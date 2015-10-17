@@ -47,14 +47,14 @@ const send404 = (function () {
                         html404 = html;
                     }
                     res.end(html404);
-                })
+                });
             }
         }
     };
 }());
 
-var send500 = (function () {
-    var html500;
+const send500 = (function () {
+    let html500;
 
     return function (req, res, err) {
         logger.error(err);

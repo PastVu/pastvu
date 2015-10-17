@@ -28,49 +28,55 @@ export function loadController(app) {
         return resultString;
     };
 
-    // Проверка на выключенный у клиенты js. В этом случае клиент передаст параметр _nojs=1 в url
-    var checkNoJS = function (req) {
-        var nojsShow = req.query._nojs === '1';
-        var nojsUrl;
+    // Check for disabled js in client's browser. In this case client send query parameter '_nojs=1'
+    const checkNoJS = req => {
+        const nojsShow = req.query._nojs === '1';
+        let nojsUrl;
 
-        //Если страница уже не для "отсутствует javascript", вставляем в noscript ссылку на редирект в случае отсутствия javascript
+        // If page doesn't fo nojs clients yet, insert into 'noscript' reference for redirect
         if (!nojsShow) {
-            nojsUrl = req._parsedUrl.pathname + '?' + (req._parsedUrl.query ? req._parsedUrl.query + '&' : '') + '_nojs=1';
+            const url = req._parsedUrl;
+            nojsUrl = url.pathname + '?' + (url.query ? url.query + '&' : '') + '_nojs=1';
         }
-        return { nojsUrl: nojsUrl, nojsShow: nojsShow };
+
+        return { nojsUrl, nojsShow };
     };
 
-    // Для путей, которым не нужна установка сессии напрямую парсим браузер
-    var getReqBrowser = function (req, res, next) {
-        var ua = req.headers['user-agent'];
+    // For paths, which don't need session, parse browser directly
+    const getReqBrowser = (req, res, next) => {
+        const ua = req.headers['user-agent'];
         if (ua) {
             req.browser = session.checkUserAgent(ua);
         }
         next();
     };
 
-    // Заполняем некоторые заголовки для полностью генерируемых страниц
-    var setStaticHeaders = (function () {
-        var cacheControl = 'no-cache',
-            xFramePolicy = 'SAMEORIGIN',
-            xPoweredBy = 'Paul Klimashkin | klimashkin@gmail.com',
-            xUA = 'IE=edge';
+    // Fill some headers for fully generated pages
+    const setStaticHeaders = (function () {
+        const cacheControl = 'no-cache';
+        const xFramePolicy = 'SAMEORIGIN';
+        const xPoweredBy = 'Paul Klimashkin | klimashkin@gmail.com';
+        const xUA = 'IE=edge';
 
-        return function (req, res, next) {
-            // Директива ответа для указания браузеру правила кеширования
-            // no-cache - браузеру и прокси разрешено кешировать, с обязательным запросом актуальности
-            // (в случае с наличием etag в первом ответе, в следующем запросе клиент для проверки актуальности передаст этот etag в заголовке If-None-Match)
+        return (req, res, next) => {
+            // Directive to indicate the browser response caching rules
+            // no-cahce - browsers and proxies can cache, with mandatory request for check actuality
+            // In case of etag existens in first response,
+            // in next request client will send that etag in 'If-None-Match' header for actuality check
             res.setHeader('Cache-Control', cacheControl);
 
-            // The page can only be displayed in a frame on the same origin as the page itself https://developer.mozilla.org/en-US/docs/Web/HTTP/X-Frame-Options
+            // The page can only be displayed in a frame on the same origin as the page itself
+            // https://developer.mozilla.org/en-US/docs/Web/HTTP/X-Frame-Options
             res.setHeader('X-Frame-Options', xFramePolicy);
 
             if (req.browser && req.browser.agent.family === 'IE') {
-                // X-UA-Compatible header has greater precedence than Compatibility View http://msdn.microsoft.com/en-us/library/ff955275(v=vs.85).aspx
+                // X-UA-Compatible header has greater precedence than Compatibility View
+                // http://msdn.microsoft.com/en-us/library/ff955275(v=vs.85).aspx
                 res.setHeader('X-UA-Compatible', xUA);
             }
 
             res.setHeader('X-Powered-By', xPoweredBy);
+
             if (typeof next === 'function') {
                 next();
             }
@@ -78,10 +84,10 @@ export function loadController(app) {
     }());
 
     [
-        '/', // Корень
-        /^\/(?:photoUpload)\/?$/, // Пути строгие (/example без или с завершающим слешом)
-        /^\/(?:ps|u|news)(?:\/.*)?$/, // Пути с возможным продолжением (/example/*)
-        /^\/(?:confirm)\/.+$/ // Пути обязательным продолжением (/example/*)
+        '/', // Root
+        /^\/(?:photoUpload)\/?$/, // Strict paths (/example with or without trailing slash)
+        /^\/(?:ps|u|news)(?:\/.*)?$/, // Path with possible continuation (/example/*)
+        /^\/(?:confirm)\/.+$/ // Path with mandatory continuation (/example/*)
     ]
         .forEach(function (route) {
             app.get(route, session.handleHTTPRequest, setStaticHeaders, appMainHandler);
@@ -90,10 +96,10 @@ export function loadController(app) {
     app.get(/^\/p\/(\d{1,7})$/, session.handleHTTPRequest, setStaticHeaders, getPhotoForPage, appMainHandler);
 
     function appMainHandler(req, res) {
-        var nojs = checkNoJS(req);
-        var photo = req.photoData && req.photoData.photo;
+        const nojs = checkNoJS(req);
+        const photo = req.photoData && req.photoData.photo;
 
-        var meta = { og: {}, twitter: {} };
+        const meta = { og: {}, twitter: {} };
 
         if (photo) {
             meta.og.url = `${origin}/p/${photo.cid}`;
@@ -102,10 +108,9 @@ export function loadController(app) {
                 meta.desc = meta.og.desc = meta.twitter.desc = Utils.txtHtmlToPlain(photo.desc, true);
             } else if (!_.isEmpty(photo.regions)) {
                 // If there in no description, create it as regions names
-                meta.desc = meta.og.desc = meta.twitter.desc = photo.regions.reduceRight(function (result, region, index) {
-                    result += region.title_local + (index ? ', ' : '');
-                    return result;
-                }, '');
+                meta.desc = meta.og.desc = meta.twitter.desc = photo.regions.reduceRight(
+                    (result, region, index) => result + region.title_local + (index ? ', ' : ''), ''
+                );
             } else {
                 meta.desc = '';
             }
@@ -131,10 +136,10 @@ export function loadController(app) {
             meta.og.url = origin + req.url; // req.path if decide without params
         }
         if (!meta.title) {
-            meta.title = meta.og.title = meta.twitter.title = 'Retro photos of mankind\'s habitat.';
+            meta.title = meta.og.title = meta.twitter.title = `Retro photos of mankind's habitat.`;
         }
         if (!meta.desc) {
-            meta.desc = meta.og.desc = meta.twitter.desc = 'Archive of historical photos, generated by users';
+            meta.desc = meta.og.desc = meta.twitter.desc = `Archive of historical photos, generated by users`;
         }
         if (meta.twitter.desc.length > 200) {
             meta.twitter.desc = meta.twitter.desc.substr(0, 197) + '...';
@@ -152,7 +157,7 @@ export function loadController(app) {
     }
 
     function getPhotoForPage(req, res, next) {
-        var cid = Number(req.params[0]);
+        const cid = Number(req.params[0]);
 
         givePhotoForPage(req.handshake.usObj, { cid })
             .then(function (result) {
@@ -165,18 +170,18 @@ export function loadController(app) {
             })
             .catch(function (err) {
                 if (err.noPhoto) {
-                    next(new errors.err.e404('Photo ' + cid + ' does not exist'));
+                    next(new errors.neoError.e404('Photo ' + cid + ' does not exist'));
                 } else {
                     next(err);
                 }
             });
     }
 
-    [/^\/(?:admin)(?:\/.*)?$/].forEach(function (route) {
+    [/^\/(?:admin)(?:\/.*)?$/].forEach(route => {
         app.get(route, session.handleHTTPRequest, setStaticHeaders, appAdminHandler);
     });
     function appAdminHandler(req, res) {
-        var nojs = checkNoJS(req);
+        const nojs = checkNoJS(req);
 
         res.statusCode = 200;
         res.render('app', {
@@ -189,8 +194,8 @@ export function loadController(app) {
         });
     }
 
-    // Устаревший браузер
-    app.get('/badbrowser', getReqBrowser, setStaticHeaders, function (req, res) {
+    // Obsolete browser
+    app.get('/badbrowser', getReqBrowser, setStaticHeaders, (req, res) => {
         res.statusCode = 200;
         res.render('status/badbrowser', {
             agent: req.browser && req.browser.agent,
@@ -198,8 +203,8 @@ export function loadController(app) {
         });
     });
 
-    // Мой user-agent
-    app.get('/myua', getReqBrowser, function (req, res) {
+    // My user-agent
+    app.get('/myua', getReqBrowser, (req, res) => {
         res.setHeader('Cache-Control', 'no-cache,no-store,max-age=0,must-revalidate');
         res.statusCode = 200;
         res.render('status/myua', {
@@ -209,8 +214,8 @@ export function loadController(app) {
         });
     });
 
-    // ping-pong для проверки работы сервера
-    app.all('/ping', function (req, res) {
+    // ping-pong to verify the server is working
+    app.all('/ping', (req, res) => {
         res.status(200).send('pong');
     });
 };
