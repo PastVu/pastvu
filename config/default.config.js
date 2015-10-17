@@ -37,13 +37,17 @@ export default {
     storePath: '', // Store folder with static user content (avatars, photos, etc)
     servePublic: true, // Tell app.js serve out its public folder (js, css, etc)
     serveStore: true, // Tell app.js serve out store public folder
+
+    logPath: './logs', // Folder for logs
     serveLog: true, // Tell app.js serve out its logs folder (path: "logPath")
+    serveLogAuth: {
+        user: 'pastvu',
+        pass: 'pastvu'
+    },
 
     // Compress response data with gzip/deflate.
     // If using nginx before nodejs, recommend to use gzip there and switch off here
     gzip: true,
-
-    logPath: '', // Folder for logs
 
     // Manual invoke garbage collector in milliseconds
     // WARN: need to use with node flags --nouse-idle-notification --expose-gc
