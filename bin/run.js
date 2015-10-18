@@ -96,7 +96,22 @@ Bluebird.promisifyAll(fs);
 const requiredModule = requireModule(argv.script);
 
 if (typeof requiredModule.configure === 'function') {
-    requiredModule.configure(startStamp);
+
+    // Wrap configuration within try to catch error and exit
+    try {
+        const result = requiredModule.configure(startStamp);
+    } catch (err) {
+        logger.error(err);
+        process.exit(1);
+    }
+
+    // If configuration has returned Promise, handle error with catch()
+    if (result && result.catch) {
+        result.catch(err => {
+            logger.error(err);
+            process.exit(1);
+        });
+    }
 }
 
 module.exports = requiredModule;
