@@ -12,6 +12,7 @@ import * as session from './_session';
 import constants from './constants.js';
 import * as photoController from './photo';
 import { userThrottleChange } from './subscr';
+import { userSettingsDef, userSettingsVars, userRanksHash } from './settings';
 
 import { User } from '../models/User';
 
@@ -21,6 +22,7 @@ const publicDir = path.join(config.storePath, 'public/avatars/');
 const msg = {
     badParams: 'Bad params',
     deny: 'У вас нет прав на это действие',
+
     nouser: 'Requested user does not exist',
     nosetting: 'Such setting does not exists'
 };
@@ -67,10 +69,10 @@ function giveUser(iAm, data, cb) {
                 return cb({ message: err && err.message || msg.nouser, error: true });
             }
             if (itsMe || iAm.isAdmin) {
-                user.settings = _.defaults(user.settings || {}, settings.userSettingsDef);
+                user.settings = _.defaults(user.settings || {}, userSettingsDef);
             }
             user.online = itsOnline;
-            cb({ message: 'ok', user: user });
+            cb({ message: 'ok', user });
         }
     );
 }
@@ -165,8 +167,8 @@ var changeSetting = Bluebird.method(function (socket, data) {
             if (!user) {
                 throw { message: msg.nouser };
             }
-            var defSetting = settings.userSettingsDef[data.key];
-            var vars = settings.userSettingsVars[data.key];
+            var defSetting = userSettingsDef[data.key];
+            var vars = userSettingsVars[data.key];
 
             // If this setting does not exist or its value is not allowed - throw error
             if (defSetting === undefined || vars === undefined || vars.indexOf(data.val) < 0) {
@@ -573,7 +575,6 @@ var setUserWatermarkChange = Bluebird.method(function (socket, data) {
 function saveUserRanks(iAm, data, cb) {
     var login = data && data.login,
         userObjOnline,
-        ranksHash,
         i;
 
     if (!iAm.isAdmin) {
@@ -585,9 +586,8 @@ function saveUserRanks(iAm, data, cb) {
     }
 
     // Проверяем, чтобы не было несуществующих званий
-    ranksHash = settings.userRanksHash;
     for (i = data.ranks; i--;) {
-        if (!ranksHash[data.ranks[i]]) {
+        if (!userRanksHash[data.ranks[i]]) {
             return cb({ message: msg.badParams, error: true });
         }
     }
