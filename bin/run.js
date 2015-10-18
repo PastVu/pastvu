@@ -9,7 +9,7 @@ const babelConfig = require('../babel/server.config');
 // Use require-hook babel
 require('babel-core/register')(Object.assign({}, babelConfig, {
     only: [ // May be array of regexp, or github.com/isaacs/node-glob
-        '@(app|downloader).js',
+        '@(app|downloader|uploader).js',
         'controllers/!(api|apilog).js',
         'models/*.js',
         'config/*.js'

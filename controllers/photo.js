@@ -26,8 +26,8 @@ import { Photo, PhotoMap, PhotoHistory } from '../models/Photo';
 
 const logger = log4js.getLogger('photo.js');
 const maxRegionLevel = constants.region.maxLevel;
-const incomeDir = path.join(config.storePath, 'incoming/');
-const privateDir = path.join(config.storePath, 'private/photos/');
+const incomeDir = path.join(config.storePath, 'incoming');
+const privateDir = path.join(config.storePath, 'private/photos');
 
 const status = constants.photo.status;
 const parsingFieldsSet = new Set(constants.photo.parsingFields);
@@ -562,7 +562,7 @@ function getUserWaterSign(user, photo) {
  * @param data Объект или массив фотографий
  */
 //var dirs = ['w', 'nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'aero'];
-var createPhotos = Bluebird.method(function (socket, data) {
+const createPhotos = Bluebird.method(function (socket, data) {
     var iAm = socket.handshake.usObj;
     if (!iAm.registered) {
         throw { message: msg.deny };
@@ -580,15 +580,15 @@ var createPhotos = Bluebird.method(function (socket, data) {
     var canCreate = core.getNewPhotosLimit(user);
 
     if (!canCreate || !data.length) {
-        return { message: 'Nothing to save', cids: cids };
+        return { message: 'Nothing to save', cids };
     }
     if (data.length > canCreate) {
         data = data.slice(0, canCreate);
     }
 
     return Bluebird.all(data.map(function (item) {
-            item.fullfile = item.file.replace(/((.)(.)(.))/, "$2/$3/$4/$1");
-            return fs.renameAsync(incomeDir + item.file, privateDir + item.fullfile);
+            item.fullfile = item.file.replace(/((.)(.)(.))/, '$2/$3/$4/$1');
+            return fs.renameAsync(path.join(incomeDir, item.file), path.join(privateDir, item.fullfile));
         }))
         .then(function () {
             return Counter.incrementBy('photo', data.length);
@@ -1223,7 +1223,7 @@ var removePhotoIncoming = Bluebird.method(function (iAm, data) {
         throw { message: msg.deny };
     }
 
-    return fs.unlinkAsync(incomeDir + data.file);
+    return fs.unlinkAsync(path.join(incomeDir, data.file));
 });
 
 /**
@@ -2649,7 +2649,7 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
             return Bluebird.join(
                 User.findOneAsync({ _id: photo.user }, { _id: 0, login: 1, avatar: 1, disp: 1 }, { lean: true }),
                 PhotoHistory
-                    .find({ cid: cid }, historySelect, { lean: true, sort: { stamp: 1 } })
+                    .find({ cid }, historySelect, { lean: true, sort: { stamp: 1 } })
                     .populate({ path: 'user', select: { _id: 0, login: 1, avatar: 1, disp: 1 } })
                     .execAsync()
             );

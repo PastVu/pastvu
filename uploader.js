@@ -1,163 +1,238 @@
-#!/usr/bin/env node
-'use strict';
+import './commons/JExtensions';
+import fs from 'fs';
+import gm from 'gm';
+import _ from 'lodash';
+import path from 'path';
+import http from 'http';
+import mkdirp from 'mkdirp';
+import log4js from 'log4js';
+import config from './config';
+import formidable from 'formidable';
+import Utils from './commons/Utils';
 
-var path = require('path'),
-    fs = require('fs'),
-    os = require('os'),
-    gm = require('gm'),
-    step = require('step'),
-    existsSync = fs.existsSync,
-    log4js = require('log4js'),
-    argv = require('optimist').argv,
-    mkdirp = require('mkdirp'),
-    formidable = require('formidable'),
-    interfaces = os.networkInterfaces(),
-    addresses = [];
+export function configure(startStamp) {
+    const {
+        storePath,
+        listen: {
+            hostname,
+            uport: listenport
+        }
+    } = config;
 
-require('./commons/JExtensions');
+    const logger = log4js.getLogger('uploader');
+    const incomeDir = path.join(storePath, 'incoming');
+    const targetDirPhoto = path.join(storePath, 'private/photos');
+    const targetDirAvatar = path.join(storePath, 'private/avatars');
+    const minPhotoSize = 10240; // 10kB
+    const maxPhotoSize = 52428800; // 50Mb
+    const maxPhotoPostSize = 53477376; // 51Mb,
+    const minAvaSize = 1024; // 1kB
+    const maxAvaSize = 7340032; // 7Mb
+    const maxAvaPostSize = 8388608; // 8Mb,
+    const acceptFileTypes = /\.(jpe?g|png)$/i;
+    const accessControl = {
+        allowOrigin: '*',
+        allowMethods: 'OPTIONS, POST',
+        allowHeaders: 'Content-Type, Content-Range, Content-Disposition'
+    };
 
-for (var k in interfaces) {
-    if (interfaces.hasOwnProperty(k)) {
-        for (var k2 in interfaces[k]) {
-            if (interfaces[k].hasOwnProperty(k2)) {
-                var address = interfaces[k][k2];
-                if (address.family === 'IPv4' && !address.internal) {
-                    addresses.push(address.address);
-                }
+    class FileInfo {
+        constructor(file, targetDir, nameLen, dirDepth) {
+            this.name = file.name;
+            this.size = file.size;
+            this.type = file.type;
+
+            this.createFileName(targetDir, nameLen, dirDepth);
+        }
+        createFileName(targetDir, nameLen, dirDepth) {
+            this.file = this.fileNameGen(nameLen);
+            this.fileDir = this.fileNameDir(targetDir, dirDepth);
+
+            // Cyclically check the existence of a file with the same name, until we find a unique
+            while (fs.existsSync(targetDir + this.fileDir + this.file)) {
+                this.file = this.fileNameGen(nameLen);
+                this.fileDir = this.fileNameDir(targetDir, dirDepth);
             }
         }
-    }
-}
-
-var conf = JSON.parse(JSON.minify(fs.readFileSync(argv.conf || __dirname + '/config.json', 'utf8'))),
-    storePath = path.normalize(argv.storePath || conf.storePath || (__dirname + '/../store/')), // Путь к папке хранилища
-    land = argv.land || conf.land || 'dev', // Окружение (dev, test, prod)
-    listenuport = argv.uport || conf.uport || 3001, // Порт прослушки сервера загрузки фотографий
-    listenhost = argv.hostname || conf.hostname || undefined, // Слушать хост
-
-    protocol = argv.protocol || conf.protocol || 'http', // Протокол сервера для клинетов
-    domain = argv.domain || conf.domain || addresses[0] || '127.0.0.1', // Адрес сервера для клинетов
-    port = argv.projectport || conf.projectport || '', // Порт сервера
-    uport = argv.projectuport || conf.projectuport || '', // Порт сервера загрузки фотографий
-    host = domain + uport, // Имя хоста (адрес+порт)
-
-    logPath = path.normalize(argv.logPath || conf.logPath || (__dirname + '/logs')); // Путь к папке логов
-
-console.log('\n');
-mkdirp.sync(logPath);
-log4js.configure('./log4js.json', { cwd: logPath });
-var logger = log4js.getLogger('uploader.js');
-
-global.appVar = {}; // Глоблальный объект для хранения глобальных переменных приложения
-global.appVar.serverAddr = { protocol: protocol, domain: domain, host: host, port: port, uport: uport };
-
-var Utils = require('./commons/Utils'),
-    options = {
-        incomeDir: path.normalize(storePath + 'incoming/'),
-        targetDir: storePath + 'private/photos/',
-        targetDirAva: storePath + 'private/avatars/',
-        minPhotoSize: 10240, // 10kB
-        maxPhotoSize: 52428800, // 50Mb
-        maxPhotoPostSize: 53477376, // 51Mb,
-        minAvaSize: 1024, // 1kB
-        maxAvaSize: 7340032, // 7Mb
-        maxAvaPostSize: 8388608, // 8Mb,
-        acceptFileTypes: /\.(jpe?g|png)$/i,
-        accessControl: {
-            allowOrigin: '*',
-            allowMethods: 'OPTIONS, POST',
-            allowHeaders: 'Content-Type, Content-Range, Content-Disposition'
+        fileNameGen(len) {
+            return Utils.randomString(len || 10, true) + this.name.substr(this.name.lastIndexOf('.')).toLowerCase();
         }
-    },
+        fileNameDir(dir, depth) {
+            const result = this.file.substr(0, depth || 1).replace(/(.)/gi, '$1/');
+            mkdirp.sync(path.join(dir, result)); // Directory creation
+            return result;
+        }
+    }
 
-    setAccessControlHeaders = function (res) {
-        res.setHeader('Access-Control-Allow-Origin', options.accessControl.allowOrigin);
-        res.setHeader('Access-Control-Allow-Methods', options.accessControl.allowMethods);
-        res.setHeader('Access-Control-Allow-Headers', options.accessControl.allowHeaders);
-    },
-    setNoCacheHeaders = function (res) {
+    const setAccessControlHeaders = res => {
+        res.setHeader('Access-Control-Allow-Origin', accessControl.allowOrigin);
+        res.setHeader('Access-Control-Allow-Methods', accessControl.allowMethods);
+        res.setHeader('Access-Control-Allow-Headers', accessControl.allowHeaders);
+    };
+    const setNoCacheHeaders = res => {
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
         res.setHeader('Content-Disposition', 'inline; filename="files.json"');
-    },
-    postHandlerResponse = function (req, res, result) {
-        res.writeHead(200, {
-            'Content-Type': req.headers.accept.indexOf('application/json') !== -1 ? 'application/json' : 'text/plain'
+    };
+
+    function tooBigPostDestroy(req, isAvatar, bytesReceived, bytesExpected) {
+        logger.warn(`Too big ${isAvatar ? 'avatar' : 'photo'}, dropping, ${bytesReceived} ${bytesExpected}`);
+        req.connection.destroy();
+    }
+
+    async function validatePhoto(fileInfo) {
+        if (!acceptFileTypes.test(fileInfo.name)) {
+            fileInfo.error = 'ftype';
+            return;
+        } else if (minPhotoSize && minPhotoSize > fileInfo.size) {
+            fileInfo.error = 'fmin';
+            return;
+        } else if (maxPhotoSize && maxPhotoSize < fileInfo.size) {
+            fileInfo.error = 'fmax';
+            return;
+        }
+
+        return await new Promise(resolve => {
+            gm(fileInfo.path).size(function (err, size) {
+                if (err || !size) {
+                    logger.error('GM size error:', err);
+                    fileInfo.error = 'fpx';
+                    return resolve();
+                }
+
+                const w = Number(size.width);
+                const h = Number(size.height);
+
+                if (!w || !h || w < 400 || h < 400 || (w < 800 && h < 800)) {
+                    fileInfo.error = 'fpx';
+                }
+                resolve();
+            });
         });
-        res.end(JSON.stringify(result));
-    },
-    postHandler = function (req, res, isAvatar, cb) {
-        var form = new formidable.IncomingForm(),
-            maxPostSize = isAvatar ? options.maxAvaPostSize : options.maxPhotoPostSize,
-            targetDir = isAvatar ? options.targetDirAva : options.targetDir,
-            validateFunc = isAvatar ? validateAvatar : validatePhoto,
+    }
 
-            contentLength = req.headers && req.headers['content-length'] && Number(req.headers['content-length']),
+    async function validateAvatar(fileInfo) {
+        if (!acceptFileTypes.test(fileInfo.name)) {
+            fileInfo.error = 'ftype';
+            return;
+        } else if (minAvaSize && minAvaSize > fileInfo.size) {
+            fileInfo.error = 'fmin';
+            return;
+        } else if (maxAvaSize && maxAvaSize < fileInfo.size) {
+            fileInfo.error = 'fmax';
+            return;
+        }
 
-            tmpFiles = [],
-            files = [],
-            map = {},
-            counter = 1;
+        return await new Promise(resolve => {
+            gm(fileInfo.path).size(function (err, size) {
+                if (err || !size) {
+                    logger.error('GM avatar size error:', err);
+                    fileInfo.error = 'fpx';
+                    return resolve();
+                }
+                const w = Number(size.width);
+                const h = Number(size.height);
+                const min = Math.min(w, h);
 
-        // Современные браузеры сразу присылают размер запроса в байтах, можно сразу отклонить при превышении максимального размера
+                if (!w || !h || w < 100 || h < 100) {
+                    fileInfo.error = 'fpx';
+                    return resolve();
+                }
+
+                if (w > 100 || h > 100) {
+                    // Cut from center by smaller size and resize to 100px
+                    gm(fileInfo.path)
+                        .gravity('Center')
+                        .quality(90)
+                        .filter('Sinc')
+                        .noProfile() // Drop EXIF
+                        .crop(min, min)
+                        .resize(100, 100)
+                        .write(fileInfo.path, function (err) {
+                            if (err) {
+                                logger.warn('GM avatar resize error', err);
+                                fileInfo.error = 'fpx';
+                            }
+                            resolve();
+                        });
+                } else {
+                    resolve();
+                }
+            });
+        });
+    }
+
+    const postHandler = (req, res) => {
+        const form = new formidable.IncomingForm();
+        const isAvatar = req.url === '/uploadava';
+        const maxPostSize = isAvatar ? maxAvaPostSize : maxPhotoPostSize;
+        const targetDir = isAvatar ? targetDirAvatar : targetDirPhoto;
+        const validateFunc = isAvatar ? validateAvatar : validatePhoto;
+        const contentLength = Number(_.get(req, `headers['content-length']`));
+
+        const tmpFiles = [];
+        const files = [];
+        const map = {};
+        let counter = 1;
+
+        // Modern browsers send ашду size in header, so we right away able to reject ша exceeding of the maximum size
         if (contentLength && contentLength > maxPostSize) {
             tooBigPostDestroy(req, isAvatar, 0, contentLength);
         }
 
-        form.uploadDir = options.incomeDir;
+        form.uploadDir = incomeDir;
         form
             .on('fileBegin', function (name, file) {
-                    tmpFiles.push(file.path);
-                    var fileInfo = new FileInfo(file, targetDir, isAvatar ? 10 : 18, isAvatar ? 2 : 3);
+                tmpFiles.push(file.path);
+                const fileInfo = new FileInfo(file, targetDir, isAvatar ? 10 : 18, isAvatar ? 2 : 3);
 
-                    map[path.basename(file.path)] = fileInfo;
-                    files.push(fileInfo);
-                })
+                map[path.basename(file.path)] = fileInfo;
+                files.push(fileInfo);
+            })
             .on('file', function (name, file) {
-                    var fileInfo = map[path.basename(file.path)];
+                const fileInfo = map[path.basename(file.path)];
 
-                    fileInfo.size = file.size;
-                    fs.renameSync(file.path, options.incomeDir + fileInfo.file); //Переименовываем файл в сгенерированное нами имя
-                })
+                fileInfo.size = file.size;
+                fileInfo.path = path.join(incomeDir, fileInfo.file);
+                fs.renameSync(file.path, fileInfo.path); // Rename file to generated name
+            })
             .on('aborted', function () {
-                    tmpFiles.forEach(function (file) {
-                        fs.unlinkSync(file);
-                    });
-                })
+                tmpFiles.forEach(function (file) {
+                    fs.unlinkSync(file);
+                });
+            })
             .on('error', function (e) {
-                    logger.warn(e && e.message || e);
-                })
+                logger.warn(e && e.message || e);
+            })
             .on('progress', function (bytesReceived, bytesExpected) {
-                    if (bytesReceived > maxPostSize) {
-                        tooBigPostDestroy(req, isAvatar, bytesReceived, bytesExpected);
+                if (bytesReceived > maxPostSize) {
+                    tooBigPostDestroy(req, isAvatar, bytesReceived, bytesExpected);
+                }
+            })
+            .on('end', async function () {
+                counter -= 1;
+
+                if (counter) {
+                    return;
+                }
+
+                for (const fileInfo of files) {
+                    await validateFunc(fileInfo);
+
+                    if (fileInfo.error) {
+                        await fs.unlinkAsync(fileInfo.path);
                     }
-                })
-            .on('end', function () {
-                    counter -= 1;
-                    if (!counter) {
-                        step(
-                            function () {
-                                for (var i = files.length; i--;) {
-                                    validateFunc(files[i], this.parallel());
-                                }
-                            },
-                            function () {
-                                for (var i = files.length; i--;) {
-                                    if (files[i].error) {
-                                        fs.unlink(options.incomeDir + files[i].file, this.parallel());
-                                    }
-                                }
-                                this.parallel()();
-                            },
-                            function () {
-                                cb(req, res, { files: files });
-                            }
-                        );
-                    }
-                })
+                }
+
+                res.writeHead(200, {
+                    'Content-Type': req.headers.accept.indexOf('application/json') !== -1 ? 'application/json' : 'text/plain'
+                });
+                res.end(JSON.stringify({ files }));
+            })
             .parse(req);
-    },
-    serve = function (req, res) {
+    };
+
+    const handleRequest = (req, res) => {
         if (req.url !== '/upload' && req.url !== '/uploadava') {
             res.statusCode = 403;
             res.end();
@@ -171,134 +246,20 @@ var Utils = require('./commons/Utils'),
                 break;
             case 'POST':
                 setNoCacheHeaders(res);
-                postHandler(req, res, req.url === '/uploadava', postHandlerResponse);
+                postHandler(req, res);
                 break;
             default:
-                logger.warn(405);
+                logger.warn(405, req.method, req.url);
                 res.statusCode = 405;
                 res.end();
         }
-    },
-
-    fileNameGen = function (name, len) {
-        return Utils.randomString(len || 10, true) + name.substr(name.lastIndexOf('.')).toLowerCase();
-    },
-    fileNameDir = function (dir, fileName, depth) {
-        var result = fileName.substr(0, depth || 1).replace(/(.)/gi, '$1/');
-        mkdirp.sync(dir + result); //Создание папки
-        return result;
-    },
-    FileInfo = function (file, targetDir, nameLen, dirDepth) {
-        this.name = file.name;
-        this.size = file.size;
-        this.type = file.type;
-        this.createFileName(targetDir, nameLen, dirDepth);
     };
 
-FileInfo.prototype.createFileName = function (targetDir, nameLen, dirDepth) {
-    this.file = fileNameGen(this.name, nameLen);
-    this.fileDir = fileNameDir(targetDir, this.file, dirDepth);
-
-    // Циклично проверяем на существование файла с таким имемнем, пока не найдем уникальное
-    while (existsSync(targetDir + this.fileDir + this.file)) {
-        this.file = fileNameGen(this.name, nameLen);
-        this.fileDir = fileNameDir(targetDir, this.file, dirDepth);
-    }
-};
-
-function tooBigPostDestroy(req, isAvatar, bytesReceived, bytesExpected) {
-    logger.warn('~~~~', 'Too big ' + (isAvatar ? 'avatar' : 'photo') + ', dropping', bytesReceived, bytesExpected);
-    req.connection.destroy();
-}
-
-function validatePhoto(fileInfo, cb) {
-    if (!options.acceptFileTypes.test(fileInfo.name)) {
-        fileInfo.error = 'ftype';
-        return cb();
-    } else if (options.minPhotoSize && options.minPhotoSize > fileInfo.size) {
-        fileInfo.error = 'fmin';
-        return cb();
-    } else if (options.maxPhotoSize && options.maxPhotoSize < fileInfo.size) {
-        fileInfo.error = 'fmax';
-        return cb();
-    }
-
-    gm(options.incomeDir + fileInfo.file).size(function (err, size) {
-        if (err) {
-            logger.error('~~~~', 'GM size error: ' + err);
-            fileInfo.error = 'fpx';
-            return cb();
-        }
-        var w = size && Number(size.width),
-            h = size && Number(size.height);
-
-        if (!w || !h || w < 400 || h < 400 || (w < 800 && h < 800)) {
-            fileInfo.error = 'fpx';
-            return cb();
-        }
-        cb();
+    http.createServer(handleRequest).listen(listenport, hostname, function () {
+        logger.info(`Uploader host for users: [${config.client.hostname + config.client.uport}]`);
+        logger.info(
+            `Uploader server started up in ${(Date.now() - startStamp) / 1000}s`,
+            `and listening [${hostname || '*'}:${listenport}]\n`
+        );
     });
 }
-
-function validateAvatar(fileInfo, cb) {
-    if (!options.acceptFileTypes.test(fileInfo.name)) {
-        fileInfo.error = 'ftype';
-        return cb();
-    } else if (options.minAvaSize && options.minAvaSize > fileInfo.size) {
-        fileInfo.error = 'fmin';
-        return cb();
-    } else if (options.maxAvaSize && options.maxAvaSize < fileInfo.size) {
-        fileInfo.error = 'fmax';
-        return cb();
-    }
-
-    gm(options.incomeDir + fileInfo.file).size(function (err, size) {
-        if (err) {
-            logger.error('~~~~', 'GM size error: ' + err);
-            fileInfo.error = 'fpx';
-            return cb();
-        }
-        var w = size && Number(size.width),
-            h = size && Number(size.height),
-            min = Math.min(w, h);
-
-        if (!w || !h || w < 100 || h < 100) {
-            fileInfo.error = 'fpx';
-            return cb();
-        }
-
-        if (w > 100 || h > 100) {
-            // Обрезаем из центра по минимальному размеру и ресайзим до 100px
-            gm(options.incomeDir + fileInfo.file)
-                .gravity('Center')
-                .quality(90)
-                .filter('Sinc')
-                .noProfile() //Убираем EXIF
-                .crop(min, min)
-                .resize(100, 100)
-                .write(options.incomeDir + fileInfo.file, function (err) {
-                           if (err) {
-                               logger.warn('~~~~', 'GM avatar resize error');
-                               fileInfo.error = 'fpx';
-                           }
-                           cb();
-                       });
-        } else {
-            cb();
-        }
-    });
-}
-
-/**
- * Handling uncaught exceptions
- */
-process.on('uncaughtException', function (err) {
-    // Add here storage for saving and resuming
-    logger.fatal('PROCESS uncaughtException: ' + (err && (err.message || err)));
-    logger.trace(err && (err.stack || err));
-});
-
-require('http').createServer(serve).listen(listenuport, listenhost, function () {
-    logger.info('Uploader host for users: [%s]', host);
-    logger.info('Uploader server listening [%s:%s]\n', listenhost ? listenhost : '*', listenuport);
-});

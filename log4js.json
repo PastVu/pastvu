@@ -74,7 +74,7 @@
 			"filename": "uploader.log",
 			"maxLogSize": 1048576,
 			"backups": 0,
-			"category": ["uploader.js"]
+			"category": ["uploader"]
 		},
 		{
 			"type": "file",

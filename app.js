@@ -7,7 +7,6 @@ import mkdirp from 'mkdirp';
 import log4js from 'log4js';
 import config from './config';
 import express from 'express';
-import Bluebird from 'bluebird';
 import socketIO from 'socket.io';
 import Utils from './commons/Utils';
 import * as region from './controllers/region';
