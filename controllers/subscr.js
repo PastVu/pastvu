@@ -5,6 +5,7 @@ import jade from 'jade';
 import log4js from 'log4js';
 import Utils from '../commons/Utils';
 import * as session from './_session';
+import config from '../config';
 import { waitDb } from './connection';
 import { send as sendMail } from './mail';
 import { userSettingsDef } from './settings';
@@ -409,6 +410,7 @@ async function sendUserNotice(userId) {
             head: true,
             body: noticeTpl({
                 user,
+                config,
                 news: newsResult,
                 photos: photosResult,
                 username: String(user.disp),
@@ -511,15 +513,21 @@ async function getUserSubscr(iAm, data) {
     };
 };
 
-fs.readFile(noticeTplPath, 'utf-8', async function (err, data) {
-    if (err) {
-        return logger.error('Notice jade read error: ' + err.message);
+export const ready = new Promise(async function(resolve, reject) {
+    try {
+        const data = await fs.readFileAsync(noticeTplPath, 'utf-8');
+
+        noticeTpl = jade.compile(data, { filename: noticeTplPath, pretty: false });
+
+        await waitDb;
+
+        resolve();
+
+        notifierConveyor();
+    } catch (err) {
+        err.message = 'Notice jade read error: ' + err.message;
+        reject(err);
     }
-    noticeTpl = jade.compile(data, { filename: noticeTplPath, pretty: false });
-
-    await waitDb;
-
-    notifierConveyor();
 });
 
 export function loadController(io) {

@@ -168,7 +168,7 @@ export async function configure(startStamp) {
 
     io.use(session.handleSocket);
 
-    await* [settings.ready, region.ready, mail.ready];
+    await* [settings.ready, region.ready, auth.ready, subscr.ready, mail.ready];
 
     session.loadController(io);
     admin.loadController(io);

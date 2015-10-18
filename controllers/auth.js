@@ -17,7 +17,6 @@ import { User, UserConfirm } from '../models/User';
 import { Counter } from '../models/Counter';
 
 const logger = log4js.getLogger('auth.js');
-const loggerApp = log4js.getLogger('app');
 const preaddrs = config.client.subdomains.map(function (sub) {
     return `${sub}.${config.client.host}`;
 });
@@ -182,6 +181,7 @@ function register(data, cb) {
                     head: true,
                     body: regTpl({
                         data,
+                        config,
                         confirmKey,
                         username: data.login,
                         greeting: 'Спасибо за регистрацию на проекте PastVu!',
@@ -254,6 +254,7 @@ function recall(iAm, data, cb) {
                 head: true,
                 body: recallTpl({
                     data,
+                    config,
                     confirmKey,
                     username: data.disp,
                     linkvalid: moment.duration(ms('2d')).humanize() + ' (до ' + moment().utc().lang('ru').add(ms('2d')).format("LLL") + ')'
@@ -416,18 +417,22 @@ function checkConfirm(data, cb) {
     });
 }
 
-fs.readFile(path.normalize('./views/mail/registration.jade'), 'utf-8', function (err, data) {
-    if (err) {
-        return loggerApp.error('Notice jade read error: ' + err.message);
+export const ready = new Promise(async function(resolve, reject) {
+    try {
+        const [regData, recallData] = await* [
+            fs.readFileAsync(path.normalize('./views/mail/registration.jade'), 'utf-8'),
+            fs.readFileAsync(path.normalize('./views/mail/recall.jade'), 'utf-8')
+        ];
+
+        regTpl = jade.compile(regData, { filename: path.normalize('./views/mail/registration.jade'), pretty: false });
+        recallTpl = jade.compile(recallData, { filename: path.normalize('./views/mail/recall.jade'), pretty: false });
+        resolve();
+    } catch (err) {
+        err.message = 'Auth jade read error: ' + err.message;
+        reject(err);
     }
-    regTpl = jade.compile(data, { filename: path.normalize('./views/mail/registration.jade'), pretty: false });
 });
-fs.readFile(path.normalize('./views/mail/recall.jade'), 'utf-8', function (err, data) {
-    if (err) {
-        return loggerApp.error('Notice jade read error: ' + err.message);
-    }
-    recallTpl = jade.compile(data, { filename: path.normalize('./views/mail/recall.jade'), pretty: false });
-});
+
 export function loadController(io) {
     io.sockets.on('connection', function (socket) {
         const hs = socket.handshake;
