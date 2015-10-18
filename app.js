@@ -1,12 +1,8 @@
 import './commons/JExtensions';
-import fs from 'fs';
-import os from 'os';
 import ms from 'ms';
 import _ from 'lodash';
-import util from 'util';
 import http from 'http';
 import path from 'path';
-import posix from 'posix';
 import mkdirp from 'mkdirp';
 import log4js from 'log4js';
 import config from './config';
@@ -52,52 +48,15 @@ export async function configure(startStamp) {
         }
     } = config;
 
-    mkdirp.sync(logPath);
-    mkdirp.sync(path.join(storePath + 'incoming'));
-    mkdirp.sync(path.join(storePath + 'private'));
-    mkdirp.sync(path.join(storePath + 'public/avatars'));
-    mkdirp.sync(path.join(storePath + 'public/photos'));
+    mkdirp.sync(path.join(storePath, 'incoming'));
+    mkdirp.sync(path.join(storePath, 'private'));
+    mkdirp.sync(path.join(storePath, 'public/avatars'));
+    mkdirp.sync(path.join(storePath, 'public/photos'));
 
-    log4js.configure('./log4js.json', { cwd: logPath });
-    if (env === 'development') {
-        log4js.addAppender(log4js.appenders.console()); // In dev write all logs also to the console
-    }
-
-    const nofileLimits = posix.getrlimit('nofile');
+    const logger = log4js.getLogger('app');
     const logger404 = log4js.getLogger('404.js');
-    const logger = log4js.getLogger('app.js');
 
-    // Handling uncaught exceptions
-    process.on('uncaughtException', function (err) {
-        // Add here storage for saving and resuming
-        logger.fatal('PROCESS uncaughtException: ' + (err && (err.message || err)));
-        logger.trace(err && (err.stack || err));
-    });
-
-    process.on('exit', function () {
-        logger.info('--SHUTDOWN--');
-    });
-
-    // Displays information about the environment and configuration
-    logger.info('~~~');
-    logger.info(`Starting server v${config.version} in ${env.toUpperCase()} mode with NODE_ENV=${process.env.NODE_ENV}`);
-    logger.info(`Platform: ${process.platform}, architecture: ${process.arch} with ${os.cpus().length} cpu cores`);
-    logger.info(`Node.js [${process.versions.node}] with v8 [${process.versions.v8}] on pid: ${process.pid}`);
-    logger.info(`Posix file descriptor limits: soft=${nofileLimits.soft}, hard=${nofileLimits.hard}`);
-    logger.info(`Configuration:\n`, util.inspect(
-        // Do deep clone of config and shade password fields
-        _.cloneDeep(config, (val, key) => key === 'pass' ? '######' : undefined),
-        { depth: null, colors: env === 'development' }
-    ));
-
-    // Enable verbose stack trace of Bluebird promises (not in production)
-    if (env !== 'production') {
-        logger.info('Bluebird long stack traces are enabled');
-        Bluebird.longStackTraces();
-    }
-    logger.info('Application Hash: ' + config.hash);
-
-    Bluebird.promisifyAll(fs);
+    logger.info('Application Hash: ' + config.hass);
 
     await connectDb(config.mongo.connection, config.mongo.pool, logger);
 
@@ -152,11 +111,11 @@ export async function configure(startStamp) {
     }
 
     if (config.servePublic) {
-        const pub = '/public/';
+        const pub = path.resolve('./public');
 
         if (env === 'development') {
             const lessMiddleware = require('less-middleware');
-            app.use('/style', lessMiddleware(path.join(__dirname, pub, 'style'), {
+            app.use('/style', lessMiddleware(path.join(pub, 'style'), {
                 force: true,
                 once: false,
                 debug: false,
@@ -165,7 +124,7 @@ export async function configure(startStamp) {
                     yuicompress: false,
                     sourceMap: true,
                     sourceMapRootpath: '/',
-                    sourceMapBasepath: path.join(__dirname, pub)
+                    sourceMapBasepath: pub
                 },
                 parser: { dumpLineNumbers: 0, optimization: 0 }
             }));
@@ -174,13 +133,10 @@ export async function configure(startStamp) {
         // Favicon need to be placed before static, because it will written from disc once and will be cached
         // It would be served even on next step (at static), but in this case it would be written from disc on every req
         app.use(require('serve-favicon')(
-            path.join(__dirname, pub, 'favicon.ico'), { maxAge: ms(env === 'development' ? '1s' : '2d') })
+            path.join(pub, 'favicon.ico'), { maxAge: ms(env === 'development' ? '1s' : '2d') })
         );
 
-        app.use(express.static(path.join(__dirname, pub), {
-            maxAge: ms(env === 'development' ? '1s' : '2d'),
-            etag: false
-        }));
+        app.use(express.static(pub, { maxAge: ms(env === 'development' ? '1s' : '2d'), etag: false }));
 
         // Seal static paths, ie request that achieve this handler will receive 404
         app.get(/^\/(?:img|js|style)(?:\/.*)$/, static404);

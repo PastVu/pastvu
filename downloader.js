@@ -4,10 +4,8 @@ import ms from 'ms';
 import _ from 'lodash';
 import path from 'path';
 import http from 'http';
-import mkdirp from 'mkdirp';
 import log4js from 'log4js';
 import config from './config';
-import Bluebird from 'bluebird';
 import Utils from './commons/Utils';
 import contentDisposition from 'content-disposition';
 
@@ -16,7 +14,6 @@ import { Download } from './models/Download';
 
 export async function configure(startStamp) {
     const {
-        env,
         storePath,
         listen: {
             hostname,
@@ -24,32 +21,9 @@ export async function configure(startStamp) {
         }
     } = config;
 
-    mkdirp.sync(config.logPath);
-    log4js.configure('./log4js.json', { cwd: config.logPath });
-    if (env === 'development') {
-        log4js.addAppender(log4js.appenders.console()); // In dev write all logs also to the console
-    }
+    const logger = log4js.getLogger('downloader');
 
-    const logger = log4js.getLogger('downloader.js');
-
-    // Handling uncaught exceptions
-    process.on('uncaughtException', function (err) {
-        // Add here storage for saving and resuming
-        logger.fatal('PROCESS uncaughtException: ' + (err && (err.message || err)));
-        logger.trace(err && (err.stack || err));
-    });
-
-    process.on('exit', function () {
-        logger.info('--SHUTDOWN--');
-    });
-
-    // Enable verbose stack trace of Bluebird promises (not in production)
-    if (env !== 'production') {
-        logger.info('Bluebird long stack traces are enabled');
-        Bluebird.longStackTraces();
-    }
-
-    Bluebird.promisifyAll(fs);
+    await connectDb(config.mongo.connection, config.mongo.poolDownloader, logger);
 
     const responseCode = function (code, response) {
         const textStatus = http.STATUS_CODES[code];
@@ -117,8 +91,6 @@ export async function configure(startStamp) {
             setTimeout(memInfo, INTERVAL + delta);
         };
     }());
-
-    await connectDb(config.mongo.connection, config.mongo.poolDownloader, logger);
 
     const handleRequest = async function (req, res) {
         res.statusCode = 200;

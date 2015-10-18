@@ -17,7 +17,7 @@ import { User, UserConfirm } from '../models/User';
 import { Counter } from '../models/Counter';
 
 const logger = log4js.getLogger('auth.js');
-const loggerApp = log4js.getLogger('app.js');
+const loggerApp = log4js.getLogger('app');
 const preaddrs = config.client.subdomains.map(function (sub) {
     return `${sub}.${config.client.host}`;
 });

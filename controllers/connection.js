@@ -26,7 +26,7 @@ export const registerModel = modelPromise => {
     return waitDb;
 };
 
-export default function (uri, poolSize = 1, logger = log4js.getLogger('app.js')) {
+export default function (uri, poolSize = 1, logger = log4js.getLogger('app')) {
     if (!connectionPromise) {
         connectionPromise = new Promise(function (resolve, reject) {
             db = mongoose.createConnection() // http://mongoosejs.com/docs/api.html#connection_Connection

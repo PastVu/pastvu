@@ -6,55 +6,97 @@
 
 const startStamp = Date.now();
 const babelConfig = require('../babel/server.config');
-const babelOptions = Object.assign({}, babelConfig, {
+// Use require-hook babel
+require('babel-core/register')(Object.assign({}, babelConfig, {
     only: [ // May be array of regexp, or github.com/isaacs/node-glob
         '@(app|downloader).js',
         'controllers/!(api|apilog).js',
         'models/*.js',
         'config/*.js'
     ]
+}));
+function requireModule(modulePath) {
+    return require(path.resolve(modulePath));
+}
+
+if (require.main !== module) { // If run.js is required by another fil
+    module.exports = requireModule;
+    return;
+}
+
+// If run.js was invoked directly
+const os = require('os');
+const fs = require('fs');
+const _ = require('lodash');
+const util = require('util');
+const path = require('path');
+const posix = require('posix');
+const mkdirp = require('mkdirp');
+const log4js = require('log4js');
+const Bluebird = require('bluebird');
+
+const argv = require('yargs')
+    .help('help') // --help to get help
+    .options('s', {
+        'alias': 'script',
+        'default': 'app.js',
+        describe: 'Path to script to start'
+    })
+    .options('c', {
+        alias: 'config',
+        describe: 'Alternative path to config file'
+    })
+    .argv;
+
+const config = require('../config');
+const logPath = config.logPath;
+const env = config.env;
+
+mkdirp.sync(logPath);
+log4js.configure('./log4js.json', { cwd: logPath });
+if (env === 'development') {
+    log4js.addAppender(log4js.appenders.console()); // In dev write all logs also to the console
+}
+
+const appName = path.parse(argv.script).name;
+const logger = log4js.getLogger(appName);
+const nofileLimits = posix.getrlimit('nofile');
+
+// Handling uncaught exceptions
+process.on('uncaughtException', function (err) {
+    logger.fatal('PROCESS uncaughtException: ' + (err && (err.message || err)));
+    logger.trace(err && (err.stack || err));
 });
 
-if (require.main === module) {
-    // If run.js was invoked directly
-    const path = require('path');
-    const argv = require('yargs')
-        .help('help') // --help to get help
-        .options('s', {
-            'alias': 'script',
-            'default': 'app.js',
-            describe: 'Path to script to start'
-        })
-        .options('c', {
-            alias: 'config',
-            describe: 'Alternative path to config file'
-        })
-        .argv;
+process.on('exit', function () {
+    logger.info('--SHUTDOWN--');
+});
 
-    const requiredModule = babelRequire(path.resolve(argv.script));
+// Displays information about the environment and configuration
+logger.info('●▬▬▬▬▬▬▬▬ ★ ▬▬▬▬▬▬▬▬●');
+logger.info(
+    `Starting ${appName} server v${config.version} in ${env.toUpperCase()} mode with NODE_ENV=${process.env.NODE_ENV}`
+);
+logger.info(`Platform: ${process.platform}, architecture: ${process.arch} with ${os.cpus().length} cpu cores`);
+logger.info(`Node.js [${process.versions.node}] with v8 [${process.versions.v8}] on pid: ${process.pid}`);
+logger.info(`Posix file descriptor limits: soft=${nofileLimits.soft}, hard=${nofileLimits.hard}`);
+logger.info(`Configuration:\n`, util.inspect(
+    // Do deep clone of config and shade password fields
+    _.cloneDeep(config, (val, key) => key === 'pass' ? '######' : undefined),
+    { depth: null, colors: env === 'development' }
+));
 
-    if (typeof requiredModule.configure === 'function') {
-        requiredModule.configure(startStamp);
-    }
+// Enable verbose stack trace of Bluebird promises (not in production)
+if (env !== 'production') {
+    logger.info('Bluebird long stack traces are enabled');
+    Bluebird.longStackTraces();
+}
+Bluebird.promisifyAll(fs);
 
-    module.exports = requiredModule;
-} else {
-    // If run.js is required by another fil
-    module.exports = babelRequire;
+const requiredModule = requireModule(argv.script);
+
+if (typeof requiredModule.configure === 'function') {
+    requiredModule.configure(startStamp);
 }
 
-/**
- * Require provided module using `Babel` transpiler.
- *
- * @param {String} modulePath - Required module path. Path should *relative from this module* or absolute.
- *   Note: `babelRequire('moduleName')` will be treated as `babelRequire('./moduleName')`.
- * @returns {Module}
- */
-function babelRequire(modulePath) {
-    var assign = require('lodash/object/assign');
-
-    // Use require-hook babel
-    require('babel-core/register')(babelOptions);
-
-    return require(path.resolve(__dirname, modulePath));
-}
+module.exports = requiredModule;

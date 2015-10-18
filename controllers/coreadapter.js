@@ -5,7 +5,7 @@ import Bluebird from 'bluebird';
 import { core as photoCore } from './photo';
 import { core as commentCore } from './comment';
 
-const logger = log4js.getLogger('app.js');
+const logger = log4js.getLogger('app');
 
 const core = {
     photo: photoCore,

@@ -13,12 +13,10 @@ import os from 'os';
 import fs from 'fs';
 import _ from 'lodash';
 import path from 'path';
-import log4js from 'log4js';
 import { argv } from 'yargs';
 import defaultConfig from './default.config';
 import browserConfig from './browsers.config';
 
-const logger = log4js.getLogger('app.js');
 const localConfigPath = path.join(__dirname, './local.config.js');
 const readJSON = jsonPath => JSON.parse(fs.readFileSync(path.resolve(jsonPath), 'utf8'));
 
@@ -56,7 +54,7 @@ export default (function () {
 
         Object.assign(config, { version, hash });
     } catch (err) {
-        logger.error(err);
+        console.error(err);
     }
 
     // If enviroment parameter not setted in config, take it from enviroment variable NODE_ENV
