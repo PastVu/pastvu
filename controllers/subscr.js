@@ -353,7 +353,7 @@ async function sendUserNotice(userId) {
     }
 
     // Select each object and amount of unread and new comments for it
-    const [photos = [], news = []] = await* [
+    const [news = [], photos = []] = await* [
         objsIdNews.length ? News.find(
             { _id: { $in: objsIdNews }, ccount: { $gt: 0 } },
             { _id: 1, cid: 1, title: 1, ccount: 1 }, { lean: true }
