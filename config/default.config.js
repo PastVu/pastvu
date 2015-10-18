@@ -28,7 +28,7 @@ export default {
     client: {
         protocol: 'http',
         hostname: '127.0.0.1', // Hostname for users, i.e. site entry point
-        port: '', // Port for users
+        port: ':3000', // Port for users
         uport: ':3001', // Upload files port for users
         dport: ':3002', // Download files port for users
         subdomains: [] // Subdomains for serving store path's public folder.
