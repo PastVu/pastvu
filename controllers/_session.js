@@ -74,13 +74,13 @@ const SESSION_SHELF_LIFE = ms('21d'); // Срок годности сессии 
 const createSidCookieObj = (function () {
     // Создает объект с кукой ключа сессии
     var key = 'past.sid',
-        hostname = config.client.hostname,
+        domain = config.client.hostname,
         cookieMaxAge = SESSION_SHELF_LIFE / 1000;
 
     return function (session) {
         return {
             key,
-            hostname,
+            domain,
             path: '/',
             value: session.key,
             'max-age': cookieMaxAge
@@ -699,7 +699,7 @@ function authConnection(ip, headers, finishCb) {
     }
 }
 
-//Обработка входящего http-соединения
+// Обработка входящего http-соединения
 module.exports.handleHTTPRequest = function (req, res, next) {
     authConnection(req.ip, req.headers, function (err, usObj, session, browser) {
         if (err) {
@@ -719,11 +719,11 @@ module.exports.handleHTTPRequest = function (req, res, next) {
             return;
         }
 
-        req.handshake = { session: session, usObj: usObj };
+        req.handshake = { session, usObj };
 
         //Добавляем в заголовок Set-cookie с идентификатором сессии (создает куку или продлевает её действие на клиенте)
         var cookieObj = createSidCookieObj(session),
-            cookieResOptions = { path: cookieObj.path, hostname: cookieObj.hostname };
+            cookieResOptions = { path: cookieObj.path, domain: cookieObj.domain };
 
         if (cookieObj['max-age'] !== undefined) {
             cookieResOptions.maxAge = cookieObj['max-age'] * 1000;

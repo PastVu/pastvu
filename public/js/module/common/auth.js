@@ -3,7 +3,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 
 	//Обновляет куки сессии переданным объектом с сервера
 	function updateCookie(obj) {
-		Utils.cookie.setItem(obj.key, obj.value, obj['max-age'], obj.path, obj.hostname, null);
+		Utils.cookie.setItem(obj.key, obj.value, obj['max-age'], obj.path, obj.domain, null);
 	}
 
 	return Cliche.extend({
