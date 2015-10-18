@@ -26,6 +26,3 @@ export async function logIt(user, obj, objtype, type, stamp, reason, roleregion,
 
     return await action.save();
 }
-
-module.exports.loadController = function () {
-};

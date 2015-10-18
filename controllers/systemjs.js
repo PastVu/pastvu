@@ -936,4 +936,3 @@ const logger = log4js.getLogger('systemjs.js');
         }
     });
 }());
-export function loadController() {};

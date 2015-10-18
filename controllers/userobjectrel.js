@@ -319,5 +319,3 @@ export async function getNewCommentsBrief(objs, relHash, userId, type = 'photo')
         obj.brief = briefsHash[obj._id];
     });
 }
-
-export const loadController = _.noop;

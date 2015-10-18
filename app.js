@@ -1,6 +1,5 @@
 import './commons/JExtensions';
 import ms from 'ms';
-import _ from 'lodash';
 import http from 'http';
 import path from 'path';
 import mkdirp from 'mkdirp';
@@ -9,28 +8,26 @@ import config from './config';
 import express from 'express';
 import socketIO from 'socket.io';
 import Utils from './commons/Utils';
+
+import * as session from './controllers/_session';
+import * as admin from './controllers/admin';
+import * as auth from './controllers/auth';
+import * as comment from './controllers/comment';
+import * as errors from './controllers/errors';
+import * as index from './controllers/index';
+import * as mail from './controllers/mail';
+import * as photo from './controllers/photo';
+import * as profile from './controllers/profile';
+import * as reason from './controllers/reason';
 import * as region from './controllers/region';
+import * as routes from './controllers/routes';
 import * as settings from './controllers/settings';
+import * as subscr from './controllers/subscr';
 import * as ourMiddlewares from './controllers/middleware';
 
 import connectDb from './controllers/connection';
-import { ApiLog } from './models/ApiLog';
-import { ActionLog } from './models/ActionLog';
-import { Counter } from './models/Counter';
-import { Settings } from './models/Settings';
-import { Reason } from './models/Reason';
-import { User, UserConfirm } from './models/User';
-import { UserSettings } from './models/UserSettings';
-import { UserStates } from './models/UserStates';
-import { UserAction } from './models/UserAction';
-import { Sessions } from './models/Sessions';
-import { Download } from './models/Download';
-import { Photo } from './models/Photo';
-import { Comment } from './models/Comment';
-import { Cluster } from './models/Cluster';
-import { Region } from './models/Region';
-import { News } from './models/News';
 import './models/_initValues';
+import './controllers/systemjs';
 
 export async function configure(startStamp) {
     const {
@@ -55,7 +52,7 @@ export async function configure(startStamp) {
     const logger = log4js.getLogger('app');
     const logger404 = log4js.getLogger('404.js');
 
-    logger.info('Application Hash: ' + config.hass);
+    logger.info('Application Hash: ' + config.hash);
 
     await connectDb(config.mongo.connection, config.mongo.pool, logger);
 
@@ -169,31 +166,27 @@ export async function configure(startStamp) {
     io.sockets.setMaxListeners(0);
     process.setMaxListeners(0);
 
-    const _session = require('./controllers/_session');
+    io.use(session.handleSocket);
 
-    io.use(_session.handleSocket);
-    _session.loadController(io);
+    await* [settings.ready, region.ready, mail.ready];
 
-    await* [settings.ready, region.ready];
-
-    settings.loadController(io);
+    session.loadController(io);
+    admin.loadController(io);
+    auth.loadController(io);
+    comment.loadController(io);
+    index.loadController(io);
+    photo.loadController(io);
+    profile.loadController(io);
+    reason.loadController(io);
     region.loadController(io);
-    require('./controllers/actionlog').loadController();
-    require('./controllers/mail').loadController();
-    require('./controllers/auth').loadController(io);
-    require('./controllers/reason').loadController(io);
-    require('./controllers/userobjectrel').loadController();
-    require('./controllers/index').loadController(io);
-    require('./controllers/photo').loadController(io);
-    require('./controllers/subscr').loadController(io);
-    require('./controllers/comment').loadController(io);
-    require('./controllers/profile').loadController(io);
-    require('./controllers/admin').loadController(io);
+    settings.loadController(io);
+    subscr.loadController(io);
+
     if (env === 'development') {
         require('./controllers/tpl').loadController(app);
     }
 
-    require('./controllers/routes').loadController(app);
+    routes.loadController(app);
 
     if (config.serveLog) {
         app.use(
@@ -204,8 +197,7 @@ export async function configure(startStamp) {
         );
     }
 
-    require('./controllers/errors').registerErrorHandling(app);
-    require('./controllers/systemjs').loadController();
+    errors.registerErrorHandling(app);
     // require('./basepatch/v1.3.0.4').loadController(app);
 
     const CoreServer = require('./controllers/coreadapter').Server;

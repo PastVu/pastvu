@@ -568,7 +568,6 @@ export function loadController(io) {
             }
         });
 
-
         socket.on('giveAllNews', function () {
             giveAllNews(hs.usObj)
                 .catch(function (err) {

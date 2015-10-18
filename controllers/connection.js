@@ -22,7 +22,11 @@ export const waitDb = new Promise(function (resolve, reject) {
     getDBReject = reject;
 });
 export const registerModel = modelPromise => {
-    modelPromises.push(modelPromise);
+    if (db) {
+        modelPromise(db);
+    } else {
+        modelPromises.push(modelPromise);
+    }
     return waitDb;
 };
 
@@ -62,6 +66,7 @@ export default function (uri, poolSize = 1, logger = log4js.getLogger('app')) {
                 dbEval = Bluebird.promisify(dbNative.eval, dbNative);
 
                 await* modelPromises.map(modelPromise => modelPromise(db));
+                modelPromises.splice(0, modelPromises.length); // Clear promises array
 
                 getDBResolve(db);
                 resolve(db);

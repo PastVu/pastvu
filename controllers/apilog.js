@@ -47,7 +47,3 @@ function saveLog() {
 }
 
 waitDb.then(scheduleLogSave);
-
-module.exports.loadController = function () {
-};
-module.exports.logIt = logIt;

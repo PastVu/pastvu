@@ -870,9 +870,7 @@ const checkExpiredSessions = (function () {
     };
 }());
 
-(async function () {
-    await waitDb;
-
+waitDb.then(() => {
     checkSessWaitingConnect();
     checkExpiredSessions();
 });

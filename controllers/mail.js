@@ -69,7 +69,7 @@ export async function send(options) {
     });
 };
 
-export function loadController() {
+export const ready = new Promise((resolve, reject) => {
     const options = {};
 
     if (mailConf.type === 'SMTP') {
@@ -96,8 +96,10 @@ export function loadController() {
         options.region = 'us-east-1';
         transport = nodemailer.createTransport(require('nodemailer-ses-transport')(options));
     } else {
-        return logger.warn('Mail not configured. Unknow transport type', mailConf.type);
+        logger.error('Mail not configured. Unknow transport type', mailConf.type);
+        return reject({ message: 'Mail not configured. Unknow transport type' });
     }
 
     logger.info('Mail configured with %s transport', mailConf.type);
-};
+    resolve();
+});
