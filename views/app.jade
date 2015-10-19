@@ -1,27 +1,27 @@
 doctype html
 html
-	head(lang="ru" prefix="og: http://ogp.me/ns#")
-		include includes/head_meta
-		if config.env === 'production'
-			script.
-				(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)})(window,document,'script','//www.google-analytics.com/analytics.js','ga');ga('create','UA-42731294-1','auto');ga('require','displayfeatures');
-		else
-			script.
-				function ga() {}
+    head(lang="ru" prefix="og: http://ogp.me/ns#")
+        include includes/head_meta
+        if config.env === 'production'
+            script.
+                (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)})(window,document,'script','//www.google-analytics.com/analytics.js','ga');ga('create','UA-42731294-1','auto');ga('require','displayfeatures');
+        else
+            script.
+                function ga() {}
 
-		link(rel="stylesheet", href="/style/common.css")
+        link(rel="stylesheet", href="/style/common.css")
 
-		| <script type="text/javascript">
-		//-Вставляем в скрипт сгенерированную для клиента строку глобальных переменных с изначальными данными
-		!= initData
-		| </script>
-		if config.env === 'development'
-			| <script type="text/javascript">
-			include ../public/js/lib/require/require.js
-			include ../public/js/_mainConfig.js
-			| </script>
+        | <script type="text/javascript">
+        //-Вставляем в скрипт сгенерированную для клиента строку глобальных переменных с изначальными данными
+        != initData
+        | </script>
+        if config.env === 'development'
+            | <script type="text/javascript">
+            include ../public/js/lib/require/require.js
+            include ../public/js/_mainConfig.js
+            | </script>
 
-	body
-		if nojsShow
-			include includes/nojs
-		script(type="text/javascript", src='/js/module/app'+appName+'.js?__='+config.hash)
+    body
+        if nojsShow
+            include includes/nojs
+        script(type="text/javascript", src='/js/module/app' + appName + '.js?__=' + config.hash)
