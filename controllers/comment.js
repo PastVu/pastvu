@@ -574,24 +574,20 @@ async function getCommentsUser(data) {
     const page = (Math.abs(Number(data.page)) || 1) - 1;
     const skip = page * commentsUserPerPage;
 
-    const comments = Comment.find(
+    const comments = await Comment.find(
         { user: userid, del: null, hidden: null },
         { _id: 0, lastChanged: 1, cid: 1, obj: 1, stamp: 1, txt: 1 },
         { lean: true, sort: { stamp: -1 }, skip, limit: commentsUserPerPage }
     ).exec();
 
-    const photosArr = [];
-    const photosExistsHash = {};
-
-    for (const photoId of comments) {
-        if (photosExistsHash[photoId] === undefined) {
-            photosExistsHash[photoId] = true;
-            photosArr.push(photoId);
-        }
+    if (_.isEmpty(comments)) {
+        return { page: data.page, comments: [], photos: {} };
     }
 
-    const photos = Photo.find(
-        { _id: { $in: photosArr } }, { _id: 1, cid: 1, file: 1, title: 1, year: 1, year2: 1 }, { lean: true }
+    // Make array of unique values of photo _ids
+    const photoIdsSet = comments.reduce((result, { obj }) => result.add(String(obj)), new Set());
+    const photos = await Photo.find(
+        { _id: { $in: [...photoIdsSet] } }, { _id: 1, cid: 1, file: 1, title: 1, year: 1, year2: 1 }, { lean: true }
     ).exec();
 
     if (_.isEmpty(photos)) {
