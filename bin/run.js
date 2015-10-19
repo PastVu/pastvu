@@ -1,24 +1,21 @@
 #!/usr/bin/env node
 /**
- * Entry point to application. It's purpuse - to run script with transformation
- * This file is not being transformed by babel, nor being checked by eslint and that's why it must be written carefully
+ * Entry point to application. It's purpuse - to run script with some common things and transformation in development
+ * This file is not being transformed by babel
  */
 
 const startStamp = Date.now();
 const path = require('path');
-const babelConfig = require('../babel/server.config');
-// Use require-hook babel
-require('babel-core/register')(Object.assign({}, babelConfig, {
-    only: [ // May be array of regexp, or github.com/isaacs/node-glob
-        '@(app|downloader|uploader).js',
-        'controllers/!(api|apilog).js',
-        'models/*.js',
-        'config/*.js'
-    ]
-}));
 const requireModule = modulePath => require(path.resolve(modulePath));
+const babelHook = () => {
+    // Use require-hook babel in development
+    const babelConfig = require('../babel/server.config');
+    const babelFiles = require('../babel/server.files');
+    require('babel-core/register')(Object.assign({ sourceMap: 'inline' }, babelConfig, babelFiles));
+};
 
-if (require.main !== module) { // If run.js is required by another fil
+if (require.main !== module) { // If run.js is required by another module (for example gruntfile)
+    babelHook();
     module.exports = requireModule;
 } else {
     // If run.js was invoked directly
@@ -47,6 +44,10 @@ if (require.main !== module) { // If run.js is required by another fil
     const config = require('../config');
     const logPath = config.logPath;
     const env = config.env;
+
+    if (env === 'development') {
+        babelHook();
+    }
 
     mkdirp.sync(logPath);
     log4js.configure('./log4js.json', { cwd: logPath });

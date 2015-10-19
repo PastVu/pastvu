@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
+require('./bin/run');
+
 var start = Date.now(),
     fs = require('fs'),
     path = require('path'),

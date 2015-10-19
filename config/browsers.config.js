@@ -1,4 +1,5 @@
-export default function (config/* , appRequire */) {
+'use strict';
+module.exports = function (config/* , appRequire */) {
     config.browsers = {
 
         // List of browser and theirs versions (in semver format), for which will be displayed badbrowser page

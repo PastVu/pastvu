@@ -1,6 +1,7 @@
 // Default server configuration
+'use strict';
 
-export default {
+module.exports = {
     env: 'development', // Enviroment: development, testing, production
 
     listen: {

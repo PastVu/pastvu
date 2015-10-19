@@ -8,14 +8,15 @@
  *
  * You can override any specific parameter through console, for example, --no-gzip
  */
+'use strict';
 
-import os from 'os';
-import fs from 'fs';
-import _ from 'lodash';
-import path from 'path';
-import { argv } from 'yargs';
-import defaultConfig from './default.config';
-import browserConfig from './browsers.config';
+const os = require('os');
+const fs = require('fs');
+const _ = require('lodash');
+const path = require('path');
+const argv = require('yargs').argv;
+const defaultConfig = require('./default.config');
+const browserConfig = require('./browsers.config');
 
 const localConfigPath = path.join(__dirname, './local.config.js');
 const readJSON = jsonPath => JSON.parse(fs.readFileSync(path.resolve(jsonPath), 'utf8'));
@@ -29,7 +30,7 @@ function execConfig(configPath, defaultConfig) {
     return browserConfig(alterConfig(defaultConfig, requireBind), requireBind);
 }
 
-export default (function () {
+module.exports = (function () {
     let config = defaultConfig;
 
     try {
@@ -48,9 +49,9 @@ export default (function () {
         _.merge(config, _.pick(argv, _.keys(defaultConfig)));
 
         // Read version from package.json
-        const { version } = readJSON('./package.json');
+        const version = readJSON('./package.json').version;
         // Read build parameters, if it is not development enviroment
-        const { hash = version } = config.env === 'development' ? {} : readJSON('./build.json');
+        const hash = config.env === 'development' ? version : readJSON('./build.json').hash;
 
         Object.assign(config, { version, hash });
     } catch (err) {

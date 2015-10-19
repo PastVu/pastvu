@@ -1,4 +1,4 @@
-export default function (config, appRequire) {
+module.exports = function (config, appRequire) {
     const ms = appRequire('ms');
 
     _.merge(config, {

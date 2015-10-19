@@ -1,16 +1,19 @@
 'use strict';
 
 module.exports = function (grunt) {
-    var path = require('path'),
-        Utils = require('./commons/Utils'),
-        env = grunt.option('env') || 'production', // Например, --env testing
-        upperDir = path.normalize(path.resolve('../') + '/'),
-        targetDir = path.normalize(upperDir + 'appBuild/'),
-        appHash = Utils.randomString(5);
+    require('./bin/run');
+    const path = require('path');
+    const Utils = require('./commons/Utils');
+    const env = grunt.option('env') || 'production'; // Например, --env testing
+    const upperDir = path.normalize(path.resolve('../') + '/');
+    const targetDir = path.normalize(upperDir + 'appBuild/');
+    const babelConfig = require('./babel/server.config');
+    const babelFiles = require('./babel/server.files');
+    const hash = Utils.randomString(5);
 
     grunt.file.defaultEncoding = 'utf8';
 
-    // Project configuration.
+    // Project configuration
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
         mkdir: {
@@ -25,8 +28,8 @@ module.exports = function (grunt) {
                 force: true // This overrides grunt.file.delete from blocking deletion of folders outside cwd
             },
             target: {
-                // Очищаем целевую директорию кроме вложенной папки node_modules
-                src: [targetDir + '/*'/* , '!' + targetDir + '/node_modules'*/]
+                // Очищаем целевую директорию (кроме вложенной папки node_modules)
+                src: [targetDir + '/*'/* , '!' + targetDir + '/node_modules' */]
             },
             publicTpl: {
                 // Очищаем директорию скомпиленных tpl
@@ -59,8 +62,16 @@ module.exports = function (grunt) {
             },
             main: {
                 files: {
-                    'public-build/js/module/appMain.js': ['public-build/js/lib/require/require.js', 'public-build/js/_mainConfig.js', 'public-build/js/module/appMain.js'],
-                    'public-build/js/module/appAdmin.js': ['public-build/js/lib/require/require.js', 'public-build/js/_mainConfig.js', 'public-build/js/module/appAdmin.js']
+                    'public-build/js/module/appMain.js': [
+                        'public-build/js/lib/require/require.js',
+                        'public-build/js/_mainConfig.js',
+                        'public-build/js/module/appMain.js'
+                    ],
+                    'public-build/js/module/appAdmin.js': [
+                        'public-build/js/lib/require/require.js',
+                        'public-build/js/_mainConfig.js',
+                        'public-build/js/module/appAdmin.js'
+                    ]
                 }
             }
         },
@@ -69,7 +80,10 @@ module.exports = function (grunt) {
                 files: [
                     {
                         expand: true,
-                        src: ['basepatch/**', 'bin/**', 'commons/**', 'controllers/**', 'models/**', 'misc/watermark/**'],
+                        src: [
+                            'bin/**', 'basepatch/**', 'commons/**', 'misc/watermark/**',
+                            'config/@(client|server|browsers.config|default.config).js', 'config/package.json'
+                        ],
                         dest: targetDir
                     },
                     {
@@ -77,10 +91,10 @@ module.exports = function (grunt) {
                         src: ['views/app.jade', 'views/api/**', 'views/includes/**', 'views/mail/**', 'views/status/**', 'views/diff/**'],
                         dest: targetDir
                     },
-                    //{expand: true, cwd: 'public-build', src: ['**'], dest: targetDir + 'public'},
+                    // {expand: true, cwd: 'public-build', src: ['**'], dest: targetDir + 'public'},
                     {
                         expand: true,
-                        src: ['app.js', 'api.js', 'config.json', 'log4js.json', 'package.json', 'uploader.js', 'downloader.js', './README'],
+                        src: ['api.js', 'log4js.json', 'package.json', './README'],
                         dest: targetDir
                     }
                 ]
@@ -96,7 +110,7 @@ module.exports = function (grunt) {
             compileTpls: {
                 options: {
                     data: {
-                        appEnv: env, appHash, pretty: false
+                        config: { env, hash }, pretty: false
                     }
                 },
                 files: [
@@ -105,15 +119,32 @@ module.exports = function (grunt) {
             },
             compileMainJades: {
                 options: {
-                    data: function (dest, src) {
-                        var name = dest.replace(/.*\/(?:app)?(.*)\.html/i, '$1');
+                    data(dest/* , src */) {
+                        const name = dest.replace(/.*\/(?:app)?(.*)\.html/i, '$1');
                         grunt.log.write('appName: ' + name + '. ');
-                        return { appName: name, appEnv: env, appHash, pretty: false };
+                        return { appName: name, config: { env, hash }, pretty: false };
                     }
                 },
                 files: [
-                    { expand: true, cwd: targetDir + 'views/', ext: '.html', src: 'status/404.jade', dest: targetDir + 'views/html/' }/*,
-                     {expand: true, cwd: targetDir + 'views/', ext: '.html', src: 'status*//*.jade', dest: targetDir + 'views/html/'}*/
+                    {
+                        expand: true,
+                        cwd: targetDir + 'views/',
+                        ext: '.html',
+                        src: 'status/404.jade',
+                        dest: targetDir + 'views/html/'
+                    }
+                ]
+            }
+        },
+        babel: {
+            options: Object.assign({}, babelConfig),
+            dist: {
+                files: [
+                    {
+                        expand: true,
+                        src: babelFiles.only,
+                        dest: targetDir
+                    }
                 ]
             }
         },
@@ -127,7 +158,7 @@ module.exports = function (grunt) {
                     comment: 'This PastVu application builded and compressed with Grunt'
                 },
                 files: [
-                    { expand: true, cwd: targetDir, src: ['**/*'/*, '!node_modules*//**//**'*/], dest: 'app' }
+                    { expand: true, cwd: targetDir, src: ['**/*'/* , '!node_modules*' */], dest: 'app' }
                 ]
             }
         }
@@ -142,6 +173,7 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-exec');
     grunt.loadNpmTasks('grunt-rename');
     grunt.loadNpmTasks('grunt-mkdir');
+    grunt.loadNpmTasks('grunt-babel');
 
     // Default task(s).
     grunt.registerTask('default', [
@@ -151,6 +183,7 @@ module.exports = function (grunt) {
         'exec:buildjs',
         'concat',
         'copy:main',
+        'babel',
         'rename:movePublic',
         'jade:compileMainJades',
         'clean:publicTpl',
@@ -159,9 +192,9 @@ module.exports = function (grunt) {
         'compress'
     ]);
 
-    //Записываем параметры сборки, например appHash, из которых запуск в prod возьмет даные
+    // Записываем параметры сборки, например hash, из которых запуск в prod возьмет данные
     grunt.registerTask('writeBuildParams', function () {
-        const buildString = JSON.stringify({ appHash });
+        const buildString = JSON.stringify({ hash });
 
         grunt.file.write(targetDir + 'build.json', buildString);
         grunt.log.writeln('Build json: ' + buildString);
