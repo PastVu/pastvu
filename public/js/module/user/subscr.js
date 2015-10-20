@@ -165,7 +165,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     if (!i && page > 1) {
                         return setTimeout(function () {
                             globalVM.router.navigate(
-                                self.pageUrl() + (self.paginationShow() ? '/' + self.pageLast() : '') + (type !== 'photo' ? '?type=' + type : ''),
+                                self.pageUrl() + (self.paginationShow() ? '/' + self.pageLast() : '') +
+                                (type !== 'photo' ? '?type=' + type : ''),
                                 { replace: true }
                             );
                         }, 100);

@@ -13,7 +13,7 @@ import * as regionController from './region';
 import * as photoCluster from './photoCluster';
 import * as photoConverter from './photoConverter';
 import * as userObjectRelController from './userobjectrel';
-import { hideObjComments } from './comment';
+import { changeObjComments } from './comment';
 import { getReasonHashFromCache } from './reason';
 import { unSubscribeObj, subscribeUserByIds } from './subscr';
 import { userSettingsDef, userSettingsVars } from './settings';
@@ -942,7 +942,7 @@ var userPCountUpdate = function (user, newDelta, publicDelta, inactiveDelta) {
 const changePublicPhotoExternality = async function (photo, iAm, makePublic) {
     await* [
         // Скрываем или показываем комментарии и пересчитываем их публичное кол-во у пользователей
-        hideObjComments(photo._id, !makePublic, iAm),
+        changeObjComments(photo, !makePublic, iAm),
         // Пересчитываем кол-во фото у владельца
         userPCountUpdate(photo.user, 0, makePublic ? 1 : -1, makePublic ? -1 : 1),
         // Если у фото есть координаты, значит надо провести действие с картой
@@ -1261,10 +1261,10 @@ var removePhoto = Bluebird.method(function (socket, data) {
             }
 
             // Заново выбираем данные для отображения
-            return core.givePhoto(iAm, { cid: photoSaved.cid, rel: rel });
+            return core.givePhoto(iAm, { cid: photoSaved.cid, rel });
         })
         .spread(function (photo, can) {
-            return { photo: photo, can: can };
+            return { photo, can };
         })
         .catch(function (err) {
             if (err.changed === true) {

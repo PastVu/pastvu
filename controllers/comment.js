@@ -560,57 +560,76 @@ async function getDelTree(iAm, data) {
 };
 
 // Select comment of user
-async function getCommentsUser(data) {
-    if (!_.isObject(data) || !data.login) {
+async function getCommentsUser(iAm, { login, page = 1, type = 'photo' } = {}) {
+    if (!login) {
         throw { message: msg.badParams };
     }
 
-    const userid = await User.getUserID(data.login);
+    const userid = await User.getUserID(login);
 
     if (!userid) {
         throw { message: msg.noUser };
     }
 
-    const page = (Math.abs(Number(data.page)) || 1) - 1;
-    const skip = page * commentsUserPerPage;
+    page = (Math.abs(Number(page)) || 1) - 1;
 
-    const comments = await Comment.find(
-        { user: userid, del: null, hidden: null },
-        { _id: 0, lastChanged: 1, cid: 1, obj: 1, stamp: 1, txt: 1 },
-        { lean: true, sort: { stamp: -1 }, skip, limit: commentsUserPerPage }
-    ).exec();
+    const commentModel = type === 'news' ? CommentN : Comment;
+    const queryNews = { user: userid, del: null};
+    const queryPhotos = Object.assign({}, queryNews, photoController.buildPhotosQuery({ r: 0 }, null, iAm).query);
+    const fields = { _id: 0, lastChanged: 1, cid: 1, obj: 1, stamp: 1, txt: 1 };
+    const options = { lean: true, sort: { stamp: -1 }, skip: page * commentsUserPerPage, limit: commentsUserPerPage };
+
+    const [comments, countNews, countPhoto] = await* [
+        commentModel.find(type === 'news' ? queryNews : queryPhotos, fields, options).exec(),
+        CommentN.count(queryNews).exec(),
+        Comment.count(queryPhotos).exec()
+    ];
 
     if (_.isEmpty(comments)) {
-        return { page: data.page, comments: [], photos: {} };
+        return { type, page, countNews, countPhoto, perPage: commentsUserPerPage, comments: [], objs: {} };
     }
 
     // Make array of unique values of photo _ids
-    const photoIdsSet = comments.reduce((result, { obj }) => result.add(String(obj)), new Set());
-    const photos = await Photo.find(
-        { _id: { $in: [...photoIdsSet] } }, { _id: 1, cid: 1, file: 1, title: 1, year: 1, year2: 1 }, { lean: true }
-    ).exec();
+    const objIds = [...comments.reduce((result, { obj }) => result.add(String(obj)), new Set())];
+    const objs = await (type === 'news' ?
+        News.find(
+            { _id: { $in: objIds } }, { _id: 1, cid: 1, title: 1, ccount: 1 }, { lean: true }
+        ).exec() :
+        Photo.find(
+            { _id: { $in: objIds } }, { _id: 1, cid: 1, title: 1, file: 1, y: 1 }, { lean: true }
+        ).exec());
 
-    if (_.isEmpty(photos)) {
+    if (_.isEmpty(objs)) {
         throw { message: msg.noObject };
     }
 
-    const photoFormattedHashCid = {};
-    const photoFormattedHashId = {};
+    const objFormattedHashCid = {};
+    const objFormattedHashId = {};
     const commentsArrResult = [];
 
-    for (const { _id, cid, file, title, year, year2 } of photos) {
-        photoFormattedHashCid[cid] = photoFormattedHashId[_id] = { cid, file, title, year, year2 };
+    for (const obj of objs) {
+        objFormattedHashCid[obj.cid] = objFormattedHashId[obj._id] = _.omit(obj, '_id');
     }
 
-    // For each comment check public photo existens and assign to comment photo cid
+    // For each comment check object existens and assign to comment its cid
     for (const comment of comments) {
-        if (photoFormattedHashId[comment.obj] !== undefined) {
-            comment.obj = photoFormattedHashId[comment.obj].cid;
+        const obj = objFormattedHashId[comment.obj];
+
+        if (obj !== undefined) {
+            comment.obj = obj.cid;
             commentsArrResult.push(comment);
         }
     }
 
-    return { page: data.page, comments: commentsArrResult, photos: photoFormattedHashCid };
+    return {
+        type,
+        page,
+        countNews,
+        countPhoto,
+        perPage: commentsUserPerPage,
+        comments: commentsArrResult,
+        objs: objFormattedHashCid
+    };
 };
 
 // Take comments
@@ -1419,17 +1438,18 @@ async function setNoComments(iAm, { cid, type = 'photo', val: nocomments } = {})
 
 /**
  * Hide/show object comments (so doing them unpublic/public)
- * @param oid
+ * @param obj
  * @param {boolean} hide
  * @param iAm Count how many comments of user are affected
  */
-export async function hideObjComments(oid, hide, iAm) {
-    const command = {};
+export async function changeObjComments(obj, hide, iAm) {
+    const command = { $set: { s: obj.s } };
+    const oid = obj._id;
 
-    if (hide) {
-        command.$set = { hidden: true };
-    } else {
+    if (obj.s === constants.photo.status.PUBLIC) {
         command.$unset = { hidden: 1 };
+    } else {
+        command.$set.hidden = true;
     }
 
     const { n: count } = await Comment.update({ obj: oid }, command, { multi: true }).exec();
@@ -1539,7 +1559,7 @@ export const loadController = io => {
                 });
         });
         socket.on('giveCommentsUser', function (data) {
-            getCommentsUser(data)
+            getCommentsUser(hs.usObj, data)
                 .catch(function (err) {
                     return { message: err.message, error: true };
                 })

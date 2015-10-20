@@ -5,10 +5,10 @@
         .col-xs-12.col-md-6.pag(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}, template: {name: 'pagerTpl'}")
     .commentsList(data-bind="foreach: comments")
         .comment.clearfix
-            a.imgLoad(data-bind="attr: {href: $parent.commentsPhotos[$data.obj].link}")
-                img.img(data-bind="attr: {src: $parent.commentsPhotos[$data.obj].sfile}", onload="G.imgLoadOk(this)", onerror="G.imgLoadFail(this)")
+            a.imgLoad(data-bind="attr: {href: $data.obj.link}")
+                img.img(data-bind="attr: {src: $data.obj.sfile}", onload="G.imgLoadOk(this)", onerror="G.imgLoadFail(this)")
             .commentHead
-                a.photoName(data-bind="attr: {href: $parent.commentsPhotos[$data.obj].link}, html: $parent.commentsPhotos[$data.obj].name")
+                a.photoName(data-bind="attr: {href: $data.obj.link}, html: $data.obj.title")
                 .dotDelimeter ·
                 a.commentStamp(data-bind="attr: {href: $data.link}, text: moment($data.stamp).calendar()")
                 //ko if: $data.lastChanged
