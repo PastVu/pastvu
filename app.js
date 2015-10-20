@@ -28,6 +28,7 @@ import * as ourMiddlewares from './controllers/middleware';
 import connectDb from './controllers/connection';
 import './models/_initValues';
 import './controllers/systemjs';
+import './basepatch/v1.3.0.5';
 
 export async function configure(startStamp) {
     const {
@@ -198,7 +199,6 @@ export async function configure(startStamp) {
     }
 
     errors.registerErrorHandling(app);
-    // require('./basepatch/v1.3.0.4').loadController(app);
 
     const CoreServer = require('./controllers/coreadapter').Server;
 

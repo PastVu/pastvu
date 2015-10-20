@@ -1,4 +1,5 @@
 import { Schema } from 'mongoose';
+import constants from '../controllers/constants';
 import { registerModel } from '../controllers/connection';
 
 export let Comment = null;
@@ -46,6 +47,9 @@ const CommentPSchema = new Schema(
 
         geo: { type: [Number], index: '2d' }, // Координаты [lng, lat] фотографии, которой принадлежит комментарий
 
+        // Photo's status (listed in constants)
+        s: { type: Number, index: true, 'default': constants.photo.status.PUBLIC, required: true },
+
         // Принадлежность к регионам, так же как в модели фотографий
         // необходимо, чтобы можно было фильтровать комментарии по регионам без запросов фотографйи
         r0: { type: Number, sparse: true },
@@ -62,7 +66,7 @@ const CommentPSchema = new Schema(
 
         // Hidden comment, for example, it belongs to inactive photo.
         // It doesn't shown in user comments list and doesn't not involved in statistics
-        hidden: { type: Boolean }
+        hidden: { type: Boolean } // true if status not PUBLIC
     },
     {
         strict: true

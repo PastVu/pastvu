@@ -21,6 +21,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 this.nextNoty = ko.observable(null);
                 this.loading = ko.observable(false);
 
+                this.itsMe = this.co.itsMe = ko.computed(function () {
+                    return this.auth.iAm.login() === this.u.login();
+                }, this);
+
                 this.types = {
                     photo_persist: ko.observable(0),
                     news_persist: ko.observable(0),
@@ -165,7 +169,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     if (!i && page > 1) {
                         return setTimeout(function () {
                             globalVM.router.navigate(
-                                self.pageUrl() + (self.paginationShow() ? '/' + self.pageLast() : '') + (type !== 'photo' ? '?type=' + type : ''),
+                                self.pageUrl() + (self.paginationShow() ? '/' + self.pageLast() : '') +
+                                (type !== 'photo' ? '?type=' + type : ''),
                                 { replace: true }
                             );
                         }, 100);
