@@ -39,7 +39,7 @@ export default function (uri, poolSize = 1, logger = log4js.getLogger('app')) {
 
             db.open(uri, {
                 db: { native_parser: true, promiseLibrary: Promise },
-                server: { poolSize, auto_reconnect: true }
+                server: { poolSize, reconnectTries: 3000, reconnectInterval: 1000, autoReconnect: true }
             });
 
             async function openHandler() {
