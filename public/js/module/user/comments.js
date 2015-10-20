@@ -217,7 +217,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                                     { css: 'btn-primary', text: 'Закрыть', click: this.closeHistory, ctx: this }
                                 ]
                             },
-                            options: { cid: cid },
+                            options: { cid: cid, type: this.type() },
                             callback: function (vm) {
                                 this.histVM = vm;
                                 this.childModules[vm.id] = vm;
