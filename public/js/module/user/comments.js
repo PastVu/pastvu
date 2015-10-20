@@ -26,7 +26,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 news: ko.observable(0)
             };
 
-            this.page = ko.observable(1);
+            this.page = ko.observable(0);
             this.pageSize = ko.observable(15);
             this.pageSlide = ko.observable(2);
 
@@ -131,17 +131,6 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     self.page(page);
                     self.makeBinding();
                 });
-            }
-
-            if (page > this.pageLast()) {
-                window.setTimeout(function () {
-                    globalVM.router.navigate('/u/' + this.u.login() + '/comments/' + this.pageLast());
-                }.bind(this), 200);
-            } else {
-                this.page(page);
-                if (this.u.ccount() > 0) {
-                    this.getPage(page);
-                }
             }
         },
 

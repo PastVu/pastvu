@@ -586,7 +586,7 @@ async function getCommentsUser(iAm, { login, page = 1, type = 'photo' } = {}) {
     ];
 
     if (_.isEmpty(comments)) {
-        return { type, page, countNews, countPhoto, perPage: commentsUserPerPage, comments: [], objs: {} };
+        return { type, page: page + 1, countNews, countPhoto, perPage: commentsUserPerPage, comments: [], objs: {} };
     }
 
     // Make array of unique values of photo _ids
@@ -623,9 +623,9 @@ async function getCommentsUser(iAm, { login, page = 1, type = 'photo' } = {}) {
 
     return {
         type,
-        page,
         countNews,
         countPhoto,
+        page: page + 1,
         perPage: commentsUserPerPage,
         comments: commentsArrResult,
         objs: objFormattedHashCid
