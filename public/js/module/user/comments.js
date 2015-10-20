@@ -19,6 +19,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.commentsObjs = {};
             this.loadingComments = ko.observable(false);
 
+            this.itsMe = this.co.itsMe = ko.computed(function () {
+                return this.auth.loggedIn() && this.auth.iAm.login() === this.u.login();
+            }, this);
+
             this.types = {
                 photo_persist: ko.observable(0),
                 news_persist: ko.observable(0),
@@ -103,7 +107,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }
         },
         resetData: function () {
-            this.objects([]);
+            this.commentsObjs = {};
             this.types.photo(0);
             this.types.news(0);
         },

@@ -1,58 +1,59 @@
 .subscr(data-bind="with: repository[M!M]")
-	//ko if: nextNoty() !== null
-	.pagOverTop
-		.nextNoty
-			span.glyphicon.glyphicon-bullhorn
-		span.text-success(data-bind="text: 'Отправка следующего уведомления запланирована на ' + nextNoty().calendar().toLowerCase() + ' (' + nextNoty().fromNow() + ')'")
-	// /ko
-	ul.nav.nav-tabs
-		li(data-bind="css: {active: type() === 'photo'}")
-			a(data-bind="attr: {href: pageUrl()}, text: 'Фотографии [' + types['photo_persist']() + ']'")
-		li(data-bind="css: {active: type() === 'news'}")
-			a(data-bind="attr: {href: pageUrl() + '?type=news'}, text: 'Новости [' + types['news_persist']() + ']'")
-	.navContent
-		.row
-			.col-xs-6.col-md-3.topcol
-				span.brief(data-bind="css: {pageLoading: loading()}, text: briefText")
-			.col-xs-12.col-md-6.pag(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}, template: {name: 'pagerTpl'}")
-		.row.objects(data-bind="css: {photoObjs: type() === 'photo', newsObjs: type() === 'news', }, template: {name: type() + 'SubscrTpl', foreach: objects}")
-		.pag(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}, template: {name: 'pagerTpl'}")
+    h4(data-bind="text: (itsMe()?'Ваши подписки':'Подписки пользователя')+' на комментарии'")
+    //ko if: nextNoty() !== null
+    .pagOverTop
+        .nextNoty
+            span.glyphicon.glyphicon-bullhorn
+        span.text-success(data-bind="text: 'Отправка следующего уведомления запланирована на ' + nextNoty().calendar().toLowerCase() + ' (' + nextNoty().fromNow() + ')'")
+    // /ko
+    ul.nav.nav-tabs
+        li(data-bind="css: {active: type() === 'photo'}")
+            a(data-bind="attr: {href: pageUrl()}, text: 'Фотографии [' + types['photo_persist']() + ']'")
+        li(data-bind="css: {active: type() === 'news'}")
+            a(data-bind="attr: {href: pageUrl() + '?type=news'}, text: 'Новости [' + types['news_persist']() + ']'")
+    .navContent
+        .row
+            .col-xs-6.col-md-3.topcol
+                span.brief(data-bind="css: {pageLoading: loading()}, text: briefText")
+            .col-xs-12.col-md-6.pag(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}, template: {name: 'pagerTpl'}")
+        .row.objects(data-bind="css: {photoObjs: type() === 'photo', newsObjs: type() === 'news', }, template: {name: type() + 'SubscrTpl', foreach: objects}")
+        .pag(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}, template: {name: 'pagerTpl'}")
 
-	| <script id="photoSubscrTpl" type="text/html">
-	.object.clearfix
-		a.imgLoad(data-bind="attr: {href: $data.link}")
-			img.img(data-bind="attr: {src: $data.sfile}", onload="G.imgLoadOk(this)", onerror="G.imgLoadFail(this)")
-		a.objTitle(data-bind="attr: {href: $data.link}, text: $data.title")
-		//ko if: $data.ccount
-		br
-		a.count(data-bind="html: $data.ccount + ($data.ccount_new ? '<span class=\"cnew\"> +' + $data.ccount_new + '</span>' : ''), attr: {href: $data.link + '?hl=comments'}", title="Комментарии")
-		//ko if: $data.sbscr_noty
-		.planed(title="Сообщение о новых комментариях запланированно к отправке в предстоящем уведомлении.")
-			span.glyphicon.glyphicon-bullhorn
-		// /ko
-		// /ko
-	| </script>
+    | <script id="photoSubscrTpl" type="text/html">
+    .object.clearfix
+        a.imgLoad(data-bind="attr: {href: $data.link}")
+            img.img(data-bind="attr: {src: $data.sfile}", onload="G.imgLoadOk(this)", onerror="G.imgLoadFail(this)")
+        a.objTitle(data-bind="attr: {href: $data.link}, text: $data.title")
+        //ko if: $data.ccount
+        br
+        a.count(data-bind="html: $data.ccount + ($data.ccount_new ? '<span class=\"cnew\"> +' + $data.ccount_new + '</span>' : ''), attr: {href: $data.link + '?hl=comments'}", title="Комментарии")
+        //ko if: $data.sbscr_noty
+        .planed(title="Сообщение о новых комментариях запланированно к отправке в предстоящем уведомлении.")
+            span.glyphicon.glyphicon-bullhorn
+        // /ko
+        // /ko
+    | </script>
 
-	| <script id="newsSubscrTpl" type="text/html">
-	.object.clearfix
-		a.objTitle(data-bind="attr: {href: $data.link}, text: $data.cid + '. ' + $data.title")
-		//ko if: $data.ccount
-		br
-		a.count(data-bind="html: $data.ccount + ($data.ccount_new ? '<span class=\"cnew\"> +' + $data.ccount_new + '</span>' : ''), attr: {href: $data.link + '?hl=comments'}", title="Комментарии")
-		//ko if: $data.sbscr_noty
-		.planed(title="Сообщение о новых комментариях запланированно к отправке в предстоящем уведомлении.")
-			span.glyphicon.glyphicon-bullhorn
-		// /ko
-		// /ko
-	| </script>
+    | <script id="newsSubscrTpl" type="text/html">
+    .object.clearfix
+        a.objTitle(data-bind="attr: {href: $data.link}, text: $data.cid + '. ' + $data.title")
+        //ko if: $data.ccount
+        br
+        a.count(data-bind="html: $data.ccount + ($data.ccount_new ? '<span class=\"cnew\"> +' + $data.ccount_new + '</span>' : ''), attr: {href: $data.link + '?hl=comments'}", title="Комментарии")
+        //ko if: $data.sbscr_noty
+        .planed(title="Сообщение о новых комментариях запланированно к отправке в предстоящем уведомлении.")
+            span.glyphicon.glyphicon-bullhorn
+        // /ko
+        // /ko
+    | </script>
 
-	| <script id="pagerTpl" type="text/html">
-	ul.pagination
-		li.edge(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: pageUrl() + pageQuery()}", title="Первая страница") &laquo;&laquo;
-		li.edge(data-bind="css: {disabled: !pageHasPrev()}"): a(data-bind="attr: {href: pageUrl() + (page() > 1 ? '/' + (page() - 1) : '')+ pageQuery()}", title="Предыдущая страница") &laquo;
-		//ko foreach: pages
-		li(data-bind="css: {active: $data === $parent.page()}"): a(data-bind="attr: {href: $parent.pageUrl() + ($data > 1 ? '/' + $data : '') + $parent.pageQuery()}, text: $data")
-		// /ko
-		li.edge(data-bind="css: {disabled: !pageHasNext()}"): a(data-bind="attr: {href: pageUrl() + '/' + (page() + 1) + pageQuery()}", title="Следующая страница") &raquo;
-		li.edge(data-bind="css: {disabled: page() === pageLast()}"): a(data-bind="attr: {href: pageUrl() + '/' + pageLast() + pageQuery()}", title="Последняя страница") &raquo;&raquo;
-	| </script>
+    | <script id="pagerTpl" type="text/html">
+    ul.pagination
+        li.edge(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: pageUrl() + pageQuery()}", title="Первая страница") &laquo;&laquo;
+        li.edge(data-bind="css: {disabled: !pageHasPrev()}"): a(data-bind="attr: {href: pageUrl() + (page() > 1 ? '/' + (page() - 1) : '')+ pageQuery()}", title="Предыдущая страница") &laquo;
+        //ko foreach: pages
+        li(data-bind="css: {active: $data === $parent.page()}"): a(data-bind="attr: {href: $parent.pageUrl() + ($data > 1 ? '/' + $data : '') + $parent.pageQuery()}, text: $data")
+        // /ko
+        li.edge(data-bind="css: {disabled: !pageHasNext()}"): a(data-bind="attr: {href: pageUrl() + '/' + (page() + 1) + pageQuery()}", title="Следующая страница") &raquo;
+        li.edge(data-bind="css: {disabled: page() === pageLast()}"): a(data-bind="attr: {href: pageUrl() + '/' + pageLast() + pageQuery()}", title="Последняя страница") &raquo;&raquo;
+    | </script>

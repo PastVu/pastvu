@@ -21,6 +21,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 this.nextNoty = ko.observable(null);
                 this.loading = ko.observable(false);
 
+                this.itsMe = this.co.itsMe = ko.computed(function () {
+                    return this.auth.iAm.login() === this.u.login();
+                }, this);
+
                 this.types = {
                     photo_persist: ko.observable(0),
                     news_persist: ko.observable(0),
