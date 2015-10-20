@@ -75,6 +75,18 @@ module.exports = function (grunt) {
                 }
             }
         },
+        'string-replace': {
+            baseurl: {
+                options: {
+                    replacements: [
+                        {pattern: /__=__/ig, replacement: `__=${hash}`}
+                    ]
+                },
+                files: {
+                    'public-build/js/_mainConfig.js': 'public-build/js/_mainConfig.js'
+                }
+            }
+        },
         copy: {
             main: {
                 files: [
@@ -82,6 +94,7 @@ module.exports = function (grunt) {
                         expand: true,
                         src: [
                             'bin/**', 'basepatch/**', 'commons/**', 'misc/watermark/**',
+                            'controllers/systemjs.js',
                             'config/@(client|server|browsers.config|default.config).js', 'config/package.json'
                         ],
                         dest: targetDir
@@ -170,6 +183,7 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-contrib-concat');
     grunt.loadNpmTasks('grunt-contrib-compress');
     grunt.loadNpmTasks('grunt-contrib-requirejs');
+    grunt.loadNpmTasks('grunt-string-replace');
     grunt.loadNpmTasks('grunt-exec');
     grunt.loadNpmTasks('grunt-rename');
     grunt.loadNpmTasks('grunt-mkdir');
@@ -181,6 +195,7 @@ module.exports = function (grunt) {
         'clean:target',
         'jade:compileTpls',
         'exec:buildjs',
+        'string-replace',
         'concat',
         'copy:main',
         'babel',
