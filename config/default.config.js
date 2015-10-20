@@ -66,15 +66,5 @@ module.exports = {
     },
 
     // Connection settings for mail provider. Need to be overrided locally
-    mail: {
-        type: 'SMTP',
-        service: 'gmail',
-        secure: true,
-        host: '',
-        port: 0,
-        auth: {
-            user: '',
-            pass: ''
-        }
-    }
+    mail: {}
 };
