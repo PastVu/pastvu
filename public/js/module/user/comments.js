@@ -88,7 +88,14 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             // Subscriptions
             this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandlerDebounced, this);
 
-            // Так как при первом заходе, когда модуль еще не зареквайрен, нужно вызвать самостоятельно, а последующие будут выстреливать сразу
+            if (!this.auth.loggedIn()) {
+                this.subscriptions.loggedIn = this.auth.loggedIn.subscribe(function () {
+                    this.getPage(this.page(), this.type(), this.onGetPage);
+                }, this);
+            }
+
+            // Так как при первом заходе, когда модуль еще не зареквайрен, нужно вызвать самостоятельно,
+            // а последующие будут выстреливать сразу
             this.routeHandler();
         },
         show: function () {
@@ -130,12 +137,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 if (type !== self.type()) {
                     self.resetData();
                 }
-                self.getPage(page, type, function () {
-                    self.pageQuery(location.search);
-                    self.page(page);
-                    self.makeBinding();
-                });
+                self.getPage(page, type, this.onGetPage);
             }
+        },
+        onGetPage: function (data) {
+            this.pageQuery(location.search);
+            this.page(data.page);
+            this.makeBinding();
         },
 
         getPage: function (page, type, cb, ctx) {
@@ -197,7 +205,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
                 this.loadingComments(false);
                 if (_.isFunction(cb)) {
-                    cb.call(ctx, data);
+                    cb.call(ctx || this, data);
                 }
             }, this);
             socket.emit('giveCommentsUser', { login: self.u.login(), type: type, page: page });
