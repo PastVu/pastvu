@@ -12,6 +12,18 @@ module.exports = function (config, appRequire) {
 
         mongo: {
             pool: 10
+        },
+
+        mail: {
+            type: 'SMTP',
+            service: 'gmail',
+            secure: true,
+            host: '',
+            port: 0,
+            auth: {
+                user: '',
+                pass: ''
+            }
         }
     });
 

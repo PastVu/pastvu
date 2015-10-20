@@ -39,7 +39,19 @@ export default function (uri, poolSize = 1, logger = log4js.getLogger('app')) {
 
             db.open(uri, {
                 db: { native_parser: true, promiseLibrary: Promise },
-                server: { poolSize, reconnectTries: 3000, reconnectInterval: 1000, autoReconnect: true }
+                server: {
+                    poolSize,
+                    auto_reconnect: true,
+                    reconnectTries: 10000,
+                    reconnectInterval: 1000,
+                    socketOptions: {
+                        noDelay: true,
+                        keepAlive: 0, // Enable keep alive connection
+                        autoReconnect: true,
+                        socketTimeoutMS: 0,
+                        connectTimeoutMS: 0
+                    }
+                }
             });
 
             async function openHandler() {
@@ -53,13 +65,20 @@ export default function (uri, poolSize = 1, logger = log4js.getLogger('app')) {
                     `with poolsize ${poolSize} at: ${uri}`
                 );
 
+                // Full list of events can be found here
+                // https://github.com/Automattic/mongoose/blob/master/lib/connection.js#L33
                 db.removeListener('error', errFirstHandler);
                 db.on('error', function (err) {
-                    logger.error('Connection error to MongoDB at: ' + uri);
-                    logger.error(err && (err.message || err));
+                    logger.error(`MongoDB connection error to ${uri}`, err);
+                });
+                db.on('disconnected', function () {
+                    logger.error('MongoDB disconnected!');
+                });
+                db.on('close', function () {
+                    logger.error('MongoDB connection closed and onClose executed on all of this connections models!');
                 });
                 db.on('reconnected', function () {
-                    logger.info('Reconnected to MongoDB at: ' + uri);
+                    logger.info('MongoDB reconnected at: ' + uri);
                 });
 
                 dbNative = db.db;

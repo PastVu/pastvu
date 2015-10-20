@@ -358,7 +358,7 @@ export async function calcRegionsIncludes(iAm, cids) {
 
     if (_.isEmpty(cids)) {
         // If array is empty - recalc all photos
-        result = await dbEval('function () {regionsAssignObjects()', [], { nolock: true });
+        result = await dbEval('function () {return regionsAssignObjects()', [], { nolock: true });
 
         if (result && result.error) {
             throw { message: result.message };

@@ -33,8 +33,8 @@ async function recalcAllClusters(iAm, data) {
         ClusterParams.collection.insert(data.conditions, { safe: true })
     ];
     await readClusterParams();
-    await dbEval('function (gravity) {clusterPhotosAll(gravity);}', [true], { nolock: true });
-    const result = await dbEval('function () {photosToMapAll();}', [], { nolock: true });
+    await dbEval('function (gravity) {return clusterPhotosAll(gravity);}', [true], { nolock: true });
+    const result = await dbEval('function () {return photosToMapAll();}', [], { nolock: true });
 
     if (result && result.error) {
         throw { message: result.message };

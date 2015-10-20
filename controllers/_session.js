@@ -825,12 +825,12 @@ const checkExpiredSessions = (function () {
     async function procedure() {
         try {
             const result = await dbEval(
-                'function (frontierDate) {archiveExpiredSessions(frontierDate);}',
+                'function (frontierDate) {return archiveExpiredSessions(frontierDate);}',
                 [new Date() - SESSION_SHELF_LIFE], { nolock: true }
             );
 
             if (!result) {
-                logger.error('archiveExpiredSessions result undefined');
+                throw { message: 'undefined result from dbEval' };
             }
 
             logger.info(`${result.count} sessions moved to archive`);
