@@ -3,14 +3,20 @@
  geoToPrecision:true, spinLng:true, regionClearPhotoTitle:true
  */
 
-import log4js from 'log4js';
-import mongoose from 'mongoose';
-import { waitDb, dbNative } from './connection';
+/**
+ * This file is not being transformed by babel
+ * @type {*|exports|module.exports}
+ */
+
+const log4js = require('log4js');
+const mongoose = require('mongoose');
+const connection = require('./connection');
+
+const waitDb = connection.waitDb;
+const dbNative = connection.dbNative;
 const logger = log4js.getLogger('systemjs.js');
 
-(async function () {
-    await waitDb;
-
+waitDb.then(function () {
     // Save function to db.system.js
     function saveSystemJSFunc(func) {
         if (!func || !func.name) {
@@ -935,4 +941,4 @@ const logger = log4js.getLogger('systemjs.js');
             return inputText;
         }
     });
-}());
+});
