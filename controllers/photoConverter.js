@@ -504,11 +504,11 @@ export async function addPhotosAll(params) {
         throw { message: result.message || '' };
     }
 
-    conveyerLength += result.conveyorAdded;
+    conveyerLength += result || 0;
     conveyerMaxLength = Math.max(conveyerLength, conveyerMaxLength);
     conveyerControl();
 
-    return result;
+    return { conveyorAdded: result || 0 };
 }
 
 /**

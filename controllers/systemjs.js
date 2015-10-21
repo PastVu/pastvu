@@ -13,16 +13,15 @@ const mongoose = require('mongoose');
 const connection = require('./connection');
 
 const waitDb = connection.waitDb;
-const dbNative = connection.dbNative;
 const logger = log4js.getLogger('systemjs.js');
 
-waitDb.then(function () {
+waitDb.then(function (db) {
     // Save function to db.system.js
     function saveSystemJSFunc(func) {
         if (!func || !func.name) {
             logger.error('saveSystemJSFunc: function name is not defined');
         }
-        dbNative.collection('system.js').save(
+        db.db.collection('system.js').save(
             {
                 _id: func.name,
                 value: new mongoose.mongo.Code(func.toString())
@@ -294,10 +293,7 @@ waitDb.then(function () {
             db.photos_conveyer.insert(conveyer);
         }
 
-        return {
-            time: (Date.now() - startTime) / 1000,
-            conveyorAdded: conveyer.length
-        };
+        return conveyer.length;
     });
 
     //Для фотографий с координатой заново расчитываем регионы
