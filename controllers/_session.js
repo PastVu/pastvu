@@ -820,7 +820,7 @@ var checkSessWaitingConnect = (function () {
 
 // Periodically sends expired session to archive
 const checkExpiredSessions = (function () {
-    const checkInterval = ms('1h'); // Check interval
+    const checkInterval = ms('1d'); // Check interval
 
     async function procedure() {
         try {
