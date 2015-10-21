@@ -82,7 +82,16 @@ export default function (uri, poolSize = 1, logger = log4js.getLogger('app')) {
                 });
 
                 dbNative = db.db;
-                dbEval = Bluebird.promisify(dbNative.eval, dbNative);
+
+                // Wrapper to deal with eval crash on some enviroments (gentoo), when one of parameters are object
+                // https://jira.mongodb.org/browse/SERVER-21041
+                // So, do parameters stringify and parse them inside eval function
+                // mongodb-native eval returns promise
+                dbEval = (functionName, params, options) => dbNative.eval(
+                    `function (params) {return ${functionName}.apply(null, JSON.parse(params));}`,
+                    JSON.stringify(Array.isArray(params) ? params : [params]),
+                    options
+                );
 
                 await* modelPromises.map(modelPromise => modelPromise(db));
                 modelPromises.splice(0, modelPromises.length); // Clear promises array

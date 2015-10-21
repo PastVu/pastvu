@@ -824,10 +824,7 @@ const checkExpiredSessions = (function () {
 
     async function procedure() {
         try {
-            const result = await dbEval(
-                'function (frontierDate) {return archiveExpiredSessions(frontierDate);}',
-                [new Date() - SESSION_SHELF_LIFE], { nolock: true }
-            );
+            const result = await dbEval('archiveExpiredSessions', [new Date() - SESSION_SHELF_LIFE], { nolock: true });
 
             if (!result) {
                 throw { message: 'undefined result from dbEval' };

@@ -498,7 +498,7 @@ export async function addPhotos(data, priority) {
  * @param params Объект
  */
 export async function addPhotosAll(params) {
-    const result = await dbEval('function (params) {return convertPhotosAll(params);}', [params], { nolock: true });
+    const result = await dbEval('convertPhotosAll', [params], { nolock: true });
 
     if (result && result.error) {
         throw { message: result.message || '' };
