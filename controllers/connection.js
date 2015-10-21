@@ -88,10 +88,10 @@ export default function (uri, poolSize = 1, logger = log4js.getLogger('app')) {
                 // So, do parameters stringify and parse them inside eval function
                 // mongodb-native eval returns promise
                 dbEval = (functionName, params, options) => dbNative.eval(
-                    `function (params) {return JSON.stringify(${functionName}.apply(null, JSON.parse(params)));}`,
+                    `function (params) {return ${functionName}.apply(null, JSON.parse(params));}`,
                     JSON.stringify(Array.isArray(params) ? params : [params]),
                     options
-                ).then(result => JSON.parse(result || null));
+                );
 
                 await* modelPromises.map(modelPromise => modelPromise(db));
                 modelPromises.splice(0, modelPromises.length); // Clear promises array

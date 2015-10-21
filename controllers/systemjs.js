@@ -293,7 +293,10 @@ waitDb.then(function (db) {
             db.photos_conveyer.insert(conveyer);
         }
 
-        return conveyer.length;
+        return {
+            time: (Date.now() - startTime) / 1000,
+            conveyorAdded: conveyer.length
+        };
     });
 
     //Для фотографий с координатой заново расчитываем регионы
