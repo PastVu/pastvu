@@ -1,41 +1,40 @@
 #top(data-bind="with: repository[M!M]")
-    .fringe#panel
-        div(title="It's all about time!",style="display:inline-block;width:61px;height:30px;background-size:contain;background-repeat:no-repeat;background-image:url('https://upload.wikimedia.org/wikipedia/commons/1/1b/Back_to_the_Future_film_series_logo.png')")
-        a#brand(href='/', title="PastVu - ретроспектива среды обитания человечества")
-            img.logo(style="display:none;",src="/img/misc/logo.png")
-            img.name(src="/img/misc/name-2x.png", srcset="/img/misc/name.png 1x, /img/misc/name-2x.png 2x")
-        #panelTools.hide-text
-            //ko if: auth.loggedIn()
-            a#toUpload.labledIco.strokeAfter(href="/photoUpload")
-                .glyphicon.glyphicon-cloud-upload
-                .text Загрузить фото
-            // /ko
-            a#gallery.labledIco.strokeAfter(href="/ps")
-                .glyphicon.glyphicon-picture
-                .text Галерея
-            //ko if: auth.loggedIn()
-            //ko if: can.adm()
-            a#toAdmin.labledIco.strokeAfter(href="/admin", target="_blank")
-                .glyphicon.glyphicon-cog
-                .text Админ
-            // /ko
-            a#toProfile.labledIco(data-bind="attr:{href: '/u/'+auth.iAm.login()}")
-                .ico.fringe(data-bind="style: {backgroundImage: 'url('+profileAvatar()+')'}")
-                .text(data-bind="text: profile")
-            // /ko
-            //ko if: !auth.loggedIn()
-            #toRegister.labledIco(data-bind="click: function(data, evt){auth.show('reg')}")
-                .ico
-                .text Регистрация
-            #toLogIn.labledIco.strokeBefore.iconAfter(data-bind="click: function(data, evt){auth.show('login')}")
-                .text Вход
-                .ico
-            // /ko
-            //ko if: auth.loggedIn()
-            #toLogOut.labledIco.strokeBefore.iconAfter(data-bind="click: function(data, evt){auth.doLogout()}")
-                .text Выход
-                .ico
-            // /ko
-    //ko if: msg().length
-    #appMsg(data-bind="css: msgCss()"): span(data-bind="text: msg()")
-    // /ko
+	.fringe#panel
+		a#brand(href='/', title="PastVu - ретроспектива среды обитания человечества")
+			img.logo(src="/img/misc/logo.png")
+			img.name(src="/img/misc/name-2x.png", srcset="/img/misc/name.png 1x, /img/misc/name-2x.png 2x")
+		#panelTools.hide-text
+			//ko if: auth.loggedIn()
+			a#toUpload.labledIco.strokeAfter(href="/photoUpload")
+				.glyphicon.glyphicon-cloud-upload
+				.text Загрузить фото
+			// /ko
+			a#gallery.labledIco.strokeAfter(href="/ps")
+				.glyphicon.glyphicon-picture
+				.text Галерея
+			//ko if: auth.loggedIn()
+			//ko if: can.adm()
+			a#toAdmin.labledIco.strokeAfter(href="/admin", target="_blank")
+				.glyphicon.glyphicon-cog
+				.text Админ
+			// /ko
+			a#toProfile.labledIco(data-bind="attr:{href: '/u/'+auth.iAm.login()}")
+				.ico.fringe(data-bind="style: {backgroundImage: 'url('+profileAvatar()+')'}")
+				.text(data-bind="text: profile")
+			// /ko
+			//ko if: !auth.loggedIn()
+			#toRegister.labledIco(data-bind="click: function(data, evt){auth.show('reg')}")
+				.ico
+				.text Регистрация
+			#toLogIn.labledIco.strokeBefore.iconAfter(data-bind="click: function(data, evt){auth.show('login')}")
+				.text Вход
+				.ico
+			// /ko
+			//ko if: auth.loggedIn()
+			#toLogOut.labledIco.strokeBefore.iconAfter(data-bind="click: function(data, evt){auth.doLogout()}")
+				.text Выход
+				.ico
+			// /ko
+	//ko if: msg().length
+	#appMsg(data-bind="css: msgCss()"): span(data-bind="text: msg()")
+	// /ko
