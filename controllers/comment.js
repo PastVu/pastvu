@@ -22,7 +22,7 @@ const dayMS = ms('1d');
 const commentMaxLength = 12e3;
 const logger = log4js.getLogger('comment.js');
 const maxRegionLevel = constants.region.maxLevel;
-const commentsUserPerPage = 15;
+const commentsUserPerPage = 20;
 
 const msg = {
     deny: 'У вас нет разрешения на это действие', // 'You do not have permission for this action'
