@@ -125,6 +125,38 @@
 				font-size: 18px;
 			}
 		}
+		.langFlag {
+            width: 25px;
+            margin: 0 8px;
+            padding: 0;
+            opacity: .92;
+            background-size: 25px auto;
+            background-position: 0 6px;
+            background-repeat: no-repeat;
+
+            &:hover {
+                opacity: 1;
+            }
+
+            &.strokeBefore::before {
+                left: -21px;
+            }
+		}
+        #langAlt {
+            position: absolute;
+            top: 30px;
+            right: -9px;
+            width: 43px;
+            height: 25px;
+            opacity: 1;
+            cursor: pointer;
+            border-width: 0 1px 1px 1px;
+            border-style: solid;
+            border-color: @FringeBorder;
+            box-shadow: 0 2px 4px 0 #222;
+            background-position: 8px 2px;
+            background-color: @MainBlueColor;
+        }
 
 		#toProfile {
 			.ico {

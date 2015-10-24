@@ -2,6 +2,7 @@
 'use strict';
 
 module.exports = {
+    lang: 'ru', // Language: ru, en
     env: 'development', // Enviroment: development, testing, production
 
     listen: {

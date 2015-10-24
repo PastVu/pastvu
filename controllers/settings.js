@@ -14,9 +14,9 @@ export const ready = waitDb.then(() => Promise.all([fillClientParams(), fillUser
 // Fill object for client parameters
 async function fillClientParams() {
     const settings = await Settings.find({}, { _id: 0, key: 1, val: 1 }, { lean: true }).exec();
-    const { client, hash } = config;
+    const { lang, client, hash } = config;
 
-    Object.assign(clientParams, { server: client, hash });
+    Object.assign(clientParams, { lang, server: client, hash });
 
     for (const setting of settings) {
         clientParams[setting.key] = setting.val;

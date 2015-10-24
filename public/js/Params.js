@@ -1,4 +1,3 @@
-/*global define:true*/
 /**
  * Params
  */
@@ -27,7 +26,6 @@ define(['jquery', 'underscore', 'socket!', 'Utils', 'knockout', 'knockout.mappin
                 CLUSTERING_ON_CLIENT: true,
                 CLUSTERING_ON_CLIENT_PIX_DELTA: { 17: 25, 18: 20, 19: 15, 20: 5, 'default': 15 },
 
-
                 locDef: { lat: 40, lng: -17, z: 3 },
                 locDefRange: ['gpsip', '_def_'],
                 locDefRangeUser: ['last', 'home', 'gpsip', '_def_'],
@@ -38,9 +36,9 @@ define(['jquery', 'underscore', 'socket!', 'Utils', 'knockout', 'knockout.mappin
 
     Params.window.square = Params.window.w * Params.window.h;
     updateSettings(init.settings, true);
-    Params = ko_mapping.fromJS(Params, { copy: ['preaddrs', 'preaddr', 'window.head'] });
+    Params = ko_mapping.fromJS(Params, { copy: ['preaddrs', 'preaddr', 'window.head', 'settings.lang'] });
 
-    //Пересчитываем размеры при ресайзе окна
+    // Пересчитываем размеры при ресайзе окна
     $window.on('resize', _.debounce(function () {
         var w = $window.width();
         var h = $window.height();
@@ -48,7 +46,6 @@ define(['jquery', 'underscore', 'socket!', 'Utils', 'knockout', 'knockout.mappin
         Params.window.h(h);
         Params.window.square(w * h);
     }, 50));
-
 
     // Обновляем настройки и в случае наличия поддоменов формируем их массив
     function updateSettings(settings, plain) {
@@ -79,7 +76,7 @@ define(['jquery', 'underscore', 'socket!', 'Utils', 'knockout', 'knockout.mappin
             console.log('takeInitData receive error!', data.error);
             return;
         }
-        updateSettings(data.p); //Обновляем настройки
+        updateSettings(data.p); // Обновляем настройки
     });
 
     return Params;

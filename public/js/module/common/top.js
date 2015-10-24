@@ -2,13 +2,21 @@
 /**
  * Модель управляет верхней панелью
  */
-define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'text!tpl/common/top.jade', 'css!style/common/top', 'm/common/auth' ], function (_, P, ko, Cliche, globalVM, jade) {
+define(['underscore', 'Params', 'jquery', 'knockout', 'm/_moduleCliche', 'globalVM', 'text!tpl/common/top.jade', 'css!style/common/top', 'm/common/auth' ], function (_, P, $, ko, Cliche, globalVM, jade) {
 	'use strict';
+    var langs = ['en', 'ru'];
 
 	return Cliche.extend({
 		jade: jade,
 		create: function () {
+            var self = this;
 			this.auth = globalVM.repository['m/common/auth'];
+            this.lang = ko.observable(P.settings.lang);
+            this.langAlt = ko.observable(_.without(langs, this.lang)[0]);
+            this.langAltShow = ko.observable(false);
+            this.langClickBinded = function (evt) {
+                self.langClick(null, evt);
+            };
 
 			this.registrationAllowed = this.co.registrationAllowed = ko.computed({
 				read: function () {
@@ -89,6 +97,22 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'text
 		hide: function () {
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
-		}
+		},
+
+        langClick: function (data, evt) {
+            var langAltShow = !this.langAltShow();
+
+            evt.stopPropagation();
+            evt.preventDefault();
+
+            this.langAltShow(langAltShow);
+            $(window)[langAltShow ? 'on' : 'off']('click', this.langClickBinded);
+        },
+        langAltClick: function () {
+            var lang = this.lang();
+
+            this.lang(this.langAlt());
+            this.langAlt(lang);
+        }
 	});
 });
