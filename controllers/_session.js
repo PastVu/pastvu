@@ -87,6 +87,22 @@ const createSidCookieObj = (function () {
         };
     };
 }());
+const createLangCookieObj = (function () {
+    // Создает объект с кукой языка
+    const key = 'past.lang';
+    const domain = config.client.hostname;
+    const cookieMaxAge = SESSION_SHELF_LIFE / 1000;
+
+    return function (lang) {
+        return {
+            key,
+            domain,
+            path: '/',
+            value: lang,
+            'max-age': cookieMaxAge
+        };
+    };
+}());
 
 export const usSid = Object.create(null); // usObjs by session key. Хэш всех пользовательских обектов по ключам сессий. Может быть один объект у нескольких сессий, если клиент залогинен ы нескольких браузерах
 export const usLogin = Object.create(null); // usObjs loggedin by user login.  Хэш пользовательских обектов по login зарегистрированного пользователя
@@ -170,8 +186,9 @@ function sessionCreate(ip, headers, browser) {
         key: Utils.randomString(12),
         stamp: new Date(),
         data: {
-            ip: ip,
-            headers: headers,
+            ip,
+            headers,
+            lang: config.lang,
             agent: getBrowserAgent(browser)
         },
         anonym: {
@@ -204,6 +221,8 @@ function sessionUpdate(session, ip, headers, browser, cb) {
         data.ip_hist.push({ ip: data.ip, off: stamp });
         data.ip = ip;
     }
+
+    data.lang = config.lang;
 
     //Если user-agent заголовка изменился, заново парсим агента и записываем предыдущего в историю с временем изменения
     if (headers['user-agent'] !== data.headers['user-agent']) {
@@ -377,7 +396,7 @@ export const regetUser = Bluebird.method(function (usObj, emitHim, emitExcludeSo
 
             //usObj и всем его сессиям присваиваем новую модель пользователя
             usObj.user = user;
-            _.forIn(usObj.sessions, function (session) {
+            _.forOwn(usObj.sessions, function (session) {
                 session.user = user;
             });
 
@@ -450,7 +469,7 @@ export function loginUser(socket, user, data, cb) {
                 }
                 //Всем сокетам текущей сессии присваиваем новую сессию и usObj
                 if (_.isObject(sessionOld.sockets)) {
-                    _.forIn(sessionOld.sockets, function (sock) {
+                    _.forOwn(sessionOld.sockets, function (sock) {
                         sock.handshake.usObj = usObj;
                         sock.handshake.session = sessionNew;
                     });
@@ -509,48 +528,50 @@ export function logoutUser(socket, cb) {
         if (err) {
             return cb(err);
         }
-        //Добавляем новую сессию в usObj
+        // Добавляем новую сессию в usObj
         userObjectAddSession(sessionNew, function (err, usObj) {
             if (err) {
                 cb(err);
             }
-            //Всем сокетам текущей сессии присваиваем новую сессию и usObj
+            // Всем сокетам текущей сессии присваиваем новую сессию и usObj
             if (_.isObject(sessionOld.sockets)) {
-                _.forIn(sessionOld.sockets, function (sock) {
+                _.forOwn(sessionOld.sockets, function (sock) {
                     sock.handshake.usObj = usObj;
                     sock.handshake.session = sessionNew;
                 });
-                //Переносим сокеты из старой в новую сессию
+                // Переносим сокеты из старой в новую сессию
                 sessionNew.sockets = sessionOld.sockets;
             } else {
                 logger.warn('SessionOld have no sockets while logout', user.login);
             }
             delete sessionOld.sockets;
 
-            //Убираем сессию из хеша сессий, и если в usObj это была одна сессия, usObj тоже удалится
+            // Убираем сессию из хеша сессий, и если в usObj это была одна сессия, usObj тоже удалится
             sessionFromHashes(usObjOld, sessionOld, 'logoutUser');
 
-            //Кладем новую сессию в хэш сессий
+            // Кладем новую сессию в хэш сессий
             sessHash[sessionNew.key] = sessionNew;
 
-            //Отправляем старую сессию в архив
+            // Отправляем старую сессию в архив
             sessionToArchive(sessionOld);
 
             socket.once('commandResult', function () {
-                //Отправляем всем сокетам сессии кроме текущей команду на релоад
-                for (var i in sessionNew.sockets) {
-                    if (sessionNew.sockets[i] !== undefined && sessionNew.sockets[i] !== socket && sessionNew.sockets[i].emit !== undefined) {
-                        sessionNew.sockets[i].emit('command', [
-                            { name: 'location' }
-                        ]);
-                    }
-                }
+                sendReload(sessionNew);
                 cb();
             });
 
-            //Отправляем клиенту новые куки анонимной сессии
+            // Отправляем клиенту новые куки анонимной сессии
             emitSidCookie(socket);
         });
+    });
+}
+
+// Send command to reload to all session's sockets
+function sendReload(session, excludeSocket) {
+    _.forOwn(session.sockets, function (socket) {
+        if (socket && socket !== excludeSocket && _.isFunction(socket.emit)) {
+            socket.emit('command', [{ name: 'location' }]);
+        }
     });
 }
 
@@ -601,6 +622,12 @@ export function saveEmitUser(usObj, excludeSocket) {
 function emitSidCookie(socket) {
     socket.emit('command', [
         { name: 'updateCookie', data: createSidCookieObj(socket.handshake.session) }
+    ]);
+}
+
+function emitLangCookie(socket, lang) {
+    socket.emit('command', [
+        { name: 'updateCookie', data: createLangCookieObj(lang) }
     ]);
 }
 
@@ -867,6 +894,19 @@ const checkExpiredSessions = (function () {
     };
 }());
 
+function langChange(socket, data) {
+    if (!['ru', 'en'].includes(data.lang)) {
+        return;
+    }
+
+    socket.once('commandResult', function () {
+        sendReload(socket.handshake.session);
+    });
+
+    // Отправляем клиенту новые куки языка
+    emitLangCookie(socket, data.lang);
+}
+
 waitDb.then(() => {
     checkSessWaitingConnect();
     checkExpiredSessions();
@@ -888,6 +928,10 @@ export function loadController(io) {
                 u: getPlainUser(usObj.user),
                 registered: usObj.registered
             });
+        });
+
+        socket.on('langChange', function (data) {
+            langChange(socket, data);
         });
     });
 };
