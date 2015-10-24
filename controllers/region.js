@@ -1258,48 +1258,40 @@ export const clearObjRegions = obj => {
 
 // Save array of regions _ids in specified user field
 export async function setUserRegions(login, regionsCids, field) {
-    if (!Array.isArray(regionsCids)) {
-        throw { message: msg.badParams };
-    }
-
-    // Check that transfered valid region numbers
-    for (const cid of regionsCids) {
-        if (typeof cid !== 'number' || !regionCacheHash[cid]) {
-            throw { message: msg.badParams };
-        }
-    }
-
-    const regions = await getOrderedRegionList(regionsCids);
-
-    if (_.isEmpty(regions)) {
-        throw { message: msg.noregion };
-    }
-    if (regions.length !== regionsCids.length) {
-        throw { message: 'You want to save nonexistent regions' };
-    }
-
-    const regionsHash = {};
-    const regionsIds = [];
     const $update = {};
 
-    for (const region of regions) {
-        regionsIds.unshift(region._id);
-        regionsHash[region.cid] = region;
-    }
-
-    // Check that the regions are not relatives
-    for (const region of regions) {
-        for (const parent of region.parents) {
-            if (regionsHash[parent] !== undefined) {
-                throw { message: 'Выбранные регионы не должны обладать родственными связями' };
+    if (_.isEmpty(regionsCids)) {
+        $update.$unset = { [field]: 1 };
+    } else {
+        // Check that transfered valid region numbers
+        for (const cid of regionsCids) {
+            if (typeof cid !== 'number' || !regionCacheHash[cid]) {
+                throw { message: msg.badParams };
             }
         }
-    }
 
-    if (regionsIds.length) {
-        $update.$set = { [field]: regionsIds };
-    } else {
-        $update.$unset = { [field]: 1 };
+        const regions = await getOrderedRegionList(regionsCids, { geo: 0 });
+
+        if (regions.length !== regionsCids.length) {
+            throw { message: 'You want to save nonexistent regions' };
+        }
+
+        const regionsIdsSet = new Set();
+
+        for (const region of regions) {
+            regionsIdsSet.add(String(region._id));
+        }
+
+        // Check that the regions are not relatives
+        for (const region of regions) {
+            for (const parent of region.parents) {
+                if (regionsIdsSet.has(String(parent))) {
+                    throw { message: 'Selected regions should not be relatives' };
+                }
+            }
+        }
+
+        $update.$set = { [field]: [...regionsIdsSet] };
     }
 
     return User.update({ login }, $update).exec();
@@ -1392,7 +1384,7 @@ async function saveUserRegions(socket, data) {
     // https://groups.google.com/forum/?fromgroups#!topic/mongoose-orm/ZQan6eUV9O0
     // So completely reget user from db
     if (userObjOnline) {
-        return _session.regetUser(userObjOnline, true, socket);
+        await _session.regetUser(userObjOnline, true, socket);
     }
 
     return { saved: 1 };
