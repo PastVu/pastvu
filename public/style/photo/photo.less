@@ -332,6 +332,24 @@
             }
         }
     }
+    .nearesTiles {
+        display: flex;
+        height: auto;
+        flex-flow: row wrap;
+        align-items: center;
+        align-content: space-around;
+        justify-content: space-around;
+        overflow: hidden;
+
+        .photoPreview {
+            margin: 0 auto 7px;
+
+            .status {
+                bottom: 2px;
+                font-size: @font-size-small;
+            }
+        }
+    }
 
     .infoBlock {
         margin-bottom: 6px;

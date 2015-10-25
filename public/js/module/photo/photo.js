@@ -389,7 +389,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
                         self.processRanks(self.p.user.ranks());
                         self.getUserRibbon(3, 4, self.applyUserRibbon, self);
-                        self.getNearestRibbon(8, self.applyNearestRibbon, self);
+                        self.getNearestRibbon(12, self.applyNearestRibbon, self);
 
                         // В первый раз точку передаем сразу в модуль карты, в следующие устанавливам методами
                         if (self.binded) {
@@ -554,7 +554,6 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
             this.sizesCalcPhoto();
             this.applyUserRibbon();
-            this.applyNearestRibbon();
         },
         // Пересчитывает размер фотографии
         sizesCalcPhoto: function () {
@@ -1332,7 +1331,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                                 }
 
                                 // Заново запрашиваем ближайшие фотографии
-                                self.getNearestRibbon(8, self.applyNearestRibbon, self);
+                                self.getNearestRibbon(12, self.applyNearestRibbon, self);
                                 self.edit(false);
                             }
                             self.exe(false);
@@ -1922,7 +1921,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             socket.emit('giveNearestPhotos', { geo: geo, limit: limit, except: except });
         },
         applyNearestRibbon: function () {
-            this.nearestRibbon(this.nearestRibbonOrigin.slice(0, this.thumbN()));
+            this.nearestRibbon(this.nearestRibbonOrigin);
         },
 
         processRanks: function (ranks) {

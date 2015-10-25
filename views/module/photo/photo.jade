@@ -88,15 +88,11 @@
                     // /ko
             .rightrow.photoMap.mContainer.mHidden(data-bind="allowBindings: false, style: {height: mapH()}")
             //ko if: nearestRibbon().length
-            .rightrow.photoTiles(style="text-align: center;")
-                .lineBehind
-                    span(data-bind="html: 'Ближайшие фотографии'")
-                //ko foreach: nearestRibbon
-                a.photoPreview(data-bind="attr: {href: '/p/' + cid, title: $data.title}, style: {marginRight: $parent.thumbM}")
-                    .photoBox
-                        img.img(data-bind="attr: {src: sfile, title: $data.title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.thumbW, height: $parent.thumbH}")
-                        .curtain
-                // /ko
+            .rightrow: .lineBehind: span Ближайшие фотографии
+            .rightrow.nearesTiles(data-bind="foreach: nearestRibbon")
+                a.photoPreview(data-bind="attr: {href: '/p/' + cid, title: $data.title}"): .photoBox
+                    img.img(data-bind="attr: {src: sfile, title: $data.title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.thumbW, height: $parent.thumbH}")
+                    .curtain
             // /ko
         .commentsContainer.mContainer.mNoDisplay(data-bind="allowBindings: false")
 
