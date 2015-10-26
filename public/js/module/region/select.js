@@ -252,7 +252,7 @@ define([
 
 		selectRegion: function (region) {
 			if (this.checkBranchSelected(region)) {
-				window.noty({text: 'Нельзя одновременно выбирать родительский и дочерний регионы', type: 'error', layout: 'center', timeout: 3000, force: true});
+				window.noty({text: 'You can not choose the parent and child regions simultaneously', type: 'error', layout: 'center', timeout: 3000, force: true});
 				return false;
 			}
 			region.selected(true);
