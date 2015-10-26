@@ -5,11 +5,11 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 	'use strict';
 
 	var catsObj = {
-			photosToApprove: {name: 'Ожидают подтверждения', tpl: 'photosTpl'},
-			photos: {name: 'Новые фото', tpl: 'photosTpl'},
-			photosNoGeo: {name: 'Где это?', tpl: 'photosTpl'},
-			ratings: {name: 'Рейтинги', tpl: 'ratingsTpl'},
-			stats: {name: 'Статистика', tpl: 'statsTpl'}
+			photosToApprove: {name: 'Awaiting confirmation', tpl: 'photosTpl'},
+			photos: {name: 'New photos', tpl: 'photosTpl'},
+			photosNoGeo: {name: 'Where is it?', tpl: 'photosTpl'},
+			ratings: {name: 'Rating', tpl: 'ratingsTpl'},
+			stats: {name: 'Statistic', tpl: 'statsTpl'}
 		},
 		cats = [
 			'photos',
@@ -22,11 +22,11 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 		],
 		imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>'),
 		declension = {
-			user: [' пользователь', ' пользователя', ' пользователей'],
-			reg: [' зарегистрирован', ' зарегистрированых', ' зарегистрированых'],
-			photo: [' фотография', ' фотографии', ' фотографий'],
-			comment: [' комментарий', ' комментария', ' комментариев'],
-			view: [' просмотр', ' просмотра', ' просмотров']
+			user: [' user'],
+			reg: [' registerd'],
+			photo: [' photo'],
+			comment: [' comment'],
+			view: [' view']
 		};
 
 	return Cliche.extend({
@@ -288,7 +288,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					} else {
 						this.stats.all = data.all;
 						this.stats.common = data.common;
-						this.stats.common.onlineTxt = 'Сейчас на сайте ' + data.common.onall + Utils.format.wordEndOfNum(data.common.onall, declension.user) + ', из них ' + data.common.onreg + Utils.format.wordEndOfNum(data.common.onall, declension.reg);
+						this.stats.common.onlineTxt = 'Now ' + data.common.onall + declension.user + (data.common.onall > 1 ? 's' : '') + ' is online, ' + data.common.onreg + ' of them are registered';
 					}
 					success = true;
 				}
@@ -320,10 +320,11 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				photo.link = '/p/' + photo.cid;
 
 				if (!photo.title) {
-					photo.title = 'Без названия';
+					photo.title = 'Without title';
 				}
 				if (numField && numFormat) {
-					photo.amount = photo[numField] + Utils.format.wordEndOfNum(photo[numField], numFormat);
+                    var amount = photo[numField];
+					photo.amount = amount + numFormat[0] + (amount > 1 ? 's' : '');
 				}
 				if (regionsHash && photo.rs !== undefined) {
 					for (j = photo.rs.length; j--;) {
@@ -346,7 +347,8 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				user.link = '/u/' + user.login + (linkSection ? '/' + linkSection : '');
 				user.title = user.disp;
 				if (numField && numFormat) {
-					user.amount = user[numField] + Utils.format.wordEndOfNum(user[numField], numFormat);
+                    var amount = user[numField];
+                    user.amount = amount + numFormat[0] + (amount > 1 ? 's' : '');
 				}
 			}
 			return users;
@@ -362,11 +364,11 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 
 			event.target.style.visibility = 'hidden';
 			if (data.conv) {
-				content = imgFailTpl({style: 'margin-top:7px;padding-top:20px; background: url(/img/misc/photoConvWhite.png) 50% 0 no-repeat;', txt: 'Превью уже создается<br>пожалуйста, обновите позже'});
+				content = imgFailTpl({style: 'margin-top:7px;padding-top:20px; background: url(/img/misc/photoConvWhite.png) 50% 0 no-repeat;', txt: 'Preview is creating <br>please update later'});
 			} else if (data.convqueue) {
-				content = imgFailTpl({style: 'margin-top:7px;', txt: '<span class="glyphicon glyphicon-road"></span><br>Превью скоро будет создано'});
+				content = imgFailTpl({style: 'margin-top:7px;', txt: '<span class="glyphicon glyphicon-road"></span><br>Preview will be created soon'});
 			} else {
-				content = imgFailTpl({style: 'margin-top:7px;padding-top:25px; background: url(/img/misc/imgw.png) 50% 0 no-repeat;', txt: 'Превью недоступно'});
+				content = imgFailTpl({style: 'margin-top:7px;padding-top:25px; background: url(/img/misc/imgw.png) 50% 0 no-repeat;', txt: 'Preview is unavailable'});
 			}
 			$photoBox.append(content);
 			parent.classList.add('showPrv');
