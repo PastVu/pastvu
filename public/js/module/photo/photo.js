@@ -175,7 +175,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 owner: this
             });
 
-            var userInfoTpl = _.template('Добавил${ addEnd } <a href="/u/${ login }" ${ css }>${ name }</a>, ${ stamp }');
+            var userInfoTpl = _.template('Added by <a href="/u/${ login }" ${ css }>${ name }</a>, ${ stamp }');
             this.userInfo = this.co.userInfo = ko.computed(function () {
                 return userInfoTpl(
                     {
