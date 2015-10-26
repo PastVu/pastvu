@@ -5,7 +5,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 	'use strict';
 	var newsDefault = {
 		pdate: new Date(),
-		title: 'Нет заголовка',
+		title: 'No title',
 		txt: '',
 		ccount: 0,
 		ccount_new: 0,

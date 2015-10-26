@@ -1,10 +1,10 @@
 .newsWrapper(data-bind="with: repository[M!M]")
-	.newsHeader Новости проекта
+	.newsHeader Project news
 	//ko if: canEdit()
 	.row
 		a.addNews(href="/admin/news/create")
 			span.glyphicon.glyphicon-plus
-			|  Добавить новость
+			|  Add news
 	// /ko
 	.news
 		//ko foreach: news
@@ -15,7 +15,7 @@
 					img(data-bind="attr: {src: $data.user.avatar}")
 				.newsDate(data-bind="text: moment($data.pdate).format('D MMM YYYY')")
 				//ko if: $data.ccount
-				a.comm(data-bind="html: $data.ccount + ($data.ccount_new ? '<span class=\"cnew\"> +' + $data.ccount_new + '</span>' : ''), attr: {href: '/news/' + $data.cid + '?hl=comments'}", title="Перейти к комментариям новости")
+				a.comm(data-bind="html: $data.ccount + ($data.ccount_new ? '<span class=\"cnew\"> +' + $data.ccount_new + '</span>' : ''), attr: {href: '/news/' + $data.cid + '?hl=comments'}", title="Jump to news comments")
 				// /ko
 			.newsBody
 				.newsHead
@@ -26,10 +26,10 @@
 					.dotDelimeter ·
 					a.newsEdit(data-bind="attr: {href: '/admin/news/edit/' + $data.cid}")
 						span.glyphicon.glyphicon-pencil
-						|  Редактировать
+						|  Edit
 					// /ko
 				.newsNotice(data-bind="html: $data.notice, css: {expandable: $data.expand}")
 				//ko if: $data.expand
-				a.newsExpand(data-bind="attr: {href: '/news/' + $data.cid}") [Читать полностью..]
+				a.newsExpand(data-bind="attr: {href: '/news/' + $data.cid}") [Read more..]
 				// /ko
 		// /ko

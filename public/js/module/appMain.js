@@ -181,7 +181,7 @@ require([
 			}
 		};
 
-	moment.lang('ru');
+	moment.lang('en');
 
 	$('body').append(html);
 	ko.applyBindings(globalVM);
