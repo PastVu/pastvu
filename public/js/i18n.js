@@ -6,13 +6,13 @@ define(['knockout', 'knockout.mapping', 'Utils'], function(ko, ko_mapping, Utils
 	"use strict";
 	var i18n = {
 		en : {
-			login : 'Login',
-			logout : 'Logout',
-			register : 'Registration',
+			login : 'Log In',
+			logout : 'Log Out',
+			register : 'Sign Up',
 			mod : 'Moderation',
 			admin : 'Administration',
-			gallery : 'Галерея',
-			image_upload : 'Загрузить фото'
+			gallery : 'Gallery',
+			image_upload : 'Upload'
 		},
 		ru : {
 			login : 'Вход',
