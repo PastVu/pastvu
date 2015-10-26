@@ -71,25 +71,25 @@ define([
 					types: ko.observableArray([
 						{
 							id: 'scheme',
-							desc: 'Схема',
+							desc: 'Roadmap',
 							selected: ko.observable(false),
 							params: 'ROADMAP'
 						},
 						{
 							id: 'sat',
-							desc: 'Спутник',
+							desc: 'Satellite',
 							selected: ko.observable(false),
 							params: 'SATELLITE'
 						},
 						{
 							id: 'hyb',
-							desc: 'Гибрид',
+							desc: 'Hybrid',
 							selected: ko.observable(false),
 							params: 'HYBRID'
 						},
 						{
 							id: 'land',
-							desc: 'Ландшафт',
+							desc: 'Terrain',
 							selected: ko.observable(false),
 							params: 'TERRAIN'
 						}
@@ -99,37 +99,37 @@ define([
 			if (P.settings.USE_YANDEX_API()) {
 				this.layers.push({
 					id: 'yandex',
-					desc: 'Яндекс',
+					desc: 'Yandex',
 					deps: 'lib/leaflet/extends/L.Yandex',
 					selected: ko.observable(false),
 					types: ko.observableArray([
 						{
 							id: 'scheme',
-							desc: 'Схема',
+							desc: 'Schema',
 							selected: ko.observable(false),
 							params: 'map'
 						},
 						{
 							id: 'sat',
-							desc: 'Спутник',
+							desc: 'Satellite',
 							selected: ko.observable(false),
 							params: 'satellite'
 						},
 						{
 							id: 'hyb',
-							desc: 'Гибрид',
+							desc: 'Hybrid',
 							selected: ko.observable(false),
 							params: 'hybrid'
 						},
 						{
 							id: 'pub',
-							desc: 'Народная',
+							desc: 'Peoples',
 							selected: ko.observable(false),
 							params: 'publicMap'
 						},
 						{
 							id: 'pubhyb',
-							desc: 'Народный гибрид',
+							desc: 'Peoples hybrid',
 							selected: ko.observable(false),
 							params: 'publicMapHybrid'
 						}
@@ -260,7 +260,7 @@ define([
 			var _this = this;
 			window.noty(
 				{
-					text: 'Новые параметры кластера посчитаны для всех ' + arr.length + ' уровней зума. <br> Отправить данные на сервер для формирования новой кластерной сетки всех фотографий? <br> Это может занять несколько минут',
+					text: 'New cluster parameters is calculated for all ' + arr.length + ' zooms. <br> Send data to server for forming new cluster grid for all photos? <br> It may takes several minutes',
 					type: 'confirm',
 					layout: 'center',
 					modal: true,
@@ -272,7 +272,7 @@ define([
 						speed: 500
 					},
 					buttons: [
-						{addClass: 'btn btn-warning', text: 'Да', onClick: function ($noty) {
+						{addClass: 'btn btn-warning', text: 'Yes', onClick: function ($noty) {
 							// this = button element
 							// $noty = $noty element
 
@@ -289,7 +289,7 @@ define([
 										_this.cancel();
 									}.bind(this));
 								} else {
-									$noty.$message.children().html('Новая кластерная сетка сформированна');
+									$noty.$message.children().html('New cluster grid is complete');
 
 									okButton.text('Ok').removeClass('btn-primary').addClass('btn-success').on('click', function () {
 										$noty.close();
@@ -299,7 +299,7 @@ define([
 							}, _this);
 							socket.emit('clusterAll', {params: arr, conditions: _this.saveParams});
 
-							$noty.$message.children().html('Данные отправлены на сервер для пересчета.<br>Вы можете закрыть это окно - данные расчитываются на сервере.<br>Этот диалог "отлипнет" при получении результата расчета с сервера');
+							$noty.$message.children().html('Data has been sent to server for calculation.<br>You may close this window - grid calculated on server-side.<br>This dialog will come unstuck after receiving result from server');
 							if ($noty.$buttons && $noty.$buttons.find) {
 								$noty.$buttons.find('.btn-warning').remove();
 								$noty.$buttons.find('button')
@@ -307,7 +307,7 @@ define([
 									.addClass('disabled');
 							}
 						}},
-						{addClass: 'btn btn-primary', text: 'Отмена', onClick: function ($noty) {
+						{addClass: 'btn btn-primary', text: 'Cancel', onClick: function ($noty) {
 							$noty.close();
 							_this.cancel();
 						}}

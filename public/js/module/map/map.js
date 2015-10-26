@@ -138,28 +138,28 @@ define([
 					types: ko.observableArray([
 						{
 							id: 'scheme',
-							desc: 'Схема',
+							desc: 'Roadmap',
 							selected: ko.observable(false),
 							params: 'ROADMAP',
 							maxZoom: 20
 						},
 						{
 							id: 'sat',
-							desc: 'Спутник',
+							desc: 'Satellite',
 							selected: ko.observable(false),
 							params: 'SATELLITE',
 							maxZoom: 19
 						},
 						{
 							id: 'hyb',
-							desc: 'Гибрид',
+							desc: 'Hybrid',
 							selected: ko.observable(false),
 							params: 'HYBRID',
 							maxZoom: 19
 						},
 						{
 							id: 'land',
-							desc: 'Ландшафт',
+							desc: 'Terrain',
 							selected: ko.observable(false),
 							params: 'TERRAIN',
 							maxZoom: 16,
@@ -172,13 +172,13 @@ define([
 			if (P.settings.USE_YANDEX_API()) {
 				this.layers.push({
 					id: 'yandex',
-					desc: 'Яндекс',
+					desc: 'Yandex',
 					deps: 'lib/leaflet/extends/L.Yandex',
 					selected: ko.observable(false),
 					types: ko.observableArray([
 						{
 							id: 'scheme',
-							desc: 'Схема',
+							desc: 'Schema',
 							selected: ko.observable(false),
 							params: 'map',
 							maxZoom: 18,
@@ -187,21 +187,21 @@ define([
 						},
 						{
 							id: 'sat',
-							desc: 'Спутник',
+							desc: 'Satellite',
 							selected: ko.observable(false),
 							params: 'satellite',
 							maxZoom: 19
 						},
 						{
 							id: 'hyb',
-							desc: 'Гибрид',
+							desc: 'Hybrid',
 							selected: ko.observable(false),
 							params: 'hybrid',
 							maxZoom: 19
 						},
 						{
 							id: 'pub',
-							desc: 'Народная',
+							desc: 'Peoples',
 							selected: ko.observable(false),
 							params: 'publicMap',
 							maxZoom: 20,
@@ -210,7 +210,7 @@ define([
 						},
 						{
 							id: 'pubhyb',
-							desc: 'Народный гибрид',
+							desc: 'Peoples hybrids',
 							selected: ko.observable(false),
 							params: 'publicMapHybrid',
 							maxZoom: 20,
@@ -485,7 +485,7 @@ define([
 		},
 		pointEditMarkerCreate: function () {
 			var self = this;
-			this.pointMarkerEdit = L.marker(this.point.geo(), {draggable: true, title: 'Точка съемки', icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], iconUrl: '/img/map/pinEdit.png', className: 'pointMarkerEdit'})})
+			this.pointMarkerEdit = L.marker(this.point.geo(), {draggable: true, title: 'Shooting point', icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], iconUrl: '/img/map/pinEdit.png', className: 'pointMarkerEdit'})})
 				.on('dragend', function () {
 					var latlng = Utils.geo.geoToPrecision(this.getLatLng());
                     self.point.geo([latlng.lat, latlng.lng]);
