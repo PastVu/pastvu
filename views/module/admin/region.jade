@@ -1,47 +1,47 @@
 .adminRegion(data-bind="with: repository[M!M]")
-	h4(data-bind="text: createMode() ? 'Создание региона' : 'Редактирование региона'")
+	h4(data-bind="text: createMode() ? 'Region creation' : 'Region editing'")
 	form.form-horizontal(action='', autocomplete="off", method='POST', data-bind="event: {submit: save}")
 		.form-group
-			label.col-xs-4.col-sm-3.col-lg-2.control-label Название
+			label.col-xs-4.col-sm-3.col-lg-2.control-label Title
 			.col-xs-3.col-sm-2
-				input.form-control(type='text', data-bind="value: region.title_en, valueUpdate: 'keyup'", placeholder="(EN) Английское", required="required", autocorrect="off", autocapitalize="off")
+				input.form-control(type='text', data-bind="value: region.title_en, valueUpdate: 'keyup'", placeholder="(EN) English", required="required", autocorrect="off", autocapitalize="off")
 			.col-xs-3.col-sm-2
-				input.form-control(type='text', data-bind="value: region.title_local, valueUpdate: 'keyup'", placeholder="(RU) Русское", autocorrect="off", autocapitalize="off")
+				input.form-control(type='text', data-bind="value: region.title_local, valueUpdate: 'keyup'", placeholder="(RU) Russian", autocorrect="off", autocapitalize="off")
 		//ko if: !createMode()
 		.form-group
 			label.col-xs-4.col-sm-3.col-lg-2.control-label
 			.col-xs-8.col-sm-9.col-lg-10
 				p.form-control-static
-					| Номер:
+					| Id:
 					strong(data-bind="text: ' ' + region.cid()")
-					| ; Уровень:
+					| ; Level:
 					strong(data-bind="text: ' ' + (Number(haveParent()) ? region.parents().length + 1 : 1)")
-					| ; Полигонов:
+					| ; Polygon count:
 					strong(data-bind="text: ' ' + formatNum(region.polynum.exterior())")
 					//ko if: region.polynum.interior()
 					|  (+
 					strong(data-bind="text: formatNum(region.polynum.interior())")
-					|  выколотых)
+					|  outter)
 					// /ko
-					| ; Вершин:
+					| ; Vertex count:
 					strong(data-bind="text: ' ' + (formatNum(region.pointsnum() - region.polynum.exterior() - region.polynum.interior()))")
 					| ;&nbsp;
-					a(data-bind="attr: {href: '/admin/region?hl=' + region.cid()}") Показать в дереве регионов
+					a(data-bind="attr: {href: '/admin/region?hl=' + region.cid()}") Show in regions tree
 		// /ko
 		.form-group
-			label.col-xs-4.col-sm-3.col-lg-2.control-label Родительский регион
+			label.col-xs-4.col-sm-3.col-lg-2.control-label Parent region
 			.col-xs-6.col-sm-4
 				.row
 					.col-xs-8.col-sm-9.col-md-8.col-lg-6
 						label.radio-inline
 							input.thr(type="radio", id="parent_radios_0", name="parent_radios", value="0", data-bind="checked: haveParent")
-							|  Отсутствует
+							|  Is absent
 						label.radio-inline
 							input.thr(type="radio", id="parent_radios_1", name="parent_radios", value="1", data-bind="checked: haveParent")
-							|  Есть
+							|  Exists
 					//ko if: Number(haveParent())
 					.col-xs-4.col-sm-3.col-lg-3
-						input.form-control(type='text', data-bind="value: parentCid, valueUpdate: 'keyup'", placeholder="Номер родительского региона", required="required", autocorrect="off", autocapitalize="off")
+						input.form-control(type='text', data-bind="value: parentCid, valueUpdate: 'keyup'", placeholder="Id of perent region", required="required", autocorrect="off", autocapitalize="off")
 					// /ko
 		//ko if: region.parents().length || childLenArr().length
 		.form-group
@@ -55,7 +55,7 @@
 					| &nbsp;
 					// /ko
 					//ko if: !createMode()
-					span.current(title="Текущий регион", data-bind="text: ' ' + region.title_en()")
+					span.current(title="Current region", data-bind="text: ' ' + region.title_en()")
 					// /ko
 					//ko foreach: childLenArr
 					| &nbsp;
@@ -64,33 +64,33 @@
 					// /ko
 		// /ko
 		.form-group
-			label.col-xs-4.col-sm-3.col-lg-2.control-label Доп. параметры
+			label.col-xs-4.col-sm-3.col-lg-2.control-label Additional parameters
 			.col-xs-8.col-sm-9.col-lg-10(style="padding-top: 3px")
 				.dopparam
-					abbr(title="Центральная точка региона в его домашнем положении") Центр
+					abbr(title="The central point of the region in it home position") Center
 					| :
-					input.form-control.input-sm.center(type="text", data-bind="centerInput: true, attr: {readonly: region.centerAuto(), placeholder: region.centerAuto() ? 'Пока не рассчитан' : 'Не задан'}, css: {invalid: !region.centerAuto() && !centerValid()}")
+					input.form-control.input-sm.center(type="text", data-bind="centerInput: true, attr: {readonly: region.centerAuto(), placeholder: region.centerAuto() ? 'Not yet calculated' : 'Not specified'}, css: {invalid: !region.centerAuto() && !centerValid()}")
 					.btn-group.btn-group-sm
-						button.btn.btn-primary.yes(type="button", data-bind="css: {active: region.centerAuto()}, click: centerAutoToggle") Авто
-						button.btn.btn-primary.no(type="button", data-bind="css: {active: !region.centerAuto()}, click: centerAutoToggle") Вручную
+						button.btn.btn-primary.yes(type="button", data-bind="css: {active: region.centerAuto()}, click: centerAutoToggle") Auto
+						button.btn.btn-primary.no(type="button", data-bind="css: {active: !region.centerAuto()}, click: centerAutoToggle") Manual
 				br
 				.dopparam
-					abbr(title="Bounding box - прямоугольник, в который целиком вписан регион") Bbox
+					abbr(title="Bounding box - rectangle in which entire region is fits") Bbox
 					| :
-					input.form-control.input-sm.bbox(type="text", readonly, data-bind="attr: {value: region.bbox() ? region.bbox().join(', ') : ''}", placeholder="Пока не рассчитан")
+					input.form-control.input-sm.bbox(type="text", readonly, data-bind="attr: {value: region.bbox() ? region.bbox().join(', ') : ''}", placeholder="Not yet calculated")
 				.dopparam
-					abbr(title="Прямоугольник, который должен быть виден в домашнем положении карты для данного региона. Нужен для расчета масштаба") Bbox дом
+					abbr(title="The rectangle that should be visible in the home position of the map. We need to calculate the scale") Bbox home
 					| .:
 					.btn-group.btn-group-sm
-						button.btn.btn-primary.yes(type="button", data-bind="css: {active: bboxAuto()}, click: bboxHomeToggle") Как bbox
-						button.btn.btn-primary.no(type="button", data-bind="css: {active: !bboxAuto()}, click: bboxHomeToggle") Вручную
+						button.btn.btn-primary.yes(type="button", data-bind="css: {active: bboxAuto()}, click: bboxHomeToggle") As bbox
+						button.btn.btn-primary.no(type="button", data-bind="css: {active: !bboxAuto()}, click: bboxHomeToggle") Manual
 					//ko if: !bboxAuto()
-					input.form-control.input-sm.bbox(type="text", data-bind="bboxhomeInput: true, attr: {readonly: bboxAuto()}, css: {invalid: !bboxAuto() && !bboxhomeValid()}", placeholder="Не задан")
+					input.form-control.input-sm.bbox(type="text", data-bind="bboxhomeInput: true, attr: {readonly: bboxAuto()}, css: {invalid: !bboxAuto() && !bboxhomeValid()}", placeholder="Not specified")
 					// /ko
 		//ko if: createMode() || showGeo()
 		.form-group
 			label.col-xs-4.col-sm-3.col-lg-2.control-label
-				| Геометрия
+				| Geometry
 				br
 				| GeoJSON
 			.col-xs-8.col-sm-9.col-lg-10
@@ -99,13 +99,13 @@
 		.form-group
 			button.btn.btn-success(type="submit", data-bind="attr: {disabled: exe()}")
 				span.glyphicon.glyphicon-ok
-				|  Сохранить
+				|  Save
 			button.btn.btn-danger(type="button", data-bind="click: remove, attr: {disabled: exe()}")
 				span.glyphicon.glyphicon-remove
-				|  Удалить
+				|  Remove
 			//ko if: !createMode()
 			button.btn.btn-primary(type="button", data-bind="click: function () {showGeo(!showGeo())}, attr: {disabled: exe()}")
 				span.glyphicon.glyphicon-th-list
-				span(data-bind="text: showGeo() ? ' Скрыть координаты' : ' Показать координаты'")
+				span(data-bind="text: showGeo() ? ' Hide coordinates' : ' Show coordinates'")
 			// /ko
 	.map(data-bind="style: {height: mh()}")

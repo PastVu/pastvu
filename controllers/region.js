@@ -1116,7 +1116,7 @@ async function giveRegionsByGeo(iAm, data) {
     }
     data.geo = data.geo.reverse();
 
-    const regions = await getRegionsByGeoPoint(data.geo, { _id: 0, cid: 1, title_local: 1, parents: 1 });
+    const regions = await getRegionsByGeoPoint(data.geo, { _id: 0, cid: 1, title_en: 1, parents: 1 });
 
     if (_.isEmpty(regions)) {
         throw { message: msg.noregions };

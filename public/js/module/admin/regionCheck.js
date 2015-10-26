@@ -22,7 +22,7 @@ define([
 				"<tr><td colspan='2'>{{=it.geo}}<hr style='margin: 2px 0 5px;'></td></tr>" +
 				"<tr style='font-weight: bold;'><td style='min-width:150px;'>PastVu</td><td style='min-width:150px;'>Google</td></tr>" +
 				"<tr><td style='vertical-align: top;'>" +
-				"{{~it.parr :value:index}}<a target='_blank' href='/admin/region/{{=value.cid}}'>{{=value.title_local}}</a><br>{{~}}" +
+				"{{~it.parr :value:index}}<a target='_blank' href='/admin/region/{{=value.cid}}'>{{=value.title_en}}</a><br>{{~}}" +
 				"</td><td style='vertical-align: top;'>" +
 				"{{~it.garr :value:index}}{{=value}}<br>{{~}}" +
 				"</td></tr>" +
@@ -122,7 +122,7 @@ define([
 				this.map.panTo(geo);
 				this.goToGeo(geo);
 			} else {
-				window.noty({text: 'Неверный формат', type: 'error', layout: 'center', timeout: 1000, force: true});
+				window.noty({text: 'Incorrect format', type: 'error', layout: 'center', timeout: 1000, force: true});
 			}
 		},
 		goToGeo: function (geo) {
@@ -135,7 +135,7 @@ define([
 			this.updateRegion(geo);
 		},
 		markerCreate: function (geo) {
-			this.marker = L.marker(geo, {draggable: true, title: 'Точка для проверки региона', icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], popupAnchor: [0, -36], iconUrl: '/img/map/pinEdit.png', className: 'pointMarkerEdit'})})
+			this.marker = L.marker(geo, {draggable: true, title: 'Point for region check', icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], popupAnchor: [0, -36], iconUrl: '/img/map/pinEdit.png', className: 'pointMarkerEdit'})})
 				.on('dragstart', function () {
 					this.updateRegionAbort();
 					this.marker.closePopup();

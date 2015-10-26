@@ -379,7 +379,7 @@ define([
                             },
                             series: [
                                 {
-                                    name: 'Фотографий в очереди',
+                                    name: 'Photos in the queue',
                                     data: this.conveyerLengthData,
                                     tooltip: {
                                         valueDecimals: 0
@@ -393,7 +393,7 @@ define([
                             },
                             series: [
                                 {
-                                    name: 'Фотографий конвертированно',
+                                    name: 'Converted photos',
                                     data: this.conveyerConvertData,
                                     tooltip: {
                                         valueDecimals: 0
@@ -434,7 +434,7 @@ define([
 
             window.noty(
                 {
-                    text: 'Конвейер будет очищен.<br>Подтвердить операцию?',
+                    text: 'The conveyor will be cleared.<br>Confirm the operation?',
                     type: 'confirm',
                     layout: 'center',
                     modal: true,

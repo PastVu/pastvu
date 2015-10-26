@@ -1,21 +1,21 @@
 .adminNews(data-bind="with: repository[M!M]")
-	h4(data-bind="text: createMode() ? 'Создание новости' : 'Редактирование новости'")
+	h4(data-bind="text: createMode() ? 'News creation' : 'News edit'")
 
 	form.form-horizontal(action='', autocomplete="off", method='POST', data-bind="event: {submit: submit}")
 		.form-group
-			label.col-xs-3.col-md-2.col-lg-1.control-label Заголовок
+			label.col-xs-3.col-md-2.col-lg-1.control-label Title
 			.col-xs-3.col-md-2
 				input.form-control(type='text', data-bind="value: news.title, valueUpdate: 'afterkeydown'")
 		.form-group
-			label.col-xs-3.col-md-2.col-lg-1.control-label Публикация
+			label.col-xs-3.col-md-2.col-lg-1.control-label Publish
 			.col-xs-3.col-md-2
 				.input-group.date#newsPdate
 					input.form-control(data-format="DD.MM.YYYY HH:mm:ss", type="text")
 					span.input-group-addon
 						span.glyphicon.glyphicon-calendar
 			.col-xs-4.col-md-3(style="text-align: right;")
-				button.btn.btn-sm.btn-primary.toggleTDate(type="button", title="Время, когда новость пропадет с главной. В общем списке она останется", data-bind="click: toggleTDate")
-					span(data-bind="text: tDateExists() ? 'Убрать время скрытия с главной' : 'Добавить время скрытия с главной'")
+				button.btn.btn-sm.btn-primary.toggleTDate(type="button", title="The time when the news will disappear from the main page. In the general list it will remain", data-bind="click: toggleTDate")
+					span(data-bind="text: tDateExists() ? 'Remove hidding time from the main page' : 'Add hidding time from the main page'")
 			//ko if: tDateExists()
 			.col-xs-3.col-md-2
 				.input-group.date#newsTdate
@@ -28,21 +28,21 @@
 				.checkbox
 					label
 						input(type="checkbox", data-bind="checked: news.nocomments")
-						|  Без комментариев
+						|  Without comments
 		.form-group
 			.textName
 				button.btn.btn-sm.btn-primary.toggleNotice(type="button", data-bind="click: toggleNotice")
-					span(data-bind="text: noticeExists() ? 'Убрать краткую версию' : 'Добавить краткую версию'")
+					span(data-bind="text: noticeExists() ? 'Remove short version' : 'Add short version'")
 				//ko if: noticeExists()
-				span.text-muted Краткая версия
+				span.text-muted Short version
 				// /ko
 			//ko if: noticeExists()
 			textarea#newsNotice
 			// /ko
 		.form-group
-			.textName Полная версия
+			.textName Full version
 			textarea#newsPrimary
 		.form-group
 			button.btn.btn-success(type="submit")
 				span.glyphicon.glyphicon-ok
-				|  Сохранить
+				|  Save
