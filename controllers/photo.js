@@ -32,16 +32,16 @@ const privateDir = path.join(config.storePath, 'private/photos');
 const status = constants.photo.status;
 const parsingFieldsSet = new Set(constants.photo.parsingFields);
 const msg = {
-    deny: 'У вас нет прав на это действие',
-    noUser: 'Запрашиваемый пользователь не существует',
-    noPhoto: 'Запрашиваемой фотографии не существует или не доступна',
-    noRegion: 'Такого региона не существует',
-    badParams: 'Неверные параметры запроса',
-    needReason: 'Необходимо указать причину операции',
+    deny: 'You do not have permission for this action',
+    noUser: 'The requested user does not exist',
+    noPhoto: 'Requested photo does not exist or it is not available to you',
+    noRegion: 'Such region does not exist',
+    badParams: 'Invalid request parameters',
+    needReason: 'Reason for the operation is not specified',
     // Две кнопки: "Посмотреть", "Продолжить <сохранение|изменение статуса>"
-    changed: 'С момента обновления вами страницы, информация на ней была кем-то изменена',
-    anotherStatus: 'Фотография уже в другом статусе, обновите страницу',
-    mustCoord: 'Фотография должна иметь координату или быть привязана к региону вручную'
+    changed: 'From the moment you had got the page, the information on it has been altered by someone',
+    anotherStatus: 'Photo is already in other status, refresh the page',
+    mustCoord: 'The photo must have coordinates or be tied to the region manually'
 };
 
 var historyFields = constants.photo.historyFields,
@@ -1754,14 +1754,14 @@ function photoCheckPublickRequired(photo) {
     }
 
     if (_.isEmpty(photo.title)) {
-        throw { message: 'Необходимо заполнить название фотографии' };
+        throw { message: 'You must fill in the title of the photo' };
     }
 
     if (!_.isNumber(photo.year) || !_.isNumber(photo.year2) ||
         photo.year < 1826 || photo.year > 2000 ||
         photo.year2 < photo.year && photo.year2 > 2000) {
         throw {
-            message: 'Опубликованные фотогрфии должны содержать предполагаемую датировку фотографии в интервале 1826—2000гг.'
+            message: 'Published photos must be in the range of 1826-2000 years'
         };
     }
 
@@ -2201,7 +2201,7 @@ var convertUserPhotos = Bluebird.method(function (iAm, data) {
         throw { message: msg.deny };
     }
     if (usersWhoConvertingNonIndividualPhotos[data.login]) {
-        throw { message: 'Вы уже отправили запрос и он еще выполняется. Попробуйте позже' };
+        throw { message: 'You have already sent a request and it is still running. Try again later' };
     }
 
     var stampStart = new Date();
@@ -2656,7 +2656,7 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
         })
         .spread(function (photoUser, histories) {
             if (_.isEmpty(histories)) {
-                throw { message: 'Для объекта еще нет истории' };
+                throw { message: 'The object has no history' };
             }
             var haveDiff;
 

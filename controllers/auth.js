@@ -46,7 +46,7 @@ function login(socket, data, cb) {
     User.getAuthenticated(data.login, data.pass, function (err, user, reason) {
         if (err) {
             logger.error('Auth login User.getAuthenticated: ', err);
-            return cb({ message: 'Ошибка авторизации', error: true });
+            return cb({ message: 'Authorizes error', error: true });
         }
 
         // Если есть пользователь, значит проверка успешна
@@ -65,7 +65,7 @@ function login(socket, data, cb) {
                 case User.failedLogin.NOT_FOUND:
                 case User.failedLogin.PASSWORD_INCORRECT:
                     // note: these cases are usually treated the same - don't tell the user *why* the login failed, only that it did
-                    cb({ message: 'Неправильная пара логин-пароль', error: true });
+                    cb({ message: 'Incorrect combination of login and password', error: true });
                     break;
                 case User.failedLogin.MAX_ATTEMPTS:
                     // send email or otherwise notify user that account is temporarily locked
@@ -80,19 +80,19 @@ function login(socket, data, cb) {
 }
 
 // Registration
-const registerPublicError = { message: 'Ошибка регистрации', error: true };
+const registerPublicError = { message: 'Registration error', error: true };
 function register(data, cb) {
     var error = '',
-        success = 'Учетная запись создана успешно. Для завершения регистрации следуйте инструкциям, отправленным на указанный вами e-mail', //'Account has been successfully created. To confirm registration, follow the instructions sent to Your e-mail',
+        success = 'Account has been successfully created. To confirm registration, follow the instructions sent to Your e-mail',
         confirmKey = '';
 
     if (!data.login) {
-        error += 'Заполните имя пользователя. '; // 'Fill in the login field. '
+        error += 'Fill in the login field. ';
     } else {
         if (data.login !== 'anonymous' && !data.login.match(/^[\.\w-]{3,15}$/i) ||
             !data.login.match(/^[A-za-z].*$/i) || !data.login.match(/^.*\w$/i)) {
-            error += 'Имя пользователя должно содержать от 3 до 15 латинских символов и начинаться с буквы. ' +
-                'В состав слова могут входить цифры, точка, подчеркивание и тире. ';
+            error += 'User name must contain between 3 and 15 Latin characters and begin with a letter. ' +
+                'The words can contain digits, dot, dash, and underscore. ';
         }
     }
     if (!data.email) {
@@ -104,7 +104,7 @@ function register(data, cb) {
         error += 'Fill in the password field. ';
     }
     if (data.pass !== data.pass2) {
-        error += 'Пароли не совпадают.';
+        error += 'Password mismatch.';
     }
     if (error) {
         return cb({ message: error, error: true });
@@ -118,14 +118,14 @@ function register(data, cb) {
     }, function (err, user) {
         if (err) {
             logger.error('Auth register User.findOne: ', err);
-            return cb({ message: 'Ошибка регистрации', error: true });
+            return cb({ message: 'Registration error', error: true });
         }
         if (user) {
             if (user.login.toLowerCase() === data.login.toLowerCase()) {
-                error += 'Пользователь с таким именем уже зарегистрирован. '; //'User with such login already exists. '
+                error += 'User with such login is already registered. ';
             }
             if (user.email === data.email) {
-                error += 'Пользователь с таким email уже зарегистрирован.'; //'User with such email already exists.'
+                error += 'User with such email is already registered.';
             }
             return cb({ message: error, error: true });
         }
@@ -177,17 +177,17 @@ function register(data, cb) {
                 sendMail({
                     sender: 'noreply',
                     receiver: { alias: data.login, email: data.email },
-                    subject: 'Подтверждение регистрации',
+                    subject: 'Confirmation of registration',
                     head: true,
                     body: regTpl({
                         data,
                         config,
                         confirmKey,
                         username: data.login,
-                        greeting: 'Спасибо за регистрацию на проекте PastVu!',
+                        greeting: 'Thank you for registering on the PastVu project!',
                         linkvalid: moment.duration(ms('2d')).humanize() + ' (до ' + moment().utc().lang('ru').add(ms('2d')).format("LLL") + ')'
                     }),
-                    text: 'Перейдите по следующей ссылке: ' + config.client.origin + '/confirm/' + confirmKey
+                    text: 'Click the following link: ' + config.client.origin + '/confirm/' + confirmKey
                 });
             }
         );
@@ -195,8 +195,8 @@ function register(data, cb) {
 }
 
 // Отправка на почту запроса на восстановление пароля
-var successPublic = { message: 'Запрос успешно отправлен. Для продолжения процедуры следуйте инструкциям, высланным на Ваш e-mail' }, //success = 'The data is successfully sent. To restore password, follow the instructions sent to Your e-mail',
-    recallPublicError = { message: 'Ошибка восстановления пароля', error: true };
+var successPublic = { message: 'The data is successfully sent. To restore password, follow the instructions sent to Your e-mail' },
+    recallPublicError = { message: 'Password recovery failed', error: true };
 function recall(iAm, data, cb) {
     var confirmKey = '';
 
@@ -219,7 +219,7 @@ function recall(iAm, data, cb) {
                 return cb(recallPublicError);
             }
             if (!user) {
-                return cb({ message: 'Пользователя с таким логином или e-mail не существует', error: true }); //'User with such login or e-mail does not exist'
+                return cb({ message: 'User with such login or e-mail does not exist', error: true });
             }
             // Если залогинен и пытается восстановить не свой аккаунт, то проверяем что это админ
             if (iAm.registered && iAm.user.login !== data.login && !iAm.isAdmin) {
@@ -250,7 +250,7 @@ function recall(iAm, data, cb) {
             sendMail({
                 sender: 'noreply',
                 receiver: { alias: data.login, email: data.email },
-                subject: 'Запрос на восстановление пароля',
+                subject: 'Password recovery request',
                 head: true,
                 body: recallTpl({
                     data,
@@ -259,14 +259,14 @@ function recall(iAm, data, cb) {
                     username: data.disp,
                     linkvalid: moment.duration(ms('2d')).humanize() + ' (до ' + moment().utc().lang('ru').add(ms('2d')).format("LLL") + ')'
                 }),
-                text: 'Перейдите по следующей ссылке: ' + config.client.origin + '/confirm/' + confirmKey
+                text: 'Click the following link: ' + config.client.origin + '/confirm/' + confirmKey
             });
         }
     );
 }
 
 // Смена пароля по запросу восстановлния из почты
-var passChangeRecallPublicError = { message: 'Ошибка смены пароля', error: true };
+var passChangeRecallPublicError = { message: 'Failed changing the password', error: true };
 function passChangeRecall(iAm, data, cb) {
     var error = '',
         key = data.key;
@@ -315,25 +315,25 @@ function passChangeRecall(iAm, data, cb) {
                     return cb(passChangeRecallPublicError);
                 }
 
-                cb({ message: 'Новый пароль сохранен успешно' });
+                cb({ message: 'New password saved successfully' });
             }
         );
     });
 }
 
 // Смена пароля в настройках пользователя с указанием текущего пароля
-var passChangePublicError = { message: 'Ошибка смены пароля', error: true };
+var passChangePublicError = { message: 'Failed changing the password', error: true };
 function passChange(iAm, data, cb) {
     var error = '';
 
     if (!iAm.registered || !data || iAm.user.login !== data.login) {
-        return cb({ message: 'Вы не авторизованны для этой операции', error: true }); // 'You are not authorized for this action'
+        return cb({ message: 'You are not authorized for this action', error: true });
     }
     if (!data.pass || !data.passNew || !data.passNew2) {
-        error += 'Заполните все поля. '; // 'Fill in all password fields. ';
+        error += 'Fill in all password fields. ';
     }
     if (data.passNew !== data.passNew2) {
-        error += 'Новые пароли не совпадают. '; // 'New passwords do not match each other.';
+        error += 'New passwords do not match each other. ';
     }
     if (error) {
         return cb({ message: error, error: true });
@@ -352,16 +352,16 @@ function passChange(iAm, data, cb) {
                     logger.error('Auth passChange iAm.user.save: ', err);
                     return cb(passChangePublicError);
                 }
-                cb({ message: 'Новый пароль установлен успешно' }); //'Password was changed successfully!'
+                cb({ message: 'Password was change successfully' });
             });
         } else {
-            cb({ message: 'Текущий пароль не верен', error: true }); //'Current password incorrect'
+            cb({ message: 'Current password is incorrect', error: true });
         }
     });
 }
 
 //Проверка ключа confirm
-var checkConfirmPublicError = { message: 'Ошибка подтверждения ключа', error: true };
+var checkConfirmPublicError = { message: 'Error confirmation key', error: true };
 function checkConfirm(data, cb) {
     if (!data || !Utils.isType('string', data.key) || data.key.length < 7 || data.key.length > 8) {
         cb({ message: 'Bad params', error: true });
@@ -369,18 +369,18 @@ function checkConfirm(data, cb) {
     }
 
     var key = data.key;
-    UserConfirm.findOne({ key: key }).populate('user').exec(function (err, confirm) {
+    UserConfirm.findOne({ key }).populate('user').exec(function (err, confirm) {
         if (err) {
             logger.error('Auth checkConfirm UserConfirm.findOne: ', err);
             return cb(checkConfirmPublicError);
         }
         if (!confirm || !confirm.user) {
-            return cb({ message: 'Переданного вами ключа не существует', error: true });
+            return cb({ message: 'The key you passed does not exist', error: true });
         }
         var user = confirm.user,
             avatar;
 
-        if (key.length === 7) { //Confirm registration
+        if (key.length === 7) { // Confirm registration
             step(
                 function () {
                     user.active = true;
@@ -395,13 +395,12 @@ function checkConfirm(data, cb) {
                     }
 
                     cb({
-                        message: 'Спасибо, регистрация подтверждена! Теперь вы можете войти в систему, используя ваш логин и пароль',
+                        message: 'Thank you! Your registration is confirmed. Now you can login using your username and password',
                         type: 'noty'
                     });
-                    //cb({message: 'Thank you! Your registration is confirmed. Now you can enter using your username and password', type: 'noty'});
                 }
             );
-        } else if (key.length === 8) { //Confirm pass change
+        } else if (key.length === 8) { // Confirm pass change
             if (user.avatar) {
                 if (preaddrs.length) {
                     avatar = preaddrs[0] + '/_a/h/' + user.avatar;

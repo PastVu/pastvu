@@ -19,9 +19,9 @@ import { UserNoty, UserObjectRel } from '../models/UserStates';
 
 const logger = log4js.getLogger('subscr.js');
 const msg = {
-    badParams: 'Неверные параметры запроса',
-    deny: 'У вас нет разрешения на это действие', // 'You do not have permission for this action'
-    noObject: 'Комментируемого объекта не существует, или модераторы перевели его в недоступный вам режим',
+    badParams: 'Invalid query parameters',
+    deny: 'You do not have permission for this action',
+    noObject: 'Commented object does not exist or moderators changed it status, which is not available to you',
     nouser: 'Requested user does not exist'
 };
 
@@ -34,8 +34,8 @@ const sortNotice = (a, b) => a.brief.newest < b.brief.newest ? 1 : (a.brief.newe
 const sortSubscr = ({ ccount_new: aCount = 0, sbscr_create: aDate}, { ccount_new: bCount = 0, sbscr_create: bDate}) =>
     aCount < bCount ? 1 : aCount > bCount ? - 1 : aDate < bDate ? 1 : aDate > bDate ? -1 : 0;
 const declension = {
-    comment: [' новый комментарий', ' новых комментария', ' новых комментариев'],
-    commentUnread: [' непрочитанный', ' непрочитанных', ' непрочитанных']
+    comment: [' new comment', ' new comments'],
+    commentUnread: [' unread']
 };
 
 /**
@@ -384,9 +384,9 @@ async function sendUserNotice(userId) {
 
             totalNewestComments += newest;
 
-            obj.briefFormat = { newest: newest + Utils.format.wordEndOfNum(newest, declension.comment) };
+            obj.briefFormat = { newest: newest + ' new comment' + (newest > 1 ? 's' : '') };
             if (newest !== unread) {
-                obj.briefFormat.unread = unread + Utils.format.wordEndOfNum(unread, declension.commentUnread);
+                obj.briefFormat.unread = unread + declension.commentUnread;
             }
 
             result.push(obj);
@@ -406,7 +406,7 @@ async function sendUserNotice(userId) {
         await sendMail({
             sender: 'noreply',
             receiver: { alias: String(user.disp), email: user.email },
-            subject: 'Новое уведомление',
+            subject: 'New notification',
             head: true,
             body: noticeTpl({
                 user,
@@ -414,11 +414,9 @@ async function sendUserNotice(userId) {
                 news: newsResult,
                 photos: photosResult,
                 username: String(user.disp),
-                greeting: 'Уведомление о событиях на PastVu'
+                greeting: 'Notification about events on PastVu'
             }),
-            text: totalNewestComments +
-            (totalNewestComments === 1 ? ' новый коментарий' : ' новых ' +
-            (totalNewestComments < 5 ? 'комментария' : 'комментариев'))
+            text: totalNewestComments + ' new comment' + (totalNewestComments > 1 ? 's' : '')
         });
     }
 

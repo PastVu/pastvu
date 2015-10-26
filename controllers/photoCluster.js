@@ -8,7 +8,7 @@ import { Cluster, ClusterParams } from '../models/Cluster';
 
 const logger = log4js.getLogger('photoCluster.js');
 const msg = {
-    deny: 'У вас нет прав на это действие'
+    deny: 'You do not have permission for this action'
 };
 
 export let clusterParams; // Parameters of cluster

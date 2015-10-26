@@ -1357,7 +1357,7 @@ async function saveUserRegions(socket, data) {
         throw { message: msg.badParams };
     }
     if (data.regions.length > maxRegionLevel) {
-        throw { message: 'Вы можете выбрать до ' + maxRegionLevel + ' регионов' };
+        throw { message: 'You can select up to ' + maxRegionLevel + ' regions' };
     }
 
     // Check that transfered valid region numbers

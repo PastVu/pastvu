@@ -25,13 +25,13 @@ const maxRegionLevel = constants.region.maxLevel;
 const commentsUserPerPage = 20;
 
 const msg = {
-    deny: 'У вас нет разрешения на это действие', // 'You do not have permission for this action'
-    noUser: 'Запрашиваемый пользователь не существует',
-    noObject: 'Комментируемого объекта не существует, или модераторы перевели его в недоступный вам режим',
-    noComments: 'Операции с комментариями на этой странице запрещены',
-    noCommentExists: 'Комментария не существует',
-    badParams: 'Неверные параметры запроса',
-    maxLength: 'Комментарий длиннее допустимого значения (' + commentMaxLength + ')'
+    deny: 'You do not have permission for this action',
+    noUser: 'Requested user is not exists',
+    noObject: 'Commented object does not exist or moderators changed it status, which is not available to you',
+    noComments: 'Operations with comments on this page are prohibited',
+    noCommentExists: 'Comment does not exists',
+    badParams: 'Invalid request parameters',
+    maxLength: 'Comments longer than max value (' + commentMaxLength + ')'
 };
 
 const permissions = {

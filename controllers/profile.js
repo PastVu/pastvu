@@ -21,7 +21,7 @@ const privateDir = path.join(config.storePath, 'private/avatars/');
 const publicDir = path.join(config.storePath, 'public/avatars/');
 const msg = {
     badParams: 'Bad params',
-    deny: 'У вас нет прав на это действие',
+    deny: 'You do not have permission for this action',
 
     nouser: 'Requested user does not exist',
     nosetting: 'Such setting does not exists'
@@ -328,7 +328,7 @@ function changeEmail(iAm, data, cb) {
     }
     data.email = data.email.toLowerCase();
     if (!data.email.match(/^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/)) {
-        return cb({ message: 'Недействительный email. Проверьте корректность ввода.', error: true });
+        return cb({ message: 'Invalid email. Check the correctness of input.', error: true });
     }
 
     step(
@@ -352,7 +352,7 @@ function changeEmail(iAm, data, cb) {
                 return cb({ message: err.message, error: true });
             }
             if (u && u.login !== user.login) {
-                return cb({ message: 'Такой email уже используется другим пользователем', error: true });
+                return cb({ message: 'This email is already in use by another user', error: true });
             }
 
             if (data.pass) {
@@ -363,7 +363,7 @@ function changeEmail(iAm, data, cb) {
                     if (isMatch) {
                         saveEmail();
                     } else {
-                        cb({ message: 'Неверный пароль', error: true });
+                        cb({ message: 'Incorrect password', error: true });
                     }
                 });
             } else {

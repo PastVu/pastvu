@@ -199,7 +199,7 @@ export function loadController(app) {
         res.statusCode = 200;
         res.render('status/badbrowser', {
             agent: req.browser && req.browser.agent,
-            title: 'Вы используете устаревшую версию браузера'
+            title: 'You are using outdated browser version'
         });
     });
 
