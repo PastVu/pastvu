@@ -27,12 +27,12 @@
                 .ico
                 .text Registration
             #toLogIn.labledIco.strokeBefore.iconAfter(data-bind="click: function(data, evt){auth.show('login')}")
-                .text Login
+                .text Log In
                 .ico
             // /ko
             //ko if: auth.loggedIn()
             #toLogOut.labledIco.strokeBefore.iconAfter(data-bind="click: function(data, evt){auth.doLogout()}")
-                .text Exit
+                .text Log Out
                 .ico
             // /ko
             #lang.labledIco.langFlag.strokeBefore(data-bind="style:{'backgroundImage': 'url(/img/misc/flags/' + lang() + '.svg)'}, click: langClick")
