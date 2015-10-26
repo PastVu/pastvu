@@ -793,7 +793,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                                         text: 'Apply',
                                         glyphicon: 'glyphicon-ok',
                                         click: function () {
-                                            var regions = this.regselectVM.getSelectedRegionsFull(['cid', 'title_local']);
+                                            var regions = this.regselectVM.getSelectedRegionsFull(['cid', 'title_en']);
 
                                             if (regions.length > 1) {
                                                 window.noty({
