@@ -1,38 +1,38 @@
 mixin noticeLi(arr, path)
-	each val in arr
-		- usersLogin = Object.keys(val.brief.users)
-		li(style="margin-left: 10px;")
-			a(href=origin + path + val.cid + '?hl=comment-unread&utm_campaign=notification&utm_source=notify_letter&utm_medium=email', target='_blank')= val.title
-			div(style="margin-left: 13px;")
-				= val.briefFormat.newest
-				if val.briefFormat.unread
-					= ' (всего ' + val.briefFormat.unread + ')'
-			if usersLogin.length > 1
-				div(style="margin-left: 13px; margin-bottom: 4px;")
-					| Авторы:
-					each login, index in usersLogin
-						if (index < 6)
-							if (index > 0)
-								| ,
-							= ' ' + val.brief.users[login]
-					if usersLogin.length > 6
-						= ' и др.'
-			if usersLogin.length === 1
-				div(style="margin-left: 13px; margin-bottom: 4px;")
-					| Автор: #{val.brief.users[usersLogin[0]]}
+    each val in arr
+        - usersLogin = Object.keys(val.brief.users)
+        li(style="margin-left: 10px;")
+            a(href=origin + path + val.cid + '?hl=comment-unread&utm_campaign=notification&utm_source=notify_letter&utm_medium=email', target='_blank')= val.title
+            div(style="margin-left: 13px;")
+                = val.briefFormat.newest
+                if val.briefFormat.unread
+                    = ' (' + val.briefFormat.unread + ' total)'
+            if usersLogin.length > 1
+                div(style="margin-left: 13px; margin-bottom: 4px;")
+                    | Authors:
+                    each login, index in usersLogin
+                        if (index < 6)
+                            if (index > 0)
+                                | ,
+                            = ' ' + val.brief.users[login]
+                    if usersLogin.length > 6
+                        = ' et al.'
+            if usersLogin.length === 1
+                div(style="margin-left: 13px; margin-bottom: 4px;")
+                    | Author: #{val.brief.users[usersLogin[0]]}
 
 include head
 - var origin = config.client.origin
-p На момент отправки данного уведомления в подписанных вами темах было добавлено следующее количество комментариев:
+p At the time of sending this notice the following number of comments was added to topics, which you have subscribed:
 if news.length
-	p(style="margin-bottom: 2px;")
-		strong Новости:
-	+noticeLi(news, '/news/')
+    p(style="margin-bottom: 2px;")
+        strong News:
+    +noticeLi(news, '/news/')
 if photos.length
-	p(style="margin-bottom: 2px;")
-		strong Фотографии:
-	+noticeLi(photos, '/p/')
+    p(style="margin-bottom: 2px;")
+        strong Photos:
+    +noticeLi(photos, '/p/')
 p
-	| Управлять подписанными материалами вы можете на странице подписок: <a href='#{origin + '/u/' + user.login + '/subscriptions'}' target='_blank'>#{config.client.host + '/u/' + user.login + '/subscriptions'}</a>
-	br
-	| Задать интервал уведомления вы можете на странице настроек: <a href='#{origin + '/u/' + user.login + '/settings'}' target='_blank'>#{config.client.host + '/u/' + user.login + '/settings'}</a>
+    | Manage your subscriptions you can on subscription page: <a href='#{origin + '/u/' + user.login + '/subscriptions'}' target='_blank'>#{config.client.host + '/u/' + user.login + '/subscriptions'}</a>
+    br
+    | Set the notification interval you can on the settings page: <a href='#{origin + '/u/' + user.login + '/settings'}' target='_blank'>#{config.client.host + '/u/' + user.login + '/settings'}</a>
