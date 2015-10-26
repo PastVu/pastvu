@@ -27,7 +27,7 @@ const msg = {
 let recallTpl;
 let regTpl;
 
-moment.lang('ru');
+moment.lang('en');
 
 // Вход в систему
 function login(socket, data, cb) {
@@ -185,7 +185,7 @@ function register(data, cb) {
                         confirmKey,
                         username: data.login,
                         greeting: 'Thank you for registering on the PastVu project!',
-                        linkvalid: moment.duration(ms('2d')).humanize() + ' (до ' + moment().utc().lang('ru').add(ms('2d')).format("LLL") + ')'
+                        linkvalid: moment.duration(ms('2d')).humanize() + ' (till ' + moment().utc().lang('en').add(ms('2d')).format("LLL") + ')'
                     }),
                     text: 'Click the following link: ' + config.client.origin + '/confirm/' + confirmKey
                 });
@@ -257,7 +257,7 @@ function recall(iAm, data, cb) {
                     config,
                     confirmKey,
                     username: data.disp,
-                    linkvalid: moment.duration(ms('2d')).humanize() + ' (до ' + moment().utc().lang('ru').add(ms('2d')).format("LLL") + ')'
+                    linkvalid: moment.duration(ms('2d')).humanize() + ' (till ' + moment().utc().lang('en').add(ms('2d')).format("LLL") + ')'
                 }),
                 text: 'Click the following link: ' + config.client.origin + '/confirm/' + confirmKey
             });
