@@ -8,36 +8,36 @@
 		textarea.form-control.cinput(wrap="soft", maxlength="12000")
 		.cinputLabel
 			| {{?it.level}}
-			| Нажмите, чтобы написать комментарий
+			| Push to write comment
 			| {{??}}
-			| Нажмите, чтобы написать комментарий первого уровня
+			| Push to write first level comment
 			br
-			small(style="font-style: italic") Чтобы ответить на существующий комментарий, нажмите под ним Ответить
+			small(style="font-style: italic") To reply to existing comment, click Reply beneath it
 			| {{?}}
 		form.form-inline
 			button.btn.btn-success.btn-sm.btnCommentSend(type="button", data-bind="click: send, attr: {disabled: exe()}")
 				span.glyphicon.glyphicon-comment
-				|  Отправить
+				|  Send
 			button.btn.btn-warning.btn-sm.btnCommentCancel(type="button", data-bind="click: cancel, attr: {disabled: exe()}")
 				span.glyphicon.glyphicon-remove
-				|  Отмена
+				|  Cancel
 			// ko if: canFrag
 			button.btn.btn-primary.btn-sm.btnCommentFrag(type="button", data-bind="click: fragClick, attr: {disabled: exe()}")
 				span.glyphicon.glyphicon-picture
-				|  Фрагмент
+				|  Fragment
 			// ko if: fraging()
 			button.btn.btn-primary.btn-sm.btnCommentFragDel(type="button", data-bind="click: fragDelete, attr: {disabled: exe()}")
 				span.glyphicon.glyphicon-remove
-				|  Очистить фрагмент
+				|  Clear fragment
 			// /ko
 			// /ko
 			.checkbox.replySubscr
 				// ko if: subscr()
-				| Вы подписаны на новые комментарии в данной теме
+				| You are subscribed to new comments in this topic
 				// /ko
 				// ko ifnot: subscr()
 				//- Устанавливаем checked как атрибут, чтобы его нажатие не изменяло настройку пользователя
 				label
 					input.chkSubscr(type="checkbox", data-bind="attr:{checked: auth.iAm.settings.subscr_auto_reply() ? 'checked' : null}, event: {click: chkSubscrClickBind}")
-					span(style="vertical-align: top;")  Подписаться на тему
+					span(style="vertical-align: top;")  Subscribe to topic
 				// /ko

@@ -6,9 +6,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 	'use strict';
 	var tplHist,
 		changeFragTexts = {
-			f1: '<span class="glyphicon glyphicon-plus"></span> Добавлен фрагмент',
-			f2: '<span class="glyphicon glyphicon-retweet"></span> Изменен фрагмент',
-			f3: '<span class="glyphicon glyphicon-minus"></span> Удален фрагмент'
+			f1: '<span class="glyphicon glyphicon-plus"></span> Fragment is added',
+			f2: '<span class="glyphicon glyphicon-retweet"></span> Fragment is changed',
+			f3: '<span class="glyphicon glyphicon-minus"></span> Fragment is removed'
 		};
 
 	return Cliche.extend({

@@ -11,10 +11,10 @@
 					| {{?h.role}}
 					| &nbsp;
 					.role
-						| {{?h.role===5}}как модератор
-						| {{?h.roleregion}} региона&nbsp;
-						a(target="_blank", href="{{='/ps?f=r!' + h.roleregion.cid}}") {{=h.roleregion.title_local}}{{?}}
-						| {{??h.role>9}}как администратор{{?}}
+						| {{?h.role===5}}as moderator
+						| {{?h.roleregion}} of region&nbsp;
+						a(target="_blank", href="{{='/ps?f=r!' + h.roleregion.cid}}") {{=h.roleregion.title_en}}{{?}}
+						| {{??h.role>9}}as administrator{{?}}
 					| {{?}}
 					.dotDelimeter ·
 					.histStamp {{=it.fDate(new Date(h.stamp))}}
@@ -22,26 +22,26 @@
 				| {{?h.del}}
 				.info.red
 					span.glyphicon.glyphicon-remove
-					|  Комментарий удален
+					|  Comment is removed
 				.histText
 					| {{?h.del.origin || h.del.reason && h.del.reason.cid}}
 					div
-						.histCat Причина:
-						| {{?h.del.origin}} Удаление родительского комментария&nbsp;
+						.histCat Reason:
+						| {{?h.del.origin}} Removing of parent comment&nbsp;
 						a(href="?hl=comment-{{=h.del.origin}}") {{='#'+h.del.origin}}
 						| {{??!!h.del.reason.title}} {{=h.del.reason.title}}{{?}}
 					| {{?}}
 
 					| {{?h.del.reason && h.del.reason.desc}}
 					div
-						.histCat Описание:
+						.histCat Description:
 						|  {{=h.del.reason.desc}}
 					| {{?}}
 
 				| {{??h.restore}}
 				.info.green
 					span.glyphicon.glyphicon-repeat
-					|  Комментарий восстановлен
+					|  Comment is restored
 				| {{??}}
 
 				| {{?h.frag}}
@@ -52,9 +52,9 @@
 				| {{?h.txtd}}
 				.info
 					span.glyphicon.glyphicon-pencil
-					|  Отредактирован текст
+					|  Text is edited
 				// ko with: hist_id[{{=h.id}}]
-				.txtSwitch(data-bind="text: showdiff() ? 'Скрыть подсветку разницы' : 'Показать разницу', click: function () {showdiff(!showdiff())}")
+				.txtSwitch(data-bind="text: showdiff() ? 'Hide difference highlighting' : 'Show difference', click: function () {showdiff(!showdiff())}")
 				.histText(data-bind="html: showdiff() ? txtd : txt")
 				// /ko
 				| {{??}}

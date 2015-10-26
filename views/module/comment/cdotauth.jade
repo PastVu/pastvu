@@ -17,25 +17,25 @@
 			.dotDelimeter ·
 			a.frag(href="{{='?hl=frag-'+c.cid}}")
 				span.glyphicon.glyphicon-picture
-				|  Комментируемый фрагмент
+				|  Commented fragment
 			| {{?}}
 			.dotDelimeter ·
 			a.stamp(data-replace="true", href="?hl=comment-{{=c.cid}}") {{=it.fDate(new Date(c.stamp))}}
 			| {{?c.lastChanged}}
 			.dotDelimeter ·
-			.changed(title="Показать историю изменений") {{='Изменен '+it.fDateIn(new Date(c.lastChanged))}}
+			.changed(title="Show history of changes") {{='Изменен '+it.fDateIn(new Date(c.lastChanged))}}
 			| {{?}}
 		.ctext {{=c.txt}}
 		| {{?it.reply}}
 		.cacts
-			span.cact.reply Ответить
+			span.cact.reply Reply
 			| {{?it.mod || c.can.edit}}
 			.dotDelimeter ·
-			span.cact.edit Редактировать
+			span.cact.edit Edit
 			| {{?}}
 			| {{?it.mod || c.can.del}}
 			.dotDelimeter ·
-			span.cact.remove Удалить
+			span.cact.remove Remove
 			| {{?}}
 		| {{?}}
 | {{?}}

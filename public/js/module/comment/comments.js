@@ -317,7 +317,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
             socket.once('subscrResult', function (result) {
                 if (!result || result.error) {
                     window.noty({
-                        text: result && result.message || 'Ошибка подписки',
+                        text: result && result.message || 'Subscription error',
                         type: 'error',
                         layout: 'center',
                         timeout: 2000,
@@ -696,7 +696,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
             if ($withContent.length) {
                 window.noty({
-                    text: 'У вас есть незавершенный комментарий. Отправьте или отмените его и переходите к новому',
+                    text: 'Do you have an incomplete comment. Send or cancel it and move on to new',
                     type: 'warning',
                     layout: 'center',
                     timeout: 3000,
@@ -790,7 +790,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                 action += '.own';
             }
 
-            this.reasonSelect(action, 'Причина удаления', function (cancel, reason) {
+            this.reasonSelect(action, 'Removing reason', function (cancel, reason) {
                 if (cancel) {
                     $('.hlRemove', this.$cmts).removeClass('hlRemove');
                     return;
@@ -848,7 +848,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                         }
 
                         if (count > 1) {
-                            msg = 'Удалено комментариев: ' + count + ',<br>от ' + result.countUsers + ' пользователя(ей)';
+                            msg = '' + count + ' comments are removed,<br>from ' + result.countUsers + ' user(s)';
                         }
                         ga('send', 'event', 'comment', 'delete', 'comment delete success', count);
                     } else {
@@ -876,7 +876,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
             $('[data-origin="' + cid + '"]', that.$cmts).add($c).addClass('hlRestore');
 
             window.noty({
-                text: 'Восстановить комментарий и его потомков, которые были удалены вместе с ним<br>(подсвечены зеленым)?',
+                text: 'Restore comment and his children that were deleted along with it <br> (highlighted in green)?',
                 type: 'confirm',
                 layout: 'center',
                 modal: true,
@@ -889,7 +889,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                 },
                 buttons: [
                     {
-                        addClass: 'btn btn-success', text: 'Да', onClick: function ($noty) {
+                        addClass: 'btn btn-success', text: 'Yes', onClick: function ($noty) {
                         if (restoring) {
                             return;
                         }
@@ -944,7 +944,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                     }
                     },
                     {
-                        addClass: 'btn btn-warning', text: 'Отмена', onClick: function ($noty) {
+                        addClass: 'btn btn-warning', text: 'Cancel', onClick: function ($noty) {
                         $('.hlRestore', that.$cmts).removeClass('hlRestore');
                         $noty.close();
                     }
@@ -972,7 +972,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
                 if (error) {
                     console.error(data && data.message || 'No comments data received');
-                    $('.delico', $c).removeClass('loading').html('Показать');
+                    $('.delico', $c).removeClass('loading').html('Show');
                     that.loadingDel = false;
                 } else {
                     that.usersRanks(data.users);
@@ -1044,14 +1044,14 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                         maxWidthRatio: 0.75,
                         animateScale: true,
                         offIcon: {
-                            text: 'Отмена', click: function () {
+                            text: 'Cancel', click: function () {
                                 cb.call(ctx, true);
                                 this.reasonDestroy();
                             }, ctx: this
                         },
                         btns: [
                             {
-                                css: 'btn-warning', text: 'Выполнить', glyphicon: 'glyphicon-ok', click: function () {
+                                css: 'btn-warning', text: 'Execute', glyphicon: 'glyphicon-ok', click: function () {
                                 var reason = this.reasonVM.getReason();
                                 if (reason) {
                                     cb.call(ctx, null, reason);
@@ -1060,7 +1060,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                             }, ctx: this
                             },
                             {
-                                css: 'btn-success', text: 'Отмена', click: function () {
+                                css: 'btn-success', text: 'Cancel', click: function () {
                                 cb.call(ctx, true);
                                 this.reasonDestroy();
                             }, ctx: this
@@ -1159,11 +1159,11 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                     $cparent;
 
                 if (!result) {
-                    window.noty({ text: 'Ошибка отправки комментария', type: 'error', layout: 'center', timeout: 2000, force: true });
+                    window.noty({ text: 'Comment sending error', type: 'error', layout: 'center', timeout: 2000, force: true });
                 } else {
                     if (result.error || !result.comment) {
                         window.noty({
-                            text: result.message || 'Ошибка отправки комментария',
+                            text: result.message || 'Comment sending error',
                             type: 'error',
                             layout: 'center',
                             timeout: 2000,
@@ -1238,11 +1238,11 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
             socket.once('updateCommentResult', function (result) {
                 if (!result) {
-                    window.noty({ text: 'Ошибка редактирования комментария', type: 'error', layout: 'center', timeout: 2000, force: true });
+                    window.noty({ text: 'Comment editing error', type: 'error', layout: 'center', timeout: 2000, force: true });
                 } else {
                     if (result.error || !result.comment) {
                         window.noty({
-                            text: result.message || 'Ошибка редактирования комментария',
+                            text: result.message || 'Comment editing error',
                             type: 'error',
                             layout: 'center',
                             timeout: 2000,
@@ -1314,12 +1314,12 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                             module: 'm/comment/hist',
                             options: { cid: cid, type: this.type },
                             modal: {
-                                topic: 'История изменений комментария',
+                                topic: 'History of comment changes',
                                 animateScale: true,
                                 curtainClick: { click: this.closeHistory, ctx: this },
-                                offIcon: { text: 'Закрыть', click: this.closeHistory, ctx: this },
+                                offIcon: { text: 'Close', click: this.closeHistory, ctx: this },
                                 btns: [
-                                    { css: 'btn-primary', text: 'Закрыть', click: this.closeHistory, ctx: this }
+                                    { css: 'btn-primary', text: 'Close', click: this.closeHistory, ctx: this }
                                 ]
                             },
                             callback: function (vm) {
@@ -1432,7 +1432,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                     this.navScrollCounterOn();
                 } else {
                     // Если дерево еще скрыто, т.е. receive еще не было, просто пишем сколько новых комментариев ниже
-                    $('.navigator .down', this.$dom).addClass('active').find('.navTxt').attr('title', 'Следующий непрочитанный комментарий').text(this.countNew());
+                    $('.navigator .down', this.$dom).addClass('active').find('.navTxt').attr('title', 'Next unread comment').text(this.countNew());
                     this.navScrollCounterOff();
                 }
             } else {
@@ -1484,11 +1484,11 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
             up.classList[upCount ? 'add' : 'remove']('active');
             up.querySelector('.navTxt').innerHTML = upCount ? upCount : '';
-            up[upCount ? 'setAttribute' : 'removeAttribute']('title', 'Предыдущий непрочитанный комментарий');
+            up[upCount ? 'setAttribute' : 'removeAttribute']('title', 'Previous unread comment');
 
             down.classList[downCount ? 'add' : 'remove']('active');
             down.querySelector('.navTxt').innerHTML = downCount ? downCount : '';
-            down[downCount ? 'setAttribute' : 'removeAttribute']('title', 'Следующий непрочитанный комментарий');
+            down[downCount ? 'setAttribute' : 'removeAttribute']('title', 'Next unread comment');
         }
     });
 });
