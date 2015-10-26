@@ -300,7 +300,7 @@ export const genObjsShortRegionsArr = function (objs, showlvls = ['r0', 'r1'], d
     }
 
     if (Object.keys(shortRegionsHash).length) {
-        fillRegionsHash(shortRegionsHash, ['cid', 'title_local']);
+        fillRegionsHash(shortRegionsHash, ['cid', 'title_en']);
     } else {
         shortRegionsHash = undefined;
     }

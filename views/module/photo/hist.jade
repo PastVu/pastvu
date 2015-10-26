@@ -1,16 +1,16 @@
 .objHist(data-bind="with: repository[M!M]")
     // ko if: haveDiff()
-    .diffSwitch(data-bind="text: showDiff() ? 'Скрыть подсветку разницы значений' : 'Показать разницу значений', click: switchDiff")
+    .diffSwitch(data-bind="text: showDiff() ? 'Hide difference highlighting' : 'Show difference highlighting', click: switchDiff")
     // /ko
     ul.media-list.hists
     //ko if: haveDiff() && switchDiff2()
-    .diffSwitch(data-bind="text: showDiff() ? 'Скрыть подсветку разницы значений' : 'Показать разницу значений', click: switchDiff")
+    .diffSwitch(data-bind="text: showDiff() ? 'Hide difference highlighting' : 'Show difference highlighting', click: switchDiff")
     // /ko
 
     | <script id="dotRegions" type="text/x-dot-template">
     | {{~it :region:index}}
     | {{?index}}, {{?}}
-    .region: a(target="_blank", href="{{='/ps?f=r!'+region.cid}}") {{=region.title_local}}
+    .region: a(target="_blank", href="{{='/ps?f=r!'+region.cid}}") {{=region.title_en}}
     | {{~}}
     | </script>
 
@@ -35,10 +35,10 @@
                 a.author(target="_blank", href="{{='/u/'+h.user.login}}") {{=h.user.disp}}
                 ='{{?h.role}} '
                 .role
-                    | {{?h.role===5}}как модератор
-                    | {{?h.roleregion}} региона&nbsp;
-                    a(target="_blank", href="{{='/ps?f=r!' + h.roleregion.cid}}") {{=h.roleregion.title_local}}{{?}}
-                    | {{??h.role>9}}как администратор{{?}}
+                    | {{?h.role===5}}as moderator
+                    | {{?h.roleregion}} of region&nbsp;
+                    a(target="_blank", href="{{='/ps?f=r!' + h.roleregion.cid}}") {{=h.roleregion.title_en}}{{?}}
+                    | {{??h.role>9}}as administrator{{?}}
                 | {{?}}
                 .dotDelimeter ·
                 a.histStamp(data-replace="true", href="/p/{{=it.cid}}?history={{=h.stamp}}") {{=it.fDate(new Date(h.stamp))}}
@@ -52,7 +52,7 @@
             | {{?h.del}}
             .info.red.iconed
                 span.glyphicon.glyphicon-minus
-                | Удален{{?h.del.length>1}}ы{{??}}о{{?}}:
+                | Removed{{?h.del.length>1}}{{??}}{{?}}:
                 | {{~h.del :del:delIndex}}
                 | {{?delIndex}},{{?}}&#32;
                 span.del {{=it.fields[del]}}
@@ -62,12 +62,12 @@
             | {{?h.values.nocomments !== undefined}}
             .info.iconed(class="{{?h.values.nocomments}}red{{??}}green{{?}}")
                 span.glyphicon(class="glyphicon-{{?h.values.nocomments}}ban-circle{{??}}ok{{?}}")
-                | Комментирование {{?h.values.nocomments}}запрещено{{??}}разрешено{{?}}
+                | Commenting is {{?h.values.nocomments}}forbidden{{??}}allowed{{?}}
             | {{?}}
 
             | {{?h.reason}}
             .value
-                .name Причина
+                .name Reason
                 .val
                     | {{?h.reason.cid}}{{=it.reasonsHash[h.reason.cid].title}}{{?}}
                     | {{?h.reason.desc}}

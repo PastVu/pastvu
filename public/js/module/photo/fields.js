@@ -3,44 +3,44 @@
  */
 define(['underscore'], function () {
     return {
-        s: 'Статус',
-        y: 'Год',
-        geo: 'Координаты',
-        regions: 'Регион',
-        title: 'Название фотографии',
-        desc: 'Описание',
-        source: 'Источник',
-        author: 'Автор',
-        address: 'Адрес точки съемки',
-        dir: 'Направление съемки',
+        s: 'Status',
+        y: 'Year',
+        geo: 'Coordinates',
+        regions: 'Region',
+        title: 'Photo title',
+        desc: 'Description',
+        source: 'Source',
+        author: 'Author',
+        address: 'Adress of shooting point',
+        dir: 'Shooting direction',
         dirVals: {
-            n: 'Север',
-            ne: 'Северо-Восток',
-            e: 'Восток',
-            se: 'Юго-Восток',
-            s: 'Юг',
-            sw: 'Юго-Запад',
-            w: 'Запад',
-            nw: 'Северо-Запад',
-            aero: 'Аэро/Спутник'
+            n: 'North',
+            ne: 'Northeast',
+            e: 'East',
+            se: 'Southeast',
+            s: 'South',
+            sw: 'Southwest',
+            w: 'West',
+            nw: 'Northwest',
+            aero: 'Aero/Satellite'
         },
         dirValsArr: ['w', 'nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'aero'],
         watersign: {
-            'title': 'Подпись на вотермарке фотографии',
-            'profile': 'Как указано в профиле',
-            'individual': 'Индивидуально',
-            'option': 'Добавлять подпись на вотермарк фотографии',
-            'default': 'Настройки системы',
-            'text': 'Текст'
+            'title': 'Text on photo\'s watermark',
+            'profile': 'As specified in profile',
+            'individual': 'Individually',
+            'option': 'Add text to photo\'s watermark',
+            'default': 'System setting',
+            'text': 'Text'
         },
-        watersignText: 'Подпись на вотермарке',
+        watersignText: 'Text on watermark',
         watersignLength: 65,
         watersignPattern: /[\w\.,:;\(\)\[\]\\\|/№§©®℗℠™•\?!@#\$%\^&\*\+\-={}"'<>~` ]/g,
         downloadOrigin: {
-            title: 'Скачивание оригинала',
-            profile: 'Как указано в профиле',
-            individual: 'Индивидуально',
-            option: 'Разрешать другим пользователям скачивать оригинал'
+            title: 'Origin download',
+            profile: 'As specified in profile',
+            individual: 'Individually',
+            option: 'Allow other users to download original'
         }
     };
 });

@@ -128,12 +128,12 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					txt = '';
 				if (count) {
 					if (this.feed()) {
-						txt = 'Всего ' + count + ' фотографий';
+						txt = '' + count + ' photos total';
 					} else {
-						txt = 'Показаны ' + this.pageFirstItem() + ' - ' + this.pageLastItem() + ' из ' + count;
+						txt = '' + this.pageFirstItem() + ' - ' + this.pageLastItem() + ' of ' + count + ' are shown';
 					}
 				} else {
-					txt = 'Пока нет ни одной фотографии';
+					txt = 'There is not a single photo';
 				}
 				return txt;
 			}, this);
@@ -233,9 +233,9 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				this.feed(true);
 				this.scrollActivate();
 				if (this.u) {
-					Utils.title.setTitle({pre: preTitle + 'Лента фотографий - '});
+					Utils.title.setTitle({pre: preTitle + 'Photos feed - '});
 				} else {
-					Utils.title.setTitle({title: preTitle + 'Лента всех фотографий'});
+					Utils.title.setTitle({title: preTitle + 'Feed of all photos'});
 				}
 				if (this.page() === 1 && currPhotoLength && currPhotoLength <= this.limit) {
 					needRecieve = false; //Если переключаемся на ленту с первой заполненной страницы, то оставляем её данные
@@ -247,9 +247,9 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				this.feed(false);
 				this.scrollDeActivate();
 				if (this.u) {
-					Utils.title.setTitle({pre: preTitle + 'Галерея - '});
+					Utils.title.setTitle({pre: preTitle + 'Gallery - '});
 				} else {
-					Utils.title.setTitle({title: preTitle + 'Галерея'});
+					Utils.title.setTitle({title: preTitle + 'Gallery'});
 				}
 				if (page === 1 && this.page() === 1 && currPhotoLength) {
 					needRecieve = false; //Если переключаемся на страницы с ленты, то оставляем её данные для первой страницы
@@ -510,7 +510,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			var photo, i = arr.length, j;
 			while (i--) {
 				photo = arr[i];
-				Photo.factory(photo, 'compact', 'h', {title: 'Без названия'});
+				Photo.factory(photo, 'compact', 'h', {title: 'Without title'});
 				if (regionsHash && photo.rs !== undefined) {
 					for (j = photo.rs.length; j--;) {
 						photo.rs[j] = regionsHash[photo.rs[j]];
@@ -568,13 +568,13 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 						{
 							module: 'm/user/photoUpload',
 							modal: {
-								topic: 'Загрузка фотографий',
+								topic: 'Photo upload',
 								initWidth: '1000px',
-								offIcon: {text: 'Отмена', click: function () {
+								offIcon: {text: 'Cancel', click: function () {
 									this.closeUpload();
 								}, ctx: this},
 								btns: [
-									{css: 'btn-success', text: 'Завершить', click: function () {
+									{css: 'btn-success', text: 'Finish', click: function () {
 										this.uploadVM.createPhotos(function (data) {
 											if (data && !data.error) {
 												this.getAndCloseUpload(data.cids.length);
@@ -584,7 +584,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 											}
 										}, this);
 									}, ctx: this},
-									{css: 'btn-warning', text: 'Отмена', click: function () {
+									{css: 'btn-warning', text: 'Cancel', click: function () {
 										this.closeUpload();
 									}, ctx: this}
 								]
@@ -657,11 +657,11 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 
 			event.target.style.visibility = 'hidden';
 			if (data.conv) {
-				content = imgFailTpl({style: 'margin-top:7px;padding-top:20px; background: url(/img/misc/photoConvWhite.png) 50% 0 no-repeat;', txt: 'Превью уже создается<br>пожалуйста, обновите позже'});
+				content = imgFailTpl({style: 'margin-top:7px;padding-top:20px; background: url(/img/misc/photoConvWhite.png) 50% 0 no-repeat;', txt: 'Preview is creating <br>please update later'});
 			} else if (data.convqueue) {
-				content = imgFailTpl({style: 'margin-top:7px;', txt: '<span class="glyphicon glyphicon-road"></span><br>Превью скоро будет создано<br>пожалуйста, обновите позже'});
+				content = imgFailTpl({style: 'margin-top:7px;', txt: '<span class="glyphicon glyphicon-road"></span><br>Preview will be created soon'});
 			} else {
-				content = imgFailTpl({style: 'margin-top:7px;padding-top:25px; background: url(/img/misc/imgw.png) 50% 0 no-repeat;', txt: 'Превью недоступно'});
+				content = imgFailTpl({style: 'margin-top:7px;padding-top:25px; background: url(/img/misc/imgw.png) 50% 0 no-repeat;', txt: 'Preview is unavailable'});
 			}
 			$photoBox.find('.curtain').after(content);
 			parent.classList.add('showPrv');
@@ -679,25 +679,25 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 								selectedInit: this.filter.disp.r()
 							},
 							modal: {
-								topic: 'Выбор регионов для фильтрации',
+								topic: 'Select regions for filtration',
 								initWidth: '900px',
 								maxWidthRatio: 0.95,
 								fullHeight: true,
 								withScroll: true,
-								offIcon: {text: 'Отмена', click: this.closeRegionSelect, ctx: this},
+								offIcon: {text: 'Cancel', click: this.closeRegionSelect, ctx: this},
 								btns: [
-									{css: 'btn-success', text: 'Применить', glyphicon: 'glyphicon-ok', click: function () {
-										var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']);
+									{css: 'btn-success', text: 'Apply', glyphicon: 'glyphicon-ok', click: function () {
+										var regions = this.regselectVM.getSelectedRegions(['cid', 'title_en']);
 
 										if (regions.length > 5) {
-											window.noty({text: 'Допускается выбирать до 5 регионов', type: 'error', layout: 'center', timeout: 3000, force: true});
+											window.noty({text: 'Allowed to select up to 5 regions', type: 'error', layout: 'center', timeout: 3000, force: true});
 											return;
 										}
 
 										this.filter.disp.r(regions);
 										this.closeRegionSelect();
 									}, ctx: this},
-									{css: 'btn-warning', text: 'Отмена', click: this.closeRegionSelect, ctx: this}
+									{css: 'btn-warning', text: 'Cancel', click: this.closeRegionSelect, ctx: this}
 								]
 							},
 							callback: function (vm) {

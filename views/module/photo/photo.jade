@@ -17,7 +17,7 @@
                 span(data-bind="text: ' ' + msg()")
                 //ko if: msgLink()
                 |  [
-                a.msgLink(data-replace="true", data-bind="attr: {href: msgLink()}") Подробнее..
+                a.msgLink(data-replace="true", data-bind="attr: {href: msgLink()}") More details..
                 | ]
                 // /ko
             // /ko
@@ -35,10 +35,10 @@
                         .photoLoading
                     .toolsRht
                         .tool.watched
-                            span.glyphicon.glyphicon-eye-open.light(title="Количество просмотров фотографии")
-                            .watch(data-bind="text: toolsNumFormat(p.vdcount()), attr: {title: p.vdcount()+ ' раз смотрели сегодня'}")
-                            .watch(data-bind="text: toolsNumFormat(p.vwcount()), attr: {title: p.vwcount()+ ' раз смотрели за неделю'}")
-                            .watch(data-bind="text: toolsNumFormat(p.vcount()), attr: {title: p.vcount()+ ' раз смотрели всего'}")
+                            span.glyphicon.glyphicon-eye-open.light(title="Number of photo's views")
+                            .watch(data-bind="text: toolsNumFormat(p.vdcount()), attr: {title: p.vdcount()+ ' times viewed today'}")
+                            .watch(data-bind="text: toolsNumFormat(p.vwcount()), attr: {title: p.vwcount()+ ' times viewed this week'}")
+                            .watch(data-bind="text: toolsNumFormat(p.vcount()), attr: {title: p.vcount()+ ' times viewed total'}")
                     .toolsBtm(data-bind="style: {width: ws() + 'px'}")
                         span.toolsTxt
                             | Размеры:&nbsp;
@@ -50,17 +50,17 @@
                             | &nbsp;|&nbsp;
                             a.sizeOrigin(target="_blank", data-bind="attr:{href: '/_p/a/' + p.file()}, text: p.w() + '×' + p.h()")
                         //ko if: hscalePossible()
-                        button.btn.btn-xxs.btn-primary(data-state="hscaleTumbler", data-bind="css: {active: hscaleTumbler()}, click: stateChange", title="Подгонять по высоте видимой области")
+                        button.btn.btn-xxs.btn-primary(data-state="hscaleTumbler", data-bind="css: {active: hscaleTumbler()}, click: stateChange", title="Adjust by the height of the visible area")
                             span.glyphicon.glyphicon-resize-vertical
                         // /ko
-                        button.btn.btn-xxs.btn-primary(data-state="watermarkShow", data-bind="css: {active: watermarkShow()}, click: stateChange", title="Показывать вотермарк фотографии")
+                        button.btn.btn-xxs.btn-primary(data-state="watermarkShow", data-bind="css: {active: watermarkShow()}, click: stateChange", title="Show photo's watermark")
                             | W
                         //ko if: p.s()===statuses.keys.PUBLIC
-                        a.btn.btn-xxs.btn-primary(href="?share=1", data-replace="true", title="Поделиться")
+                        a.btn.btn-xxs.btn-primary(href="?share=1", data-replace="true", title="Share")
                             span.glyphicon.glyphicon-share-alt
                         // /ko
                         //ko if: !edit()
-                        a.btn.btn-xxs(data-bind="click:download,css: downloadCSSClass(), attr: {href:'/_p/a/'+p.file(), download:p.cid()+' '+(p.title()||'').replace(/[\/|]/g, '-')+'.jpg', title:'Скачать '+(downLoadOrigin()?'оригинал ':'в полном размере ')+p.w() + '×' + p.h()}")
+                        a.btn.btn-xxs(data-bind="click:download,css: downloadCSSClass(), attr: {href:'/_p/a/'+p.file(), download:p.cid()+' '+(p.title()||'').replace(/[\/|]/g, '-')+'.jpg', title:'Download '+(downLoadOrigin()?'original ':'full size ')+p.w() + '×' + p.h()}")
                             span.glyphicon.glyphicon-save
                         // /ko
 
@@ -88,7 +88,7 @@
                     // /ko
             .rightrow.photoMap.mContainer.mHidden(data-bind="allowBindings: false, style: {height: mapH()}")
             //ko if: nearestRibbon().length
-            .rightrow: .lineBehind: span Ближайшие фотографии
+            .rightrow: .lineBehind: span Nearest photos
             .rightrow.nearesTiles(data-bind="foreach: nearestRibbon")
                 a.photoPreview(data-bind="attr: {href: '/p/' + cid, title: $data.title}"): .photoBox
                     img.img(data-bind="attr: {src: sfile, title: $data.title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.thumbW, height: $parent.thumbH}")
@@ -101,52 +101,52 @@
     //ko if: can.edit()
     button.btn.btn-primary(type="button", data-bind="click: editSave, attr: {disabled: exe()}")
         span.glyphicon.glyphicon-pencil
-        |  Редактировать
+        |  Edit
     // /ko
     //ko if: can.ready()
-    button.btn.btn-success(type="button", title="Отправить на премодерацию и дальнейшую публикацию", data-bind="click: ready, attr: {disabled: exe()}")
+    button.btn.btn-success(type="button", title="Send to premoderation and further publishing", data-bind="click: ready, attr: {disabled: exe()}")
         span.glyphicon.glyphicon-check
-        |  На публикацию
+        |  To publishing
     // /ko
     //ko if: can.approve()
-    button.btn.btn-success(type="button", title="Подтвердить и опубликовать эту фотографию", data-bind="click: approve, attr: {disabled: exe()}")
+    button.btn.btn-success(type="button", title="Confirm and publish this photo", data-bind="click: approve, attr: {disabled: exe()}")
         span.glyphicon.glyphicon-ok
-        |  Опубликовать
+        |  Publish
     // /ko
     //ko if: can.revision()
-    button.btn.btn-warning(type="button", title="Отправить пользователю на доработку", data-bind="click: toRevision, attr: {disabled: exe()}")
+    button.btn.btn-warning(type="button", title="Send to user for revision", data-bind="click: toRevision, attr: {disabled: exe()}")
         span.glyphicon.glyphicon-check
-        |  На доработку
+        |  To revision
     // /ko
     //ko if: can.revoke()
-    button.btn.btn-danger(type="button", data-bind="click: revoke, attr: {disabled: exe()}", title="Отозвать эту фотографию, снять с возможной публикации")
+    button.btn.btn-danger(type="button", data-bind="click: revoke, attr: {disabled: exe()}", title="Revoke this photo from possible publication")
         span.glyphicon.glyphicon-remove
-        |  Отозвать
+        |  Revoke
     // /ko
     //ko if: can.reject()
-    button.btn.btn-danger(type="button", data-bind="click: reject, attr: {disabled: exe()}", title="Отклонить фотографию, снять с возможной публикации")
+    button.btn.btn-danger(type="button", data-bind="click: reject, attr: {disabled: exe()}", title="Reject this photo from possible publication")
         span.glyphicon.glyphicon-remove
-        |  Отклонить
+        |  Reject
     // /ko
     //ko if: can.activate()
     button.btn.btn-success(type="button", data-bind="click: toggleDisable, attr: {disabled: exe()}")
         span.glyphicon.glyphicon-ok-sign
-        |  Активировать
+        |  Activate
     // /ko
     //ko if: can.deactivate()
     button.btn.btn-warning(type="button", data-bind="click: toggleDisable, attr: {disabled: exe()}")
         span.glyphicon.glyphicon-exclamation-sign
-        |  Деактивировать
+        |  Deactivate
     // /ko
     //ko if: can.remove()
     button.btn.btn-danger(type="button", data-bind="click: remove, attr: {disabled: exe()}")
         span.glyphicon.glyphicon-trash
-        |  Удалить
+        |  Remove
     // /ko
     //ko if: can.restore()
     button.btn.btn-success(type="button", data-bind="click: restore, attr: {disabled: exe()}")
         span.glyphicon.glyphicon-repeat
-        span  Восстановить
+        span  Restore
     // /ko
     | </script>
 
@@ -154,10 +154,10 @@
     | <script id="photoActionsEdit" type="text/html">
     button.btn.btn-success(type="button", data-bind="click: editSave, attr: {disabled: exe()}")
         span.glyphicon.glyphicon-ok
-        |  Сохранить
+        |  Save
     button.btn.btn-danger(type="button", data-bind="click: editCancel, attr: {disabled: exe()}")
         span.glyphicon.glyphicon-remove
-        |  Отмена редактирования
+        |  Cancel editing
     | </script>
 
     //-DATA VIEW MODE
@@ -178,12 +178,12 @@
             //ko foreach: p.regions
             | <!--ko if: $index()-->, <!-- /ko -->
             .region
-                a(data-bind="text: $data.title_local(), attr: {href: '/ps?f=r!' + $data.cid()}")
+                a(data-bind="text: $data.title_en(), attr: {href: '/ps?f=r!' + $data.cid()}")
             // /ko
             //ko if: !p.geo()
             =', '
             .region
-                a(data-bind="text: 'Где это?', attr: {href: '/ps?f=geo!0_r!' + p.regions()[p.regions().length-1].cid()}", style="color: #BEA265;")
+                a(data-bind="text: 'Where is it?', attr: {href: '/ps?f=geo!0_r!' + p.regions()[p.regions().length-1].cid()}", style="color: #BEA265;")
             // /ko
             // /ko
         //ko if: p.desc().length
@@ -218,7 +218,7 @@
     //ko if: p.cdate
     .infoBlock
         .info
-            a(href="?history=1", data-replace="true", data-bind="css: {changed: p.changed()}, html: 'Последнее изменение ' + fDateIn(p.cdate())")
+            a(href="?history=1", data-replace="true", data-bind="css: {changed: p.changed()}, html: 'Last changed at ' + fDateIn(p.cdate())")
     // /ko
 
     //-a.help.visible-lg(href="http://start.planeta.ru/campaigns/1694", target="_blank", title="Узнайте как помочь проекту")
@@ -229,7 +229,7 @@
     | <script id="photoEdit" type="text/html">
     .fieldWrap.mandatory(data-bind="css: {hasContent: p.title().length}")
         label(for="pName", data-bind="html: fields.title")
-        input.form-control.title(name="pName", type="text", maxlength="120", placeholder="Введите название фотографии", data-bind="value: p.title, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
+        input.form-control.title(name="pName", type="text", maxlength="120", placeholder="Enter photo titile", data-bind="value: p.title, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
     .fieldWrap.asrow
         .yearsEdit.mandatory(data-bind="css: {hasContent: !!p.year()}")
             span.infoName(data-bind="html: fields.y+':'")
@@ -241,47 +241,47 @@
             //ko if: p.regions().length
             span(data-bind="foreach: p.regions")
                 .region
-                    a(target="_blank", data-bind="text: ' ' + $data.title_local(), attr: {href: '/ps?f=r!' + $data.cid()}")
+                    a(target="_blank", data-bind="text: ' ' + $data.title_en(), attr: {href: '/ps?f=r!' + $data.cid()}")
                 //ko if: $index() < $parent.p.regions().length - 1
                 | ,&#32;
                 // /ko
             // /ko
             //ko if: !p.regions().length
-            .region.err Не привязан
+            .region.err Not specified
             // /ko
             //ko if: !p.geo()
             span.regionEdit(data-bind="click: regionSelect")
-                | [Выбрать]
+                | [Select]
             // /ko
     .fieldWrap(data-bind="css: {hasContent: p.desc().length}")
         label(for="pDesc", data-bind="html: fields.desc")
-        textarea.form-control.descInput(name="pDesc", wrap="soft", maxlength="4000", placeholder="Опишите фотографию", data-bind="value: p.desc, valueUpdate: 'afterkeydown', event: {focus: descFocus, blur: descBlur}")
+        textarea.form-control.descInput(name="pDesc", wrap="soft", maxlength="4000", placeholder="Describe photo", data-bind="value: p.desc, valueUpdate: 'afterkeydown', event: {focus: descFocus, blur: descBlur}")
     .fieldWrap(data-bind="css: {hasContent: p.author().length}")
         label(for="pAuthor", data-bind="html: fields.author")
-        input.form-control(name="pAuthor", type="text", maxlength="250", placeholder="Автор фотографии", data-bind="value: p.author, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
+        input.form-control(name="pAuthor", type="text", maxlength="250", placeholder="Author", data-bind="value: p.author, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
     .fieldWrap(data-bind="css: {hasContent: p.source().length}")
         label(for="pSource", data-bind="html: fields.source")
-        input.form-control(name="pSource", type="text", maxlength="250", placeholder="Если вам известен источник фотографии (ссылка, книга и т.д.), обязательно укажите его здесь", data-bind="value: p.source, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
+        input.form-control(name="pSource", type="text", maxlength="250", placeholder="If you know the photo source (link, a book, etc.), necessary to specify it here", data-bind="value: p.source, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
     .fieldWrap(data-bind="css: {hasContent: p.address().length}")
         label(for="pAddr", data-bind="html: fields.address")
-        input.form-control(name="pAddr", type="text", maxlength="250", placeholder="Вы знаете адрес точки съемки?", data-bind="value: p.address, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
+        input.form-control(name="pAddr", type="text", maxlength="250", placeholder="Do you know shooting adress?", data-bind="value: p.address, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
     .fieldWrap(data-bind="css: {hasContent: !!p.dir()}")
         label(for="pDir", data-bind="html: fields.dir")
-        select.form-control(name="pDir", data-bind="css: {empty: !p.dir()}, options: fields.dirValsArr, value: p.dir, optionsText: function(item) {return fields.dirVals[item]}, optionsCaption: 'Выберите направление съемки...'")
+        select.form-control(name="pDir", data-bind="css: {empty: !p.dir()}, options: fields.dirValsArr, value: p.dir, optionsText: function(item) {return fields.dirVals[item]}, optionsCaption: 'Chose shooting direction...'")
     //ko if: can.nowaterchange()
     div(style="display:table;margin:8px 0 -6px;")
         div(style="display:table-cell;padding-right:5px;")
-            = "Разрешить пользователю на этой фотографии управлять подписью на вотермарке и скачиванием оригинала (текущая глобальная настройка настройка для пользователя - "
-            strong(data-bind="text: p.user.nowaterchange()?'Нет':'Да'")
+            = "Allow user to change text on watermark of this photo and ability to download origin (current global setting for user - "
+            strong(data-bind="text: p.user.nowaterchange()?'No':'Yes'")
             | )
         .btn-group.btn-group-sm(style="display:table-cell;width:65px;vertical-align:top;")
-            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !p.nowaterchange()}, click: nowaterchangeChange") Да
-            button.btn.btn-primary.no(type="button", data-bind="css: {active: !!p.nowaterchange()}, click: nowaterchangeChange") Нет
+            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !p.nowaterchange()}, click: nowaterchangeChange") Yes
+            button.btn.btn-primary.no(type="button", data-bind="css: {active: !!p.nowaterchange()}, click: nowaterchangeChange") No
     // /ko
     //ko if: !can.watersign()
     .text-danger(style="margin:8px 0 -8px;")
         span.glyphicon.glyphicon-warning-sign
-        |  Администратор запретил вам менять настройки подписи на этой фотографии
+        |  Administrator has disabled for you ability to change watermark settings for this photo
     // /ko
     .watersingcontrol(data-bind="css: {deny: !can.watersign()}")
         .fieldWrap.asrow: span.panel-block(style="padding-bottom:3px")
@@ -297,8 +297,8 @@
             div(style="margin-top:7px;")
                 span(data-bind="html: fields.watersign.option + ': '")
                 .btn-group.btn-group-sm.disabled
-                    button.btn.btn-primary.yes(type="button", data-bind="attr: {disabled: !p.watersignIndividual()}, css: {active: watersignOption()!==false}, click: watersignOptionChange") Да
-                    button.btn.btn-primary.no(type="button", data-bind="attr: {disabled: !p.watersignIndividual()}, css: {active: watersignOption()===false}, click: watersignOptionChange") Нет
+                    button.btn.btn-primary.yes(type="button", data-bind="attr: {disabled: !p.watersignIndividual()}, css: {active: watersignOption()!==false}, click: watersignOptionChange") Yes
+                    button.btn.btn-primary.no(type="button", data-bind="attr: {disabled: !p.watersignIndividual()}, css: {active: watersignOption()===false}, click: watersignOptionChange") No
                 // ko if: !!watersignOption()
                 .radio(style="margin-top:8px"): label
                     input(type="radio", name="watersign", value="true", data-bind="attr: {disabled: !p.watersignIndividual()}, checked: watersignOption")
@@ -312,12 +312,12 @@
                 // /ko
             p.text-muted(style="margin:3px 0;padding-left:8px;line-height:1.1;font-size:11px;")
                 sup(style="margin-left:-8px;") 1
-                |  Указанная настройка по умолчанию применяется ко всем вашим фотографиям, на которых не указана индивидуальная.
-                span(style="display:inline-block;")  Изменить её можно на странине&nbsp;
-                    a(target="_blank", data-bind="attr: {href: '/u/' + p.user.login() + '/settings'}") настроек
+                |  Specified setting by default apply to all your photo, where is no indivisual setting.
+                span(style="display:inline-block;")  It can be changed on&nbsp;
+                    a(target="_blank", data-bind="attr: {href: '/u/' + p.user.login() + '/settings'}") settings page
             p.text-muted(style="margin-bottom:0;padding-left:8px;line-height:1.1;font-size:11px;")
                 sup(style="margin-left:-8px;") *
-                |  При изменении настройки подписи, фотография будет отправлена в очередь на обработку, что может занять некоторое время
+                |  If you change the watermark, photo will be sent to the queue for processing, that may take some time
 
         .fieldWrap.asrow: span.panel-block(style="padding-bottom:3px")
             span.infoName(data-bind="html: fields.downloadOrigin.title+':'")
@@ -332,15 +332,15 @@
             div(style="margin-top:7px;")
                 span(data-bind="html: fields.downloadOrigin.option + ': '")
                 .btn-group.btn-group-sm.disabled
-                    button.btn.btn-primary.yes(type="button", data-bind="attr: {disabled: !p.disallowDownloadOriginIndividual() || watersignOption()===false}, css: {active: !disallowDownloadOrigin()}, click: downloadOriginChange") Да
-                    button.btn.btn-primary.no(type="button", data-bind="attr: {disabled: !p.disallowDownloadOriginIndividual()|| watersignOption()===false}, css: {active: disallowDownloadOrigin()}, click: downloadOriginChange") Нет
+                    button.btn.btn-primary.yes(type="button", data-bind="attr: {disabled: !p.disallowDownloadOriginIndividual() || watersignOption()===false}, css: {active: !disallowDownloadOrigin()}, click: downloadOriginChange") Yes
+                    button.btn.btn-primary.no(type="button", data-bind="attr: {disabled: !p.disallowDownloadOriginIndividual()|| watersignOption()===false}, css: {active: disallowDownloadOrigin()}, click: downloadOriginChange") No
             p.text-muted(style="margin-bottom:0;padding-left:8px;line-height:1.1;font-size:11px;")
                 sup(style="margin-left:-8px;") *
-                |  Запретить скачивать оригинал можно только в случае наличия подписи на вотермарке фотографии
+                |  Prohibition of downloading original can be set only if photo have watermark text
             p.text-muted(style="margin:3px 0;padding-left:8px;line-height:1.1;font-size:11px;")
                 sup(style="margin-left:-8px;") 1
-                |  Указанная настройка по умолчанию применяется ко всем вашим фотографиям, на которых не указана индивидуальная.
-                span(style="display:inline-block;")  Изменить её можно на странине&nbsp;
-                    a(target="_blank", data-bind="attr: {href: '/u/' + p.user.login() + '/settings'}") настроек
+                |  Specified setting by default apply to all your photo, where is no indivisual setting.
+                span(style="display:inline-block;")  It can be changed on&nbsp;
+                    a(target="_blank", data-bind="attr: {href: '/u/' + p.user.login() + '/settings'}") settings page
     .spanner
     | </script>

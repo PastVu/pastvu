@@ -320,10 +320,10 @@ export const core = {
                 }
 
                 if (photo.geo) {
-                    regionFields = ['cid', 'title_local'];
+                    regionFields = ['cid', 'title_en'];
                 } else {
                     // Если у фото нет координаты, дополнительно берем домашнее положение региона и выбираем их из базы
-                    regionFields = { _id: 0, cid: 1, title_local: 1, center: 1, bbox: 1, bboxhome: 1 };
+                    regionFields = { _id: 0, cid: 1, title_en: 1, center: 1, bbox: 1, bboxhome: 1 };
                 }
                 promiseProps.regions = regionController.getObjRegionList(photo, regionFields, !photo.geo);
 
@@ -2738,7 +2738,7 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
 
             // Если есть регионы, запрашиваем их объекты
             if (Object.keys(regions).length) {
-                result.regions = regionController.fillRegionsHash(regions, ['cid', 'title_local']);
+                result.regions = regionController.fillRegionsHash(regions, ['cid', 'title_en']);
             }
 
             // Если есть причины, запрашиваем их заголовки
