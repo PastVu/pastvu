@@ -410,7 +410,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 				try {
 					socket.once('logoutCommand', function (data) {
 						if (data.error) {
-							window.noty({text: data.noconnect ? data.message : 'При попытке выхода возникла ошибка', type: 'error', layout: 'center', timeout: 4000, force: true});
+							window.noty({text: data.noconnect ? data.message : 'Error', type: 'error', layout: 'center', timeout: 4000, force: true});
 							console.log('Logout error: ' + data.message);
 						}
 

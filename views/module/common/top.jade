@@ -1,22 +1,22 @@
 #top(data-bind="with: repository[M!M]")
     .fringe#panel
-        a#brand(href='/', title="PastVu - ретроспектива среды обитания человечества")
+        a#brand(href='/', title="PastVu - retro photo of mankind's habitat")
             img.logo(src="/img/misc/logo.png")
             img.name(src="/img/misc/name-2x.png", srcset="/img/misc/name.png 1x, /img/misc/name-2x.png 2x")
         #panelTools.hide-text
             //ko if: auth.loggedIn()
             a#toUpload.labledIco.strokeAfter(href="/photoUpload")
                 .glyphicon.glyphicon-cloud-upload
-                .text Загрузить фото
+                .text Upload photo
             // /ko
             a#gallery.labledIco.strokeAfter(href="/ps")
                 .glyphicon.glyphicon-picture
-                .text Галерея
+                .text Gallery
             //ko if: auth.loggedIn()
             //ko if: can.adm()
             a#toAdmin.labledIco.strokeAfter(href="/admin", target="_blank")
                 .glyphicon.glyphicon-cog
-                .text Админ
+                .text Admin
             // /ko
             a#toProfile.labledIco(data-bind="attr:{href: '/u/'+auth.iAm.login()}")
                 .ico.fringe(data-bind="style: {backgroundImage: 'url('+profileAvatar()+')'}")
@@ -25,14 +25,14 @@
             //ko if: !auth.loggedIn()
             #toRegister.labledIco(data-bind="click: function(data, evt){auth.show('reg')}")
                 .ico
-                .text Регистрация
+                .text Registration
             #toLogIn.labledIco.strokeBefore.iconAfter(data-bind="click: function(data, evt){auth.show('login')}")
-                .text Вход
+                .text Login
                 .ico
             // /ko
             //ko if: auth.loggedIn()
             #toLogOut.labledIco.strokeBefore.iconAfter(data-bind="click: function(data, evt){auth.doLogout()}")
-                .text Выход
+                .text Exit
                 .ico
             // /ko
             #lang.labledIco.langFlag.strokeBefore(data-bind="style:{'backgroundImage': 'url(/img/misc/flags/' + lang() + '.svg)'}, click: langClick")
