@@ -34,7 +34,7 @@
             .yearOuter.R
         .mapNavigation.mContainer.mHidden
         .trtools
-            .trtool.trtoolbutt.openModePanel.fringe(data-bind="css: {no: !openNewTab()}, click: function () {openNewTab(!openNewTab())}, attr: {title: (openNewTab() ? 'Enable' : 'Disable') + ' opening of a photo in a new window'}")
+            .trtool.trtoolbutt.openModePanel.fringe(data-bind="css: {no: !openNewTab()}, click: function () {openNewTab(!openNewTab())}, attr: {title: (openNewTab() ? 'Disable' : 'Enable') + ' opening of a photo in a new window'}")
                 span.glyphicon.glyphicon-share
             //ko if: !embedded
             .trtool.trtoolbutt.link.fringe(data-bind="click: showLink", title="Link to current map position")

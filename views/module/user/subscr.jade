@@ -14,7 +14,7 @@
     .navContent
         .row
             .col-xs-6.col-md-3.topcol
-                span.brief(data-bind="css: {pageLoading: loading()}, text: briefText")
+                span.brief(data-bind="css: {pageLoading: loading()}, html: briefText")
             .col-xs-12.col-md-6.pag(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}, template: {name: 'pagerTpl'}")
         .row.objects(data-bind="css: {photoObjs: type() === 'photo', newsObjs: type() === 'news', }, template: {name: type() + 'SubscrTpl', foreach: objects}")
         .pag(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}, template: {name: 'pagerTpl'}")

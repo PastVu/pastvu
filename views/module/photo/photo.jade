@@ -36,12 +36,12 @@
                     .toolsRht
                         .tool.watched
                             span.glyphicon.glyphicon-eye-open.light(title="Number of photo's views")
-                            .watch(data-bind="text: toolsNumFormat(p.vdcount()), attr: {title: p.vdcount()+ ' times viewed today'}")
-                            .watch(data-bind="text: toolsNumFormat(p.vwcount()), attr: {title: p.vwcount()+ ' times viewed this week'}")
-                            .watch(data-bind="text: toolsNumFormat(p.vcount()), attr: {title: p.vcount()+ ' times viewed total'}")
+                            .watch(data-bind="text: toolsNumFormat(p.vdcount()), attr: {title: p.vdcount()+ ' views today'}")
+                            .watch(data-bind="text: toolsNumFormat(p.vwcount()), attr: {title: p.vwcount()+ ' views this week'}")
+                            .watch(data-bind="text: toolsNumFormat(p.vcount()), attr: {title: p.vcount()+ ' views total'}")
                     .toolsBtm(data-bind="style: {width: ws() + 'px'}")
                         span.toolsTxt
-                            | Размеры:&nbsp;
+                            | Sizes:&nbsp;
                             //ko if: ws() !== p.ws() && hs() !== p.hs()
                             .sizeThis(data-bind="text: ws() + '×' + hs()")
                             | &nbsp;|&nbsp;
@@ -88,7 +88,7 @@
                     // /ko
             .rightrow.photoMap.mContainer.mHidden(data-bind="allowBindings: false, style: {height: mapH()}")
             //ko if: nearestRibbon().length
-            .rightrow: .lineBehind: span Nearest photos
+            .rightrow: .lineBehind: span Nearby photos
             .rightrow.nearesTiles(data-bind="foreach: nearestRibbon")
                 a.photoPreview(data-bind="attr: {href: '/p/' + cid, title: $data.title}"): .photoBox
                     img.img(data-bind="attr: {src: sfile, title: $data.title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.thumbW, height: $parent.thumbH}")

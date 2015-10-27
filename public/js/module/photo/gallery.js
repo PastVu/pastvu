@@ -130,7 +130,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					if (this.feed()) {
 						txt = '' + count + ' photos total';
 					} else {
-						txt = '' + this.pageFirstItem() + ' - ' + this.pageLastItem() + ' of ' + count + ' are shown';
+						txt = '' + this.pageFirstItem() + '&ndash;' + this.pageLastItem() + ' of ' + count + ' are shown';
 					}
 				} else {
 					txt = 'There is not a single photo';

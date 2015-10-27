@@ -8,7 +8,7 @@
     .navContent
         .row
             .col-xs-6.col-md-3.topcol
-                span.brief(data-bind="css: {pageLoading: loadingComments()}, text: briefText")
+                span.brief(data-bind="css: {pageLoading: loadingComments()}, html: briefText")
             .col-xs-12.col-md-6.pag(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}, template: {name: 'pagerTpl'}")
         .commentsList(data-bind="template: {name: type() + 'CommentsTpl', foreach: comments}")
         .pag(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}, template: {name: 'pagerTpl'}")

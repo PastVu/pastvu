@@ -73,7 +73,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     var count = this.types[this.type() + '_persist'](),
                         txt = '';
                     if (count) {
-                        txt = '' + this.pageFirstItem() + ' - ' + (this.pageLastItem() || this.pageSize()) + ' of ' + count + ' are shown';
+                        txt = '' + this.pageFirstItem() + '&ndash;' + (this.pageLastItem() || this.pageSize()) + ' of ' + count + ' are shown';
                     } else {
                         txt = 'Still has no subscription in this category';
                     }

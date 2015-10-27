@@ -50,12 +50,12 @@
                                         input(type="checkbox", value="0", data-bind="checked: filter.disp.geo, click: fgeoclk")
                                         span Not setted (Where is it?)
             .col-xs-12.col-sm-5.col-lg-4.col-lg-push-4.topcol.switch(data-bind="css: {invisible: !loadedFirst()}")
-                span.brief(data-bind="text: briefText")
+                span.brief(data-bind="html: briefText")
                 //ko if: photos().length
                 .btn-group
-                    button.btn.btn-primary(title="Page by page", data-bind="click: function () {feedSelect(false)}, css: {active: !feed()}")
+                    button.btn.btn-primary(title="Page view", data-bind="click: function () {feedSelect(false)}, css: {active: !feed()}")
                         span.glyphicon.glyphicon-book
-                    button.btn.btn-primary(title="Feed", data-bind="click: function () {feedSelect(true)}, css: {active: feed()}")
+                    button.btn.btn-primary(title="Feed view", data-bind="click: function () {feedSelect(true)}, css: {active: feed()}")
                         span.glyphicon.glyphicon-th-list
                 // /ko
             .clearfix.hidden-lg
