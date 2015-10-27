@@ -4,7 +4,7 @@ html
 		include ../includes/head_top_cap
 body
 	.top.fringe
-		a.brand(href='/', title="PastVu - ретроспектива среды обитания человечества")
+		a.brand(href='/', title="PastVu - retro photos of mankind's habitat")
 			img.logo(src="/img/misc/logo.png")
 			img.name(src="/img/misc/name-2x.png", srcset="/img/misc/name.png 1x, /img/misc/name-2x.png 2x")
 	style.
@@ -57,18 +57,18 @@ body
 	.cent.centering_content
 		.content.fringe
 			p
-				span Команда PastVu считает, что ваш браузер
+				span PastVu team considers, that your browser
 				if agent && agent.family
 					span.curr=' '+agent.family+' '+agent.major
-				span  устарел и не отвечает современным требованиям, по которым разработан наш сайт
+				span  is obsolete and does not meet modern requirements, which developed our website
 				br
 				br
-				| Пожалуйста, обновите ваш браузер или установите с официального сайта один из перечисленных ниже.
+				| Please upgrade your browser or install one of the following from the official website.
 				br
-				| Это займет всего несколько минут, но откроет вам быстрый современный интернет.
+				| It will take a few minutes, but will open you a fast modern Internet.
 				br
 				br
-				| А после установки возвращайтесь к нам - на самый большой архив исторических фотографий PastVu.com!
+				| After installation return to us - the largest archive of history photos PastVu.com!
 			.browsers
 				a.chrome(href="http://www.google.com/chrome", target="_blank") Google Chrome
 				a.firefox(href="http://www.mozilla.org", target="_blank") Mozilla Firefox
@@ -76,5 +76,5 @@ body
 				a.safari(href="http://www.apple.com/safari", target="_blank") Apple Safari
 				a.yandex(href="http://browser.yandex.net", target="_blank") Yandex
 			.support
-				a(href='mailto:support@pastvu.comm?subject=Сайт выдаёт сообщение об устаревшем браузере&body=Добрый день! Идентификатор моего браузера: '+(agent&&agent.source?agent.source:''), target="_blank")
-					| Напишите, если мы ошибаемся: support@pastvu.com
+				a(href='mailto:support@pastvu.comm?subject=Website displays a message about an outdated browser&body=Good afternoon! My browser: '+(agent&&agent.source?agent.source:''), target="_blank")
+					| Please write, if we are mistaken: support@pastvu.com
