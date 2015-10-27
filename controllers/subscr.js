@@ -15,6 +15,7 @@ import * as userObjectRelController from './userobjectrel';
 import { News } from '../models/News';
 import { User } from '../models/User';
 import { Photo } from '../models/Photo';
+import { Session } from '../models/Sessions';
 import { UserNoty, UserObjectRel } from '../models/UserStates';
 
 const logger = log4js.getLogger('subscr.js');
@@ -266,11 +267,25 @@ const notifierConveyor = (function () {
     async function conveyorStep() {
         try {
             // Find noty, which time nextnoty has passed
-            const usersNoty = await UserNoty.find(
+            let usersNoty = await UserNoty.find(
                 { nextnoty: { $lte: new Date() } },
                 { _id: 0 },
                 { lean: true, limit: sendPerStep, sort: { nextnoty: 1 } }
             ).exec();
+
+            // Hack fo checking user localization. Do not notify if user's language different from this node instanse
+            // Determine user language by language in last session
+            const usersNotyWithCurrentLang = [];
+            for (const noty of usersNoty) {
+                const sessions = await Session.find(
+                    { user: noty.user }, { _id: 0, 'data.lang': 1 },
+                    { lean: true, limit: 1, sort: { stamp: -1 } }
+                ).exec();
+                if (_.get(sessions, '[0].data.lang', 'ru') === config.lang) {
+                    usersNotyWithCurrentLang.push(noty);
+                }
+            }
+            usersNoty = usersNotyWithCurrentLang;
 
             if (_.isEmpty(usersNoty)) {
                 return notifierConveyor();
