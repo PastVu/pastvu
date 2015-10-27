@@ -109,7 +109,7 @@ export function loadController(app) {
             } else if (!_.isEmpty(photo.regions)) {
                 // If there in no description, create it as regions names
                 meta.desc = meta.og.desc = meta.twitter.desc = photo.regions.reduceRight(
-                    (result, region, index) => result + region.title_local + (index ? ', ' : ''), ''
+                    (result, region, index) => result + region.title_en + (index ? ', ' : ''), ''
                 );
             } else {
                 meta.desc = '';

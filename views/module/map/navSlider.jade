@@ -9,7 +9,7 @@
                 span.glyphicon.glyphicon-arrow-down
             .mleft.fringe.butt(data-bind="event: {'click': function () { pan('left') }}")
                 span.glyphicon.glyphicon-arrow-left
-            .mhome.fringe.butt(data-bind="click: toHome, attr: {title: 'Set map to home region ' + (auth.loggedIn() ? auth.iAm.regionHome.title_local() : 'Moscow')}")
+            .mhome.fringe.butt(data-bind="click: toHome, attr: {title: 'Set map to home region ' + (auth.loggedIn() ? auth.iAm.regionHome.title_en() : 'Moscow')}")
                 span.glyphicon.glyphicon-home
             .zoomin.fringe.butt.inout(data-bind="event: {'click': function () { changeZoom(1) }}")
                 span.glyphicon.glyphicon-plus
