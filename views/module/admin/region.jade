@@ -1,111 +1,111 @@
 .adminRegion(data-bind="with: repository[M!M]")
-	h4(data-bind="text: createMode() ? 'Region creation' : 'Region editing'")
-	form.form-horizontal(action='', autocomplete="off", method='POST', data-bind="event: {submit: save}")
-		.form-group
-			label.col-xs-4.col-sm-3.col-lg-2.control-label Title
-			.col-xs-3.col-sm-2
-				input.form-control(type='text', data-bind="value: region.title_en, valueUpdate: 'keyup'", placeholder="(EN) English", required="required", autocorrect="off", autocapitalize="off")
-			.col-xs-3.col-sm-2
-				input.form-control(type='text', data-bind="value: region.title_local, valueUpdate: 'keyup'", placeholder="(RU) Russian", autocorrect="off", autocapitalize="off")
-		//ko if: !createMode()
-		.form-group
-			label.col-xs-4.col-sm-3.col-lg-2.control-label
-			.col-xs-8.col-sm-9.col-lg-10
-				p.form-control-static
-					| Id:
-					strong(data-bind="text: ' ' + region.cid()")
-					| ; Level:
-					strong(data-bind="text: ' ' + (Number(haveParent()) ? region.parents().length + 1 : 1)")
-					| ; Polygon count:
-					strong(data-bind="text: ' ' + formatNum(region.polynum.exterior())")
-					//ko if: region.polynum.interior()
-					|  (+
-					strong(data-bind="text: formatNum(region.polynum.interior())")
-					|  outter)
-					// /ko
-					| ; Vertex count:
-					strong(data-bind="text: ' ' + (formatNum(region.pointsnum() - region.polynum.exterior() - region.polynum.interior()))")
-					| ;&nbsp;
-					a(data-bind="attr: {href: '/admin/region?hl=' + region.cid()}") Show in regions tree
-		// /ko
-		.form-group
-			label.col-xs-4.col-sm-3.col-lg-2.control-label Parent region
-			.col-xs-6.col-sm-4
-				.row
-					.col-xs-8.col-sm-9.col-md-8.col-lg-6
-						label.radio-inline
-							input.thr(type="radio", id="parent_radios_0", name="parent_radios", value="0", data-bind="checked: haveParent")
-							|  Is absent
-						label.radio-inline
-							input.thr(type="radio", id="parent_radios_1", name="parent_radios", value="1", data-bind="checked: haveParent")
-							|  Exists
-					//ko if: Number(haveParent())
-					.col-xs-4.col-sm-3.col-lg-3
-						input.form-control(type='text', data-bind="value: parentCid, valueUpdate: 'keyup'", placeholder="Id of perent region", required="required", autocorrect="off", autocapitalize="off")
-					// /ko
-		//ko if: region.parents().length || childLenArr().length
-		.form-group
-			label.col-xs-4.col-sm-3.col-lg-2.control-label
-			.col-xs-8.col-sm-9.col-lg-10
-				p.form-control-static.regions
-					//ko foreach: region.parents
-					a(data-bind="text: ' ' + $data.title_en(), attr: {href: '/admin/region/' + $data.cid()}")
-					| &nbsp;
-					span.glyphicon.glyphicon-play
-					| &nbsp;
-					// /ko
-					//ko if: !createMode()
-					span.current(title="Current region", data-bind="text: ' ' + region.title_en()")
-					// /ko
-					//ko foreach: childLenArr
-					| &nbsp;
-					span.glyphicon.glyphicon-play
-					span(data-bind="text: ' ' + $data")
-					// /ko
-		// /ko
-		.form-group
-			label.col-xs-4.col-sm-3.col-lg-2.control-label Additional parameters
-			.col-xs-8.col-sm-9.col-lg-10(style="padding-top: 3px")
-				.dopparam
-					abbr(title="The central point of the region in it home position") Center
-					| :
-					input.form-control.input-sm.center(type="text", data-bind="centerInput: true, attr: {readonly: region.centerAuto(), placeholder: region.centerAuto() ? 'Not yet calculated' : 'Not specified'}, css: {invalid: !region.centerAuto() && !centerValid()}")
-					.btn-group.btn-group-sm
-						button.btn.btn-primary.yes(type="button", data-bind="css: {active: region.centerAuto()}, click: centerAutoToggle") Auto
-						button.btn.btn-primary.no(type="button", data-bind="css: {active: !region.centerAuto()}, click: centerAutoToggle") Manual
-				br
-				.dopparam
-					abbr(title="Bounding box - rectangle in which entire region is fits") Bbox
-					| :
-					input.form-control.input-sm.bbox(type="text", readonly, data-bind="attr: {value: region.bbox() ? region.bbox().join(', ') : ''}", placeholder="Not yet calculated")
-				.dopparam
-					abbr(title="The rectangle that should be visible in the home position of the map. We need to calculate the scale") Bbox home
-					| .:
-					.btn-group.btn-group-sm
-						button.btn.btn-primary.yes(type="button", data-bind="css: {active: bboxAuto()}, click: bboxHomeToggle") As bbox
-						button.btn.btn-primary.no(type="button", data-bind="css: {active: !bboxAuto()}, click: bboxHomeToggle") Manual
-					//ko if: !bboxAuto()
-					input.form-control.input-sm.bbox(type="text", data-bind="bboxhomeInput: true, attr: {readonly: bboxAuto()}, css: {invalid: !bboxAuto() && !bboxhomeValid()}", placeholder="Not specified")
-					// /ko
-		//ko if: createMode() || showGeo()
-		.form-group
-			label.col-xs-4.col-sm-3.col-lg-2.control-label
-				| Geometry
-				br
-				| GeoJSON
-			.col-xs-8.col-sm-9.col-lg-10
-				textarea.form-control(wrap="soft", rows="5", data-bind="value: region.geo, valueUpdate: 'keyup'", placeholder="{ type: 'Polygon | MultiPolygon', coordinates: [[ [] ]] }", required="required")
-		// /ko
-		.form-group
-			button.btn.btn-success(type="submit", data-bind="attr: {disabled: exe()}")
-				span.glyphicon.glyphicon-ok
-				|  Save
-			button.btn.btn-danger(type="button", data-bind="click: remove, attr: {disabled: exe()}")
-				span.glyphicon.glyphicon-remove
-				|  Remove
-			//ko if: !createMode()
-			button.btn.btn-primary(type="button", data-bind="click: function () {showGeo(!showGeo())}, attr: {disabled: exe()}")
-				span.glyphicon.glyphicon-th-list
-				span(data-bind="text: showGeo() ? ' Hide coordinates' : ' Show coordinates'")
-			// /ko
-	.map(data-bind="style: {height: mh()}")
+    h4(data-bind="text: createMode() ? 'Region creation' : 'Region editing'")
+    form.form-horizontal(action='', autocomplete="off", method='POST', data-bind="event: {submit: save}")
+        .form-group
+            label.col-xs-4.col-sm-3.col-lg-2.control-label Title
+            .col-xs-3.col-sm-2
+                input.form-control(type='text', data-bind="value: region.title_en, valueUpdate: 'keyup'", placeholder="(EN) English", required="required", autocorrect="off", autocapitalize="off")
+            .col-xs-3.col-sm-2
+                input.form-control(type='text', data-bind="value: region.title_local, valueUpdate: 'keyup'", placeholder="(RU) Russian", autocorrect="off", autocapitalize="off")
+        //ko if: !createMode()
+        .form-group
+            label.col-xs-4.col-sm-3.col-lg-2.control-label
+            .col-xs-8.col-sm-9.col-lg-10
+                p.form-control-static
+                    | Id:
+                    strong(data-bind="text: ' ' + region.cid()")
+                    | ; Level:
+                    strong(data-bind="text: ' ' + (Number(haveParent()) ? region.parents().length + 1 : 1)")
+                    | ; Polygon count:
+                    strong(data-bind="text: ' ' + formatNum(region.polynum.exterior())")
+                    //ko if: region.polynum.interior()
+                    |  (+
+                    strong(data-bind="text: formatNum(region.polynum.interior())")
+                    |  outter)
+                    // /ko
+                    | ; Vertex count:
+                    strong(data-bind="text: ' ' + (formatNum(region.pointsnum() - region.polynum.exterior() - region.polynum.interior()))")
+                    | ;&nbsp;
+                    a(data-bind="attr: {href: '/admin/region?hl=' + region.cid()}") Show in regions tree
+        // /ko
+        .form-group
+            label.col-xs-4.col-sm-3.col-lg-2.control-label Parent region
+            .col-xs-6.col-sm-4
+                .row
+                    .col-xs-8.col-sm-9.col-md-8.col-lg-6
+                        label.radio-inline
+                            input.thr(type="radio", id="parent_radios_0", name="parent_radios", value="0", data-bind="checked: haveParent")
+                            |  Is absent
+                        label.radio-inline
+                            input.thr(type="radio", id="parent_radios_1", name="parent_radios", value="1", data-bind="checked: haveParent")
+                            |  Exists
+                    //ko if: Number(haveParent())
+                    .col-xs-4.col-sm-3.col-lg-3
+                        input.form-control(type='text', data-bind="value: parentCid, valueUpdate: 'keyup'", placeholder="Id of perent region", required="required", autocorrect="off", autocapitalize="off")
+                    // /ko
+        //ko if: region.parents().length || childLenArr().length
+        .form-group
+            label.col-xs-4.col-sm-3.col-lg-2.control-label
+            .col-xs-8.col-sm-9.col-lg-10
+                p.form-control-static.regions
+                    //ko foreach: region.parents
+                    a(data-bind="text: ' ' + $data.title_en(), attr: {href: '/admin/region/' + $data.cid()}")
+                    | &nbsp;
+                    span.glyphicon.glyphicon-play
+                    | &nbsp;
+                    // /ko
+                    //ko if: !createMode()
+                    span.current(title="Current region", data-bind="text: ' ' + region.title_en()")
+                    // /ko
+                    //ko foreach: childLenArr
+                    | &nbsp;
+                    span.glyphicon.glyphicon-play
+                    span(data-bind="text: ' ' + $data")
+                    // /ko
+        // /ko
+        .form-group
+            label.col-xs-4.col-sm-3.col-lg-2.control-label Additional parameters
+            .col-xs-8.col-sm-9.col-lg-10(style="padding-top: 3px")
+                .dopparam
+                    abbr(title="The central point of the region in it home position") Center
+                    | :
+                    input.form-control.input-sm.center(type="text", data-bind="centerInput: true, attr: {readonly: region.centerAuto(), placeholder: region.centerAuto() ? 'Not yet calculated' : 'Not specified'}, css: {invalid: !region.centerAuto() && !centerValid()}")
+                    .btn-group.btn-group-sm
+                        button.btn.btn-primary.yes(type="button", data-bind="css: {active: region.centerAuto()}, click: centerAutoToggle") Auto
+                        button.btn.btn-primary.no(type="button", data-bind="css: {active: !region.centerAuto()}, click: centerAutoToggle") Manual
+                br
+                .dopparam
+                    abbr(title="Bounding box - rectangle in which entire region is fits") Bbox
+                    | :
+                    input.form-control.input-sm.bbox(type="text", readonly, data-bind="attr: {value: region.bbox() ? region.bbox().join(', ') : ''}", placeholder="Not yet calculated")
+                .dopparam
+                    abbr(title="The rectangle that should be visible in the home position of the map. We need to calculate the scale") Bbox home
+                    | .:
+                    .btn-group.btn-group-sm
+                        button.btn.btn-primary.yes(type="button", data-bind="css: {active: bboxAuto()}, click: bboxHomeToggle") As bbox
+                        button.btn.btn-primary.no(type="button", data-bind="css: {active: !bboxAuto()}, click: bboxHomeToggle") Manual
+                    //ko if: !bboxAuto()
+                    input.form-control.input-sm.bbox(type="text", data-bind="bboxhomeInput: true, attr: {readonly: bboxAuto()}, css: {invalid: !bboxAuto() && !bboxhomeValid()}", placeholder="Not specified")
+                    // /ko
+        //ko if: createMode() || showGeo()
+        .form-group
+            label.col-xs-4.col-sm-3.col-lg-2.control-label
+                | Geometry
+                br
+                | GeoJSON
+            .col-xs-8.col-sm-9.col-lg-10
+                textarea.form-control(wrap="soft", rows="5", data-bind="value: region.geo, valueUpdate: 'keyup'", placeholder="{ type: 'Polygon | MultiPolygon', coordinates: [[ [] ]] }", required="required")
+        // /ko
+        .form-group
+            button.btn.btn-success(type="submit", data-bind="attr: {disabled: exe()}")
+                span.glyphicon.glyphicon-ok
+                |  Save
+            button.btn.btn-danger(type="button", data-bind="click: remove, attr: {disabled: exe()}")
+                span.glyphicon.glyphicon-remove
+                |  Remove
+            //ko if: !createMode()
+            button.btn.btn-primary(type="button", data-bind="click: function () {showGeo(!showGeo())}, attr: {disabled: exe()}")
+                span.glyphicon.glyphicon-th-list
+                span(data-bind="text: showGeo() ? ' Hide coordinates' : ' Show coordinates'")
+            // /ko
+    .map(data-bind="style: {height: mh()}")

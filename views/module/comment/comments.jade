@@ -1,42 +1,42 @@
 .fullComments(data-bind="with: repository[M!M]")
-	.cmtsHead
-		a.count.headElem.interact(href="?hl=comments", data-replace="true", data-bind="html: count() + (countNew() ? '<span class=\"cnew\"> +' + countNew() + '</span>' : '')", title="Link to the comments area")
-		//ko if: canReply()
-		.addZero.headElem.interact.strokeBefore(data-bind="click: replyZero", title="Add first level comment")
-			span.glyphicon.glyphicon-edit
-			|  Add
-		// /ko
-		//ko if: !auth.loggedIn()
-		.addZero.headElem.interact.strokeBefore(data-bind="click: function(data, evt){auth.show('login')}", title="Click to login or register")
-			span.glyphicon.glyphicon-log-in
-			|   Log in to share your opinion
-		// /ko
-		//ko if: auth.loggedIn()
-		.commSubscr.headElem.interact.strokeBefore(data-bind="click: subscribe, css: {isSubscr: subscr()}, attr: {title: subscr() ? 'You are subscribed for new comments. Click to unsubscribe' : 'Subscribe to new comments'}")
-			span.glyphicon.glyphicon-envelope
-			span(data-bind="text: subscr() ? ' Subscribe' : ' Unsubscribe'")
-		// /ko
-		//ko if: canModerate()
-		.noComments.headElem.interact(data-bind="click: setNoComments, attr: {title: (nocomments() ? 'Allow' : 'Disallow')+' further commenting'}")
-			span.glyphicon(data-bind="css: nocomments() ? 'glyphicon-ok-sign' : 'glyphicon-minus-sign'")
-			span(data-bind="text: nocomments() ? ' Allow commenting' : ' Disallow commenting'")
-		// /ko
-		//ko if: auth.loggedIn() && nocomments()
-		span.cantComment Commenting is not allowed
-		// /ko
-		.commentsLoad(data-bind="style: {display: loading() ? '' : 'none'}") &nbsp;
+    .cmtsHead
+        a.count.headElem.interact(href="?hl=comments", data-replace="true", data-bind="html: count() + (countNew() ? '<span class=\"cnew\"> +' + countNew() + '</span>' : '')", title="Link to the comments area")
+        //ko if: canReply()
+        .addZero.headElem.interact.strokeBefore(data-bind="click: replyZero", title="Add first level comment")
+            span.glyphicon.glyphicon-edit
+            |  Add
+        // /ko
+        //ko if: !auth.loggedIn()
+        .addZero.headElem.interact.strokeBefore(data-bind="click: function(data, evt){auth.show('login')}", title="Click to login or register")
+            span.glyphicon.glyphicon-log-in
+            |   Log in to share your opinion
+        // /ko
+        //ko if: auth.loggedIn()
+        .commSubscr.headElem.interact.strokeBefore(data-bind="click: subscribe, css: {isSubscr: subscr()}, attr: {title: subscr() ? 'You are subscribed for new comments. Click to unsubscribe' : 'Subscribe to new comments'}")
+            span.glyphicon.glyphicon-envelope
+            span(data-bind="text: subscr() ? ' Subscribe' : ' Unsubscribe'")
+        // /ko
+        //ko if: canModerate()
+        .noComments.headElem.interact(data-bind="click: setNoComments, attr: {title: (nocomments() ? 'Allow' : 'Disallow')+' further commenting'}")
+            span.glyphicon(data-bind="css: nocomments() ? 'glyphicon-ok-sign' : 'glyphicon-minus-sign'")
+            span(data-bind="text: nocomments() ? ' Allow commenting' : ' Disallow commenting'")
+        // /ko
+        //ko if: auth.loggedIn() && nocomments()
+        span.cantComment Commenting is not allowed
+        // /ko
+        .commentsLoad(data-bind="style: {display: loading() ? '' : 'none'}") &nbsp;
 
-	.cmts
+    .cmts
 
-	//ko if: countNew()
-	.navigator(data-bind="css: {touch: touch}")
-		.arrow
-		.navigatorInn
-			.countAll(data-bind="text: '+' + countNew()")
-			.up(data-bind="click: navUp")
-				span.glyphicon.glyphicon-arrow-up
-				.navTxt
-			.down(data-bind="click: navDown")
-				.navTxt
-				span.glyphicon.glyphicon-arrow-down
-	// /ko
+    //ko if: countNew()
+    .navigator(data-bind="css: {touch: touch}")
+        .arrow
+        .navigatorInn
+            .countAll(data-bind="text: '+' + countNew()")
+            .up(data-bind="click: navUp")
+                span.glyphicon.glyphicon-arrow-up
+                .navTxt
+            .down(data-bind="click: navDown")
+                .navTxt
+                span.glyphicon.glyphicon-arrow-down
+    // /ko

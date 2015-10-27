@@ -1,25 +1,25 @@
 .mapNavigator(data-bind="with: repository[M!M]")
-	.stateWrap(data-bind="css: {pinned: pinned(), hover: hover(), canOpen: canOpen()}")
-		.navpanel(data-bind="style: {height: panelH() + 'px'}")
-			.mup.fringe.butt(data-bind="event: {'click': function () { pan('up') }}")
-				span.glyphicon.glyphicon-arrow-up
-			.mright.fringe.butt(data-bind="event: {'click': function () { pan('right') }}")
-				span.glyphicon.glyphicon-arrow-right
-			.mdown.fringe.butt(data-bind="event: {'click': function () { pan('down') }}")
-				span.glyphicon.glyphicon-arrow-down
-			.mleft.fringe.butt(data-bind="event: {'click': function () { pan('left') }}")
-				span.glyphicon.glyphicon-arrow-left
-			.mhome.fringe.butt(data-bind="click: toHome, attr: {title: 'Set map to home region ' + (auth.loggedIn() ? auth.iAm.regionHome.title_local() : 'Moscow')}")
-				span.glyphicon.glyphicon-home
-			.zoomin.fringe.butt.inout(data-bind="event: {'click': function () { changeZoom(1) }}")
-				span.glyphicon.glyphicon-plus
-			.zoomout.fringe.butt.inout(data-bind="event: {'click': function () { changeZoom(-1) }}")
-				span.glyphicon.glyphicon-minus
-			.stick.fringe
-			.sliderArea(data-bind="css: {sliding: sliding()}")
-				//ko foreach: dashes
-				.dash(data-bind="style: {height: $parent.step() + 'px'}, attr: {'data-zoom': $data}")
-				// /ko
-				.slider.fringe(data-bind="text: sliderOnZoom(), style: {bottom: (step() * (sliderOnZoom() - minZoom())) + 'px'}")
-		.pinArea
-			.pin.fringe(data-bind="click: togglePin")
+    .stateWrap(data-bind="css: {pinned: pinned(), hover: hover(), canOpen: canOpen()}")
+        .navpanel(data-bind="style: {height: panelH() + 'px'}")
+            .mup.fringe.butt(data-bind="event: {'click': function () { pan('up') }}")
+                span.glyphicon.glyphicon-arrow-up
+            .mright.fringe.butt(data-bind="event: {'click': function () { pan('right') }}")
+                span.glyphicon.glyphicon-arrow-right
+            .mdown.fringe.butt(data-bind="event: {'click': function () { pan('down') }}")
+                span.glyphicon.glyphicon-arrow-down
+            .mleft.fringe.butt(data-bind="event: {'click': function () { pan('left') }}")
+                span.glyphicon.glyphicon-arrow-left
+            .mhome.fringe.butt(data-bind="click: toHome, attr: {title: 'Set map to home region ' + (auth.loggedIn() ? auth.iAm.regionHome.title_local() : 'Moscow')}")
+                span.glyphicon.glyphicon-home
+            .zoomin.fringe.butt.inout(data-bind="event: {'click': function () { changeZoom(1) }}")
+                span.glyphicon.glyphicon-plus
+            .zoomout.fringe.butt.inout(data-bind="event: {'click': function () { changeZoom(-1) }}")
+                span.glyphicon.glyphicon-minus
+            .stick.fringe
+            .sliderArea(data-bind="css: {sliding: sliding()}")
+                //ko foreach: dashes
+                .dash(data-bind="style: {height: $parent.step() + 'px'}, attr: {'data-zoom': $data}")
+                // /ko
+                .slider.fringe(data-bind="text: sliderOnZoom(), style: {bottom: (step() * (sliderOnZoom() - minZoom())) + 'px'}")
+        .pinArea
+            .pin.fringe(data-bind="click: togglePin")

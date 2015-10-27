@@ -1,83 +1,83 @@
 .mainAdmin(data-bind="with: repository[M!M]")
-	h6 Current connections
-	div
-		span.stateRate
-			.rate(data-bind="text: onlines.users()")
-			| /
-			.rate(data-bind="text: (onlines.all() - onlines.users())")
-			| /
-			.rate(data-bind="text: onlines.all()")
-		span.stateDesc Visitors authorised/anonymous/total
-	div
-		span.stateRate
-			.rate(data-bind="text: onlines.sessUC()")
-			| /
-			.rate(data-bind="text: onlines.sessAC()")
-			| /
-			.rate(data-bind="text: (onlines.sessUC() + onlines.sessAC())")
-		span.stateDesc(data-bind="text: 'Active sessionsauthorised/anonymous/total. With zero connections: [' + onlines.sessUZC() + '/' + onlines.sessAZC() + ']. With no connections: [' + onlines.sessUNC() + '/' + onlines.sessANC() + '].'")
+    h6 Current connections
+    div
+        span.stateRate
+            .rate(data-bind="text: onlines.users()")
+            | /
+            .rate(data-bind="text: (onlines.all() - onlines.users())")
+            | /
+            .rate(data-bind="text: onlines.all()")
+        span.stateDesc Visitors authorised/anonymous/total
+    div
+        span.stateRate
+            .rate(data-bind="text: onlines.sessUC()")
+            | /
+            .rate(data-bind="text: onlines.sessAC()")
+            | /
+            .rate(data-bind="text: (onlines.sessUC() + onlines.sessAC())")
+        span.stateDesc(data-bind="text: 'Active sessionsauthorised/anonymous/total. With zero connections: [' + onlines.sessUZC() + '/' + onlines.sessAZC() + ']. With no connections: [' + onlines.sessUNC() + '/' + onlines.sessANC() + '].'")
 
-	div
-		span.stateRate
-			.rate(data-bind="text: onlines.sessWCUC()")
-			| /
-			.rate(data-bind="text: onlines.sessWCAC()")
-			| /
-			.rate(data-bind="text: (onlines.sessWCUC() + onlines.sessWCAC())")
-		span.stateDesc Sessions waiting connections authorised/anonymous/total
-	div
-		span.stateRate
-			.rate(data-bind="text: onlines.sockUC()")
-			| /
-			.rate(data-bind="text: onlines.sockAC()")
-			| /
-			.rate(data-bind="text: (onlines.sockUC() + onlines.sockAC())")
-		span.stateDesc Active connections authorised/anonymous/total
-	div
-		span.stateDesc Map of user objects in memory:&nbsp;
-		span.stateRate
-			| usSid:
-			.rate(data-bind="text: ' '+ onlines.cusSid()")
-			| , usLogin:
-			.rate(data-bind="text: ' '+ onlines.cusLogin()")
-			| , usId:
-			.rate(data-bind="text: ' '+ onlines.cusId()")
-	div
-		span.stateDesc Map of sessions in memory:&nbsp;
-		span.stateRate
-			| sessConnected:
-			.rate(data-bind="text: ' '+ onlines.csessConnected()")
-			| , sessWaitingConnect:
-			.rate(data-bind="text: ' '+ onlines.csessWaitingConnect()")
-			| , sessWaitingSelect:
-			.rate(data-bind="text: ' '+ onlines.csessWaitingSelect()")
-	.desc
-		strong Active session
-		|  - one client browser with opened pastvu at least in one tab. If exists with zero connections, means that connection closing didn't clear session (should not be). If without connection, means session jumped in active state without socket connection (should not be).
-		br
-		strong Waiting session
-		|  - client passed handshake, but still have no reac socket connection. Such session remove in 5 minutes if connection would not established.
-		br
-		strong Active connection
-		|  - every opened browser tab of active session
-		br
-		br
-		| In each client session (broeser) can be several opened connections (tabs)
-		br
-		| User, who authorised in several browser at the same time, counts as one, but have several sessions according the number of open browsers. That's why number of active authorised sessions may be more then number of authorised
-	br
+    div
+        span.stateRate
+            .rate(data-bind="text: onlines.sessWCUC()")
+            | /
+            .rate(data-bind="text: onlines.sessWCAC()")
+            | /
+            .rate(data-bind="text: (onlines.sessWCUC() + onlines.sessWCAC())")
+        span.stateDesc Sessions waiting connections authorised/anonymous/total
+    div
+        span.stateRate
+            .rate(data-bind="text: onlines.sockUC()")
+            | /
+            .rate(data-bind="text: onlines.sockAC()")
+            | /
+            .rate(data-bind="text: (onlines.sockUC() + onlines.sockAC())")
+        span.stateDesc Active connections authorised/anonymous/total
+    div
+        span.stateDesc Map of user objects in memory:&nbsp;
+        span.stateRate
+            | usSid:
+            .rate(data-bind="text: ' '+ onlines.cusSid()")
+            | , usLogin:
+            .rate(data-bind="text: ' '+ onlines.cusLogin()")
+            | , usId:
+            .rate(data-bind="text: ' '+ onlines.cusId()")
+    div
+        span.stateDesc Map of sessions in memory:&nbsp;
+        span.stateRate
+            | sessConnected:
+            .rate(data-bind="text: ' '+ onlines.csessConnected()")
+            | , sessWaitingConnect:
+            .rate(data-bind="text: ' '+ onlines.csessWaitingConnect()")
+            | , sessWaitingSelect:
+            .rate(data-bind="text: ' '+ onlines.csessWaitingSelect()")
+    .desc
+        strong Active session
+        |  - one client browser with opened pastvu at least in one tab. If exists with zero connections, means that connection closing didn't clear session (should not be). If without connection, means session jumped in active state without socket connection (should not be).
+        br
+        strong Waiting session
+        |  - client passed handshake, but still have no reac socket connection. Such session remove in 5 minutes if connection would not established.
+        br
+        strong Active connection
+        |  - every opened browser tab of active session
+        br
+        br
+        | In each client session (broeser) can be several opened connections (tabs)
+        br
+        | User, who authorised in several browser at the same time, counts as one, but have several sessions according the number of open browsers. That's why number of active authorised sessions may be more then number of authorised
+    br
 
-	//ko if: headers().length
-	h6 Headers of ACTIVE sessions without connections (if exists):
-	div(data-bind="foreach: headers")
-		| -------
-		.headers(data-bind="html: $data")
-	br
-	// /ko
+    //ko if: headers().length
+    h6 Headers of ACTIVE sessions without connections (if exists):
+    div(data-bind="foreach: headers")
+        | -------
+        .headers(data-bind="html: $data")
+    br
+    // /ko
 
-	//ko if: headersWC().length
-	h6 Headers of WAITING sessions without connections (if exists):
-	div(data-bind="foreach: headersWC")
-		| -------
-		.headers(data-bind="html: $data")
-	// /ko
+    //ko if: headersWC().length
+    h6 Headers of WAITING sessions without connections (if exists):
+    div(data-bind="foreach: headersWC")
+        | -------
+        .headers(data-bind="html: $data")
+    // /ko

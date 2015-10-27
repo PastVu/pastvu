@@ -1,118 +1,118 @@
 .gallery(data-bind="with: repository[M!M]")
-	.thumbs(data-bind="style: {width: panelW()}")
-		//ko if: topTitle()
-		.row.rowoffset: .col-xs-12.topcol: .pageHeader(data-bind="text: topTitle()")
-		// /ko
+    .thumbs(data-bind="style: {width: panelW()}")
+        //ko if: topTitle()
+        .row.rowoffset: .col-xs-12.topcol: .pageHeader(data-bind="text: topTitle()")
+        // /ko
 
-		.row.rowoffset
-			.col-xs-12.col-sm-7.col-lg-4.topcol(data-bind="css: {invisible: !loadedFirst()}")
-				.filter(data-bind="css: {opened: filter.open(), inactive: !filter.active()}")
-					.ftitle(data-bind="attr: {title: 'Фильтр. ' + (filter.active() ? 'Switch off' : 'Switch on')}, click: function () {filter.active(!filter.active())}")
-						span.glyphicon.glyphicon-filter
-					.fopen(data-bind="attr: {title: filter.open() ? 'Collapse' : 'Expand'}, click: function () {filter.open(!filter.open())}")
-						span.glyphicon.glyphicon-list-alt
-					.fvals
-						.regions
-							.filterName Regions:
-							.filterVars
-								//ko if: !filter.disp.r().length
-								span.region
-									span.glyphicon.glyphicon-globe
-									|  Whole world
-								// /ko
-								//ko foreach: filter.disp.r
-								span.region.candis(data-bind="css: {dis: $parent._.contains($parent.filter.disp.rdis(), $data.cid)}")
-									span(data-bind="text: $data.title_en")
-									.rtgl.only(title="Leave active only this region", data-bind="click: function() {$parent.fronly($data.cid);}")
-										span.glyphicon.glyphicon-ok
-									.rtgl.dis(title="Toggle activity of this region", data-bind="click: function() {$parent.frdis($data.cid);}")
-										span.glyphicon.glyphicon-off
-								// /ko
-								span.regionEdit(data-bind="click: regionSelect")
-									span.glyphicon.glyphicon-pencil
-									| Change
-						.row.others
-							//ko if: filter.can.s()
-							.row.svars
-								.filterName Status:
-								.filterVars(data-bind="foreach: filter.available.s")
-									label.checkbox-inline.s
-										input(type="checkbox", data-bind="attr: {value: s}, checked: $parent.filter.disp.s")
-										span(data-bind="text: title")
-							// /ko
-							.row.geovars
-								.filterName Coordinates:
-								.filterVars
-									label.checkbox-inline
-										input(type="checkbox", value="1", data-bind="checked: filter.disp.geo, click: fgeoclk")
-										span Setted
-									label.checkbox-inline
-										input(type="checkbox", value="0", data-bind="checked: filter.disp.geo, click: fgeoclk")
-										span Not setted (Where is it?)
-			.col-xs-12.col-sm-5.col-lg-4.col-lg-push-4.topcol.switch(data-bind="css: {invisible: !loadedFirst()}")
-				span.brief(data-bind="text: briefText")
-				//ko if: photos().length
-				.btn-group
-					button.btn.btn-primary(title="Page by page", data-bind="click: function () {feedSelect(false)}, css: {active: !feed()}")
-						span.glyphicon.glyphicon-book
-					button.btn.btn-primary(title="Feed", data-bind="click: function () {feedSelect(true)}, css: {active: feed()}")
-						span.glyphicon.glyphicon-th-list
-				// /ko
-			.clearfix.hidden-lg
-			.col-xs-12.col-lg-4.col-lg-pull-4.pag(data-bind="css: {loading: !feed() && loading(), hasPag: paginationShow()}")
-				//ko if: paginationShow()
-				//ko template: {name: 'photoPagerTpl'}
-				// /ko
-				// /ko
+        .row.rowoffset
+            .col-xs-12.col-sm-7.col-lg-4.topcol(data-bind="css: {invisible: !loadedFirst()}")
+                .filter(data-bind="css: {opened: filter.open(), inactive: !filter.active()}")
+                    .ftitle(data-bind="attr: {title: 'Фильтр. ' + (filter.active() ? 'Switch off' : 'Switch on')}, click: function () {filter.active(!filter.active())}")
+                        span.glyphicon.glyphicon-filter
+                    .fopen(data-bind="attr: {title: filter.open() ? 'Collapse' : 'Expand'}, click: function () {filter.open(!filter.open())}")
+                        span.glyphicon.glyphicon-list-alt
+                    .fvals
+                        .regions
+                            .filterName Regions:
+                            .filterVars
+                                //ko if: !filter.disp.r().length
+                                span.region
+                                    span.glyphicon.glyphicon-globe
+                                    |  Whole world
+                                // /ko
+                                //ko foreach: filter.disp.r
+                                span.region.candis(data-bind="css: {dis: $parent._.contains($parent.filter.disp.rdis(), $data.cid)}")
+                                    span(data-bind="text: $data.title_en")
+                                    .rtgl.only(title="Leave active only this region", data-bind="click: function() {$parent.fronly($data.cid);}")
+                                        span.glyphicon.glyphicon-ok
+                                    .rtgl.dis(title="Toggle activity of this region", data-bind="click: function() {$parent.frdis($data.cid);}")
+                                        span.glyphicon.glyphicon-off
+                                // /ko
+                                span.regionEdit(data-bind="click: regionSelect")
+                                    span.glyphicon.glyphicon-pencil
+                                    | Change
+                        .row.others
+                            //ko if: filter.can.s()
+                            .row.svars
+                                .filterName Status:
+                                .filterVars(data-bind="foreach: filter.available.s")
+                                    label.checkbox-inline.s
+                                        input(type="checkbox", data-bind="attr: {value: s}, checked: $parent.filter.disp.s")
+                                        span(data-bind="text: title")
+                            // /ko
+                            .row.geovars
+                                .filterName Coordinates:
+                                .filterVars
+                                    label.checkbox-inline
+                                        input(type="checkbox", value="1", data-bind="checked: filter.disp.geo, click: fgeoclk")
+                                        span Setted
+                                    label.checkbox-inline
+                                        input(type="checkbox", value="0", data-bind="checked: filter.disp.geo, click: fgeoclk")
+                                        span Not setted (Where is it?)
+            .col-xs-12.col-sm-5.col-lg-4.col-lg-push-4.topcol.switch(data-bind="css: {invisible: !loadedFirst()}")
+                span.brief(data-bind="text: briefText")
+                //ko if: photos().length
+                .btn-group
+                    button.btn.btn-primary(title="Page by page", data-bind="click: function () {feedSelect(false)}, css: {active: !feed()}")
+                        span.glyphicon.glyphicon-book
+                    button.btn.btn-primary(title="Feed", data-bind="click: function () {feedSelect(true)}, css: {active: feed()}")
+                        span.glyphicon.glyphicon-th-list
+                // /ko
+            .clearfix.hidden-lg
+            .col-xs-12.col-lg-4.col-lg-pull-4.pag(data-bind="css: {loading: !feed() && loading(), hasPag: paginationShow()}")
+                //ko if: paginationShow()
+                //ko template: {name: 'photoPagerTpl'}
+                // /ko
+                // /ko
 
-		//ko if: u && canAdd()
-		a.photoPreview.withInfo.fringe.addPhoto(href="/photoUpload")
-			img.img(src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7", data-bind="style: {width: w, height: h}")
-			.plusPhoto
-			.desc Upload photo..
-		// /ko
-		//ko foreach: photos
-		.photoPreview.withStatus.withInfo.fringe(data-bind="attr: {title: title}, css: ($parent.feed() ? 'trans ' : '') + 's' + $data.s")
-			a.photoBox(data-bind="attr: {href: '/p/' + cid, target: $parent.feed() ? '_blank' : '_self'}")
-				img.img(data-bind="attr: {src: sfile, alt: title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.w, height: $parent.h}")
-				.curtain
-				//ko if: status.icon
-				.status.fringe(data-bind="attr: {title: status.tip}")
-					span.glyphicon(data-bind="css: status.icon")
-				// /ko
-			.info
-				a.title(data-bind="text: title, attr: {href: '/p/' + cid, target: $parent.feed() ? '_blank' : '_self'}")
-				//ko if: $data.rs
-				.regions(data-bind="foreach: $data.rs", title=" ")
-					| <!--ko if: $index()-->, <!-- /ko -->
-					a.shortRegion(data-bind="css: {where: !$data.cid}, attr: {href: '/ps?f='+(!$data.cid ? 'geo!0'+($parent.rs[$index()+1] ? '_r!'+$parent.rs[$index()+1].cid : '') : 'r!'+$data.cid), title: $data.title_en}, text: $data.title_en")
-				// /ko
-			//ko if: $data.ccount || $data.changed
-			.rightBlocks
-				//ko if: $data.ccount
-				a.rightBlock.comm(data-bind="html: $data.ccount + ($data.ccount_new ? '<span class=\"cnew\"> +' + $data.ccount_new + '</span>' : ''), attr: {href: '/p/' + cid + '?hl=comments', target: $parent.feed() ? '_blank' : '_self'}", title="Comments")
-				// /ko
-				//ko if: $data.changed
-				a.rightBlock.changed(data-bind="attr: {href: '/p/' + cid + '?history=1', target: $parent.feed() ? '_blank' : '_self'}", title="Photo has been changed since last visit")
-					span.glyphicon.glyphicon-pencil
-				// /ko
-			// /ko
-		// /ko
-		//ko if: feed()
-		.photoPreview.withInfo.loadingPhoto(data-bind="style: {visibility: loading() ? 'visible' : 'hidden', width: w, height: h}")
-			.loadPhoto Loading
-		// /ko
-		//ko if: photos().length && paginationShow()
-		.rowoffset.pag(data-bind="template: {name: 'photoPagerTpl'}")
-		// /ko
+        //ko if: u && canAdd()
+        a.photoPreview.withInfo.fringe.addPhoto(href="/photoUpload")
+            img.img(src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7", data-bind="style: {width: w, height: h}")
+            .plusPhoto
+            .desc Upload photo..
+        // /ko
+        //ko foreach: photos
+        .photoPreview.withStatus.withInfo.fringe(data-bind="attr: {title: title}, css: ($parent.feed() ? 'trans ' : '') + 's' + $data.s")
+            a.photoBox(data-bind="attr: {href: '/p/' + cid, target: $parent.feed() ? '_blank' : '_self'}")
+                img.img(data-bind="attr: {src: sfile, alt: title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.w, height: $parent.h}")
+                .curtain
+                //ko if: status.icon
+                .status.fringe(data-bind="attr: {title: status.tip}")
+                    span.glyphicon(data-bind="css: status.icon")
+                // /ko
+            .info
+                a.title(data-bind="text: title, attr: {href: '/p/' + cid, target: $parent.feed() ? '_blank' : '_self'}")
+                //ko if: $data.rs
+                .regions(data-bind="foreach: $data.rs", title=" ")
+                    | <!--ko if: $index()-->, <!-- /ko -->
+                    a.shortRegion(data-bind="css: {where: !$data.cid}, attr: {href: '/ps?f='+(!$data.cid ? 'geo!0'+($parent.rs[$index()+1] ? '_r!'+$parent.rs[$index()+1].cid : '') : 'r!'+$data.cid), title: $data.title_en}, text: $data.title_en")
+                // /ko
+            //ko if: $data.ccount || $data.changed
+            .rightBlocks
+                //ko if: $data.ccount
+                a.rightBlock.comm(data-bind="html: $data.ccount + ($data.ccount_new ? '<span class=\"cnew\"> +' + $data.ccount_new + '</span>' : ''), attr: {href: '/p/' + cid + '?hl=comments', target: $parent.feed() ? '_blank' : '_self'}", title="Comments")
+                // /ko
+                //ko if: $data.changed
+                a.rightBlock.changed(data-bind="attr: {href: '/p/' + cid + '?history=1', target: $parent.feed() ? '_blank' : '_self'}", title="Photo has been changed since last visit")
+                    span.glyphicon.glyphicon-pencil
+                // /ko
+            // /ko
+        // /ko
+        //ko if: feed()
+        .photoPreview.withInfo.loadingPhoto(data-bind="style: {visibility: loading() ? 'visible' : 'hidden', width: w, height: h}")
+            .loadPhoto Loading
+        // /ko
+        //ko if: photos().length && paginationShow()
+        .rowoffset.pag(data-bind="template: {name: 'photoPagerTpl'}")
+        // /ko
 
-	| <script id="photoPagerTpl" type="text/html">
-	ul.pagination
-		li.edge(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: pageUrl() + pageQuery()}", title="First page") &laquo;&laquo;
-		li.edge(data-bind="css: {disabled: !pageHasPrev()}"): a(data-bind="attr: {href: pageUrl() + (page() > 1 ? '/' + (page() - 1) : '')+ pageQuery()}", title="Previous page") &laquo;
-		//ko foreach: pages
-		li(data-bind="css: {active: $data === $parent.page()}"): a(data-bind="attr: {href: $parent.pageUrl() + '/' + $data + $parent.pageQuery()}, text: $data")
-		// /ko
-		li.edge(data-bind="css: {disabled: !pageHasNext()}"): a(data-bind="attr: {href: pageUrl() + '/' + (page() + 1) + pageQuery()}", title="Next page") &raquo;
-		li.edge(data-bind="css: {disabled: page() === pageLast()}"): a(data-bind="attr: {href: pageUrl() + '/' + pageLast() + pageQuery()}", title="Last page") &raquo;&raquo;
-	| </script>
+    | <script id="photoPagerTpl" type="text/html">
+    ul.pagination
+        li.edge(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: pageUrl() + pageQuery()}", title="First page") &laquo;&laquo;
+        li.edge(data-bind="css: {disabled: !pageHasPrev()}"): a(data-bind="attr: {href: pageUrl() + (page() > 1 ? '/' + (page() - 1) : '')+ pageQuery()}", title="Previous page") &laquo;
+        //ko foreach: pages
+        li(data-bind="css: {active: $data === $parent.page()}"): a(data-bind="attr: {href: $parent.pageUrl() + '/' + $data + $parent.pageQuery()}, text: $data")
+        // /ko
+        li.edge(data-bind="css: {disabled: !pageHasNext()}"): a(data-bind="attr: {href: pageUrl() + '/' + (page() + 1) + pageQuery()}", title="Next page") &raquo;
+        li.edge(data-bind="css: {disabled: page() === pageLast()}"): a(data-bind="attr: {href: pageUrl() + '/' + pageLast() + pageQuery()}", title="Last page") &raquo;&raquo;
+    | </script>

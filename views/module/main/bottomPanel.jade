@@ -1,135 +1,135 @@
 .bottomPanel(data-bind="with: repository[M!M]")
-	//ko if: news().length > 0
-	.news
-		.newsHeader Project news
-		//ko foreach: news
-		//ko if: $index()
-		hr
-		// /ko
-		.novel.clearfix
-			.newsLeft
-				.newsDate(data-bind="text: moment($data.pdate).format('D MMM')")
-				//ko if: $data.ccount
-				a.newsComms(data-bind="html: $data.ccount + ($data.ccount_new ? '<div class=\"cnew\">+' + $data.ccount_new + '</div>' : ''), attr: {href: '/news/' + $data.cid + '?hl=comments'}", title="Jump to news comments")
-				// /ko
-			.newsBody
-				a.newsTitle(data-bind="text: $data.title, attr: {href: '/news/' + $data.cid}")
-				.newsNotice(data-bind="html: $data.notice")
-				//ko if: $data.expand
-				a.newsExpand(data-bind="attr: {href: '/news/' + $data.cid}") [Read more..]
-				// /ko
-		// /ko
-	// /ko
-	nav.navbar.navbar-pastvu.catMenu
-		ul.nav.navbar-nav
-			//ko foreach: cats
-			li(data-bind="css: {loading: $data === $parent.catLoading(), active: $data === $parent.catActive()}, click: $parent.catClickBind")
-				a(data-bind="text: $parent.catsObj[$data].name")
-			// /ko
-			li
-				a(target="_blank", href="/news")
-					| News archive
-					span.glyphicon.glyphicon-share
-	//ko if: catActive()
-	.catContent(data-bind="template: catsObj[catActive()].tpl")
-	// /ko
+    //ko if: news().length > 0
+    .news
+        .newsHeader Project news
+        //ko foreach: news
+        //ko if: $index()
+        hr
+        // /ko
+        .novel.clearfix
+            .newsLeft
+                .newsDate(data-bind="text: moment($data.pdate).format('D MMM')")
+                //ko if: $data.ccount
+                a.newsComms(data-bind="html: $data.ccount + ($data.ccount_new ? '<div class=\"cnew\">+' + $data.ccount_new + '</div>' : ''), attr: {href: '/news/' + $data.cid + '?hl=comments'}", title="Jump to news comments")
+                // /ko
+            .newsBody
+                a.newsTitle(data-bind="text: $data.title, attr: {href: '/news/' + $data.cid}")
+                .newsNotice(data-bind="html: $data.notice")
+                //ko if: $data.expand
+                a.newsExpand(data-bind="attr: {href: '/news/' + $data.cid}") [Read more..]
+                // /ko
+        // /ko
+    // /ko
+    nav.navbar.navbar-pastvu.catMenu
+        ul.nav.navbar-nav
+            //ko foreach: cats
+            li(data-bind="css: {loading: $data === $parent.catLoading(), active: $data === $parent.catActive()}, click: $parent.catClickBind")
+                a(data-bind="text: $parent.catsObj[$data].name")
+            // /ko
+            li
+                a(target="_blank", href="/news")
+                    | News archive
+                    span.glyphicon.glyphicon-share
+    //ko if: catActive()
+    .catContent(data-bind="template: catsObj[catActive()].tpl")
+    // /ko
 
-	| <script id="photosTpl" type="text/html">
-	.photosNew
-		//ko foreach: photos
-		.photoPreview.withInfo.fringe(data-bind="attr: {title: title}")
-			a.photoBox(data-bind="attr: {href: $data.link}")
-				img.img(data-bind="attr: {src: sfile, alt: title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}")
-				.curtain
-			.info
-				a.title(data-bind="text: title, attr: {href: $data.link}")
-				//ko if: $data.rs
-				.regions(data-bind="foreach: $data.rs", title=" ")
-					| <!--ko if: $index()-->, <!-- /ko -->
-					a.shortRegion(data-bind="css: {where: !$data.cid}, attr: {href: '/ps?f='+(!$data.cid ? 'geo!0'+($parent.rs[$index()+1] ? '_r!'+$parent.rs[$index()+1].cid : '') : 'r!'+$data.cid), title: $data.title_en}, text: $data.title_en")
-				// /ko
-			//ko if: $data.ccount || $data.changed
-			.rightBlocks
-				//ko if: $data.ccount
-				a.rightBlock.comm(data-bind="html: $data.ccount + ($data.ccount_new ? '<span class=\"cnew\"> +' + $data.ccount_new + '</span>' : ''), attr: {href: $data.link + '?hl=comments'}", title="Комментарии")
-				// /ko
-				//ko if: $data.changed
-				a.rightBlock.changed(data-bind="attr: {href: $data.link + '?history=1'}", title="Photo has been changed since last view")
-					span.glyphicon.glyphicon-pencil
-				// /ko
-			// /ko
-		// /ko
-		//ko if: moreLink()
-		a.photoPreview.withInfo.nextPhoto(data-bind="attr: {href: moreLink()}")
-			.nextPhotoTxt
-				span.glyphicon.glyphicon-fast-forward
-				|  More..
-		// /ko
-	| </script>
+    | <script id="photosTpl" type="text/html">
+    .photosNew
+        //ko foreach: photos
+        .photoPreview.withInfo.fringe(data-bind="attr: {title: title}")
+            a.photoBox(data-bind="attr: {href: $data.link}")
+                img.img(data-bind="attr: {src: sfile, alt: title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}")
+                .curtain
+            .info
+                a.title(data-bind="text: title, attr: {href: $data.link}")
+                //ko if: $data.rs
+                .regions(data-bind="foreach: $data.rs", title=" ")
+                    | <!--ko if: $index()-->, <!-- /ko -->
+                    a.shortRegion(data-bind="css: {where: !$data.cid}, attr: {href: '/ps?f='+(!$data.cid ? 'geo!0'+($parent.rs[$index()+1] ? '_r!'+$parent.rs[$index()+1].cid : '') : 'r!'+$data.cid), title: $data.title_en}, text: $data.title_en")
+                // /ko
+            //ko if: $data.ccount || $data.changed
+            .rightBlocks
+                //ko if: $data.ccount
+                a.rightBlock.comm(data-bind="html: $data.ccount + ($data.ccount_new ? '<span class=\"cnew\"> +' + $data.ccount_new + '</span>' : ''), attr: {href: $data.link + '?hl=comments'}", title="Комментарии")
+                // /ko
+                //ko if: $data.changed
+                a.rightBlock.changed(data-bind="attr: {href: $data.link + '?history=1'}", title="Photo has been changed since last view")
+                    span.glyphicon.glyphicon-pencil
+                // /ko
+            // /ko
+        // /ko
+        //ko if: moreLink()
+        a.photoPreview.withInfo.nextPhoto(data-bind="attr: {href: moreLink()}")
+            .nextPhotoTxt
+                span.glyphicon.glyphicon-fast-forward
+                |  More..
+        // /ko
+    | </script>
 
-	| <script id="ratingsTpl" type="text/html">
-	.row.ratings
-		.col-xs-6
-			.catHead Rating of photos
-			.row
-				.col-xs-6
-					.catGroupHead By views
-					.btn-group.btn-group-sm#pbyview
-						button.btn.btn-primary(data-time="day", data-bind="text: 'Day', click: ratSelect, css: {active: ratings.pbyview.selected() === 'day'}")
-						button.btn.btn-primary(data-time="week", data-bind="text: 'Week', click: ratSelect, css: {active: ratings.pbyview.selected() === 'week'}")
-						button.btn.btn-primary(data-time="all", data-bind="text: 'All', click: ratSelect, css: {active: ratings.pbyview.selected() === 'all'}")
-					//ko template: { name: 'ratingsColumnTpl', foreach: ratings.pbyview[ratings.pbyview.selected()] }
-					// /ko
-				.col-xs-6
-					.catGroupHead By comments
-					.btn-group.btn-group-sm#pbycomm
-						button.btn.btn-primary(data-time="day", data-bind="text: 'Day', click: ratSelect, css: {active: ratings.pbycomm.selected() === 'day'}")
-						button.btn.btn-primary(data-time="week", data-bind="text: 'Week', click: ratSelect, css: {active: ratings.pbycomm.selected() === 'week'}")
-						button.btn.btn-primary(data-time="all", data-bind="text: 'All', click: ratSelect, css: {active: ratings.pbycomm.selected() === 'all'}")
-					//ko template: { name: 'ratingsColumnTpl', foreach: ratings.pbycomm[ratings.pbycomm.selected()] }
-					// /ko
-		.col-xs-6
-			.catHead Rating of users
-			.row
-				.col-xs-6
-					.catGroupHead By comments
-					.btn-group.btn-group-sm#ubycomm
-						button.btn.btn-primary(data-time="day", data-bind="text: 'Day', click: ratSelect, css: {active: ratings.ubycomm.selected() === 'day'}")
-						button.btn.btn-primary(data-time="week", data-bind="text: 'Week', click: ratSelect, css: {active: ratings.ubycomm.selected() === 'week'}")
-						button.btn.btn-primary(data-time="all", data-bind="text: 'All', click: ratSelect, css: {active: ratings.ubycomm.selected() === 'all'}")
-					//ko template: { name: 'ratingsColumnTpl', foreach: ratings.ubycomm[ratings.ubycomm.selected()] }
-					// /ko
-				.col-xs-6
-					.catGroupHead By uploads
-					.btn-group.btn-group-sm#ubyphoto
-						button.btn.btn-primary(data-time="day", data-bind="text: 'Day', click: ratSelect, css: {active: ratings.ubyphoto.selected() === 'day'}")
-						button.btn.btn-primary(data-time="week", data-bind="text: 'Week', click: ratSelect, css: {active: ratings.ubyphoto.selected() === 'week'}")
-						button.btn.btn-primary(data-time="all", data-bind="text: 'All', click: ratSelect, css: {active: ratings.ubyphoto.selected() === 'all'}")
-					//ko template: { name: 'ratingsColumnTpl', foreach: ratings.ubyphoto[ratings.ubyphoto.selected()] }
-					// /ko
-	| </script>
+    | <script id="ratingsTpl" type="text/html">
+    .row.ratings
+        .col-xs-6
+            .catHead Rating of photos
+            .row
+                .col-xs-6
+                    .catGroupHead By views
+                    .btn-group.btn-group-sm#pbyview
+                        button.btn.btn-primary(data-time="day", data-bind="text: 'Day', click: ratSelect, css: {active: ratings.pbyview.selected() === 'day'}")
+                        button.btn.btn-primary(data-time="week", data-bind="text: 'Week', click: ratSelect, css: {active: ratings.pbyview.selected() === 'week'}")
+                        button.btn.btn-primary(data-time="all", data-bind="text: 'All', click: ratSelect, css: {active: ratings.pbyview.selected() === 'all'}")
+                    //ko template: { name: 'ratingsColumnTpl', foreach: ratings.pbyview[ratings.pbyview.selected()] }
+                    // /ko
+                .col-xs-6
+                    .catGroupHead By comments
+                    .btn-group.btn-group-sm#pbycomm
+                        button.btn.btn-primary(data-time="day", data-bind="text: 'Day', click: ratSelect, css: {active: ratings.pbycomm.selected() === 'day'}")
+                        button.btn.btn-primary(data-time="week", data-bind="text: 'Week', click: ratSelect, css: {active: ratings.pbycomm.selected() === 'week'}")
+                        button.btn.btn-primary(data-time="all", data-bind="text: 'All', click: ratSelect, css: {active: ratings.pbycomm.selected() === 'all'}")
+                    //ko template: { name: 'ratingsColumnTpl', foreach: ratings.pbycomm[ratings.pbycomm.selected()] }
+                    // /ko
+        .col-xs-6
+            .catHead Rating of users
+            .row
+                .col-xs-6
+                    .catGroupHead By comments
+                    .btn-group.btn-group-sm#ubycomm
+                        button.btn.btn-primary(data-time="day", data-bind="text: 'Day', click: ratSelect, css: {active: ratings.ubycomm.selected() === 'day'}")
+                        button.btn.btn-primary(data-time="week", data-bind="text: 'Week', click: ratSelect, css: {active: ratings.ubycomm.selected() === 'week'}")
+                        button.btn.btn-primary(data-time="all", data-bind="text: 'All', click: ratSelect, css: {active: ratings.ubycomm.selected() === 'all'}")
+                    //ko template: { name: 'ratingsColumnTpl', foreach: ratings.ubycomm[ratings.ubycomm.selected()] }
+                    // /ko
+                .col-xs-6
+                    .catGroupHead By uploads
+                    .btn-group.btn-group-sm#ubyphoto
+                        button.btn.btn-primary(data-time="day", data-bind="text: 'Day', click: ratSelect, css: {active: ratings.ubyphoto.selected() === 'day'}")
+                        button.btn.btn-primary(data-time="week", data-bind="text: 'Week', click: ratSelect, css: {active: ratings.ubyphoto.selected() === 'week'}")
+                        button.btn.btn-primary(data-time="all", data-bind="text: 'All', click: ratSelect, css: {active: ratings.ubyphoto.selected() === 'all'}")
+                    //ko template: { name: 'ratingsColumnTpl', foreach: ratings.ubyphoto[ratings.ubyphoto.selected()] }
+                    // /ko
+    | </script>
 
-	| <script id="ratingsColumnTpl" type="text/html">
-	a.row.ratElem(data-bind="attr: {href: $data.link}")
-		.imgLoad
-			img.img(data-bind="attr: {src: $data.sfile}", onload="G.imgLoadOk(this)", onerror="G.imgLoadFail(this)")
-		.ratName(data-bind="text: $data.title, css: {online: $data.online}")
-		.ratAmount(data-bind="text: $data.amount")
-	| </script>
+    | <script id="ratingsColumnTpl" type="text/html">
+    a.row.ratElem(data-bind="attr: {href: $data.link}")
+        .imgLoad
+            img.img(data-bind="attr: {src: $data.sfile}", onload="G.imgLoadOk(this)", onerror="G.imgLoadFail(this)")
+        .ratName(data-bind="text: $data.title, css: {online: $data.online}")
+        .ratAmount(data-bind="text: $data.amount")
+    | </script>
 
-	| <script id="statsTpl" type="text/html">
-	.stats
-		.statsFast
-			.onlineStat(data-bind="text: stats.common.onlineTxt")
-		.row
-			.col-xs-12
-				.catHead The entire project
-				.statrow(data-bind="text: 'Registered users: ' + stats.all.userCount")
-				.statrow(data-bind="text: 'Photos: ' + stats.all.pallCount")
-				.statrow(data-bind="text: 'Vast majority of photos refers to ' + stats.all.photoYear.pop.year + ' year, ' + stats.all.photoYear.pop.count")
-				.statrow(data-bind="text: 'New photos today: ' + stats.all.pdayCount")
-				.statrow(data-bind="text: 'New photos this week: ' + stats.all.pweekCount")
-				.statrow(data-bind="text: 'Comments: ' + stats.all.callCount")
-				.statrow(data-bind="text: 'Today new comments: ' + stats.all.cdayCount")
-				.statrow(data-bind="text: 'New comments this week: ' + stats.all.cweekCount")
-	| </script>
+    | <script id="statsTpl" type="text/html">
+    .stats
+        .statsFast
+            .onlineStat(data-bind="text: stats.common.onlineTxt")
+        .row
+            .col-xs-12
+                .catHead The entire project
+                .statrow(data-bind="text: 'Registered users: ' + stats.all.userCount")
+                .statrow(data-bind="text: 'Photos: ' + stats.all.pallCount")
+                .statrow(data-bind="text: 'Vast majority of photos refers to ' + stats.all.photoYear.pop.year + ' year, ' + stats.all.photoYear.pop.count")
+                .statrow(data-bind="text: 'New photos today: ' + stats.all.pdayCount")
+                .statrow(data-bind="text: 'New photos this week: ' + stats.all.pweekCount")
+                .statrow(data-bind="text: 'Comments: ' + stats.all.callCount")
+                .statrow(data-bind="text: 'Today new comments: ' + stats.all.cdayCount")
+                .statrow(data-bind="text: 'New comments this week: ' + stats.all.cweekCount")
+    | </script>

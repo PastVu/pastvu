@@ -1,43 +1,43 @@
 .c.cadd(class="l{{=it.level}}", data-cid="{{=it.cid}}", data-level="{{=it.level}}", data-type="{{=it.type}}")
-	a.hrefava(href="{{='/u/'+it.user.login}}", target="_blank")
-		| {{?it.user.avatar === undefined}}
-		.overprint {{=it.user.disp[0]}}
-		| {{?}}
-		img.cava(src="{{=it.user.avatar || '/img/caps/avatarth.png'}}")
-	.cbody
-		textarea.form-control.cinput(wrap="soft", maxlength="12000")
-		.cinputLabel
-			| {{?it.level}}
-			| Push to write comment
-			| {{??}}
-			| Push to write first level comment
-			br
-			small(style="font-style: italic") To reply to existing comment, click Reply beneath it
-			| {{?}}
-		form.form-inline
-			button.btn.btn-success.btn-sm.btnCommentSend(type="button", data-bind="click: send, attr: {disabled: exe()}")
-				span.glyphicon.glyphicon-comment
-				|  Send
-			button.btn.btn-warning.btn-sm.btnCommentCancel(type="button", data-bind="click: cancel, attr: {disabled: exe()}")
-				span.glyphicon.glyphicon-remove
-				|  Cancel
-			// ko if: canFrag
-			button.btn.btn-primary.btn-sm.btnCommentFrag(type="button", data-bind="click: fragClick, attr: {disabled: exe()}")
-				span.glyphicon.glyphicon-picture
-				|  Fragment
-			// ko if: fraging()
-			button.btn.btn-primary.btn-sm.btnCommentFragDel(type="button", data-bind="click: fragDelete, attr: {disabled: exe()}")
-				span.glyphicon.glyphicon-remove
-				|  Clear fragment
-			// /ko
-			// /ko
-			.checkbox.replySubscr
-				// ko if: subscr()
-				| You are subscribed to new comments in this topic
-				// /ko
-				// ko ifnot: subscr()
-				//- Устанавливаем checked как атрибут, чтобы его нажатие не изменяло настройку пользователя
-				label
-					input.chkSubscr(type="checkbox", data-bind="attr:{checked: auth.iAm.settings.subscr_auto_reply() ? 'checked' : null}, event: {click: chkSubscrClickBind}")
-					span(style="vertical-align: top;")  Subscribe to topic
-				// /ko
+    a.hrefava(href="{{='/u/'+it.user.login}}", target="_blank")
+        | {{?it.user.avatar === undefined}}
+        .overprint {{=it.user.disp[0]}}
+        | {{?}}
+        img.cava(src="{{=it.user.avatar || '/img/caps/avatarth.png'}}")
+    .cbody
+        textarea.form-control.cinput(wrap="soft", maxlength="12000")
+        .cinputLabel
+            | {{?it.level}}
+            | Push to write comment
+            | {{??}}
+            | Push to write first level comment
+            br
+            small(style="font-style: italic") To reply to existing comment, click Reply beneath it
+            | {{?}}
+        form.form-inline
+            button.btn.btn-success.btn-sm.btnCommentSend(type="button", data-bind="click: send, attr: {disabled: exe()}")
+                span.glyphicon.glyphicon-comment
+                |  Send
+            button.btn.btn-warning.btn-sm.btnCommentCancel(type="button", data-bind="click: cancel, attr: {disabled: exe()}")
+                span.glyphicon.glyphicon-remove
+                |  Cancel
+            // ko if: canFrag
+            button.btn.btn-primary.btn-sm.btnCommentFrag(type="button", data-bind="click: fragClick, attr: {disabled: exe()}")
+                span.glyphicon.glyphicon-picture
+                |  Fragment
+            // ko if: fraging()
+            button.btn.btn-primary.btn-sm.btnCommentFragDel(type="button", data-bind="click: fragDelete, attr: {disabled: exe()}")
+                span.glyphicon.glyphicon-remove
+                |  Clear fragment
+            // /ko
+            // /ko
+            .checkbox.replySubscr
+                // ko if: subscr()
+                | You are subscribed to new comments in this topic
+                // /ko
+                // ko ifnot: subscr()
+                //- Устанавливаем checked как атрибут, чтобы его нажатие не изменяло настройку пользователя
+                label
+                    input.chkSubscr(type="checkbox", data-bind="attr:{checked: auth.iAm.settings.subscr_auto_reply() ? 'checked' : null}, event: {click: chkSubscrClickBind}")
+                    span(style="vertical-align: top;")  Subscribe to topic
+                // /ko

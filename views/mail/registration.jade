@@ -1,22 +1,22 @@
 include head
 p(style="padding-left: 3px; border-style: solid; border-width: 0px 0px 0px 3px; border-color: #5D88B6;")
-	| You have specified the following details:
-	br
-	| Login username: <strong>#{data.login}</strong>
-	br
-	| E-mail: #{data.email}
-	br
-	small For better security, we do not store your original password. If you forget it, just set the new one with recovery procedures on the site
+    | You have specified the following details:
+    br
+    | Login username: <strong>#{data.login}</strong>
+    br
+    | E-mail: #{data.email}
+    br
+    small For better security, we do not store your original password. If you forget it, just set the new one with recovery procedures on the site
 p
-	| We require that all new users should to confirm their email, to be sure that email is real.
-	br
-	| This is required for protection against spammers and multiple registration.
+    | We require that all new users should to confirm their email, to be sure that email is real.
+    br
+    | This is required for protection against spammers and multiple registration.
 p(style="padding-left: 3px; border-style: solid; border-width: 0px 0px 0px 3px; border-color: #5D88B6;")
-	| To activate your account, click the following link:
-	br
-	a(href=config.client.origin + '/confirm/' + confirmKey, target='_blank')
-		= config.client.host + '/confirm/' + confirmKey
-	br
-	small The link is valid for #{linkvalid}, after which you will need to register again
+    | To activate your account, click the following link:
+    br
+    a(href=config.client.origin + '/confirm/' + confirmKey, target='_blank')
+        = config.client.host + '/confirm/' + confirmKey
+    br
+    small The link is valid for #{linkvalid}, after which you will need to register again
 p(style="color: #999;")
-	small You have received this letter because this email address was used for registration. If you didn't register on our website, simply ignore and delete the email.
+    small You have received this letter because this email address was used for registration. If you didn't register on our website, simply ignore and delete the email.

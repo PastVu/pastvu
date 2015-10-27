@@ -1,45 +1,45 @@
 .conveyerModuleWrapper(data-bind="with: repository[M!M]")
-	h4 Conveyor control
-	.row
-		.col-xs-5.col-md-4
-			h5 Actions
-			button.btn.btn-sm(type="button", data-bind="css: {disabled: exe(), 'btn-warning': conveyerEnabled(), 'btn-success': !conveyerEnabled()}, click: startstop, attr: {disabled: exe()}")
-				span.glyphicon(data-bind="css: {'glyphicon-stop': conveyerEnabled(), 'glyphicon-play': !conveyerEnabled()}")
-				span(data-bind="text: conveyerEnabled() ? ' Stop' : ' Start'")
-			button.btn.btn-sm.btn-danger(type="button", data-bind="css: {disabled: exe()}, click: clearConveyer, attr: {disabled: exe()}")
-				span.glyphicon.glyphicon-trash
-				|  Clear
-			br
-			br
-			.toConvertSection
-				h5 Send to convert all photos:
-				form.form-inline
-					.form-group
-						| Photos id:&nbsp;
-						input.form-control(type="number", placeholder="min", data-bind="attr: {disabled: exe()}, value: reconvertCidMin, valueUpdate: 'afterkeydown'", style="width: 70px;")
-						input.form-control(type="number", placeholder="max", data-bind="attr: {disabled: exe()}, value: reconvertCidMax, valueUpdate: 'afterkeydown'", style="width: 70px;")
-						| &nbsp;
-				form.form-inline
-					.form-group
-						| Region id:&nbsp;
-						input.form-control(type="number", data-bind="attr: {disabled: exe()}, value: reconvertRegion, valueUpdate: 'afterkeydown'", style="width: 70px;")
-						| &nbsp;
-				button.btn.btn-primary(data-bind="click: toConvert, attr: {disabled: exe()}") Start
-		.col-xs-7.col-md-8(style="padding-left: 10px;")
-			h5 The current state of the conveyor
-			div(data-bind="css: {'text-success': conveyerEnabled(), 'text-error': !conveyerEnabled()}, text: conveyerEnabled() ? 'Conveyor is active' : 'Conveyor is stopped'")
-			div
-				span.stateRate(data-bind="text:converted()")
-				span.stateDesc Converted since last 10-minute
-			div
-				span.stateRate(data-bind="text:clength()")
-				span.stateDesc Conveyor length
-			div
-				span.stateRate(data-bind="text:cmaxlength()")
-				span.stateDesc Maximum conveyor length since last 10-minute
-	br
-	h5 Converted
-	#conveyerConvertGraph
-	br
-	h5 Maximum conveyor length
-	#conveyerLengthGraph
+    h4 Conveyor control
+    .row
+        .col-xs-5.col-md-4
+            h5 Actions
+            button.btn.btn-sm(type="button", data-bind="css: {disabled: exe(), 'btn-warning': conveyerEnabled(), 'btn-success': !conveyerEnabled()}, click: startstop, attr: {disabled: exe()}")
+                span.glyphicon(data-bind="css: {'glyphicon-stop': conveyerEnabled(), 'glyphicon-play': !conveyerEnabled()}")
+                span(data-bind="text: conveyerEnabled() ? ' Stop' : ' Start'")
+            button.btn.btn-sm.btn-danger(type="button", data-bind="css: {disabled: exe()}, click: clearConveyer, attr: {disabled: exe()}")
+                span.glyphicon.glyphicon-trash
+                |  Clear
+            br
+            br
+            .toConvertSection
+                h5 Send to convert all photos:
+                form.form-inline
+                    .form-group
+                        | Photos id:&nbsp;
+                        input.form-control(type="number", placeholder="min", data-bind="attr: {disabled: exe()}, value: reconvertCidMin, valueUpdate: 'afterkeydown'", style="width: 70px;")
+                        input.form-control(type="number", placeholder="max", data-bind="attr: {disabled: exe()}, value: reconvertCidMax, valueUpdate: 'afterkeydown'", style="width: 70px;")
+                        | &nbsp;
+                form.form-inline
+                    .form-group
+                        | Region id:&nbsp;
+                        input.form-control(type="number", data-bind="attr: {disabled: exe()}, value: reconvertRegion, valueUpdate: 'afterkeydown'", style="width: 70px;")
+                        | &nbsp;
+                button.btn.btn-primary(data-bind="click: toConvert, attr: {disabled: exe()}") Start
+        .col-xs-7.col-md-8(style="padding-left: 10px;")
+            h5 The current state of the conveyor
+            div(data-bind="css: {'text-success': conveyerEnabled(), 'text-error': !conveyerEnabled()}, text: conveyerEnabled() ? 'Conveyor is active' : 'Conveyor is stopped'")
+            div
+                span.stateRate(data-bind="text:converted()")
+                span.stateDesc Converted since last 10-minute
+            div
+                span.stateRate(data-bind="text:clength()")
+                span.stateDesc Conveyor length
+            div
+                span.stateRate(data-bind="text:cmaxlength()")
+                span.stateDesc Maximum conveyor length since last 10-minute
+    br
+    h5 Converted
+    #conveyerConvertGraph
+    br
+    h5 Maximum conveyor length
+    #conveyerLengthGraph

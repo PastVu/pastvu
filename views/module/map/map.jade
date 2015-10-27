@@ -1,58 +1,58 @@
 .mapModuleWrapper(data-bind="with: repository[M!M]")
-	.mapContainer(data-bind="css: {embedded: embedded}")
-		.map
+    .mapContainer(data-bind="css: {embedded: embedded}")
+        .map
 
-		//ko if: embedded
-		.mapInfos
-			//ko if: editing()
-			.mapInfo.geoInput
-				input(type="text", data-bind="value: geoInputComputed, valueUpdate: 'keyup', event: {focusout: geoInputBlur}", placeholder="Широта, долгота")
-			.mapInfo.info.geoInfo
-				//ko if: point.geo()
-				button.btn.btn-sm.btn-warning(type="button", data-bind="click: delPointGeo")
-					span.glyphicon.glyphicon-remove-circle
-					|  Reset the coordinates
-				// /ko
-				//ko ifnot: point.geo()
-				span.glyphicon.glyphicon-map-marker
-				| To set the coordinates, click on the map
-				// /ko
-			// /ko
+        //ko if: embedded
+        .mapInfos
+            //ko if: editing()
+            .mapInfo.geoInput
+                input(type="text", data-bind="value: geoInputComputed, valueUpdate: 'keyup', event: {focusout: geoInputBlur}", placeholder="Широта, долгота")
+            .mapInfo.info.geoInfo
+                //ko if: point.geo()
+                button.btn.btn-sm.btn-warning(type="button", data-bind="click: delPointGeo")
+                    span.glyphicon.glyphicon-remove-circle
+                    |  Reset the coordinates
+                // /ko
+                //ko ifnot: point.geo()
+                span.glyphicon.glyphicon-map-marker
+                | To set the coordinates, click on the map
+                // /ko
+            // /ko
 
-			//ko if: !editing() && !point.geo()
-			.mapInfo.warn
-				span.glyphicon.glyphicon-warning-sign
-				|  Coordinates of photo are not specified
-			// /ko
-		// /ko
+            //ko if: !editing() && !point.geo()
+            .mapInfo.warn
+                span.glyphicon.glyphicon-warning-sign
+                |  Coordinates of photo are not specified
+            // /ko
+        // /ko
 
-		.mapYearSelector
-			.yearSlider
-				.ui-slider-handle.L
-				.ui-slider-handle.R
-			.yearOuter.L
-			.yearOuter.R
-		.mapNavigation.mContainer.mHidden
-		.trtools
-			.trtool.trtoolbutt.openModePanel.fringe(data-bind="css: {no: !openNewTab()}, click: function () {openNewTab(!openNewTab())}, attr: {title: (openNewTab() ? 'Enable' : 'Disable') + ' opening of a photo in a new window'}")
-				span.glyphicon.glyphicon-share
-			//ko if: !embedded
-			.trtool.trtoolbutt.link.fringe(data-bind="click: showLink", title="Link to current map position")
-				span.glyphicon.glyphicon-link
-				//ko if: linkShow()
-				input.inputLink(type="url", readonly, data-bind="click: linkClick, value: location.host + location.pathname + link()", autocorrect="off", autocapitalize="off")
-				// /ko
-			// /ko
-			.trtool.layersPanel.fringe(data-bind="css: {open: layersOpen()}")
-				.currentLayer(data-bind="click: toggleLayers, attr: {title: layersOpen() ? 'Click to hide layer vaiarnts' : 'Click to show available map layers'}")
-					.currentLayerTxt(data-bind="text: layerActiveDesc()")
-					img.layerImg(src='/img/map/layers.png')
-				.layerSystems(data-bind="style: {width: (layersOpen() ? 104 * layers().length : 64) + 'px'}")
-					.h_separator
-					//ko foreach: {data: $data.layers, as: 'system'}
-					.layerSystem(data-bind="css: {selected: system.selected()}")
-						.layerHead(data-bind="text: system.desc")
-						//ko foreach: {data:system.types, as: 'type'}
-						.layerType(data-bind="css: {selected: type.selected()}, text: type.desc, click: function () {$parents[1].selectLayer(system.id, type.id)}")
-						// /ko
-					// /ko
+        .mapYearSelector
+            .yearSlider
+                .ui-slider-handle.L
+                .ui-slider-handle.R
+            .yearOuter.L
+            .yearOuter.R
+        .mapNavigation.mContainer.mHidden
+        .trtools
+            .trtool.trtoolbutt.openModePanel.fringe(data-bind="css: {no: !openNewTab()}, click: function () {openNewTab(!openNewTab())}, attr: {title: (openNewTab() ? 'Enable' : 'Disable') + ' opening of a photo in a new window'}")
+                span.glyphicon.glyphicon-share
+            //ko if: !embedded
+            .trtool.trtoolbutt.link.fringe(data-bind="click: showLink", title="Link to current map position")
+                span.glyphicon.glyphicon-link
+                //ko if: linkShow()
+                input.inputLink(type="url", readonly, data-bind="click: linkClick, value: location.host + location.pathname + link()", autocorrect="off", autocapitalize="off")
+                // /ko
+            // /ko
+            .trtool.layersPanel.fringe(data-bind="css: {open: layersOpen()}")
+                .currentLayer(data-bind="click: toggleLayers, attr: {title: layersOpen() ? 'Click to hide layer vaiarnts' : 'Click to show available map layers'}")
+                    .currentLayerTxt(data-bind="text: layerActiveDesc()")
+                    img.layerImg(src='/img/map/layers.png')
+                .layerSystems(data-bind="style: {width: (layersOpen() ? 104 * layers().length : 64) + 'px'}")
+                    .h_separator
+                    //ko foreach: {data: $data.layers, as: 'system'}
+                    .layerSystem(data-bind="css: {selected: system.selected()}")
+                        .layerHead(data-bind="text: system.desc")
+                        //ko foreach: {data:system.types, as: 'type'}
+                        .layerType(data-bind="css: {selected: type.selected()}, text: type.desc, click: function () {$parents[1].selectLayer(system.id, type.id)}")
+                        // /ko
+                    // /ko

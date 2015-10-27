@@ -1,47 +1,47 @@
 .regsel(data-bind="with: repository[M!M]")
-	//ko if: loading()
-	.loading Загрузка
-	// /ko
+    //ko if: loading()
+    .loading Загрузка
+    // /ko
 
-	//ko ifnot: loading()
-	h4.namehead
-		span.glyphicon.glyphicon-globe
-		span(data-bind="text: ' Region' + (options.max > 1 ? 's' : '') + ' select'")
-	.offsetwrap
-		div Type the name of the region directly in the input or find it in the below tree
-		//ko if: options.max > 1
-		div(data-bind="text: 'Allowed to select ' + (options.min ? 'from ' + options.min: 'up ')+ ' to ' + options.max + ' regions, they should not be nested within each other'")
-		// /ko
+    //ko ifnot: loading()
+    h4.namehead
+        span.glyphicon.glyphicon-globe
+        span(data-bind="text: ' Region' + (options.max > 1 ? 's' : '') + ' select'")
+    .offsetwrap
+        div Type the name of the region directly in the input or find it in the below tree
+        //ko if: options.max > 1
+        div(data-bind="text: 'Allowed to select ' + (options.min ? 'from ' + options.min: 'up ')+ ' to ' + options.max + ' regions, they should not be nested within each other'")
+        // /ko
 
-	.inputwrap.surrogate
-	.inputwrap.origin
-		.input-group.regionsgroup
-			span.input-group-addon Selection:
-			input.regionstkn.form-control(type="text", placeholder="Start to type region name")
+    .inputwrap.surrogate
+    .inputwrap.origin
+        .input-group.regionsgroup
+            span.input-group-addon Selection:
+            input.regionstkn.form-control(type="text", placeholder="Start to type region name")
 
-	.offsetwrap
-		.regionsHead
-			.headElem.interact(data-bind="click: expandAll")
-				span.glyphicon.glyphicon-plus
-				|  Expand all
-			.headElem.interact(data-bind="click: collapseAll")
-				span.glyphicon.glyphicon-minus
-				|  Collapse all
-	.tree
-		ul(data-bind="template: {name: 'treeNode', foreach: regionsTree}")
-	// /ko
+    .offsetwrap
+        .regionsHead
+            .headElem.interact(data-bind="click: expandAll")
+                span.glyphicon.glyphicon-plus
+                |  Expand all
+            .headElem.interact(data-bind="click: collapseAll")
+                span.glyphicon.glyphicon-minus
+                |  Collapse all
+    .tree
+        ul(data-bind="template: {name: 'treeNode', foreach: regionsTree}")
+    // /ko
 
-	| <script id="treeNode" type="text/html">
-	li(data-bind="css: {isparent: $data.childLen}")
-		.lirow(data-bind="css: {selected: $data.selected(), selectable: $data.selectable()}")
-			//ko if: $data.childLen
-			.chevron(data-bind="click: $parents[$data.level].collapseToggle, attr: {title: ($data.opened() ? 'Collapse' : 'Expand') + ' children regions'}")
-				span.glyphicon(data-bind="css: {'glyphicon-minus': $data.opened(), 'glyphicon-plus': !$data.opened()}")
-			// /ko
-			.name(data-bind="click: function() {$parents[$data.level].clickNode($data.title_en)}, attr: {title: $data.selected() ? 'Remove selection' : ($data.selectable() ? 'Select region' : '')}")
-				span(data-bind="text: ' ' + $data.title_en")
-		//ko if: $data.childLen && $data.opened()
-		//ko template: {name: 'treeNode', foreach: $data.regions}
-		// /ko
-		// /ko
-	| </script>
+    | <script id="treeNode" type="text/html">
+    li(data-bind="css: {isparent: $data.childLen}")
+        .lirow(data-bind="css: {selected: $data.selected(), selectable: $data.selectable()}")
+            //ko if: $data.childLen
+            .chevron(data-bind="click: $parents[$data.level].collapseToggle, attr: {title: ($data.opened() ? 'Collapse' : 'Expand') + ' children regions'}")
+                span.glyphicon(data-bind="css: {'glyphicon-minus': $data.opened(), 'glyphicon-plus': !$data.opened()}")
+            // /ko
+            .name(data-bind="click: function() {$parents[$data.level].clickNode($data.title_en)}, attr: {title: $data.selected() ? 'Remove selection' : ($data.selectable() ? 'Select region' : '')}")
+                span(data-bind="text: ' ' + $data.title_en")
+        //ko if: $data.childLen && $data.opened()
+        //ko template: {name: 'treeNode', foreach: $data.regions}
+        // /ko
+        // /ko
+    | </script>

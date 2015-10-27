@@ -1,35 +1,35 @@
 .newsWrapper(data-bind="with: repository[M!M]")
-	.newsHeader Project news
-	//ko if: canEdit()
-	.row
-		a.addNews(href="/admin/news/create")
-			span.glyphicon.glyphicon-plus
-			|  Add news
-	// /ko
-	.news
-		//ko foreach: news
-		hr
-		.novel.clearfix
-			.newsLeft
-				.newsAvatar.fringe(data-bind="attr: {href: '/u/' + $data.user.login}")
-					img(data-bind="attr: {src: $data.user.avatar}")
-				.newsDate(data-bind="text: moment($data.pdate).format('D MMM YYYY')")
-				//ko if: $data.ccount
-				a.comm(data-bind="html: $data.ccount + ($data.ccount_new ? '<span class=\"cnew\"> +' + $data.ccount_new + '</span>' : ''), attr: {href: '/news/' + $data.cid + '?hl=comments'}", title="Jump to news comments")
-				// /ko
-			.newsBody
-				.newsHead
-					a.newsTitle(data-bind="text: $data.title, attr: {href: '/news/' + $data.cid}")
-					.dotDelimeter ·
-					a.authorName(data-bind="text: $data.user.disp, attr: {href: '/u/' + $data.user.login}")
-					//ko if: $parent.canEdit()
-					.dotDelimeter ·
-					a.newsEdit(data-bind="attr: {href: '/admin/news/edit/' + $data.cid}")
-						span.glyphicon.glyphicon-pencil
-						|  Edit
-					// /ko
-				.newsNotice(data-bind="html: $data.notice, css: {expandable: $data.expand}")
-				//ko if: $data.expand
-				a.newsExpand(data-bind="attr: {href: '/news/' + $data.cid}") [Read more..]
-				// /ko
-		// /ko
+    .newsHeader Project news
+    //ko if: canEdit()
+    .row
+        a.addNews(href="/admin/news/create")
+            span.glyphicon.glyphicon-plus
+            |  Add news
+    // /ko
+    .news
+        //ko foreach: news
+        hr
+        .novel.clearfix
+            .newsLeft
+                .newsAvatar.fringe(data-bind="attr: {href: '/u/' + $data.user.login}")
+                    img(data-bind="attr: {src: $data.user.avatar}")
+                .newsDate(data-bind="text: moment($data.pdate).format('D MMM YYYY')")
+                //ko if: $data.ccount
+                a.comm(data-bind="html: $data.ccount + ($data.ccount_new ? '<span class=\"cnew\"> +' + $data.ccount_new + '</span>' : ''), attr: {href: '/news/' + $data.cid + '?hl=comments'}", title="Jump to news comments")
+                // /ko
+            .newsBody
+                .newsHead
+                    a.newsTitle(data-bind="text: $data.title, attr: {href: '/news/' + $data.cid}")
+                    .dotDelimeter ·
+                    a.authorName(data-bind="text: $data.user.disp, attr: {href: '/u/' + $data.user.login}")
+                    //ko if: $parent.canEdit()
+                    .dotDelimeter ·
+                    a.newsEdit(data-bind="attr: {href: '/admin/news/edit/' + $data.cid}")
+                        span.glyphicon.glyphicon-pencil
+                        |  Edit
+                    // /ko
+                .newsNotice(data-bind="html: $data.notice, css: {expandable: $data.expand}")
+                //ko if: $data.expand
+                a.newsExpand(data-bind="attr: {href: '/news/' + $data.cid}") [Read more..]
+                // /ko
+        // /ko
