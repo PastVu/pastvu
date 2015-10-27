@@ -73,7 +73,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     var count = this.types[this.type() + '_persist'](),
                         txt = '';
                     if (count) {
-                        txt = 'Показаны ' + this.pageFirstItem() + ' - ' + (this.pageLastItem() || this.pageSize()) + ' из ' + count;
+                        txt = 'Показаны ' + this.pageFirstItem() + '&ndash;' + (this.pageLastItem() || this.pageSize()) + ' из ' + count;
                     } else {
                         txt = 'Пока нет подписок в данной категории';
                     }

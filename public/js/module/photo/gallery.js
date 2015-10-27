@@ -130,7 +130,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					if (this.feed()) {
 						txt = 'Всего ' + count + ' фотографий';
 					} else {
-						txt = 'Показаны ' + this.pageFirstItem() + ' - ' + this.pageLastItem() + ' из ' + count;
+						txt = 'Показаны ' + this.pageFirstItem() + '&ndash;' + this.pageLastItem() + ' из ' + count;
 					}
 				} else {
 					txt = 'Пока нет ни одной фотографии';

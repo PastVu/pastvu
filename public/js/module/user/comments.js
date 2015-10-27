@@ -72,7 +72,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 var count = this.types[this.type() + '_persist'](),
                     txt = '';
                 if (count) {
-                    txt = 'Показаны ' + this.pageFirstItem() + ' - ' + this.pageLastItem() + ' из ' + count;
+                    txt = 'Показаны ' + this.pageFirstItem() + '&ndash;' + this.pageLastItem() + ' из ' + count;
                 } else {
                     txt = 'Пользователь пока не оставил комментариев в данной категории';
                 }

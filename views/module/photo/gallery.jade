@@ -50,7 +50,7 @@
                                         input(type="checkbox", value="0", data-bind="checked: filter.disp.geo, click: fgeoclk")
                                         span Нет (Где это?)
             .col-xs-12.col-sm-5.col-lg-4.col-lg-push-4.topcol.switch(data-bind="css: {invisible: !loadedFirst()}")
-                span.brief(data-bind="text: briefText")
+                span.brief(data-bind="html: briefText")
                 //ko if: photos().length
                 .btn-group
                     button.btn.btn-primary(title="Постранично", data-bind="click: function () {feedSelect(false)}, css: {active: !feed()}")
