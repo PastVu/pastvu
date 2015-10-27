@@ -105,6 +105,10 @@ var start = Date.now(),
                 exclude: ['commonExcludes']
             },
             {
+                name: 'm/user/photoUpload',
+                exclude: ['commonExcludes']
+            },
+            {
                 name: 'm/comment/hist',
                 exclude: ['commonExcludes']
             },
