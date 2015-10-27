@@ -1,16 +1,16 @@
 .subscr(data-bind="with: repository[M!M]")
-    h4(data-bind="text: (itsMe()?'Ваши подписки':'Подписки пользователя')+' на комментарии'")
+    h4(data-bind="text: (itsMe()?'Your subscriptions':'User subscriptions')")
     //ko if: nextNoty() !== null
     .pagOverTop
         .nextNoty
             span.glyphicon.glyphicon-bullhorn
-        span.text-success(data-bind="text: 'Отправка следующего уведомления запланирована на ' + nextNoty().calendar().toLowerCase() + ' (' + nextNoty().fromNow() + ')'")
+        span.text-success(data-bind="text: 'Sending next notice is scheduled for ' + nextNoty().calendar().toLowerCase() + ' (' + nextNoty().fromNow() + ')'")
     // /ko
     ul.nav.nav-tabs
         li(data-bind="css: {active: type() === 'photo'}")
-            a(data-bind="attr: {href: pageUrl()}, text: 'Фотографии [' + types['photo_persist']() + ']'")
+            a(data-bind="attr: {href: pageUrl()}, text: 'Photos [' + types['photo_persist']() + ']'")
         li(data-bind="css: {active: type() === 'news'}")
-            a(data-bind="attr: {href: pageUrl() + '?type=news'}, text: 'Новости [' + types['news_persist']() + ']'")
+            a(data-bind="attr: {href: pageUrl() + '?type=news'}, text: 'Nesw [' + types['news_persist']() + ']'")
     .navContent
         .row
             .col-xs-6.col-md-3.topcol
@@ -26,9 +26,9 @@
         a.objTitle(data-bind="attr: {href: $data.link}, text: $data.title")
         //ko if: $data.ccount
         br
-        a.count(data-bind="html: $data.ccount + ($data.ccount_new ? '<span class=\"cnew\"> +' + $data.ccount_new + '</span>' : ''), attr: {href: $data.link + '?hl=comments'}", title="Комментарии")
+        a.count(data-bind="html: $data.ccount + ($data.ccount_new ? '<span class=\"cnew\"> +' + $data.ccount_new + '</span>' : ''), attr: {href: $data.link + '?hl=comments'}", title="Comments")
         //ko if: $data.sbscr_noty
-        .planed(title="Сообщение о новых комментариях запланированно к отправке в предстоящем уведомлении.")
+        .planed(title="Message about new comment is scheduled to be sent in the next notice.")
             span.glyphicon.glyphicon-bullhorn
         // /ko
         // /ko
@@ -39,9 +39,9 @@
         a.objTitle(data-bind="attr: {href: $data.link}, text: $data.cid + '. ' + $data.title")
         //ko if: $data.ccount
         br
-        a.count(data-bind="html: $data.ccount + ($data.ccount_new ? '<span class=\"cnew\"> +' + $data.ccount_new + '</span>' : ''), attr: {href: $data.link + '?hl=comments'}", title="Комментарии")
+        a.count(data-bind="html: $data.ccount + ($data.ccount_new ? '<span class=\"cnew\"> +' + $data.ccount_new + '</span>' : ''), attr: {href: $data.link + '?hl=comments'}", title="Comments")
         //ko if: $data.sbscr_noty
-        .planed(title="Сообщение о новых комментариях запланированно к отправке в предстоящем уведомлении.")
+        .planed(title="Message about new comment is scheduled to be sent in the next notice.")
             span.glyphicon.glyphicon-bullhorn
         // /ko
         // /ko
@@ -49,11 +49,11 @@
 
     | <script id="pagerTpl" type="text/html">
     ul.pagination
-        li.edge(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: pageUrl() + pageQuery()}", title="Первая страница") &laquo;&laquo;
-        li.edge(data-bind="css: {disabled: !pageHasPrev()}"): a(data-bind="attr: {href: pageUrl() + (page() > 1 ? '/' + (page() - 1) : '')+ pageQuery()}", title="Предыдущая страница") &laquo;
+        li.edge(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: pageUrl() + pageQuery()}", title="First page") &laquo;&laquo;
+        li.edge(data-bind="css: {disabled: !pageHasPrev()}"): a(data-bind="attr: {href: pageUrl() + (page() > 1 ? '/' + (page() - 1) : '')+ pageQuery()}", title="Previous page") &laquo;
         //ko foreach: pages
         li(data-bind="css: {active: $data === $parent.page()}"): a(data-bind="attr: {href: $parent.pageUrl() + ($data > 1 ? '/' + $data : '') + $parent.pageQuery()}, text: $data")
         // /ko
-        li.edge(data-bind="css: {disabled: !pageHasNext()}"): a(data-bind="attr: {href: pageUrl() + '/' + (page() + 1) + pageQuery()}", title="Следующая страница") &raquo;
-        li.edge(data-bind="css: {disabled: page() === pageLast()}"): a(data-bind="attr: {href: pageUrl() + '/' + pageLast() + pageQuery()}", title="Последняя страница") &raquo;&raquo;
+        li.edge(data-bind="css: {disabled: !pageHasNext()}"): a(data-bind="attr: {href: pageUrl() + '/' + (page() + 1) + pageQuery()}", title="Next page") &raquo;
+        li.edge(data-bind="css: {disabled: page() === pageLast()}"): a(data-bind="attr: {href: pageUrl() + '/' + pageLast() + pageQuery()}", title="Last page") &raquo;&raquo;
     | </script>

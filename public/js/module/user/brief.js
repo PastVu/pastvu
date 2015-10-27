@@ -6,11 +6,11 @@ define(['underscore', 'Params', 'knockout', 'socket!', 'm/_moduleCliche', 'globa
 	'use strict';
 
 	var mess = {
-		ftype: 'Тип файла не соответствует правилам',
-		fmax: 'Файл больше разрешенного размера',
-		fmin: 'Файл слишком мал',
-		fpx: 'Согласно правилам, размер изображения должен быть не менее 100px по каждой из сторон',
-		finvalid: 'Файл не прошел валидацию' //Сообщение по умолчанию для валидации
+		ftype: 'File type does not correspond site rules',
+		fmax: 'File is bigger then allowed',
+		fmin: 'File is too small',
+		fpx: 'According the rules, image size must be at least 100px for each sides',
+		finvalid: 'The file has not passed validation' //Сообщение по умолчанию для валидации
 	};
 
 	return Cliche.extend({
@@ -155,13 +155,13 @@ define(['underscore', 'Params', 'knockout', 'socket!', 'm/_moduleCliche', 'globa
 
 			if (receivedFile && receivedFile.file) {
 				if (receivedFile.error) {
-					window.noty({text: mess[receivedFile.error] || mess.finvalid || 'Ошибка загрузки аватары', type: 'error', layout: 'center', timeout: 4000, force: true});
+					window.noty({text: mess[receivedFile.error] || mess.finvalid || 'Failed to load avatar', type: 'error', layout: 'center', timeout: 4000, force: true});
 					this.avaexe(false);
 					ga('send', 'event', 'avatar', 'upload', 'avatar upload error');
 				} else {
 					socket.once('changeAvatarResult', function (result) {
 						if (!result || result.error || !result.avatar) {
-							window.noty({text: result && result.message || 'Ошибка создания аватары', type: 'error', layout: 'center', timeout: 4000, force: true});
+							window.noty({text: result && result.message || 'Failed to create avatar', type: 'error', layout: 'center', timeout: 4000, force: true});
 							ga('send', 'event', 'avatar', 'upload', 'avatar upload error');
 						} else {
 							if (this.user.login() !== this.auth.iAm.login()) {
@@ -181,7 +181,7 @@ define(['underscore', 'Params', 'knockout', 'socket!', 'm/_moduleCliche', 'globa
 			}
 		},
 		avaFail: function (e, data) {
-			window.noty({text: data && data.message || 'Ошибка загрузки аватары', type: 'error', layout: 'center', timeout: 4000, force: true});
+			window.noty({text: data && data.message || 'Failed to load avatar', type: 'error', layout: 'center', timeout: 4000, force: true});
 			this.avaexe(false);
 		},
 
@@ -189,7 +189,7 @@ define(['underscore', 'Params', 'knockout', 'socket!', 'm/_moduleCliche', 'globa
 			this.avaexe(true);
 			socket.once('delAvatarResult', function (result) {
 				if (!result || result.error) {
-					window.noty({text: result && result.message || 'Ошибка удаления аватары', type: 'error', layout: 'center', timeout: 4000, force: true});
+					window.noty({text: result && result.message || 'Failed to remove avatar', type: 'error', layout: 'center', timeout: 4000, force: true});
 				} else {
 					if (this.user.login() !== this.auth.iAm.login()) {
 						//Если меняем не себе, обновляем модель вручную. Себе обновления пришлет _session

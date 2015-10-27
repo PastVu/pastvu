@@ -6,18 +6,18 @@
             .avaLoadCurtain
             // /ko
             //ko if: canAva()
-            button.btn.btn-sm.btn-primary.avaEdit(data-bind="click: avaActionToggle, css: {disabled: avaexe()}, attr: {disabled: avaexe()}", title="Редактировать аватару")
+            button.btn.btn-sm.btn-primary.avaEdit(data-bind="click: avaActionToggle, css: {disabled: avaexe()}, attr: {disabled: avaexe()}", title="Edit avatar")
                 span.glyphicon.glyphicon-pencil
             //ko if: avaction()
             .avaAction
                 input.avaInput(type="file", name="files[]")
-                button.btn.btn-primary.avaSelect(data-bind="click: avaSelect, css: {disabled: avaexe()}, attr: {disabled: avaexe()}", title="Загрузить новое изображение")
+                button.btn.btn-primary.avaSelect(data-bind="click: avaSelect, css: {disabled: avaexe()}, attr: {disabled: avaexe()}", title="Upload new image")
                     span.glyphicon.glyphicon-picture
-                    |  Сменить
+                    |  Change
                 //ko if: avaExists()
-                button.btn.btn-primary.avaDel(data-bind="click: avaDel, css: {disabled: avaexe()}, attr: {disabled: avaexe()}", title="Удалить загруженное изображение")
+                button.btn.btn-primary.avaDel(data-bind="click: avaDel, css: {disabled: avaexe()}, attr: {disabled: avaexe()}", title="Remove image")
                     span.glyphicon.glyphicon-remove
-                    |  Удалить
+                    |  Remove
                 // /ko
             // /ko
             // /ko
@@ -32,24 +32,24 @@
             span.glyphicon.glyphicon-envelope
             span Send message
     .briefBlock
-        .head Общее
+        .head Common
         .h_separator
         table.briefTable
             tbody
                 tr
-                    td Регистрация:
+                    td Registration:
                     td(data-bind="text: moment(user.regdate()).format('D MMMM YYYY')")
                 tr
-                    td Статус:
-                    td(data-bind="text: user.online() ? 'Онлайн' : 'Оффлайн', css: {online : user.online()}")
+                    td Status:
+                    td(data-bind="text: user.online() ? 'Online' : 'Offline', css: {online : user.online()}")
     .briefBlock
-        .head Краткая статистика
+        .head Brief statistics
         .h_separator
         table.briefTable
             tbody
                 tr
-                    td Фотографий:
+                    td Photos:
                     td(data-bind="text: user.pcount()")
                 tr
-                    td Комментариев:
+                    td Comments:
                     td(data-bind="text: user.ccount()")

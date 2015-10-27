@@ -72,9 +72,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 var count = this.types[this.type() + '_persist'](),
                     txt = '';
                 if (count) {
-                    txt = 'Показаны ' + this.pageFirstItem() + ' - ' + this.pageLastItem() + ' из ' + count;
+                    txt = '' + this.pageFirstItem() + ' - ' + this.pageLastItem() + ' of ' + count + ' are shown';
                 } else {
-                    txt = 'Пользователь пока не оставил комментариев в данной категории';
+                    txt = 'User still has no comments in this category';
                 }
                 return txt;
             }, this);
@@ -217,12 +217,12 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         {
                             module: 'm/comment/hist',
                             modal: {
-                                topic: 'История изменений комментария',
+                                topic: 'History of comment\'s changes',
                                 animateScale: true,
                                 curtainClick: { click: this.closeHistory, ctx: this },
-                                offIcon: { text: 'Закрыть', click: this.closeHistory, ctx: this },
+                                offIcon: { text: 'Close', click: this.closeHistory, ctx: this },
                                 btns: [
-                                    { css: 'btn-primary', text: 'Закрыть', click: this.closeHistory, ctx: this }
+                                    { css: 'btn-primary', text: 'Close', click: this.closeHistory, ctx: this }
                                 ]
                             },
                             options: { cid: cid, type: this.type() },

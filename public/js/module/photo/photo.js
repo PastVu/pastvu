@@ -1374,8 +1374,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             self.exe(true);
             noties.confirm({
                 message: 'The photo will be moved to the Trash, and misses the turn to the publication<br>Confirm the operation?',
-                okText: 'Да',
-                cancelText: 'Нет',
+                okText: 'Yes',
+                cancelText: 'No',
                 onOk: function (confirmer) {
                     confirmer.disable();
 

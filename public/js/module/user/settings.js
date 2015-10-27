@@ -210,8 +210,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
                 window.noty({
                     text: error ? data && data.message || 'Error occurred' :
-                        warning ? 'Ни одной фотографии не отправлено на конвертацию' :
-                        data.updated + ' фотографий отправлено на повторную конвертацию',
+                        warning ? 'No photos are sent for conversion' :
+                        data.updated + ' photos sent to the re-conversion',
                     type: error ? 'error' : warning ? 'warning' : 'success',
                     layout: 'center',
                     timeout: 3000,
@@ -235,10 +235,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }
 
             noties.confirm({
-                message: 'Вы уверены что хотите сбросить индивидуальные настройки подписи в фотографиях' +
-                (region ? ' указанного региона' : '') + '?',
-                okText: 'Да, сбросить',
-                cancelText: 'Отменить',
+                message: 'Are you sure you want to reset individual watermark settings on photos' +
+                (region ? ' in specified region' : '') + '?',
+                okText: 'Yes, reset',
+                cancelText: 'Cancel',
                 onOk: function (confirmer) {
                     socket.once('convertUserPhotosResult', function (data) {
                         var error = !data || data.error;
@@ -248,8 +248,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
                         window.noty({
                             text: error ? data && data.message || 'Error occurred' :
-                                warning ? 'Не найдено ни одной фотографии с индивидуальными настройками подписи' :
-                                'У ' + data.updated + ' фотографий сброшены индивидуальные настройки подписи и они отправлены на повторную конвертацию',
+                                warning ? 'There is no photos with custom watermark' :
+                                'Individual settings have been reset at ' + data.updated + ' photos and they were send to reconvert',
                             type: error ? 'error' : warning ? 'warning' : 'success',
                             layout: 'center',
                             timeout: 3000,
@@ -281,10 +281,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }
 
             noties.confirm({
-                message: 'Вы уверены что хотите сбросить индивидуальные настройки скачивания оргиналов фотографий' +
-                (region ? ' указанного региона' : '') + '?',
-                okText: 'Да, сбросить',
-                cancelText: 'Отменить',
+                message: 'Are you sure you want to reset individual download settings of photos' +
+                (region ? ' in specified region' : '') + '?',
+                okText: 'Yes, reset',
+                cancelText: 'Cancel',
                 onOk: function (confirmer) {
                     socket.once('resetIndividualDownloadOriginResult', function (data) {
                         var error = !data || data.error;
@@ -294,8 +294,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
                         window.noty({
                             text: error ? data && data.message || 'Error occurred' :
-                                warning ? 'Не найдено ни одной фотографии с индивидуальными настройками скачивания' :
-                                'У ' + data.updated + ' фотографий сброшены индивидуальные настройки скачивания',
+                                warning ? 'There is no photos with individual download settings' :
+                                'Individual download settings have been reset at ' + data.updated + ' photos',
                             type: error ? 'error' : warning ? 'warning' : 'success',
                             layout: 'center',
                             timeout: 3000,
@@ -463,16 +463,16 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
         regionHomeSelect: function () {
             if (!this.regHomeselectVM) {
-                this.regionSelect([ko_mapping.toJS(this.u.regionHome)], 1, 1, 'Выбор домашнего региона',
+                this.regionSelect([ko_mapping.toJS(this.u.regionHome)], 1, 1, 'Home region selection',
                     function (vm) {
                         this.regHomeselectVM = vm;
                     },
                     function () {
-                        var regions = this.regHomeselectVM.getSelectedRegions(['cid', 'title_local']);
+                        var regions = this.regHomeselectVM.getSelectedRegions(['cid', 'title_en']);
 
                         if (regions.length !== 1) {
                             window.noty({
-                                text: 'Необходимо выбрать один регион',
+                                text: 'Necessary to choose only one region',
                                 type: 'error',
                                 layout: 'center',
                                 timeout: 2000,
@@ -501,16 +501,16 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
         regionFilterSelect: function () {
             if (!this.regselectVM) {
-                this.regionSelect(ko_mapping.toJS(this.u.regions), 0, 5, 'Изменение списка регионов для фильтрации по умолчанию',
+                this.regionSelect(ko_mapping.toJS(this.u.regions), 0, 5, 'List of regions for filtering by default',
                     function (vm) {
                         this.regselectVM = vm;
                     },
                     function () {
-                        var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']);
+                        var regions = this.regselectVM.getSelectedRegions(['cid', 'title_en']);
 
                         if (regions.length > 5) {
                             window.noty({
-                                text: 'Допускается выбирать до 5 регионов',
+                                text: 'Allowed to select up to 5 regions',
                                 type: 'error',
                                 layout: 'center',
                                 timeout: 3000,
@@ -553,16 +553,16 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             maxWidthRatio: 0.95,
                             fullHeight: true,
                             withScroll: true,
-                            offIcon: { text: 'Отмена', click: onCancel, ctx: ctx },
+                            offIcon: { text: 'Cancel', click: onCancel, ctx: ctx },
                             btns: [
                                 {
                                     css: 'btn-success',
-                                    text: 'Применить',
+                                    text: 'Apply',
                                     glyphicon: 'glyphicon-ok',
                                     click: onApply,
                                     ctx: ctx
                                 },
-                                { css: 'btn-warning', text: 'Отмена', click: onCancel, ctx: ctx }
+                                { css: 'btn-warning', text: 'Cancel', click: onCancel, ctx: ctx }
                             ]
                         },
                         callback: function (vm) {

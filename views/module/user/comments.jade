@@ -1,10 +1,10 @@
 .comments(data-bind="with: repository[M!M]")
-    h4(data-bind="text: itsMe()?'Ваши комментарии':'Комментарии пользователя'")
+    h4(data-bind="text: itsMe()?'Your comments':'User comments'")
     ul.nav.nav-tabs
         li(data-bind="css: {active: type() === 'photo'}")
-            a(data-bind="attr: {href: pageUrl()}, text: 'В фотографиях [' + types['photo_persist']() + ']'")
+            a(data-bind="attr: {href: pageUrl()}, text: 'For photos [' + types['photo_persist']() + ']'")
         li(data-bind="css: {active: type() === 'news'}")
-            a(data-bind="attr: {href: pageUrl() + '?type=news'}, text: 'В новостях [' + types['news_persist']() + ']'")
+            a(data-bind="attr: {href: pageUrl() + '?type=news'}, text: 'For news [' + types['news_persist']() + ']'")
     .navContent
         .row
             .col-xs-6.col-md-3.topcol
@@ -23,7 +23,7 @@
             a.commentStamp(data-bind="attr: {href: $data.link}, text: moment($data.stamp).calendar()")
             //ko if: $data.lastChanged
             .dotDelimeter ·
-            .commentChanged(title="Показать историю изменений", data-bind="text: 'Изменен ' + moment($data.lastChanged).calendar().toLowerCase(), click: function () {$parent.showHistory($data.cid)}")
+            .commentChanged(title="Show history of changes", data-bind="text: 'Changed at ' + moment($data.lastChanged).calendar().toLowerCase(), click: function () {$parent.showHistory($data.cid)}")
             // /ko
         a.commentText(data-bind="attr: {href: $data.link}, html: $data.txt")
     | </script>
@@ -36,18 +36,18 @@
             a.commentStamp(data-bind="attr: {href: $data.link}, text: moment($data.stamp).calendar()")
             //ko if: $data.lastChanged
             .dotDelimeter ·
-            .commentChanged(title="Показать историю изменений", data-bind="text: 'Изменен ' + moment($data.lastChanged).calendar().toLowerCase(), click: function () {$parent.showHistory($data.cid)}")
+            .commentChanged(title="Show history of changes", data-bind="text: 'Changed at ' + moment($data.lastChanged).calendar().toLowerCase(), click: function () {$parent.showHistory($data.cid)}")
             // /ko
         a.commentText(style="margin-left:29px", data-bind="attr: {href: $data.link}, html: $data.txt")
     | </script>
 
     | <script id="pagerTpl" type="text/html">
     ul.pagination
-        li.edge(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: pageUrl() + pageQuery()}", title="Первая страница") &laquo;&laquo;
-        li.edge(data-bind="css: {disabled: !pageHasPrev()}"): a(data-bind="attr: {href: pageUrl() + (page() > 1 ? '/' + (page() - 1) : '')+ pageQuery()}", title="Предыдущая страница") &laquo;
+        li.edge(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: pageUrl() + pageQuery()}", title="First page") &laquo;&laquo;
+        li.edge(data-bind="css: {disabled: !pageHasPrev()}"): a(data-bind="attr: {href: pageUrl() + (page() > 1 ? '/' + (page() - 1) : '')+ pageQuery()}", title="Previous page") &laquo;
         //ko foreach: pages
         li(data-bind="css: {active: $data === $parent.page()}"): a(data-bind="attr: {href: $parent.pageUrl() + '/' + $data + $parent.pageQuery()}, text: $data")
         // /ko
-        li.edge(data-bind="css: {disabled: !pageHasNext()}"): a(data-bind="attr: {href: pageUrl() + '/' + (page() + 1) + pageQuery()}", title="Следующая страница") &raquo;
-        li.edge(data-bind="css: {disabled: page() === pageLast()}"): a(data-bind="attr: {href: pageUrl() + '/' + pageLast() + pageQuery()}", title="Последняя страница") &raquo;&raquo;
+        li.edge(data-bind="css: {disabled: !pageHasNext()}"): a(data-bind="attr: {href: pageUrl() + '/' + (page() + 1) + pageQuery()}", title="Next page") &raquo;
+        li.edge(data-bind="css: {disabled: page() === pageLast()}"): a(data-bind="attr: {href: pageUrl() + '/' + pageLast() + pageQuery()}", title="Last page") &raquo;&raquo;
     | </script>

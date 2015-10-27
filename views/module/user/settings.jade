@@ -1,9 +1,9 @@
 .user_settings(data-bind="with: repository[M!M]"): .panel-group#accordion
     .panel.panel-pastvu
-        .panel-heading: .panel-title: a(data-toggle="collapse", href="#privacy") Конфиденциальность
+        .panel-heading: .panel-title: a(data-toggle="collapse", href="#privacy") Privacy
         .panel-collapse.collapse.in#privacy: .panel-body
             dl.dl-horizontal
-                dt Мой email
+                dt My email
                 dd: .row: .col-xs-9.col-sm-10.col-md-7.col-lg-4
                     .input-group
                         input.form-control(type="email", data-bind="attr: {size: u.email().length, disabled: !editEmail()}, value: u.email, valueUpdate: 'afterkeydown', executeOnEnter: saveEmail")
@@ -14,148 +14,146 @@
                             span.glyphicon.glyphicon-remove
                         // /ko
             dl.dl-horizontal
-                dt Мой пароль
+                dt My password
                 dd
                     //ko if: itsMe()
-                    button.btn.btn-sm.btn-primary(type="button", title="Сменить текущий пароль", data-bind="event:{click: function(data, evt){auth.show('passChange')}}")
-                        span Сменить
+                    button.btn.btn-sm.btn-primary(type="button", title="Change current password", data-bind="event:{click: function(data, evt){auth.show('passChange')}}")
+                        span Change
                     // /ko
-                    button.btn.btn-sm.btn-primary(type="button", title="Сменить через почту без ввода текущего", data-bind="event:{click: function(data, evt){auth.showRecallRequest(u.login())}}")
-                        span Запросить смену
+                    button.btn.btn-sm.btn-primary(type="button", title="Change through email without entering current", data-bind="event:{click: function(data, evt){auth.showRecallRequest(u.login())}}")
+                        span Request change
             dl.dl-horizontal
-                dt Показывать в обсуждениях реальное имя
+                dt Show real name in conversations
                 dd: .btn-group.btn-group-sm
-                    button.btn.btn-primary.yes(type="button", data-bind="css: {active: showName()}, click: toggleDisp") Да
-                    button.btn.btn-primary.no(type="button", data-bind="css: {active: !showName()}, click: toggleDisp") Нет
+                    button.btn.btn-primary.yes(type="button", data-bind="css: {active: showName()}, click: toggleDisp") Yes
+                    button.btn.btn-primary.no(type="button", data-bind="css: {active: !showName()}, click: toggleDisp") No
 
     .panel.panel-pastvu
-        .panel-heading: .panel-title: a(data-toggle="collapse", href="#region") Регионы
+        .panel-heading: .panel-title: a(data-toggle="collapse", href="#region") Regions
         .panel-collapse.collapse.in#region: .panel-body
             dl.dl-horizontal
                 dt.helpexists
-                    abbr(title="Регион, который определяет некоторые настройки, например, позицию кнопки Домой на карте, первый элемент в списке выбора регионов и т.д.")
+                    abbr(title="Region, which affect on some settings, for example, region of Home button on map, first element on list of regions etc.")
                         span.glyphicon.glyphicon-info-sign
                         | &nbsp;
                         span.glyphicon.glyphicon-home
-                        |  Домашний регион
+                        |  Home region
                 dd
                     span.region
-                        span(data-bind="text: u.regionHome.title_local()")
+                        span(data-bind="text: u.regionHome.title_en()")
                     span.regionEdit(data-bind="click: regionHomeSelect")
                         span.glyphicon.glyphicon-pencil
-                        | Изменить
+                        | Change
             //ko if: u.role() === 5 && u.mod_regions()
             dl.dl-horizontal.forMod
                 dt.helpexists
-                    abbr(title="Регионы, в которых вы являетесь модератором. Назначаются администратором")
+                    abbr(title="Regions, where you are moderator. Assigned by administrator")
                         span.glyphicon.glyphicon-info-sign
-                        |  Модерируемые мной регионы
+                        |  Regions where I'm moderator
                 dd
                     //ko if: !u.mod_regions().length
                     span.region
                         span.glyphicon.glyphicon-globe
-                        |  Весь мир
+                        |  Whole world
                     // /ko
                     //ko foreach: u.mod_regions
                     span.region
-                        span(data-bind="text: $data.title_local()")
+                        span(data-bind="text: $data.title_en)")
                     // /ko
             // /ko
             dl.dl-horizontal
                 dt.helpexists
-                    abbr(title="Регионы, по которым будет производится автоматическая фильтрация контента")
+                    abbr(title="Regions, which define automatic content filtration")
                         span.glyphicon.glyphicon-info-sign
                         | &nbsp;
                         span.glyphicon.glyphicon-filter
-                        |  Фильтрация данных по умолчанию
+                        |  Filter by default
                 dd: span.panel-block
                     .radio(style="margin-top:0"): label
                         input(type="radio", name="regfilter_radios", value="all", data-bind="checked: regfiltercheck")
                         span.glyphicon.glyphicon-globe
-                        |  Весь мир (без фильтра)
+                        |  Whole world (no filter)
                     .radio: label
                         input(type="radio", name="regfilter_radios", value="home", data-bind="checked: regfiltercheck")
                         span.glyphicon.glyphicon-home
-                        |  Домашний регион
+                        |  Home region
                     .radio(style="margin-bottom:5px"): label
                         input(type="radio", name="regfilter_radios", value="list", data-bind="checked: regfiltercheck")
                         span.glyphicon.glyphicon-list
-                        span  Список
+                        span  List
                         //ko if: regfiltercheck() === 'list'
                         | :&nbsp;
                         //ko foreach: u.regions
-                        span.region.candrop(title="Убрать из моих регионов", data-bind="click: function() {$parent.regionDrop($data.cid());}")
-                            span(data-bind="text: $data.title_local()")
+                        span.region.candrop(title="Remove from my regions", data-bind="click: function() {$parent.regionDrop($data.cid());}")
+                            span(data-bind="text: $data.title_en()")
                         // /ko
                         //ko if: u.regions().length
                         span.regionEdit(data-bind="click: regionFilterSelect")
                             span.glyphicon.glyphicon-pencil
-                            | Изменить
+                            | Change
                         // /ko
                         // /ko
             dl.dl-horizontal
                 dt.helpexists(style="color: #27578d;")
-                    | По умолчанию фильтровать по выбранным регионам:
+                    | Filter by default with selected regions:
                 dd
             dl.dl-horizontal.dl-tight
                 dt.helpexists
-                    abbr(title="Фотографии пользователей, доступые в соответствующих профилях")
+                    abbr(title="Photos which located in users profile")
                         span.glyphicon.glyphicon-info-sign
-                        |  Галереи пользователей
+                        |  Users photos
                 dd
                     .btn-group.btn-group-sm
-                        button.btn.btn-primary.yes(type="button", data-bind="css: {active: u.settings.r_f_user_gal()}, click: regionUserGal") Да
-                        button.btn.btn-primary.no(type="button", data-bind="css: {active: !u.settings.r_f_user_gal()}, click: regionUserGal") Нет
+                        button.btn.btn-primary.yes(type="button", data-bind="css: {active: u.settings.r_f_user_gal()}, click: regionUserGal") Yes
+                        button.btn.btn-primary.no(type="button", data-bind="css: {active: !u.settings.r_f_user_gal()}, click: regionUserGal") No
             dl.dl-horizontal.dl-tight
                 dt.helpexists
-                    abbr(title="Полоса фотографий, находящаяся рядом с именем пользователя, на странице просмотра загруженной им фотогафии")
+                    abbr(title="Strip, which located close to user avatar on photo page")
                         span.glyphicon.glyphicon-info-sign
-                        |  Полосу других фотографий пользователя
+                        |  Strip of other user's photos
                 dd
                     .btn-group.btn-group-sm
-                        button.btn.btn-primary.yes(type="button", data-bind="css: {active: u.settings.r_f_photo_user_gal()}, click: regionPhotoUserGal") Да
-                        button.btn.btn-primary.no(type="button", data-bind="css: {active: !u.settings.r_f_photo_user_gal()}, click: regionPhotoUserGal") Нет
+                        button.btn.btn-primary.yes(type="button", data-bind="css: {active: u.settings.r_f_photo_user_gal()}, click: regionPhotoUserGal") Yes
+                        button.btn.btn-primary.no(type="button", data-bind="css: {active: !u.settings.r_f_photo_user_gal()}, click: regionPhotoUserGal") No
 
     .panel.panel-pastvu
-        .panel-heading: .panel-title: a(data-toggle="collapse", href="#photo") Фотографии
+        .panel-heading: .panel-title: a(data-toggle="collapse", href="#photo") Photos
         .panel-collapse.collapse.in#photo: .panel-body
             dl.dl-horizontal
                 dt.helpexists
-                    abbr(title="Показывать по умолчанию вотермарк pastvu.com, встроенный в изображение")
+                    abbr(title="Show pastvu.com watermark by default, embedded in image")
                         span.glyphicon.glyphicon-info-sign
-                        |  Показывать вотермарк фотографии
+                        |  Show watermark by default
                 dd
                     .btn-group.btn-group-sm
-                        button.btn.btn-primary.yes(type="button", data-bind="css: {active: u.settings.photo_show_watermark()}, click: watermarkShow") Да
-                        button.btn.btn-primary.no(type="button", data-bind="css: {active: !u.settings.photo_show_watermark()}, click: watermarkShow") Нет
+                        button.btn.btn-primary.yes(type="button", data-bind="css: {active: u.settings.photo_show_watermark()}, click: watermarkShow") Yes
+                        button.btn.btn-primary.no(type="button", data-bind="css: {active: !u.settings.photo_show_watermark()}, click: watermarkShow") No
 
             //ko if: u.nowaterchange()
             dl.dl-horizontal: .helpexists: abbr.text-danger
                 span.glyphicon.glyphicon-warning-sign
-                span(data-bind="text: ' Администратор запретил ' + (itsMe()?'вам':'пользователю') + ' управлять настройками установки подписи на ' + (itsMe()?'ваших':'его') + ' фотографиях'")
+                span(data-bind="text: ' Administrator has forbidden ' + (itsMe()?'you':'user') + ' to change watermark settings on ' + (itsMe()?'your':'his') + ' photos'")
             // /ko
             .watersingcontrol(data-bind="css: {deny: itsMe() && u.nowaterchange()}")
                 dl.dl-horizontal
                     dt.helpexists
-                        abbr(title="Поведение можно менять для каждой отдельной фотографии на странице её редактирования")
+                        abbr(title="Behavior can be changed for each photo individually on edit page")
                             span.glyphicon.glyphicon-info-sign
-                            |  Подпись на вотермарке
-                            br
-                            |  загружаемых мной фотографий
+                            |  Text on watermark on my photos
                     dd: span.panel-block
                         .btn-group.btn-group-sm(style="margin-bottom:8px")
-                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !!u.settings.photo_watermark_add_sign()}, click: watersignAdd") Да
-                            button.btn.btn-primary.no(type="button", data-bind="css: {active: !u.settings.photo_watermark_add_sign()}, click: watersignAdd") Нет
+                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !!u.settings.photo_watermark_add_sign()}, click: watersignAdd") Yes
+                            button.btn.btn-primary.no(type="button", data-bind="css: {active: !u.settings.photo_watermark_add_sign()}, click: watersignAdd") No
                         br
                         // ko if: !!u.settings.photo_watermark_add_sign()
                         .radio(style="margin-top:3px"): label
                             input(type="radio", name="watersign", value="true", data-bind="checked: watersigncheck")
-                            | Настройки системы (
+                            | System settings (
                             span(style="color:#777", data-bind="text: 'uploaded by ' + u.login()")
                             | )
                         .radio(style="margin-top:0"): .input-group(style="max-width:500px")
                             input(type="radio", name="watersign", value="custom", data-bind="checked: watersigncheck")
-                            span.input-group-addon Текст
+                            span.input-group-addon Text
                             input.form-control(type="text", data-bind="attr: {disabled: watersigncheck()!=='custom'}, value: u.watersignCustom, symbols: {pattern:fields.watersignPattern,watch:u.watersignCustom,noMultiplySpace:true,maxLength:fields.watersignLength}, valueUpdate: 'input', executeOnEnter: watermarkCustomSave")
                             span.input-group-addon.action.save(data-bind="style: {visibility: watersignCustomChanged() ? 'visible' : 'hidden'}, click: watermarkCustomSave")
                                 span.glyphicon.glyphicon-ok
@@ -164,91 +162,89 @@
                         // /ko
                         p.text-muted(style="padding-left:8px;line-height:1.1;font-size:11px;")
                             sup(style="margin-left:-6px;") *
-                            |  Настройка сохраняется автоматически и будет применена ко всем вновь загружаемым фотографиям. Чтобы применить ее к существующим фотографиям, нажмите "применить" ниже
+                            |  Setting saves automatically and will be applied to all newly uploaded photos. To apply it to existing photos, push "Apply" below
 
                         hr(style="margin:8px 0 9px;")
-                        abbr(title="Отправить на переконвертацию свои фотографии, в которых подпись на вотермарке берется из текущих настроек профиля")
-                            | Применить настройку к загруженным фотографиям, в которых нет индивидульных настроек подписи:
+                        abbr(title="Send to reconvert own photos, which have no individual watermark setting")
+                            | Apply setting to existing photos, which have no individual watermark setting:
                         div
                             label.radio-inline
                                 input(type="radio", name="reconvert", value="all", data-bind="checked: reconvertcheck")
-                                | Все
+                                | All
                             label.radio-inline
                                 input(type="radio", name="reconvert", value="region", data-bind="checked: reconvertcheck")
                                 span
-                                    | В регионе
-                                    input.form-control(id="reconvertRegion", data-bind="attr: {disabled: reconvertcheck()!=='region'}", style="display:inline-block;margin-left:6px;width:180px;", type="number", placeholder="Введите номер региона", maxlength="6")
-                            button.btn.btn-sm.btn-primary(type="button", style="margin: 5px 0 8px;", data-bind="click: reconvertPhotos, attr: {disabled: reconvertingPhotos()}") Применить
+                                    | Within region
+                                    input.form-control(id="reconvertRegion", data-bind="attr: {disabled: reconvertcheck()!=='region'}", style="display:inline-block;margin-left:6px;width:180px;", type="number", placeholder="Type region id", maxlength="6")
+                            button.btn.btn-sm.btn-primary(type="button", style="margin: 5px 0 8px;", data-bind="click: reconvertPhotos, attr: {disabled: reconvertingPhotos()}") Apply
 
                         hr(style="margin:8px 0 9px;")
-                        abbr(title="Сбросить установленные индивидульные настройки подписи в фотографиях (если такие устанавливались)")
-                            | Сбросить установленные в фотографиях индивидульные настройки подписи
+                        abbr(title="Reset individual watermark settings")
+                            | Reset individual watermark settings
                         div
                             label.radio-inline
                                 input(type="radio", name="resetwatersign", value="all", data-bind="checked: resetwatersigncheck")
-                                | Все
+                                | All
                             label.radio-inline
                                 input(type="radio", name="resetwatersign", value="region", data-bind="checked: resetwatersigncheck")
                                 span
-                                    | В регионе
-                                    input.form-control(id="resetwatersignRegion", data-bind="attr: {disabled: resetwatersigncheck()!=='region'}", style="display:inline-block;margin-left:6px;width:180px;", type="number", placeholder="Введите номер региона", maxlength="6")
+                                    | Within region
+                                    input.form-control(id="resetwatersignRegion", data-bind="attr: {disabled: resetwatersigncheck()!=='region'}", style="display:inline-block;margin-left:6px;width:180px;", type="number", placeholder="Type region id", maxlength="6")
                             button.btn.btn-sm.btn-primary(type="button", style="margin: 5px 0 8px;", data-bind="click: individualWatersignReset, attr: {disabled: reconvertingPhotos()}") Сбросить
                             p.text-muted(style="padding-left:8px;line-height:1.1;font-size:11px;")
                                 sup(style="margin-left:-6px;") *
-                                |  Фотографиям будет установлена настройка подписи по умолчанию, указанная выше. Эти фотографии будут отправлены на переконвертацию автоматически
+                                |  Photos will receive setting by default, which specified above. This photos will be reconverted automatically
 
                 dl.dl-horizontal
                     dt.helpexists
-                        abbr(title="Другие зарегистрированные пользователи смогут скачивать оригиналы ваших фотографий")
+                        abbr(title="Another registered users will be able to download file that you uploaded")
                             span.glyphicon.glyphicon-info-sign
-                            |  Разрешать скачивать оригинал
-                            br
-                            | моих фотографий
+                            |  Allow to download origin of my photos
                     dd: span.panel-block
                         .btn-group.btn-group-sm(style="margin-bottom:8px")
-                            button.btn.btn-primary.yes(type="button", data-bind="attr: {disabled: !u.settings.photo_watermark_add_sign()}, css: {active: !u.settings.photo_watermark_add_sign() || !u.settings.photo_disallow_download_origin()}, click: disallowDownloadOrigin") Да
-                            button.btn.btn-primary.no(type="button", data-bind="attr: {disabled: !u.settings.photo_watermark_add_sign()}, css: {active: !!u.settings.photo_watermark_add_sign() && !!u.settings.photo_disallow_download_origin()}, click: disallowDownloadOrigin") Нет
+                            button.btn.btn-primary.yes(type="button", data-bind="attr: {disabled: !u.settings.photo_watermark_add_sign()}, css: {active: !u.settings.photo_watermark_add_sign() || !u.settings.photo_disallow_download_origin()}, click: disallowDownloadOrigin") Yes
+                            button.btn.btn-primary.no(type="button", data-bind="attr: {disabled: !u.settings.photo_watermark_add_sign()}, css: {active: !!u.settings.photo_watermark_add_sign() && !!u.settings.photo_disallow_download_origin()}, click: disallowDownloadOrigin") No
                         p.text-muted(style="padding-left:8px;line-height:1.1;font-size:11px;")
                             sup(style="margin-left:-6px;") *
-                            |  Запретить скачивать оригинал можно только в случае наличия подписи на вотермарке фотографии
+                            |  Disallowance of downloading original can be established only for photo that has text on watermark
                         p.text-muted(style="padding-left:8px;line-height:1.1;font-size:11px;")
                             sup(style="margin-left:-6px;") *
-                            |  Для других пользователей кнопка скачивания фотографии будет окрашена в зеленый цвет, если скачивание оригинала разрешено. Вы всегда сможете скачивать оригиналы своих фотографий, а если другие пользователи не могут этого делать согласно вашей настройке, то для вас кнопка скачивания будет синей с зеленой стрелкой
+                            |  For another users download button will be green, if original download is allowed. You always will be able to download original file of your photos, if other users can't do it, button will be blue with green arrow
 
                         hr(style="margin:8px 0 9px;")
-                        | Сбросить установленные в фотографиях индивидульные настройки разрешения на скачивание
+                        | Reset individual settings about downloading original photo
                         div
                             label.radio-inline
                                 input(type="radio", name="disallowDownloadOrigin", value="all", data-bind="checked: resetDisallowDownloadOrigin")
-                                | Все
+                                | All
                             label.radio-inline
                                 input(type="radio", name="disallowDownloadOrigin", value="region", data-bind="checked: resetDisallowDownloadOrigin")
                                 span
-                                    | В регионе
-                                    input.form-control(id="resetDisallowDownloadOriginRegion", data-bind="attr: {disabled: resetDisallowDownloadOrigin()!=='region'}", style="display:inline-block;margin-left:6px;width:180px;", type="number", placeholder="Введите номер региона", maxlength="6")
-                            button.btn.btn-sm.btn-primary(type="button", style="margin: 5px 0 8px;", data-bind="click: individualDisallowDownloadOriginReset, attr: {disabled: reconvertingPhotos()}") Сбросить
+                                    | In region
+                                    input.form-control(id="resetDisallowDownloadOriginRegion", data-bind="attr: {disabled: resetDisallowDownloadOrigin()!=='region'}", style="display:inline-block;margin-left:6px;width:180px;", type="number", placeholder="Type region id", maxlength="6")
+                            button.btn.btn-sm.btn-primary(type="button", style="margin: 5px 0 8px;", data-bind="click: individualDisallowDownloadOriginReset, attr: {disabled: reconvertingPhotos()}") Reset
                             p.text-muted(style="padding-left:8px;line-height:1.1;font-size:11px;")
                                 sup(style="margin-left:-6px;") *
-                                |  В каждой фотографии вы можете устанавливать разрешение на скачивание индивидуально. Здесь вы можете сбросить индивидуальную настройку в этих фотографиях и к ним будет применена общая, указанная выше
+                                |  For each photo you can set allowance of downloading original individually. Here you can reset such individual settings and common setting, specified above, will be applied to them
 
     .panel.panel-pastvu
-        .panel-heading: .panel-title: a(data-toggle="collapse", href="#notice") Подписка и уведомления
+        .panel-heading: .panel-title: a(data-toggle="collapse", href="#notice") Subscription and notification
         .panel-collapse.collapse.in#notice: .panel-body
             dl.dl-horizontal
                 dt.helpexists
-                    abbr(title="Исходное состояние опции «Подписаться на тему» при отправке комментария")
+                    abbr(title="Default state of «Subscribe» checkbox at comment writing form")
                         span.glyphicon.glyphicon-info-sign
-                        |  Автоподписка при комментировании темы
+                        |  Automatic subscription when comment topic
                 dd
                     .btn-group.btn-group-sm
-                        button.btn.btn-primary.yes(type="button", data-bind="css: {active: u.settings.subscr_auto_reply()}, click: autoReply") Да
-                        button.btn.btn-primary.no(type="button", data-bind="css: {active: !u.settings.subscr_auto_reply()}, click: autoReply") Нет
+                        button.btn.btn-primary.yes(type="button", data-bind="css: {active: u.settings.subscr_auto_reply()}, click: autoReply") Yes
+                        button.btn.btn-primary.no(type="button", data-bind="css: {active: !u.settings.subscr_auto_reply()}, click: autoReply") No
             dl.dl-horizontal
                 dt.helpexists
-                    abbr(title="Минимальное время, которое должно пройти между отправками писем с уведомлением")
+                    abbr(title="Minimal amount of time between sending of notification letter")
                         span.glyphicon.glyphicon-info-sign
-                        |  Минимальный интервал между отправками
+                        |  Minimum interval between sending
                 dd.throttle(data-bind="foreach: vars.subscr_throttle")
                     label.radio-inline
                         input(type="radio", name="subscr_throttle_radios", data-bind="attr: {id: 'subscr_throttle_radios_' + $index(), value: ''+$data}, checked: $parent.u.settings.subscr_throttle")
-                        span(data-bind="text: ($data/60000 > 59 ? $data/3600000 + 'ч' : $data/60000 + 'мин')")
+                        span(data-bind="text: ($data/60000 > 59 ? $data/3600000 + 'h' : $data/60000 + 'm')")

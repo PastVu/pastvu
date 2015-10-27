@@ -80,7 +80,7 @@ define(['underscore', 'jquery', 'Utils', 'Params'], function (_, $, Utils, P) {
                }
                },
                {
-                   addClass: 'btn btn-primary', text: params.cancelText || 'Отмена', onClick: function ($noty) {
+                   addClass: 'btn btn-primary', text: params.cancelText || 'Cancel', onClick: function ($noty) {
                    $noty.close();
                    params.onCancel && params.onCancel.call(params.ctx);
                }

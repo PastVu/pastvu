@@ -7,10 +7,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
     }
 
     var ranksLang = {
-        mec: 'Меценат',
-        mec_silv: 'Серебряный меценат',
-        mec_gold: 'Золотой меценат',
-        adviser: 'Советник'
+        mec: 'Maecenas',
+        mec_silv: 'Silver maecenas',
+        mec_gold: 'Gold maecenas',
+        adviser: 'Counselor'
     };
 
     return Cliche.extend({
@@ -32,10 +32,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
             this.role = ko.observable(String(this.u_origin.role));
             this.roles = [
-                { cat: 'reg', name: 'Обычный пользователь' },
-                { cat: 'mod', name: 'Модератор' },
-                { cat: 'adm', name: 'Администратор' },
-                { cat: 'sadm', name: 'Суперадминистратор' }
+                { cat: 'reg', name: 'Regular user' },
+                { cat: 'mod', name: 'Moderator' },
+                { cat: 'adm', name: 'Administrator' },
+                { cat: 'sadm', name: 'Superadministrator' }
             ];
             this.roleCategory = ko.computed({
                 read: function () {
@@ -203,21 +203,21 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             selectedInit: this.regions()
                         },
                         modal: {
-                            topic: 'Изменение списка регионов для модерирования',
+                            topic: 'Change the list of regions for moderation',
                             initWidth: '900px',
                             maxWidthRatio: 0.95,
                             fullHeight: true,
                             withScroll: true,
-                            offIcon: { text: 'Отмена', click: this.closeRegionSelect, ctx: this },
+                            offIcon: { text: 'Cancel', click: this.closeRegionSelect, ctx: this },
                             btns: [
                                 {
-                                    css: 'btn-success', text: 'Применить', glyphicon: 'glyphicon-ok',
+                                    css: 'btn-success', text: 'Apply', glyphicon: 'glyphicon-ok',
                                     click: function () {
-                                        var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']);
+                                        var regions = this.regselectVM.getSelectedRegions(['cid', 'title_en']);
 
                                         if (regions.length > 20) {
                                             window.noty({
-                                                text: 'Допускается выбирать до 20 регионов',
+                                                text: 'Allowed to select up to 20 regions',
                                                 type: 'error',
                                                 layout: 'center',
                                                 timeout: 3000,
@@ -230,7 +230,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                                     },
                                     ctx: this
                                 },
-                                { css: 'btn-warning', text: 'Отмена', click: this.closeRegionSelect, ctx: this }
+                                { css: 'btn-warning', text: 'Cancel', click: this.closeRegionSelect, ctx: this }
                             ]
                         },
                         callback: function (vm) {
@@ -256,7 +256,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             socket.once('setUserWatermarkChangeResult', function (result) {
                 if (!result || result.error) {
                     window.noty({
-                        text: result && result.message || 'Ошибка',
+                        text: result && result.message || 'Error',
                         type: 'error',
                         layout: 'center',
                         timeout: 4000,
@@ -285,7 +285,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             socket.once('saveUserRanksResult', function (result) {
                 if (!result || result.error || !result.saved) {
                     window.noty({
-                        text: result && result.message || 'Ошибка сохранения звания',
+                        text: result && result.message || 'Failed to save rank',
                         type: 'error',
                         layout: 'center',
                         timeout: 4000,
@@ -313,7 +313,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             socket.once('saveUserRulesResult', function (result) {
                 if (!result || result.error || !result.saved) {
                     window.noty({
-                        text: result && result.message || 'Ошибка сохранения звания',
+                        text: result && result.message || 'Failed to save rank',
                         type: 'error',
                         layout: 'center',
                         timeout: 4000,

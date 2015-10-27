@@ -447,7 +447,7 @@ define([
                     },
                     buttons: [
                         {
-                            addClass: 'btn btn-danger', text: 'Да',
+                            addClass: 'btn btn-danger', text: 'Yes',
                             onClick: function ($noty) {
                                 // this = button element
                                 // $noty = $noty element
@@ -464,7 +464,7 @@ define([
 
                                     $noty.$message.children().html((data && data.message) || '');
 
-                                    okButton.text('Закрыть').on('click', function () {
+                                    okButton.text('Close').on('click', function () {
                                         $noty.close();
                                         this.exe(false);
                                         this.statFast();
@@ -474,7 +474,7 @@ define([
                             }
                         },
                         {
-                            addClass: 'btn btn-primary', text: 'Отмена',
+                            addClass: 'btn btn-primary', text: 'Cancel',
                             onClick: function ($noty) {
                                 $noty.close();
                                 _this.exe(false);

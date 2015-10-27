@@ -223,7 +223,7 @@ define([
 					}
 				}
 			} else {
-				$(e.relatedTarget).addClass('invalid').attr('title', 'Нет такого региона');
+				$(e.relatedTarget).addClass('invalid').attr('title', 'No such region');
 			}
 		},
 		//Событие удаления токена непосредственно из поля

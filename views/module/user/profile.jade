@@ -1,40 +1,40 @@
 .user_profile(data-bind="with: repository[M!M]")
     form.form-horizontal(data-bind="css: {canBeEdit: canBeEdit(), cannotBeEdit: !canBeEdit()}")
         .form-group
-            label.col-sm-3.col-md-2.control-label(for="inName") Псевдоним
+            label.col-sm-3.col-md-2.control-label(for="inName") Username
             .col-sm-9.col-md-9
                 p.form-control-static
                     span.glyphicon.glyphicon-user
                     span.loginName(data-bind="text: ' ' + u.login()")
         .form-group(data-bind="style: {display: canBeEdit() ||  u.firstName().length || u.lastName().length > 0 ? '' : 'none'}")
-            label.col-sm-3.col-md-2.control-label(for="inName") Реальное имя
+            label.col-sm-3.col-md-2.control-label(for="inName") Real name
             .col-sm-3.col-md-2
                 input.form-control(type="text", id="inName", data-bind="attr: {size: u.firstName().length, disabled: !editMode()}, value: u.firstName, valueUpdate: 'afterkeydown'")
             .col-sm-3.col-md-2
                 input.form-control(type="text", id="inLastName", data-bind="attr: {disabled: !editMode()}, value: u.lastName, valueUpdate: 'afterkeydown'")
         .form-group
-            label.col-sm-3.col-md-2.control-label(for="inBirthdate") Дата рождения
+            label.col-sm-3.col-md-2.control-label(for="inBirthdate") Birthdate
             .col-sm-3.col-md-2
                 input#inBirthdate.form-control(type="text", data-bind="attr: {disabled: !editMode()}, value: u.birthdate, valueUpdate: 'keyup'")
         .form-group
-            label.col-sm-3.col-md-2.control-label(for="inSex2") Пол
+            label.col-sm-3.col-md-2.control-label(for="inSex2") Gender
             .col-sm-4.col-md-3
                 input.form-control(type="text", id="inSex2", disabled, data-bind="style: {display: (!canBeEdit() ? '' : 'none')}, value: u.sex()=='m' ? 'Male' : 'Female'")
                 div(data-bind="style: {display: canBeEdit() ? '' : 'none'}")
                     label.radio-inline
-                        input(type="radio", id='inSex', name="sex", value="m", data-bind="checked: u.sex, attr: {disabled: !editMode()}")
-                        | &nbsp;Мужчина
+                        input(type="radio", name="sex", value="m", data-bind="checked: u.sex, attr: {disabled: !editMode()}")
+                        | &nbsp;Male
                     label.radio-inline
-                        input(type="radio", id='inSex', name="sex", value="f", data-bind="checked: u.sex, attr: {disabled: !editMode()}")
-                        | &nbsp;Женщина
+                        input(type="radio", name="sex", value="f", data-bind="checked: u.sex, attr: {disabled: !editMode()}")
+                        | &nbsp;Female
         .form-group(data-bind="style: {display: canBeEdit() ||  u.country().length || u.city().length > 0 ? '' : 'none'}")
-            label.col-sm-3.col-md-2.control-label(for="inResidence") Резиденция
+            label.col-sm-3.col-md-2.control-label(for="inResidence") Residence
             .col-sm-3.col-md-2
                 input.form-control(type="text", id='inResidence', data-bind="attr: {disabled: !editMode()}, size: u.country().length, value: u.country, valueUpdate: 'afterkeydown'")
             .col-sm-3.col-md-2
                 input.form-control(type="text", id="inResidence2", data-bind="attr: {disabled: !editMode()}, value: u.city, valueUpdate: 'afterkeydown'")
         .form-group(data-bind="style: {display: canBeEdit() ||  u.work().length > 0 ? '' : 'none'}")
-            label.col-sm-3.col-md-2.control-label(for="inInterested") Деятельность
+            label.col-sm-3.col-md-2.control-label(for="inInterested") Occupation
             .col-sm-3.col-md-2
                 input.form-control(type="text", id='inInterested', data-bind="attr: {disabled: !editMode()}, value: u.work, valueUpdate: 'afterkeydown'")
         .form-group(data-bind="style: {display: canBeEdit() ||  u.www().length > 0 ? '' : 'none'}")
@@ -42,7 +42,7 @@
             .col-sm-3.col-md-2
                 input.form-control(type="text", id='inWebsite', data-bind="attr: {disabled: !editMode()}, value: u.www, valueUpdate: 'afterkeydown'")
         .form-group(data-bind="style: {display: canBeEdit() ||  u.lj().length > 0 ? '' : 'none'}")
-            label.col-sm-3.col-md-2.control-label(for="inLJ") ЖЖ
+            label.col-sm-3.col-md-2.control-label(for="inLJ") LJ
             .col-sm-3.col-md-2
                 input.form-control(type="text", id='inLJ', data-bind="attr: {disabled: !editMode()}, value: u.lj, valueUpdate: 'afterkeydown'")
         .form-group(data-bind="style: {display: canBeEdit() ||  u.skype().length > 0 ? '' : 'none'}")
@@ -66,14 +66,14 @@
             .col-sm-3.col-md-2
                 input.form-control(type="text", id='inBlogger', data-bind="attr: {disabled: !editMode()}, value: u.blogger, valueUpdate: 'afterkeydown'")
         .form-group(data-bind="style: {display: canBeEdit() ||  u.aboutme().length > 0 ? '' : 'none'}")
-            label.col-sm-3.col-md-2.control-label(for="inaboutme") Обо мне
+            label.col-sm-3.col-md-2.control-label(for="inaboutme") About me
             .col-sm-7.col-md-8
                 textarea.form-control(rows="4", id='inaboutme', data-bind="attr: {disabled: !editMode()}, value: u.aboutme, valueUpdate: 'afterkeydown'")
         .form-group(data-bind="style: {display: canBeEdit() ? '' : 'none'}")
             .col-sm-12
                 button.btn.btn-primary(type="button", data-bind="css: {'btn-success': editMode()}, event: {click: function(data, event) { if (!data.editMode()){data.edit(true)} else{data.saveUser()}}}")
                     span.glyphicon(data-bind="css: {'glyphicon-pencil': !editMode(), 'glyphicon-ok': editMode()}")
-                    span(data-bind="text: editMode() ? ' Сохранить профиль' : ' Редактировать'")
+                    span(data-bind="text: editMode() ? ' Save profile' : ' Edit'")
                 button.btn.btn-danger(type="button", data-bind="style: {display: editMode() ? '' : 'none'}, event: {click: function(data, event) { if (data.editMode()) {data.cancelUser()}}}")
                     span.glyphicon.glyphicon-remove
-                    |  Отмена
+                    |  Cancel

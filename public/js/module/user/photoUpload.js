@@ -6,14 +6,14 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 	'use strict';
 
 	var mess = {
-		fsuccess: 'Фотография успешно загружена',
-		fcount: 'Превышено разрешенное количество файлов',
+		fsuccess: 'Photo is successfully uploaded',
+		fcount: 'Allowed count of files exceeded',
 
-		ftype: 'Тип файла не соответствует Правилам',
-		fmax: 'Файл больше разрешенного размера',
-		fmin: 'Файл слишком мал',
-		fpx: 'Согласно Правилам, размер изображения должен быть не менее 400px по каждой из сторон и не менее 800px по большей стороне',
-		finvalid: 'Файл не прошел валидацию' //Сообщение по умолчанию для валидации
+		ftype: 'File type does not correspond to the Rules',
+		fmax: 'File is bigger then allowed',
+		fmin: 'File is too small',
+		fpx: 'According the rules, image size must be at least 400px on the smaller side and 800 on the larger side',
+		finvalid: 'The file has not passed validation' //Сообщение по умолчанию для валидации
 	};
 
 	return Cliche.extend({
@@ -54,9 +54,9 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 
 							this.canCount(this.canCountTotal);
 							if (!this.canCount()) {
-								this.toptext('У вас нет свободных лимитов для загрузки файлов, так как вы имеете ' + this.u.pfcount() + ' неподтвержденных модератором фотографий. Это максимально разрешенное количество, установленное для вашего профиля.');
+								this.toptext('You are out of limits for uploading photos, because you have ' + this.u.pfcount() + ' unconfirmed photos by moderator. It is maximum value for your profile type.');
 							} else {
-								this.toptext('Выберите фотографии, нажав на кнопку добавления' + (this.filereader() ? ' или перетащив их в пунктирную область' : ''));
+								this.toptext('Select photos by pushing add button' + (this.filereader() ? ' or draging them inside dashed area' : ''));
 								this.canLoad(true);
 
 								this.fileOptions = {
@@ -172,7 +172,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 		getLimit: function (cb, ctx) {
 			socket.once('takeNewPhotosLimit', function (data) {
 				if (!data || data.error) {
-					window.noty({text: 'Ошибка инициализации формы:' + data && data.message, type: 'error', layout: 'center', timeout: 4000, force: true});
+					window.noty({text: 'Error form initialization:' + data && data.message, type: 'error', layout: 'center', timeout: 4000, force: true});
 					console.dir(data);
 				}
 				cb.call(ctx || window, data);
@@ -253,7 +253,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			data.files.forEach(function (file, index) {
 				file.ext.uploading(true);
 				file.ext.uploaded(false);
-				this.setMessage(file, 'Пожалуйста подождите. Загрузка..', 'muted'); //Please wait. Loading..
+				this.setMessage(file, 'Wait please. Loading..', 'muted'); //Please wait. Loading..
 			}, this);
 		},
 		onFileSend: function (e, data) {
@@ -300,7 +300,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			if (toSaveArr.length > 0) {
 				socket.once('createPhotoCallback', function (data) {
 					if (!data || data.error) {
-						window.noty({text: data && data.message || 'Ошибка создания фотографий', type: 'error', layout: 'center', timeout: 4000, force: true});
+						window.noty({text: data && data.message || 'Failed to create photos', type: 'error', layout: 'center', timeout: 4000, force: true});
 						console.dir(data);
 					}
 					cb.call(ctx || window, data);
@@ -366,7 +366,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			var that = this,
 				options = this.fileOptions;
 
-			this.setMessage(file, 'Подготовка файла..', 'muted');
+			this.setMessage(file, 'Preparing file..', 'muted');
 			loadImage(
 				file,
 				function (img) {

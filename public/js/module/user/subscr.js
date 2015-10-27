@@ -73,9 +73,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     var count = this.types[this.type() + '_persist'](),
                         txt = '';
                     if (count) {
-                        txt = 'Показаны ' + this.pageFirstItem() + ' - ' + (this.pageLastItem() || this.pageSize()) + ' из ' + count;
+                        txt = '' + this.pageFirstItem() + ' - ' + (this.pageLastItem() || this.pageSize()) + ' of ' + count + ' are shown';
                     } else {
-                        txt = 'Пока нет подписок в данной категории';
+                        txt = 'Still has no subscription in this category';
                     }
                     return txt;
                 }, this);

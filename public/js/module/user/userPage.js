@@ -53,18 +53,18 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 				this.menuItems = this.co.menuItems = ko.computed(function () {
 					var login = this.user.login(),
 						result = [
-							{name: 'Профиль', href: "/u/" + login, section: 'profile'},
-							{name: 'Фотографии', href: "/u/" + login + "/photo", section: 'photo'},
-							{name: 'Комментарии', href: "/u/" + login + "/comments", section: 'comments'}
+							{name: 'Profile', href: "/u/" + login, section: 'profile'},
+							{name: 'Photos', href: "/u/" + login + "/photo", section: 'photo'},
+							{name: 'Comments', href: "/u/" + login + "/comments", section: 'comments'}
 						];
 
 					if (this.auth.loggedIn() && (this.auth.iAm.login() === login || this.auth.iAm.role() > 9)) {
-						result.push({name: 'Подписки', href: "/u/" + login + "/subscriptions", section: 'subscriptions'});
-						result.push({name: 'Настройки', href: "/u/" + login + "/settings", section: 'settings'});
+						result.push({name: 'Subscriptions', href: "/u/" + login + "/subscriptions", section: 'subscriptions'});
+						result.push({name: 'Settings', href: "/u/" + login + "/settings", section: 'settings'});
 						//result.push({name: 'Messages', href: "/u/" + login + '/pm', disable: true, section: 'pm'});
 					}
 					if (this.auth.iAm.role() > 9) {
-						result.push({name: 'Управление', href: "/u/" + login + "/manage", section: 'manage'});
+						result.push({name: 'Manage', href: "/u/" + login + "/manage", section: 'manage'});
 					}
 					return result;
 				}, this);
@@ -192,22 +192,22 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 					} else {
 						moduleOptions.options.goUpload = true; //Если нет, говорим что надо открыть при загрузке галереи
 					}
-					Utils.title.setTitle({pre: 'Загрузка - ', title: this.user.disp()});
+					Utils.title.setTitle({pre: 'Upload - ', title: this.user.disp()});
 				} else {
-					Utils.title.setTitle({pre: 'Галерея - ', title: this.user.disp()});
+					Utils.title.setTitle({pre: 'Gallery - ', title: this.user.disp()});
 				}
 			} else if (section === 'comments') {
 				module = 'm/user/comments';
-				Utils.title.setTitle({pre: 'Комментарии - ', title: this.user.disp()});
+				Utils.title.setTitle({pre: 'Comments - ', title: this.user.disp()});
 			} else if (section === 'subscriptions') {
 				module = 'm/user/subscr';
-				Utils.title.setTitle({pre: 'Подписки - ', title: this.user.disp()});
+				Utils.title.setTitle({pre: 'Subscriptions - ', title: this.user.disp()});
 			} else if (section === 'settings') {
 				module = 'm/user/settings';
-				Utils.title.setTitle({pre: 'Настройки - ', title: this.user.disp()});
+				Utils.title.setTitle({pre: 'Settings - ', title: this.user.disp()});
 			} else if (section === 'manage') {
 				module = 'm/user/manage';
-				Utils.title.setTitle({pre: 'Управление - ', title: this.user.disp()});
+				Utils.title.setTitle({pre: 'Manage - ', title: this.user.disp()});
 			}
 
 			this.section(section);
