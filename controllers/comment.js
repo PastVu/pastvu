@@ -786,17 +786,19 @@ async function createComment(socket, data) {
 
     await new CommentModel(comment).save();
 
+    let frag;
     if (fragAdded) {
         if (!obj.frags) {
             obj.frags = [];
         }
-        obj.frags.push({
+        frag = {
             cid,
             l: Utils.math.toPrecision(Number(data.fragObj.l) || 0, 2),
             t: Utils.math.toPrecision(Number(data.fragObj.t) || 0, 2),
             w: Utils.math.toPrecision(Number(data.fragObj.w) || 20, 2),
             h: Utils.math.toPrecision(Number(data.fragObj.h) || 15, 2)
-        });
+        };
+        obj.frags.push(frag);
     }
 
     obj.ccount = (obj.ccount || 0) + 1;
@@ -821,7 +823,7 @@ async function createComment(socket, data) {
     session.emitUser(iAm, null, socket);
     subscrController.commentAdded(obj._id, iAm.user, stamp);
 
-    return { comment, frag: obj.fragObj };
+    return { comment, frag };
 };
 
 /**
