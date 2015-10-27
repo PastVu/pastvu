@@ -21,9 +21,9 @@ define(['module'], function (module) {
 
 					firstConnected = false, //Флаг первоначального коннекта
 					firstConnectSubscribers = [],
-					disconnectionDataReturn = {error: true, noconnect: true, message: 'Нет соединения с сервером, повторите после восстановления связи'},
-					noСonnWait = '<div class="noconn"><div class="inn">Нет соединения с сервером, пробую подключиться.. После восстановления связи сообщение пропадет автоматически</div></div>',
-					noСonnFail = '<div class="noconn fail"><div class="inn">Не удалось автоматически подключиться к серверу. <span class="repeat">Продолжать попытки</span></div></div>',
+					disconnectionDataReturn = {error: true, noconnect: true, message: 'No connection with the server, please try again after reconnecting'},
+					noСonnWait = '<div class="noconn"><div class="inn">No connection with the server, trying to connect .. After the restoration of connection message will disappear automatically</div></div>',
+					noСonnFail = '<div class="noconn fail"><div class="inn">Failed to connect to the server automatically. <span class="repeat">Keep trying</span></div></div>',
 					$noСonnWait,
 					$noСonnFail;
 

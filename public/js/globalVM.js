@@ -61,10 +61,10 @@ define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'i18n', 'knockout'
 		repository: {},
 
 		ranks: {
-			mec: {src: '/img/rank/bronse.jpg', title: 'Меценат'},
-			mec_silv: {src: '/img/rank/silver.jpg', title: 'Серебряный меценат'},
-			mec_gold: {src: '/img/rank/gold.jpg', title: 'Золотой меценат'},
-			adviser: {src: '/img/rank/adviser.jpg', title: 'Советник'}
+			mec: {src: '/img/rank/bronse.jpg', title: 'Maecenas'},
+			mec_silv: {src: '/img/rank/silver.jpg', title: 'Silver maecenas'},
+			mec_gold: {src: '/img/rank/gold.jpg', title: 'Gold maecenas'},
+			adviser: {src: '/img/rank/adviser.jpg', title: 'counselor'}
 		},
 
 		func: {
