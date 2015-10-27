@@ -11,6 +11,15 @@ export let userRanks;
 
 export const ready = waitDb.then(() => Promise.all([fillClientParams(), fillUserSettingsDef(), fillUserRanks()]));
 
+const clientParamsPromise = Promise.resolve(clientParams);
+const getClientParams = () => clientParamsPromise;
+
+const userSettingsVarsPromise = Promise.resolve(userSettingsVars);
+const getUserSettingsVars = () => userSettingsVarsPromise;
+
+let userRanksPromise;
+const getUserRanks = () => userRanksPromise;
+
 // Fill object for client parameters
 async function fillClientParams() {
     const settings = await Settings.find({}, { _id: 0, key: 1, val: 1 }, { lean: true }).exec();
@@ -41,6 +50,7 @@ async function fillUserRanks() {
     const row = await UserSettings.findOneAsync({ key: 'ranks' }, { _id: 0, vars: 1 }, { lean: true });
 
     userRanks = row.vars;
+    userRanksPromise = Promise.resolve(userRanks);
 
     for (const rank of userRanks) {
         userRanksHash[rank] = 1;
@@ -50,15 +60,33 @@ async function fillUserRanks() {
 export function loadController(io) {
     io.sockets.on('connection', function (socket) {
         socket.on('giveClientParams', function () {
-            socket.emit('takeClientParams', clientParams);
+            getClientParams()
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('takeClientParams', resultData);
+                });
         });
 
         socket.on('giveUserSettingsVars', function () {
-            socket.emit('takeUserSettingsVars', userSettingsVars);
+            getUserSettingsVars()
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('takeUserSettingsVars', resultData);
+                });
         });
 
         socket.on('giveUserAllRanks', function () {
-            socket.emit('takeUserAllRanks', userRanks);
+            getUserRanks()
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('takeUserAllRanks', resultData);
+                });
         });
     });
 }
