@@ -1,47 +1,47 @@
 .regsel(data-bind="with: repository[M!M]")
-	//ko if: loading()
-	.loading Загрузка
-	// /ko
+    //ko if: loading()
+    .loading Загрузка
+    // /ko
 
-	//ko ifnot: loading()
-	h4.namehead
-		span.glyphicon.glyphicon-globe
-		span(data-bind="text: ' Выбор регион' + (options.max > 1 ? 'ов' : 'а')")
-	.offsetwrap
-		div Вводите имя региона непосредственно в поле выбора или найдите его вручную в дереве регионов ниже
-		//ko if: options.max > 1
-		div(data-bind="text: 'Возможно выбрать ' + (options.min ? 'от ' + options.min: '')+ ' до ' + options.max + ' регионов, они не должны быть вложены друг в друга'")
-		// /ko
+    //ko ifnot: loading()
+    h4.namehead
+        span.glyphicon.glyphicon-globe
+        span(data-bind="text: ' Выбор регион' + (options.max > 1 ? 'ов' : 'а')")
+    .offsetwrap
+        div Вводите имя региона непосредственно в поле выбора или найдите его вручную в дереве регионов ниже
+        //ko if: options.max > 1
+        div(data-bind="text: 'Возможно выбрать ' + (options.min ? 'от ' + options.min: '')+ ' до ' + options.max + ' регионов, они не должны быть вложены друг в друга'")
+        // /ko
 
-	.inputwrap.surrogate
-	.inputwrap.origin
-		.input-group.regionsgroup
-			span.input-group-addon Выбор:
-			input.regionstkn.form-control(type="text", placeholder="Начните вводить имя региона")
+    .inputwrap.surrogate
+    .inputwrap.origin
+        .input-group.regionsgroup
+            span.input-group-addon Выбор:
+            input.regionstkn.form-control(type="text", placeholder="Начните вводить имя региона")
 
-	.offsetwrap
-		.regionsHead
-			.headElem.interact(data-bind="click: expandAll")
-				span.glyphicon.glyphicon-plus
-				|  Раскрыть все
-			.headElem.interact(data-bind="click: collapseAll")
-				span.glyphicon.glyphicon-minus
-				|  Свернуть все
-	.tree
-		ul(data-bind="template: {name: 'treeNode', foreach: regionsTree}")
-	// /ko
+    .offsetwrap
+        .regionsHead
+            .headElem.interact(data-bind="click: expandAll")
+                span.glyphicon.glyphicon-plus
+                |  Раскрыть все
+            .headElem.interact(data-bind="click: collapseAll")
+                span.glyphicon.glyphicon-minus
+                |  Свернуть все
+    .tree
+        ul(data-bind="template: {name: 'treeNode', foreach: regionsTree}")
+    // /ko
 
-	| <script id="treeNode" type="text/html">
-	li(data-bind="css: {isparent: $data.childLen}")
-		.lirow(data-bind="css: {selected: $data.selected(), selectable: $data.selectable()}")
-			//ko if: $data.childLen
-			.chevron(data-bind="click: $parents[$data.level].collapseToggle, attr: {title: ($data.opened() ? 'Скрыть' : 'Раскрыть') + ' дочерние регионы'}")
-				span.glyphicon(data-bind="css: {'glyphicon-minus': $data.opened(), 'glyphicon-plus': !$data.opened()}")
-			// /ko
-			.name(data-bind="click: function() {$parents[$data.level].clickNode($data.title_local)}, attr: {title: $data.selected() ? 'Снять выбор' : ($data.selectable() ? 'Выбрать регион' : '')}")
-				span(data-bind="text: ' ' + $data.title_local")
-		//ko if: $data.childLen && $data.opened()
-		//ko template: {name: 'treeNode', foreach: $data.regions}
-		// /ko
-		// /ko
-	| </script>
+    | <script id="treeNode" type="text/html">
+    li(data-bind="css: {isparent: $data.childLen}")
+        .lirow(data-bind="css: {selected: $data.selected(), selectable: $data.selectable()}")
+            //ko if: $data.childLen
+            .chevron(data-bind="click: $parents[$data.level].collapseToggle, attr: {title: ($data.opened() ? 'Скрыть' : 'Раскрыть') + ' дочерние регионы'}")
+                span.glyphicon(data-bind="css: {'glyphicon-minus': $data.opened(), 'glyphicon-plus': !$data.opened()}")
+            // /ko
+            .name(data-bind="click: function() {$parents[$data.level].clickNode($data.title_local)}, attr: {title: $data.selected() ? 'Снять выбор' : ($data.selectable() ? 'Выбрать регион' : '')}")
+                span(data-bind="text: ' ' + $data.title_local")
+        //ko if: $data.childLen && $data.opened()
+        //ko template: {name: 'treeNode', foreach: $data.regions}
+        // /ko
+        // /ko
+    | </script>

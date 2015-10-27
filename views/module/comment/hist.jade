@@ -1,69 +1,69 @@
 .commentHist(data-bind="with: repository[M!M]")
-	| <script id="dothist" type="text/x-dot-template">
-	ul.media-list
-		| {{~it.hists :h:index}}
-		li.media.hist
-			a.pull-left(target="_blank", href="{{='/u/'+h.user.login}}")
-				img.media-object(src="{{=h.user.avatar}}")
-			.media-body
-				.histHead
-					a.author(target="_blank", href="{{='/u/'+h.user.login}}") {{=h.user.disp}}
-					| {{?h.role}}
-					| &nbsp;
-					.role
-						| {{?h.role===5}}как модератор
-						| {{?h.roleregion}} региона&nbsp;
-						a(target="_blank", href="{{='/ps?f=r!' + h.roleregion.cid}}") {{=h.roleregion.title_local}}{{?}}
-						| {{??h.role>9}}как администратор{{?}}
-					| {{?}}
-					.dotDelimeter ·
-					.histStamp {{=it.fDate(new Date(h.stamp))}}
+    | <script id="dothist" type="text/x-dot-template">
+    ul.media-list
+        | {{~it.hists :h:index}}
+        li.media.hist
+            a.pull-left(target="_blank", href="{{='/u/'+h.user.login}}")
+                img.media-object(src="{{=h.user.avatar}}")
+            .media-body
+                .histHead
+                    a.author(target="_blank", href="{{='/u/'+h.user.login}}") {{=h.user.disp}}
+                    | {{?h.role}}
+                    | &nbsp;
+                    .role
+                        | {{?h.role===5}}как модератор
+                        | {{?h.roleregion}} региона&nbsp;
+                        a(target="_blank", href="{{='/ps?f=r!' + h.roleregion.cid}}") {{=h.roleregion.title_local}}{{?}}
+                        | {{??h.role>9}}как администратор{{?}}
+                    | {{?}}
+                    .dotDelimeter ·
+                    .histStamp {{=it.fDate(new Date(h.stamp))}}
 
-				| {{?h.del}}
-				.info.red
-					span.glyphicon.glyphicon-remove
-					|  Комментарий удален
-				.histText
-					| {{?h.del.origin || h.del.reason && h.del.reason.cid}}
-					div
-						.histCat Причина:
-						| {{?h.del.origin}} Удаление родительского комментария&nbsp;
-						a(href="?hl=comment-{{=h.del.origin}}") {{='#'+h.del.origin}}
-						| {{??!!h.del.reason.title}} {{=h.del.reason.title}}{{?}}
-					| {{?}}
+                | {{?h.del}}
+                .info.red
+                    span.glyphicon.glyphicon-remove
+                    |  Комментарий удален
+                .histText
+                    | {{?h.del.origin || h.del.reason && h.del.reason.cid}}
+                    div
+                        .histCat Причина:
+                        | {{?h.del.origin}} Удаление родительского комментария&nbsp;
+                        a(href="?hl=comment-{{=h.del.origin}}") {{='#'+h.del.origin}}
+                        | {{??!!h.del.reason.title}} {{=h.del.reason.title}}{{?}}
+                    | {{?}}
 
-					| {{?h.del.reason && h.del.reason.desc}}
-					div
-						.histCat Описание:
-						|  {{=h.del.reason.desc}}
-					| {{?}}
+                    | {{?h.del.reason && h.del.reason.desc}}
+                    div
+                        .histCat Описание:
+                        |  {{=h.del.reason.desc}}
+                    | {{?}}
 
-				| {{??h.restore}}
-				.info.green
-					span.glyphicon.glyphicon-repeat
-					|  Комментарий восстановлен
-				| {{??}}
+                | {{??h.restore}}
+                .info.green
+                    span.glyphicon.glyphicon-repeat
+                    |  Комментарий восстановлен
+                | {{??}}
 
-				| {{?h.frag}}
-				.info {{=h.frag}}
-				| {{?}}
+                | {{?h.frag}}
+                .info {{=h.frag}}
+                | {{?}}
 
-				| {{?h.txt}}
-				| {{?h.txtd}}
-				.info
-					span.glyphicon.glyphicon-pencil
-					|  Отредактирован текст
-				// ko with: hist_id[{{=h.id}}]
-				.txtSwitch(data-bind="text: showdiff() ? 'Скрыть подсветку разницы' : 'Показать разницу', click: function () {showdiff(!showdiff())}")
-				.histText(data-bind="html: showdiff() ? txtd : txt")
-				// /ko
-				| {{??}}
-				.histText {{=h.txt}}
-				| {{?}}
-				| {{?}}
+                | {{?h.txt}}
+                | {{?h.txtd}}
+                .info
+                    span.glyphicon.glyphicon-pencil
+                    |  Отредактирован текст
+                // ko with: hist_id[{{=h.id}}]
+                .txtSwitch(data-bind="text: showdiff() ? 'Скрыть подсветку разницы' : 'Показать разницу', click: function () {showdiff(!showdiff())}")
+                .histText(data-bind="html: showdiff() ? txtd : txt")
+                // /ko
+                | {{??}}
+                .histText {{=h.txt}}
+                | {{?}}
+                | {{?}}
 
 
-				| {{?}}
+                | {{?}}
 
-		| {{~}}
-	| </script>
+        | {{~}}
+    | </script>

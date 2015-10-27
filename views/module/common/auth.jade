@@ -1,225 +1,225 @@
 #auth_curtain.centering_content(data-bind="with: repository[M!M]")
 
-	//ko if: mode()
-	form.fringe(action='', autocomplete="on", method='POST', data-bind="attr: {name: mode() + 'Form'}, css: {working: working(), finish: finish()}, event: {submit: submit}")
-		//ko template: {name: mode() + 'Tpl'}
-		// /ko
-	// /ko
+    //ko if: mode()
+    form.fringe(action='', autocomplete="on", method='POST', data-bind="attr: {name: mode() + 'Form'}, css: {working: working(), finish: finish()}, event: {submit: submit}")
+        //ko template: {name: mode() + 'Tpl'}
+        // /ko
+    // /ko
 
-	| <script id="loginTpl" type="text/html">
-	.head Авторизация
-	.form-group
-		dl.dl-horizontal
-			dt Имя пользователя:
-			dd
-				span(data-bind="click: function () {mode('reg')}") Регистрация
-		.inputwrap
-			span.glyphicon.glyphicon-user
-			input.form-control(autocomplete="on", type="text", required="required", placeholder="Enter username or e-mail", name="login", autocorrect="off", autocapitalize="off")
-	.form-group(style="margin-bottom:0;")
-		dl.dl-horizontal
-			dt Пароль:
-			dd
-				span(data-bind="click: function () {mode('recallRequest')}") Восстановить пароль
-		.inputwrap
-			span.glyphicon.glyphicon-lock
-			input.form-control(type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}")
-		.footnote
-			| Для безопасной работы на чужом компьютере, используйте приватную вкладку (
-			a.lll(href="https://support.google.com/chrome/answer/95464", target="_blank") режим инкогнито
-			| )
-	.form-group(style="margin-bottom:20px;")
-		.text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}"): span.glyphicon.glyphicon-warning-sign  Caps Lock активен
-		.mess
-			div(data-bind="text: msg()")
-		.row.btnsAction
-			.col-xs-6
-				button.btn.btn-primary(type="submit") Вход
-			.col-xs-6.colright
-				button.btn.btn-primary(type="button", data-bind="click: formClose") Отмена
-		.cantLoging
-			a(href="", target="_blank", onclick="ga('send', 'event', 'support', 'click', 'support click login'); $(this).attr('href', 'mailto:support@pastvu.com?Subject=%5BНе%20могу%20войти%5D%20' + $(this).parents('form').find('[name=login]').val())")
-				| Не можете войти?
-	| </script>
+    | <script id="loginTpl" type="text/html">
+    .head Авторизация
+    .form-group
+        dl.dl-horizontal
+            dt Имя пользователя:
+            dd
+                span(data-bind="click: function () {mode('reg')}") Регистрация
+        .inputwrap
+            span.glyphicon.glyphicon-user
+            input.form-control(autocomplete="on", type="text", required="required", placeholder="Enter username or e-mail", name="login", autocorrect="off", autocapitalize="off")
+    .form-group(style="margin-bottom:0;")
+        dl.dl-horizontal
+            dt Пароль:
+            dd
+                span(data-bind="click: function () {mode('recallRequest')}") Восстановить пароль
+        .inputwrap
+            span.glyphicon.glyphicon-lock
+            input.form-control(type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}")
+        .footnote
+            | Для безопасной работы на чужом компьютере, используйте приватную вкладку (
+            a.lll(href="https://support.google.com/chrome/answer/95464", target="_blank") режим инкогнито
+            | )
+    .form-group(style="margin-bottom:20px;")
+        .text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}"): span.glyphicon.glyphicon-warning-sign  Caps Lock активен
+        .mess
+            div(data-bind="text: msg()")
+        .row.btnsAction
+            .col-xs-6
+                button.btn.btn-primary(type="submit") Вход
+            .col-xs-6.colright
+                button.btn.btn-primary(type="button", data-bind="click: formClose") Отмена
+        .cantLoging
+            a(href="", target="_blank", onclick="ga('send', 'event', 'support', 'click', 'support click login'); $(this).attr('href', 'mailto:support@pastvu.com?Subject=%5BНе%20могу%20войти%5D%20' + $(this).parents('form').find('[name=login]').val())")
+                | Не можете войти?
+    | </script>
 
-	| <script id="regTpl" type="text/html">
-	.head Регистрация
-	.form-group
-		dl.dl-horizontal
-			dt Имя пользователя:
-			dd: span(data-bind="click: function () {mode('login')}") Авторизация
-		.inputwrap
-			span.glyphicon.glyphicon-user
-			input.form-control(autocomplete="off", type="text", required="required", placeholder="User", name="login", autocorrect="off", autocapitalize="off")
-	.form-group
-		dl.dl-horizontal
-			dt E-mail:
-			dd
-		.inputwrap
-			span.glyphicon.glyphicon-envelope
-			input.form-control(autocomplete="on", type="email", required="required", placeholder="email", name="email", autocorrect="off", autocapitalize="off")
-	.form-group
-		dl.dl-horizontal
-			dt Пароль:
-			dd
-		.inputwrap
-			span.glyphicon.glyphicon-lock
-			input.form-control(autocomplete="off", type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}")
-	.form-group
-		dl.dl-horizontal
-			dt Повторите пароль:
-			dd
-		.inputwrap
-			span.glyphicon.glyphicon-lock
-			input.form-control(autocomplete="off", type="password", required="required", placeholder="Enter password", name="pass2", data-bind="event: {keypress: pressHandler}")
-	.form-group
-		.text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}")
-			span.glyphicon.glyphicon-warning-sign
-			|  Caps Lock активен
-		.mess
-			div(data-bind="text: msg()")
-		.row.btnsAction
-			.col-xs-6
-				button.btn.btn-primary(type="submit") Отправить
-			.col-xs-6.colright
-				button.btn.btn-primary(type="button", data-bind="click: formClose") Отмена
-		.row.btnsFinish
-			.col-xs-12.colcent
-				button.btn.btn-primary(type="button", data-bind="click: formClose") Завершить
-	| </script>
+    | <script id="regTpl" type="text/html">
+    .head Регистрация
+    .form-group
+        dl.dl-horizontal
+            dt Имя пользователя:
+            dd: span(data-bind="click: function () {mode('login')}") Авторизация
+        .inputwrap
+            span.glyphicon.glyphicon-user
+            input.form-control(autocomplete="off", type="text", required="required", placeholder="User", name="login", autocorrect="off", autocapitalize="off")
+    .form-group
+        dl.dl-horizontal
+            dt E-mail:
+            dd
+        .inputwrap
+            span.glyphicon.glyphicon-envelope
+            input.form-control(autocomplete="on", type="email", required="required", placeholder="email", name="email", autocorrect="off", autocapitalize="off")
+    .form-group
+        dl.dl-horizontal
+            dt Пароль:
+            dd
+        .inputwrap
+            span.glyphicon.glyphicon-lock
+            input.form-control(autocomplete="off", type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}")
+    .form-group
+        dl.dl-horizontal
+            dt Повторите пароль:
+            dd
+        .inputwrap
+            span.glyphicon.glyphicon-lock
+            input.form-control(autocomplete="off", type="password", required="required", placeholder="Enter password", name="pass2", data-bind="event: {keypress: pressHandler}")
+    .form-group
+        .text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}")
+            span.glyphicon.glyphicon-warning-sign
+            |  Caps Lock активен
+        .mess
+            div(data-bind="text: msg()")
+        .row.btnsAction
+            .col-xs-6
+                button.btn.btn-primary(type="submit") Отправить
+            .col-xs-6.colright
+                button.btn.btn-primary(type="button", data-bind="click: formClose") Отмена
+        .row.btnsFinish
+            .col-xs-12.colcent
+                button.btn.btn-primary(type="button", data-bind="click: formClose") Завершить
+    | </script>
 
-	| <script id="recallRequestTpl" type="text/html">
-	.head Восстановление пароля
-	.form-group
-		dl.dl-horizontal
-			dt Имя пользователя или e-mail:
-			dd: span(data-bind="click: function () {mode('login')}") Авторизация
-		.inputwrap
-			span.glyphicon.glyphicon-user
-			input.form-control(autocomplete="off", type="text", required="required", placeholder="Enter username or e-mail", name="login", autocorrect="off", autocapitalize="off")
-	.form-group
-		.mess
-			div(data-bind="text: msg()")
-		.row.btnsAction
-			.col-xs-6
-				button.btn.btn-primary(type="submit") Отправить
-			.col-xs-6.colright
-				button.btn.btn-primary(type="button", data-bind="click: formClose") Отмена
-		.row.btnsFinish
-			.col-xs-12.colcent
-				button.btn.btn-primary(type="button", data-bind="click: formClose") Завершить
-	| </script>
+    | <script id="recallRequestTpl" type="text/html">
+    .head Восстановление пароля
+    .form-group
+        dl.dl-horizontal
+            dt Имя пользователя или e-mail:
+            dd: span(data-bind="click: function () {mode('login')}") Авторизация
+        .inputwrap
+            span.glyphicon.glyphicon-user
+            input.form-control(autocomplete="off", type="text", required="required", placeholder="Enter username or e-mail", name="login", autocorrect="off", autocapitalize="off")
+    .form-group
+        .mess
+            div(data-bind="text: msg()")
+        .row.btnsAction
+            .col-xs-6
+                button.btn.btn-primary(type="submit") Отправить
+            .col-xs-6.colright
+                button.btn.btn-primary(type="button", data-bind="click: formClose") Отмена
+        .row.btnsFinish
+            .col-xs-12.colcent
+                button.btn.btn-primary(type="button", data-bind="click: formClose") Завершить
+    | </script>
 
-	| <script id="recallRequestForMeTpl" type="text/html">
-	.head Запрос нового пароля
-	.form-group
-		div(style="text-align: center; max-width: 350px; margin-bottom: 10px;")
-			| На почту придет письмо со ссылкой на установку нового пароля без ввода текущего. Отправить запрос?
-		.mess
-			div(data-bind="text: msg()")
-	.form-group
-		.row.btnsAction
-			.col-xs-6
-				button.btn.btn-primary(type="submit") Отправить
-			.col-xs-6.colright
-				button.btn.btn-primary(type="button", data-bind="click: formClose") Отмена
-		.row.btnsFinish
-			.col-xs-12.colcent
-				button.btn.btn-primary(type="button", data-bind="click: formClose") Завершить
-	| </script>
+    | <script id="recallRequestForMeTpl" type="text/html">
+    .head Запрос нового пароля
+    .form-group
+        div(style="text-align: center; max-width: 350px; margin-bottom: 10px;")
+            | На почту придет письмо со ссылкой на установку нового пароля без ввода текущего. Отправить запрос?
+        .mess
+            div(data-bind="text: msg()")
+    .form-group
+        .row.btnsAction
+            .col-xs-6
+                button.btn.btn-primary(type="submit") Отправить
+            .col-xs-6.colright
+                button.btn.btn-primary(type="button", data-bind="click: formClose") Отмена
+        .row.btnsFinish
+            .col-xs-12.colcent
+                button.btn.btn-primary(type="button", data-bind="click: formClose") Завершить
+    | </script>
 
-	| <script id="passChangeRecallTpl" type="text/html">
-	.userTitle.clearfix
-		img.userTitlePreview(data-bind="attr: {src: avatar()}")
-		.userTitleName(data-bind="text: name()")
-		.userTitleLogin(data-bind="text: login()")
-	.form-group
-		dl.dl-horizontal
-			dt Новый пароль:
-			dd
-		.inputwrap
-			span.glyphicon.glyphicon-lock
-			input.form-control(type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}")
-	.form-group
-		dl.dl-horizontal
-			dt Повторите новый пароль:
-			dd
-		.inputwrap
-			span.glyphicon.glyphicon-lock
-			input.form-control(type="password", required="required", placeholder="Enter password", name="pass2", data-bind="event: {keypress: pressHandler}")
-	.form-group
-		.text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}")
-			span.glyphicon.glyphicon-warning-sign
-			|  Caps Lock активен
-		.mess
-			div(data-bind="text: msg()")
-		.row.btnsAction
-			.col-xs-6
-				button.btn.btn-primary(type="submit") Сменить
-			.col-xs-6.colright
-				button.btn.btn-primary(type="button", data-bind="click: formClose") Отмена
-		.row.btnsFinish
-			.col-xs-12.colcent
-				button.btn.btn-primary(type="button", data-bind="click: formClose") Завершить
-	| </script>
+    | <script id="passChangeRecallTpl" type="text/html">
+    .userTitle.clearfix
+        img.userTitlePreview(data-bind="attr: {src: avatar()}")
+        .userTitleName(data-bind="text: name()")
+        .userTitleLogin(data-bind="text: login()")
+    .form-group
+        dl.dl-horizontal
+            dt Новый пароль:
+            dd
+        .inputwrap
+            span.glyphicon.glyphicon-lock
+            input.form-control(type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}")
+    .form-group
+        dl.dl-horizontal
+            dt Повторите новый пароль:
+            dd
+        .inputwrap
+            span.glyphicon.glyphicon-lock
+            input.form-control(type="password", required="required", placeholder="Enter password", name="pass2", data-bind="event: {keypress: pressHandler}")
+    .form-group
+        .text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}")
+            span.glyphicon.glyphicon-warning-sign
+            |  Caps Lock активен
+        .mess
+            div(data-bind="text: msg()")
+        .row.btnsAction
+            .col-xs-6
+                button.btn.btn-primary(type="submit") Сменить
+            .col-xs-6.colright
+                button.btn.btn-primary(type="button", data-bind="click: formClose") Отмена
+        .row.btnsFinish
+            .col-xs-12.colcent
+                button.btn.btn-primary(type="button", data-bind="click: formClose") Завершить
+    | </script>
 
-	| <script id="passChangeTpl" type="text/html">
-	.head Смена пароля
-	.form-group
-		dl.dl-horizontal
-			dt Текущий пароль:
-			dd
-		.inputwrap
-			span.glyphicon.glyphicon-lock
-			input.form-control(type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}", autocorrect="off", autocapitalize="off")
-	.form-group
-		dl.dl-horizontal
-			dt Новый пароль:
-			dd
-		.inputwrap
-			span.glyphicon.glyphicon-lock
-			input.form-control(type="password", required="required", placeholder="Enter password", name="passNew", data-bind="event: {keypress: pressHandler}")
-	.form-group
-		dl.dl-horizontal
-			dt Повторите новый пароль:
-			dd
-		.inputwrap
-			span.glyphicon.glyphicon-lock
-			input.form-control(type="password", required="required", placeholder="Enter password", name="passNew2", data-bind="event: {keypress: pressHandler}")
-	.form-group
-		.text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}")
-			span.glyphicon.glyphicon-warning-sign
-			|  Caps Lock активен
-		.mess
-			div(data-bind="text: msg()")
-		.row.btnsAction
-			.col-xs-6
-				button.btn.btn-primary(type="submit") Сменить
-			.col-xs-6.colright
-				button.btn.btn-primary(type="button", data-bind="click: formClose") Отмена
-		.row.btnsFinish
-			.col-xs-12.colcent
-				button.btn.btn-primary(type="button", data-bind="click: formClose") Завершить
-	| </script>
+    | <script id="passChangeTpl" type="text/html">
+    .head Смена пароля
+    .form-group
+        dl.dl-horizontal
+            dt Текущий пароль:
+            dd
+        .inputwrap
+            span.glyphicon.glyphicon-lock
+            input.form-control(type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}", autocorrect="off", autocapitalize="off")
+    .form-group
+        dl.dl-horizontal
+            dt Новый пароль:
+            dd
+        .inputwrap
+            span.glyphicon.glyphicon-lock
+            input.form-control(type="password", required="required", placeholder="Enter password", name="passNew", data-bind="event: {keypress: pressHandler}")
+    .form-group
+        dl.dl-horizontal
+            dt Повторите новый пароль:
+            dd
+        .inputwrap
+            span.glyphicon.glyphicon-lock
+            input.form-control(type="password", required="required", placeholder="Enter password", name="passNew2", data-bind="event: {keypress: pressHandler}")
+    .form-group
+        .text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}")
+            span.glyphicon.glyphicon-warning-sign
+            |  Caps Lock активен
+        .mess
+            div(data-bind="text: msg()")
+        .row.btnsAction
+            .col-xs-6
+                button.btn.btn-primary(type="submit") Сменить
+            .col-xs-6.colright
+                button.btn.btn-primary(type="button", data-bind="click: formClose") Отмена
+        .row.btnsFinish
+            .col-xs-12.colcent
+                button.btn.btn-primary(type="button", data-bind="click: formClose") Завершить
+    | </script>
 
-	| <script id="passInputTpl" type="text/html">
-	.head Верификация
-	.form-group
-		dl.dl-horizontal
-			dt Введите свой пароль для подтверждения:
-			dd
-		.inputwrap
-			span.glyphicon.glyphicon-lock
-			input.form-control(type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}", autocorrect="off", autocapitalize="off")
-	.form-group
-		.text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}")
-			span.glyphicon.glyphicon-warning-sign
-			|  Caps Lock активен
-		.mess
-			div(data-bind="text: msg()")
-		.row.btnsAction
-			.col-xs-6
-				button.btn.btn-primary(type="submit") Отправить
-			.col-xs-6.colright
-				button.btn.btn-primary(type="button", data-bind="click: formClose") Отмена
-	| </script>
+    | <script id="passInputTpl" type="text/html">
+    .head Верификация
+    .form-group
+        dl.dl-horizontal
+            dt Введите свой пароль для подтверждения:
+            dd
+        .inputwrap
+            span.glyphicon.glyphicon-lock
+            input.form-control(type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}", autocorrect="off", autocapitalize="off")
+    .form-group
+        .text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}")
+            span.glyphicon.glyphicon-warning-sign
+            |  Caps Lock активен
+        .mess
+            div(data-bind="text: msg()")
+        .row.btnsAction
+            .col-xs-6
+                button.btn.btn-primary(type="submit") Отправить
+            .col-xs-6.colright
+                button.btn.btn-primary(type="button", data-bind="click: formClose") Отмена
+    | </script>

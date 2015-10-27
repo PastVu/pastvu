@@ -1,25 +1,25 @@
 .c(id="c{{=c.cid}}", class="l{{=c.level}}")
-	a.hrefava(href="{{='/u/'+c.user.login}}")
-		| {{?c.user.avatar === undefined}}
-		.overprint {{=c.user.disp[0]}}
-		| {{?}}
-		img.cava(src="{{=c.user.avatar || '/img/caps/avatarth.png'}}")
-	.cbody
-		.chead
-			a.author(class="{{?c.user.online}}online{{?}}", href="{{='/u/'+c.user.login}}") {{=c.user.disp}}
-			| {{?c.user.rnks}}
-			.ranks {{=c.user.rnks}}
-			| {{?}}
-			| {{?c.frag}}
-			.dotDelimeter ·
-			a.frag(href="{{='?hl=frag-'+c.cid}}")
-				span.glyphicon.glyphicon-picture
-				|  Комментируемый фрагмент
-			| {{?}}
-			.dotDelimeter ·
-			a.stamp(data-replace="true", href="{{='?hl=comment-'+c.cid}}") {{=it.fDate(new Date(c.stamp))}}
-			| {{?c.lastChanged}}
-			.dotDelimeter ·
-			.changed(title="Показать историю изменений") {{='Изменен '+it.fDateIn(new Date(c.lastChanged))}}
-			| {{?}}
-		.ctext {{=c.txt}}
+    a.hrefava(href="{{='/u/'+c.user.login}}")
+        | {{?c.user.avatar === undefined}}
+        .overprint {{=c.user.disp[0]}}
+        | {{?}}
+        img.cava(src="{{=c.user.avatar || '/img/caps/avatarth.png'}}")
+    .cbody
+        .chead
+            a.author(class="{{?c.user.online}}online{{?}}", href="{{='/u/'+c.user.login}}") {{=c.user.disp}}
+            | {{?c.user.rnks}}
+            .ranks {{=c.user.rnks}}
+            | {{?}}
+            | {{?c.frag}}
+            .dotDelimeter ·
+            a.frag(href="{{='?hl=frag-'+c.cid}}")
+                span.glyphicon.glyphicon-picture
+                |  Комментируемый фрагмент
+            | {{?}}
+            .dotDelimeter ·
+            a.stamp(data-replace="true", href="{{='?hl=comment-'+c.cid}}") {{=it.fDate(new Date(c.stamp))}}
+            | {{?c.lastChanged}}
+            .dotDelimeter ·
+            .changed(title="Показать историю изменений") {{='Изменен '+it.fDateIn(new Date(c.lastChanged))}}
+            | {{?}}
+        .ctext {{=c.txt}}

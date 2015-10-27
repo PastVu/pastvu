@@ -1,45 +1,45 @@
 .conveyerModuleWrapper(data-bind="with: repository[M!M]")
-	h4 Управление конвейером конвертаций фотографий
-	.row
-		.col-xs-5.col-md-4
-			h5 Действия
-			button.btn.btn-sm(type="button", data-bind="css: {disabled: exe(), 'btn-warning': conveyerEnabled(), 'btn-success': !conveyerEnabled()}, click: startstop, attr: {disabled: exe()}")
-				span.glyphicon(data-bind="css: {'glyphicon-stop': conveyerEnabled(), 'glyphicon-play': !conveyerEnabled()}")
-				span(data-bind="text: conveyerEnabled() ? ' Остановить' : ' Запустить'")
-			button.btn.btn-sm.btn-danger(type="button", data-bind="css: {disabled: exe()}, click: clearConveyer, attr: {disabled: exe()}")
-				span.glyphicon.glyphicon-trash
-				|  Очистить
-			br
-			br
-			.toConvertSection
-				h5 Отправить на конвертацию все фото:
-				form.form-inline
-					.form-group
-						| Номера фотографий:&nbsp;
-						input.form-control(type="number", placeholder="min", data-bind="attr: {disabled: exe()}, value: reconvertCidMin, valueUpdate: 'afterkeydown'", style="width: 70px;")
-						input.form-control(type="number", placeholder="max", data-bind="attr: {disabled: exe()}, value: reconvertCidMax, valueUpdate: 'afterkeydown'", style="width: 70px;")
-						| &nbsp;
-				form.form-inline
-					.form-group
-						| Номер региона:&nbsp;
-						input.form-control(type="number", data-bind="attr: {disabled: exe()}, value: reconvertRegion, valueUpdate: 'afterkeydown'", style="width: 70px;")
-						| &nbsp;
-				button.btn.btn-primary(data-bind="click: toConvert, attr: {disabled: exe()}") Cтарт
-		.col-xs-7.col-md-8(style="padding-left: 10px;")
-			h5 Текущее состояние конвейера
-			div(data-bind="css: {'text-success': conveyerEnabled(), 'text-error': !conveyerEnabled()}, text: conveyerEnabled() ? 'Конвейер активен' : 'Конвейер остановлен'")
-			div
-				span.stateRate(data-bind="text:converted()")
-				span.stateDesc Конвертированно с песледней 10-минутки
-			div
-				span.stateRate(data-bind="text:clength()")
-				span.stateDesc Длина конвейера
-			div
-				span.stateRate(data-bind="text:cmaxlength()")
-				span.stateDesc Максимальная длина конвейера с песледней 10-минутки
-	br
-	h5 Сконвертированно
-	#conveyerConvertGraph
-	br
-	h5 Максимальная длина конвейера
-	#conveyerLengthGraph
+    h4 Управление конвейером конвертаций фотографий
+    .row
+        .col-xs-5.col-md-4
+            h5 Действия
+            button.btn.btn-sm(type="button", data-bind="css: {disabled: exe(), 'btn-warning': conveyerEnabled(), 'btn-success': !conveyerEnabled()}, click: startstop, attr: {disabled: exe()}")
+                span.glyphicon(data-bind="css: {'glyphicon-stop': conveyerEnabled(), 'glyphicon-play': !conveyerEnabled()}")
+                span(data-bind="text: conveyerEnabled() ? ' Остановить' : ' Запустить'")
+            button.btn.btn-sm.btn-danger(type="button", data-bind="css: {disabled: exe()}, click: clearConveyer, attr: {disabled: exe()}")
+                span.glyphicon.glyphicon-trash
+                |  Очистить
+            br
+            br
+            .toConvertSection
+                h5 Отправить на конвертацию все фото:
+                form.form-inline
+                    .form-group
+                        | Номера фотографий:&nbsp;
+                        input.form-control(type="number", placeholder="min", data-bind="attr: {disabled: exe()}, value: reconvertCidMin, valueUpdate: 'afterkeydown'", style="width: 70px;")
+                        input.form-control(type="number", placeholder="max", data-bind="attr: {disabled: exe()}, value: reconvertCidMax, valueUpdate: 'afterkeydown'", style="width: 70px;")
+                        | &nbsp;
+                form.form-inline
+                    .form-group
+                        | Номер региона:&nbsp;
+                        input.form-control(type="number", data-bind="attr: {disabled: exe()}, value: reconvertRegion, valueUpdate: 'afterkeydown'", style="width: 70px;")
+                        | &nbsp;
+                button.btn.btn-primary(data-bind="click: toConvert, attr: {disabled: exe()}") Cтарт
+        .col-xs-7.col-md-8(style="padding-left: 10px;")
+            h5 Текущее состояние конвейера
+            div(data-bind="css: {'text-success': conveyerEnabled(), 'text-error': !conveyerEnabled()}, text: conveyerEnabled() ? 'Конвейер активен' : 'Конвейер остановлен'")
+            div
+                span.stateRate(data-bind="text:converted()")
+                span.stateDesc Конвертированно с песледней 10-минутки
+            div
+                span.stateRate(data-bind="text:clength()")
+                span.stateDesc Длина конвейера
+            div
+                span.stateRate(data-bind="text:cmaxlength()")
+                span.stateDesc Максимальная длина конвейера с песледней 10-минутки
+    br
+    h5 Сконвертированно
+    #conveyerConvertGraph
+    br
+    h5 Максимальная длина конвейера
+    #conveyerLengthGraph

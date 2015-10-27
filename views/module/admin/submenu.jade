@@ -1,6 +1,6 @@
 .adminSubMenu(data-bind="with: repository[M!M]")
-	ul.nav.nav-pills.nav-stacked
-		//ko foreach: menuItems
-		li(data-bind="css: {active: $data.section === $parent.section()}")
-			a(data-bind="text: $data.name, attr: {href: ($data.disable ? '' : $data.href)}, css: {disabled: $data.disable}")
-		// /ko
+    ul.nav.nav-pills.nav-stacked
+        //ko foreach: menuItems
+        li(data-bind="css: {active: $data.section === $parent.section()}")
+            a(data-bind="text: $data.name, attr: {href: ($data.disable ? '' : $data.href)}, css: {disabled: $data.disable}")
+        // /ko

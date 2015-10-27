@@ -1,34 +1,34 @@
 .mapModuleWrapper(data-bind="with: repository[M!M]")
-	h3 Параметры размера кластера
-	p Для установки нового размера кластера, захватите прозрачный прямоугольник на карте и перемещайте его или его границу в необходимых пределах. Для приенения изменений нажмите кнопку Сохранить.
-	.mapContainer(data-bind="css: {}")
-		.map
-		.clusterContainer
-			.clusterRect(data-bind="style: {borderColor: changed() ? '#FF0808' : '#2daf2e', borderStyle: changed() ? 'dashed' : 'solid'}")
-		.layersPanel.fringe(data-bind="css: {open: layersOpen()}")
-			.currentLayer(data-bind="text: layerActiveDesc(), click: toggleLayers")
-			.layerSystems(data-bind="style: {width: (104 * (layersOpen() ? layers().length : 1)) + 'px'}")
-				.h_separator
-				//ko foreach: {data: $data.layers, as: 'system'}
-				.layerSystem(data-bind="css: {selected: system.selected()}")
-					.layerHead(data-bind="text: system.desc")
-					//ko foreach: {data:system.types, as: 'type'}
-					.layerType(data-bind="css: {selected: type.selected()}, text: type.desc, click: function () {$parents[1].selectLayer(system.id, type.id)}")
-					// /ko
-				// /ko
-	dl.dl-horizontal
-		dt(data-bind="text: 'Текущие размеры:'")
-		dd(data-bind="text: '' + wCurr() + ' x ' + hCurr() + ''")
-	dl.dl-horizontal(data-bind="style: {display: changed() ? '' : 'none'}")
-		dt(data-bind="text: 'Новые размеры:'")
-		dd(data-bind="text: '' + wNew() + ' x ' + hNew() + ''")
-	.clusterButt(data-bind="style: {display: changed() ? '' : 'none'}")
-		button.btn.btn-primary.btnSave(type="button", data-bind="css: {disabled: exe()}, click: save, attr: {disabled: exe()}")
-			span.glyphicon.glyphicon-ok
-			|  Save and start conversion
-		button.btn.btn-warning.btnSave(type="button", data-bind="click: cancel")
-			span.glyphicon.glyphicon-exclamation-sign
-			|  Cancel
-	p(style="margin-top: 6px; margin-bottom: 0;", data-bind="style: {display: exe() && changed() ? '' : 'none'}") Процесс расчета новых параметров на разных уровнях зума:
-	.progress.progress-striped.active(data-bind="style: {display: exe() && changed() ? '' : 'none'}")
-		.progress-bar.progress-bar-success(data-bind="style: {width: exePercent() + '%'}")
+    h3 Параметры размера кластера
+    p Для установки нового размера кластера, захватите прозрачный прямоугольник на карте и перемещайте его или его границу в необходимых пределах. Для приенения изменений нажмите кнопку Сохранить.
+    .mapContainer(data-bind="css: {}")
+        .map
+        .clusterContainer
+            .clusterRect(data-bind="style: {borderColor: changed() ? '#FF0808' : '#2daf2e', borderStyle: changed() ? 'dashed' : 'solid'}")
+        .layersPanel.fringe(data-bind="css: {open: layersOpen()}")
+            .currentLayer(data-bind="text: layerActiveDesc(), click: toggleLayers")
+            .layerSystems(data-bind="style: {width: (104 * (layersOpen() ? layers().length : 1)) + 'px'}")
+                .h_separator
+                //ko foreach: {data: $data.layers, as: 'system'}
+                .layerSystem(data-bind="css: {selected: system.selected()}")
+                    .layerHead(data-bind="text: system.desc")
+                    //ko foreach: {data:system.types, as: 'type'}
+                    .layerType(data-bind="css: {selected: type.selected()}, text: type.desc, click: function () {$parents[1].selectLayer(system.id, type.id)}")
+                    // /ko
+                // /ko
+    dl.dl-horizontal
+        dt(data-bind="text: 'Текущие размеры:'")
+        dd(data-bind="text: '' + wCurr() + ' x ' + hCurr() + ''")
+    dl.dl-horizontal(data-bind="style: {display: changed() ? '' : 'none'}")
+        dt(data-bind="text: 'Новые размеры:'")
+        dd(data-bind="text: '' + wNew() + ' x ' + hNew() + ''")
+    .clusterButt(data-bind="style: {display: changed() ? '' : 'none'}")
+        button.btn.btn-primary.btnSave(type="button", data-bind="css: {disabled: exe()}, click: save, attr: {disabled: exe()}")
+            span.glyphicon.glyphicon-ok
+            |  Save and start conversion
+        button.btn.btn-warning.btnSave(type="button", data-bind="click: cancel")
+            span.glyphicon.glyphicon-exclamation-sign
+            |  Cancel
+    p(style="margin-top: 6px; margin-bottom: 0;", data-bind="style: {display: exe() && changed() ? '' : 'none'}") Процесс расчета новых параметров на разных уровнях зума:
+    .progress.progress-striped.active(data-bind="style: {display: exe() && changed() ? '' : 'none'}")
+        .progress-bar.progress-bar-success(data-bind="style: {width: exePercent() + '%'}")
