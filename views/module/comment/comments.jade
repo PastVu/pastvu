@@ -14,7 +14,7 @@
         //ko if: auth.loggedIn()
         .commSubscr.headElem.interact.strokeBefore(data-bind="click: subscribe, css: {isSubscr: subscr()}, attr: {title: subscr() ? 'You are subscribed for new comments. Click to unsubscribe' : 'Subscribe to new comments'}")
             span.glyphicon.glyphicon-envelope
-            span(data-bind="text: subscr() ? ' Subscribe' : ' Unsubscribe'")
+            span(data-bind="text: subscr() ? ' Unsubscribe' : ' Subscribe'")
         // /ko
         //ko if: canModerate()
         .noComments.headElem.interact(data-bind="click: setNoComments, attr: {title: (nocomments() ? 'Allow' : 'Disallow')+' further commenting'}")
