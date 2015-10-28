@@ -28,6 +28,17 @@ const msg = {
     nosetting: 'Such setting does not exists'
 };
 
+const getUserByLogin = async function (login) {
+    const usObjOnline = session.getOnline(login);
+    const user = usObjOnline ? usObjOnline.user : await User.findOne({ login }).exec();
+
+    if (!user) {
+        throw { message: msg.nouser };
+    }
+
+    return { usObjOnline, user };
+};
+
 // Serve user
 async function giveUser(iAm, { login } = {}) {
     if (!login) {
@@ -71,12 +82,7 @@ async function saveUser(iAm, { login, ...data } = {}) {
         throw { message: msg.deny };
     }
 
-    const usObj = session.getOnline(login);
-    const user = usObj ? usObj.user : await User.findOne({ login }).exec();
-
-    if (!user) {
-        throw { message: msg.nouser };
-    }
+    const { usObj, user } = await getUserByLogin(login);
 
     // New values of really changing properties
     const newValues = Utils.diff(_.pick(data,
@@ -123,12 +129,7 @@ async function changeSetting(socket, { login, key, val } = {}) {
         throw { message: msg.deny };
     }
 
-    const usObjOnline = session.getOnline(login);
-    const user = usObjOnline ? usObjOnline.user : await User.findOne({ login }).exec();
-
-    if (!user) {
-        throw { message: msg.nouser };
-    }
+    const { usObjOnline, user } = await getUserByLogin(login);
 
     const defSetting = userSettingsDef[key];
     const vars = userSettingsVars[key];
@@ -177,12 +178,7 @@ async function changeDispName(iAm, { login, showName } = {}) {
         throw { message: msg.deny };
     }
 
-    const userObjOnline = session.getOnline(login);
-    const user = userObjOnline ? userObjOnline.user : await User.findOne({ login }).exec();
-
-    if (!user) {
-        throw { message: msg.nouser };
-    }
+    const { usObjOnline, user } = await getUserByLogin(login);
 
     if (Boolean(showName)) {
         const f = user.firstName || '';
@@ -194,8 +190,8 @@ async function changeDispName(iAm, { login, showName } = {}) {
 
     await user.save();
 
-    if (userObjOnline) {
-        session.emitUser(userObjOnline);
+    if (usObjOnline) {
+        session.emitUser(usObjOnline);
     }
 
     return { saved: 1, disp: user.disp };
@@ -213,8 +209,7 @@ async function setWatersignCustom(socket, { login, watersign }) {
         throw { message: msg.badParams };
     }
 
-    const userObjOnline = session.getOnline(login);
-    const user = userObjOnline ? userObjOnline.user : await User.findOne({ login }).exec();
+    const { usObjOnline, user } = await getUserByLogin(login);
 
     watersign = _.isString(watersign) ? watersign
         .match(constants.photo.watersignPattern).join('')
@@ -244,8 +239,8 @@ async function setWatersignCustom(socket, { login, watersign }) {
 
         await user.save();
 
-        if (userObjOnline) {
-            session.emitUser(userObjOnline, null, socket);
+        if (usObjOnline) {
+            session.emitUser(usObjOnline, null, socket);
         }
     }
 
@@ -272,13 +267,7 @@ async function changeEmail(iAm, { login, email, pass } = {}) {
         throw { message: 'Wrong email, check it one more time' };
     }
 
-    const userObjOnline = session.getOnline(login);
-    const user = userObjOnline ? userObjOnline.user : await User.findOne({ login }).exec();
-
-    if (!user) {
-        throw { message: msg.nouser };
-    }
-
+    const { usObjOnline, user } = await getUserByLogin(login);
     const existsEmailUser = await User.findOne({ email }, { _id: 0, login: 1 }).exec();
 
     if (existsEmailUser) {
@@ -301,8 +290,8 @@ async function changeEmail(iAm, { login, email, pass } = {}) {
     user.email = email;
     await user.save();
 
-    if (userObjOnline) {
-        session.emitUser(userObjOnline);
+    if (usObjOnline) {
+        session.emitUser(usObjOnline);
     }
 
     return { email: user.email };
@@ -319,12 +308,7 @@ async function changeAvatar(iAm, { login, file, type } = {}) {
         throw { message: msg.deny };
     }
 
-    const userObjOnline = session.getOnline(login);
-    const user = userObjOnline ? userObjOnline.user : await User.findOne({ login }).exec();
-
-    if (!user) {
-        throw { message: msg.nouser };
-    }
+    const { usObjOnline, user } = await getUserByLogin(login);
 
     const fullfile = file.replace(/((.)(.))/, '$2/$3/$1');
     const originPath = path.join(privateDir, fullfile);
@@ -379,8 +363,8 @@ async function changeAvatar(iAm, { login, file, type } = {}) {
         fs.unlink(path.join(publicDir, 'h', currentAvatar + '.webp'), _.noop);
     }
 
-    if (userObjOnline) {
-        session.emitUser(userObjOnline);
+    if (usObjOnline) {
+        session.emitUser(usObjOnline);
     }
 
     return { avatar: user.avatar };
@@ -398,12 +382,7 @@ async function delAvatar(iAm, { login } = {}) {
         throw { message: msg.deny };
     }
 
-    const userObjOnline = session.getOnline(login);
-    const user = userObjOnline ? userObjOnline.user : await User.findOne({ login }).exec();
-
-    if (!user) {
-        throw { message: msg.nouser };
-    }
+    const { usObjOnline, user } = await getUserByLogin(login);
 
     const currentAvatar = user.avatar;
 
@@ -417,8 +396,8 @@ async function delAvatar(iAm, { login } = {}) {
         user.avatar = undefined;
         await user.save();
 
-        if (userObjOnline) {
-            session.emitUser(userObjOnline);
+        if (usObjOnline) {
+            session.emitUser(usObjOnline);
         }
     }
 
@@ -436,12 +415,7 @@ async function setUserWatermarkChange(socket, { login, nowaterchange } = {}) {
         throw { message: msg.badParams };
     }
 
-    const userObjOnline = session.getOnline(login);
-    const user = userObjOnline ? userObjOnline.user : await User.findOne({ login }).exec();
-
-    if (!user) {
-        throw { message: msg.nouser };
-    }
+    const { usObjOnline, user } = await getUserByLogin(login);
 
     let changed;
     if (nowaterchange) {
@@ -456,8 +430,8 @@ async function setUserWatermarkChange(socket, { login, nowaterchange } = {}) {
     if (changed) {
         await user.save();
 
-        if (userObjOnline) {
-            session.emitUser(userObjOnline, null, socket);
+        if (usObjOnline) {
+            session.emitUser(usObjOnline, null, socket);
         }
     }
 
@@ -481,19 +455,14 @@ async function saveUserRanks(iAm, { login, ranks } = {}) {
         }
     }
 
-    const userObjOnline = session.getOnline(login);
-    const user = userObjOnline ? userObjOnline.user : await User.findOne({ login }).exec();
-
-    if (!user) {
-        throw { message: msg.nouser };
-    }
+    const { usObjOnline, user } = await getUserByLogin(login);
 
     user.ranks = ranks.length ? ranks : undefined;
 
     await user.save();
 
-    if (userObjOnline) {
-        session.emitUser(userObjOnline);
+    if (usObjOnline) {
+        session.emitUser(usObjOnline);
     }
 
     return { saved: true, ranks: user.ranks || [] };
@@ -508,12 +477,7 @@ async function giveUserRules(iAm, { login } = {}) {
         throw { message: msg.deny };
     }
 
-    const userObjOnline = session.getOnline(login);
-    const user = userObjOnline ? userObjOnline.user : await User.findOne({ login }).exec();
-
-    if (!user) {
-        throw { message: msg.nouser };
-    }
+    const { user } = await getUserByLogin(login);
 
     return { rules: user.rules || {}, info: { canPhotoNew: photoController.core.getNewPhotosLimit(user) } };
 }
@@ -527,12 +491,7 @@ async function saveUserRules(iAm, { login, rules } = {}) {
         throw { message: msg.deny };
     }
 
-    const userObjOnline = session.getOnline(login);
-    const user = userObjOnline ? userObjOnline.user : await User.findOne({ login }).exec();
-
-    if (!user) {
-        throw { message: msg.nouser };
-    }
+    const { usObjOnline, user } = await getUserByLogin(login);
 
     if (!user.rules) {
         user.rules = {};
@@ -557,8 +516,8 @@ async function saveUserRules(iAm, { login, rules } = {}) {
 
     await user.save();
 
-    if (userObjOnline) {
-        session.emitUser(userObjOnline);
+    if (usObjOnline) {
+        session.emitUser(usObjOnline);
     }
 
     return {
