@@ -2,6 +2,7 @@ import './commons/JExtensions';
 import ms from 'ms';
 import http from 'http';
 import path from 'path';
+import moment from 'moment';
 import mkdirp from 'mkdirp';
 import log4js from 'log4js';
 import config from './config';
@@ -64,6 +65,8 @@ export async function configure(startStamp) {
         res.statusCode = 404;
         res.end(status404Text); // Finish with 'end' instead of 'send', that there is no additional operations (etag)
     };
+
+    moment.locale(config.lang); // Set global language for momentjs
 
     const app = express();
     app.disable('x-powered-by'); // Disable default X-Powered-By

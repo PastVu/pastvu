@@ -39,7 +39,7 @@
         "underscore.string": "3.2.2",
         "yargs": "3.29.0",
         "ms": "0.7.1",
-        "moment": "2.7.0",
+        "moment": "2.10.6",
         "useragent": "2.1.7",
         "lru-cache": "2.7.0",
         "semver": "5.0.3",

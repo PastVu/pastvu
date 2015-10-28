@@ -16,6 +16,11 @@ import { getRegionsArrFromCache } from './region';
 import { User, UserConfirm } from '../models/User';
 import { Counter } from '../models/Counter';
 
+moment.locale(config.lang);
+
+const ms2d = ms('2d');
+const human2d = moment.duration(ms2d).humanize();
+
 const logger = log4js.getLogger('auth.js');
 const preaddrs = config.client.subdomains.map(function (sub) {
     return `${sub}.${config.client.host}`;
@@ -26,8 +31,6 @@ const msg = {
 
 let recallTpl;
 let regTpl;
-
-moment.lang('en');
 
 // Вход в систему
 function login(socket, data, cb) {
@@ -185,9 +188,9 @@ function register(data, cb) {
                         confirmKey,
                         username: data.login,
                         greeting: 'Thank you for registering on the PastVu project!',
-                        linkvalid: moment.duration(ms('2d')).humanize() + ' (till ' + moment().utc().lang('en').add(ms('2d')).format("LLL") + ')'
+                        linkvalid: `${human2d} (till ${moment.utc().add(ms2d).format('LLL')})`
                     }),
-                    text: 'Click the following link: ' + config.client.origin + '/confirm/' + confirmKey
+                    text: `Click the following link: ${config.client.origin}/confirm/${confirmKey}`
                 });
             }
         );
@@ -257,9 +260,9 @@ function recall(iAm, data, cb) {
                     config,
                     confirmKey,
                     username: data.disp,
-                    linkvalid: moment.duration(ms('2d')).humanize() + ' (till ' + moment().utc().lang('en').add(ms('2d')).format("LLL") + ')'
+                    linkvalid: `${human2d} (till ${moment.utc().add(ms2d).format('LLL')})`
                 }),
-                text: 'Click the following link: ' + config.client.origin + '/confirm/' + confirmKey
+                text: `Click the following link: ${config.client.origin}/confirm/${confirmKey}`
             });
         }
     );
