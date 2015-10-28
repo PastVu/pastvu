@@ -2,7 +2,6 @@ import fs from 'fs';
 import gm from 'gm';
 import _ from 'lodash';
 import path from 'path';
-import step from 'step';
 import mkdirp from 'mkdirp';
 import config from '../config';
 import Bluebird from 'bluebird';
@@ -427,185 +426,151 @@ async function delAvatar(iAm, { login } = {}) {
 }
 
 // Change (by administrator) user ability to change his watersign setting
-var setUserWatermarkChange = Bluebird.method(function (socket, data) {
-    var iAm = socket.handshake.usObj;
-    var login = data && data.login;
+async function setUserWatermarkChange(socket, { login, nowaterchange } = {}) {
+    const iAm = socket.handshake.usObj;
 
     if (!iAm.isAdmin) {
         throw { message: msg.deny };
     }
-    if (!_.isObject(data) || !login) {
+    if (!login) {
         throw { message: msg.badParams };
     }
 
-    var userObjOnline = session.getOnline(login);
+    const userObjOnline = session.getOnline(login);
+    const user = userObjOnline ? userObjOnline.user : await User.findOne({ login }).exec();
 
-    return (userObjOnline ? Bluebird.resolve(userObjOnline.user) : User.findOneAsync({ login: login }))
-        .then(function (user) {
-            if (data.nowaterchange) {
-                if (user.nowaterchange) {
-                    return user;
-                }
-                user.nowaterchange = true;
-            } else if (user.nowaterchange !== undefined) {
-                user.nowaterchange = undefined;
-            }
+    if (!user) {
+        throw { message: msg.nouser };
+    }
 
-            return user.saveAsync().spread(function (user) {
-                if (userObjOnline) {
-                    session.emitUser(userObjOnline, null, socket);
-                }
+    let changed;
+    if (nowaterchange) {
+        if (!user.nowaterchange) {
+            user.nowaterchange = changed = true;
+        }
+    } else if (user.nowaterchange !== undefined) {
+        user.nowaterchange = undefined;
+        changed = true;
+    }
 
-                return user;
-            });
-        })
-        .then(function (user) {
-            return { nowaterchange: user.nowaterchange };
-        });
-});
+    if (changed) {
+        await user.save();
 
-// Сохраняем ранки пользователя
-function saveUserRanks(iAm, data, cb) {
-    var login = data && data.login,
-        userObjOnline,
-        i;
+        if (userObjOnline) {
+            session.emitUser(userObjOnline, null, socket);
+        }
+    }
+
+    return { nowaterchange: user.nowaterchange };
+};
+
+// Save user ranks
+async function saveUserRanks(iAm, { login, ranks } = {}) {
+    if (!login || !Array.isArray(ranks)) {
+        throw { message: msg.badParams};
+    }
 
     if (!iAm.isAdmin) {
-        return cb({ message: msg.deny, error: true });
+        throw { message: msg.deny };
     }
 
-    if (!_.isObject(data) || !login || !Array.isArray(data.ranks)) {
-        return cb({ message: msg.badParams, error: true });
-    }
-
-    // Проверяем, чтобы не было несуществующих званий
-    for (i = data.ranks; i--;) {
-        if (!userRanksHash[data.ranks[i]]) {
-            return cb({ message: msg.badParams, error: true });
+    // Check that all values are allowed
+    for (const rank of ranks) {
+        if (!userRanksHash[rank]) {
+            throw { message: msg.badParams };
         }
     }
 
-    step(
-        function () {
-            userObjOnline = session.getOnline(login);
-            if (userObjOnline) {
-                this(null, userObjOnline.user);
-            } else {
-                User.findOne({ login: login }, this);
-            }
-        },
-        function (err, user) {
-            if (err || !user) {
-                return cb({ message: err && err.message || msg.nouser, error: true });
-            }
-            if (data.ranks.length) {
-                user.ranks = data.ranks;
-            } else {
-                user.ranks = undefined;
-            }
-            user.save(function (err, savedUser) {
-                if (err) {
-                    return cb({ message: err.message, error: true });
-                }
-                if (userObjOnline) {
-                    session.emitUser(userObjOnline);
-                }
-                cb({ message: 'ok', saved: true, ranks: user.ranks || [] });
-            });
-        }
-    );
+    const userObjOnline = session.getOnline(login);
+    const user = userObjOnline ? userObjOnline.user : await User.findOne({ login }).exec();
+
+    if (!user) {
+        throw { message: msg.nouser };
+    }
+
+    user.ranks = ranks.length ? ranks : undefined;
+
+    await user.save();
+
+    if (userObjOnline) {
+        session.emitUser(userObjOnline);
+    }
+
+    return { saved: true, ranks: user.ranks || [] };
 }
 
-function giveUserRules(iAm, data, cb) {
-    if (!iAm.isAdmin) {
-        return cb({ message: msg.deny, error: true });
-    }
-    if (!_.isObject(data) || !data.login) {
-        return cb({ message: msg.badParams, error: true });
+async function giveUserRules(iAm, { login } = {}) {
+    if (!login) {
+        throw { message: msg.badParams};
     }
 
-    step(
-        function () {
-            var userObj = session.getOnline(data.login);
-            if (userObj) {
-                this(null, userObj.user);
-            } else {
-                User.findOne({ login: data.login }, this);
-            }
-        },
-        function (err, user) {
-            if (err || !user) {
-                return cb({ message: err && err.message || msg.nouser, error: true });
-            }
-            cb({ rules: user.rules || {}, info: { canPhotoNew: photoController.core.getNewPhotosLimit(user) } });
-        }
-    );
+    if (!iAm.isAdmin) {
+        throw { message: msg.deny };
+    }
+
+    const userObjOnline = session.getOnline(login);
+    const user = userObjOnline ? userObjOnline.user : await User.findOne({ login }).exec();
+
+    if (!user) {
+        throw { message: msg.nouser };
+    }
+
+    return { rules: user.rules || {}, info: { canPhotoNew: photoController.core.getNewPhotosLimit(user) } };
 }
-function saveUserRules(iAm, data, cb) {
+
+async function saveUserRules(iAm, { login, rules } = {}) {
+    if (!login || !rules) {
+        throw { message: msg.badParams};
+    }
+
     if (!iAm.isAdmin) {
-        return cb({ message: msg.deny, error: true });
-    }
-    if (!_.isObject(data) || !data.login || !data.rules) {
-        return cb({ message: msg.badParams, error: true });
+        throw { message: msg.deny };
     }
 
-    var userObjOnline;
+    const userObjOnline = session.getOnline(login);
+    const user = userObjOnline ? userObjOnline.user : await User.findOne({ login }).exec();
 
-    step(
-        function () {
-            userObjOnline = session.getOnline(data.login);
-            if (userObjOnline) {
-                this(null, userObjOnline.user);
-            } else {
-                User.findOne({ login: data.login }, this);
-            }
-        },
-        function (err, user) {
-            if (err || !user) {
-                return cb({ message: err && err.message || msg.nouser, error: true });
-            }
-            var rules = data.rules;
+    if (!user) {
+        throw { message: msg.nouser };
+    }
 
-            if (!user.rules) {
-                user.rules = {};
-            }
+    if (!user.rules) {
+        user.rules = {};
+    }
 
-            if (rules.photoNewLimit !== undefined) {
-                if (_.isNumber(rules.photoNewLimit)) {
-                    user.rules.photoNewLimit = Math.min(Math.max(0, rules.photoNewLimit), photoController.core.maxNewPhotosLimit);
-                } else {
-                    delete user.rules.photoNewLimit;
-                }
-            }
-
-            //Если правил для пользователя нет, удаляем этот объет у пользователя
-            if (!Object.keys(user.rules).length) {
-                user.rules = undefined;
-            }
-            //Помечаем поле правил изменившимся
-            user.markModified('rules');
-
-            user.save(function (err, savedUser) {
-                if (err) {
-                    return cb({ message: err.message, error: true });
-                }
-                if (userObjOnline) {
-                    session.emitUser(userObjOnline);
-                }
-                cb({
-                    message: 'ok',
-                    saved: true,
-                    rules: savedUser.rules,
-                    info: { canPhotoNew: photoController.core.getNewPhotosLimit(savedUser) }
-                });
-            });
+    if (rules.photoNewLimit !== undefined) {
+        if (_.isNumber(rules.photoNewLimit)) {
+            user.rules.photoNewLimit = Math.min(
+                Math.max(0, rules.photoNewLimit), photoController.core.maxNewPhotosLimit
+            );
+        } else {
+            delete user.rules.photoNewLimit;
         }
-    );
+    }
+
+    // If rules is empty - remove it
+    if (!Object.keys(user.rules).length) {
+        user.rules = undefined;
+    }
+
+    user.markModified('rules');
+
+    await user.save();
+
+    if (userObjOnline) {
+        session.emitUser(userObjOnline);
+    }
+
+    return {
+        saved: true,
+        rules: user.rules,
+        info: { canPhotoNew: photoController.core.getNewPhotosLimit(user) }
+    };
 }
 
 export function loadController(io) {
     io.sockets.on('connection', function (socket) {
-        var hs = socket.handshake;
+        const hs = socket.handshake;
 
         socket.on('giveUser', function (data) {
             giveUser(hs.usObj, data)
@@ -694,21 +659,33 @@ export function loadController(io) {
         });
 
         socket.on('saveUserRanks', function (data) {
-            saveUserRanks(hs.usObj, data, function (result) {
-                socket.emit('saveUserRanksResult', result);
-            });
+            saveUserRanks(hs.usObj, data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('saveUserRanksResult', resultData);
+                });
         });
 
         socket.on('giveUserRules', function (data) {
-            giveUserRules(hs.usObj, data, function (result) {
-                socket.emit('takeUserRules', result);
-            });
+            giveUserRules(hs.usObj, data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('takeUserRules', resultData);
+                });
         });
 
         socket.on('saveUserRules', function (data) {
-            saveUserRules(hs.usObj, data, function (result) {
-                socket.emit('saveUserRulesResult', result);
-            });
+            saveUserRules(hs.usObj, data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('saveUserRulesResult', resultData);
+                });
         });
     });
 };
