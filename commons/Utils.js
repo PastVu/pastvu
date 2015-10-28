@@ -378,32 +378,39 @@ Utils.calcGeoJSONPointsNumReduce = function (previousValue, currentValue) {
     return previousValue + (Array.isArray(currentValue[0]) ? currentValue.reduce(Utils.calcGeoJSONPointsNumReduce, 0) : 1);
 };
 
-Utils.copyFile = function (source, target, cb) {
+Utils.copyFile = (source, target) => new Promise((resolve, reject) => {
     'use strict';
-    var cbCalled = false;
 
-    var rd = fs.createReadStream(source);
-    rd.on("error", function (err) {
+    let cbCalled = false;
+    const rd = fs.createReadStream(source);
+
+    rd.on('error', function (err) {
         done(err);
     });
 
-    var wr = fs.createWriteStream(target);
-    wr.on("error", function (err) {
+    const wr = fs.createWriteStream(target);
+    wr.on('error', function (err) {
         done(err);
     });
-    wr.on("close", function (ex) {
+    wr.on('close', function () {
         done();
     });
 
     rd.pipe(wr);
 
     function done(err) {
-        if (!cbCalled) {
-            cb(err);
-            cbCalled = true;
+        if (cbCalled) {
+            return;
+        }
+        cbCalled = true;
+
+        if (err) {
+            reject(err);
+        } else {
+            resolve();
         }
     }
-};
+});
 
 //Экстракт данных из курсора MongoDB-native
 Utils.cursorExtract = function (err, cursor) {
