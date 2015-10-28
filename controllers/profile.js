@@ -27,128 +27,90 @@ const msg = {
     nosetting: 'Such setting does not exists'
 };
 
-// Отдаем пользователя
-function giveUser(iAm, data, cb) {
-    var login = data && data.login,
-        itsMe = iAm.registered && iAm.user.login === login,
-        itsOnline = false;
-
-    if (!_.isObject(data) || !login) {
-        return cb({ message: msg.badParams, error: true });
-    }
-
-    step(
-        function () {
-            var userObj = session.getOnline(login);
-            if (userObj) {
-                itsOnline = true;
-                this(null, session.getPlainUser(userObj.user));
-            } else {
-                User.findOne({ login: login, active: true }, {
-                    _id: 0,
-                    cid: 0,
-                    pass: 0,
-                    activatedate: 0,
-                    loginAttempts: 0,
-                    active: 0,
-                    rules: 0
-                }, { lean: true })
-                    .populate([
-                        {
-                            path: 'regionHome',
-                            select: { _id: 0, cid: 1, parents: 1, title_en: 1, title_local: 1, center: 1, bbox: 1, bboxhome: 1 }
-                        },
-                        { path: 'regions', select: { _id: 0, cid: 1, title_en: 1, title_local: 1 } },
-                        { path: 'mod_regions', select: { _id: 0, cid: 1, title_en: 1, title_local: 1 } }
-                    ])
-                    .exec(this);
-            }
-        },
-        function (err, user) {
-            if (err || !user) {
-                return cb({ message: err && err.message || msg.nouser, error: true });
-            }
-            if (itsMe || iAm.isAdmin) {
-                user.settings = _.defaults(user.settings || {}, userSettingsDef);
-            }
-            user.online = itsOnline;
-            cb({ message: 'ok', user });
-        }
-    );
-}
-
-//Сохраняем изменения в профиле пользователя
-function saveUser(iAm, data, cb) {
-    var login = data && data.login,
-        userObjOnline,
-        itsMe,
-        newValues;
-
-    if (!iAm.registered) {
-        return cb({ message: msg.deny, error: true });
-    }
-    if (!_.isObject(data) || !login) {
-        return cb({ message: msg.badParams, error: true });
-    }
-    itsMe = iAm.user.login === login;
-
-    if (!itsMe && !iAm.isAdmin) {
-        return cb({ message: msg.deny, error: true });
-    }
-
-    step(
-        function () {
-            userObjOnline = session.getOnline(login);
-            if (userObjOnline) {
-                this(null, userObjOnline.user);
-            } else {
-                User.findOne({ login: login }, this);
-            }
-        },
-        function (err, user) {
-            if (err || !user) {
-                return cb({ message: err && err.message || msg.nouser, error: true });
-            }
-
-            //Новые значения действительно изменяемых свойств
-            newValues = Utils.diff(_.pick(data, 'firstName', 'lastName', 'birthdate', 'sex', 'country', 'city', 'work', 'www', 'icq', 'skype', 'aim', 'lj', 'flickr', 'blogger', 'aboutme'), user.toObject());
-            if (_.isEmpty(newValues)) {
-                return cb({ message: 'Nothing to save' });
-            }
-            if (user.disp && user.disp !== user.login && (newValues.firstName || newValues.lastName)) {
-                var f = newValues.firstName || user.firstName || '',
-                    l = newValues.lastName || user.lastName || '';
-
-                user.disp = f + (f && l ? ' ' : '') + l;
-            }
-
-            Object.assign(user, newValues);
-            user.save(this);
-        },
-        function (err, user) {
-            if (err) {
-                return cb({ message: err.message, error: true });
-            }
-            if (userObjOnline) {
-                session.emitUser(userObjOnline);
-            }
-
-            cb({ message: 'ok', saved: 1 });
-        }
-    );
-}
-
-// Changes value of specified user setting
-var changeSetting = Bluebird.method(function (socket, data) {
-    if (!_.isObject(data) || !data.login || !data.key) {
+// Serve user
+async function giveUser(iAm, { login } = {}) {
+    if (!login) {
         throw { message: msg.badParams };
     }
 
-    var key = data.key;
-    var login = data.login;
-    var iAm = socket.handshake.usObj;
-    var itsMe = iAm.registered && iAm.user.login === login;
-    var forbidden = !itsMe && !iAm.isAdmin;
+    const userObj = session.getOnline(login);
+    const itsMe = iAm.registered && iAm.user.login === login;
+
+    const user = userObj ? session.getPlainUser(userObj.user) : await User.findOne(
+        { login, active: true },
+        { _id: 0, cid: 0, pass: 0, activatedate: 0, loginAttempts: 0, active: 0, rules: 0 }, { lean: true }
+    ).populate([
+        {
+            path: 'regionHome',
+            select: { _id: 0, cid: 1, parents: 1, title_en: 1, title_local: 1, center: 1, bbox: 1, bboxhome: 1 }
+        },
+        { path: 'regions', select: { _id: 0, cid: 1, title_en: 1, title_local: 1 } },
+        { path: 'mod_regions', select: { _id: 0, cid: 1, title_en: 1, title_local: 1 } }
+    ]).exec();
+
+    if (!user) {
+        throw { message: msg.nouser };
+    }
+
+    if (itsMe || iAm.isAdmin) {
+        user.settings = _.defaults(user.settings || {}, userSettingsDef);
+    }
+
+    user.online = Boolean(userObj);
+
+    return { user };
+}
+
+// Save changes in user profile
+async function saveUser(iAm, { login, ...data } = {}) {
+    if (!login) {
+        throw { message: msg.badParams };
+    }
+    if (!iAm.registered || iAm.user.login !== login && !iAm.isAdmin) {
+        throw { message: msg.deny };
+    }
+
+    const usObj = session.getOnline(login);
+    const user = usObj ? usObj.user : await User.findOne({ login }).exec();
+
+    if (!user) {
+        throw { message: msg.nouser };
+    }
+
+    // New values of really changing properties
+    const newValues = Utils.diff(_.pick(data,
+        'firstName', 'lastName', 'birthdate', 'sex', 'country', 'city', 'work',
+        'www', 'icq', 'skype', 'aim', 'lj', 'flickr', 'blogger', 'aboutme'
+    ), user.toObject());
+
+    if (_.isEmpty(newValues)) {
+        return { message: 'Nothing to save' };
+    }
+
+    Object.assign(user, newValues);
+
+    if (user.disp && user.disp !== user.login) {
+        user.disp = [user.firstName, user.lastName].join(' ').trim() || undefined;
+    }
+
+    await user.save();
+
+    if (usObj) {
+        session.emitUser(usObj);
+    }
+
+    return { saved: 1 };
+}
+
+// Changes value of specified user setting
+async function changeSetting(socket, { login, key, val } = {}) {
+    if (!login || !key) {
+        throw { message: msg.badParams };
+    }
+
+    const iAm = socket.handshake.usObj;
+    const itsMe = iAm.registered && iAm.user.login === login;
+    let forbidden = !itsMe && !iAm.isAdmin;
 
     if (!forbidden) {
         if (key === 'photo_watermark_add_sign') {
@@ -160,99 +122,82 @@ var changeSetting = Bluebird.method(function (socket, data) {
         throw { message: msg.deny };
     }
 
-    var userObjOnline = session.getOnline(login);
+    const usObjOnline = session.getOnline(login);
+    const user = usObjOnline ? usObjOnline.user : await User.findOne({ login }).exec();
 
-    return (userObjOnline ? Bluebird.resolve(userObjOnline.user) : User.findOneAsync({ login: login }))
-        .then(function (user) {
-            if (!user) {
-                throw { message: msg.nouser };
-            }
-            var defSetting = userSettingsDef[data.key];
-            var vars = userSettingsVars[data.key];
+    if (!user) {
+        throw { message: msg.nouser };
+    }
 
-            // If this setting does not exist or its value is not allowed - throw error
-            if (defSetting === undefined || vars === undefined || vars.indexOf(data.val) < 0) {
-                throw { message: msg.nosetting };
-            }
+    const defSetting = userSettingsDef[key];
+    const vars = userSettingsVars[key];
 
-            if (!user.settings) {
-                user.settings = {};
-            }
+    // If this setting does not exist or its value is not allowed - throw error
+    if (defSetting === undefined || vars === undefined || vars.indexOf(val) < 0) {
+        throw { message: msg.nosetting };
+    }
 
-            if (user.settings[data.key] === data.val) {
-                // If the specified setting have not changed, just return
-                return user;
-            } else {
-                // Saving new setting value and marking settings object as changed, because it has Mixed type
-                user.settings[data.key] = data.val;
-                user.markModified('settings');
+    if (!user.settings) {
+        user.settings = {};
+    }
 
-                if (data.key === 'subscr_throttle') {
-                    // If throttle value has changed, trying to reschedule next notification time
-                    userThrottleChange(user._id, data.val);
-                }
+    if (user.settings[key] === val) {
+        // If the specified setting have not changed, just return
+        return { key, val };
+    }
 
-                return user.saveAsync().spread(function (user) {
-                    if (userObjOnline) {
-                        session.emitUser(userObjOnline, null, socket);
-                    }
+    // Saving new setting value and marking settings object as changed, because it has Mixed type
+    user.settings[key] = val;
+    user.markModified('settings');
 
-                    return user;
-                });
-            }
-        })
-        .then(function (user) {
-            return { key: data.key, val: user.settings[data.key] };
-        });
-});
+    // If throttle value has changed, trying to reschedule next notification time
+    if (key === 'subscr_throttle') {
+        userThrottleChange(user._id, val);
+    }
 
-// Меняем отображаемое имя
-function changeDispName(iAm, data, cb) {
-    var login = data && data.login;
-    var itsMe = iAm.registered && iAm.user.login === login;
-    var userObjOnline;
+    await user.save();
+
+    if (usObjOnline) {
+        session.emitUser(usObjOnline, null, socket);
+    }
+
+    return { key, val };
+};
+
+// Change displayed name
+async function changeDispName(iAm, { login, showName } = {}) {
+    if (!login) {
+        throw { message: msg.badParams };
+    }
+
+    const itsMe = iAm.registered && iAm.user.login === login;
 
     if (!itsMe && !iAm.isAdmin) {
-        return cb({ message: msg.deny, error: true });
-    }
-    if (!_.isObject(data) || !login) {
-        return cb({ message: msg.badParams, error: true });
+        throw { message: msg.deny };
     }
 
-    step(
-        function () {
-            userObjOnline = session.getOnline(login);
-            if (userObjOnline) {
-                this(null, userObjOnline.user);
-            } else {
-                User.findOne({ login: login }, this);
-            }
-        },
-        function (err, user) {
-            if (err || !user) {
-                return cb({ message: err && err.message || msg.nouser, error: true });
-            }
+    const userObjOnline = session.getOnline(login);
+    const user = userObjOnline ? userObjOnline.user : await User.findOne({ login }).exec();
 
-            if (!!data.showName) {
-                var f = user.firstName || '',
-                    l = user.lastName || '';
-                user.disp = (f + (f && l ? ' ' : '') + l) || user.login;
-            } else {
-                user.disp = user.login;
-            }
+    if (!user) {
+        throw { message: msg.nouser };
+    }
 
-            user.save(this);
-        },
-        function (err, user) {
-            if (err) {
-                return cb({ message: err.message, error: true });
-            }
-            if (userObjOnline) {
-                session.emitUser(userObjOnline);
-            }
-            cb({ message: 'ok', saved: 1, disp: user.disp });
-        }
-    );
+    if (Boolean(showName)) {
+        const f = user.firstName || '';
+        const l = user.lastName || '';
+        user.disp = (f + (f && l ? ' ' : '') + l) || user.login;
+    } else {
+        user.disp = user.login;
+    }
+
+    await user.save();
+
+    if (userObjOnline) {
+        session.emitUser(userObjOnline);
+    }
+
+    return { saved: 1, disp: user.disp };
 }
 
 // Set watermark custom sign
@@ -273,7 +218,7 @@ var setWatersignCustom = Bluebird.method(function (socket, data) {
         .match(constants.photo.watersignPattern).join('')
         .trim().replace(/ {2,}/g, ' ').substr(0, constants.photo.watersignLength) : '';
 
-    return (userObjOnline ? Bluebird.resolve(userObjOnline.user) : User.findOneAsync({ login: login }))
+    return (userObjOnline ? Bluebird.resolve(userObjOnline.user) : User.findOneAsync({ login }))
         .then(function (user) {
             var watermarkSetting;
 
@@ -437,7 +382,7 @@ function changeAvatar(iAm, data, cb) {
             // Копирование 100px из private в public/d/
             Utils.copyFile(originPath, publicDir + 'd/' + fullfile, this.parallel());
             exec(
-                'cwebp -preset photo -m 5 ' + (lossless ? '-lossless ': '') + originPath + ' -o ' + publicDir + 'd/' + fullfile + '.webp',
+                'cwebp -preset photo -m 5 ' + (lossless ? '-lossless ' : '') + originPath + ' -o ' + publicDir + 'd/' + fullfile + '.webp',
                 null, this.parallel()
             );
 
@@ -449,7 +394,7 @@ function changeAvatar(iAm, data, cb) {
                 .write(publicDir + 'h/' + fullfile, this.parallel());
 
             exec(
-                'cwebp -preset photo -m 5 -resize 50 50 ' + (lossless ? '-lossless ': '') + originPath + ' -o ' + publicDir + 'h/' + fullfile + '.webp',
+                'cwebp -preset photo -m 5 -resize 50 50 ' + (lossless ? '-lossless ' : '') + originPath + ' -o ' + publicDir + 'h/' + fullfile + '.webp',
                 null, this.parallel()
             );
         },
@@ -715,21 +660,33 @@ export function loadController(io) {
         var hs = socket.handshake;
 
         socket.on('giveUser', function (data) {
-            giveUser(hs.usObj, data, function (result) {
-                socket.emit('takeUser', result);
-            });
+            giveUser(hs.usObj, data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('takeUser', resultData);
+                });
         });
 
         socket.on('saveUser', function (data) {
-            saveUser(hs.usObj, data, function (resultData) {
-                socket.emit('saveUserResult', resultData);
-            });
+            saveUser(hs.usObj, data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('saveUserResult', resultData);
+                });
         });
 
         socket.on('changeDispName', function (data) {
-            changeDispName(hs.usObj, data, function (resultData) {
-                socket.emit('changeDispNameResult', resultData);
-            });
+            changeDispName(hs.usObj, data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('changeDispNameResult', resultData);
+                });
         });
 
         socket.on('changeUserSetting', function (data) {
