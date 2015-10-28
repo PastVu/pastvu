@@ -19,6 +19,8 @@ import { User } from '../models/User';
 const incomeDir = path.join(config.storePath, 'incoming/');
 const privateDir = path.join(config.storePath, 'private/avatars/');
 const publicDir = path.join(config.storePath, 'public/avatars/');
+const mkdirpAsync = Bluebird.promisify(mkdirp);
+const execAsync = Bluebird.promisify(exec);
 const msg = {
     badParams: 'Bad params',
     deny: 'У вас нет прав на это действие',
@@ -201,281 +203,227 @@ async function changeDispName(iAm, { login, showName } = {}) {
 }
 
 // Set watermark custom sign
-var setWatersignCustom = Bluebird.method(function (socket, data) {
-    var iAm = socket.handshake.usObj;
-    var login = data && data.login;
-    var itsMe = iAm.registered && iAm.user.login === login;
+async function setWatersignCustom(socket, { login, watersign }) {
+    const iAm = socket.handshake.usObj;
+    const itsMe = iAm.registered && iAm.user.login === login;
 
     if (itsMe && iAm.user.nowaterchange || !itsMe && !iAm.isAdmin) {
         throw { message: msg.deny };
     }
-    if (!_.isObject(data) || !login) {
+    if (!login) {
         throw { message: msg.badParams };
     }
 
-    var userObjOnline = session.getOnline(login);
-    var watersign = _.isString(data.watersign) ? data.watersign
+    const userObjOnline = session.getOnline(login);
+    const user = userObjOnline ? userObjOnline.user : await User.findOne({ login }).exec();
+
+    watersign = _.isString(watersign) ? watersign
         .match(constants.photo.watersignPattern).join('')
         .trim().replace(/ {2,}/g, ' ').substr(0, constants.photo.watersignLength) : '';
 
-    return (userObjOnline ? Bluebird.resolve(userObjOnline.user) : User.findOneAsync({ login }))
-        .then(function (user) {
-            var watermarkSetting;
+    let watermarkSetting;
 
-            if (watersign.length) {
-                if (watersign === user.watersignCustom) {
-                    return user;
+    if (watersign.length) {
+        if (watersign !== user.watersignCustom) {
+            watermarkSetting = 'custom';
+            user.watersignCustom = watersign;
+        }
+    } else if (user.watersignCustom !== undefined) {
+        watermarkSetting = true;
+        user.watersignCustom = undefined;
+    }
+
+    if (watermarkSetting) {
+        if (!user.settings) {
+            user.settings = {};
+        }
+
+        if (watermarkSetting !== user.settings.photo_watermark_add_sign) {
+            user.settings.photo_watermark_add_sign = watermarkSetting;
+            user.markModified('settings');
+        }
+
+        await user.save();
+
+        if (userObjOnline) {
+            session.emitUser(userObjOnline, null, socket);
+        }
+    }
+
+    return {
+        watersignCustom: user.watersignCustom,
+        photo_watermark_add_sign: user.settings && user.settings.photo_watermark_add_sign
+    };
+};
+
+// Change user's email
+async function changeEmail(iAm, { login, email, pass } = {}) {
+    if (!login || !_.isString(email) || !email) {
+        throw { message: msg.badParams };
+    }
+
+    const itsMe = iAm.registered && iAm.user.login === login;
+
+    if (!itsMe && !iAm.isAdmin) {
+        throw { message: msg.deny };
+    }
+
+    email = email.toLowerCase();
+    if (!email.match(/^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/)) {
+        throw { message: 'Wrong email, check it one more time' };
+    }
+
+    const userObjOnline = session.getOnline(login);
+    const user = userObjOnline ? userObjOnline.user : await User.findOne({ login }).exec();
+
+    if (!user) {
+        throw { message: msg.nouser };
+    }
+
+    const existsEmailUser = await User.findOne({ email }, { _id: 0, login: 1 }).exec();
+
+    if (existsEmailUser) {
+        if (existsEmailUser.login === login) {
+            return { email };
+        }
+        throw { message: 'This email already in use by another user' };
+    }
+
+    if (!pass) {
+        return { confirm: 'pass' };
+    }
+
+    const isMatch = await iAm.user.checkPass(pass);
+
+    if (!isMatch) {
+        throw { message: 'Wrong password' };
+    }
+
+    user.email = email;
+    await user.save();
+
+    if (userObjOnline) {
+        session.emitUser(userObjOnline);
+    }
+
+    return { email: user.email };
+}
+
+async function changeAvatar(iAm, { login, file, type } = {}) {
+    if (!login || !file || !new RegExp('^[a-z0-9]{10}\\.(jpe?g|png)$', '').test(file)) {
+        throw { message: msg.badParams };
+    }
+
+    const itsMe = iAm.registered && iAm.user.login === login;
+
+    if (!itsMe && !iAm.isAdmin) {
+        throw { message: msg.deny };
+    }
+
+    const userObjOnline = session.getOnline(login);
+    const user = userObjOnline ? userObjOnline.user : await User.findOne({ login }).exec();
+
+    if (!user) {
+        throw { message: msg.nouser };
+    }
+
+    const fullfile = file.replace(/((.)(.))/, '$2/$3/$1');
+    const originPath = path.join(privateDir, fullfile);
+    const dirPrefix = fullfile.substr(0, 4);
+    const lossless = type === 'image/png';
+
+    await* [
+        // Transfer file from incoming to private
+        fs.renameAsync(incomeDir + file, path.normalize(originPath)),
+        // Create folders inside public
+        mkdirpAsync(path.join(publicDir, 'd/', dirPrefix)),
+        mkdirpAsync(path.join(publicDir, 'h/', dirPrefix))
+    ];
+
+    await* [
+        // Copy 100px from private to public/d/
+        Utils.copyFile(originPath, publicDir + 'd/' + fullfile),
+
+        // Convert from private into 50px to public/h/
+        new Promise((resolve, reject) => {
+            gm(originPath).quality(90).filter('Sinc').resize(50, 50).write(publicDir + 'h/' + fullfile, err => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
                 }
-                watermarkSetting = 'custom';
-                user.watersignCustom = watersign;
-            } else if (user.watersignCustom !== undefined) {
-                watermarkSetting = true;
-                user.watersignCustom = undefined;
-            }
-
-            if (!user.settings) {
-                user.settings = {};
-            }
-
-            if (watermarkSetting !== user.settings.photo_watermark_add_sign) {
-                user.settings.photo_watermark_add_sign = watermarkSetting;
-                user.markModified('settings');
-            }
-
-            return user.saveAsync().spread(function (user) {
-                if (userObjOnline) {
-                    session.emitUser(userObjOnline, null, socket);
-                }
-
-                return user;
             });
-        })
-        .then(function (user) {
-            return {
-                watersignCustom: user.watersignCustom,
-                photo_watermark_add_sign: user.settings && user.settings.photo_watermark_add_sign
-            };
-        });
-});
+        }),
 
-// Меняем email
-function changeEmail(iAm, data, cb) {
-    var user,
-        login = data && data.login,
-        itsMe = iAm.registered && iAm.user.login === login,
-        userObjOnline;
+        // WebP verions
+        execAsync(
+            `cwebp -preset photo -m 5 ${lossless ? '-lossless ' : ''}${originPath} -o ${publicDir}d/${fullfile}.webp`
+        ),
+        execAsync(
+            `cwebp -preset photo -m 5 -resize 50 50 ${lossless ? '-lossless ' : ''}${originPath} ` +
+            `-o ${publicDir}h/${fullfile}.webp`
+        )
+    ];
 
-    if (!itsMe && !iAm.isAdmin) {
-        return cb({ message: msg.deny, error: true });
+    const currentAvatar = user.avatar;
+
+    // Assign and save new avatar;
+    user.avatar = fullfile;
+    await user.save();
+
+    // Remove current avatar if it has been
+    if (currentAvatar) {
+        fs.unlink(path.join(privateDir, currentAvatar), _.noop);
+        fs.unlink(path.join(publicDir, 'd', currentAvatar), _.noop);
+        fs.unlink(path.join(publicDir, 'd', currentAvatar + '.webp'), _.noop);
+        fs.unlink(path.join(publicDir, 'h', currentAvatar), _.noop);
+        fs.unlink(path.join(publicDir, 'h', currentAvatar + '.webp'), _.noop);
     }
-    if (!_.isObject(data) || !login || !data.email) {
-        return cb({ message: msg.badParams, error: true });
-    }
-    data.email = data.email.toLowerCase();
-    if (!data.email.match(/^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/)) {
-        return cb({ message: 'Недействительный email. Проверьте корректность ввода.', error: true });
+
+    if (userObjOnline) {
+        session.emitUser(userObjOnline);
     }
 
-    step(
-        function () {
-            userObjOnline = session.getOnline(login);
-            if (userObjOnline) {
-                this(null, userObjOnline.user);
-            } else {
-                User.findOne({ login: login }, this);
-            }
-        },
-        function (err, u) {
-            if (err || !u) {
-                return cb({ message: err && err.message || msg.nouser, error: true });
-            }
-            user = u;
-            User.findOne({ email: data.email }, { _id: 0, login: 1 }, this);
-        },
-        function (err, u) {
-            if (err) {
-                return cb({ message: err.message, error: true });
-            }
-            if (u && u.login !== user.login) {
-                return cb({ message: 'Такой email уже используется другим пользователем', error: true });
-            }
-
-            if (data.pass) {
-                iAm.user.checkPass(data.pass, function (err, isMatch) {
-                    if (err) {
-                        return cb({ message: err.message, error: true });
-                    }
-                    if (isMatch) {
-                        saveEmail();
-                    } else {
-                        cb({ message: 'Неверный пароль', error: true });
-                    }
-                });
-            } else {
-                cb({ confirm: 'pass' });
-            }
-        }
-    );
-
-    function saveEmail() {
-        user.email = data.email;
-        user.save(function (err, savedUser) {
-            if (err) {
-                return cb({ message: err.message, error: true });
-            }
-            if (userObjOnline) {
-                session.emitUser(userObjOnline);
-            }
-            cb({ message: 'ok', email: savedUser.email });
-        });
-    }
+    return { avatar: user.avatar };
 }
 
-function changeAvatar(iAm, data, cb) {
-    var user,
-        login = data && data.login,
-        itsMe = iAm.registered && iAm.user.login === login,
-        userObjOnline,
-        file,
-        fullfile;
+// Remove avatar
+async function delAvatar(iAm, { login } = {}) {
+    if (!login) {
+        throw { message: msg.badParams };
+    }
+
+    const itsMe = iAm.registered && iAm.user.login === login;
 
     if (!itsMe && !iAm.isAdmin) {
-        return cb({ message: msg.deny, error: true });
-    }
-    if (!_.isObject(data) || !login || !data.file || !new RegExp('^[a-z0-9]{10}\\.(jpe?g|png)$', '').test(data.file)) {
-        return cb({ message: msg.badParams, error: true });
+        throw { message: msg.deny };
     }
 
-    file = data.file;
-    fullfile = file.replace(/((.)(.))/, '$2/$3/$1');
-    var originPath = path.join(privateDir, fullfile);
-    var lossless = data.type === 'image/png';
+    const userObjOnline = session.getOnline(login);
+    const user = userObjOnline ? userObjOnline.user : await User.findOne({ login }).exec();
 
-    step(
-        function () {
-            userObjOnline = session.getOnline(login);
-            if (userObjOnline) {
-                this(null, userObjOnline.user);
-            } else {
-                User.findOne({ login: login }, this);
-            }
-        },
-        function (err, u) {
-            if (err || !u) {
-                return cb({ message: err && err.message || msg.nouser, error: true });
-            }
-            var dirPrefix = fullfile.substr(0, 4);
-            user = u;
+    if (!user) {
+        throw { message: msg.nouser };
+    }
 
-            // Transfer file from incoming to private
-            fs.rename(incomeDir + file, path.normalize(originPath), this.parallel());
+    const currentAvatar = user.avatar;
 
-            // Create folders inside public
-            mkdirp(path.normalize(publicDir + 'd/' + dirPrefix), null, this.parallel());
-            mkdirp(path.normalize(publicDir + 'h/' + dirPrefix), null, this.parallel());
-        },
-        function (err) {
-            if (err) {
-                return cb({ message: err.message, error: true });
-            }
+    if (currentAvatar) {
+        fs.unlink(path.join(privateDir, currentAvatar), _.noop);
+        fs.unlink(path.join(publicDir, 'd', currentAvatar), _.noop);
+        fs.unlink(path.join(publicDir, 'd', currentAvatar + '.webp'), _.noop);
+        fs.unlink(path.join(publicDir, 'h', currentAvatar), _.noop);
+        fs.unlink(path.join(publicDir, 'h', currentAvatar + '.webp'), _.noop);
 
-            // Копирование 100px из private в public/d/
-            Utils.copyFile(originPath, publicDir + 'd/' + fullfile, this.parallel());
-            exec(
-                'cwebp -preset photo -m 5 ' + (lossless ? '-lossless ' : '') + originPath + ' -o ' + publicDir + 'd/' + fullfile + '.webp',
-                null, this.parallel()
-            );
+        user.avatar = undefined;
+        await user.save();
 
-            // Конвертация в 50px из private в public/h/
-            gm(originPath)
-                .quality(90)
-                .filter('Sinc')
-                .resize(50, 50)
-                .write(publicDir + 'h/' + fullfile, this.parallel());
-
-            exec(
-                'cwebp -preset photo -m 5 -resize 50 50 ' + (lossless ? '-lossless ' : '') + originPath + ' -o ' + publicDir + 'h/' + fullfile + '.webp',
-                null, this.parallel()
-            );
-        },
-        function (err) {
-            if (err) {
-                return cb({ message: err.message, error: true });
-            }
-
-            //Удаляем текущий аватар, если он был
-            var currentAvatar = user.avatar;
-            if (currentAvatar) {
-                fs.unlink(path.normalize(privateDir + currentAvatar), _.noop);
-                fs.unlink(path.normalize(publicDir + 'd/' + currentAvatar), _.noop);
-                fs.unlink(path.normalize(publicDir + 'h/' + currentAvatar), _.noop);
-            }
-
-            //Присваиваем и сохраняем новый аватар
-            user.avatar = fullfile;
-            user.save(this);
-        },
-        function (err) {
-            if (err) {
-                return cb({ message: err.message, error: true });
-            }
-            if (userObjOnline) {
-                session.emitUser(userObjOnline);
-            }
-            cb({ message: 'ok', avatar: user.avatar });
+        if (userObjOnline) {
+            session.emitUser(userObjOnline);
         }
-    );
-}
-
-//Удаляем аватар
-function delAvatar(iAm, data, cb) {
-    var login = data && data.login,
-        itsMe = iAm.registered && iAm.user.login === login,
-        userObjOnline;
-
-    if (!itsMe && !iAm.isAdmin) {
-        return cb({ message: msg.deny, error: true });
-    }
-    if (!_.isObject(data) || !login) {
-        return cb({ message: msg.badParams, error: true });
     }
 
-    step(
-        function () {
-            userObjOnline = session.getOnline(login);
-            if (userObjOnline) {
-                this(null, userObjOnline.user);
-            } else {
-                User.findOne({ login: login }, this);
-            }
-        },
-        function (err, user) {
-            if (err || !user) {
-                return cb({ message: err && err.message || msg.nouser, error: true });
-            }
-
-            //Удаляем текущий аватар, если он был
-            var currentAvatar = user.avatar;
-            if (currentAvatar) {
-                fs.unlink(path.normalize(privateDir + currentAvatar), _.noop);
-                fs.unlink(path.normalize(publicDir + 'd/' + currentAvatar), _.noop);
-                fs.unlink(path.normalize(publicDir + 'h/' + currentAvatar), _.noop);
-
-                user.avatar = undefined;
-                user.save(function (err) {
-                    if (err) {
-                        return cb({ message: err.message, error: true });
-                    }
-                    if (userObjOnline) {
-                        session.emitUser(userObjOnline);
-                    }
-                    cb({ message: 'ok' });
-                });
-            } else {
-                cb({ message: 'ok' });
-            }
-        }
-    );
+    return { message: 'ok' };
 }
 
 // Change (by administrator) user ability to change his watersign setting
@@ -717,20 +665,32 @@ export function loadController(io) {
                 });
         });
         socket.on('changeEmail', function (data) {
-            changeEmail(hs.usObj, data, function (resultData) {
-                socket.emit('changeEmailResult', resultData);
-            });
+            changeEmail(hs.usObj, data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('changeEmailResult', resultData);
+                });
         });
 
         socket.on('changeAvatar', function (data) {
-            changeAvatar(hs.usObj, data, function (resultData) {
-                socket.emit('changeAvatarResult', resultData);
-            });
+            changeAvatar(hs.usObj, data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('changeAvatarResult', resultData);
+                });
         });
         socket.on('delAvatar', function (data) {
-            delAvatar(hs.usObj, data, function (resultData) {
-                socket.emit('delAvatarResult', resultData);
-            });
+            delAvatar(hs.usObj, data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('delAvatarResult', resultData);
+                });
         });
 
         socket.on('saveUserRanks', function (data) {

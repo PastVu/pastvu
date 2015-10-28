@@ -1,5 +1,6 @@
 import ms from 'ms';
 import bcrypt from 'bcrypt';
+import Bluebird from 'bluebird';
 import { Schema } from 'mongoose';
 import { registerModel } from '../controllers/connection';
 
@@ -115,12 +116,15 @@ registerModel(db => {
 
     // Checks if pass is right for current user
     UserScheme.methods.checkPass = function (candidatePassword, cb) {
-        bcrypt.compare(candidatePassword, this.pass, function (err, isMatch) {
-            if (err) {
-                return cb(err);
-            }
-            cb(null, isMatch);
-        });
+        return new Bluebird((resolve, reject) => {
+            bcrypt.compare(candidatePassword, this.pass, (err, isMatch) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(isMatch);
+                }
+            });
+        }).nodeify(cb);
     };
 
     UserScheme.virtual('isLocked').get(function () {
