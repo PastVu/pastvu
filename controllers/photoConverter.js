@@ -188,7 +188,7 @@ function fillImgPrior(parent, level) {
 // Собираем статистику конвейера на начало каждой 10-минутки
 function CollectConveyerStat() {
     const st = new STPhotoConveyer({
-        stamp: new Date(+(moment().utc().startOf('minute'))),
+        stamp: new Date(+(moment.utc().startOf('minute'))),
         clength: conveyerMaxLength,
         converted: conveyerConverted
     });
@@ -542,7 +542,7 @@ export async function removePhotos(data) {
     conveyerMaxLength = conveyerLength;
 
     // Планируем запись статистики конвейера на начало следующей 10-минутки
-    const hourStart = +(moment().utc().startOf('hour'));
+    const hourStart = +(moment.utc().startOf('hour'));
     setTimeout(CollectConveyerStat, hourStart + ms('10m') * Math.ceil((Date.now() - hourStart) / ms('10m')) - Date.now() + 10);
 }());
 

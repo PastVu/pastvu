@@ -16,10 +16,10 @@ let dayStart; // Время начала дня
 let weekStart; // Время начала недели
 
 (function periodStartCalc() {
-    dayStart = moment().utc().startOf('day').toDate();
-    weekStart = moment().utc().startOf('week').toDate();
+    dayStart = moment.utc().startOf('day').toDate();
+    weekStart = moment.utc().startOf('week').toDate();
     // На начало следующего дня планируем пересчет
-    setTimeout(periodStartCalc, moment().utc().add('d', 1).startOf('day').diff(moment().utc()) + 1000);
+    setTimeout(periodStartCalc, moment.utc().add(1, 'd').startOf('day').diff(moment.utc()) + 1000);
 }());
 
 // Рейтинги
