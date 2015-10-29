@@ -32,55 +32,46 @@ const msg = {
 let recallTpl;
 let regTpl;
 
-// Вход в систему
-function login(socket, data, cb) {
-    var error = '';
-
-    if (!data.login) {
-        error += 'Fill in the login field. ';
+// Users login
+async function login(socket, { login, pass } = {}) {
+    if (!login) {
+        throw { message: 'Fill in the login field' };
     }
-    if (!data.pass) {
-        error += 'Fill in the password field.';
-    }
-    if (error) {
-        return cb({ message: error, error: true });
+    if (!pass) {
+        throw { message: 'Fill in the password field' };
     }
 
-    User.getAuthenticated(data.login, data.pass, function (err, user, reason) {
-        if (err) {
-            logger.error('Auth login User.getAuthenticated: ', err);
-            return cb({ message: 'Ошибка авторизации', error: true });
+    try {
+        const user = await User.getAuthenticated(login, pass);
+
+        // Pass user to session
+        const { userPlain } = await session.loginUser(socket, user);
+
+        return { message: 'Success login', youAre: userPlain };
+    } catch (err) {
+        switch (err.code) {
+            case User.failedLogin.NOT_FOUND:
+            case User.failedLogin.PASSWORD_INCORRECT:
+                // note: these cases are usually treated the same - don't tell the user *why* the login failed, only that it did
+                throw { message: 'Неправильная пара логин-пароль' };
+            case User.failedLogin.MAX_ATTEMPTS:
+                // send email or otherwise notify user that account is temporarily locked
+                throw {
+                    message: 'Your account has been temporarily locked due to exceeding the number of wrong login attempts'
+                };
+            default:
+                logger.error('Auth login session.loginUser: ', err);
+                throw { message: 'Ошибка авторизации' };
         }
-
-        // Если есть пользователь, значит проверка успешна
-        if (user) {
-            // Передаем пользователя в сессию
-            session.loginUser(socket, user, data, function (err, session, userPlain) {
-                if (err) {
-                    logger.error('Auth login session.loginUser: ', err);
-                    cb({ message: err.message, error: true });
-                } else {
-                    cb({ message: 'Success login', youAre: userPlain });
-                }
-            });
-        } else {
-            switch (reason) {
-                case User.failedLogin.NOT_FOUND:
-                case User.failedLogin.PASSWORD_INCORRECT:
-                    // note: these cases are usually treated the same - don't tell the user *why* the login failed, only that it did
-                    cb({ message: 'Неправильная пара логин-пароль', error: true });
-                    break;
-                case User.failedLogin.MAX_ATTEMPTS:
-                    // send email or otherwise notify user that account is temporarily locked
-                    cb({
-                        message: 'Your account has been temporarily locked due to exceeding the number of wrong login attempts',
-                        error: true
-                    });
-                    break;
-            }
-        }
-    });
+    }
 }
+
+// Users logout
+async function logout(socket) {
+    await session.logoutUser(socket);
+
+    return {};
+};
 
 // Registration
 const registerPublicError = { message: 'Ошибка регистрации', error: true };
@@ -440,16 +431,24 @@ export function loadController(io) {
     io.sockets.on('connection', function (socket) {
         const hs = socket.handshake;
 
-        socket.on('loginRequest', function (json) {
-            login(socket, json, function (data) {
-                socket.emit('loginResult', data);
-            });
+        socket.on('loginRequest', function (data) {
+            login(socket, data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('loginResult', resultData);
+                });
         });
 
         socket.on('logoutRequest', function () {
-            session.logoutUser(socket, function (err) {
-                socket.emit('logoutCommand', { message: (err && err.message) || '', error: !!err });
-            });
+            logout(socket)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('logouResult', resultData);
+                });
         });
 
         socket.on('registerRequest', function (data) {

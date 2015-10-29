@@ -123,7 +123,7 @@ const usObjIsModerator = function () {
 };
 
 // Создаем запись в хэше пользователей (если нет) и добавляем в неё сессию
-function userObjectAddSession(session, cb) {
+async function userObjectAddSession(session) {
     var registered = !!session.user,
         user = registered ? session.user : session.anonym,
         usObj = registered ? usLogin[user.login] : usSid[session.key], //Для зарегистрированных надо брать именно через хэш пользователей, чтобы взялся существующий usObj, если пользователь логинится в другом браузере
@@ -169,15 +169,13 @@ function userObjectAddSession(session, cb) {
         }
     }
 
-    usObj.sessions[session.key] = session; //Добавляем сессию в хеш сессий объекта пользователя
+    usObj.sessions[session.key] = session; // Добавляем сессию в хеш сессий объекта пользователя
 
     if (firstAdding) {
-        userObjectTreatUser(usObj, function (err) {
-            cb(null, usObj, firstAdding);
-        });
-    } else {
-        cb(null, usObj, firstAdding);
+        await userObjectTreatUser(usObj);
     }
+
+    return usObj;
 }
 
 //Создаёт сессию и сохраняет её в базу. Не ждёт результата сохранения
@@ -257,8 +255,10 @@ function sessionCopy(sessionSource) {
 //Добавляет созданную или вновь выбранную из базы сессию в память (список ожидания коннектов, хэш пользователей)
 function sessionToHashes(session, cb) {
     sessWaitingConnect[session.key] = session;
-    userObjectAddSession(session, function (err, usObj) {
-        cb(err, usObj, session);
+    userObjectAddSession(session).then(function (usObj) {
+        cb(null, usObj, session);
+    }).catch(function (err) {
+        cb(err);
     });
 }
 
@@ -296,90 +296,75 @@ function sessionFromHashes(usObj, session, logPrefix) {
     }
 }
 
-//Отправляет сессию в архив
-function sessionToArchive(session) {
-    var archivePlain = session.toObject({ depopulate: true }), //Берем чистый объект сессии с _id, вместо популированных зависимостей
-        archiveObj = new SessionArchive(archivePlain);
+// Send session to archive
+async function sessionToArchive(session) {
+    // Take plain object of session, with _id instead of populated objects
+    const sessionPlain = session.toObject({ minimize: true, depopulate: true, versionKey: false });
+    const archiveSession = new SessionArchive(sessionPlain);
 
-    if (archivePlain.user) {
-        archiveObj.anonym = undefined;
+    if (sessionPlain.user) {
+        archiveSession.anonym = undefined;
     }
 
-    session.remove(); //Удаляем архивированную сессию из активных
-    archiveObj.save(); //Сохраняем архивированную сессию в архив
+    await session.remove(); // Remove session from collections of active sessions
+    await archiveSession.save(); // Save archive session to collection of archive sessions
 
-    return archiveObj;
+    return archiveSession;
 }
 
-function userObjectTreatUser(usObj, cb) {
-    var user = usObj.user;
-    // Присваиваем ему настройки по умолчанию
+function userObjectTreatUser(usObj) {
+    const user = usObj.user;
+
+    // Assign to user default settings
     user.settings = _.defaults(user.settings || {}, userSettingsDef);
 
-    return new Bluebird(function (resolve, reject) {
-        // Популируем регионы
-        popUserRegions(usObj, function (err) {
-            if (err) {
-                reject(err);
-            } else {
-                resolve();
-            }
-        });
-    })
-        .nodeify(cb);
+    return popUserRegions(usObj);
 }
 
-// Пупулируем регионы пользователя и строим запросы для них
-function popUserRegions(usObj, cb) {
-    var user = usObj.user,
-        registered = usObj.registered,
-        pathPrefix = (registered ? '' : 'anonym.'),
-        paths = [
-            {
-                path: pathPrefix + 'regionHome',
-                select: { _id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1, center: 1, bbox: 1, bboxhome: 1 }
-            },
-            { path: pathPrefix + 'regions', select: { _id: 1, cid: 1, title_en: 1, title_local: 1 } }
-        ],
-        mod_regions_equals; //Регионы интересов и модерирования равны
+// Pupulate user regions and build queries for them
+async function popUserRegions(usObj) {
+    const user = usObj.user;
+    const registered = usObj.registered;
+    const pathPrefix = registered ? '' : 'anonym.';
+    const paths = [
+        {
+            path: pathPrefix + 'regionHome',
+            select: { _id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1, center: 1, bbox: 1, bboxhome: 1 }
+        },
+        { path: pathPrefix + 'regions', select: { _id: 1, cid: 1, title_en: 1, title_local: 1 } }
+    ];
+
+    let modregionsEquals; // Profile regions and moderation regions are equals
 
     if (registered && user.role === 5) {
-        mod_regions_equals = _.isEqual(user.regions, user.mod_regions) || undefined;
+        modregionsEquals = _.isEqual(user.regions, user.mod_regions) || undefined;
         paths.push({ path: pathPrefix + 'mod_regions', select: { _id: 1, cid: 1, title_en: 1, title_local: 1 } });
     }
+    await user.populate(paths).execPopulate();
 
-    user.populate(paths, function (err, user) {
-        if (err) {
-            return cb(err);
-        }
-        var regionsData,
-            shortRegions;
+    let regionsData = regionController.buildQuery(user.regions);
+    let shortRegions = regionController.getShortRegionsParams(regionsData.rhash);
 
-        if (usObj) {
-            regionsData = regionController.buildQuery(user.regions);
-            shortRegions = regionController.getShortRegionsParams(regionsData.rhash);
-            usObj.rhash = regionsData.rhash;
-            usObj.rquery = regionsData.rquery;
-            usObj.rshortlvls = shortRegions.lvls;
-            usObj.rshortsel = shortRegions.sel;
+    usObj.rhash = regionsData.rhash;
+    usObj.rquery = regionsData.rquery;
+    usObj.rshortlvls = shortRegions.lvls;
+    usObj.rshortsel = shortRegions.sel;
 
-            if (user.role === 5) {
-                regionsData = regionController.buildQuery(user.mod_regions);
-                shortRegions = regionController.getShortRegionsParams(regionsData.rhash);
-                usObj.mod_rhash = regionsData.rhash;
-                usObj.mod_rquery = regionsData.rquery;
-                usObj.mod_rshortlvls = shortRegions.lvls;
-                usObj.mod_rshortsel = shortRegions.sel;
-            }
-            if (!mod_regions_equals) {
-                delete usObj.mod_regions_equals;
-            } else {
-                usObj.mod_regions_equals = mod_regions_equals;
-            }
-        }
+    if (user.role === 5) {
+        regionsData = regionController.buildQuery(user.mod_regions);
+        shortRegions = regionController.getShortRegionsParams(regionsData.rhash);
 
-        cb(null);
-    });
+        usObj.mod_rhash = regionsData.rhash;
+        usObj.mod_rquery = regionsData.rquery;
+        usObj.mod_rshortlvls = shortRegions.lvls;
+        usObj.mod_rshortsel = shortRegions.sel;
+    }
+
+    if (!modregionsEquals) {
+        delete usObj.mod_regions_equals;
+    } else {
+        usObj.mod_regions_equals = modregionsEquals;
+    }
 }
 
 // Заново выбирает пользователя из базы и популирует все зависимости. Заменяет ссылки в хешах на эти новые объекты
@@ -431,138 +416,124 @@ export function regetUsers(filterFn, emitThem, cb) {
     return usersCount;
 }
 
-//Работа с сессиями при авторизации пользователя, вызывается из auth-контроллера
-export function loginUser(socket, user, data, cb) {
-    var handshake = socket.handshake,
-        sessionOld = handshake.session,
-        usObjOld = handshake.usObj,
-        sessHash = sessWaitingConnect[sessionOld.key] ? sessWaitingConnect : sessConnected,
-        sessionNew = sessionCopy(sessionOld);
+// Session treatment when user logging in, invokes from auth-controller
+export async function loginUser(socket, user) {
+    const handshake = socket.handshake;
+    const usObjOld = handshake.usObj;
+    const sessionOld = handshake.session;
+    const sessionNew = sessionCopy(sessionOld);
+    const sessHash = sessWaitingConnect[sessionOld.key] ? sessWaitingConnect : sessConnected;
 
-    //Присваивание объекта пользователя при логине еще пустому populated-полю сессии вставит туда только _id,
-    //поэтому затем после сохранения сессии нужно будет сделать populate на этом поле. (mongoose 3.6)
-    //https://github.com/LearnBoost/mongoose/issues/1530
+    // Assign user to session
     sessionNew.user = user;
 
-    //Удаляем поле анонимного пользователя
+    // Remove propery of anonym user (it will remain in sessionOld)
     sessionNew.anonym = undefined;
 
-    //Присваиваем поля data специфичные для залогиненного пользователя
-    //_.assign(sessionNew.data, {});
-
-    //Указываем новой сессий ссылку на архивируемую
+    // Set link to old session
     sessionNew.previous = sessionOld.key;
 
-    sessionNew.save(function (err, sessionNew) {
-        if (err) {
-            return cb(err);
-        }
-        sessionNew.populate('user', function (err, sessionNew) {
-            if (err) {
-                return cb(err);
-            }
+    await sessionNew.save();
 
-            //Добавляем новую сессию в usObj(создастся если еще нет, а если есть, usObj и пользователь в сессию возьмется оттуда вместо спопулированного)
-            userObjectAddSession(sessionNew, function (err, usObj) {
-                if (err) {
-                    cb(err, sessionNew);
-                }
-                //Всем сокетам текущей сессии присваиваем новую сессию и usObj
-                if (_.isObject(sessionOld.sockets)) {
-                    _.forOwn(sessionOld.sockets, function (sock) {
-                        sock.handshake.usObj = usObj;
-                        sock.handshake.session = sessionNew;
-                    });
-                    //Переносим сокеты из старой в новую сессию
-                    sessionNew.sockets = sessionOld.sockets;
-                } else {
-                    logger.warn('SessionOld have no sockets while login', user.login);
-                }
-                delete sessionOld.sockets;
+    // Add session to existing usObj or will create new usObj
+    // usObj already exists if user already logged in on some other device (other session), in this case
+    // user must be taken from usObj instaed of incoming
+    const usObj = await userObjectAddSession(sessionNew);
+    user = usObj.user;
 
-                //Убираем сессию и usObj из хеша сессий
-                sessionFromHashes(usObjOld, sessionOld, 'loginUser');
-
-                //Кладем новую сессию в хэш сессий
-                sessHash[sessionNew.key] = sessionNew;
-
-                //Отправляем старую сессию в архив
-                sessionToArchive(sessionOld);
-
-                var userPlain = getPlainUser(usObj.user);
-
-                emitSidCookie(socket); //Куки можно обновлять в любом соединении, они обновятся для всех в браузере
-
-                //Отправляем пользователя во все сокеты сессии, кроме текущего сокета (ему отправит auth-контроллер)
-                for (var i in sessionNew.sockets) {
-                    if (sessionNew.sockets[i] !== undefined && sessionNew.sockets[i] !== socket && sessionNew.sockets[i].emit !== undefined) {
-                        sessionNew.sockets[i].emit('youAre', { user: userPlain, registered: true });
-                    }
-                }
-
-                cb(err, sessionNew, userPlain);
-            });
+    // For all socket of currect (old) session assign new session and usObj
+    if (_.isObject(sessionOld.sockets)) {
+        _.forOwn(sessionOld.sockets, function (sock) {
+            sock.handshake.usObj = usObj;
+            sock.handshake.session = sessionNew;
         });
+
+        // Transfer all sockets from old session to new
+        sessionNew.sockets = sessionOld.sockets;
+    } else {
+        logger.warn('SessionOld have no sockets while login', user.login);
+    }
+    delete sessionOld.sockets;
+
+    // Remove old session from sessions map
+    sessionFromHashes(usObjOld, sessionOld, 'loginUser');
+
+    // Put new session into sessions map
+    sessHash[sessionNew.key] = sessionNew;
+
+    // Send old session to archive
+    sessionToArchive(sessionOld);
+
+    // Update cookie in current socket, all browser tabs will see it
+    emitSidCookie(socket);
+
+    const userPlain = getPlainUser(user);
+
+    // Send user to all sockets of session, except current socket (auth-controller send user there)
+    _.forOwn(sessionNew.sockets, function (sock) {
+        if (sock !== socket && _.isFunction(sock.emit)) {
+            sock.emit('youAre', { user: userPlain, registered: true });
+        }
     });
+
+    return { session: sessionNew, userPlain };
 }
 
-//Работа с сессиями при выходе пользователя, вызывается из auth-контроллера
-export function logoutUser(socket, cb) {
-    var handshake = socket.handshake,
-        usObjOld = handshake.usObj,
-        sessionOld = handshake.session,
-        sessionNew = sessionCopy(sessionOld),
-        sessHash = sessWaitingConnect[sessionOld.key] ? sessWaitingConnect : sessConnected,
-        user = usObjOld.user.toObject(),
-        regionsIds = usObjOld.user.populated('regions') || [],
-        regionHomeId = usObjOld.user.populated('regionHome') || regionController.DEFAULT_REGION._id;
+// Session treatment when user exit, invokes from auth-controller
+export async function logoutUser(socket) {
+    const handshake = socket.handshake;
+    const usObjOld = handshake.usObj;
+    const sessionOld = handshake.session;
+    const sessionNew = sessionCopy(sessionOld);
+    const sessHash = sessWaitingConnect[sessionOld.key] ? sessWaitingConnect : sessConnected;
 
-    sessionNew.anonym.settings = user.settings;
-    sessionNew.anonym.regionHome = regionHomeId;
-    sessionNew.anonym.regions = regionsIds;
+    const user = usObjOld.user;
 
-    //Указываем новой сессий ссылку на архивируемую
+    sessionNew.anonym.settings = user.toObject().settings;
+    // Array of regions _ids
+    sessionNew.anonym.regions = user.populated('regions') || [];
+    // _id of user's home regions
+    sessionNew.anonym.regionHome = user.populated('regionHome') || regionController.DEFAULT_REGION._id;
+
+    // Set link to old session
     sessionNew.previous = sessionOld.key;
 
-    sessionNew.save(function (err, sessionNew) {
-        if (err) {
-            return cb(err);
-        }
-        // Добавляем новую сессию в usObj
-        userObjectAddSession(sessionNew, function (err, usObj) {
-            if (err) {
-                cb(err);
-            }
-            // Всем сокетам текущей сессии присваиваем новую сессию и usObj
-            if (_.isObject(sessionOld.sockets)) {
-                _.forOwn(sessionOld.sockets, function (sock) {
-                    sock.handshake.usObj = usObj;
-                    sock.handshake.session = sessionNew;
-                });
-                // Переносим сокеты из старой в новую сессию
-                sessionNew.sockets = sessionOld.sockets;
-            } else {
-                logger.warn('SessionOld have no sockets while logout', user.login);
-            }
-            delete sessionOld.sockets;
+    await sessionNew.save();
 
-            // Убираем сессию из хеша сессий, и если в usObj это была одна сессия, usObj тоже удалится
-            sessionFromHashes(usObjOld, sessionOld, 'logoutUser');
+    // Create new usObj and new session into it
+    const usObj = await userObjectAddSession(sessionNew);
 
-            // Кладем новую сессию в хэш сессий
-            sessHash[sessionNew.key] = sessionNew;
-
-            // Отправляем старую сессию в архив
-            sessionToArchive(sessionOld);
-
-            socket.once('commandResult', function () {
-                sendReload(sessionNew);
-                cb();
-            });
-
-            // Отправляем клиенту новые куки анонимной сессии
-            emitSidCookie(socket);
+    // For all socket of currect (old) session assign new session and usObj
+    if (_.isObject(sessionOld.sockets)) {
+        _.forOwn(sessionOld.sockets, function (sock) {
+            sock.handshake.usObj = usObj;
+            sock.handshake.session = sessionNew;
         });
+
+        // Transfer all sockets from old session to new
+        sessionNew.sockets = sessionOld.sockets;
+    } else {
+        logger.warn('SessionOld have no sockets while logout', user.login);
+    }
+    delete sessionOld.sockets;
+
+    // Remove old session from sessions map
+    sessionFromHashes(usObjOld, sessionOld, 'logoutUser');
+
+    // Put new session in sessions map
+    sessHash[sessionNew.key] = sessionNew;
+
+    // Send old session to archive
+    sessionToArchive(sessionOld);
+
+    await new Promise(resolve => {
+        socket.once('commandResult', function () {
+            sendReload(sessionNew);
+            resolve();
+        });
+
+        // Send client new cookie of anonym session
+        emitSidCookie(socket);
     });
 }
 
