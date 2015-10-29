@@ -115,8 +115,8 @@ registerModel(db => {
     });
 
     // Checks if pass is right for current user
-    UserScheme.methods.checkPass = function (candidatePassword, cb) {
-        return new Bluebird((resolve, reject) => {
+    UserScheme.methods.checkPass = function (candidatePassword) {
+        return new Promise((resolve, reject) => {
             bcrypt.compare(candidatePassword, this.pass, (err, isMatch) => {
                 if (err) {
                     reject(err);
@@ -124,7 +124,7 @@ registerModel(db => {
                     resolve(isMatch);
                 }
             });
-        }).nodeify(cb);
+        });
     };
 
     UserScheme.virtual('isLocked').get(function () {
@@ -132,18 +132,21 @@ registerModel(db => {
         return !!(this.lockUntil && this.lockUntil > Date.now());
     });
 
-    UserScheme.methods.incLoginAttempts = function (cb) {
+    UserScheme.methods.incLoginAttempts = function () {
         // If we have a previous lock that has expired, restart at 1
         if (this.lockUntil && this.lockUntil < Date.now()) {
-            return this.update({ $set: { loginAttempts: 1 }, $unset: { lockUntil: 1 } }, cb);
+            return this.update({ $set: { loginAttempts: 1 }, $unset: { lockUntil: 1 } }).exec();
         }
+
         // Otherwise we're incrementing
         const updates = { $inc: { loginAttempts: 1 } };
+
         // Lock the account if we've reached max attempts and it's not locked already
         if (this.loginAttempts + 1 >= MAX_LOGIN_ATTEMPTS && !this.isLocked) {
             updates.$set = { lockUntil: Date.now() + LOCK_TIME };
         }
-        return this.update(updates, cb);
+
+        return this.update(updates).exec();
     };
 
     // Failed Login Reasons
@@ -153,62 +156,46 @@ registerModel(db => {
         MAX_ATTEMPTS: 2
     };
 
-    UserScheme.statics.getAuthenticated = function (login, password, cb) {
-        this.findOne({
+    UserScheme.statics.getAuthenticated = async function (login, password) {
+        const user = await this.findOne({
             $or: [
                 { login: new RegExp('^' + login + '$', 'i') },
                 { email: login.toLowerCase() }
             ], active: true, pass: { $ne: 'init' }
-        }, function (err, user) {
-            if (err) {
-                return cb(err);
-            }
-
-            // make sure the user exists
-            if (!user) {
-                return cb(null, null, reasons.NOT_FOUND);
-            }
-
-            // check if the account is currently locked
-            if (user.isLocked) {
-                // just increment login attempts if account is already locked
-                return user.incLoginAttempts(function (err) {
-                    if (err) {
-                        return cb(err);
-                    }
-                    cb(null, null, reasons.MAX_ATTEMPTS);
-                });
-            }
-
-            // test for a matching password
-            user.checkPass(password, function (err, isMatch) {
-                if (err) {
-                    return cb(err);
-                }
-
-                if (isMatch) {
-                    // if there's no lock or failed attempts, just return the user
-                    if (!user.loginAttempts && !user.lockUntil) {
-                        return cb(null, user);
-                    }
-                    // reset attempts and lock info
-                    user.update({ $set: { loginAttempts: 0 }, $unset: { lockUntil: 1 } }, function (err) {
-                        if (err) {
-                            return cb(err);
-                        }
-                        cb(null, user);
-                    });
-                } else {
-                    // password is incorrect, so increment login attempts before responding
-                    user.incLoginAttempts(function (err) {
-                        if (err) {
-                            return cb(err);
-                        }
-                        cb(null, null, reasons.PASSWORD_INCORRECT);
-                    });
-                }
-            });
         });
+
+        // Make sure the user exists
+        if (!user) {
+            throw { code: reasons.NOT_FOUND, message: 'User not found' };
+        }
+
+        // Check if the account is currently locked
+        if (user.isLocked) {
+            // just increment login attempts if account is already locked
+            await user.incLoginAttempts();
+            throw { code: reasons.MAX_ATTEMPTS, message: 'Maximum number of login attempts exceeded' };
+        }
+
+        // Test for a matching password
+        const isMatch = await user.checkPass(password);
+
+        if (isMatch) {
+            // If there's no lock or failed attempts, just return the user
+            if (!user.loginAttempts && !user.lockUntil) {
+                return user;
+            }
+
+            // Reset attempts and lock info
+            user.loginAttempts = 0;
+            user.lockUntil = undefined;
+            await user.save();
+
+            return user;
+        }
+
+        // Password is incorrect, so increment login attempts before responding
+        await user.incLoginAttempts();
+        throw { code: reasons.PASSWORD_INCORRECT, message: 'Password is incorrect' };
     };
 
     UserScheme.path('sex').validate(function (sex) {

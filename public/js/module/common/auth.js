@@ -408,7 +408,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 				logouting = true;
 				ga('send', 'event', 'auth', 'logout');
 				try {
-					socket.once('logoutCommand', function (data) {
+					socket.once('logoutResult', function (data) {
 						if (data.error) {
 							window.noty({text: data.noconnect ? data.message : 'Error', type: 'error', layout: 'center', timeout: 4000, force: true});
 							console.log('Logout error: ' + data.message);
