@@ -82,7 +82,7 @@ async function saveUser(iAm, { login, ...data } = {}) {
         throw { message: msg.deny };
     }
 
-    const { usObj, user } = await getUserByLogin(login);
+    const { usObjOnline, user } = await getUserByLogin(login);
 
     // New values of really changing properties
     const newValues = Utils.diff(_.pick(data,
@@ -102,8 +102,8 @@ async function saveUser(iAm, { login, ...data } = {}) {
 
     await user.save();
 
-    if (usObj) {
-        session.emitUser(usObj);
+    if (usObjOnline) {
+        session.emitUser(usObjOnline);
     }
 
     return { saved: 1 };
