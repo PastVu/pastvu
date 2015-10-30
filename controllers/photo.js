@@ -1333,11 +1333,20 @@ export const givePhotoForPage = Bluebird.method(function (iAm, data) {
         throw ({ message: msg.badParams });
     }
 
-    return core.givePhoto(iAm, { cid: cid, fullView: true, countView: !data.forEdit, forEdit: data.forEdit })
+    return core.givePhoto(iAm, { cid, fullView: true, countView: !data.forEdit, forEdit: data.forEdit })
         .spread(function (photo, can) {
-            return { photo: photo, can: can, forEdit: !!photo.user.settings };
+            return { photo, can, forEdit: !!photo.user.settings };
         });
 });
+
+export const givePhotoPrevNextCids = async function (cid) {
+    const [prev, next] = await* [
+        Photo.findOne({ cid: { $lt: cid }, s: 5 }, { _id: 0, cid: 1 }, { lean: true }).sort({ cid: -1 }).exec(),
+        Photo.findOne({ cid: { $gt: cid }, s: 5 }, { _id: 0, cid: 1 }, { lean: true }).sort({ cid: 1 }).exec()
+    ];
+
+    return { prev: prev && prev.cid, next: next && next.cid };
+};
 
 /**
  * Отдаем полную галерею с учетом прав и фильтров в компактном виде
