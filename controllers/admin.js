@@ -1,8 +1,6 @@
 import _ from 'lodash';
-import step from 'step';
-import Utils from '../commons/Utils';
-import * as session from './_session';
 import * as regionController from './region.js';
+import * as sessionController from './_session';
 
 import { News } from '../models/News';
 import { User } from '../models/User';
@@ -12,151 +10,117 @@ const msg = {
     deny: 'You do not have permission for this action'
 };
 
-function createNews(iAm, data, cb) {
-    if (!_.isObject(data)) {
-        return cb({ message: 'Bad params', error: true });
-    }
-
-    step(
-        function () {
-            Counter.increment('news', this);
-        },
-        function (err, count) {
-            if (err || !count) {
-                return cb({ message: err && err.message || 'Increment comment counter error', error: true });
-            }
-
-            var novel = new News({
-                cid: count.next,
-                user: iAm.user,
-                pdate: data.pdate,
-                tdate: data.tdate,
-                title: data.title,
-                notice: data.notice,
-                txt: data.txt
-            });
-            novel.save(this);
-        },
-        function (err, novel) {
-            if (err || !novel) {
-                return cb({ message: err && err.message || 'Save error', error: true });
-            }
-            cb({ news: novel });
-        }
-    );
-}
-function saveNews(iAm, data, cb) {
-    if (!_.isObject(data)) {
-        return cb({ message: 'Bad params', error: true });
-    }
-
-    step(
-        function () {
-            News.findOne({ cid: data.cid }, this);
-        },
-        function (err, novel) {
-            if (err || !novel) {
-                return cb({ message: err && err.message || 'No such news', error: true });
-            }
-            novel.pdate = data.pdate;
-            novel.tdate = data.tdate;
-            novel.title = data.title;
-            novel.notice = data.notice;
-            novel.txt = data.txt;
-            novel.nocomments = data.nocomments ? true : undefined;
-            novel.save(this);
-        },
-        function (err, novel) {
-            if (err || !novel) {
-                return cb({ message: err && err.message || 'Save error', error: true });
-            }
-            cb({ news: novel });
-        }
-    );
-}
-
-function getOnlineStat(iAm, cb) {
+function saveOrCreateNews(iAm, data = {}) {
     if (!iAm.isAdmin) {
-        return cb({ message: msg.deny, error: true });
+        throw { message: msg.deny };
+    }
+    if (!data.txt) {
+        throw { message: 'Bad params' };
     }
 
-    var usersCount = Utils.getObjectPropertyLength(session.usLogin);
-    var sessions = session.sessConnected;
+    return data.cid ? saveNews(iAm, data) : createNews(iAm, data);
+}
 
-    var sessUserCount = 0;
-    var sessUserZeroSockCount = 0;
-    var sessUserNoSockCount = 0;
-    var sessAnonymCount = 0;
-    var sessAnonymZeroSockCount = 0;
-    var sessAnonymNoSockCount = 0;
-    var sessNoSockHeaders = [];
+async function createNews(iAm, { pdate, tdate, title, notice, txt, nocomments }) {
+    const count = await Counter.increment('news');
 
-    var sessionsWaitingConnect = session.sessWaitingConnect;
-    var sessWCUserCount = 0;
-    var sessWCAnonymCount = 0;
-    var sessWCNoSockHeaders = [];
+    const novel = new News({ cid: count.next, user: iAm.user, pdate, tdate, title, notice, txt });
 
-    var socketUserCount = 0;
-    var socketAnonymCount = 0;
+    if (nocomments) {
+        novel.nocomments = true;
+    }
 
-    var sockets;
-    var isReg;
-    var count;
-    var i;
+    await novel.save();
 
-    for (i in sessions) {
-        if (sessions[i] !== undefined) {
-            isReg = !!sessions[i].user;
+    return { news: novel };
+}
+
+async function saveNews(iAm, { cid, pdate, tdate, title, notice, txt, nocomments }) {
+    const novel = await News.findOne({ cid }).exec();
+
+    if (!novel) {
+        throw { message: 'No such news' };
+    }
+
+    Object.assign(novel, { pdate, tdate, title, notice, txt, nocomments: Boolean(nocomments) || undefined });
+
+    await novel.save();
+
+    return { news: novel };
+}
+
+function getOnlineStat(iAm) {
+    if (!iAm.isAdmin) {
+        throw { message: msg.deny };
+    }
+
+    const usersCount = _.size(sessionController.usLogin);
+
+    let sessUserCount = 0;
+    let sessUserZeroSockCount = 0;
+    let sessUserNoSockCount = 0;
+    let sessAnonymCount = 0;
+    let sessAnonymZeroSockCount = 0;
+    let sessAnonymNoSockCount = 0;
+    const sessNoSockHeaders = [];
+
+    let sessWCUserCount = 0;
+    let sessWCAnonymCount = 0;
+    const sessWCNoSockHeaders = [];
+
+    let socketUserCount = 0;
+    let socketAnonymCount = 0;
+
+    _.forOwn(sessionController.sessConnected, session => {
+        const isReg = Boolean(session.user);
+        const sockets = session.sockets;
+
+        if (isReg) {
+            sessUserCount++;
+        } else {
+            sessAnonymCount++;
+        }
+
+        if (sockets) {
+            const count = _.size(sockets);
+
             if (isReg) {
-                sessUserCount++;
-            } else {
-                sessAnonymCount++;
-            }
-            sockets = sessions[i].sockets;
-            if (sockets) {
-                count = Object.keys(sockets).length || 0;
-                if (isReg) {
-                    if (count) {
-                        socketUserCount += count;
-                    } else {
-                        sessUserZeroSockCount++;
-                    }
+                if (count) {
+                    socketUserCount += count;
                 } else {
-                    if (count) {
-                        socketAnonymCount += count;
-                    } else {
-                        sessAnonymZeroSockCount++;
-                    }
+                    sessUserZeroSockCount++;
                 }
             } else {
-                if (isReg) {
-                    sessUserNoSockCount++;
+                if (count) {
+                    socketAnonymCount += count;
                 } else {
-                    sessAnonymNoSockCount++;
+                    sessAnonymZeroSockCount++;
                 }
-                sessNoSockHeaders.push({
-                    stamp: sessions[i].stamp,
-                    header: (sessions[i].data && sessions[i].data.headers) || {}
-                });
             }
-        }
-    }
-
-    for (i in sessionsWaitingConnect) {
-        if (sessionsWaitingConnect[i] !== undefined) {
-            isReg = !!sessionsWaitingConnect[i].user;
+        } else {
             if (isReg) {
-                sessWCUserCount++;
+                sessUserNoSockCount++;
             } else {
-                sessWCAnonymCount++;
+                sessAnonymNoSockCount++;
             }
-            sessWCNoSockHeaders.push({
-                stamp: sessionsWaitingConnect[i].stamp,
-                header: (sessionsWaitingConnect[i].data && sessionsWaitingConnect[i].data.headers) || {}
-            });
+
+            sessNoSockHeaders.push({ stamp: session.stamp, header: _.get(session, 'data.headers', {}) });
         }
-    }
-    cb(null, {
+    });
+
+    _.forOwn(sessionController.sessWaitingConnect, session => {
+        const isReg = Boolean(session.user);
+
+        if (isReg) {
+            sessWCUserCount++;
+        } else {
+            sessWCAnonymCount++;
+        }
+
+        sessWCNoSockHeaders.push({ stamp: session.stamp, header: _.get(session, 'data.headers', {}) });
+    });
+
+    return Promise.resolve({
         all: usersCount + sessAnonymCount,
         users: usersCount,
 
@@ -175,12 +139,12 @@ function getOnlineStat(iAm, cb) {
         sockUC: socketUserCount,
         sockAC: socketAnonymCount,
 
-        cusSid: Utils.getObjectPropertyLength(session.usSid),
         cusLogin: usersCount,
-        cusId: Utils.getObjectPropertyLength(session.usId),
-        csessConnected: Utils.getObjectPropertyLength(session.sessConnected),
-        csessWaitingConnect: Utils.getObjectPropertyLength(session.sessWaitingConnect),
-        csessWaitingSelect: Utils.getObjectPropertyLength(session.sessWaitingSelect)
+        cusId: _.size(sessionController.usId),
+        cusSid: _.size(sessionController.usSid),
+        csessConnected: _.size(sessionController.sessConnected),
+        csessWaitingConnect: _.size(sessionController.sessWaitingConnect),
+        csessWaitingSelect: _.size(sessionController.sessWaitingSelect)
     });
 }
 
@@ -199,7 +163,7 @@ async function saveUserCredentials(iAm, { login, role, regions } = {}) {
         throw { message: 'Administrators can not change their role :)' };
     }
 
-    const usObjOnline = session.getOnline(login);
+    const usObjOnline = sessionController.getOnline(login);
     const user = usObjOnline ? usObjOnline.user :
         await User.findOne({ login }).populate('mod_regions', { _id: 0, cid: 1 }).exec();
 
@@ -227,7 +191,7 @@ async function saveUserCredentials(iAm, { login, role, regions } = {}) {
             await regionController.setUserRegions(login, regions, 'mod_regions');
 
             if (usObjOnline) {
-                await session.regetUser(usObjOnline);
+                await sessionController.regetUser(usObjOnline);
             }
         }
     }
@@ -243,7 +207,7 @@ async function saveUserCredentials(iAm, { login, role, regions } = {}) {
     await user.save();
 
     if (usObjOnline) {
-        session.emitUser(usObjOnline);
+        sessionController.emitUser(usObjOnline);
     }
 
     return {};
@@ -254,26 +218,23 @@ export function loadController(io) {
         const hs = socket.handshake;
 
         socket.on('saveNews', function (data) {
-            if (!hs.usObj.isAdmin) {
-                return result({ message: msg.deny, error: true });
-            }
-            if (data.cid) {
-                saveNews(hs.usObj, data, result);
-            } else {
-                createNews(hs.usObj, data, result);
-            }
-            function result(resultData) {
-                socket.emit('saveNewsResult', resultData);
-            }
+            saveOrCreateNews(hs.usObj, data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('saveNewsResult', resultData);
+                });
         });
 
         socket.on('getOnlineStat', function () {
-            getOnlineStat(hs.usObj, function (err, resultData) {
-                if (err) {
-                    console.log(err);
-                }
-                socket.emit('takeOnlineStat', resultData);
-            });
+            getOnlineStat(hs.usObj)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('takeOnlineStat', resultData);
+                });
         });
         socket.on('saveUserCredentials', function (data) {
             saveUserCredentials(hs.usObj, data)
