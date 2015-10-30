@@ -36,6 +36,9 @@ if meta && meta.twitter && meta.twitter.img
 if !nojsShow && nojsUrl
     noscript: meta(http-equiv="refresh", content='0; URL=' + nojsUrl)
 
+each val in meta.rels
+    link(rel=val.rel, href=val.href)
+
 link(rel="shortcut icon", href="/favicon.ico")
 
 //-Coast by Opera for ipad

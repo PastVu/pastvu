@@ -4,7 +4,7 @@ import * as errors from './errors';
 import Utils from '../commons/Utils';
 import * as session from './_session';
 import { clientParams } from './settings';
-import { givePhotoForPage } from './photo';
+import { givePhotoForPage, givePhotoPrevNextCids } from './photo';
 
 export function loadController(app) {
     const origin = config.client.origin;
@@ -99,7 +99,16 @@ export function loadController(app) {
         const nojs = checkNoJS(req);
         const photo = req.photoData && req.photoData.photo;
 
-        const meta = { og: {}, twitter: {} };
+        const meta = { og: {}, twitter: {}, rels: [] };
+
+        if (req.photoRel) {
+            if (req.photoRel.prev) {
+                meta.rels.push({ rel: 'prev', href: `${origin}/p/${req.photoRel.prev}` });
+            }
+            if (req.photoRel.next) {
+                meta.rels.push({ rel: 'next', href: `${origin}/p/${req.photoRel.next}` });
+            }
+        }
 
         if (photo) {
             meta.og.url = `${origin}/p/${photo.cid}`;
@@ -156,25 +165,27 @@ export function loadController(app) {
         });
     }
 
-    function getPhotoForPage(req, res, next) {
+    async function getPhotoForPage(req, res, next) {
         const cid = Number(req.params[0]);
 
-        givePhotoForPage(req.handshake.usObj, { cid })
-            .then(function (result) {
-                if (!result) {
-                    throw { noPhoto: true };
-                }
+        try {
+            const photo = await givePhotoForPage(req.handshake.usObj, { cid });
 
-                req.photoData = result;
-                next();
-            })
-            .catch(function (err) {
-                if (err.noPhoto) {
-                    next(new errors.neoError.e404('Photo ' + cid + ' does not exist'));
-                } else {
-                    next(err);
-                }
-            });
+            if (!photo) {
+                throw { noPhoto: true };
+            }
+
+            req.photoData = photo;
+            req.photoRel = await givePhotoPrevNextCids(cid);
+
+            next();
+        } catch (err) {
+            if (err.noPhoto) {
+                next(new errors.neoError.e404('Photo ' + cid + ' does not exist'));
+            } else {
+                next(err);
+            }
+        }
     }
 
     [/^\/(?:admin)(?:\/.*)?$/].forEach(route => {
