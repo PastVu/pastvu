@@ -34,10 +34,10 @@ async function fillClientParams() {
 
 // Fill object of default user settings
 async function fillUserSettingsDef() {
-    const settings = await UserSettings.findAsync(
+    const settings = await UserSettings.find(
         { key: { $ne: 'ranks' } },
         { _id: 0, key: 1, val: 1, vars: 1 }, { lean: true }
-    );
+    ).exec();
 
     for (const setting of settings) {
         userSettingsDef[setting.key] = setting.val;
@@ -47,7 +47,7 @@ async function fillUserSettingsDef() {
 
 // Fill object of user ranks
 async function fillUserRanks() {
-    const row = await UserSettings.findOneAsync({ key: 'ranks' }, { _id: 0, vars: 1 }, { lean: true });
+    const row = await UserSettings.findOne({ key: 'ranks' }, { _id: 0, vars: 1 }, { lean: true }).exec();
 
     userRanks = row.vars;
     userRanksPromise = Promise.resolve(userRanks);

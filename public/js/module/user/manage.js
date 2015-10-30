@@ -156,10 +156,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
             this.exe(true);
             socket.once('saveUserCredentialsResult', function (data) {
-                var error = !data || data.error || !data.saved;
+                var error = !data || data.error;
                 if (error) {
                     window.noty({
-                        text: data && data.message || 'Error occurred',
+                        text: _.get(data, 'message', 'Error occurred'),
                         type: 'error',
                         layout: 'center',
                         timeout: 3000,
