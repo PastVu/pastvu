@@ -134,7 +134,10 @@ function getOnlineStat(iAm, cb) {
                 } else {
                     sessAnonymNoSockCount++;
                 }
-                sessNoSockHeaders.push({ stamp: sessions[i].stamp, header: (sessions[i].data && sessions[i].data.headers) || {} });
+                sessNoSockHeaders.push({
+                    stamp: sessions[i].stamp,
+                    header: (sessions[i].data && sessions[i].data.headers) || {}
+                });
             }
         }
     }
@@ -181,100 +184,69 @@ function getOnlineStat(iAm, cb) {
     });
 }
 
-//Сохраняем права пользователя
-function saveUserCredentials(iAm, data, cb) {
+async function saveUserCredentials(iAm, { login, role, regions } = {}) {
     if (!iAm.isAdmin) {
-        return cb({ message: msg.deny, error: true });
+        throw { message: msg.deny };
     }
 
-    var login = data && data.login;
-    var itsMe = iAm.user.login === login;
-    var userObjOnline;
-
-    if (!_.isObject(data) || !login || data.role < 0 || data.role > 11) {
-        return cb({ message: msg.badParams, error: true });
+    if (!login || !_.isNumber(role) || role < 0 || role > 11) {
+        throw { message: msg.badParams };
     }
 
-    if (itsMe && iAm.user.role !== data.role) {
-        return cb({ message: 'Administrators can not change their role :)', error: true });
+    const itsMe = iAm.user.login === login;
+
+    if (itsMe && iAm.user.role !== role) {
+        throw { message: 'Administrators can not change their role :)' };
     }
 
-    step(
-        function () {
-            userObjOnline = session.getOnline(login);
-            if (userObjOnline) {
-                this(null, userObjOnline.user);
-            } else {
-                User.findOne({ login: login }).populate('mod_regions', { _id: 0, cid: 1 }).exec(this);
-            }
-        },
-        function (err, user) {
-            if (err || !user) {
-                return cb({ message: err && err.message || msg.nouser, error: true });
-            }
+    const usObjOnline = session.getOnline(login);
+    const user = usObjOnline ? usObjOnline.user :
+        await User.findOne({ login }).populate('mod_regions', { _id: 0, cid: 1 }).exec();
 
-            if (!itsMe) {
-                if (user.role < 11 && data.role === 11) {
-                    return cb({
-                        message: 'The role of the super admin can not be assigned through the user management interface',
-                        error: true
-                    });
-                }
-                if (iAm.user.role === 10 && user.role < 10 && data.role > 9) {
-                    return cb({ message: 'Only super administrators can assign other administrators', error: true });
-                }
-            }
-            var existsRegions;
+    if (!user) {
+        throw { message: msg.nouser };
+    }
 
-            if (data.role === 5 && data.regions) {
-                existsRegions = [];
-                user.mod_regions.forEach(function (item) {
-                    existsRegions.push(item.cid);
-                });
-                if (!_.isEqual(data.regions, existsRegions)) {
-                    regionController.setUserRegions(login, data.regions, 'mod_regions', function (err) {
-                        if (err) {
-                            return cb({ message: err.message, error: true });
-                        }
-                        if (userObjOnline) {
-                            session.regetUser(userObjOnline, false, null, function (err) {
-                                if (err) {
-                                    return cb({ message: err.message, error: true });
-                                }
-                                further();
-                            });
-                        } else {
-                            further();
-                        }
-                    });
-                } else {
-                    further();
-                }
-            } else {
-                further();
-            }
+    if (!itsMe) {
+        if (user.role < 11 && role === 11) {
+            throw {
+                message: 'The role of the super admin can not be assigned through the user management interface'
+            };
+        }
+        if (iAm.user.role === 10 && user.role < 10 && role > 9) {
+            throw { message: 'Only super administrators can assign other administrators' };
+        }
+    }
 
-            function further() {
-                if (user.role !== data.role) {
-                    user.role = data.role || undefined;
-                    if (data.role !== 5) {
-                        user.mod_regions = undefined;
-                    }
-                }
+    if (role === 5 && regions) {
+        const existsRegions = user.mod_regions.map(function (item) {
+            return item.cid;
+        });
 
-                user.save(function (err) {
-                    if (err) {
-                        return cb({ message: err.message, error: true });
-                    }
+        if (!_.isEqual(regions, existsRegions)) {
+            await regionController.setUserRegions(login, regions, 'mod_regions');
 
-                    if (userObjOnline) {
-                        session.emitUser(userObjOnline);
-                    }
-                    cb({ message: 'ok', saved: true });
-                });
+            if (usObjOnline) {
+                await session.regetUser(usObjOnline);
             }
         }
-    );
+    }
+
+    if (user.role !== role) {
+        user.role = role || undefined;
+
+        if (role !== 5) {
+            user.mod_regions = undefined;
+        }
+    }
+
+    await user.save();
+
+    if (usObjOnline) {
+        session.emitUser(usObjOnline);
+    }
+
+    return {};
 }
 
 export function loadController(io) {
@@ -304,9 +276,13 @@ export function loadController(io) {
             });
         });
         socket.on('saveUserCredentials', function (data) {
-            saveUserCredentials(hs.usObj, data, function (resultData) {
-                socket.emit('saveUserCredentialsResult', resultData);
-            });
+            saveUserCredentials(hs.usObj, data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('saveUserCredentialsResult', resultData);
+                });
         });
     });
 

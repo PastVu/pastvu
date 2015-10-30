@@ -365,54 +365,50 @@ async function popUserRegions(usObj) {
     } else {
         usObj.mod_regions_equals = modregionsEquals;
     }
+
+    return usObj;
 }
 
-// Заново выбирает пользователя из базы и популирует все зависимости. Заменяет ссылки в хешах на эти новые объекты
-export const regetUser = Bluebird.method(function (usObj, emitHim, emitExcludeSocket, cb) {
+// Reget user from db and populate all his dependencies
+export async function regetUser(usObj, emitHim, emitExcludeSocket) {
     if (!usObj.registered) {
         throw { message: 'Can reget only registered user' };
     }
 
-    return User.findOneAsync({ login: usObj.user.login })
-        .tap(function (user) {
-            if (!user) {
-                throw { message: 'No such user for reget' };
-            }
+    const user = await User.findOne({ login: usObj.user.login }).exec();
 
-            //usObj и всем его сессиям присваиваем новую модель пользователя
-            usObj.user = user;
-            _.forOwn(usObj.sessions, function (session) {
-                session.user = user;
-            });
+    if (!user) {
+        throw { message: 'No such user for reget' };
+    }
 
-            return userObjectTreatUser(usObj);
-        })
-        .then(function (user) {
-            if (emitHim) {
-                emitUser(usObj, null, emitExcludeSocket);
-            }
+    // Assign new user object to usObj and to all its sessions
+    usObj.user = user;
+    _.forOwn(usObj.sessions, function (session) {
+        session.user = user;
+    });
 
-            return user;
-        })
-        .nodeify(cb);
-});
+    await userObjectTreatUser(usObj);
 
-// TODO: Обрабатывать и анонимных пользователей, популировать у них регионы
-// Заново выбирает онлайн пользователей из базы и популирует у них все зависимости. Заменяет ссылки в хешах на эти новые объекты
-// Принимает на вход 'all' или функцию фильтра пользователей
-// Не ждет выполнения - сразу возвращает кол-во пользователей, для которых будет reget
-export function regetUsers(filterFn, emitThem, cb) {
-    var usersToReget = filterFn === 'all' ? usLogin : _.filter(usLogin, filterFn),
-        usersCount = _.size(usersToReget);
+    if (emitHim) {
+        emitUser(usObj, null, emitExcludeSocket);
+    }
 
-    //_.forEach, потому что usersToReget может быть как объектом (usLogin), так и массивом (результат filter)
+    return user;
+};
+
+// Reget online users from db and populate all dependencies. Replace links in hashes with this new objects
+// Receive 'all' or filter function
+// Doesn't wait for execution, returns number of affected users immediately
+// TODO: precess anonymouse users too, populate theirs regions
+export function regetUsers(filterFn, emitThem) {
+    const usersToReget = filterFn === 'all' ? usLogin : _.filter(usLogin, filterFn);
+    const usersCount = _.size(usersToReget);
+
+    // _.forEach, because usersToReget object(usLogin), either an array(result of _.filter)
     _.forEach(usersToReget, function (usObj) {
         regetUser(usObj, emitThem);
     });
 
-    if (cb) {
-        cb(null, usersCount);
-    }
     return usersCount;
 }
 
