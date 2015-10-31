@@ -26,7 +26,8 @@ const preaddrs = config.client.subdomains.map(function (sub) {
     return `${sub}.${config.client.host}`;
 });
 const msg = {
-    deny: 'You do not have permission for this action'
+    deny: 'You do not have permission for this action',
+    regError: 'Ошибка регистрации'
 };
 
 let recallTpl;
@@ -74,118 +75,101 @@ async function logout(socket) {
 };
 
 // Registration
-const registerPublicError = { message: 'Ошибка регистрации', error: true };
-function register(data, cb) {
-    var error = '',
-        success = 'Учетная запись создана успешно. Для завершения регистрации следуйте инструкциям, отправленным на указанный вами e-mail', //'Account has been successfully created. To confirm registration, follow the instructions sent to Your e-mail',
-        confirmKey = '';
+async function register(iAm, { login, email, pass, pass2 }) {
+    if (!login) {
+        throw { message: 'Заполните имя пользователя' };
+    }
 
-    if (!data.login) {
-        error += 'Заполните имя пользователя. '; // 'Fill in the login field. '
-    } else {
-        if (data.login !== 'anonymous' && !data.login.match(/^[\.\w-]{3,15}$/i) ||
-            !data.login.match(/^[A-za-z].*$/i) || !data.login.match(/^.*\w$/i)) {
-            error += 'Имя пользователя должно содержать от 3 до 15 латинских символов и начинаться с буквы. ' +
-                'В состав слова могут входить цифры, точка, подчеркивание и тире. ';
+    if (login !== 'anonymous' &&
+        !login.match(/^[\.\w-]{3,15}$/i) || !login.match(/^[A-za-z].*$/i) || !login.match(/^.*\w$/i)) {
+        throw {
+            message: 'Имя пользователя должно содержать от 3 до 15 латинских символов и начинаться с буквы. ' +
+            'В состав слова могут входить цифры, точка, подчеркивание и тире'
+        };
+    }
+
+    if (!email) {
+        throw { message: 'Fill in the e-mail field' };
+    }
+
+    email = email.toLowerCase();
+
+    if (!pass) {
+        throw { message: 'Fill in the password field' };
+    }
+    if (pass !== pass2) {
+        throw { message: 'Пароли не совпадают' };
+    }
+
+    let user = await User.findOne({ $or: [{ login: new RegExp('^' + login + '$', 'i') }, { email }] }).exec();
+
+    if (user) {
+        if (user.login.toLowerCase() === login.toLowerCase()) {
+            throw { message: 'Пользователь с таким именем уже зарегистрирован' };
         }
-    }
-    if (!data.email) {
-        error += 'Fill in the e-mail field. ';
-    }
-    data.email = data.email.toLowerCase();
-
-    if (!data.pass) {
-        error += 'Fill in the password field. ';
-    }
-    if (data.pass !== data.pass2) {
-        error += 'Пароли не совпадают.';
-    }
-    if (error) {
-        return cb({ message: error, error: true });
-    }
-
-    User.findOne({
-        $or: [
-            { login: new RegExp('^' + data.login + '$', 'i') },
-            { email: data.email }
-        ]
-    }, function (err, user) {
-        if (err) {
-            logger.error('Auth register User.findOne: ', err);
-            return cb({ message: 'Ошибка регистрации', error: true });
-        }
-        if (user) {
-            if (user.login.toLowerCase() === data.login.toLowerCase()) {
-                error += 'Пользователь с таким именем уже зарегистрирован. '; //'User with such login already exists. '
-            }
-            if (user.email === data.email) {
-                error += 'Пользователь с таким email уже зарегистрирован.'; //'User with such email already exists.'
-            }
-            return cb({ message: error, error: true });
+        if (user.email === email) {
+            throw { message: 'Пользователь с таким email уже зарегистрирован' };
         }
 
-        step(
-            function () {
-                Counter.increment('user', this);
-            },
-            function createUser(err, count) {
-                if (err || !count) {
-                    logger.error('Auth register increment user: ', err || 'Increment user counter error');
-                    return cb(registerPublicError);
-                }
-                var regionHome = getRegionsArrFromCache([3]);
-                if (regionHome.length) {
-                    regionHome = regionHome[0]._id;
-                }
+        throw { message: 'Пользователь уже зарегистрирован' };
+    }
 
-                new User({
-                    login: data.login,
-                    cid: count.next,
-                    email: data.email,
-                    pass: data.pass,
-                    disp: data.login,
-                    regionHome: regionHome || undefined, // Домашним регионом пока делаем всем Москву
-                    settings: {
-                        // Пустой объект settings не сохранится, заполняем его одной из настроек
-                        subscr_auto_reply: userSettingsDef.subscr_auto_reply || true
-                    }
-                }).save(this);
-            },
-            function (err, user) {
-                if (err || !user) {
-                    logger.error('Auth register user save: ', err);
-                    return cb(registerPublicError);
-                }
-                confirmKey = Utils.randomString(7);
-                new UserConfirm({ key: confirmKey, user: user._id }).save(this);
-            },
+    const count = await Counter.increment('user');
 
-            function finish(err) {
-                if (err) {
-                    User.remove({ login: data.login });
-                    logger.error('Auth register UserConfirm save: ', err);
-                    return cb(registerPublicError);
-                }
-                cb({ message: success });
+    let regionHome = getRegionsArrFromCache([config.regionHome]);
 
-                sendMail({
-                    sender: 'noreply',
-                    receiver: { alias: data.login, email: data.email },
-                    subject: 'Подтверждение регистрации',
-                    head: true,
-                    body: regTpl({
-                        data,
-                        config,
-                        confirmKey,
-                        username: data.login,
-                        greeting: 'Спасибо за регистрацию на проекте PastVu!',
-                        linkvalid: `${human2d} (до ${moment.utc().add(ms2d).format('LLL')})`
-                    }),
-                    text: `Перейдите по следующей ссылке: ${config.client.origin}/confirm/${confirmKey}`
-                });
-            }
-        );
+    if (regionHome.length) {
+        regionHome = regionHome[0]._id;
+    }
+
+    user = new User({
+        pass,
+        email,
+        login,
+        cid: count.next,
+        disp: login,
+        regionHome: regionHome || undefined, // Take home default home region from config
+        settings: {
+            // Empty settings objects will not be saved, so fill it with one of settings
+            subscr_auto_reply: userSettingsDef.subscr_auto_reply || true
+        }
     });
+
+    await user.save();
+
+    try {
+        const confirmKey = Utils.randomString(7);
+
+        await new UserConfirm({ key: confirmKey, user: user._id }).save();
+
+        sendMail({
+            sender: 'noreply',
+            receiver: { alias: login, email },
+            subject: 'Подтверждение регистрации',
+            head: true,
+            body: regTpl({
+                email,
+                login,
+                config,
+                confirmKey,
+                username: login,
+                greeting: 'Спасибо за регистрацию на проекте PastVu!',
+                linkvalid: `${human2d} (до ${moment.utc().add(ms2d).format('LLL')})`
+            }),
+            text: `Перейдите по следующей ссылке: ${config.client.origin}/confirm/${confirmKey}`
+        });
+
+    } catch (err) {
+        await User.remove({ login });
+
+        logger.error('Auth register after save: ', err);
+        throw { message: msg.regError };
+    }
+
+    return {
+        message: 'Учетная запись создана успешно. Для завершения регистрации следуйте инструкциям, ' +
+        'отправленным на указанный вами e-mail'
+    };
 }
 
 // Отправка на почту запроса на восстановление пароля
@@ -452,9 +436,13 @@ export function loadController(io) {
         });
 
         socket.on('registerRequest', function (data) {
-            register(data, function (data) {
-                socket.emit('registerResult', data);
-            });
+            register(hs.usObj, data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('registerResult', resultData);
+                });
         });
 
         socket.on('recallRequest', function (data) {
