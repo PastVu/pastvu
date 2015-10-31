@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import log4js from 'log4js';
+import config from '../config';
 import Utils from '../commons/Utils';
 import { waitDb, dbEval } from './connection';
 import constants from './constants.js';
@@ -10,7 +11,7 @@ import { Region } from '../models/Region';
 import { Comment } from '../models/Comment';
 import { Counter } from '../models/Counter';
 
-export let DEFAULT_REGION = null;
+export let DEFAULT_HOME = null;
 export const regionsAllSelectHash = Object.create(null);
 
 const logger = log4js.getLogger('region.js');
@@ -47,7 +48,7 @@ async function fillCache() {
             result[region.cid] = region;
         }, { '0': nogeoRegion }); // Zero region means absence of coordinates
 
-        DEFAULT_REGION = regionCacheArr[0];
+        DEFAULT_HOME = regionCacheHash[config.regionHome] || regionCacheArr[0];
         logger.info('Region cache filled with ' + regionCacheArr.length);
         loggerApp.info('Region cache filled with ' + regionCacheArr.length);
     } catch (err) {
