@@ -190,7 +190,7 @@ function sessionCreate(ip, headers, browser) {
             agent: getBrowserAgent(browser)
         },
         anonym: {
-            regionHome: regionController.DEFAULT_REGION._id,
+            regionHome: regionController.DEFAULT_HOME._id,
             regions: []
         }
     });
@@ -489,7 +489,7 @@ export async function logoutUser(socket) {
     // Array of regions _ids
     sessionNew.anonym.regions = user.populated('regions') || [];
     // _id of user's home regions
-    sessionNew.anonym.regionHome = user.populated('regionHome') || regionController.DEFAULT_REGION._id;
+    sessionNew.anonym.regionHome = user.populated('regionHome') || regionController.DEFAULT_HOME._id;
 
     // Set link to old session
     sessionNew.previous = sessionOld.key;

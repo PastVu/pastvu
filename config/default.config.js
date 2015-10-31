@@ -67,5 +67,8 @@ module.exports = {
     },
 
     // Connection settings for mail provider. Need to be overrided locally
-    mail: {}
+    mail: {},
+
+    // Default home region for new user
+    regionHome: 2
 };
