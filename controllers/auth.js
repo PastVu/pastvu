@@ -2,7 +2,6 @@ import fs from 'fs';
 import ms from 'ms';
 import _ from 'lodash';
 import path from 'path';
-import step from 'step';
 import jade from 'jade';
 import log4js from 'log4js';
 import moment from 'moment';
@@ -20,18 +19,32 @@ moment.locale(config.lang);
 
 const ms2d = ms('2d');
 const human2d = moment.duration(ms2d).humanize();
-
 const logger = log4js.getLogger('auth.js');
-const preaddrs = config.client.subdomains.map(function (sub) {
-    return `${sub}.${config.client.host}`;
-});
 const msg = {
     deny: 'You do not have permission for this action',
-    regError: 'Ошибка регистрации'
+    regError: 'Registration error',
+    recError: 'Password recovery error',
+    passChangeError: 'Password change error'
 };
 
 let recallTpl;
 let regTpl;
+
+export const ready = new Promise(async function(resolve, reject) {
+    try {
+        const [regData, recallData] = await* [
+            fs.readFileAsync(path.normalize('./views/mail/registration.jade'), 'utf-8'),
+            fs.readFileAsync(path.normalize('./views/mail/recall.jade'), 'utf-8')
+        ];
+
+        regTpl = jade.compile(regData, { filename: path.normalize('./views/mail/registration.jade'), pretty: false });
+        recallTpl = jade.compile(recallData, { filename: path.normalize('./views/mail/recall.jade'), pretty: false });
+        resolve();
+    } catch (err) {
+        err.message = 'Auth jade read error: ' + err.message;
+        reject(err);
+    }
+});
 
 // Users login
 async function login(socket, { login, pass } = {}) {
@@ -45,7 +58,7 @@ async function login(socket, { login, pass } = {}) {
     try {
         const user = await User.getAuthenticated(login, pass);
 
-        // Pass user to session
+        // Transfer user to session
         const { userPlain } = await session.loginUser(socket, user);
 
         return { message: 'Success login', youAre: userPlain };
@@ -53,7 +66,8 @@ async function login(socket, { login, pass } = {}) {
         switch (err.code) {
             case User.failedLogin.NOT_FOUND:
             case User.failedLogin.PASSWORD_INCORRECT:
-                // note: these cases are usually treated the same - don't tell the user *why* the login failed, only that it did
+                // note: these cases are usually treated the same -
+                // don't tell the user *why* the login failed, only that it did
                 throw { message: 'Incorrect combination of login and password' };
             case User.failedLogin.MAX_ATTEMPTS:
                 // send email or otherwise notify user that account is temporarily locked
@@ -75,7 +89,7 @@ async function logout(socket) {
 }
 
 // Registration
-async function register(iAm, { login, email, pass, pass2 }) {
+async function register(iAm, { login, email, pass, pass2 } = {}) {
     if (!login) {
         throw { message: 'Fill in the login field' };
     }
@@ -160,7 +174,7 @@ async function register(iAm, { login, email, pass, pass2 }) {
         });
 
     } catch (err) {
-        await User.remove({ login });
+        await User.remove({ login }).exec();
 
         logger.error('Auth register after save: ', err);
         throw { message: msg.regError };
@@ -172,242 +186,141 @@ async function register(iAm, { login, email, pass, pass2 }) {
     };
 }
 
-// Отправка на почту запроса на восстановление пароля
-var successPublic = { message: 'The data is successfully sent. To restore password, follow the instructions sent to Your e-mail' },
-    recallPublicError = { message: 'Password recovery failed', error: true };
-function recall(iAm, data, cb) {
-    var confirmKey = '';
-
-    if (!_.isObject(data) || !data.login) {
-        return cb({ message: 'Bad params', error: true });
+// Send to email request for password recovery
+async function recall(iAm, { login } = {}) {
+    if (!login || !_.isString(login)) {
+        throw { message: 'Bad params' };
     }
 
-    step(
-        function checkUserExists() {
-            User.findOne({
-                $or: [
-                    { login: new RegExp('^' + data.login + '$', 'i') },
-                    { email: data.login.toLowerCase() }
-                ]
-            }).exec(this);
-        },
-        function (err, user) {
-            if (err) {
-                logger.error('Auth recall User.findOne: ', err);
-                return cb(recallPublicError);
-            }
-            if (!user) {
-                return cb({ message: 'User with such login or e-mail does not exist', error: true });
-            }
-            // Если залогинен и пытается восстановить не свой аккаунт, то проверяем что это админ
-            if (iAm.registered && iAm.user.login !== data.login && !iAm.isAdmin) {
-                return cb({ message: msg.deny, error: true });
-            }
+    const user = await User.findOne({
+        $or: [{ login: new RegExp(`^${login}$`, 'i') }, { email: login.toLowerCase() }]
+    }, null, { lean: true }).exec();
 
-            data._id = user._id;
-            data.login = user.login;
-            data.email = user.email;
-            data.disp = user.disp;
-            confirmKey = Utils.randomString(8);
-            UserConfirm.remove({ user: user._id }, this);
-        },
-        function (err) {
-            if (err) {
-                logger.error('Auth recall UserConfirm.remove: ', err);
-                return cb(recallPublicError);
-            }
-            new UserConfirm({ key: confirmKey, user: data._id }).save(this);
-        },
-        function finish(err) {
-            if (err) {
-                logger.error('Auth recall UserConfirm.save: ', err);
-                return cb(recallPublicError);
-            }
-            cb(successPublic);
-
-            sendMail({
-                sender: 'noreply',
-                receiver: { alias: data.login, email: data.email },
-                subject: 'Password recovery request',
-                head: true,
-                body: recallTpl({
-                    data,
-                    config,
-                    confirmKey,
-                    username: data.disp,
-                    linkvalid: `${human2d} (till ${moment.utc().add(ms2d).format('LLL')})`
-                }),
-                text: `Click the following link: ${config.client.origin}/confirm/${confirmKey}`
-            });
-        }
-    );
-}
-
-// Смена пароля по запросу восстановлния из почты
-var passChangeRecallPublicError = { message: 'Failed changing the password', error: true };
-function passChangeRecall(iAm, data, cb) {
-    var error = '',
-        key = data.key;
-
-    if (!data || !Utils.isType('string', key) || key.length !== 8) {
-        error = 'Bad params. ';
-    }
-    if (!data.pass) {
-        error += 'Fill in the password field. ';
-    }
-    if (data.pass !== data.pass2) {
-        error += 'Passwords do not match.';
-    }
-    if (error) {
-        return cb({ message: error, error: true });
+    if (!user) {
+        throw { message: 'User with such login or e-mail does not exist' };
     }
 
-    UserConfirm.findOne({ key }).populate('user').exec(function (err, confirm) {
-        if (err) {
-            logger.error('Auth passChangeRecall UserConfirm.findOne: ', err);
-            return cb(passChangeRecallPublicError);
-        }
-        if (!confirm || !confirm.user) {
-            return cb(passChangeRecallPublicError);
-        }
-        step(
-            function () {
-                // Если залогиненный пользователь запрашивает восстановление, то пароль надо поменять в модели пользователя сессии
-                // Если аноним - то в модели пользователи конфирма
-                // (Это один и тот же пользователь, просто разные объекты)
-                var user = iAm.registered && iAm.user.login === confirm.user.login ? iAm.user : confirm.user;
-                user.pass = data.pass;
+    // If user logged in and trying t restore not own accaunt, it mast be admin
+    if (iAm.registered && iAm.user.login !== login && !iAm.isAdmin) {
+        throw { message: msg.deny };
+    }
 
-                // Если неактивный пользователь восстанавливает пароль - активируем его
-                if (!user.active) {
-                    user.active = true;
-                    user.activatedate = new Date();
-                }
+    const confirmKey = Utils.randomString(8);
+    await UserConfirm.remove({ user: user._id }).exec();
 
-                user.save(this.parallel());
-                confirm.remove(this.parallel());
-            },
-            function (err) {
-                if (err) {
-                    logger.error('Auth passChangeRecall user.save or confirm.remove: ', err);
-                    return cb(passChangeRecallPublicError);
-                }
+    await new UserConfirm({ key: confirmKey, user: user._id }).save();
 
-                cb({ message: 'New password saved successfully' });
-            }
-        );
+    sendMail({
+        sender: 'noreply',
+        receiver: { alias: login, email: user.email },
+        subject: 'Password recovery request',
+        head: true,
+        body: recallTpl({
+            config,
+            confirmKey,
+            username: user.disp,
+            linkvalid: `${human2d} (till ${moment.utc().add(ms2d).format('LLL')})`
+        }),
+        text: `Click the following link: ${config.client.origin}/confirm/${confirmKey}`
     });
+
+    return {
+        message: 'The data is successfully sent. To restore password, follow the instructions sent to Your e-mail'
+    };
 }
 
-// Смена пароля в настройках пользователя с указанием текущего пароля
-var passChangePublicError = { message: 'Failed changing the password', error: true };
-function passChange(iAm, data, cb) {
-    var error = '';
-
-    if (!iAm.registered || !data || iAm.user.login !== data.login) {
-        return cb({ message: 'You are not authorized for this action', error: true });
+// Password hange by recall request from email
+async function passChangeRecall(iAm, { key, pass, pass2 } = {}) {
+    if (!_.isString(key) || key.length !== 8) {
+        throw { message: 'Bad params' };
     }
-    if (!data.pass || !data.passNew || !data.passNew2) {
-        error += 'Fill in all password fields. ';
+    if (!_.isString(pass) || !pass) {
+        throw { message: 'Fill in the password field' };
     }
-    if (data.passNew !== data.passNew2) {
-        error += 'New passwords do not match each other. ';
-    }
-    if (error) {
-        return cb({ message: error, error: true });
+    if (pass !== pass2) {
+        throw { message: 'Passwords do not match' };
     }
 
-    iAm.user.checkPass(data.pass, function (err, isMatch) {
-        if (err) {
-            logger.error('Auth passChange iAm.user.checkPass: ', err);
-            return cb(passChangePublicError);
-        }
+    const confirm = await UserConfirm.findOne({ key }).populate('user').exec();
 
-        if (isMatch) {
-            iAm.user.pass = data.passNew;
-            iAm.user.save(function (err) {
-                if (err) {
-                    logger.error('Auth passChange iAm.user.save: ', err);
-                    return cb(passChangePublicError);
-                }
-                cb({ message: 'Password was change successfully' });
-            });
-        } else {
-            cb({ message: 'Current password is incorrect', error: true });
-        }
-    });
+    if (!confirm || !confirm.user) {
+        throw { message: msg.passChangeError };
+    }
+
+    // If registered user has requested password restoration, pass must be changed in user's model in session
+    // If anonym - in user's model in confirm
+    // (it the same user, but different objects)
+    const user = iAm.registered && iAm.user.login === confirm.user.login ? iAm.user : confirm.user;
+    user.pass = pass;
+
+    // If inactive user is restoring password - activate him
+    if (!user.active) {
+        user.active = true;
+        user.activatedate = new Date();
+    }
+
+    await* [user.save(), confirm.remove()];
+
+    return { message: 'New password has been saved successfully' };
 }
 
-//Проверка ключа confirm
-var checkConfirmPublicError = { message: 'Error confirmation key', error: true };
-function checkConfirm(data, cb) {
-    if (!data || !Utils.isType('string', data.key) || data.key.length < 7 || data.key.length > 8) {
-        cb({ message: 'Bad params', error: true });
-        return;
+// Password changing in user's settings page with entering current password
+async function passChange(iAm, { login, pass, passNew, passNew2 } = {}) {
+    if (!iAm.registered || iAm.user.login !== login) {
+        throw { message: msg.deny };
+    }
+    if (!pass || !passNew || !passNew2) {
+        throw { message: 'Fill in all password fields' };
+    }
+    if (passNew !== passNew2) {
+        throw { message: 'Passwords do not match' };
     }
 
-    var key = data.key;
-    UserConfirm.findOne({ key }).populate('user').exec(function (err, confirm) {
-        if (err) {
-            logger.error('Auth checkConfirm UserConfirm.findOne: ', err);
-            return cb(checkConfirmPublicError);
-        }
-        if (!confirm || !confirm.user) {
-            return cb({ message: 'The key you passed does not exist', error: true });
-        }
-        var user = confirm.user,
-            avatar;
+    const isMatch = await iAm.user.checkPass(pass);
 
-        if (key.length === 7) { // Confirm registration
-            step(
-                function () {
-                    user.active = true;
-                    user.activatedate = new Date();
-                    user.save(this.parallel());
-                    confirm.remove(this.parallel());
-                },
-                function (err) {
-                    if (err) {
-                        logger.error('Auth checkConfirm confirm.remove: ', err);
-                        return cb(checkConfirmPublicError);
-                    }
+    if (!isMatch) {
+        throw { message: 'Current password is incorrect' };
+    }
 
-                    cb({
-                        message: 'Thank you! Your registration is confirmed. Now you can login using your username and password',
-                        type: 'noty'
-                    });
-                }
-            );
-        } else if (key.length === 8) { // Confirm pass change
-            if (user.avatar) {
-                if (preaddrs.length) {
-                    avatar = preaddrs[0] + '/_a/h/' + user.avatar;
-                } else {
-                    avatar = '/_a/h/' + user.avatar;
-                }
-            } else {
-                avatar = '/img/caps/avatarth.png';
-            }
-            cb({ message: 'Pass change', type: 'authPassChange', login: user.login, disp: user.disp, avatar: avatar });
-        }
+    iAm.user.pass = passNew;
+    await iAm.user.save();
 
-    });
+    return { message: 'Password has been changed successfully' };
 }
 
-export const ready = new Promise(async function(resolve, reject) {
-    try {
-        const [regData, recallData] = await* [
-            fs.readFileAsync(path.normalize('./views/mail/registration.jade'), 'utf-8'),
-            fs.readFileAsync(path.normalize('./views/mail/recall.jade'), 'utf-8')
-        ];
-
-        regTpl = jade.compile(regData, { filename: path.normalize('./views/mail/registration.jade'), pretty: false });
-        recallTpl = jade.compile(recallData, { filename: path.normalize('./views/mail/recall.jade'), pretty: false });
-        resolve();
-    } catch (err) {
-        err.message = 'Auth jade read error: ' + err.message;
-        reject(err);
+// Check confirm key
+async function checkConfirm({ key } = {}) {
+    if (!_.isString(key) || key.length < 7 || key.length > 8) {
+        throw { message: 'Bad params' };
     }
+
+    const confirm = await UserConfirm.findOne({ key }).populate('user').exec();
+
+    if (!confirm || !confirm.user) {
+        throw { message: 'The key you have passed does not exist' };
+    }
+
+    const user = confirm.user;
+
+    if (key.length === 7) { // Confirm registration
+        user.active = true;
+        user.activatedate = new Date();
+        await* [user.save(), confirm.remove()];
+
+        return {
+            message: 'Thank you! Your registration is confirmed. Now you can login using your username and password',
+            type: 'noty'
+        };
+    } else if (key.length === 8) { // Confirm password change
+        const avatar = user.avatar ? '/_a/h/' + user.avatar : '/img/caps/avatarth.png';
+
+        return { message: 'Pass change', type: 'authPassChange', login: user.login, disp: user.disp, avatar };
+    }
+}
+
+const whoAmI = iAm => Promise.resolve({
+    user: iAm.user && iAm.user.toObject ? iAm.user.toObject() : null,
+    registered: iAm.registered
 });
 
 export function loadController(io) {
@@ -445,33 +358,52 @@ export function loadController(io) {
         });
 
         socket.on('recallRequest', function (data) {
-            recall(hs.usObj, data, function (data) {
-                socket.emit('recallResult', data);
-            });
+            recall(hs.usObj, data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('recallResult', resultData);
+                });
         });
 
         socket.on('passChangeRecall', function (data) {
-            passChangeRecall(hs.usObj, data, function (data) {
-                socket.emit('passChangeRecallResult', data);
-            });
+            passChangeRecall(hs.usObj, data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('passChangeRecallResult', resultData);
+                });
         });
         socket.on('passChangeRequest', function (data) {
-            passChange(hs.usObj, data, function (data) {
-                socket.emit('passChangeResult', data);
-            });
-        });
-
-        socket.on('whoAmI', function () {
-            socket.emit('youAre', {
-                user: hs.usObj.user && hs.usObj.user.toObject ? hs.usObj.user.toObject() : null,
-                registered: hs.usObj.registered
-            });
+            passChange(hs.usObj, data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('passChangeResult', resultData);
+                });
         });
 
         socket.on('checkConfirm', function (data) {
-            checkConfirm(data, function (data) {
-                socket.emit('checkConfirmResult', data);
-            });
+            checkConfirm(data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('checkConfirmResult', resultData);
+                });
+        });
+
+        socket.on('whoAmI', function () {
+            whoAmI(hs.usObj)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('youAre', resultData);
+                });
         });
     });
-};
+}
