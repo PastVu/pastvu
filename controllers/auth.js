@@ -72,7 +72,7 @@ async function logout(socket) {
     await session.logoutUser(socket);
 
     return {};
-};
+}
 
 // Registration
 async function register(iAm, { login, email, pass, pass2 }) {
@@ -154,7 +154,7 @@ async function register(iAm, { login, email, pass, pass2 }) {
                 confirmKey,
                 username: login,
                 greeting: 'Thank you for registering on the PastVu project!',
-                linkvalid: `${human2d} (до ${moment.utc().add(ms2d).format('LLL')})`
+                linkvalid: `${human2d} (till ${moment.utc().add(ms2d).format('LLL')})`
             }),
             text: `Click the following link: ${config.client.origin}/confirm/${confirmKey}`
         });
