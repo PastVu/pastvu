@@ -85,7 +85,7 @@ async function logout(socket) {
     await session.logoutUser(socket);
 
     return {};
-};
+}
 
 // Registration
 async function register(iAm, { login, email, pass, pass2 } = {}) {
