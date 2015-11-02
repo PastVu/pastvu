@@ -1,5 +1,6 @@
 import fs from 'fs';
 import _ from 'lodash';
+import path from 'path';
 import zlib from 'zlib';
 import log4js from 'log4js';
 import mkdirp from 'mkdirp';
@@ -13,6 +14,8 @@ import { Photo } from './models/Photo';
 
 const logger = log4js.getLogger('sitemap');
 const { sitemapPath, sitemapInterval, sitemapGenerateOnStart, client: { origin } } = config;
+const sitemapPathAbs = path.resolve(sitemapPath);
+
 
 const schedule = (function () {
     async function run() {
@@ -43,7 +46,7 @@ const schedule = (function () {
 }());
 
 export async function configure(startStamp) {
-    mkdirp.sync(sitemapPath);
+    mkdirp.sync(sitemapPathAbs);
 
     await connectDb(config.mongo.connection, config.mongo.pool, logger);
     await regionsReady;
@@ -92,7 +95,7 @@ async function generateSitemap() {
 
     for (let cid = 1, count = 0; cid !== undefined; counter++) {
         start = Date.now();
-        fileName = `sitemap${counter}.xml.gz`;
+        fileName = path.join(sitemapPathAbs, `sitemap${counter}.xml.gz`);
 
         [cid, count] = await generatePhotoSitemap(fileName, cid, 50000);
 
@@ -107,7 +110,7 @@ async function generateSitemap() {
 
     counter--;
     start = Date.now();
-    fileName = `sitemap${counter}.xml.gz`;
+    fileName = path.join(sitemapPathAbs, `sitemap${counter}.xml.gz`);
     const regionsCount = await generateRegionsSitemap(fileName);
 
     if (regionsCount) {
