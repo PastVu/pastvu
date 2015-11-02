@@ -96,6 +96,12 @@
 			"maxLogSize": 1048576,
 			"backups": 3,
 			"category": ["api.js"]
+		},
+		{
+			"type": "file",
+			"filename": "sitemap.log",
+			"maxLogSize": 1048576,
+			"category": ["sitemap"]
 		}
 	]
 }

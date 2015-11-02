@@ -21,6 +21,7 @@ logs/*.log.*
 
 # USER CONTENT #
 ######################
+sitemap*.xml*
 
 # Temp Files #
 ######################

@@ -15,7 +15,6 @@ export let DEFAULT_HOME = null;
 export const regionsAllSelectHash = Object.create(null);
 
 const logger = log4js.getLogger('region.js');
-const loggerApp = log4js.getLogger('app');
 const maxRegionLevel = constants.region.maxLevel;
 const nogeoRegion = { cid: 0, title_en: 'Where is it?', title_local: 'Где это?' };
 const msg = {
@@ -28,6 +27,8 @@ const msg = {
 
 let regionCacheArr = []; // Array-cache of regions  [{ _id, cid, parents }]
 let regionCacheHash = {}; // Hash-cache of regions { cid: { _id, cid, parents } }
+
+let regionCacheArrPromise;
 
 for (let i = 0; i <= maxRegionLevel; i++) {
     regionsAllSelectHash['r' + i] = 1;
@@ -44,13 +45,14 @@ async function fillCache() {
             { lean: true, sort: { cid: 1 } }
         ).exec();
 
+        regionCacheArrPromise = Promise.resolve({ regions: regionCacheArr });
+
         regionCacheHash = _.transform(regionCacheArr, (result, region) => {
             result[region.cid] = region;
         }, { '0': nogeoRegion }); // Zero region means absence of coordinates
 
         DEFAULT_HOME = regionCacheHash[config.regionHome] || regionCacheArr[0];
         logger.info('Region cache filled with ' + regionCacheArr.length);
-        loggerApp.info('Region cache filled with ' + regionCacheArr.length);
     } catch (err) {
         err.message = `FillCache: ${err.message}`;
         throw err;
@@ -1080,13 +1082,7 @@ async function getRegionsFull(iAm, data) {
     return { regions, stat: { common: regionsStatCommon, byLevel: regionsStatByLevel } };
 }
 
-function getRegionsPublic(data) {
-    if (!_.isObject(data)) {
-        throw { message: msg.badParams };
-    }
-
-    return { regions: regionCacheArr };
-}
+export const getRegionsPublic = () => regionCacheArrPromise;
 
 // Returns an array of regions in which a given point falls
 export const getRegionsByGeoPoint = (function () {
@@ -1481,7 +1477,13 @@ export function loadController(io) {
                 });
         });
         socket.on('giveRegions', function (data) {
-            socket.emit('takeRegions', getRegionsPublic(hs.usObj, data));
+            getRegionsPublic(hs.usObj, data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('takeRegions', resultData);
+                });
         });
         socket.on('giveRegionsByGeo', function (data) {
             giveRegionsByGeo(hs.usObj, data)
