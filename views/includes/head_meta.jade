@@ -36,7 +36,7 @@ if meta && meta.twitter && meta.twitter.img
 if !nojsShow && nojsUrl
     noscript: meta(http-equiv="refresh", content='0; URL=' + nojsUrl)
 
-if meta
+if meta && meta.rels
     each val in meta.rels
         link(rel=val.rel, href=val.href)
 
