@@ -3,7 +3,7 @@ import _ from 'lodash';
 import zlib from 'zlib';
 import log4js from 'log4js';
 import config from './config';
-import { ready as regionsReady, getObjRegionList } from './controllers/region';
+import { ready as regionsReady, getObjRegionList, getRegionsPublic } from './controllers/region';
 
 import connectDb from './controllers/connection';
 import './models/_initValues';
@@ -41,17 +41,28 @@ const processPhotos = photos => photos.reduce((result, { cid, file, title, adate
         </url>`;
 }, '');
 
+const processRegions = regions => regions.reduce((result, { cid }) => {
+    return result + `<url>
+            <loc>${origin}/ps?f=r!${cid}</loc>
+            <changefreq>daily</changefreq>
+            <priority>0.7</priority>
+        </url>`;
+}, '');
+
 async function generateSitemap() {
     const stamp = new Date().toISOString();
 
     let sitemapIndex = '<?xml version="1.0" encoding="UTF-8"?>' +
             '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
 
+    let start;
+    let counter = 1;
     let totalPhotos = 0;
+    let fileName = `sitemap${counter}.xml.gz`;
 
-    for (let cid = 1, count = 0, counter = 1; cid !== undefined; counter++) {
-        const start = Date.now();
-        const fileName = `sitemap${counter}.xml.gz`;
+    for (let cid = 1, count = 0; cid !== undefined; counter++) {
+        start = Date.now();
+        fileName = `sitemap${counter}.xml.gz`;
 
         [cid, count] = await generatePhotoSitemap(fileName, cid, 50000);
 
@@ -62,6 +73,18 @@ async function generateSitemap() {
                 `${fileName} generated in ${(Date.now() - start) / 1000}s for ${count} photos, last photo id is ${cid}`
             );
         }
+    }
+
+    counter--;
+    start = Date.now();
+    fileName = `sitemap${counter}.xml.gz`;
+    const regionsCount = await generateRegionsSitemap(fileName);
+
+    if (regionsCount) {
+        sitemapIndex += `<sitemap><loc>${origin}/${fileName}</loc><lastmod>${stamp}</lastmod></sitemap>`;
+        logger.info(
+            `${fileName} generated in ${(Date.now() - start) / 1000}s for ${regionsCount} regions`
+        );
     }
 
     sitemapIndex += '</sitemapindex>';
@@ -102,8 +125,37 @@ async function generatePhotoSitemap(fileName, cidFrom, limit) {
     gzip.end();
 
     return new Promise((resolve, reject) => {
-        gzip.on('finish', () => resolve([_.chain(photos).last().get('cid').value(), photos.length]));
-        gzip.on('error', err => reject(err));
+        out.on('finish', () => resolve([_.chain(photos).last().get('cid').value(), photos.length]));
+        out.on('error', err => reject(err));
+    });
+}
+
+async function generateRegionsSitemap(fileName) {
+    const { regions } = await getRegionsPublic();
+
+    let string = processRegions(regions);
+
+    if (_.isEmpty(string)) {
+        return Promise.resolve(0);
+    }
+
+    string = '<?xml version="1.0" encoding="UTF-8"?>' +
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" ' +
+        'xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">' +
+        string + '</urlset>';
+
+    string = string.replace(/^[\t\s]+/gim, '').replace(/\r|\n/gim, '');
+
+    const gzip = zlib.createGzip({ level: 9 });
+    const out = fs.createWriteStream(fileName);
+
+    gzip.pipe(out);
+    gzip.write(string);
+    gzip.end();
+
+    return new Promise((resolve, reject) => {
+        out.on('finish', () => resolve(regions.length));
+        out.on('error', err => reject(err));
     });
 }
 

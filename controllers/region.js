@@ -28,6 +28,8 @@ const msg = {
 let regionCacheArr = []; // Array-cache of regions  [{ _id, cid, parents }]
 let regionCacheHash = {}; // Hash-cache of regions { cid: { _id, cid, parents } }
 
+let regionCacheArrPromise;
+
 for (let i = 0; i <= maxRegionLevel; i++) {
     regionsAllSelectHash['r' + i] = 1;
 }
@@ -42,6 +44,8 @@ async function fillCache() {
             { _id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1 },
             { lean: true, sort: { cid: 1 } }
         ).exec();
+
+        regionCacheArrPromise = Promise.resolve({ regions: regionCacheArr });
 
         regionCacheHash = _.transform(regionCacheArr, (result, region) => {
             result[region.cid] = region;
@@ -1078,13 +1082,7 @@ async function getRegionsFull(iAm, data) {
     return { regions, stat: { common: regionsStatCommon, byLevel: regionsStatByLevel } };
 }
 
-function getRegionsPublic(data) {
-    if (!_.isObject(data)) {
-        throw { message: msg.badParams };
-    }
-
-    return { regions: regionCacheArr };
-}
+export const getRegionsPublic = () => regionCacheArrPromise;
 
 // Returns an array of regions in which a given point falls
 export const getRegionsByGeoPoint = (function () {
@@ -1479,7 +1477,13 @@ export function loadController(io) {
                 });
         });
         socket.on('giveRegions', function (data) {
-            socket.emit('takeRegions', getRegionsPublic(hs.usObj, data));
+            getRegionsPublic(hs.usObj, data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('takeRegions', resultData);
+                });
         });
         socket.on('giveRegionsByGeo', function (data) {
             giveRegionsByGeo(hs.usObj, data)
