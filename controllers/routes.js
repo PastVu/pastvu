@@ -159,6 +159,13 @@ export function loadController(app) {
         if (meta.twitter.desc.length > 200) {
             meta.twitter.desc = meta.twitter.desc.substr(0, 197) + '...';
         }
+        if (!meta.og.img) {
+            meta.og.img = meta.twitter.img = {
+                url: `${origin}/img/loading/Loading1.jpg`,
+                w: 758,
+                h: 304
+            };
+        }
 
         res.statusCode = 200;
         res.render('app', {
