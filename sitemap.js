@@ -17,8 +17,8 @@ export async function configure(startStamp) {
     await regionsReady;
 
     logger.info(`Starting to generate sitemap`);
-    await generateSitemap();
-    logger.info(`Done in ${(Date.now() - startStamp) / 1000}s`);
+    const totalPhotos = await generateSitemap();
+    logger.info(`Done in ${(Date.now() - startStamp) / 1000}s, ${totalPhotos} photos have been added to to sitemap`);
 
     process.exit(0);
 }
@@ -47,6 +47,8 @@ async function generateSitemap() {
     let sitemapIndex = '<?xml version="1.0" encoding="UTF-8"?>' +
             '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
 
+    let totalPhotos = 0;
+
     for (let cid = 1, count = 0, counter = 1; cid !== undefined; counter++) {
         const start = Date.now();
         const fileName = `sitemap${counter}.xml.gz`;
@@ -54,6 +56,7 @@ async function generateSitemap() {
         [cid, count] = await generatePhotoSitemap(fileName, cid, 50000);
 
         if (cid) {
+            totalPhotos += count;
             sitemapIndex += `<sitemap><loc>${origin}/${fileName}</loc><lastmod>${stamp}</lastmod></sitemap>`;
             logger.info(
                 `${fileName} generated in ${(Date.now() - start) / 1000}s for ${count} photos, last photo id is ${cid}`
@@ -64,6 +67,8 @@ async function generateSitemap() {
     sitemapIndex += '</sitemapindex>';
 
     fs.writeFileSync('sitemap.xml', sitemapIndex, { encoding: 'utf8' });
+
+    return totalPhotos;
 }
 
 async function generatePhotoSitemap(fileName, cidFrom, limit) {
