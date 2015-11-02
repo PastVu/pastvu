@@ -15,7 +15,6 @@ export let DEFAULT_HOME = null;
 export const regionsAllSelectHash = Object.create(null);
 
 const logger = log4js.getLogger('region.js');
-const loggerApp = log4js.getLogger('app');
 const maxRegionLevel = constants.region.maxLevel;
 const nogeoRegion = { cid: 0, title_en: 'Where is it?', title_local: 'Где это?' };
 const msg = {
@@ -50,7 +49,6 @@ async function fillCache() {
 
         DEFAULT_HOME = regionCacheHash[config.regionHome] || regionCacheArr[0];
         logger.info('Region cache filled with ' + regionCacheArr.length);
-        loggerApp.info('Region cache filled with ' + regionCacheArr.length);
     } catch (err) {
         err.message = `FillCache: ${err.message}`;
         throw err;
