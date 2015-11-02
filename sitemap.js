@@ -4,6 +4,7 @@ import zlib from 'zlib';
 import log4js from 'log4js';
 import mkdirp from 'mkdirp';
 import config from './config';
+import { times } from './commons/time';
 import { ready as regionsReady, getObjRegionList, getRegionsPublic } from './controllers/region';
 
 import connectDb from './controllers/connection';
@@ -25,7 +26,19 @@ const schedule = (function () {
     }
 
     return (immediate) => {
-        setTimeout(run, immediate ? 4 : sitemapInterval);
+        let timeout;
+
+        if (immediate) {
+            timeout = 4;
+        } else {
+            // Next run must be next interval after last midnight
+            const a = (Date.now() - times.midnight) / sitemapInterval;
+            timeout = Math.ceil(
+                a > 1 ? sitemapInterval - sitemapInterval * (a - Math.floor(a)) : sitemapInterval - sitemapInterval * a
+            );
+        }
+
+        setTimeout(run, timeout);
     };
 }());
 

@@ -75,6 +75,7 @@ module.exports = {
     regionHome: 2,
 
     sitemapPath: './sitemap', // Folder for generating sitemap
-    sitemapInterval: ms('10s'), // Interval between sitemap complete regeneration
-    sitemapGenerateOnStart: false // Start generating on server start
+    // Interval between sitemap complete regeneration. First run - next interval after last midnight
+    sitemapInterval: ms('12h'),
+    sitemapGenerateOnStart: false // First run must be on server start
 };
