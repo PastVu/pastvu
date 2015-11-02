@@ -4,7 +4,8 @@ import * as errors from './errors';
 import Utils from '../commons/Utils';
 import * as session from './_session';
 import { clientParams } from './settings';
-import { givePhotoForPage, givePhotoPrevNextCids } from './photo';
+import { getRegionsArrFromCache } from './region';
+import { givePhotoForPage, givePhotoPrevNextCids, parseFilter } from './photo';
 
 export function loadController(app) {
     const origin = config.client.origin;
@@ -86,7 +87,7 @@ export function loadController(app) {
     [
         '/', // Root
         /^\/(?:photoUpload)\/?$/, // Strict paths (/example with or without trailing slash)
-        /^\/(?:ps|u|news)(?:\/.*)?$/, // Path with possible continuation (/example/*)
+        /^\/(?:u|news)(?:\/.*)?$/, // Path with possible continuation (/example/*)
         /^\/(?:confirm)\/.+$/ // Path with mandatory continuation (/example/*)
     ]
         .forEach(function (route) {
@@ -94,6 +95,7 @@ export function loadController(app) {
         });
 
     app.get(/^\/p\/(\d{1,7})$/, session.handleHTTPRequest, setStaticHeaders, getPhotoForPage, appMainHandler);
+    app.get(/^\/ps(?:\/(\d{1,6}))?$/, session.handleHTTPRequest, setStaticHeaders, getRegionForGallery, appMainHandler);
 
     function appMainHandler(req, res) {
         const nojs = checkNoJS(req);
@@ -108,6 +110,10 @@ export function loadController(app) {
             if (req.photoRel.next) {
                 meta.rels.push({ rel: 'next', href: `${origin}/p/${req.photoRel.next}` });
             }
+        }
+
+        if (req.pageTitle) {
+            meta.title = meta.og.title = meta.twitter.title = req.pageTitle;
         }
 
         if (photo) {
@@ -186,6 +192,35 @@ export function loadController(app) {
                 next(err);
             }
         }
+    }
+
+    function getRegionForGallery(req, res, next) {
+        const filter = req.query.f;
+
+        if (filter) {
+            try {
+                const regions = getRegionsArrFromCache(parseFilter(filter).r);
+
+                if (!_.isEmpty(regions)) {
+                    let hasRussianRegions = false;
+                    let title = regions.map(({ title_en: en, title_local: local, parents }) => {
+                        if (parents[0] === 1) {
+                            hasRussianRegions = true;
+                            return local;
+                        }
+                        return en;
+                    }).join(', ');
+
+                    title = (hasRussianRegions ? 'Старые фотографии ' : 'Retro photos of ') + title;
+
+                    req.pageTitle = title;
+                }
+            } catch (err) {
+                return next(err);
+            }
+        }
+
+        next();
     }
 
     [/^\/(?:admin)(?:\/.*)?$/].forEach(route => {

@@ -1457,7 +1457,7 @@ var givePhotosPublicNoGeoIndex = (function () {
 var filterProps = { geo: [], r: [], rp: [], s: [] };
 var delimeterParam = '_';
 var delimeterVal = '!';
-function parseFilter(filterString) {
+export function parseFilter(filterString) {
     var filterParams = filterString && filterString.split(delimeterParam);
     var filterParam;
     var filterVal;
