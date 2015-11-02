@@ -1,6 +1,8 @@
 // Default server configuration
 'use strict';
 
+var ms = require('ms');
+
 module.exports = {
     lang: 'ru', // Language: ru, en
     env: 'development', // Enviroment: development, testing, production
@@ -70,5 +72,9 @@ module.exports = {
     mail: {},
 
     // Default home region for new user
-    regionHome: 2
+    regionHome: 2,
+
+    sitemapPath: './sitemap', // Folder for generating sitemap
+    sitemapInterval: ms('10s'), // Interval between sitemap complete regeneration
+    sitemapGenerateOnStart: false // Start generating on server start
 };

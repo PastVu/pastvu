@@ -2,6 +2,7 @@ import fs from 'fs';
 import _ from 'lodash';
 import zlib from 'zlib';
 import log4js from 'log4js';
+import mkdirp from 'mkdirp';
 import config from './config';
 import { ready as regionsReady, getObjRegionList, getRegionsPublic } from './controllers/region';
 
@@ -10,17 +11,33 @@ import './models/_initValues';
 import { Photo } from './models/Photo';
 
 const logger = log4js.getLogger('sitemap');
-const origin = config.client.origin;
+const { sitemapPath, sitemapInterval, sitemapGenerateOnStart, client: { origin } } = config;
+
+const schedule = (function () {
+    async function run() {
+        const start = Date.now();
+
+        logger.info(`Starting to generate sitemap`);
+        const totalPhotos = await generateSitemap();
+        logger.info(`Done in ${(Date.now() - start) / 1000}s, ${totalPhotos} photos have been added to to sitemap`);
+
+        schedule();
+    }
+
+    return (immediate) => {
+        setTimeout(run, immediate ? 4 : sitemapInterval);
+    };
+}());
 
 export async function configure(startStamp) {
+    mkdirp.sync(sitemapPath);
+
     await connectDb(config.mongo.connection, config.mongo.pool, logger);
     await regionsReady;
 
-    logger.info(`Starting to generate sitemap`);
-    const totalPhotos = await generateSitemap();
-    logger.info(`Done in ${(Date.now() - startStamp) / 1000}s, ${totalPhotos} photos have been added to to sitemap`);
+    schedule(sitemapGenerateOnStart);
 
-    process.exit(0);
+    logger.info(`Sitemap generator started up in ${(Date.now() - startStamp) / 1000}s`);
 }
 
 const processPhotos = photos => photos.reduce((result, { cid, file, title, adate, cdate, ucdate, ...regions }) => {
