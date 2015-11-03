@@ -1,9 +1,8 @@
 Sitemap: https://pastvu.com/sitemap.xml
 
-# Google Image
-#User-agent: Googlebot-Image
-#Allow: /p/*
-#Disallow: /
+User-agent: Yandex
+Crawl-delay: 1 # sets a 1 second time-out
+Clean-param: _nojs&hl
 
 # global
 User-agent: *
@@ -15,6 +14,3 @@ Disallow: /admin
 Disallow: /confirm
 Disallow: /ps/feed
 Disallow: /photoUpload
-Crawl-delay: 10
-
-Clean-param: hl

@@ -97,32 +97,35 @@ async function generateSitemap() {
     let start;
     let counter = 1;
     let totalPhotos = 0;
-    let fileName = `sitemap${counter}.xml.gz`;
+    let fileName;
+    let filePath;
 
     for (let cid = 1, count = 0; cid !== undefined; counter++) {
         start = Date.now();
-        fileName = path.join(sitemapPathAbs, `sitemap${counter}.xml.gz`);
+        fileName = `sitemap${counter}.xml.gz`;
+        filePath = path.join(sitemapPathAbs, fileName);
 
-        [cid, count] = await generatePhotoSitemap(fileName, cid, 50000);
+        [cid, count] = await generatePhotoSitemap(filePath, cid, 50000);
 
         if (cid) {
             totalPhotos += count;
             sitemapIndex += `<sitemap><loc>${origin}/${fileName}</loc><lastmod>${stamp}</lastmod></sitemap>`;
             logger.info(
-                `${fileName} generated in ${(Date.now() - start) / 1000}s for ${count} photos, last photo id is ${cid}`
+                `${filePath} generated in ${(Date.now() - start) / 1000}s for ${count} photos, last photo id is ${cid}`
             );
         }
     }
 
     counter--;
     start = Date.now();
-    fileName = path.join(sitemapPathAbs, `sitemap${counter}.xml.gz`);
-    const regionsCount = await generateRegionsSitemap(fileName);
+    fileName = `sitemap${counter}.xml.gz`;
+    filePath = path.join(sitemapPathAbs, `sitemap${counter}.xml.gz`);
+    const regionsCount = await generateRegionsSitemap(filePath);
 
     if (regionsCount) {
         sitemapIndex += `<sitemap><loc>${origin}/${fileName}</loc><lastmod>${stamp}</lastmod></sitemap>`;
         logger.info(
-            `${fileName} generated in ${(Date.now() - start) / 1000}s for ${regionsCount} regions`
+            `${filePath} generated in ${(Date.now() - start) / 1000}s for ${regionsCount} regions`
         );
     }
 
