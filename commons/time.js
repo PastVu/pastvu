@@ -51,3 +51,10 @@ export const hhmmss = (ms, utc, delimeter) => {
         delimeter + (minutes > 9 ? minutes : '0' + minutes) +
         delimeter + (seconds > 9 ? seconds : '0' + seconds);
 };
+export const hhmmssms = (ms, utc, delimeter) => {
+    if (!_.isDate(ms)) {
+        ms = new Date(ms);
+    }
+
+    return `${hhmmss(ms, utc, delimeter)}.${ms[utc ? 'getUTCMilliseconds' : 'getMilliseconds']()}`;
+};
