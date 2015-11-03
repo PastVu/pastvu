@@ -5,7 +5,7 @@ import zlib from 'zlib';
 import log4js from 'log4js';
 import mkdirp from 'mkdirp';
 import config from './config';
-import { times } from './commons/time';
+import { times, hhmmssms } from './commons/time';
 import { ready as regionsReady, getObjRegionList, getRegionsPublic } from './controllers/region';
 
 import connectDb from './controllers/connection';
@@ -16,7 +16,7 @@ const logger = log4js.getLogger('sitemap');
 const { sitemapPath, sitemapInterval, sitemapGenerateOnStart, client: { origin } } = config;
 const sitemapPathAbs = path.resolve(sitemapPath);
 
-
+// Scheduler of next generations
 const schedule = (function () {
     async function run() {
         const start = Date.now();
@@ -41,6 +41,12 @@ const schedule = (function () {
             );
         }
 
+        const next = new Date(Date.now() + timeout);
+        logger.info(
+            `Next sitemap generation has been scheduled on ` +
+            `${next.getFullYear()}-${next.getMonth() + 1}-${next.getDate()} ${hhmmssms(next)}`
+        );
+
         setTimeout(run, timeout);
     };
 }());
@@ -51,9 +57,9 @@ export async function configure(startStamp) {
     await connectDb(config.mongo.connection, config.mongo.pool, logger);
     await regionsReady;
 
-    schedule(sitemapGenerateOnStart);
-
     logger.info(`Sitemap generator started up in ${(Date.now() - startStamp) / 1000}s`);
+
+    schedule(sitemapGenerateOnStart);
 }
 
 const processPhotos = photos => photos.reduce((result, { cid, file, title, adate, cdate, ucdate, ...regions }) => {
@@ -122,7 +128,7 @@ async function generateSitemap() {
 
     sitemapIndex += '</sitemapindex>';
 
-    fs.writeFileSync('sitemap.xml', sitemapIndex, { encoding: 'utf8' });
+    fs.writeFileSync(path.join(sitemapPathAbs, 'sitemap.xml'), sitemapIndex, { encoding: 'utf8' });
 
     return totalPhotos;
 }
