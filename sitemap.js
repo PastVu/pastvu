@@ -16,7 +16,7 @@ const logger = log4js.getLogger('sitemap');
 const { sitemapPath, sitemapInterval, sitemapGenerateOnStart, client: { origin } } = config;
 const sitemapPathAbs = path.resolve(sitemapPath);
 
-
+// Scheduler of next generations
 const schedule = (function () {
     async function run() {
         const start = Date.now();
@@ -128,7 +128,7 @@ async function generateSitemap() {
 
     sitemapIndex += '</sitemapindex>';
 
-    fs.writeFileSync('sitemap.xml', sitemapIndex, { encoding: 'utf8' });
+    fs.writeFileSync(path.join(sitemapPathAbs, 'sitemap.xml'), sitemapIndex, { encoding: 'utf8' });
 
     return totalPhotos;
 }
