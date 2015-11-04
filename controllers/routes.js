@@ -86,7 +86,7 @@ export function loadController(app) {
 
     [
         '/', // Root
-        /^\/(?:photoUpload)\/?$/, // Strict paths (/example with or without trailing slash)
+        /^\/(?:photoUpload|ps\/feed)\/?$/, // Strict paths (/example with or without trailing slash)
         /^\/(?:u|news)(?:\/.*)?$/, // Path with possible continuation (/example/*)
         /^\/(?:confirm)\/.+$/ // Path with mandatory continuation (/example/*)
     ]
@@ -95,7 +95,7 @@ export function loadController(app) {
         });
 
     app.get(/^\/p\/(\d{1,7})$/, session.handleHTTPRequest, setStaticHeaders, getPhotoForPage, appMainHandler);
-    app.get(/^\/ps(?:\/(\d{1,6}))?$/, session.handleHTTPRequest, setStaticHeaders, getRegionForGallery, appMainHandler);
+    app.get(/^\/ps(?:\/(\d{1,6}))?\/?$/, session.handleHTTPRequest, setStaticHeaders, getRegionForGallery, appMainHandler);
 
     function appMainHandler(req, res) {
         const nojs = checkNoJS(req);
