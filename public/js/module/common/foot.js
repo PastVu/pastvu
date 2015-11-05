@@ -40,7 +40,6 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'rend
 
         navigateAbout: function () {
             globalVM.router.navigate('/about');
-            this.aboutNavigated = true;
         },
 		showAbout: function () {
 			if (!this.aboutVM) {
@@ -79,7 +78,6 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'rend
 
         navigateRules: function () {
             globalVM.router.navigate('/rules');
-            this.rulesNavigated = true;
         },
 		showRules: function () {
 			if (!this.rulesVM) {
@@ -117,8 +115,7 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'rend
 
         closePopup: function () {
             // Закрытие будет вызвано автоматиечски после срабатывания routeHandler
-            if (this.rulesNavigated || this.aboutNavigated) {
-                this.rulesNavigated = this.aboutNavigated = false;
+            if (globalVM.router.navigated) {
                 globalVM.router.back();
             } else {
                 globalVM.router.navigate('/');

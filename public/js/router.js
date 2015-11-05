@@ -75,6 +75,9 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'globalVM', 'renderer'], fu
                     if (!router.triggerUrl()) {
                         global.location.reload(); //Если triggerUrl не нашел обработчиков, просто рефрешим с новым url
                     }
+
+                    // Flag that we navigated at least once by inner links after initial start
+                    router.navigated = true;
                 }
             } else {
                 global.location = url;
