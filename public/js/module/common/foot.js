@@ -9,9 +9,12 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'rend
 		jade: jade,
 		create: function () {
 			ko.applyBindings(globalVM, this.$dom[0]);
+
 			window.setTimeout(function () {
-				this.show();
-			}.bind(this), 1500);
+                this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandler, this);
+                this.routeHandler();
+                this.show();
+            }.bind(this), 800);
 		},
 		show: function () {
 			globalVM.func.showContainer(this.$container);
@@ -21,6 +24,24 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'rend
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 		},
+        routeHandler: function () {
+            var params = globalVM.router.params();
+
+            if (params.rules) {
+                this.showRules();
+            } else if (this.rulesVM) {
+                this.destroyRules();
+            } else if (params.about) {
+                this.showAbout();
+            } else if (this.aboutVM) {
+                this.destroyAbout();
+            }
+        },
+
+        navigateAbout: function () {
+            globalVM.router.navigate('/about');
+            this.aboutNavigated = true;
+        },
 		showAbout: function () {
 			if (!this.aboutVM) {
 				renderer(
@@ -30,11 +51,11 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'rend
 							modal: {
 								topic: 'О проекте',
 								initWidth: '1000px',
-								animateScale: true,
-								curtainClick: {click: this.closeAbout, ctx: this},
-								offIcon: {text: 'Закрыть', click: this.closeAbout, ctx: this},
+								//animateScale: true,
+								curtainClick: {click: this.closePopup, ctx: this},
+								offIcon: {text: 'Закрыть', click: this.closePopup, ctx: this},
 								btns: [
-									{css: 'btn-primary', text: 'Закрыть', click: this.closeAbout, ctx: this}
+									{css: 'btn-primary', text: 'Закрыть', click: this.closePopup, ctx: this}
 								]
 							},
 							callback: function (vm) {
@@ -49,11 +70,16 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'rend
 				);
 			}
 		},
-        closeAbout: function () {
+        destroyAbout: function () {
             if (this.aboutVM) {
                 this.aboutVM.destroy();
                 delete this.aboutVM;
             }
+        },
+
+        navigateRules: function () {
+            globalVM.router.navigate('/rules');
+            this.rulesNavigated = true;
         },
 		showRules: function () {
 			if (!this.rulesVM) {
@@ -64,11 +90,10 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'rend
 							modal: {
 								topic: 'Правила PastVu',
 								initWidth: '1000px',
-								//animateScale: true,
-								curtainClick: {click: this.closeRules, ctx: this},
-								offIcon: {text: 'Закрыть', click: this.closeRules, ctx: this},
+								curtainClick: {click: this.closePopup, ctx: this},
+								offIcon: {text: 'Закрыть', click: this.closePopup, ctx: this},
 								btns: [
-									{css: 'btn-primary', text: 'Закрыть', click: this.closeRules, ctx: this}
+									{css: 'btn-primary', text: 'Закрыть', click: this.closePopup, ctx: this}
 								]
 							},
 							callback: function (vm) {
@@ -83,11 +108,21 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'rend
 				);
 			}
 		},
-		closeRules: function () {
+		destroyRules: function () {
 			if (this.rulesVM) {
 				this.rulesVM.destroy();
 				delete this.rulesVM;
 			}
-		}
+		},
+
+        closePopup: function () {
+            // Закрытие будет вызвано автоматиечски после срабатывания routeHandler
+            if (this.rulesNavigated || this.aboutNavigated) {
+                this.rulesNavigated = this.aboutNavigated = false;
+                globalVM.router.back();
+            } else {
+                globalVM.router.navigate('/');
+            }
+        }
 	});
 });

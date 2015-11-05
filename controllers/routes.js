@@ -86,7 +86,7 @@ export function loadController(app) {
 
     [
         '/', // Root
-        /^\/(?:photoUpload|ps\/feed)\/?$/, // Strict paths (/example with or without trailing slash)
+        /^\/(?:photoUpload|ps\/feed|rules|about)\/?$/, // Strict paths (/example with or without trailing slash)
         /^\/(?:u|news)(?:\/.*)?$/, // Path with possible continuation (/example/*)
         /^\/(?:confirm)\/.+$/ // Path with mandatory continuation (/example/*)
     ]
