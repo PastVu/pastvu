@@ -81,6 +81,7 @@ define(
             revision: false,
             revoke: false,
             reject: false,
+            rereject: false,
             approve: false,
             activate: false,
             deactivate: false,
