@@ -81,6 +81,12 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'globalVM', 'renderer'], fu
             }
         },
 
+        back: function () {
+            if (hasHistoryApi) {
+                global.history.back();
+            }
+        },
+
         triggerUrl: function () {
             var qparams = Utils.getURLParameters(location.href);
             var pathname = location.pathname;
