@@ -117,6 +117,7 @@ export const permissions = {
             // revision: [true, false]
             // revoke: [true, false]
             // reject: [true, false]
+            // rereject: [true, false]
             // approve: [true, false]
             // activate: [true, false]
             // deactivate: [true, false]
@@ -171,6 +172,8 @@ export const permissions = {
             can.revoke = s < status.REVOKE && ownPhoto || undefined;
             // Модератор может отклонить не свое фото пока оно новое
             can.reject = s < status.REVOKE && canModerate && !ownPhoto || undefined;
+            // Administrator can resore rejected photo
+            can.rereject = s === status.REJECT && usObj.isAdmin || undefined;
             // Восстанавливать из удаленных может только администратор
             can.restore = s === status.REMOVE && usObj.isAdmin || undefined;
             // Отправить на конвертацию может только администратор
@@ -929,13 +932,13 @@ var userPCountUpdate = function (user, newDelta, publicDelta, inactiveDelta) {
         ownerObj.user.pdcount = ownerObj.user.pdcount + (inactiveDelta || 0);
         return session.saveEmitUser(ownerObj);
     } else {
-        return User.updateAsync({ _id: userId }, {
+        return User.update({ _id: userId }, {
             $inc: {
                 pfcount: newDelta || 0,
                 pcount: publicDelta || 0,
                 pdcount: inactiveDelta || 0
             }
-        });
+        }).exec();
     }
 };
 
@@ -1069,50 +1072,84 @@ var toRevision = Bluebird.method(function (socket, data) {
         });
 });
 
-/**
- * Отклонение фотографии
- * @param {Object} socket Сокет пользователя
- * @param {Object} data
- */
-var rejectPhoto = Bluebird.method(function (socket, data) {
-    var iAm = socket.handshake.usObj;
-
+// Reject waiting photo by moderator/administrator
+async function rejectPhoto(iAm, data) {
     if (_.isEmpty(data.reason)) {
         throw { message: msg.needReason };
     }
 
-    return photoEditPrefetch(iAm, data, 'reject')
-        .bind({})
-        .spread(function (photo, canModerate) {
-            this.oldPhotoObj = photo.toObject();
-            this.canModerate = canModerate;
+    try {
+        let can;
+        let photo;
+        let canModerate;
 
-            photo.s = status.REJECT;
-            //TODO: При возврате на доработку возвращать sdate +shift10y
-            photo.sdate = photo.stdate = photo.cdate = new Date();
+        [photo, canModerate] = await photoEditPrefetch(iAm, data, 'reject');
 
-            return photoUpdate(iAm, photo);
-        })
-        .spread(function (photoSaved, rel) {
-            // Пересчитываем кол-во фото у владельца
-            userPCountUpdate(photoSaved.user, -1, 0, 1);
+        const oldPhotoObj = photo.toObject();
 
-            // Сохраняем в истории предыдущий статус
-            savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, this.canModerate, data.reason);
+        photo.s = status.REJECT;
+        // TODO: При возврате на доработку возвращать sdate +shift10y
+        photo.sdate = photo.stdate = photo.cdate = new Date();
 
-            // Заново выбираем данные для отображения
-            return core.givePhoto(iAm, { cid: photoSaved.cid, rel: rel });
-        })
-        .spread(function (photo, can) {
-            return { photo: photo, can: can };
-        })
-        .catch(function (err) {
-            if (err.changed === true) {
-                return { message: msg.changed, changed: true };
-            }
-            throw err;
-        });
-});
+        const [photoSaved, rel] = await photoUpdate(iAm, photo);
+
+        // Compute amount of photos of user
+        userPCountUpdate(photoSaved.user, -1, 0, 1);
+
+        // Save previous status to history
+        savePhotoHistory(iAm, oldPhotoObj, photoSaved, canModerate, data.reason);
+
+        // Reget photo for view
+        [photo, can] = await core.givePhoto(iAm, { cid: photoSaved.cid, rel });
+
+        return { photo, can };
+
+    } catch (err) {
+        if (err.changed === true) {
+            return { message: msg.changed, changed: true };
+        }
+        throw err;
+    }
+}
+
+// Restore rejected photo to ready status (waitnig for moderation)
+async function rerejectPhoto(iAm, data) {
+    if (_.isEmpty(data.reason)) {
+        throw { message: msg.needReason };
+    }
+
+    try {
+        let can;
+        let photo;
+        let canModerate;
+
+        [photo, canModerate] = await photoEditPrefetch(iAm, data, 'rereject');
+
+        const oldPhotoObj = photo.toObject();
+
+        photo.s = status.READY;
+        photo.sdate = photo.stdate = photo.cdate = new Date();
+
+        const [photoSaved, rel] = await photoUpdate(iAm, photo);
+
+        // Compute amount of photos of user
+        userPCountUpdate(photoSaved.user, 1, 0, -1);
+
+        // Save previous status to history
+        savePhotoHistory(iAm, oldPhotoObj, photoSaved, canModerate, data.reason);
+
+        // Reget photo for view
+        [photo, can] = await core.givePhoto(iAm, { cid: photoSaved.cid, rel });
+
+        return { photo, can };
+
+    } catch (err) {
+        if (err.changed === true) {
+            return { message: msg.changed, changed: true };
+        }
+        throw err;
+    }
+};
 
 /**
  * Публикация (подтверждение) новой фотографии
@@ -2853,12 +2890,21 @@ export function loadController(io) {
         });
 
         socket.on('rejectPhoto', function (data) {
-            rejectPhoto(socket, data)
+            rejectPhoto(hs.usObj, data)
                 .catch(function (err) {
                     return { message: err.message, error: true };
                 })
                 .then(function (resultData) {
                     socket.emit('rejectPhotoResult', resultData);
+                });
+        });
+        socket.on('rerejectPhoto', function (data) {
+            rerejectPhoto(hs.usObj, data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('rerejectPhotoResult', resultData);
                 });
         });
 

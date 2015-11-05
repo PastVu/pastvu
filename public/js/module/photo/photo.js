@@ -1570,6 +1570,63 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             });
         },
 
+        rereject: function () {
+            var self = this;
+            var p = self.p;
+            var cid = p.cid();
+
+            if (!self.can.rereject()) {
+                return false;
+            }
+
+            self.exe(true);
+
+            self.reasonSelect('photo.rereject', 'Причина восстановления', function (cancel, reason) {
+                if (cancel) {
+                    self.exe(false);
+                    return;
+                }
+
+                (function request(confirmer) {
+                    socket.once('rerejectPhotoResult', function (data) {
+                        if (data && data.changed) {
+                            noties.confirm({
+                                message: data.message + '<br><a target="_blank" href="/p/' + cid + '">Посмотреть последнюю версию</a>',
+                                okText: 'Продолжить восстановление',
+                                cancelText: 'Отменить',
+                                onOk: function (confirmer) {
+                                    request(confirmer);
+                                },
+                                onCancel: function () {
+                                    self.exe(false);
+                                }
+                            });
+                        } else {
+                            var error = !data || data.error;
+                            if (error) {
+                                noties.error(data && data.message);
+                            } else {
+                                self.rechargeData(data.photo, data.can);
+
+                                if (confirmer) {
+                                    confirmer.close();
+                                }
+                            }
+                            self.exe(false);
+                            ga('send', 'event', 'photo', 'rereject', 'photo rereject ' + (error ? 'error' : 'success'));
+                        }
+                    });
+                    socket.emit('rerejectPhoto', {
+                        cid: cid,
+                        cdate: p.cdate(),
+                        s: p.s(),
+                        reason: reason,
+                        ignoreChange: !!confirmer
+                    });
+                }());
+            });
+        },
+
         approve: function () {
             var self = this;
             var p = self.p;
@@ -1788,7 +1845,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                                 }
                             }
                             self.exe(false);
-                            ga('send', 'event', 'photo', 'reject', 'photo restore ' + (error ? 'error' : 'success'));
+                            ga('send', 'event', 'photo', 'restore', 'photo restore ' + (error ? 'error' : 'success'));
                         }
                     });
                     socket.emit('restorePhoto', {

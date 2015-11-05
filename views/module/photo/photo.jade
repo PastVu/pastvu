@@ -118,6 +118,11 @@
         span.glyphicon.glyphicon-check
         |  To revision
     // /ko
+    //ko if: can.rereject()
+    button.btn.btn-success(type="button", data-bind="click: rereject, attr: {disabled: exe()}")
+        span.glyphicon.glyphicon-repeat
+        span  Восстановить
+    // /ko
     //ko if: can.revoke()
     button.btn.btn-danger(type="button", data-bind="click: revoke, attr: {disabled: exe()}", title="Revoke this photo from possible publication")
         span.glyphicon.glyphicon-remove
