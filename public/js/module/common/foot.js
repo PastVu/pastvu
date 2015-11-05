@@ -49,10 +49,44 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'rend
 				);
 			}
 		},
-		closeAbout: function () {
-			if (this.aboutVM) {
-				this.aboutVM.destroy();
-				delete this.aboutVM;
+        closeAbout: function () {
+            if (this.aboutVM) {
+                this.aboutVM.destroy();
+                delete this.aboutVM;
+            }
+        },
+		showRules: function () {
+			if (!this.rulesVM) {
+				renderer(
+					[
+						{
+							module: 'm/diff/rules',
+							modal: {
+								topic: 'Правила PastVu',
+								initWidth: '1000px',
+								//animateScale: true,
+								curtainClick: {click: this.closeRules, ctx: this},
+								offIcon: {text: 'Закрыть', click: this.closeRules, ctx: this},
+								btns: [
+									{css: 'btn-primary', text: 'Закрыть', click: this.closeRules, ctx: this}
+								]
+							},
+							callback: function (vm) {
+								this.rulesVM = this.childModules[vm.id] = vm;
+							}.bind(this)
+						}
+					],
+					{
+						parent: this,
+						level: this.level + 2
+					}
+				);
+			}
+		},
+		closeRules: function () {
+			if (this.rulesVM) {
+				this.rulesVM.destroy();
+				delete this.rulesVM;
 			}
 		}
 	});
