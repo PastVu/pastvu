@@ -12,264 +12,128 @@ import { User } from '../models/User';
 import { Photo } from '../models/Photo';
 import { Comment, CommentN } from '../models/Comment';
 
-let dayStart; // Время начала дня
-let weekStart; // Время начала недели
+let dayStart; // Time of day start
+let weekStart; // Time of week start
 
 (function periodStartCalc() {
     dayStart = moment.utc().startOf('day').toDate();
-    weekStart = moment.utc().startOf('week').toDate();
-    // На начало следующего дня планируем пересчет
+    weekStart = moment.utc().startOf('isoWeek').toDate();
+    // Plan recalculation on the begining of the next day
     setTimeout(periodStartCalc, moment.utc().add(1, 'd').startOf('day').diff(moment.utc()) + 1000);
 }());
 
-// Рейтинги
-var giveRatings = (function () {
-    var limit = 10; //Ограничиваем кол-во результатов по каждому показателю
+// Ratings
+const giveRatings = (function () {
+    const memoizeInterval = ms('1m');
+    const limit = 13; // Result number for every indicator
 
-    //Так как после выборки объектов по вхождению в массив ключей ($in) порядок сортировки не гарантируется,
-    //то перед отдачей сортируем массивы по требуемому показателю
-    function sortCcount(a, b) {
-        return b.ccount - a.ccount;
-    }
+    // After selecting object by array of keys ($in) the sort order is not guaranteed,
+    // so manually sort by indicator
+    const sortCcount = (a, b) => b.ccount > a.ccount ? -1 : b.ccount < a.ccount ? 1 : 0;
+    const sortPcount = (a, b) => b.pcount > a.pcount ? -1 : b.pcount < a.pcount ? 1 : 0;
 
-    function sortPcount(a, b) {
-        return b.pcount - a.pcount;
-    }
+    const photosByCommentsCount = $gt => Comment.aggregate([
+        { $match: { stamp: { $gt }, del: null, hidden: null } },
+        { $group: { _id: '$obj', ccount: { $sum: 1 } } },
+        { $sort: { ccount: -1 } },
+        { $limit: limit }
+    ]).exec().then(photos => {
+        const countHash = {};
+        const ids = photos.map(photo => {
+            countHash[photo._id] = photo.ccount;
+            return photo._id;
+        });
 
-    return Utils.memoizeAsync(function (handler) {
-        var //st = Date.now(),
-            pcommdayHash = {},
-            pcommweekHash = {},
-            ucommdayHash = {},
-            ucommweekHash = {},
-            updayHash = {},
-            upweekHash = {};
+        return Photo.find(
+            { _id: { $in: ids }, s: 5 }, { _id: 1, cid: 1, file: 1, title: 1, ccount: 1 }, { lean: true }
+        ).exec().then(photos => _.forEach(photos, photo => photo.ccount = countHash[photo._id]).sort(sortCcount));
+    });
 
+    const usersByCommentsCount = $gt => Comment.aggregate([
+        { $match: { stamp: { $gt }, del: null, hidden: null } },
+        { $group: { _id: '$user', ccount: { $sum: 1 } } },
+        { $sort: { ccount: -1 } },
+        { $limit: limit }
+    ]).exec().then(users => {
+        const countHash = {};
+        const ids = users.map(user => {
+            countHash[user._id] = user.ccount;
+            return user._id;
+        });
 
-        step(
-            //Сначала запускаем агрегацию по всем показателем, требующим расчет
-            function aggregation() {
-                Comment.collection.aggregate([
-                    { $match: { stamp: { $gt: dayStart }, del: null, hidden: null } },
-                    { $group: { _id: '$obj', ccount: { $sum: 1 } } },
-                    { $sort: { ccount: -1 } },
-                    { $limit: limit }
-                ], this.parallel());
-                Comment.collection.aggregate([
-                    { $match: { stamp: { $gt: weekStart }, del: null, hidden: null } },
-                    { $group: { _id: '$obj', ccount: { $sum: 1 } } },
-                    { $sort: { ccount: -1 } },
-                    { $limit: limit }
-                ], this.parallel());
-                Comment.collection.aggregate([
-                    { $match: { stamp: { $gt: dayStart }, del: null, hidden: null } },
-                    { $group: { _id: '$user', ccount: { $sum: 1 } } },
-                    { $sort: { ccount: -1 } },
-                    { $limit: limit }
-                ], this.parallel());
-                Comment.collection.aggregate([
-                    { $match: { stamp: { $gt: weekStart }, del: null, hidden: null } },
-                    { $group: { _id: '$user', ccount: { $sum: 1 } } },
-                    { $sort: { ccount: -1 } },
-                    { $limit: limit }
-                ], this.parallel());
-                Photo.collection.aggregate([
-                    { $match: { adate: { $gt: dayStart }, s: 5 } },
-                    { $group: { _id: '$user', pcount: { $sum: 1 } } },
-                    { $sort: { pcount: -1 } },
-                    { $limit: limit }
-                ], this.parallel());
-                Photo.collection.aggregate([
-                    { $match: { adate: { $gt: weekStart }, s: 5 } },
-                    { $group: { _id: '$user', pcount: { $sum: 1 } } },
-                    { $sort: { pcount: -1 } },
-                    { $limit: limit }
-                ], this.parallel());
-            },
-            function getAggregationResultObjects(err, pcday, pcweek, ucday, ucweek, upday, upweek) {
-                if (err) {
-                    return handler({ message: err && err.message, error: true });
-                }
-                var i,
-                    pcdayarr = [],
-                    pcweekarr = [],
-                    ucdayarr = [],
-                    ucweekarr = [],
-                    updayarr = [],
-                    upweekarr = [];
+        return User.find({ _id: { $in: ids } }, { _id: 1, login: 1, avatar: 1, disp: 1, ccount: 1 }, { lean: true })
+            .exec().then(users => _.forEach(users, user => {
+                user.ccount = countHash[user._id];
+                user.online = session.usLogin[user.login] !== undefined;
+            }).sort(sortCcount));
+    });
 
-                // Photo by views
-                Photo.collection.find({ s: 5, vdcount: { $gt: 0 } }, {
-                    _id: 0,
-                    cid: 1,
-                    file: 1,
-                    title: 1,
-                    vdcount: 1
-                }, {
-                    limit: limit, sort: [
-                        ['vdcount', 'desc']
-                    ]
-                }, this.parallel());
-                Photo.collection.find({ s: 5, vwcount: { $gt: 0 } }, {
-                    _id: 0,
-                    cid: 1,
-                    file: 1,
-                    title: 1,
-                    vwcount: 1
-                }, {
-                    limit: limit, sort: [
-                        ['vwcount', 'desc']
-                    ]
-                }, this.parallel());
-                Photo.collection.find({ s: 5, vcount: { $gt: 0 } }, { _id: 0, cid: 1, file: 1, title: 1, vcount: 1 }, {
-                    limit: limit, sort: [
-                        ['vcount', 'desc']
-                    ]
-                }, this.parallel());
+    const usersByPhotosCount = $gt => Photo.aggregate([
+        { $match: { adate: { $gt }, s: 5 } },
+        { $group: { _id: '$user', pcount: { $sum: 1 } } },
+        { $sort: { pcount: -1 } },
+        { $limit: limit }
+    ]).exec().then(users => {
+        const countHash = {};
+        const ids = users.map(user => {
+            countHash[user._id] = user.pcount;
+            return user._id;
+        });
 
-                // Photo by comments
-                for (i = pcday.length; i--;) {
-                    pcommdayHash[pcday[i]._id] = pcday[i].ccount;
-                    pcdayarr.push(pcday[i]._id);
-                }
-                Photo.collection.find({ _id: { $in: pcdayarr }, s: 5 }, {
-                    _id: 1,
-                    cid: 1,
-                    file: 1,
-                    title: 1,
-                    ccount: 1
-                }, this.parallel());
-                for (i = pcweek.length; i--;) {
-                    pcommweekHash[pcweek[i]._id] = pcweek[i].ccount;
-                    pcweekarr.push(pcweek[i]._id);
-                }
-                Photo.collection.find({ _id: { $in: pcweekarr }, s: 5 }, {
-                    _id: 1,
-                    cid: 1,
-                    file: 1,
-                    title: 1,
-                    ccount: 1
-                }, this.parallel());
-                Photo.collection.find({ s: 5 }, { _id: 0, cid: 1, file: 1, title: 1, ccount: 1 }, {
-                    limit: limit, sort: [
-                        ['ccount', 'desc']
-                    ]
-                }, this.parallel());
+        return User.find({ _id: { $in: ids } }, { _id: 1, login: 1, avatar: 1, disp: 1, pcount: 1 }, { lean: true })
+            .exec().then(users => _.forEach(users, user => {
+                user.pcount = countHash[user._id];
+                user.online = session.usLogin[user.login] !== undefined;
+            }).sort(sortPcount));
+    });
 
-                // User by comments
-                for (i = ucday.length; i--;) {
-                    ucommdayHash[ucday[i]._id] = ucday[i].ccount;
-                    ucdayarr.push(ucday[i]._id);
-                }
-                User.collection.find({ _id: { $in: ucdayarr } }, {
-                    _id: 1,
-                    login: 1,
-                    avatar: 1,
-                    disp: 1,
-                    ccount: 1
-                }, this.parallel());
-                for (i = ucweek.length; i--;) {
-                    ucommweekHash[ucweek[i]._id] = ucweek[i].ccount;
-                    ucweekarr.push(ucweek[i]._id);
-                }
-                User.collection.find({ _id: { $in: ucweekarr } }, {
-                    _id: 1,
-                    login: 1,
-                    avatar: 1,
-                    disp: 1,
-                    ccount: 1
-                }, this.parallel());
-                User.collection.find({ ccount: { $gt: 0 } }, { _id: 0, login: 1, avatar: 1, disp: 1, ccount: 1 }, {
-                    limit: limit, sort: [
-                        ['ccount', 'desc']
-                    ]
-                }, this.parallel());
+    return Utils.memoizePromise(async function () {
+        const [pday, pweek, pall, pcday, pcweek, pcall, ucday, ucweek, ucall, upday, upweek, upall] = await * [
+            // Photo by views count
+            Photo.find(
+                { s: 5, vdcount: { $gt: 0 } },
+                { _id: 0, cid: 1, file: 1, title: 1, vdcount: 1 },
+                { lean: true, limit, sort: { vdcount: -1 } }
+            ).exec(),
+            Photo.find(
+                { s: 5, vwcount: { $gt: 0 } },
+                { _id: 0, cid: 1, file: 1, title: 1, vwcount: 1 },
+                { lean: true, limit, sort: { vwcount: -1 } }
+            ).exec(),
+            Photo.find(
+                { s: 5, vwcount: { $gt: 0 } },
+                { _id: 0, cid: 1, file: 1, title: 1, vcount: 1 },
+                { lean: true, limit, sort: { vcount: -1 } }
+            ).exec(),
 
-                // User by photos
-                for (i = upday.length; i--;) {
-                    updayHash[upday[i]._id] = upday[i].pcount;
-                    updayarr.push(upday[i]._id);
-                }
-                User.collection.find({ _id: { $in: updayarr } }, {
-                    _id: 1,
-                    login: 1,
-                    avatar: 1,
-                    disp: 1,
-                    pcount: 1
-                }, this.parallel());
-                for (i = upweek.length; i--;) {
-                    upweekHash[upweek[i]._id] = upweek[i].pcount;
-                    upweekarr.push(upweek[i]._id);
-                }
-                User.collection.find({ _id: { $in: upweekarr } }, {
-                    _id: 1,
-                    login: 1,
-                    avatar: 1,
-                    disp: 1,
-                    pcount: 1
-                }, this.parallel());
-                User.collection.find({ pcount: { $gt: 0 } }, { _id: 0, login: 1, avatar: 1, disp: 1, pcount: 1 }, {
-                    limit: limit, sort: [
-                        ['pcount', 'desc']
-                    ]
-                }, this.parallel());
-            },
-            Utils.cursorsExtract,
-            function (err, pday, pweek, pall, pcday, pcweek, pcall, ucday, ucweek, ucall, upday, upweek, upall) {
-                if (err) {
-                    return handler({ message: err && err.message, error: true });
-                }
-                var i;
+            // Photo by comments count
+            photosByCommentsCount(dayStart),
+            photosByCommentsCount(weekStart),
+            Photo.find(
+                { s: 5 }, { _id: 0, cid: 1, file: 1, title: 1, ccount: 1 },
+                { lean: true, limit, sort: { ccount: -1 } }
+            ).exec(),
 
-                for (i = pcday.length; i--;) {
-                    pcday[i].ccount = pcommdayHash[pcday[i]._id];
-                }
-                for (i = pcweek.length; i--;) {
-                    pcweek[i].ccount = pcommweekHash[pcweek[i]._id];
-                }
+            // Users by comments count
+            usersByCommentsCount(dayStart),
+            usersByCommentsCount(weekStart),
+            User.find(
+                { ccount: { $gt: 0 } }, { _id: 0, login: 1, avatar: 1, disp: 1, ccount: 1 },
+                { lean: true, limit, sort: { ccount: -1} }
+            ).exec().then(users => _.forEach(users, user => user.online = session.usLogin[user.login] !== undefined)),
 
-                for (i = ucday.length; i--;) {
-                    ucday[i].ccount = ucommdayHash[ucday[i]._id];
-                    ucday[i].online = session.usLogin[ucday[i].login] !== undefined;
-                }
-                for (i = ucweek.length; i--;) {
-                    ucweek[i].ccount = ucommweekHash[ucweek[i]._id];
-                    ucweek[i].online = session.usLogin[ucweek[i].login] !== undefined;
-                }
-                for (i = ucall.length; i--;) {
-                    ucall[i].online = session.usLogin[ucall[i].login] !== undefined;
-                }
+            // Users by photos count
+            usersByPhotosCount(dayStart),
+            usersByPhotosCount(weekStart),
+            User.find(
+                { pcount: { $gt: 0 } }, { _id: 0, login: 1, avatar: 1, disp: 1, pcount: 1 },
+                { lean: true, limit, sort: { pcount: -1 } }
+            ).exec().then(users => _.forEach(users, user => user.online = session.usLogin[user.login] !== undefined))
+        ];
 
-                for (i = upday.length; i--;) {
-                    upday[i].pcount = updayHash[upday[i]._id];
-                    upday[i].online = session.usLogin[upday[i].login] !== undefined;
-                }
-                for (i = upweek.length; i--;) {
-                    upweek[i].pcount = upweekHash[upweek[i]._id];
-                    upweek[i].online = session.usLogin[upweek[i].login] !== undefined;
-                }
-                for (i = upall.length; i--;) {
-                    upall[i].online = session.usLogin[upall[i].login] !== undefined;
-                }
+        return { pday, pweek, pall, pcday, pcweek, pcall, ucday, ucweek, ucall, upday, upweek, upall };
 
-                //console.log(Date.now() - st);
-                handler({
-                    pday: pday || [],
-                    pweek: pweek || [],
-                    pall: pall || [],
-                    pcday: pcday.sort(sortCcount),
-                    pcweek: pcweek.sort(sortCcount),
-                    pcall: pcall,
-                    ucday: ucday.sort(sortCcount),
-                    ucweek: ucweek.sort(sortCcount),
-                    ucall: ucall,
-                    upday: upday.sort(sortPcount),
-                    upweek: upweek.sort(sortPcount),
-                    upall: upall
-                });
-            }
-        );
-    }, ms('1m'));
+    }, memoizeInterval);
 }());
 
 /**
@@ -593,9 +457,13 @@ export function loadController(io) {
         });
 
         socket.on('giveRatings', function (data) {
-            giveRatings(function (resultData) {
-                socket.emit('takeRatings', resultData);
-            });
+            giveRatings(hs.usObj, data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (result) {
+                    socket.emit('takeRatings', result);
+                });
         });
 
         socket.on('giveStats', function () {
