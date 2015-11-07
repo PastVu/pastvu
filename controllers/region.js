@@ -329,7 +329,7 @@ async function calcRegionIncludes(cidOrRegion) {
 
     // First clear assignment of objects with coordinates to region
     const unsetObject = { $unset: { [level]: 1 } };
-    const [{n: photosCountBefore = 0 }, { n: commentsCountBefore }] = await* [
+    const [{n: photosCountBefore = 0 }, { n: commentsCountBefore = 0 }] = await* [
         Photo.update({ geo: { $exists: true }, [level]: region.cid }, unsetObject, { multi: true }).exec(),
         Comment.update({ geo: { $exists: true }, [level]: region.cid }, unsetObject, { multi: true }).exec()
     ];
@@ -534,7 +534,9 @@ async function changeRegionParentExternality(region, oldParentsArray, childLenAr
 
     // Calculate number of photos belongs to the region
     const countQuery = { ['r' + levelWas]: region.cid };
-    const [affectedPhotos = 0, affectedComments = 0] = await* [Photo.count(countQuery), Comment.count(countQuery)];
+    const [affectedPhotos, affectedComments] = await* [
+        Photo.count(countQuery).exec(), Comment.count(countQuery).exec()
+    ];
 
     let affectedUsers;
     let affectedMods;
@@ -933,7 +935,7 @@ async function removeRegion(iAm, data) {
         }
     }
 
-    const [affectedPhotos = 0, affectedComments = 0] = await* [
+    const [{ n: affectedPhotos = 0 }, { n: affectedComments = 0 }] = await* [
         // Update included photos
         Photo.update(objectsMatchQuery, objectsUpdateQuery, { multi: true }).exec(),
         // Update comments of included photos
