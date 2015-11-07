@@ -27,8 +27,8 @@ const giveRatings = (function () {
 
     // After selecting object by array of keys ($in) the sort order is not guaranteed,
     // so manually sort by indicator
-    const sortCcount = (a, b) => b.ccount > a.ccount ? -1 : b.ccount < a.ccount ? 1 : 0;
-    const sortPcount = (a, b) => b.pcount > a.pcount ? -1 : b.pcount < a.pcount ? 1 : 0;
+    const sortCcount = (a, b) => b.ccount > a.ccount ? 1 : b.ccount < a.ccount ? -1 : 0;
+    const sortPcount = (a, b) => b.pcount > a.pcount ? 1 : b.pcount < a.pcount ? -1 : 0;
 
     const photosByCommentsCount = $gt => Comment.aggregate([
         { $match: { stamp: { $gt }, del: null, hidden: null } },
