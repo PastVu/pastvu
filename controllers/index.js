@@ -180,7 +180,7 @@ const giveStats = (function () {
             Comment.count({ stamp: { $gt: dayStart }, del: null, hidden: null }).exec(),
             CommentN.count({ stamp: { $gt: dayStart }, del: null, hidden: null }).exec(),
             Comment.count({ stamp: { $gt: weekStart }, del: null, hidden: null }).exec(),
-            CommentN.count({ stamp: { $gt: weekStart }, del: null, hidden: null }).exec(),
+            CommentN.count({ stamp: { $gt: weekStart }, del: null, hidden: null }).exec()
         ];
 
         return {
@@ -219,55 +219,52 @@ async function giveIndexStats() {
     return stat;
 }
 
-/**
- * Новости на главной для анонимных в memoize
- */
-var giveIndexNewsAnonym = (function () {
-    var select = { _id: 0, user: 0, cdate: 0, tdate: 0, nocomments: 0 };
-    var options = { lean: true, limit: 3, sort: { pdate: -1 } };
+// News for index page
+const giveIndexNews = (function () {
+    const forAnonym = (function () {
+        const select = { _id: 0, user: 0, cdate: 0, tdate: 0, nocomments: 0 };
+        const options = { lean: true, limit: 3, sort: { pdate: -1 } };
 
-    return Utils.memoizeAsync(function (handler) {
-        var now = new Date();
-        News.find({
-            pdate: { $lte: now }, $or: [
-                { tdate: { $gt: now } },
-                { tdate: { $exists: false } }
-            ]
-        }, select, options, handler);
-    }, ms('1m'));
-}());
+        return Utils.memoizePromise(function () {
+            const now = new Date();
 
-/**
- * Новости на главной для авторизованного пользователя
- */
-var giveIndexNews = (function () {
-    var select = { user: 0, cdate: 0, tdate: 0, nocomments: 0 };
-    var options = { lean: true, limit: 3, sort: { pdate: -1 } };
-
-    return function (iAm) {
-        var now = new Date();
-
-        return News.findAsync(
-            {
+            return News.find({
                 pdate: { $lte: now }, $or: [
-                { tdate: { $gt: now } },
-                { tdate: { $exists: false } }
-            ]
-            }, select, options
-            )
-            .then(function (news) {
-                if (news.length) {
-                    return userObjectRelController.fillObjectByRels(news, iAm._id, 'news');
-                } else {
-                    return news;
-                }
-            })
-            .then(function (news) {
-                for (var i = news.length; i--;) {
-                    delete news[i]._id;
-                }
-                return { news: news };
-            });
+                    { tdate: { $gt: now } },
+                    { tdate: { $exists: false } }
+                ]
+            }, select, options).exec();
+        }, ms('1m'));
+    }());
+
+    const forRegistered = (function () {
+        const select = { user: 0, cdate: 0, tdate: 0, nocomments: 0 };
+        const options = { lean: true, limit: 3, sort: { pdate: -1 } };
+
+        return async function (iAm) {
+            const now = new Date();
+
+            const news = await News.find({
+                pdate: { $lte: now },
+                $or: [
+                    { tdate: { $gt: now } },
+                    { tdate: { $exists: false } }
+                ]
+            }, select, options).exec();
+
+            if (news.length) {
+                await userObjectRelController.fillObjectByRels(news, iAm.user._id, 'news');
+                news.forEach(n => delete n._id);
+            }
+
+            return news;
+        };
+    }());
+
+    return async function(iAm) {
+        const news = await (iAm.registered ? forRegistered(iAm) : forAnonym());
+
+        return { news };
     };
 }());
 
@@ -395,19 +392,13 @@ export function loadController(io) {
         const hs = socket.handshake;
 
         socket.on('giveIndexNews', function () {
-            if (hs.usObj.registered) {
-                giveIndexNews(hs.usObj.user)
-                    .catch(function (err) {
-                        return { message: err.message, error: true };
-                    })
-                    .then(function (result) {
-                        socket.emit('takeIndexNews', result);
-                    });
-            } else {
-                giveIndexNewsAnonym(function (err, news) {
-                    socket.emit('takeIndexNews', err ? { message: err.message, error: true } : { news: news });
+            giveIndexNews(hs.usObj)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (result) {
+                    socket.emit('takeIndexNews', result);
                 });
-            }
         });
 
         socket.on('giveAllNews', function () {
