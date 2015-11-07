@@ -136,11 +136,10 @@ const giveRatings = (function () {
     }, memoizeInterval);
 }());
 
-/**
- * Статистика
- */
-var giveStats = (function () {
-    var aggregateParams = [
+// Statistics
+const giveStats = (function () {
+    const memoizeInterval = ms('5m');
+    const aggregateParams = [
         { $match: { s: 5 } },
         { $group: { _id: '$year', count: { $sum: 1 } } },
         { $sort: { count: -1 } },
@@ -156,90 +155,69 @@ var giveStats = (function () {
         {
             $project: {
                 _id: 0,
-                pop: { year: "$popYear", count: "$popYearCount" },
-                unpop: { year: "$unpopYear", count: "$unpopYearCount" }
+                pop: { year: '$popYear', count: '$popYearCount' },
+                unpop: { year: '$unpopYear', count: '$unpopYearCount' }
             }
         }
     ];
 
-    return Utils.memoizeAsync(function (handler) {
-        var //st = Date.now(),
-            photoYear;
+    return Utils.memoizePromise(async function () {
+        const [
+            [photoYear],
+            pallCount, userCount, pdayCount, pweekCount, callCount,
+            cnallCount, cdayCount, cndayCount, cweekCount, cnweekCount
+        ] = await* [
+            Photo.aggregate(aggregateParams).exec(),
 
-        step(
-            //Сначала запускаем агрегацию по всем показателем, требующим расчет
-            function aggregation() {
-                Photo.collection.aggregate(aggregateParams, this);
-            },
-            function getAggregationResultObjects(err, pMaxYear) {
-                if (err) {
-                    return handler(err);
-                }
-                photoYear = pMaxYear[0];
+            Photo.count({ s: 5 }).exec(),
+            User.count({ active: true }).exec(),
 
-                Photo.count({ s: 5 }, this.parallel());
-                User.count({ active: true }, this.parallel());
+            Photo.count({ s: 5, adate: { $gt: dayStart } }).exec(),
+            Photo.count({ s: 5, adate: { $gt: weekStart } }).exec(),
 
-                Photo.count({ s: 5, adate: { $gt: dayStart } }, this.parallel());
-                Photo.count({ s: 5, adate: { $gt: weekStart } }, this.parallel());
+            Comment.count({ del: null, hidden: null }).exec(),
+            CommentN.count({ del: null, hidden: null }).exec(),
+            Comment.count({ stamp: { $gt: dayStart }, del: null, hidden: null }).exec(),
+            CommentN.count({ stamp: { $gt: dayStart }, del: null, hidden: null }).exec(),
+            Comment.count({ stamp: { $gt: weekStart }, del: null, hidden: null }).exec(),
+            CommentN.count({ stamp: { $gt: weekStart }, del: null, hidden: null }).exec(),
+        ];
 
-                Comment.count({ del: null, hidden: null }, this.parallel());
-                CommentN.count({ del: null, hidden: null }, this.parallel());
-                Comment.count({ stamp: { $gt: dayStart }, del: null, hidden: null }, this.parallel());
-                CommentN.count({ stamp: { $gt: dayStart }, del: null, hidden: null }, this.parallel());
-                Comment.count({ stamp: { $gt: weekStart }, del: null, hidden: null }, this.parallel());
-                CommentN.count({ stamp: { $gt: weekStart }, del: null, hidden: null }, this.parallel());
-            },
-            function (err, pallCount, userCount, pdayCount, pweekCount, callCount, cnallCount, cdayCount, cndayCount, cweekCount, cnweekCount) {
-                if (err) {
-                    return handler(err);
-                }
-                //console.log(Date.now() - st);
-                handler(
-                    null,
-                    {
-                        all: {
-                            pallCount: pallCount || 0,
-                            userCount: userCount || 0,
-                            photoYear: photoYear,
-                            pdayCount: pdayCount || 0,
-                            pweekCount: pweekCount || 0,
-                            callCount: (callCount || 0) + (cnallCount || 0),
-                            cdayCount: (cdayCount || 0) + (cndayCount || 0),
-                            cweekCount: (cweekCount || 0) + (cnweekCount || 0)
-                        }
-                    }
-                );
+        return {
+            all: {
+                photoYear, pallCount, userCount, pdayCount, pweekCount,
+                callCount: callCount + cnallCount,
+                cdayCount: cdayCount + cndayCount,
+                cweekCount: cweekCount + cnweekCount
             }
-        );
-    }, ms('5m'));
+        };
+    }, memoizeInterval);
 }());
 
-/**
- * Быстрая статистика
- */
-var giveFastStats = (function () {
+// Fast statistics
+const giveOnlineStats = (function () {
+    const memoizeInterval = ms('5s');
 
-    return Utils.memoizeAsync(function (handler) {
-        var usersCount = Utils.getObjectPropertyLength(session.usLogin),
-            sessions = session.sessConnected,
-            anonymCount = 0,
-            i;
+    return Utils.memoizePromise(function () {
+        const usersCount = _.size(session.usLogin);
+        const anonymCount = _.reduce(session.sessConnected, (result, session) => {
+            return session.user ? result : result + 1;
+        }, 0);
 
-        //Общее кол-во "на сайте" считаем по анонимным сессиям плюс кол-во вошедших пользователей,
-        //чтобы вычесть пользователей, залогиненных в нескольких сессиях
-        for (i in sessions) {
-            if (sessions[i] !== undefined && sessions[i].user === undefined) {
-                anonymCount++;
-            }
-        }
-
-        handler(null, {
+        return Promise.resolve({
             onall: anonymCount + usersCount,
             onreg: usersCount
         });
-    }, ms('15s'));
+    }, memoizeInterval);
 }());
+
+async function giveIndexStats() {
+    const [stat, statFast] = await* [giveStats(), giveOnlineStats()];
+
+    stat.common = statFast;
+
+    return stat;
+}
 
 /**
  * Новости на главной для анонимных в memoize
@@ -467,24 +445,13 @@ export function loadController(io) {
         });
 
         socket.on('giveStats', function () {
-            step(
-                function () {
-                    giveStats(this.parallel());
-                    giveFastStats(this.parallel());
-                },
-                function (err, stat, statFast) {
-                    if (err) {
-                        return socket.emit('takeStats', { message: err && err.message, error: true });
-                    }
-                    stat.common = {};
-                    for (var i in statFast) {
-                        if (statFast[i] !== undefined) {
-                            stat.common[i] = statFast[i];
-                        }
-                    }
-                    socket.emit('takeStats', stat);
-                }
-            );
+            giveIndexStats()
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (result) {
+                    socket.emit('takeStats', result);
+                });
         });
 
         socket.on('giveAbout', function () {
