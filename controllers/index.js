@@ -1,8 +1,6 @@
 import ms from 'ms';
 import _ from 'lodash';
-import step from 'step';
 import moment from 'moment';
-import Bluebird from 'bluebird';
 import Utils from '../commons/Utils';
 import * as session from './_session';
 import * as userObjectRelController from './userobjectrel';
@@ -268,122 +266,78 @@ const giveIndexNews = (function () {
     };
 }());
 
-/**
- * Архив новостей
- */
-var giveAllNews = function (iAm) {
-    return News.find({ pdate: { $lte: new Date() } }, { cdate: 0, tdate: 0, nocomments: 0 }, {
-            lean: true,
-            sort: { pdate: -1 }
-        })
-        .populate({ path: 'user', select: { _id: 0, login: 1, avatar: 1, disp: 1 } })
-        .execAsync()
-        .then(function (news) {
-            if (!iAm.registered || !news.length) {
-                return news;
-            } else {
-                //Если пользователь залогинен, заполняем кол-во новых комментариев для каждого объекта
-                return userObjectRelController.fillObjectByRels(news, iAm.user._id, 'news');
-            }
-        })
-        .then(function (news) {
-            for (var i = news.length; i--;) {
-                delete news[i]._id;
-            }
-            return { news: news };
-        });
+// News archive
+async function giveAllNews(iAm) {
+    const news = await News.find(
+        { pdate: { $lte: new Date() } },
+        { cdate: 0, tdate: 0, nocomments: 0 },
+        { lean: true, sort: { pdate: -1 } }
+    ).populate({ path: 'user', select: { _id: 0, login: 1, avatar: 1, disp: 1 } }).exec();
+
+    if (iAm.registered && !news.length) {
+        // If user is logged in, fill in count of new comments for each news
+        await userObjectRelController.fillObjectByRels(news, iAm.user._id, 'news');
+        news.forEach(n => delete n._id);
+    }
+
+    return { news };
 };
 
-function giveNewsFull(data, cb) {
-    if (!_.isObject(data) || !_.isNumber(data.cid) || data.cid < 1) {
-        return cb({ message: 'Bad params', error: true });
-    }
-    step(
-        function () {
-            News.collection.findOne({ cid: data.cid }, { _id: 0 }, this);
-        },
-        function (err, news) {
-            if (err) {
-                return cb({ message: err && err.message, error: true });
-            }
-            cb({ news: news });
-        }
-    );
-}
-
-/**
- * Отдача новости для её страницы
- * @param iAm
- * @param data
- * @param cb
- */
-var giveNewsPublic = Bluebird.method(function (iAm, data) {
-    if (!_.isObject(data) || !_.isNumber(data.cid)) {
+// Full news object for administration (create/edit)
+async function giveNewsFull({ cid } = {}) {
+    if (!_.isNumber(cid) || cid < 1) {
         throw { message: 'Bad params' };
     }
 
-    return News.findOneAsync(
-        { cid: data.cid },
-        { _id: 1, cid: 1, user: 1, pdate: 1, title: 1, txt: 1, ccount: 1, nocomments: 1 },
-        { lean: true }
-        )
-        .then(function (news) {
-            if (!news) {
-                throw { message: 'No such news' };
-            }
-            var userObj = session.getOnline(null, news.user);
+    const news = await News.findOne({ cid }, { _id: 0 }).exec();
 
-            if (userObj) {
-                news.user = {
-                    login: userObj.user.login, avatar: userObj.user.avatar, disp: userObj.user.disp, online: true
-                };
-                return news;
-            } else {
-                return User.findOneAsync({ _id: news.user }, { _id: 0, login: 1, avatar: 1, disp: 1 }, { lean: true })
-                    .then(function (user) {
-                        news.user = user;
-                        return news;
-                    });
-            }
-        })
-        .then(function (news) {
-            if (iAm.registered) {
-                return userObjectRelController.fillObjectByRels(news, iAm.user._id, 'news')
-                    .then(function (news) {
-                        // Обновляем время просмотра объекта пользователем
-                        userObjectRelController.setObjectView(news._id, iAm.user._id, 'news');
-                    })
-                    .then(function () {
-                        return news;
-                    });
-            } else {
-                return news;
-            }
-        })
-        .then(function (news) {
-            delete news._id;
-            return { news: news };
-        });
-});
+    return { news };
+}
 
-/**
- * Аватары для About
- */
-var giveAbout = (function () {
-    var select = { _id: 0, login: 1, avatar: 1 },
-        options = { lean: true };
+// Return news for its public page
+async function giveNewsPublic(iAm, { cid } = {}) {
+    if (!_.isNumber(cid) || cid < 1) {
+        throw { message: 'Bad params' };
+    }
 
-    return Utils.memoizeAsync(function (handler) {
-        User.find({ login: { $in: ['Ilya', 'Duche', 'klimashkin', 'dema501', 'abdulla_hasan'] } }, select, options, function (err, users) {
-            if (err || !users) {
-                users = [];
-            }
-            var result = {}, i;
-            for (i = users.length; i--;) {
-                result[users[i].login] = users[i].avatar || '/img/caps/avatar.png';
-            }
-            handler(result);
-        });
+    const news = await News.findOne(
+        { cid }, { _id: 1, cid: 1, user: 1, pdate: 1, title: 1, txt: 1, ccount: 1, nocomments: 1 }, { lean: true }
+    ).exec();
+
+    if (!news) {
+        throw { message: 'No such news' };
+    }
+
+    const userObj = session.getOnline(null, news.user);
+
+    if (userObj) {
+        news.user = Object.assign(_.pick(userObj.user, 'login', 'avatar', 'disp'), { online: true });
+    } else {
+        news.user = await User.findOne(
+            { _id: news.user }, { _id: 0, login: 1, avatar: 1, disp: 1 }, { lean: true }
+        ).exec();
+    }
+
+    if (iAm.registered) {
+        await userObjectRelController.fillObjectByRels(news, iAm.user._id, 'news');
+        // Update object view time by user
+        await userObjectRelController.setObjectView(news._id, iAm.user._id, 'news');
+    }
+
+    delete news._id;
+    return { news };
+};
+
+// Avatars for about
+const giveAbout = (function () {
+    const query = { login: { $in: ['Ilya', 'Duche', 'klimashkin', 'dema501', 'abdulla_hasan'] } };
+    const select = { _id: 0, login: 1, avatar: 1 };
+    const options = { lean: true };
+
+    return Utils.memoizePromise(async function () {
+        const users = await User.find(query, select, options).exec();
+
+        return _.transform(users, (result, user) => result[user.login] = user.avatar || '/img/caps/avatar.png', {});
     }, ms('1m'));
 }());
 
@@ -411,9 +365,13 @@ export function loadController(io) {
                 });
         });
         socket.on('giveNews', function (data) {
-            giveNewsFull(data, function (resultData) {
-                socket.emit('takeNews', resultData);
-            });
+            giveNewsFull(data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (result) {
+                    socket.emit('takeNews', result);
+                });
         });
         socket.on('giveNewsPublic', function (data) {
             giveNewsPublic(hs.usObj, data)
@@ -424,7 +382,6 @@ export function loadController(io) {
                     socket.emit('takeNewsPublic', result);
                 });
         });
-
         socket.on('giveRatings', function (data) {
             giveRatings(hs.usObj, data)
                 .catch(function (err) {
@@ -434,7 +391,6 @@ export function loadController(io) {
                     socket.emit('takeRatings', result);
                 });
         });
-
         socket.on('giveStats', function () {
             giveIndexStats()
                 .catch(function (err) {
@@ -444,11 +400,14 @@ export function loadController(io) {
                     socket.emit('takeStats', result);
                 });
         });
-
         socket.on('giveAbout', function () {
-            giveAbout(function (resultData) {
-                socket.emit('takeAbout', resultData);
-            });
+            giveAbout()
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (result) {
+                    socket.emit('takeAbout', result);
+                });
         });
     });
 };
