@@ -304,7 +304,7 @@ export const core = {
                 }
 
                 var isMine = User.isEqual(iAm.user, photo.user);
-                var userObj = isMine ? iAm : session.getOnline(null, photo.user);
+                var userObj = isMine ? iAm : session.getOnline({ userId: photo.user });
                 var promiseProps = {};
                 var regionFields;
 
@@ -508,7 +508,7 @@ var giveNewPhotosLimit = Bluebird.method(function (iAm, data) {
     if (!iAm.registered || iAm.user.login !== data.login && !iAm.isAdmin) {
         throw { message: msg.deny };
     }
-    var userObj = session.getOnline(data.login);
+    var userObj = session.getOnline({ login: data.login });
     var promise;
 
     if (userObj) {
@@ -631,10 +631,10 @@ const createPhotos = Bluebird.method(function (socket, data) {
             photoConverter.addPhotos(cids, 1);
 
             user.pfcount = user.pfcount + data.length;
-            return session.saveEmitUser(iAm, socket);
+            return session.saveEmitUser({ usObj: iAm, excludeSocket: socket });
         })
         .then(function () {
-            return { message: data.length + ' photo successfully saved', cids: cids };
+            return { message: data.length + ' photo successfully saved', cids };
         });
 });
 
@@ -924,13 +924,13 @@ var photoUpdate = function (iAm, photo, stamp) {
 // Обновляем счетчики количества у пользователя
 var userPCountUpdate = function (user, newDelta, publicDelta, inactiveDelta) {
     var userId = user._id || user;
-    var ownerObj = session.getOnline(null, userId);
+    var ownerObj = session.getOnline({ userId });
 
     if (ownerObj) {
         ownerObj.user.pfcount = ownerObj.user.pfcount + (newDelta || 0);
         ownerObj.user.pcount = ownerObj.user.pcount + (publicDelta || 0);
         ownerObj.user.pdcount = ownerObj.user.pdcount + (inactiveDelta || 0);
-        return session.saveEmitUser(ownerObj);
+        return session.saveEmitUser({ usObj: ownerObj });
     } else {
         return User.update({ _id: userId }, {
             $inc: {

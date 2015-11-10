@@ -4,8 +4,9 @@
 var ms = require('ms');
 
 module.exports = {
-    lang: 'ru', // Language: ru, en
     env: 'development', // Enviroment: development, testing, production
+    locales: ['en', 'ru'], // List of supported locales. First one is the default locale, if user transferred nothing
+    lang: 'ru', // Language: ru, en
 
     listen: {
         // Accept only this host. If the hostname is omitted,
@@ -43,6 +44,7 @@ module.exports = {
     serveStore: true, // Tell app.js serve out store public folder
 
     logPath: './logs', // Folder for logs
+    logLongDuration: ms('2s'),
     serveLog: true, // Tell app.js serve out its logs folder (path: "logPath")
     serveLogAuth: {
         user: 'pastvu',

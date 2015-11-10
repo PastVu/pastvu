@@ -321,7 +321,7 @@ const notifierConveyor = (function () {
  * @param userId
  */
 async function sendUserNotice(userId) {
-    const userObj = session.getOnline(null, userId);
+    const userObj = session.getOnline({ userId });
     const user = await (userObj ? Promise.resolve(userObj.user) :
         User.findOne({ _id: userId }, { _id: 1, login: 1, disp: 1, email: 1 }, { lean: true }).exec());
 

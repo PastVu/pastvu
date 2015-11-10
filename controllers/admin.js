@@ -163,7 +163,7 @@ async function saveUserCredentials(iAm, { login, role, regions } = {}) {
         throw { message: 'Administrators can not change their role :)' };
     }
 
-    const usObjOnline = sessionController.getOnline(login);
+    const usObjOnline = sessionController.getOnline({ login });
     const user = usObjOnline ? usObjOnline.user :
         await User.findOne({ login }).populate('mod_regions', { _id: 0, cid: 1 }).exec();
 
@@ -207,7 +207,7 @@ async function saveUserCredentials(iAm, { login, role, regions } = {}) {
     await user.save();
 
     if (usObjOnline) {
-        sessionController.emitUser(usObjOnline);
+        sessionController.emitUser({ usObj: usObjOnline });
     }
 
     return {};

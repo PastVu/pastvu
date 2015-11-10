@@ -1307,7 +1307,7 @@ async function saveUserHomeRegion(iAm, data) {
         throw { message: msg.badParams };
     }
 
-    const userObjOnline = _session.getOnline(login);
+    const userObjOnline = _session.getOnline({ login });
     let region;
     let user;
 
@@ -1337,7 +1337,7 @@ async function saveUserHomeRegion(iAm, data) {
             await _session.regetUser(userObjOnline, true);
         }
     } else if (userObjOnline) {
-        await _session.emitUser(userObjOnline);
+        await _session.emitUser({ usObj: usObjOnline });
     }
 
     return { saved: 1, region: regionHome };
@@ -1366,7 +1366,7 @@ async function saveUserRegions(socket, data) {
         }
     }
 
-    const userObjOnline = _session.getOnline(login);
+    const userObjOnline = _session.getOnline({ login });
     const user = userObjOnline ? userObjOnline.user : await User.findOne({ login }).exec();
 
     if (!user) {

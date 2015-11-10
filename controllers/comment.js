@@ -820,7 +820,7 @@ async function createComment(socket, data) {
         comment.level = 0;
     }
 
-    session.emitUser(iAm, null, socket);
+    session.emitUser({ usObj: iAm, excludeSocket: socket });
     subscrController.commentAdded(obj._id, iAm.user, stamp);
 
     return { comment, frag };
@@ -960,11 +960,11 @@ async function removeComment(socket, data) {
     const promises = [obj.save()];
 
     for (const [userId, count] of usersCountMap) {
-        const userObj = session.getOnline(null, userId);
+        const userObj = session.getOnline({ userId });
 
         if (userObj !== undefined) {
             userObj.user.ccount = userObj.user.ccount - count;
-            promises.push(session.saveEmitUser(userObj));
+            promises.push(session.saveEmitUser({ usObj: userObj }));
         } else {
             promises.push(User.update({ _id: userId }, { $inc: { ccount: -count } }).exec());
         }
@@ -1126,10 +1126,10 @@ async function restoreComment(socket, { cid, type } = {}) {
     const promises = [obj.save()];
 
     for (const [userId, ccount] of usersCountMap) {
-        const userObj = session.getOnline(null, userId);
+        const userObj = session.getOnline({ userId });
         if (userObj !== undefined) {
             userObj.user.ccount = userObj.user.ccount + ccount;
-            promises.push(session.saveEmitUser(userObj));
+            promises.push(session.saveEmitUser({ usObj: userObj }));
         } else {
             promises.push(User.update({ _id: userId }, { $inc: { ccount } }).exec());
         }
@@ -1471,11 +1471,11 @@ export async function changeObjComments(obj, hide, iAm) {
 
     for (const [userId, ccount] of usersCountMap) {
         const cdelta = hide ? -ccount : ccount;
-        const userObj = session.getOnline(null, userId);
+        const userObj = session.getOnline({ userId });
 
         if (userObj !== undefined) {
             userObj.user.ccount = userObj.user.ccount + cdelta;
-            session.saveEmitUser(userObj);
+            session.saveEmitUser({ usObj: userObj });
         } else {
             User.update({ _id: userId }, { $inc: { ccount: cdelta } }).exec();
         }

@@ -1,0 +1,4 @@
+{
+    "main": "./server",
+    "browser": "./client"
+}

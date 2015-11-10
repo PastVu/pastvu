@@ -29,7 +29,7 @@ const msg = {
 };
 
 const getUserByLogin = async function (login) {
-    const usObjOnline = session.getOnline(login);
+    const usObjOnline = session.getOnline({ login });
     const user = usObjOnline ? usObjOnline.user : await User.findOne({ login }).exec();
 
     if (!user) {
@@ -45,7 +45,7 @@ async function giveUser(iAm, { login } = {}) {
         throw { message: msg.badParams };
     }
 
-    const userObj = session.getOnline(login);
+    const userObj = session.getOnline({ login });
     const itsMe = iAm.registered && iAm.user.login === login;
 
     const user = userObj ? session.getPlainUser(userObj.user) : await User.findOne(
@@ -103,7 +103,7 @@ async function saveUser(iAm, { login, ...data } = {}) {
     await user.save();
 
     if (usObjOnline) {
-        session.emitUser(usObjOnline);
+        session.emitUser({ usObj: usObjOnline });
     }
 
     return { saved: 1 };
@@ -160,7 +160,7 @@ async function changeSetting(socket, { login, key, val } = {}) {
     await user.save();
 
     if (usObjOnline) {
-        session.emitUser(usObjOnline, null, socket);
+        session.emitUser({ usObj: usObjOnline, excludeSocket: socket });
     }
 
     return { key, val };
@@ -191,7 +191,7 @@ async function changeDispName(iAm, { login, showName } = {}) {
     await user.save();
 
     if (usObjOnline) {
-        session.emitUser(usObjOnline);
+        session.emitUser({ usObj: usObjOnline });
     }
 
     return { saved: 1, disp: user.disp };
@@ -240,7 +240,7 @@ async function setWatersignCustom(socket, { login, watersign }) {
         await user.save();
 
         if (usObjOnline) {
-            session.emitUser(usObjOnline, null, socket);
+            session.emitUser({ usObj: usObjOnline, excludeSocket: socket });
         }
     }
 
@@ -291,7 +291,7 @@ async function changeEmail(iAm, { login, email, pass } = {}) {
     await user.save();
 
     if (usObjOnline) {
-        session.emitUser(usObjOnline);
+        session.emitUser({ usObj: usObjOnline });
     }
 
     return { email: user.email };
@@ -364,7 +364,7 @@ async function changeAvatar(iAm, { login, file, type } = {}) {
     }
 
     if (usObjOnline) {
-        session.emitUser(usObjOnline);
+        session.emitUser({ usObj: usObjOnline });
     }
 
     return { avatar: user.avatar };
@@ -397,7 +397,7 @@ async function delAvatar(iAm, { login } = {}) {
         await user.save();
 
         if (usObjOnline) {
-            session.emitUser(usObjOnline);
+            session.emitUser({ usObj: usObjOnline });
         }
     }
 
@@ -431,7 +431,7 @@ async function setUserWatermarkChange(socket, { login, nowaterchange } = {}) {
         await user.save();
 
         if (usObjOnline) {
-            session.emitUser(usObjOnline, null, socket);
+            session.emitUser({ usObj: usObjOnline, excludeSocket: socket });
         }
     }
 
@@ -462,7 +462,7 @@ async function saveUserRanks(iAm, { login, ranks } = {}) {
     await user.save();
 
     if (usObjOnline) {
-        session.emitUser(usObjOnline);
+        session.emitUser({ usObj: usObjOnline });
     }
 
     return { saved: true, ranks: user.ranks || [] };
@@ -517,7 +517,7 @@ async function saveUserRules(iAm, { login, rules } = {}) {
     await user.save();
 
     if (usObjOnline) {
-        session.emitUser(usObjOnline);
+        session.emitUser({ usObj: usObjOnline });
     }
 
     return {

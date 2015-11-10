@@ -14,41 +14,59 @@ Utils.isOdd = function (n) {
     return Math.abs(n) % 2 === 1;
 };
 
-//Проверяет user-agent на совпадение с передаными разрешенными версиями
-//Если такого браузера нет в списке проверок, возвращается true
+// Check user-gent for a match with the specified versions
+// If such browser not specified - returns true
 Utils.checkUserAgent = (function () {
-    var browserAcceptFromVerionDefault = { 'IE': '>=9.0.0' };
+    const browserVerionsDefault = { badbrowserList: {}, polyfillFreelist: {} };
 
-    return function (browserAcceptFromVerion) {
-        var semver = require('semver'),
-            cache = require('lru-cache')({ max: 1500 }); //Кэш для строк проверенных юзер-агентов, чтобы парсить уникальный юзер-агент только раз
+    return function (browserVerions) {
+        const semver = require('semver');
 
-        if (!browserAcceptFromVerion) {
-            browserAcceptFromVerion = browserAcceptFromVerionDefault;
-        }
+        // Cache for checked user-agents, to parse a unique user-agent only once
+        const cache = require('lru-cache')({ max: 1500 });
 
-        //If you are paranoid and always want your RegExp library to be up to date to match with agent,
-        //this will async load the database from the https://raw.github.com/tobie/ua-parser/master/regexes.yaml
-        //and compile it to a proper JavaScript supported format.
-        //If it fails to compile or load it from the remote location it will just fall back silently to the shipped version.
+        // If you are paranoid and always want your RegExp library to be up to date to match with agent,
+        // this will async load the database from the https://raw.github.com/tobie/ua-parser/master/regexes.yaml
+        // and compile it to a proper JavaScript supported format.
+        // If it fails to compile or load it from the remote location it will just fall back silently to the shipped version.
         useragent(true);
 
-        return function (userAgent) {
-            var agent, acceptVersion, result;
+        if (!browserVerions) {
+            browserVerions = browserVerionsDefault;
+        }
 
+        const badbrowserList = browserVerions.badbrowserList;
+        const polyfillFreelist = browserVerions.polyfillFreelist;
+
+        return function (userAgent) {
             if (!userAgent) {
                 return true;
             }
 
-            result = cache.peek(userAgent);
+            let result = cache.peek(userAgent);
+
             if (result === undefined) {
-                agent = useragent.parse(userAgent);
-                acceptVersion = browserAcceptFromVerion[agent.family];
+                const agent = useragent.parse(userAgent);
+                const family = agent.family;
+                const version = Number(agent.major) || 0;
+
+                // Check version match with semver, so we should have semver string guaranteed
+                const versionString = `${version}.${(Number(agent.minor) || 0)}.${(Number(agent.patch) || 0)}`;
+
+                // Check for bad browser
+                const browser = badbrowserList[family];
+                const isBadbrowser = browser ? semver.satisfies(versionString, browser) : false;
 
                 result = {
-                    agent: agent,
-                    accept: acceptVersion === undefined || semver.satisfies((Number(agent.major) || 0) + '.' + (Number(agent.minor) || 0) + '.' + (Number(agent.patch) || 0), acceptVersion)
+                    agent,
+                    version,
+                    badbrowser: isBadbrowser,
+                    polyfills: isBadbrowser ? {} : _.transform(polyfillFreelist, (result, browsers, polyfill) => {
+                        const browser = browsers[family];
+                        result[polyfill] = !browser || !semver.satisfies(versionString, browser);
+                    })
                 };
+
                 cache.set(userAgent, result);
             }
             return result;
@@ -105,13 +123,13 @@ Utils.dummyFn = function () {
 };
 
 Utils.randomString = (function () {
-    var charsAll = String('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz').split(''),
-        charsLow = String('0123456789abcdefghijklmnopqrstuvwxyz').split('');
+    const charsAll = String('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz').split('');
+    const charsLow = String('0123456789abcdefghijklmnopqrstuvwxyz').split('');
 
     return function (resultLen, lowOnly) {
-        var chars = lowOnly ? charsLow : charsAll,
-            charsLen = chars.length,
-            str = '';
+        const chars = lowOnly ? charsLow : charsAll;
+        const charsLen = chars.length;
+        let str = '';
 
         if (!resultLen) {
             resultLen = Math.random() * charsLen + 1 >> 0;
@@ -209,6 +227,54 @@ Utils.memoizePromise = function (func, ttl) {
     return function () {
         return memoizedPromise || resetPromise();
     };
+};
+
+/**
+ * Transforms a complex object (with nested objects) in a simple (flatten with one level).
+ * Return new object
+ *
+ * @example:
+ *     flattenObject({
+ *       a: {
+ *         b: {
+ *           c: 'test1',
+ *           d: 'test2
+ *         }
+ *       },
+ *       e: 1,
+ *       d: null
+ *     }); // ==>
+ *
+ *     {
+ *       'a.b.c': 'test1',
+ *       'a.b.d': 'test2',
+ *       'e': 1,
+ *       'd': null
+ *     }
+ *
+ * @param {Object} obj
+ * @param {Object} [opts] Options
+ * @param {Function} [opts.filter] Function of filtration nested objects.
+ *                                 If specified and returns 'true', need to transform. If 'false' - no transformation
+ * @param {String} [prefix]  Prefix, which will be putted before all keys
+ * @param {Object} [resultObj={}]  Объект, в который будут записываться преобразованные свойства.
+ * @returns {Object}
+ */
+Utils.flattenObject = (obj, opts, prefix, resultObj) => {
+    const filter = opts && opts.filter;
+
+    prefix = prefix || '';
+    resultObj = resultObj || Object.create(null);
+
+    _.forOwn(obj, (val, key) => {
+        if (_.isPlainObject(val) && (!filter || filter(val))) {
+            Utils.flattenObject(val, opts, resultObj, prefix + key + '.');
+        } else {
+            resultObj[prefix + key] = val;
+        }
+    });
+
+    return resultObj;
 };
 
 Utils.linkifyMailString = function (inputText, className) {

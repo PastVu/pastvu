@@ -1,4 +1,6 @@
 export default {
+    UNHANDLED_ERROR: 'UNHANDLED_ERROR',
+
     region: {
         maxLevel: 5 // 6 levels of regions: 0..5
     },

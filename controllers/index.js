@@ -308,7 +308,7 @@ async function giveNewsPublic(iAm, { cid } = {}) {
         throw { message: 'No such news' };
     }
 
-    const userObj = session.getOnline(null, news.user);
+    const userObj = session.getOnline({ userId: news.user });
 
     if (userObj) {
         news.user = Object.assign(_.pick(userObj.user, 'login', 'avatar', 'disp'), { online: true });
@@ -340,6 +340,16 @@ const giveAbout = (function () {
         return _.transform(users, (result, user) => result[user.login] = user.avatar || '/img/caps/avatar.png', {});
     }, ms('1m'));
 }());
+
+export default {
+    giveIndexNews,
+    giveAllNews,
+    giveNewsFull,
+    giveNewsPublic,
+    giveRatings,
+    giveIndexStats,
+    giveAbout
+};
 
 export function loadController(io) {
     io.sockets.on('connection', function (socket) {
