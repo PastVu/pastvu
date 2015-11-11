@@ -26,7 +26,7 @@ const ERROR_TYPES = {
 // Locales Map for checking their presence after header parsing
 const localesMap = new Map(config.locales.map(locale => [locale, locale]));
 // Default locale is the first one from config
-const localeDefault = config.locale[0];
+const localeDefault = config.locales[0];
 // Method for parsing and checking user-gent
 export const checkUserAgent = Utils.checkUserAgent(config.browsers);
 
@@ -762,7 +762,7 @@ export async function handleConnection(ip, headers, overHTTP, req) {
     if (sessWaitingSelect[sid]) {
         track = 'Session searching have been already started, waiting for that promise';
     } else {
-        sessWaitingSelect[sid] = new Promise(async (resolve, reject) => {
+        sessWaitingSelect[sid] = new Promise(async function (resolve, reject) {
             try {
                 let session = await Session.findOne({ key: sid }).populate('user').exec();
 

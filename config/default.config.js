@@ -51,6 +51,9 @@ module.exports = {
         pass: 'pastvu'
     },
 
+    // Serve out webapi method with http, for mobile clients for example
+    serveHTTPApi: true,
+
     // Compress response data with gzip/deflate.
     // If using nginx before nodejs, recommend to use gzip there and switch off here
     gzip: true,

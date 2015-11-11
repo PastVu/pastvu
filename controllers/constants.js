@@ -1,4 +1,5 @@
 export default {
+    NO_SUCH_METHOD: 'NO_SUCH_METHOD',
     UNHANDLED_ERROR: 'UNHANDLED_ERROR',
 
     region: {

@@ -5,6 +5,7 @@ import Utils from '../commons/Utils';
 import * as session from './_session';
 import { clientParams } from './settings';
 import { getRegionsArrFromCache } from './region';
+import { handleHTTPRequest, registerHTTPAPIHandler } from '../app/request';
 import { givePhotoForPage, givePhotoPrevNextCids, parseFilter } from './photo';
 
 export function loadController(app) {
@@ -91,11 +92,15 @@ export function loadController(app) {
         /^\/(?:confirm)\/.+$/ // Path with mandatory continuation (/example/*)
     ]
         .forEach(function (route) {
-            app.get(route, session.handleHTTPRequest, setStaticHeaders, appMainHandler);
+            app.get(route, handleHTTPRequest, setStaticHeaders, appMainHandler);
         });
 
-    app.get(/^\/p\/(\d{1,7})$/, session.handleHTTPRequest, setStaticHeaders, getPhotoForPage, appMainHandler);
-    app.get(/^\/ps(?:\/(\d{1,6}))?\/?$/, session.handleHTTPRequest, setStaticHeaders, getRegionForGallery, appMainHandler);
+    app.get(/^\/p\/(\d{1,7})$/, handleHTTPRequest, setStaticHeaders, getPhotoForPage, appMainHandler);
+    app.get(/^\/ps(?:\/(\d{1,6}))?\/?$/, handleHTTPRequest, setStaticHeaders, getRegionForGallery, appMainHandler);
+
+    if (config.serveHTTPApi) {
+        app.use('/api2', require('body-parser').json({ limit: '4mb' }), registerHTTPAPIHandler);
+    }
 
     function appMainHandler(req, res) {
         const nojs = checkNoJS(req);
@@ -231,7 +236,7 @@ export function loadController(app) {
     }
 
     [/^\/(?:admin)(?:\/.*)?$/].forEach(route => {
-        app.get(route, session.handleHTTPRequest, setStaticHeaders, appAdminHandler);
+        app.get(route, handleHTTPRequest, setStaticHeaders, appAdminHandler);
     });
     function appAdminHandler(req, res) {
         const nojs = checkNoJS(req);

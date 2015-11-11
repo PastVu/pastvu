@@ -1,3 +1,4 @@
+/*
 const _ = require('lodash');
 const ms = require('ms');
 
@@ -40,4 +41,4 @@ module.exports = {
         return socket.off(SOCKET_NOTIFICATION_EVENT_PREFIX + event, cb);
     }
 
-};
+};*/

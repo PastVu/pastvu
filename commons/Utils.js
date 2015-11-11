@@ -17,6 +17,8 @@ Utils.isOdd = function (n) {
 // Check user-gent for a match with the specified versions
 // If such browser not specified - returns true
 Utils.checkUserAgent = (function () {
+    'use strict';
+
     const browserVerionsDefault = { badbrowserList: {}, polyfillFreelist: {} };
 
     return function (browserVerions) {
@@ -123,6 +125,8 @@ Utils.dummyFn = function () {
 };
 
 Utils.randomString = (function () {
+    'use strict';
+
     const charsAll = String('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz').split('');
     const charsLow = String('0123456789abcdefghijklmnopqrstuvwxyz').split('');
 
@@ -261,6 +265,8 @@ Utils.memoizePromise = function (func, ttl) {
  * @returns {Object}
  */
 Utils.flattenObject = (obj, opts, prefix, resultObj) => {
+    'use strict';
+
     const filter = opts && opts.filter;
 
     prefix = prefix || '';
@@ -268,7 +274,7 @@ Utils.flattenObject = (obj, opts, prefix, resultObj) => {
 
     _.forOwn(obj, (val, key) => {
         if (_.isPlainObject(val) && (!filter || filter(val))) {
-            Utils.flattenObject(val, opts, resultObj, prefix + key + '.');
+            Utils.flattenObject(val, opts, prefix + key + '.', resultObj);
         } else {
             resultObj[prefix + key] = val;
         }

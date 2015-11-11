@@ -5,11 +5,11 @@ import config from '../config';
 import Utils from '../commons/Utils';
 import sioRouter from 'socket.io-events';
 import webApi from './webapi';
-import * as sessionController from './../controllers/_session';
+import constants from '../controllers/constants';
+import * as sessionController from '../controllers/_session';
 
 const logger = log4js.getLogger('request');
 const loggerLong = log4js.getLogger('requestLong');
-const constants = require('./web-api/constants');
 
 const errtypes = {
     NO_HEADERS: 'Bad request - no header or user agent',

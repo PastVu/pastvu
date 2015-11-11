@@ -1,15 +1,13 @@
 import _ from 'lodash';
 import util from 'util';
 import log4js from 'log4js';
-import config from '../config';
 import methods from './methods';
+import config from '../../config';
 import Utils from '../../commons/Utils';
 import APIError from '../errors/APIError';
 import constants from '../../controllers/constants';
 
 const methodsHash = Utils.flattenObject(methods);
-const LOG_CATEGORY = 'webapi';
-const commonLog = log4js.getLogger(LOG_CATEGORY);
 
 function unhandledErrorFilter(error) {
     return !(error instanceof APIError);
@@ -20,6 +18,8 @@ function unhandledErrorFilter(error) {
  * In result will be logger "webapi-photo", "webapi-comments", "webapi-region" and etc.
  */
 const getMethodLogger = (function () {
+    const LOG_CATEGORY = 'webapi';
+    const commonLog = log4js.getLogger(LOG_CATEGORY);
     const loggersMap = _.transform(methodsHash, (map, value, name) => {
         map.set(name, log4js.getLogger(`${LOG_CATEGORY}-${name.split('.', 1)[0]}`));
     }, new Map());
@@ -38,7 +38,7 @@ const inspect = (function () {
 export default async function callMethod(methodName, params) {
     const start = Date.now();
     const method = methodsHash[methodName];
-    const logger = method ? getMethodLogger(methodName) : commonLog;
+    const logger = getMethodLogger(methodName);
 
     // Метод можно вызвать как с дополнительными параметрами для создания контекста,
     // так и уже в контексте этих параметров (например, из другого метода)
