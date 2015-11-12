@@ -31,7 +31,7 @@ const localeDefault = config.locales[0];
 export const checkUserAgent = Utils.checkUserAgent(config.browsers);
 
 // Create cookie session object
-const createSidCookieObj = (function () {
+export const createSidCookieObj = (function () {
     const key = SESSION_COOKIE_KEY;
     const domain = config.client.hostname;
     const cookieMaxAge = SESSION_SHELF_LIFE / 1000;
@@ -186,8 +186,8 @@ function userObjectTreatUser(usObj) {
     return popUserRegions(usObj);
 }
 
-// Create and save session to db. Doesn't wait save result
-function createSession(ip, headers, browser) {
+// Create and save session to db
+async function createSession(ip, headers, browser) {
     const session = new Session({
         key: Utils.randomString(12),
         stamp: new Date(),
@@ -203,8 +203,7 @@ function createSession(ip, headers, browser) {
         }
     });
 
-    session.save();
-    return session;
+    return await session.save();
 }
 
 // Update session in db, if it was select from db at entrance
@@ -263,7 +262,7 @@ async function addSessionToHashes(session) {
     sessWaitingConnect[session.key] = session;
     const usObj = await addSessionToUserObject.call(this, session);
 
-    return [usObj, session];
+    return usObj;
 }
 
 // Remove session from hashes, and remove usObj if it doesn't contains sessiona anymore
@@ -678,7 +677,7 @@ const checkExpiredSessions = (function () {
     };
 }());
 
-// Handler of http-request or websocket-connection for session create/select
+// Handler of http-request or websocket-connection for session and usObj create/select
 export async function handleConnection(ip, headers, overHTTP, req) {
     if (!headers || !headers['user-agent']) {
         throw { type: ERROR_TYPES.NO_HEADERS }; // If session doesn't contain header or user-agent - deny
@@ -708,44 +707,20 @@ export async function handleConnection(ip, headers, overHTTP, req) {
     const sid = cookieObj[SESSION_COOKIE_KEY]; // Get session key from cookie
     let session;
     let track;
-
-    const handleConnectionFinish = data => {
-        if (!data.usObj) {
-            logger.error(
-                `${this.ridMark} Handling incoming ${overHTTP ? 'http' : 'websocket'} connection`,
-                `finished with empty usObj, incoming sid: ${sid}, track: ${track}`
-            );
-            throw { type: ERROR_TYPES.CANT_POPUSER_SESSION, agent: browser.agent };
-        }
-
-        const session = data.session;
-
-        data.browser = browser;
-        data.cookie = cookieObj;
-
-        if (!overHTTP) {
-            // Mark session as active (connected by websocket)
-            sessConnected[session.sessionId] = session;
-            // Delete from hash of waiting connection sessions
-            delete sessWaitingConnect[session.sessionId];
-        }
-
-        return data;
-    };
+    let usObj;
 
     if (!sid) {
         track = 'No incoming sid, creating new session';
+
         session = await createSession.call(this, ip, headers, browser);
-
-        return handleConnectionFinish(await addSessionToHashes.call(this, session));
-    }
-
-    session = sessConnected[sid] || sessWaitingConnect[sid]; // Try to find session among selected sessions
-
-    if (session) {
-        track = `Session found in hash of ${sessConnected[sid] ? 'connected' : 'waiting connect'} sessions`;
+        usObj = await addSessionToHashes.call(this, session);
+    } else if ((sessConnected[sid] || sessWaitingConnect[sid]) && usSid[sid]) {
         // If key exists and such session already in hash, then just get this session
         // logger.info(this.ridMark, 'handleConnection', 'Get session from hash');
+
+        track = `Session found among ${sessConnected[sid] ? 'connected' : 'waiting connect'} sessions`;
+        session = sessConnected[sid] || sessWaitingConnect[sid];
+        usObj = usSid[sid];
 
         if (overHTTP) {
             // If client made http request again (open new browser tab), update session data, to set current stamp,
@@ -753,41 +728,58 @@ export async function handleConnection(ip, headers, overHTTP, req) {
             // And check if locale changed
             await updateSession.call(this, session, ip, headers, browser);
         }
-
-        return handleConnectionFinish({ session, usObj: usSid[sid], firstAdding: false });
-    }
-
-    // If session key is exists, but session not in hashes,
-    // then select session from db, but if it's already selecting just return request promise
-    if (sessWaitingSelect[sid]) {
-        track = 'Session searching have been already started, waiting for that promise';
     } else {
-        sessWaitingSelect[sid] = new Promise(async function (resolve, reject) {
-            try {
-                let session = await Session.findOne({ key: sid }).populate('user').exec();
+        // If session key is exists, but session not in hashes,
+        // then select session from db, but if it's already selecting just wait promise
 
-                // If session is found, update data in db and populate user
-                if (session) {
-                    await updateSession.call(this, session, ip, headers, browser);
-                } else {
-                    // If session with such key doesn't exist, create new one
-                    track = `Session haven't been found in db by incoming sid, creating new one`;
-                    session = await createSession.call(this, ip, headers, browser);
+        if (!sessWaitingSelect[sid]) {
+            sessWaitingSelect[sid] = new Promise(async function (resolve, reject) {
+                try {
+                    let session = await Session.findOne({ key: sid }).populate('user').exec();
+
+                    // If session is found, update data in db and populate user
+                    if (session) {
+                        await updateSession.call(this, session, ip, headers, browser);
+                    } else {
+                        // If session with such key doesn't exist, create new one
+                        track = `Session haven't been found in db by incoming sid, creating new one`;
+                        session = await createSession.call(this, ip, headers, browser);
+                    }
+
+                    const usObj = await addSessionToHashes.call(this, session);
+
+                    resolve({ session, usObj });
+                } catch (err) {
+                    reject(err);
+                } finally {
+                    // Remove promise from hash of waiting connect by session key, anyway - success or error
+                    delete sessWaitingSelect[sid];
                 }
+            }.bind(this)); // We can't use arrow function as async yet, so make bind
+        } else {
+            track = 'Session searching have been already started, waiting for that promise';
+        }
 
-                await addSessionToHashes.call(this, session);
-
-                resolve(handleConnectionFinish(session));
-            } catch (err) {
-                reject(err);
-            } finally {
-                // Remove promise from hash of waiting connect by session key, anyway - success or error
-                delete sessWaitingSelect[sid];
-            }
-        });
+        ({ session, usObj } = await sessWaitingSelect[sid]);
     }
 
-    return sessWaitingSelect[sid];
+    if (!usObj || !session) {
+        logger.error(
+            `${this.ridMark} Handling incoming ${overHTTP ? 'http' : 'websocket'} connection`,
+            `finished with empty ${!usObj ? 'usObj' : 'session'}, incoming sid: ${sid}, track: ${track}`
+        );
+        throw { type: ERROR_TYPES.CANT_GET_SESSION, agent: browser.agent };
+    }
+
+    if (!overHTTP) {
+        // Mark session as active (connected by websocket)
+        sessConnected[session.sessionId] = session;
+        // Delete from hash of waiting connection sessions
+        delete sessWaitingConnect[session.sessionId];
+    }
+
+    return { usObj, session, browser, cookie: cookieObj };
+
 };
 
 function langChange(socket, data) {
