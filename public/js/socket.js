@@ -287,7 +287,7 @@ define(['module'], function (module) {
 				manager.on('reconnect', function () {
 					console.log('ReConnected to server');
 					socket.connected = true;
-					manager.emit('giveInitData', location.pathname); //После реконнекта заново запрашиваем initData
+					manager.emit('session.giveInitData', location.pathname); //После реконнекта заново запрашиваем initData
 					noConnWaitHide(); //Скрываем сообщение об отсутствии соединения
 					emitQueued(); //Отправляем все сообщения emit, которые ожидали восстановления соединения
 				});

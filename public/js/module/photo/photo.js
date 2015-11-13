@@ -455,7 +455,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }
 
             socket.once('takePhoto', finish);
-            socket.emit('givePhoto', { cid: cid, forEdit: edit });
+            socket.emit('photo.giveForPage', { cid: cid, forEdit: edit });
         },
 
         loggedInHandler: function () {
@@ -1141,7 +1141,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
                     waitingForKey = false;
                 });
-                socket.emit('getDownloadKey', { cid: cid });
+                socket.emit('photo.getDownloadKey', { cid: cid });
             };
 
             return function (data, event) {
@@ -1338,7 +1338,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             ga('send', 'event', 'photo', 'edit', 'photo edit ' + (error ? 'error' : 'success'));
                         }
                     });
-                    socket.emit('savePhoto', {
+                    socket.emit('photo.save', {
                         cid: cid,
                         cdate: p.cdate(),
                         s: p.s(),
@@ -1364,7 +1364,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 socket.once('revokePhotoCallback', function (data) {
                     cb.call(ctx, data);
                 });
-                socket.emit('revokePhoto', {
+                socket.emit('photo.revoke', {
                     cid: cid,
                     cdate: self.p.cdate(),
                     s: self.p.s(),
@@ -1452,7 +1452,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         self.exe(false);
                     }
                 });
-                socket.emit('readyPhoto', { cid: cid, cdate: p.cdate(), s: p.s(), ignoreChange: !!confirmer });
+                socket.emit('photo.ready', { cid: cid, cdate: p.cdate(), s: p.s(), ignoreChange: !!confirmer });
             }());
         },
 
@@ -1503,7 +1503,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             self.exe(false);
                         }
                     });
-                    socket.emit('revisionPhoto', {
+                    socket.emit('photo.toRevision', {
                         cid: cid,
                         cdate: p.cdate(),
                         s: p.s(),
@@ -1560,7 +1560,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             self.exe(false);
                         }
                     });
-                    socket.emit('rejectPhoto', {
+                    socket.emit('photo.reject', {
                         cid: cid,
                         cdate: p.cdate(),
                         s: p.s(),
@@ -1617,7 +1617,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             ga('send', 'event', 'photo', 'rereject', 'photo rereject ' + (error ? 'error' : 'success'));
                         }
                     });
-                    socket.emit('rerejectPhoto', {
+                    socket.emit('photo.rereject', {
                         cid: cid,
                         cdate: p.cdate(),
                         s: p.s(),
@@ -1668,7 +1668,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         self.exe(false);
                     }
                 });
-                socket.emit('approvePhoto', { cid: cid, cdate: p.cdate(), s: p.s(), ignoreChange: !!confirmer });
+                socket.emit('photo.approve', { cid: cid, cdate: p.cdate(), s: p.s(), ignoreChange: !!confirmer });
             }());
         },
 
@@ -1725,7 +1725,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         self.exe(false);
                     }
                 });
-                socket.emit('disablePhoto', {
+                socket.emit('photo.activateDeactivate', {
                     cid: cid,
                     cdate: p.cdate(),
                     s: p.s(),
@@ -1792,7 +1792,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             ga('send', 'event', 'photo', 'reject', 'photo delete ' + (error ? 'error' : 'success'));
                         }
                     });
-                    socket.emit('removePhoto', {
+                    socket.emit('photo.remove', {
                         cid: cid,
                         cdate: p.cdate(),
                         s: p.s(),
@@ -1849,7 +1849,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             ga('send', 'event', 'photo', 'restore', 'photo restore ' + (error ? 'error' : 'success'));
                         }
                     });
-                    socket.emit('restorePhoto', {
+                    socket.emit('photo.restore', {
                         cid: cid,
                         cdate: p.cdate(),
                         s: p.s(),
@@ -1886,7 +1886,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 }
                 this.exe(false);
             }, this);
-            socket.emit('convertPhotos', [
+            socket.emit('photo.convert', [
                 { cid: this.p.cid() }
             ]);
         },
@@ -1920,7 +1920,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     cb.call(ctx, data);
                 }
             }, this);
-            socket.emit('giveUserPhotosAround', { cid: this.p.cid(), limitL: left, limitR: right });
+            socket.emit('photo.giveUserPhotosAround', { cid: this.p.cid(), limitL: left, limitR: right });
         },
         applyUserRibbon: function () {
             var n = this.thumbNUser();
@@ -1975,7 +1975,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     cb.call(ctx, data);
                 }
             }, this);
-            socket.emit('giveNearestPhotos', { geo: geo, limit: limit, except: except });
+            socket.emit('photo.giveNearestPhotos', { geo: geo, limit: limit, except: except });
         },
         applyNearestRibbon: function () {
             this.nearestRibbon(this.nearestRibbonOrigin);

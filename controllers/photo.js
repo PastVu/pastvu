@@ -7,11 +7,12 @@ import moment from 'moment';
 import config from '../config';
 import Bluebird from 'bluebird';
 import Utils from '../commons/Utils';
+import { waitDb } from './connection';
 import constants from './constants.js';
 import * as session from './_session';
 import * as regionController from './region';
-import * as photoCluster from './photoCluster';
-import * as photoConverter from './photoConverter';
+import * as cluster from './cluster';
+import * as converter from './converter';
 import * as userObjectRelController from './userobjectrel';
 import { changeObjComments } from './comment';
 import { getReasonHashFromCache } from './reason';
@@ -439,7 +440,7 @@ export const core = {
         }
 
         if (data.z < 17) {
-            promise = year ? photoCluster.getBoundsByYear(data) : photoCluster.getBounds(data);
+            promise = year ? cluster.getBoundsByYear(data) : cluster.getBounds(data);
         } else {
             promises = [];
 
@@ -504,7 +505,9 @@ export const core = {
     }
 };
 
-var giveNewPhotosLimit = Bluebird.method(function (iAm, data) {
+var giveNewLimit = Bluebird.method(function (data) {
+    const { hadshake: { usObj: iAm } } = this;
+
     if (!iAm.registered || iAm.user.login !== data.login && !iAm.isAdmin) {
         throw { message: msg.deny };
     }
@@ -565,8 +568,9 @@ function getUserWaterSign(user, photo) {
  * @param data Объект или массив фотографий
  */
 //var dirs = ['w', 'nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'aero'];
-const createPhotos = Bluebird.method(function (socket, data) {
-    var iAm = socket.handshake.usObj;
+const create = Bluebird.method(function (data) {
+    const { socket, hadshake: { usObj: iAm } } = this;
+
     if (!iAm.registered) {
         throw { message: msg.deny };
     }
@@ -606,7 +610,7 @@ const createPhotos = Bluebird.method(function (socket, data) {
             return Bluebird.all(data.map(function (item, i) {
                 var photo = new Photo({
                     cid: next + i,
-                    user: user,
+                    user,
                     file: item.fullfile,
                     ldate: new Date(now + i * 10), //Время загрузки каждого файла инкрементим на 10мс для правильной сортировки
                     sdate: new Date(now + i * 10 + shift10y), //Новые фотографии должны быть всегда сверху
@@ -628,7 +632,7 @@ const createPhotos = Bluebird.method(function (socket, data) {
             }));
         })
         .then(function () {
-            photoConverter.addPhotos(cids, 1);
+            converter.addPhotos(cids, 1);
 
             user.pfcount = user.pfcount + data.length;
             return session.saveEmitUser({ usObj: iAm, excludeSocket: socket });
@@ -660,14 +664,14 @@ function photoToMap(photo, geoPhotoOld, yearPhotoOld) {
     return Bluebird.join(
         PhotoMap.updateAsync({ cid: photo.cid }, $update, { upsert: true }),
         // Отправляем на кластеризацию
-        photoCluster.clusterPhoto(photo, geoPhotoOld, yearPhotoOld)
+        cluster.clusterPhoto(photo, geoPhotoOld, yearPhotoOld)
     );
 }
 
 // Remove photo from map
 function photoFromMap(photo) {
     return Bluebird.all([
-        photoCluster.declusterPhoto(photo),
+        cluster.declusterPhoto(photo),
         PhotoMap.removeAsync({ cid: photo.cid })
     ]);
 }
@@ -955,11 +959,10 @@ const changePublicPhotoExternality = async function (photo, iAm, makePublic) {
 
 /**
  * Отзыв собственной фотографии
- * @param {Object} socket Сокет пользователя
  * @param {Object} data
  */
-var revokePhoto = function (socket, data) {
-    var iAm = socket.handshake.usObj;
+var revoke = function (data) {
+    const { hadshake: { usObj: iAm } } = this;
 
     return photoEditPrefetch(iAm, data, 'revoke')
         .bind({})
@@ -994,11 +997,10 @@ var revokePhoto = function (socket, data) {
 
 /**
  * Говорим, что фото готово к премодерации и публикации
- * @param {Object} socket Сокет пользователя
  * @param {Object} data
  */
-var readyPhoto = function (socket, data) {
-    var iAm = socket.handshake.usObj;
+var readyPhoto = function (data) {
+    const { hadshake: { usObj: iAm } } = this;
 
     return photoEditPrefetch(iAm, data, 'ready')
         .bind({})
@@ -1073,7 +1075,9 @@ var toRevision = Bluebird.method(function (socket, data) {
 });
 
 // Reject waiting photo by moderator/administrator
-async function rejectPhoto(iAm, data) {
+async function reject(data) {
+    const { hadshake: { usObj: iAm } } = this;
+
     if (_.isEmpty(data.reason)) {
         throw { message: msg.needReason };
     }
@@ -1113,7 +1117,9 @@ async function rejectPhoto(iAm, data) {
 }
 
 // Restore rejected photo to ready status (waitnig for moderation)
-async function rerejectPhoto(iAm, data) {
+async function rereject(data) {
+    const { hadshake: { usObj: iAm } } = this;
+
     if (_.isEmpty(data.reason)) {
         throw { message: msg.needReason };
     }
@@ -1153,11 +1159,10 @@ async function rerejectPhoto(iAm, data) {
 
 /**
  * Публикация (подтверждение) новой фотографии
- * @param {Object} socket Сокет пользователя
  * @param {Object} data
  */
-var approvePhoto = function (socket, data) {
-    var iAm = socket.handshake.usObj;
+var approve = function (data) {
+    const { hadshake: { usObj: iAm } } = this;
 
     return photoEditPrefetch(iAm, data, 'approve')
         .bind({})
@@ -1255,7 +1260,9 @@ var activateDeactivate = function (socket, data) {
  * @param {Object} iAm Объект пользователя
  * @param {Object} data
  */
-var removePhotoIncoming = Bluebird.method(function (iAm, data) {
+var removeIncoming = Bluebird.method(function (data) {
+    const { hadshake: { usObj: iAm } } = this;
+
     if (!iAm.registered) {
         throw { message: msg.deny };
     }
@@ -1265,11 +1272,10 @@ var removePhotoIncoming = Bluebird.method(function (iAm, data) {
 
 /**
  * Удаление фотографии
- * @param {Object} socket Сокет пользователя
  * @param {Object} data
  */
-var removePhoto = Bluebird.method(function (socket, data) {
-    var iAm = socket.handshake.usObj;
+var remove = Bluebird.method(function (data) {
+    const { hadshake: { usObj: iAm } } = this;
 
     if (_.isEmpty(data.reason)) {
         throw { message: msg.needReason };
@@ -1313,11 +1319,10 @@ var removePhoto = Bluebird.method(function (socket, data) {
 
 /**
  * Восстановление фотографии
- * @param {Object} socket Сокет пользователя
  * @param {Object} data
  */
-var restorePhoto = Bluebird.method(function (socket, data) {
-    var iAm = socket.handshake.usObj;
+var restore = Bluebird.method(function (data) {
+    const { hadshake: { usObj: iAm } } = this;
 
     if (_.isEmpty(data.reason)) {
         throw { message: msg.needReason };
@@ -1358,13 +1363,11 @@ var restorePhoto = Bluebird.method(function (socket, data) {
 
 /**
  * Отдаем фотографию для её страницы
- * @param {Object} iAm Объект пользователя
  * @param {Object} data
  */
-export const givePhotoForPage = Bluebird.method(function (iAm, data) {
-    if (!_.isObject(data)) {
-        throw ({ message: msg.badParams });
-    }
+export const giveForPage = Bluebird.method(function (data = {}) {
+    const { hadshake: { usObj: iAm } } = this;
+
     var cid = Number(data.cid);
     if (!cid || cid < 1) {
         throw ({ message: msg.badParams });
@@ -1470,22 +1473,26 @@ var givePhotos = Bluebird.method(function (iAm, filter, data, user_id) {
 });
 
 // Отдаем последние публичные фотографии на главной
-var givePhotosPublicIndex = (function () {
-    var options = { skip: 0, limit: 30 };
-    var filter = { s: [status.PUBLIC] };
+const givePublicIndex = (function () {
+    const options = { skip: 0, limit: 30 };
+    const filter = { s: [status.PUBLIC] };
 
-    return function (iAm) {
+    return function () {
+        const { hadshake: { usObj: iAm } } = this;
+
         // Всегда выбираем заново, т.к. могут быть региональные фильтры
         return givePhotos(iAm, filter, options);
     };
 }());
 
 // Отдаем последние публичные "Где это?" фотографии для главной
-var givePhotosPublicNoGeoIndex = (function () {
-    var options = { skip: 0, limit: 30 };
-    var filter = { geo: ['0'], s: [status.PUBLIC] };
+const givePublicNoGeoIndex = (function () {
+    const options = { skip: 0, limit: 30 };
+    const filter = { geo: ['0'], s: [status.PUBLIC] };
 
-    return function (iAm) {
+    return function () {
+        const { hadshake: { usObj: iAm } } = this;
+
         // Выбираем заново, т.к. могут быть региональные фильтры
         return givePhotos(iAm, filter, options);
     };
@@ -1581,10 +1588,8 @@ export function parseFilter(filterString) {
 }
 
 // Отдаем общую галерею
-var givePhotosPS = Bluebird.method(function (iAm, data) {
-    if (!_.isObject(data)) {
-        throw { message: msg.badParams };
-    }
+var givePS = Bluebird.method(function (data = {}) {
+    const { hadshake: { usObj: iAm } } = this;
 
     var filter = data.filter ? parseFilter(data.filter) : {};
     if (!filter.s) {
@@ -1595,10 +1600,12 @@ var givePhotosPS = Bluebird.method(function (iAm, data) {
 });
 
 // Отдаем галерею пользователя
-var giveUserPhotos = Bluebird.method(function (iAm, data) {
-    if (!_.isObject(data) || !data.login) {
+const giveUserGallery = Bluebird.method(function (data = {}) {
+    if (!data.login) {
         throw { message: msg.badParams };
     }
+
+    const { hadshake: { usObj: iAm } } = this;
 
     return User.getUserID(data.login)
         .then(function (user_id) {
@@ -1618,14 +1625,13 @@ var giveUserPhotos = Bluebird.method(function (iAm, data) {
 });
 
 // Отдаем последние фотографии, ожидающие подтверждения
-var givePhotosForApprove = Bluebird.method(function (iAm, data) {
+var giveForApprove = Bluebird.method(function (data = {}) {
+    const { hadshake: { usObj: iAm } } = this;
+
     var query = { s: status.READY };
 
     if (!iAm.registered || iAm.user.role < 5) {
         throw { message: msg.deny };
-    }
-    if (!_.isObject(data)) {
-        throw { message: msg.badParams };
     }
     if (iAm.isModerator) {
         _.assign(query, iAm.mod_rquery);
@@ -1652,7 +1658,9 @@ var givePhotosForApprove = Bluebird.method(function (iAm, data) {
  * @param {Object} iAm Объект пользователя
  * @param {Object} data
  */
-var giveUserPhotosAround = Bluebird.method(function (iAm, data) {
+var giveUserPhotosAround = Bluebird.method(function (data = {}) {
+    const { hadshake: { usObj: iAm } } = this;
+
     var cid = Number(data && data.cid);
     var limitL = Math.min(Number(data.limitL), 100);
     var limitR = Math.min(Number(data.limitR), 100);
@@ -1691,8 +1699,8 @@ var giveUserPhotosAround = Bluebird.method(function (iAm, data) {
 });
 
 // Берем массив ближайших фотографий
-var giveNearestPhotos = Bluebird.method(function (data) {
-    if (!data || !Utils.geo.checkLatLng(data.geo)) {
+var giveNearestPhotos = Bluebird.method(function (data = {}) {
+    if (!Utils.geo.checkLatLng(data.geo)) {
         throw { message: msg.badParams };
     }
     data.limit = Number(data.limit);
@@ -1705,7 +1713,9 @@ var giveNearestPhotos = Bluebird.method(function (data) {
 });
 
 // Отдаем непубличные фотографии пользователя
-var giveUserPhotosPrivate = Bluebird.method(function (iAm, data) {
+var giveUserPhotosPrivate = Bluebird.method(function (data = {}) {
+    const { hadshake: { usObj: iAm } } = this;
+
     if (!iAm.registered || (iAm.user.role < 5 && iAm.user.login !== data.login)) {
         throw { message: msg.deny };
     }
@@ -1737,14 +1747,13 @@ var giveUserPhotosPrivate = Bluebird.method(function (iAm, data) {
 });
 
 // Отдаем новые фотографии
-var givePhotosFresh = Bluebird.method(function (iAm, data) {
+var giveFresh = Bluebird.method(function (data = {}) {
+    const { hadshake: { usObj: iAm } } = this;
+
     if (!iAm.registered ||
         (!data.login && iAm.user.role < 5) ||
         (data.login && iAm.user.role < 5 && iAm.user.login !== data.login)) {
         throw { message: msg.deny };
-    }
-    if (!_.isObject(data)) {
-        throw { message: msg.badParams };
     }
 
     return (data.login ? User.getUserID(data.login) : Bluebird.resolve)
@@ -1780,7 +1789,9 @@ var givePhotosFresh = Bluebird.method(function (iAm, data) {
 });
 
 // Отдаем разрешенные can для фото
-var giveCanPhoto = Bluebird.method(function (iAm, data) {
+var giveCan = Bluebird.method(function (data = {}) {
+    const { hadshake: { usObj: iAm } } = this;
+
     var cid = Number(data.cid);
 
     if (!cid) {
@@ -1954,7 +1965,9 @@ var photoValidate = function (newValues, oldValues, can) {
  * @param {Object} iAm Объект пользователя
  * @param {Object} data
  */
-var savePhoto = function (iAm, data) {
+var save = function (data) {
+    const { hadshake: { usObj: iAm } } = this;
+
     var oldGeo;
     var newGeo;
     var geoToNull;
@@ -2134,7 +2147,7 @@ var savePhoto = function (iAm, data) {
             }
 
             if (this.reconvert) {
-                photoConverter.addPhotos([{ cid: this.photo.cid }], 2);
+                converter.addPhotos([{ cid: this.photo.cid }], 2);
             }
 
             // Заново выбираем данные для отображения
@@ -2155,8 +2168,8 @@ var savePhoto = function (iAm, data) {
 
 // Фотографии и кластеры по границам
 // {z: Масштаб, bounds: [[]]}
-var getBounds = Bluebird.method(function (data) {
-    if (!_.isObject(data) || !Array.isArray(data.bounds) || !data.z) {
+var getByBounds = Bluebird.method(function (data = {}) {
+    if (!Array.isArray(data.bounds) || !data.z) {
         throw { message: msg.badParams };
     }
     // Реверсируем geo границы баунда
@@ -2172,7 +2185,9 @@ var getBounds = Bluebird.method(function (data) {
 });
 
 // Sends selected photos for convert (By admin, whom pressed reconvert button on photo page)
-var convertPhotos = Bluebird.method(function (iAm, data) {
+var convert = Bluebird.method(function (data) {
+    const { hadshake: { usObj: iAm } } = this;
+
     if (!iAm.isAdmin) {
         throw { message: msg.deny };
     }
@@ -2205,12 +2220,14 @@ var convertPhotos = Bluebird.method(function (iAm, data) {
                 Photo.updateAsync({ cid: { $in: cids } }, { $set: { convqueue: true } }, { multi: true });
             }
 
-            return photoConverter.addPhotos(converterData, 3);
+            return converter.addPhotos(converterData, 3);
         });
 });
 
 // Sends all photo for convert
-var convertPhotosAll = Bluebird.method(function (iAm, data) {
+var convertAll = Bluebird.method(function (data) {
+    const { hadshake: { usObj: iAm } } = this;
+
     if (!iAm.isAdmin) {
         throw { message: msg.deny };
     }
@@ -2234,13 +2251,15 @@ var convertPhotosAll = Bluebird.method(function (iAm, data) {
         }
     }
 
-    return photoConverter.addPhotosAll(params);
+    return converter.addPhotosAll(params);
 });
 
 // Sends user's photo for convert
 var usersWhoConvertingNonIndividualPhotos = {};
-var convertUserPhotos = Bluebird.method(function (iAm, data) {
-    if (!_.isObject(data) || !data.login) {
+var convertByUser = Bluebird.method(function (data = {}) {
+    const { hadshake: { usObj: iAm } } = this;
+
+    if (!data.login) {
         throw { message: msg.badParams };
     }
     if (!iAm.registered || iAm.user.login !== data.login && !iAm.isAdmin) {
@@ -2375,7 +2394,7 @@ var convertUserPhotos = Bluebird.method(function (iAm, data) {
                     }))
                 )
                 .then(function () {
-                    return photoConverter.addPhotosAll({
+                    return converter.addPhotosAll({
                         login: data.login,
                         priority: 2,
                         region: region,
@@ -2397,8 +2416,10 @@ var convertUserPhotos = Bluebird.method(function (iAm, data) {
         });
 });
 
-var resetIndividualDownloadOrigin = Bluebird.method(function (iAm, data) {
-    if (!_.isObject(data) || !data.login) {
+var resetIndividualDownloadOrigin = Bluebird.method(function (data) {
+    const { hadshake: { usObj: iAm } } = this;
+
+    if (!data.login) {
         throw { message: msg.badParams };
     }
     if (!iAm.registered || iAm.user.login !== data.login && !iAm.isAdmin) {
@@ -2647,11 +2668,11 @@ export function buildPhotosQuery(filter, forUserId, iAm) {
     return result;
 }
 
-//Обнуляет статистику просмотров за день и неделю
-var planResetDisplayStat = (function () {
+// Обнуляет статистику просмотров за день и неделю
+const planResetDisplayStat = (function () {
     function resetStat() {
         var setQuery = { vdcount: 0 },
-            needWeek = moment.utc().day() === 1; //Начало недели - понедельник
+            needWeek = moment.utc().day() === 1; // Начало недели - понедельник
 
         if (needWeek) {
             setQuery.vwcount = 0;
@@ -2675,11 +2696,12 @@ var planResetDisplayStat = (function () {
  * @param iAm Объект пользователя сессии
  * @param data Объект
  */
-var giveObjHist = Bluebird.method(function (iAm, data) {
-    if (!_.isObject(data) || !Number(data.cid) || !Number(data.fetchId)) {
+var giveObjHist = Bluebird.method(function (data = {}) {
+    if (!Number(data.cid) || !Number(data.fetchId)) {
         throw { message: msg.badParams };
     }
 
+    const { hadshake: { usObj: iAm } } = this;
     var cid = Number(data.cid);
     var showDiff = !!data.showDiff;
 
@@ -2797,8 +2819,10 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
         });
 });
 
-var getDownloadKey = Bluebird.method(function (iAm, data) {
-    var cid = Number(_.get(data, 'cid'));
+var getDownloadKey = Bluebird.method(function (data = {}) {
+    const { hadshake: { usObj: iAm } } = this;
+
+    var cid = Number(data.cid);
 
     if (!iAm.registered) {
         throw { message: msg.deny };
@@ -2840,324 +2864,38 @@ var getDownloadKey = Bluebird.method(function (iAm, data) {
     return {};
 });
 
-export function loadController(io) {
-    photoCluster.loadController(io);
-    photoConverter.loadController(io);
-
-    planResetDisplayStat(); // Планируем очистку статистики
-
-    io.sockets.on('connection', function (socket) {
-        const hs = socket.handshake;
-
-        socket.on('createPhoto', function (data) {
-            createPhotos(socket, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('createPhotoCallback', resultData);
-                });
-        });
-
-        socket.on('revokePhoto', function (data) {
-            revokePhoto(socket, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('revokePhotoCallback', resultData);
-                });
-        });
-
-        socket.on('readyPhoto', function (data) {
-            readyPhoto(socket, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('readyPhotoResult', resultData);
-                });
-        });
-
-        socket.on('revisionPhoto', function (data) {
-            toRevision(socket, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('revisionPhotoResult', resultData);
-                });
-        });
-
-        socket.on('rejectPhoto', function (data) {
-            rejectPhoto(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('rejectPhotoResult', resultData);
-                });
-        });
-        socket.on('rerejectPhoto', function (data) {
-            rerejectPhoto(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('rerejectPhotoResult', resultData);
-                });
-        });
-
-        socket.on('approvePhoto', function (data) {
-            approvePhoto(socket, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('approvePhotoResult', resultData);
-                });
-        });
-
-        socket.on('disablePhoto', function (data) {
-            activateDeactivate(socket, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('disablePhotoResult', resultData);
-                });
-        });
-
-        socket.on('removePhoto', function (data) {
-            removePhoto(socket, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('removePhotoResult', resultData);
-                });
-        });
-
-        socket.on('removePhotoInc', function (data) {
-            removePhotoIncoming(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('removePhotoIncCallback', resultData);
-                });
-        });
-
-        socket.on('restorePhoto', function (data) {
-            restorePhoto(socket, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('restorePhotoResult', resultData);
-                });
-        });
-
-        socket.on('givePhoto', function (data) {
-            givePhotoForPage(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takePhoto', resultData);
-                });
-        });
-
-        socket.on('givePhotosPublicIndex', function () {
-            givePhotosPublicIndex(hs.usObj)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takePhotosPublicIndex', resultData);
-                });
-        });
-
-        socket.on('givePhotosPublicNoGeoIndex', function () {
-            givePhotosPublicNoGeoIndex(hs.usObj)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takePhotosPublicNoGeoIndex', resultData);
-                });
-        });
-
-        socket.on('givePhotos', function (data) {
-            givePhotosPS(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takePhotos', resultData);
-                });
-        });
-
-        socket.on('giveUserPhotos', function (data) {
-            giveUserPhotos(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeUserPhotos', resultData);
-                });
-        });
-
-        socket.on('givePhotosForApprove', function (data) {
-            givePhotosForApprove(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takePhotosForApprove', resultData);
-                });
-        });
-
-        socket.on('giveUserPhotosAround', function (data) {
-            giveUserPhotosAround(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeUserPhotosAround', resultData);
-                });
-        });
-
-        socket.on('giveUserPhotosPrivate', function (data) {
-            giveUserPhotosPrivate(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeUserPhotosPrivate', resultData);
-                });
-        });
-
-        socket.on('givePhotosFresh', function (data) {
-            givePhotosFresh(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takePhotosFresh', resultData);
-                });
-        });
-
-        socket.on('giveNearestPhotos', function (data) {
-            giveNearestPhotos(data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeNearestPhotos', resultData);
-                });
-        });
-
-        socket.on('giveCanPhoto', function (data) {
-            giveCanPhoto(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeCanPhoto', resultData);
-                });
-        });
-
-        socket.on('savePhoto', function (data) {
-            savePhoto(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('savePhotoResult', resultData);
-                });
-        });
-
-        socket.on('giveObjHist', function (data) {
-            giveObjHist(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true, fetchId: data && data.fetchId };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeObjHist', resultData);
-                });
-        });
-
-        socket.on('getBounds', function (data) {
-            getBounds(data)
-                .catch(function (err) {
-                    return { message: err.message, error: true, startAt: data.startAt };
-                })
-                .then(function (resultData) {
-                    socket.emit('getBoundsResult', resultData);
-                });
-        });
-
-        socket.on('convertPhotos', function (data) {
-            convertPhotos(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('convertPhotosResult', resultData);
-                });
-        });
-
-        socket.on('convertPhotosAll', function (data) {
-            convertPhotosAll(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('convertPhotosAllResult', resultData);
-                });
-        });
-        socket.on('convertUserPhotos', function (data) {
-            convertUserPhotos(hs.usObj, data)
-                .catch(function (err) {
-                    logger.error('convertUserPhotos ERROR with data', hs.usObj.user && hs.usObj.user.login, data);
-                    logger.trace(err);
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('convertUserPhotosResult', resultData);
-                });
-        });
-        socket.on('resetIndividualDownloadOrigin', function (data) {
-            resetIndividualDownloadOrigin(hs.usObj, data)
-                .catch(function (err) {
-                    logger.error('resetIndividualDownloadOrigin ERROR with data', hs.usObj.user && hs.usObj.user.login, data);
-                    logger.trace(err);
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('resetIndividualDownloadOriginResult', resultData);
-                });
-        });
-
-        socket.on('giveNewPhotosLimit', function (data) {
-            giveNewPhotosLimit(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeNewPhotosLimit', resultData);
-                });
-        });
-
-        socket.on('getDownloadKey', function (data) {
-            getDownloadKey(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('getDownloadKeyResult', resultData);
-                });
-        });
-    });
+export default {
+    create,
+    revoke,
+    readyPhoto,
+    toRevision,
+    reject,
+    rereject,
+    approve,
+    activateDeactivate,
+    remove,
+    removeIncoming,
+    restore,
+    giveForPage,
+    givePublicIndex,
+    givePublicNoGeoIndex,
+    givePS,
+    giveUserGallery,
+    giveForApprove,
+    giveUserPhotosAround,
+    giveUserPhotosPrivate,
+    giveFresh,
+    giveNearestPhotos,
+    giveCan,
+    save,
+    giveObjHist,
+    getByBounds,
+    convert,
+    convertAll,
+    convertByUser,
+    resetIndividualDownloadOrigin,
+    giveNewLimit,
+    getDownloadKey
 };
+
+waitDb.then(planResetDisplayStat); // Plan statistic clean up

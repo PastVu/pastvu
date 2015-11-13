@@ -291,7 +291,7 @@ define(
                     cb.call(ctx, error, data);
                 }, this);
 
-                socket.emit('giveObjHist', { cid: this.cid, showDiff: this.showDiff(), fetchId: this.fetchId });
+                socket.emit('photo.giveObjHist', { cid: this.cid, showDiff: this.showDiff(), fetchId: this.fetchId });
             }
         });
     });

@@ -297,7 +297,7 @@ define([
 									}.bind(this));
 								}
 							}, _this);
-							socket.emit('clusterAll', {params: arr, conditions: _this.saveParams});
+							socket.emit('cluster.recalcAll', {params: arr, conditions: _this.saveParams});
 
 							$noty.$message.children().html('Данные отправлены на сервер для пересчета.<br>Вы можете закрыть это окно - данные расчитываются на сервере.<br>Этот диалог "отлипнет" при получении результата расчета с сервера');
 							if ($noty.$buttons && $noty.$buttons.find) {

@@ -24,7 +24,7 @@ define(['underscore', 'Params', 'socket!', 'knockout', 'm/_moduleCliche', 'globa
 					this.modal.$curtain.addClass('showModalCurtain');
 				}
 			}, this);
-			socket.emit('giveAbout');
+			socket.emit('index.giveAbout');
 		},
 		hide: function () {
 			globalVM.func.hideContainer(this.$container);

@@ -189,7 +189,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					cb.call(ctx, success, scroll);
 				}
 			}, this);
-			socket.emit('giveIndexNews');
+			socket.emit('index.giveIndexNews');
 		},
 		getPhotos: function (cb, ctx, scroll) {
 			socket.once('takePhotosPublicIndex', function (data) {
@@ -208,7 +208,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					cb.call(ctx, success, scroll);
 				}
 			}, this);
-			socket.emit('givePhotosPublicIndex');
+			socket.emit('photo.givePublicIndex');
 		},
 		getPhotosNoGeo: function (cb, ctx, scroll) {
 			socket.once('takePhotosPublicNoGeoIndex', function (data) {
@@ -227,7 +227,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					cb.call(ctx, success, scroll);
 				}
 			}, this);
-			socket.emit('givePhotosPublicNoGeoIndex');
+			socket.emit('photo.givePublicNoGeoIndex');
 		},
 		getPhotosToApprove: function (cb, ctx, scroll) {
 			socket.once('takePhotosForApprove', function (data) {
@@ -246,7 +246,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					cb.call(ctx, success, scroll);
 				}
 			}, this);
-			socket.emit('givePhotosForApprove', {skip: 0, limit: 42});
+			socket.emit('photo.giveForApprove', {skip: 0, limit: 42});
 		},
 		getRatings: function (cb, ctx, scroll) {
 			var success = false;
@@ -277,7 +277,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					cb.call(ctx, success, scroll);
 				}
 			}, this);
-			socket.emit('giveRatings', {limit: 24});
+			socket.emit('index.giveRatings', {limit: 24});
 		},
 		getStats: function (cb, ctx, scroll) {
 			var success = false;

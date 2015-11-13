@@ -6,7 +6,7 @@ import { waitDb, dbEval } from './connection';
 import { Photo } from '../models/Photo';
 import { Cluster, ClusterParams } from '../models/Cluster';
 
-const logger = log4js.getLogger('photoCluster.js');
+const logger = log4js.getLogger('cluster.js');
 const msg = {
     deny: 'У вас нет прав на это действие'
 };
@@ -22,7 +22,7 @@ async function readClusterParams() {
 }
 
 // Set new cluster parameters and send clusters to recalculate
-async function recalcAllClusters(iAm, data) {
+async function recalcAll(iAm, data) {
     if (!iAm.isAdmin) {
         throw { message: msg.deny };
     }
@@ -335,18 +335,6 @@ async function getClusterPoster(cluster, yearCriteria) {
 // After connection to db read current cluster parameters
 waitDb.then(readClusterParams);
 
-module.exports.loadController = function (io) {
-    io.sockets.on('connection', function (socket) {
-        const hs = socket.handshake;
-
-        socket.on('clusterAll', function (data) {
-            recalcAllClusters(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('clusterAllResult', resultData);
-                });
-        });
-    });
+export default {
+    recalcAll
 };

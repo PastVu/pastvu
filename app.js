@@ -9,15 +9,13 @@ import config from './config';
 import express from 'express';
 import socketIO from 'socket.io';
 import Utils from './commons/Utils';
+import { handleSocketConnection, registerSocketRequestHendler } from './app/request';
 
-import * as session from './controllers/_session';
 import * as admin from './controllers/admin';
 import * as auth from './controllers/auth';
 import * as comment from './controllers/comment';
 import * as errors from './controllers/errors';
-import * as index from './controllers/index';
 import * as mail from './controllers/mail';
-import * as photo from './controllers/photo';
 import * as profile from './controllers/profile';
 import * as reason from './controllers/reason';
 import * as region from './controllers/region';
@@ -157,6 +155,8 @@ export async function configure(startStamp) {
         app.get(/^\/(?:_a|_p)(?:\/.*)$/, static404);
     }
 
+    await* [settings.ready, region.ready, auth.ready, subscr.ready, mail.ready];
+
     const httpServer = http.createServer(app);
     const io = socketIO(httpServer, {
         transports: ['websocket', 'polling'],
@@ -170,16 +170,12 @@ export async function configure(startStamp) {
     io.sockets.setMaxListeners(0);
     process.setMaxListeners(0);
 
-    io.use(session.handleSocket);
+    io.use(handleSocketConnection); // Handler for esteblishing websocket connection
+    registerSocketRequestHendler(io); // Register router for socket.io events
 
-    await* [settings.ready, region.ready, auth.ready, subscr.ready, mail.ready];
-
-    session.loadController(io);
     admin.loadController(io);
     auth.loadController(io);
     comment.loadController(io);
-    index.loadController(io);
-    photo.loadController(io);
     profile.loadController(io);
     reason.loadController(io);
     region.loadController(io);

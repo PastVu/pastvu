@@ -14,7 +14,7 @@ import { Photo, PhotoConveyer, PhotoConveyerError, STPhotoConveyer } from '../mo
 
 const execAsync = Bluebird.promisify(exec);
 const mkdirpAsync = Bluebird.promisify(mkdirp);
-const logger = log4js.getLogger('photoConverter.js');
+const logger = log4js.getLogger('converter.js');
 const sleep = time => new Promise(resolve => setTimeout(resolve, time));
 
 let conveyerEnabled = true;
@@ -203,18 +203,19 @@ function CollectConveyerStat() {
     setTimeout(CollectConveyerStat, ms('10m'));
 }
 
-/**
- * Очищает конвейер, кроме тех фотографий, которые сейчас конвертируются
- */
-async function conveyerClear() {
-    try {
-        const removed = (await PhotoConveyer.remove({ converting: { $exists: false } }).exec())[0];
+// Clear conveyor except photos, which are converting now
+async function conveyerClear({ value }) {
+    let removedCount = 0;
 
-        conveyerLength = await PhotoConveyer.count({}).exec();
-        return { message: `Cleared ok! Removed ${removed}, left ${conveyerLength}` };
-    } catch (err) {
-        return { message: err || 'Error occurred', error: true };
+    if (value === true) {
+        conveyerEnabled = value;
+
+        [removedCount] = await PhotoConveyer.remove({ converting: { $exists: false } }).exec();
     }
+
+    conveyerLength = await PhotoConveyer.count({}).exec();
+
+    return { message: `Cleared ok! Removed ${removedCount}, left ${conveyerLength}` };
 }
 
 /**
@@ -546,64 +547,44 @@ export async function removePhotos(data) {
     setTimeout(CollectConveyerStat, hourStart + ms('10m') * Math.ceil((Date.now() - hourStart) / ms('10m')) - Date.now() + 10);
 }());
 
-export function loadController(io) {
-    io.sockets.on('connection', function (socket) {
-        const hs = socket.handshake;
+function conveyorStartStop({ value }) {
+    if (_.isBoolean(value)) {
+        conveyerEnabled = value;
+        if (value) {
+            conveyerControl();
+        }
+    }
 
-        (function () {
-            socket.on('conveyorStartStop', function (value) {
-                if (_.isBoolean(value)) {
-                    conveyerEnabled = value;
-                    if (value) {
-                        conveyerControl();
-                    }
-                }
-                socket.emit('conveyorStartStopResult', { conveyerEnabled });
-            });
-        }());
-
-        (function () {
-            socket.on('conveyerClear', async function (value) {
-                if (value === true) {
-                    conveyerEnabled = value;
-                    socket.emit('conveyerClearResult', await conveyerClear());
-                }
-            });
-        }());
-
-        (function () {
-            function result(data) {
-                socket.emit('getStatConveyer', data);
-            }
-
-            socket.on('statConveyer', async function () {
-                if (!hs.usObj.registered) {
-                    return result({ message: 'Not authorized for statConveyer', error: true });
-                }
-
-                const docs = await STPhotoConveyer.find({}, { _id: 0, __v: 0 }, { sort: 'stamp', lean: true }).exec();
-
-                for (const doc of docs) {
-                    doc.stamp = doc.stamp.getTime();
-                }
-
-                result({ data: docs });
-            });
-        }());
-
-        (function statFast() {
-            socket.on('giveStatFastConveyer', function () {
-                socket.emit('takeStatFastConveyer', {
-                    conveyerEnabled,
-                    clength: conveyerLength,
-                    cmaxlength: conveyerMaxLength,
-                    converted: conveyerConverted
-                });
-            });
-        }());
-
-    });
+    return { conveyerEnabled };
 }
+
+async function conveyorStat() {
+    const { hadshake: { usObj: iAm } } = this;
+
+    if (!iAm.registered) {
+        throw { message: 'Not authorized for statConveyer' };
+    }
+
+    const docs = await STPhotoConveyer.find({}, { _id: 0, __v: 0 }, { sort: 'stamp', lean: true }).exec();
+
+    docs.forEach(doc => doc.stamp = doc.stamp.getTime());
+
+    return { data: docs };
+}
+
+const conveyorStatFast = () => ({
+    conveyerEnabled,
+    conveyerLength,
+    conveyerMaxLength,
+    conveyerConverted
+});
+
+export default {
+    conveyorStartStop,
+    conveyerClear,
+    conveyorStat,
+    conveyorStatFast
+};
 
 /**
  a - origin

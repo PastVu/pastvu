@@ -466,7 +466,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			}, this);
 		},
 		receivePhotos: function (skip, limit, cb, ctx) {
-			var reqName = this.u ? 'giveUserPhotos' : 'givePhotos';
+			var reqName = this.u ? 'photo.giveUserGallery' : 'photo.givePS';
             var resName = this.u ? 'takeUserPhotos' : 'takePhotos';
             var params = {skip: skip, limit: limit, filter: this.filter.origin};
 
@@ -630,7 +630,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 						}
 						this.loading(false);
 					}, this);
-					socket.emit('givePhotosFresh', {login: this.u.login(), after: this.waitUploadSince});
+					socket.emit('photo.giveFresh', {login: this.u.login(), after: this.waitUploadSince});
 				}
 				this.closeUpload();
 			}

@@ -782,34 +782,30 @@ export async function handleConnection(ip, headers, overHTTP, req) {
 
 };
 
-function langChange(socket, data) {
+function langChange(data) {
+    const { socket, hadshake: { session } } = this;
+
     if (!config.locales.includes(data.lang)) {
         return;
     }
 
     socket.once('commandResult', function () {
-        sendReload(socket.handshake.session);
+        sendReload(session);
     });
 
-    // Отправляем клиенту новые куки языка
+    // Send lient new language cookie
     emitLangCookie(socket, data.lang);
 }
 
-waitDb.then(() => {
-    checkSessWaitingConnect();
-    checkExpiredSessions();
-});
+function giveInitData() {
+    const { hadshake: { session, usObj: iAm } } = this;
 
-function giveInitData(hs) {
-    const usObj = hs.usObj;
-    const session = hs.session;
-
-    return Promise.resolve({
+    return {
         p: clientParams,
-        u: getPlainUser(usObj.user),
-        registered: usObj.registered,
+        u: getPlainUser(iAm.user),
+        registered: iAm.registered,
         cook: createSidCookieObj(session)
-    });
+    };
 }
 
 export default {
@@ -817,24 +813,7 @@ export default {
     langChange
 };
 
-export function loadController(io) {
-    io.sockets.on('connection', function (socket) {
-        const hs = socket.handshake;
-
-        socket.setMaxListeners(0); // TODO: Make only one listener with custom router
-
-        socket.on('giveInitData', function () {
-            giveInitData(hs)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeInitData', resultData);
-                });
-        });
-
-        socket.on('langChange', function (data) {
-            langChange(socket, data);
-        });
-    });
-};
+waitDb.then(() => {
+    checkSessWaitingConnect();
+    checkExpiredSessions();
+});

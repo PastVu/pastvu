@@ -319,7 +319,7 @@ define([
 				newZoom = bound = null;
 				this.startPendingAt = undefined;
 			}, this);
-			socket.emit('getBounds', {z: newZoom, bounds: bounds, startAt: this.startPendingAt, year: this.year, year2: this.year2});
+			socket.emit('photo.getByBounds', {z: newZoom, bounds: bounds, startAt: this.startPendingAt, year: this.year, year2: this.year2});
 		}
 	};
 
@@ -449,7 +449,7 @@ define([
 			}
 			zoom = bound = null;
 		}, this);
-		socket.emit('getBounds', {z: zoom, bounds: bounds, year: this.year, year2: this.year2});
+		socket.emit('photo.getByBounds', {z: zoom, bounds: bounds, year: this.year, year2: this.year2});
 	};
 
 	/**

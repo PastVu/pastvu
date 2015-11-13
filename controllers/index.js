@@ -259,7 +259,8 @@ const giveIndexNews = (function () {
         };
     }());
 
-    return async function(iAm) {
+    return async function() {
+        const { hadshake: { usObj: iAm } } = this;
         const news = await (iAm.registered ? forRegistered(iAm) : forAnonym());
 
         return { news };
@@ -267,7 +268,8 @@ const giveIndexNews = (function () {
 }());
 
 // News archive
-async function giveAllNews(iAm) {
+async function giveAllNews() {
+    const { hadshake: { usObj: iAm } } = this;
     const news = await News.find(
         { pdate: { $lte: new Date() } },
         { cdate: 0, tdate: 0, nocomments: 0 },
@@ -295,11 +297,12 @@ async function giveNewsFull({ cid } = {}) {
 }
 
 // Return news for its public page
-async function giveNewsPublic(iAm, { cid } = {}) {
+async function giveNewsPublic({ cid } = {}) {
     if (!_.isNumber(cid) || cid < 1) {
         throw { message: 'Bad params' };
     }
 
+    const { hadshake: { usObj: iAm } } = this;
     const news = await News.findOne(
         { cid }, { _id: 1, cid: 1, user: 1, pdate: 1, title: 1, txt: 1, ccount: 1, nocomments: 1 }, { lean: true }
     ).exec();
@@ -349,75 +352,4 @@ export default {
     giveRatings,
     giveIndexStats,
     giveAbout
-};
-
-export function loadController(io) {
-    io.sockets.on('connection', function (socket) {
-        const hs = socket.handshake;
-
-        socket.on('giveIndexNews', function () {
-            giveIndexNews(hs.usObj)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (result) {
-                    socket.emit('takeIndexNews', result);
-                });
-        });
-
-        socket.on('giveAllNews', function () {
-            giveAllNews(hs.usObj)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (result) {
-                    socket.emit('takeAllNews', result);
-                });
-        });
-        socket.on('giveNews', function (data) {
-            giveNewsFull(data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (result) {
-                    socket.emit('takeNews', result);
-                });
-        });
-        socket.on('giveNewsPublic', function (data) {
-            giveNewsPublic(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (result) {
-                    socket.emit('takeNewsPublic', result);
-                });
-        });
-        socket.on('giveRatings', function (data) {
-            giveRatings(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (result) {
-                    socket.emit('takeRatings', result);
-                });
-        });
-        socket.on('giveStats', function () {
-            giveIndexStats()
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (result) {
-                    socket.emit('takeStats', result);
-                });
-        });
-        socket.on('giveAbout', function () {
-            giveAbout()
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (result) {
-                    socket.emit('takeAbout', result);
-                });
-        });
-    });
 };

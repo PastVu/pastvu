@@ -126,7 +126,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 					cb.call(ctx, data);
 				}
 			}, this);
-			socket.emit('giveNewsPublic', {cid: cid});
+			socket.emit('index.giveNewsPublic', {cid: cid});
 		},
 
 		/**

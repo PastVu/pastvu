@@ -157,7 +157,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			//Если фото с этим файлом уже создалось, то вызываем его удаление,
 			//если нет, значит оно загружается, и отменяем запрос на загрузку
 			if (this.fileUploaded.hasOwnProperty(file.ext.file)) {
-				socket.emit('removePhotoInc', {file: file.ext.file});
+				socket.emit('photo.removeIncoming', {file: file.ext.file});
 				delete this.fileUploaded[file.ext.file];
 			} else if (file.ext.jqXHR && file.ext.jqXHR.abort) {
 				file.ext.jqXHR.abort();
@@ -177,7 +177,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				}
 				cb.call(ctx || window, data);
 			}, this);
-			socket.emit('giveNewPhotosLimit', {login: this.auth.iAm.login()});
+			socket.emit('photo.giveNewLimit', {login: this.auth.iAm.login()});
 		},
 		onFileAdd: function (e, data) {
 			var options = this.fileOptions,
@@ -305,7 +305,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					}
 					cb.call(ctx || window, data);
 				}, this);
-				socket.emit('createPhoto', toSaveArr);
+				socket.emit('photo.create', toSaveArr);
 			} else {
 				cb.call(ctx || window, {cids: []});
 			}

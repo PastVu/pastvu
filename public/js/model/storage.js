@@ -63,7 +63,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
                         delete storage.waitings['p' + cid];
                     }
                 });
-                socket.emit('givePhoto', { cid: cid });
+                socket.emit('photo.giveForPage', { cid: cid });
             }
         },
         photoCan: function (cid, callback, context) {
@@ -82,7 +82,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
                     callback.call(context, data);
                 }
             });
-            socket.emit('giveCanPhoto', { cid: cid });
+            socket.emit('photo.giveCan', { cid: cid });
         }
     };
 

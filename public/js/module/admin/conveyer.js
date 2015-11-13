@@ -403,7 +403,7 @@ define([
                         }, this.chartsOptions));
                     }
                 }, this);
-                socket.emit('statConveyer', {});
+                socket.emit('converter.conveyorStat');
             }, this);
 
             this.showing = true;
@@ -426,7 +426,7 @@ define([
                 }
                 this.exe(false);
             }, this);
-            socket.emit('conveyorStartStop', !this.conveyerEnabled());
+            socket.emit('converter.conveyorStartStop', !this.conveyerEnabled());
         },
         clearConveyer: function () {
             var _this = this;
@@ -507,7 +507,7 @@ define([
                 }
                 this.exe(false);
             }, this);
-            socket.emit('convertPhotosAll', {
+            socket.emit('photo.convertAll', {
                 min: Number(this.reconvertCidMin()),
                 max: Number(this.reconvertCidMax()),
                 r: Number(this.reconvertRegion())
@@ -519,13 +519,13 @@ define([
             socket.once('takeStatFastConveyer', function (data) {
                 if (data) {
                     this.conveyerEnabled(data.conveyerEnabled);
-                    this.clength(data.clength);
-                    this.cmaxlength(data.cmaxlength);
-                    this.converted(data.converted);
+                    this.clength(data.conveyerLength);
+                    this.cmaxlength(data.conveyerMaxLength);
+                    this.converted(data.conveyerConverted);
                 }
                 this.timeoutUpdate = window.setTimeout(this.statFast.bind(this), 2000);
             }, this);
-            socket.emit('giveStatFastConveyer', {});
+            socket.emit('converter.conveyorStatFast');
         }
     });
 });

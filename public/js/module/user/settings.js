@@ -220,7 +220,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
                 this.reconvertingPhotos(false);
             }, this);
-            socket.emit('convertUserPhotos', { login: this.u.login(), r: region });
+            socket.emit('photo.convertByUser', { login: this.u.login(), r: region });
         },
         individualWatersignReset: function () {
             var self = this;
@@ -258,7 +258,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
                         self.reconvertingPhotos(false);
                     });
-                    socket.emit('convertUserPhotos', { login: self.u.login(), r: region, resetIndividual: true });
+                    socket.emit('photo.convertByUser', { login: self.u.login(), r: region, resetIndividual: true });
                 },
                 onCancel: function () {
                     self.reconvertingPhotos(false);
@@ -304,7 +304,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
                         self.reconvertingPhotos(false);
                     });
-                    socket.emit('resetIndividualDownloadOrigin', { login: self.u.login(), r: region});
+                    socket.emit('photo.resetIndividualDownloadOrigin', { login: self.u.login(), r: region});
                 },
                 onCancel: function () {
                     self.reconvertingPhotos(false);

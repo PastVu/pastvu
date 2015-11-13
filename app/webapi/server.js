@@ -2,6 +2,7 @@ import _ from 'lodash';
 import util from 'util';
 import log4js from 'log4js';
 import methods from './methods';
+import Bluebird from 'bluebird';
 import config from '../../config';
 import Utils from '../../commons/Utils';
 import APIError from '../errors/APIError';
@@ -35,13 +36,11 @@ const inspect = (function () {
     return obj => util.inspect(obj, inspectOptions);
 }());
 
-export default async function callMethod(methodName, params) {
+export default async function callMethod(methodName, params = {}) {
     const start = Date.now();
     const method = methodsHash[methodName];
     const logger = getMethodLogger(methodName);
 
-    // Метод можно вызвать как с дополнительными параметрами для создания контекста,
-    // так и уже в контексте этих параметров (например, из другого метода)
     if (!this.rid) {
         logger.warn(`No request context for ${methodName} calling`);
     }
@@ -50,7 +49,7 @@ export default async function callMethod(methodName, params) {
     logger.debug(`${this.ridMark} Params:`, inspect(params));
 
     try {
-        const result = await method.call(this, params);
+        const result = await Bluebird.try(method, [params], this);  // Use try, because not all methods return promise
         const elapsed = Date.now() - start;
 
         logger.info(`${this.ridMark} WebApi Method "${methodName}" has executed in ${elapsed}ms`);

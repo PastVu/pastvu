@@ -73,7 +73,7 @@ define([
 					cb.call(ctx, data);
 				}
 			}, this);
-			socket.emit('giveAllNews', {});
+			socket.emit('index.giveAllNews', {});
 		}
 	});
 });
