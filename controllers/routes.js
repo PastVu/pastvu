@@ -179,7 +179,8 @@ export function loadController(app) {
             initData: genInitDataString(req),
             nojsUrl: nojs.nojsUrl,
             nojsShow: nojs.nojsShow,
-            agent: req.browser && req.browser.agent
+            agent: req.browser && req.browser.agent,
+            polyfills: req.browser && req.browser.polyfills
         });
     }
 
@@ -248,7 +249,8 @@ export function loadController(app) {
             meta: {},
             nojsUrl: nojs.nojsUrl,
             nojsShow: nojs.nojsShow,
-            agent: req.browser && req.browser.agent
+            agent: req.browser && req.browser.agent,
+            polyfills: req.browser && req.browser.polyfills
         });
     }
 
