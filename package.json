@@ -31,7 +31,6 @@
         "body-parser": "1.14.1",
         "serve-favicon": "2.3.0",
         "basic-auth-connect": "1.0.0",
-        "es6-error": "2.0.2",
         "locale": "0.0.20",
         "jade": "1.11.0",
         "mongoose": "4.2.3",

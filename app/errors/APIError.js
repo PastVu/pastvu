@@ -1,7 +1,7 @@
 import _ from 'lodash';
-import ExtendableError from 'es6-error';
+import ApplicationError from './Application';
 
-class APIError extends ExtendableError {
+class APIError extends ApplicationError {
     // constructor is optional; you should omit it if you just want a custom error
     // type for inheritance and type checking
     constructor(code, message, details = {}) {

@@ -99,6 +99,18 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
 			return Class;
 		}()),
 
+        inherit: (function () {
+            var F = function () {};
+
+            return function (child, parent) {
+                F.prototype = parent.prototype;
+                child.prototype = new F;
+                child.prototype.constructor = child;
+                child.superproto = parent.prototype;
+                return child;
+            };
+        }()),
+
 		/**
 		 * Проверяет на соответствие объекта типу (вместо typeof)
 		 * @param {string} type Имя типа.
