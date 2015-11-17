@@ -10,7 +10,7 @@ define(['Utils', 'errors/Application'], function (Utils, ApplicationError) {
 
     TimeoutError.prototype.name = 'TimeoutError';
     TimeoutError.prototype.toString = function () {
-        let message = 'Timeout: ' + JSON.stringify(this.event);
+        var message = 'Timeout: ' + JSON.stringify(this.event);
 
         if (this.timeout) {
             message += ' (' + (this.timeout / 1000) + 's passed)';

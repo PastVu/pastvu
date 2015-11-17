@@ -2,8 +2,9 @@ const CAPTURE_STACK_TRACE_SUPPORT = Boolean(Error.captureStackTrace);
 const FIREFOX_ERROR_INFO = /@(.+?):(\d+):(\d+)$/;
 
 export default class ApplicationError extends Error {
-    constructor() {
-        super();
+    constructor(message) {
+        super(message); // TODO: Make ...arguments in Node 5
+
         // Ensure we get a proper stack trace in most Javascript environments
         if (CAPTURE_STACK_TRACE_SUPPORT) {
             // V8 environments (Chrome and Node.js)
