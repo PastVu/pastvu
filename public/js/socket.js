@@ -3,7 +3,7 @@ define(['module'], function (/* module */) {
 
     var onLoad;
 
-    function moduleHandler(_, io, TimeoutError) {
+    function moduleHandler(_, io, noties, TimeoutError) {
         var connectPath = location.host;
         var connectOptions = {
             autoConnect: false,
@@ -156,7 +156,7 @@ define(['module'], function (/* module */) {
          * @param name Имя сообщения
          * @param [data] Данные
          * @param {number} [timeToWaitIfNoConnection] Время ожидания отправки, если нет подключения. 0 - ждать вечно
-         * @returns {Promise} Отправлено ли сообщение
+         * @returns {Promise}
          */
         socket.request = function (name, data, timeToWaitIfNoConnection) {
             return new Promise(function (resolve, reject) {
@@ -190,6 +190,30 @@ define(['module'], function (/* module */) {
                     reject(new TimeoutError({ type: 'SOCKET_CONNECTION', name, data }, timeToWaitIfNoConnection));
                 }
             });
+        };
+
+        /**
+         * Отправляет данные на сервер с ожиданием результата.
+         * Возвращает Promise
+         * @param name Имя сообщения
+         * @param [data] Данные
+         * @param [notyOnError] Показывать нотификацию об ошибке
+         * @param {number} [timeToWaitIfNoConnection] Время ожидания отправки, если нет подключения. 0 - ждать вечно
+         * @returns {Promise}
+         */
+        socket.run = function (name, data, notyOnError, timeToWaitIfNoConnection) {
+            return socket.request(name, data, timeToWaitIfNoConnection)
+                .then(function (result) {
+                    if (!result || result.error) {
+                        if (notyOnError) {
+                            console.error('socket.run "' + name + '" returned error\n', result);
+                            noties.error(_.get(result, 'error.message', 'Error occured'));
+                        }
+                        throw result.error;
+                    }
+
+                    return result.result;
+                });
         };
 
         // Уведомление обработчиков о первом соединении
@@ -345,7 +369,7 @@ define(['module'], function (/* module */) {
         manager.on('reconnect', function () {
             console.log('ReConnected to server');
             socket.connected = true;
-            manager.emit('session.giveInitData', location.pathname); // После реконнекта заново запрашиваем initData
+            manager.emit('session.giveInitData', { path: location.pathname }); // После реконнекта заново запрашиваем initData
             noConnWaitHide(); // Скрываем сообщение об отсутствии соединения
             emitQueued(); // Отправляем все сообщения emit, которые ожидали восстановления соединения
         });
@@ -368,7 +392,7 @@ define(['module'], function (/* module */) {
             }
             onLoad = onLoadExe;
 
-            req(['underscore', 'socket.io', 'errors/Timeout'], moduleHandler);
+            req(['underscore', 'socket.io', 'noties', 'errors/Timeout'], moduleHandler);
         }
     };
 });
