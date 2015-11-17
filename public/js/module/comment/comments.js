@@ -337,51 +337,46 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
         receive: function (cb, ctx) {
             this.loading(true);
-            socket.once('takeCommentsObj', function (data) {
-                if (!data) {
-                    console.error('No comments data received');
+            socket.run('comment.giveForObj', { type: this.type, cid: this.cid }, true).then(function (data) {
+                if (data.cid !== this.cid) {
+                    console.info('Comments received for another ' + this.type + ' ' + data.cid);
                 } else {
-                    if (data.error) {
-                        console.error('While loading comments: ', data.message || 'Error occurred');
-                    } else if (data.cid !== this.cid) {
-                        console.info('Comments received for another ' + this.type + ' ' + data.cid);
-                    } else {
-                        var canModerate = !!data.canModerate,
-                            canReply = !!data.canReply;
+                    var canModerate = !!data.canModerate,
+                        canReply = !!data.canReply;
 
-                        this.usersRanks(data.users);
-                        this.users = _.assign(data.users, this.users);
+                    this.usersRanks(data.users);
+                    this.users = _.assign(data.users, this.users);
 
-                        //Если общее кол-во изменилось пока получали, то присваиваем заново
-                        if (this.count() !== data.countTotal) {
-                            this.parentModule.commentCountIncrement(data.countTotal - this.count());
-                            this.count(data.countTotal);
-                        }
-                        this.countNew(data.countNew);
-                        this.canModerate(canModerate);
-                        this.canReply(canReply);
-
-                        //Отрисовываем комментарии путем замены innerHTML результатом шаблона dot
-                        this.$cmts[0].innerHTML = this.renderComments(data.comments, tplComments, true);
-
-                        //Если у пользователя есть право отвечать в комментариях этого объекта, сразу добавляем ответ нулевого уровня
-                        if (canReply) {
-                            this.inputZeroAdd();
-                        }
-                        this.showTree(true);
+                    // Если общее кол-во изменилось пока получали, то присваиваем заново
+                    if (this.count() !== data.countTotal) {
+                        this.parentModule.commentCountIncrement(data.countTotal - this.count());
+                        this.count(data.countTotal);
                     }
+                    this.countNew(data.countNew);
+                    this.canModerate(canModerate);
+                    this.canReply(canReply);
+
+                    // Отрисовываем комментарии путем замены innerHTML результатом шаблона dot
+                    this.$cmts[0].innerHTML = this.renderComments(data.comments, tplComments, true);
+
+                    // Если у пользователя есть право отвечать в комментариях этого объекта,
+                    // сразу добавляем ответ нулевого уровня
+                    if (canReply) {
+                        this.inputZeroAdd();
+                    }
+                    this.showTree(true);
                 }
+
                 this.loading(false);
                 if (Utils.isType('function', cb)) {
                     cb.call(ctx, data);
                 }
-                //Уведомляем активатор (родительский модуль) о получении данных
+                // Уведомляем активатор (родительский модуль) о получении данных
                 if (this.activatorRecieveNotice) {
                     this.activatorRecieveNotice.cb.call(this.activatorRecieveNotice.ctx || window);
                     delete this.activatorRecieveNotice;
                 }
-            }, this);
-            socket.emit('giveCommentsObj', { type: this.type, cid: this.cid });
+            }.bind(this));
         },
         renderComments: function (tree, tpl, changeHash) {
             var usersHash = this.users,
@@ -795,19 +790,24 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                     $('.hlRemove', this.$cmts).removeClass('hlRemove');
                     return;
                 }
-                socket.once('removeCommentResult', function (result) {
-                    var i,
-                        msg,
-                        count,
-                        $cdel;
+                socket.run('comment.remove', { type: this.type, cid: cid, reason: reason }, true)
+                    .catch(function () {
+                        $('.hlRemove', this.$cmts).removeClass('hlRemove');
+                        ga('send', 'event', 'comment', 'delete', 'comment delete error');
+                    }.bind(this))
+                    .then(function (result) {
+                        var i,
+                            count,
+                            $cdel;
 
-                    if (result && !result.error) {
                         count = Number(result.countComments);
                         if (!count) {
                             return;
                         }
                         if (!tplCommentDel) {
-                            tplCommentDel = doT.template(dotCommentDel, _.defaults({ varname: 'c,it' }, doT.templateSettings));
+                            tplCommentDel = doT.template(
+                                dotCommentDel, _.defaults({ varname: 'c,it' }, doT.templateSettings)
+                            );
                         }
 
                         comment.lastChanged = result.stamp;
@@ -819,16 +819,22 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                         }
 
                         comment.del = result.delInfo;
-                        //Очищаем массив дочерних как в delHide
+                        // Очищаем массив дочерних как в delHide
                         delete comment.comments;
-                        //Удаляем дочерние, если есть (нельзя просто удалить все .hlRemove, т.к. могут быть дочерние уже удалённые, на которых hlRemove не распространяется, но убрать их из дерева тоже надо)
+                        // Удаляем дочерние, если есть (нельзя просто удалить все .hlRemove,
+                        // т.к. могут быть дочерние уже удалённые, на которых hlRemove не распространяется,
+                        // но убрать их из дерева тоже надо)
                         getChildComments(comment, $c).remove();
-                        //Заменяем корневой удаляемый комментарий на удалённый(схлопнутый)
-                        $cdel = $(tplCommentDel(comment, { fDate: formatDateRelative, fDateIn: formatDateRelativeIn }));
+                        // Заменяем корневой удаляемый комментарий на удалённый(схлопнутый)
+                        $cdel = $(tplCommentDel(comment, {
+                            fDate: formatDateRelative,
+                            fDateIn: formatDateRelativeIn
+                        }));
                         $c.replaceWith($cdel);
 
-                        //Если обычный пользователь удаляет свой ответ на свой же комментарий,
-                        //пока может тот редактировать, и у того не осталось неудаленных дочерних, то проставляем у родителя кнопку удалить
+                        // Если обычный пользователь удаляет свой ответ на свой же комментарий,
+                        // пока может тот редактировать, и у того не осталось неудаленных дочерних,
+                        // то проставляем у родителя кнопку удалить
                         if (!this.canModerate() && parent && parent.user.login === this.auth.iAm.login() && parent.can.edit) {
                             parent.can.del = true;
                             for (i = 0; i < parent.comments.length; i++) {
@@ -838,7 +844,8 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                                 }
                             }
                             if (parent.can.del) {
-                                $('<div class="dotDelimeter">·</div><span class="cact remove">Удалить</span>').insertAfter($('#c' + parent.cid + ' .cact.edit', this.$cmts));
+                                $('<div class="dotDelimeter">·</div><span class="cact remove">Удалить</span>')
+                                    .insertAfter($('#c' + parent.cid + ' .cact.edit', this.$cmts));
                             }
                         }
 
@@ -847,21 +854,13 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                             $window.scrollTo($cdel, { offset: -P.window.head, duration: 600 });
                         }
 
-                        if (count > 1) {
-                            msg = 'Удалено комментариев: ' + count + ',<br>от ' + result.countUsers + ' пользователя(ей)';
-                        }
                         ga('send', 'event', 'comment', 'delete', 'comment delete success', count);
-                    } else {
-                        msg = result && result.message || '';
-                        $('.hlRemove', this.$cmts).removeClass('hlRemove');
-                        ga('send', 'event', 'comment', 'delete', 'comment delete error');
-                    }
 
-                    if (msg) {
-                        window.noty({ text: msg, type: 'info', layout: 'center', timeout: 2200, force: true });
-                    }
-                }, that);
-                socket.emit('removeComment', { type: that.type, cid: cid, reason: reason });
+                        window.noty({
+                            text: 'Удалено комментариев: ' + count + ',<br>от ' + result.countUsers + ' пользователя(ей)',
+                            type: 'info', layout: 'center', timeout: 2200, force: true
+                        });
+                    }.bind(this));
             }, this);
         },
         restore: function (cid, $c) {
@@ -894,53 +893,45 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                             return;
                         }
                         restoring = true;
-                        socket.once('restoreCommentResult', function (result) {
+                        socket.run('comment.restore', { type: that.type, cid: cid }, true).then(function (result) {
                             var count, i, c, tplIt;
 
-                            if (result && !result.error) {
-                                count = Number(result.countComments);
-                                if (!count) {
-                                    return;
-                                }
+                            count = Number(result.countComments);
+                            if (!count) {
+                                return;
+                            }
 
-                                comment.lastChanged = result.stamp;
-                                that.count(that.count() + count);
-                                that.parentModule.commentCountIncrement(count);
+                            comment.lastChanged = result.stamp;
+                            that.count(that.count() + count);
+                            that.parentModule.commentCountIncrement(count);
 
-                                if (Array.isArray(result.frags)) {
-                                    that.parentModule.fragReplace(result.frags);
-                                }
+                            if (Array.isArray(result.frags)) {
+                                that.parentModule.fragReplace(result.frags);
+                            }
 
-                                tplIt = { reply: true, mod: true, fDate: formatDateRelative, fDateIn: formatDateRelativeIn };
+                            tplIt = {
+                                reply: true,
+                                mod: true,
+                                fDate: formatDateRelative,
+                                fDateIn: formatDateRelativeIn
+                            };
 
-                                //Заменяем корневой восстанавливаемый комментарий
-                                delete comment.del;
-                                $c.replaceWith(tplCommentAuth(comment, tplIt));
+                            //Заменяем корневой восстанавливаемый комментарий
+                            delete comment.del;
+                            $c.replaceWith(tplCommentAuth(comment, tplIt));
 
-                                if (count > 1) {
-                                    //Заменяем комментарии потомки, которые были удалены вместе с корневым
-                                    for (i in that.commentsHash) {
-                                        c = that.commentsHash[i];
-                                        if (c !== undefined && c.del !== undefined && c.del.origin === cid) {
-                                            delete c.del;
-                                            $('#c' + c.cid, that.$cmts).replaceWith(tplCommentAuth(c, tplIt));
-                                        }
+                            if (count > 1) {
+                                //Заменяем комментарии потомки, которые были удалены вместе с корневым
+                                for (i in that.commentsHash) {
+                                    c = that.commentsHash[i];
+                                    if (c !== undefined && c.del !== undefined && c.del.origin === cid) {
+                                        delete c.del;
+                                        $('#c' + c.cid, that.$cmts).replaceWith(tplCommentAuth(c, tplIt));
                                     }
                                 }
-
-                            } else {
-                                window.noty({
-                                    text: result && result.message || '',
-                                    type: 'warning',
-                                    layout: 'center',
-                                    timeout: 2200,
-                                    force: true
-                                });
-                                $('.hlRestore', that.$cmts).removeClass('hlRestore');
                             }
                             $noty.close();
                         });
-                        socket.emit('restoreComment', { type: that.type, cid: cid });
                     }
                     },
                     {
@@ -963,24 +954,23 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
             that.loadingDel = true;
             $('.delico', $c).addClass('loading').html('');
 
-            socket.once('takeCommentsDel', function (data) {
-                //Если пока запрашивали удалённый, уже перешли на новый объект - ничего не делаем
-                if (objCid !== that.cid) {
-                    return;
-                }
-                var error = !data || data.error;
-
-                if (error) {
-                    console.error(data && data.message || 'No comments data received');
+            socket.run('comment.giveDelTree', { type: that.type, cid: cid }, true)
+                .catch(function () {
                     $('.delico', $c).removeClass('loading').html('Показать');
                     that.loadingDel = false;
-                } else {
+                })
+                .then(function (data) {
+                    // Если пока запрашивали удалённый, уже перешли на новый объект - ничего не делаем
+                    if (objCid !== that.cid) {
+                        return;
+                    }
+
                     that.usersRanks(data.users);
                     that.users = _.assign(data.users, that.users);
 
                     require(['text!tpl/comment/cdotdelopen.jade'], function (doTCommentDelOpen) {
-                        //Чтобы не загружать клиента, только при первом запросе удалённых
-                        //реквайрим шаблон, компилим его и вешаем нужные события на блок комментариев
+                        // Чтобы не загружать клиента, только при первом запросе удалённых
+                        // реквайрим шаблон, компилим его и вешаем нужные события на блок комментариев
                         if (!tplCommentsDel) {
                             tplCommentsDel = doT.template(doTComments, undefined, { comment: doTCommentDelOpen });
                         }
@@ -1002,18 +992,16 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                                 });
                             that.delopenevents = true;
                         }
-                        //Присваиваем получаенный дочерние, если они есть, чтобы, например,
-                        //createInput ответа на родительский удаленного вставил поле ввода после удаленной ветки
+                        // Присваиваем получаенный дочерние, если они есть, чтобы, например,
+                        // createInput ответа на родительский удаленного вставил поле ввода после удаленной ветки
                         comment.comments = data.comments[0].comments;
-                        //Указываем, чо первый комментарий - корневой для группы
+                        // Указываем, чо первый комментарий - корневой для группы
                         data.comments[0].delroot = true;
                         $c.replaceWith(that.renderComments(data.comments, tplCommentsDel));
 
                         that.loadingDel = false;
                     });
-                }
-            });
-            socket.emit('giveCommentsDel', { type: that.type, cid: cid });
+                });
         },
         delHide: function (cid, $c) {
             var comment = this.commentsHash[cid];
@@ -1148,79 +1136,68 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
         },
         sendCreate: function (parent, dataSend, cb, $cadd) {
             if (parent) {
-                //Значит создается дочерний комментарий
+                // Значит создается дочерний комментарий
                 dataSend.parent = parent.cid;
                 dataSend.level = ~~parent.level + 1;
             }
 
-            socket.once('createCommentResult', function (result) {
+            socket.run('comment.createComment', dataSend, true).then(function (result) {
                 var comment,
                     $c,
                     $cparent;
 
-                if (!result) {
-                    window.noty({ text: 'Ошибка отправки комментария', type: 'error', layout: 'center', timeout: 2000, force: true });
-                } else {
-                    if (result.error || !result.comment) {
-                        window.noty({
-                            text: result.message || 'Ошибка отправки комментария',
-                            type: 'error',
-                            layout: 'center',
-                            timeout: 2000,
-                            force: true
-                        });
-                    } else {
-                        comment = result.comment;
-                        comment.user = this.users[comment.user];
-                        comment.can.edit = true;
-                        comment.can.del = true;
+                if (!result.comment) {
+                    return;
+                }
 
-                        this.commentsHash[comment.cid] = comment;
-                        $c = $(tplCommentAuth(comment, {
-                            reply: this.canReply(),
-                            mod: this.canModerate(),
-                            fDate: formatDateRelative,
-                            fDateIn: formatDateRelativeIn
-                        }));
+                comment = result.comment;
+                comment.user = self.users[comment.user];
+                comment.can.edit = true;
+                comment.can.del = true;
 
-                        if (parent) {
-                            if (!parent.comments) {
-                                parent.comments = [];
-                            }
-                            parent.comments.push(comment);
-                            comment.parent = parent.cid;
+                self.commentsHash[comment.cid] = comment;
+                $c = $(tplCommentAuth(comment, {
+                    reply: self.canReply(),
+                    mod: self.canModerate(),
+                    fDate: formatDateRelative,
+                    fDateIn: formatDateRelativeIn
+                }));
 
-                            //Если это комментарий-ответ, заменяем поле ввода новым комментарием
-                            $cadd.replaceWith($c);
-                            this.fragDelete();
-                            delete this.commentEditingFragChanged;
-
-                            //Если обычный пользователь отвечает на свой комментарий, пока может его удалить,
-                            //то отменяем у родителя возможность удалить
-                            if (!this.canModerate() && parent.can.del) {
-                                parent.can.del = false;
-                                $cparent = $('#c' + parent.cid, this.$cmts);
-                                $('.remove', $cparent).prev('.dotDelimeter').remove();
-                                $('.remove', $cparent).remove();
-                            }
-                        } else {
-                            //Если это ответ первого уровня, сбрасываем поле ввода и вставляем перед ним результат
-                            $c.insertBefore($cadd);
-                            this.inputReset($cadd);
-                        }
-
-                        this.auth.setProps({ ccount: this.auth.iAm.ccount() + 1 }); //Инкрементим комментарии пользователя
-                        this.count(this.count() + 1);
-                        this.parentModule.commentCountIncrement(1);
-                        if (this.canFrag && Utils.isType('object', result.frag)) {
-                            this.parentModule.fragAdd(result.frag); //Если добавили фрагмент вставляем его в фотографию
-                        }
+                if (parent) {
+                    if (!parent.comments) {
+                        parent.comments = [];
                     }
+                    parent.comments.push(comment);
+                    comment.parent = parent.cid;
+
+                    // Если это комментарий-ответ, заменяем поле ввода новым комментарием
+                    $cadd.replaceWith($c);
+                    self.fragDelete();
+                    delete self.commentEditingFragChanged;
+
+                    // Если обычный пользователь отвечает на свой комментарий, пока может его удалить,
+                    // то отменяем у родителя возможность удалить
+                    if (!self.canModerate() && parent.can.del) {
+                        parent.can.del = false;
+                        $cparent = $('#c' + parent.cid, self.$cmts);
+                        $('.remove', $cparent).prev('.dotDelimeter').remove();
+                        $('.remove', $cparent).remove();
+                    }
+                } else {
+                    // Если это ответ первого уровня, сбрасываем поле ввода и вставляем перед ним результат
+                    $c.insertBefore($cadd);
+                    self.inputReset($cadd);
+                }
+
+                self.auth.setProps({ ccount: self.auth.iAm.ccount() + 1 }); // Инкрементим комментарии пользователя
+                self.count(self.count() + 1);
+                self.parentModule.commentCountIncrement(1);
+                if (self.canFrag && Utils.isType('object', result.frag)) {
+                    self.parentModule.fragAdd(result.frag); // Если добавили фрагмент вставляем его в фотографию
                 }
 
                 cb(result);
-            }, this);
-            socket.emit('createComment', dataSend);
+            });
         },
         sendUpdate: function (comment, dataSend, cb, $cadd) {
             if (!this.canModerate() && (!this.canReply() || !comment.can.edit)) {
@@ -1230,57 +1207,46 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
             dataSend.cid = comment.cid;
 
-            //Если у комментария был фрагмент и он не изменился, то вставляем этот оригинальный фрагмент,
-            //потому что даже если мы не двигали его в интерфейсе, он изменится из-за округления пикселей
+            // Если у комментария был фрагмент и он не изменился, то вставляем этот оригинальный фрагмент,
+            // потому что даже если мы не двигали его в интерфейсе, он изменится из-за округления пикселей
             if (fragExists && !this.commentEditingFragChanged) {
                 dataSend.fragObj = _.pick(fragExists, 'cid', 'w', 'h', 't', 'l');
             }
 
-            socket.once('updateCommentResult', function (result) {
-                if (!result) {
-                    window.noty({ text: 'Ошибка редактирования комментария', type: 'error', layout: 'center', timeout: 2000, force: true });
-                } else {
-                    if (result.error || !result.comment) {
-                        window.noty({
-                            text: result.message || 'Ошибка редактирования комментария',
-                            type: 'error',
-                            layout: 'center',
-                            timeout: 2000,
-                            force: true
-                        });
-                    } else {
-                        comment.txt = result.comment.txt;
-                        comment.lastChanged = result.comment.lastChanged;
+            var self = this;
+            socket.run('comment.updateComment', dataSend, true).then(function (result) {
+                if (!result.comment) {
+                    return;
+                }
+                comment.txt = result.comment.txt;
+                comment.lastChanged = result.comment.lastChanged;
 
-                        if (this.canFrag && this.commentEditingFragChanged) {
-                            if (Utils.isType('object', result.frag)) {
-                                comment.frag = true;
-                                if (!fragExists) {
-                                    this.parentModule.fragAdd(result.frag);
-                                } else {
-                                    this.parentModule.fragRemove(comment.cid);
-                                    this.parentModule.fragAdd(result.frag);
-                                }
-                            } else if (fragExists) {
-                                comment.frag = false;
-                                this.parentModule.fragRemove(comment.cid);
-                            }
+                if (self.canFrag && self.commentEditingFragChanged) {
+                    if (Utils.isType('object', result.frag)) {
+                        comment.frag = true;
+                        if (!fragExists) {
+                            self.parentModule.fragAdd(result.frag);
+                        } else {
+                            self.parentModule.fragRemove(comment.cid);
+                            self.parentModule.fragAdd(result.frag);
                         }
-
-                        var $c = $(tplCommentAuth(comment, {
-                            reply: this.canReply(),
-                            mod: this.canModerate(),
-                            fDate: formatDateRelative,
-                            fDateIn: formatDateRelativeIn
-                        }));
-                        $('#c' + comment.cid, this.$cmts).replaceWith($c); //Заменяем комментарий на новый
-                        this.inputRemove($cadd); //Удаляем поле ввода
+                    } else if (fragExists) {
+                        comment.frag = false;
+                        self.parentModule.fragRemove(comment.cid);
                     }
                 }
 
+                var $c = $(tplCommentAuth(comment, {
+                    reply: self.canReply(),
+                    mod: self.canModerate(),
+                    fDate: formatDateRelative,
+                    fDateIn: formatDateRelativeIn
+                }));
+                $('#c' + comment.cid, self.$cmts).replaceWith($c); // Заменяем комментарий на новый
+                self.inputRemove($cadd); // Удаляем поле ввода
+
                 cb(result);
-            }, this);
-            socket.emit('updateComment', dataSend);
+            });
         },
         fragClick: function (data, event) {
             if (!this.canFrag) {
@@ -1343,21 +1309,11 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
         },
 
         setNoComments: function () {
-            socket.once('setNoCommentsResult', function (data) {
-                if (!data || data.error) {
-                    window.noty({
-                        text: data && data.message || 'Error occurred',
-                        type: 'error',
-                        layout: 'center',
-                        timeout: 3000,
-                        force: true
-                    });
-                } else {
+            socket.run('setNoComments', { cid: this.cid, type: this.type, val: !this.nocomments() }, true)
+                .then(function (data) {
                     this.parentModule.setNoComments(!!data.nocomments);
                     this.nocomments(!!data.nocomments);
-                }
-            }, this);
-            socket.emit('setNoComments', { cid: this.cid, type: this.type, val: !this.nocomments() });
+                }.bind(this));
         },
 
         navUp: function () {

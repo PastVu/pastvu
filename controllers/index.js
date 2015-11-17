@@ -260,7 +260,7 @@ const giveIndexNews = (function () {
     }());
 
     return async function() {
-        const { hadshake: { usObj: iAm } } = this;
+        const { handshake: { usObj: iAm } } = this;
         const news = await (iAm.registered ? forRegistered(iAm) : forAnonym());
 
         return { news };
@@ -269,7 +269,7 @@ const giveIndexNews = (function () {
 
 // News archive
 async function giveAllNews() {
-    const { hadshake: { usObj: iAm } } = this;
+    const { handshake: { usObj: iAm } } = this;
     const news = await News.find(
         { pdate: { $lte: new Date() } },
         { cdate: 0, tdate: 0, nocomments: 0 },
@@ -302,7 +302,7 @@ async function giveNewsPublic({ cid } = {}) {
         throw { message: 'Bad params' };
     }
 
-    const { hadshake: { usObj: iAm } } = this;
+    const { handshake: { usObj: iAm } } = this;
     const news = await News.findOne(
         { cid }, { _id: 1, cid: 1, user: 1, pdate: 1, title: 1, txt: 1, ccount: 1, nocomments: 1 }, { lean: true }
     ).exec();

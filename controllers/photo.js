@@ -506,7 +506,7 @@ export const core = {
 };
 
 var giveNewLimit = Bluebird.method(function (data) {
-    const { hadshake: { usObj: iAm } } = this;
+    const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered || iAm.user.login !== data.login && !iAm.isAdmin) {
         throw { message: msg.deny };
@@ -569,7 +569,7 @@ function getUserWaterSign(user, photo) {
  */
 //var dirs = ['w', 'nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'aero'];
 const create = Bluebird.method(function (data) {
-    const { socket, hadshake: { usObj: iAm } } = this;
+    const { socket, handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered) {
         throw { message: msg.deny };
@@ -962,7 +962,7 @@ const changePublicPhotoExternality = async function (photo, iAm, makePublic) {
  * @param {Object} data
  */
 var revoke = function (data) {
-    const { hadshake: { usObj: iAm } } = this;
+    const { handshake: { usObj: iAm } } = this;
 
     return photoEditPrefetch(iAm, data, 'revoke')
         .bind({})
@@ -1000,7 +1000,7 @@ var revoke = function (data) {
  * @param {Object} data
  */
 var readyPhoto = function (data) {
-    const { hadshake: { usObj: iAm } } = this;
+    const { handshake: { usObj: iAm } } = this;
 
     return photoEditPrefetch(iAm, data, 'ready')
         .bind({})
@@ -1076,7 +1076,7 @@ var toRevision = Bluebird.method(function (socket, data) {
 
 // Reject waiting photo by moderator/administrator
 async function reject(data) {
-    const { hadshake: { usObj: iAm } } = this;
+    const { handshake: { usObj: iAm } } = this;
 
     if (_.isEmpty(data.reason)) {
         throw { message: msg.needReason };
@@ -1118,7 +1118,7 @@ async function reject(data) {
 
 // Restore rejected photo to ready status (waitnig for moderation)
 async function rereject(data) {
-    const { hadshake: { usObj: iAm } } = this;
+    const { handshake: { usObj: iAm } } = this;
 
     if (_.isEmpty(data.reason)) {
         throw { message: msg.needReason };
@@ -1162,7 +1162,7 @@ async function rereject(data) {
  * @param {Object} data
  */
 var approve = function (data) {
-    const { hadshake: { usObj: iAm } } = this;
+    const { handshake: { usObj: iAm } } = this;
 
     return photoEditPrefetch(iAm, data, 'approve')
         .bind({})
@@ -1261,7 +1261,7 @@ var activateDeactivate = function (socket, data) {
  * @param {Object} data
  */
 var removeIncoming = Bluebird.method(function (data) {
-    const { hadshake: { usObj: iAm } } = this;
+    const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered) {
         throw { message: msg.deny };
@@ -1275,7 +1275,7 @@ var removeIncoming = Bluebird.method(function (data) {
  * @param {Object} data
  */
 var remove = Bluebird.method(function (data) {
-    const { hadshake: { usObj: iAm } } = this;
+    const { handshake: { usObj: iAm } } = this;
 
     if (_.isEmpty(data.reason)) {
         throw { message: msg.needReason };
@@ -1322,7 +1322,7 @@ var remove = Bluebird.method(function (data) {
  * @param {Object} data
  */
 var restore = Bluebird.method(function (data) {
-    const { hadshake: { usObj: iAm } } = this;
+    const { handshake: { usObj: iAm } } = this;
 
     if (_.isEmpty(data.reason)) {
         throw { message: msg.needReason };
@@ -1366,7 +1366,7 @@ var restore = Bluebird.method(function (data) {
  * @param {Object} data
  */
 export const giveForPage = Bluebird.method(function (data = {}) {
-    const { hadshake: { usObj: iAm } } = this;
+    const { handshake: { usObj: iAm } } = this;
 
     var cid = Number(data.cid);
     if (!cid || cid < 1) {
@@ -1478,7 +1478,7 @@ const givePublicIndex = (function () {
     const filter = { s: [status.PUBLIC] };
 
     return function () {
-        const { hadshake: { usObj: iAm } } = this;
+        const { handshake: { usObj: iAm } } = this;
 
         // Всегда выбираем заново, т.к. могут быть региональные фильтры
         return givePhotos(iAm, filter, options);
@@ -1491,7 +1491,7 @@ const givePublicNoGeoIndex = (function () {
     const filter = { geo: ['0'], s: [status.PUBLIC] };
 
     return function () {
-        const { hadshake: { usObj: iAm } } = this;
+        const { handshake: { usObj: iAm } } = this;
 
         // Выбираем заново, т.к. могут быть региональные фильтры
         return givePhotos(iAm, filter, options);
@@ -1589,7 +1589,7 @@ export function parseFilter(filterString) {
 
 // Отдаем общую галерею
 var givePS = Bluebird.method(function (data = {}) {
-    const { hadshake: { usObj: iAm } } = this;
+    const { handshake: { usObj: iAm } } = this;
 
     var filter = data.filter ? parseFilter(data.filter) : {};
     if (!filter.s) {
@@ -1605,7 +1605,7 @@ const giveUserGallery = Bluebird.method(function (data = {}) {
         throw { message: msg.badParams };
     }
 
-    const { hadshake: { usObj: iAm } } = this;
+    const { handshake: { usObj: iAm } } = this;
 
     return User.getUserID(data.login)
         .then(function (user_id) {
@@ -1626,7 +1626,7 @@ const giveUserGallery = Bluebird.method(function (data = {}) {
 
 // Отдаем последние фотографии, ожидающие подтверждения
 var giveForApprove = Bluebird.method(function (data = {}) {
-    const { hadshake: { usObj: iAm } } = this;
+    const { handshake: { usObj: iAm } } = this;
 
     var query = { s: status.READY };
 
@@ -1659,7 +1659,7 @@ var giveForApprove = Bluebird.method(function (data = {}) {
  * @param {Object} data
  */
 var giveUserPhotosAround = Bluebird.method(function (data = {}) {
-    const { hadshake: { usObj: iAm } } = this;
+    const { handshake: { usObj: iAm } } = this;
 
     var cid = Number(data && data.cid);
     var limitL = Math.min(Number(data.limitL), 100);
@@ -1714,7 +1714,7 @@ var giveNearestPhotos = Bluebird.method(function (data = {}) {
 
 // Отдаем непубличные фотографии пользователя
 var giveUserPhotosPrivate = Bluebird.method(function (data = {}) {
-    const { hadshake: { usObj: iAm } } = this;
+    const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered || (iAm.user.role < 5 && iAm.user.login !== data.login)) {
         throw { message: msg.deny };
@@ -1748,7 +1748,7 @@ var giveUserPhotosPrivate = Bluebird.method(function (data = {}) {
 
 // Отдаем новые фотографии
 var giveFresh = Bluebird.method(function (data = {}) {
-    const { hadshake: { usObj: iAm } } = this;
+    const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered ||
         (!data.login && iAm.user.role < 5) ||
@@ -1790,7 +1790,7 @@ var giveFresh = Bluebird.method(function (data = {}) {
 
 // Отдаем разрешенные can для фото
 var giveCan = Bluebird.method(function (data = {}) {
-    const { hadshake: { usObj: iAm } } = this;
+    const { handshake: { usObj: iAm } } = this;
 
     var cid = Number(data.cid);
 
@@ -1966,7 +1966,7 @@ var photoValidate = function (newValues, oldValues, can) {
  * @param {Object} data
  */
 var save = function (data) {
-    const { hadshake: { usObj: iAm } } = this;
+    const { handshake: { usObj: iAm } } = this;
 
     var oldGeo;
     var newGeo;
@@ -2186,7 +2186,7 @@ var getByBounds = Bluebird.method(function (data = {}) {
 
 // Sends selected photos for convert (By admin, whom pressed reconvert button on photo page)
 var convert = Bluebird.method(function (data) {
-    const { hadshake: { usObj: iAm } } = this;
+    const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.isAdmin) {
         throw { message: msg.deny };
@@ -2226,7 +2226,7 @@ var convert = Bluebird.method(function (data) {
 
 // Sends all photo for convert
 var convertAll = Bluebird.method(function (data) {
-    const { hadshake: { usObj: iAm } } = this;
+    const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.isAdmin) {
         throw { message: msg.deny };
@@ -2257,7 +2257,7 @@ var convertAll = Bluebird.method(function (data) {
 // Sends user's photo for convert
 var usersWhoConvertingNonIndividualPhotos = {};
 var convertByUser = Bluebird.method(function (data = {}) {
-    const { hadshake: { usObj: iAm } } = this;
+    const { handshake: { usObj: iAm } } = this;
 
     if (!data.login) {
         throw { message: msg.badParams };
@@ -2417,7 +2417,7 @@ var convertByUser = Bluebird.method(function (data = {}) {
 });
 
 var resetIndividualDownloadOrigin = Bluebird.method(function (data) {
-    const { hadshake: { usObj: iAm } } = this;
+    const { handshake: { usObj: iAm } } = this;
 
     if (!data.login) {
         throw { message: msg.badParams };
@@ -2701,7 +2701,7 @@ var giveObjHist = Bluebird.method(function (data = {}) {
         throw { message: msg.badParams };
     }
 
-    const { hadshake: { usObj: iAm } } = this;
+    const { handshake: { usObj: iAm } } = this;
     var cid = Number(data.cid);
     var showDiff = !!data.showDiff;
 
@@ -2820,7 +2820,7 @@ var giveObjHist = Bluebird.method(function (data = {}) {
 });
 
 var getDownloadKey = Bluebird.method(function (data = {}) {
-    const { hadshake: { usObj: iAm } } = this;
+    const { handshake: { usObj: iAm } } = this;
 
     var cid = Number(data.cid);
 

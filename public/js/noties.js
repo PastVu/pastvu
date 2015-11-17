@@ -1,92 +1,92 @@
-define(['underscore', 'jquery', 'Utils', 'Params'], function (_, $, Utils, P) {
+define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
     'use strict';
 
     function confirm(params) {
         return window.noty({
-           text: params.message,
-           type: 'confirm',
-           layout: 'center',
-           modal: true,
-           force: true,
-           animation: { open: { height: 'toggle' }, close: {}, easing: 'swing', speed: 500 },
-           buttons: [
-               {
-                   addClass: 'btn btn-danger', text: params.okText || 'Ok', onClick: function ($noty) {
-                   // this = button element
-                   // $noty = $noty element
+            text: params.message,
+            type: 'confirm',
+            layout: 'center',
+            modal: true,
+            force: true,
+            animation: { open: { height: 'toggle' }, close: {}, easing: 'swing', speed: 500 },
+            buttons: [
+                {
+                    addClass: 'btn btn-danger', text: params.okText || 'Ok', onClick: function ($noty) {
+                    // this = button element
+                    // $noty = $noty element
 
-                   if (!params.onOk) {
-                       $noty.close();
-                       return;
-                   }
+                    if (!params.onOk) {
+                        $noty.close();
+                        return;
+                    }
 
-                   var $buttons = $noty.$buttons;
-                   var finish = function (onFinish, ctx) {
-                       $buttons.find('.btn-danger').remove();
-                       return $buttons.find('.btn-primary')
-                           .off('click')
-                           .attr('disabled', false)
-                           .on('click', function () {
-                               $noty.close();
-                               if (onFinish) {
-                                   onFinish.call(ctx);
-                               }
-                           });
-                   };
-                   var methods = {
-                       close: function () {
-                           $noty.close();
-                       },
-                       enable: function () {
-                           $buttons.find('button').attr('disabled', false);
-                       },
-                       disable: function () {
-                           $buttons.find('button').attr('disabled', true);
-                       },
-                       replaceTexts: function (message, okText, cancelText) {
-                           $noty.$message.children().html(message);
-                           if (okText) {
-                               $('.btn-danger', $buttons).text(okText);
-                           }
-                           if (cancelText) {
-                               $('.btn-primary', $buttons).text(cancelText);
-                           }
-                       },
-                       success: function (message, buttonText, countdown, onFinish, ctx) {
-                           this.replaceTexts(message, null, buttonText);
-                           var finishButton = finish(onFinish, ctx);
+                    var $buttons = $noty.$buttons;
+                    var finish = function (onFinish, ctx) {
+                        $buttons.find('.btn-danger').remove();
+                        return $buttons.find('.btn-primary')
+                            .off('click')
+                            .attr('disabled', false)
+                            .on('click', function () {
+                                $noty.close();
+                                if (onFinish) {
+                                    onFinish.call(ctx);
+                                }
+                            });
+                    };
+                    var methods = {
+                        close: function () {
+                            $noty.close();
+                        },
+                        enable: function () {
+                            $buttons.find('button').attr('disabled', false);
+                        },
+                        disable: function () {
+                            $buttons.find('button').attr('disabled', true);
+                        },
+                        replaceTexts: function (message, okText, cancelText) {
+                            $noty.$message.children().html(message);
+                            if (okText) {
+                                $('.btn-danger', $buttons).text(okText);
+                            }
+                            if (cancelText) {
+                                $('.btn-primary', $buttons).text(cancelText);
+                            }
+                        },
+                        success: function (message, buttonText, countdown, onFinish, ctx) {
+                            this.replaceTexts(message, null, buttonText);
+                            var finishButton = finish(onFinish, ctx);
 
-                           if (_.isNumber(countdown) && countdown > 0) {
-                               finishButton.text(buttonText + ' (' + (countdown - 1) + ')');
+                            if (_.isNumber(countdown) && countdown > 0) {
+                                finishButton.text(buttonText + ' (' + (countdown - 1) + ')');
 
-                               Utils.timer(
-                                   countdown * 1000,
-                                   function (timeleft) {
-                                       finishButton.text(buttonText + ' (' + timeleft + ')');
-                                   },
-                                   function () {
-                                       finishButton.trigger('click');
-                                   }
-                               );
-                           }
-                       },
-                       error: function (message, buttonText, onFinish, ctx) {
-                           this.replaceTexts(message, null, buttonText);
-                           finish(onFinish, ctx);
-                       }
-                   };
+                                Utils.timer(
+                                    countdown * 1000,
+                                    function (timeleft) {
+                                        finishButton.text(buttonText + ' (' + timeleft + ')');
+                                    },
+                                    function () {
+                                        finishButton.trigger('click');
+                                    }
+                                );
+                            }
+                        },
+                        error: function (message, buttonText, onFinish, ctx) {
+                            this.replaceTexts(message, null, buttonText);
+                            finish(onFinish, ctx);
+                        }
+                    };
 
-                   params.onOk.call(params.ctx, methods);
-               }
-               },
-               {
-                   addClass: 'btn btn-primary', text: params.cancelText || 'Отмена', onClick: function ($noty) {
-                   $noty.close();
-                   params.onCancel && params.onCancel.call(params.ctx);
-               }
-               }
-           ]
-       });
+                    params.onOk.call(params.ctx, methods);
+                }
+                },
+                {
+                    addClass: 'btn btn-primary', text: params.cancelText || 'Отмена', onClick: function ($noty) {
+                    $noty.close();
+                    params.onCancel && params.onCancel.call(params.ctx);
+                }
+                }
+            ]
+        });
     }
 
     function notyAlert(params) {
@@ -137,7 +137,7 @@ define(['underscore', 'jquery', 'Utils', 'Params'], function (_, $, Utils, P) {
             text: message || 'Возникла ошибка',
             type: 'error',
             layout: 'center',
-            timeout: timeout || 2000,
+            timeout: timeout || 3000,
             force: true
         });
     }
@@ -146,5 +146,5 @@ define(['underscore', 'jquery', 'Utils', 'Params'], function (_, $, Utils, P) {
         confirm: confirm,
         alert: notyAlert,
         error: notyError
-    }
+    };
 });

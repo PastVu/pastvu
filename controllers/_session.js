@@ -783,7 +783,7 @@ export async function handleConnection(ip, headers, overHTTP, req) {
 };
 
 function langChange(data) {
-    const { socket, hadshake: { session } } = this;
+    const { socket, handshake: { session } } = this;
 
     if (!config.locales.includes(data.lang)) {
         return;
@@ -798,7 +798,7 @@ function langChange(data) {
 }
 
 function giveInitData() {
-    const { hadshake: { session, usObj: iAm } } = this;
+    const { handshake: { session, usObj: iAm } } = this;
 
     return {
         p: clientParams,

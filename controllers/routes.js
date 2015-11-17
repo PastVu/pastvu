@@ -6,7 +6,7 @@ import * as session from './_session';
 import { clientParams } from './settings';
 import { getRegionsArrFromCache } from './region';
 import { handleHTTPRequest, registerHTTPAPIHandler } from '../app/request';
-import { givePhotoForPage, givePhotoPrevNextCids, parseFilter } from './photo';
+import { giveForPage, givePhotoPrevNextCids, parseFilter } from './photo';
 
 export function loadController(app) {
     const origin = config.client.origin;
@@ -99,7 +99,7 @@ export function loadController(app) {
     app.get(/^\/ps(?:\/(\d{1,6}))?\/?$/, handleHTTPRequest, setStaticHeaders, getRegionForGallery, appMainHandler);
 
     if (config.serveHTTPApi) {
-        app.use('/api2', require('body-parser').json({ limit: '4mb' }), registerHTTPAPIHandler);
+        app.use('/api2', require('body-parser').json({ limit: '4mb' }), handleHTTPRequest, registerHTTPAPIHandler);
     }
 
     function appMainHandler(req, res) {
@@ -188,7 +188,7 @@ export function loadController(app) {
         const cid = Number(req.params[0]);
 
         try {
-            const photo = await givePhotoForPage(req.handshake.usObj, { cid });
+            const photo = await giveForPage(req.handshake.usObj, { cid });
 
             if (!photo) {
                 throw { noPhoto: true };

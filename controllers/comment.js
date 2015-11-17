@@ -489,7 +489,7 @@ export const core = {
 
         return ({ comments: tree, users, countTotal, countNew, canModerate, canReply });
     },
-    async getDelTree(iAm, data) {
+    async giveDelTree(iAm, data) {
         const commentModel = data.type === 'news' ? CommentN : Comment;
 
         const { obj: objId, ...comment } = await commentModel.findOne(
@@ -531,12 +531,14 @@ export const core = {
 };
 
 // Select comments for object
-async function getCommentsObj(iAm, data) {
-    if (!_.isObject(data) || !Number(data.cid)) {
-        throw { message: msg.badParams };
-    }
+async function giveForObj(data) {
+    const { handshake: { usObj: iAm } } = this;
 
     data.cid = Number(data.cid);
+
+    if (!data.cid) {
+        throw { message: msg.badParams };
+    }
 
     const result = await (iAm.registered ? core.getCommentsObjAuth(iAm, data) : core.getCommentsObjAnonym(iAm, data));
 
@@ -546,21 +548,25 @@ async function getCommentsObj(iAm, data) {
 };
 
 // Select branch of removed comments starting from requested
-async function getDelTree(iAm, data) {
-    if (!_.isObject(data) || !Number(data.cid)) {
-        throw { message: msg.badParams };
-    }
+async function giveDelTree(data) {
+    const { handshake: { usObj: iAm } } = this;
 
     data.cid = Number(data.cid);
 
-    const result = await core.getDelTree(iAm, data);
+    if (!data.cid) {
+        throw { message: msg.badParams };
+    }
+
+    const result = await core.giveDelTree(iAm, data);
     result.cid = data.cid;
 
     return result;
 };
 
 // Select comment of user
-async function getCommentsUser(iAm, { login, page = 1, type = 'photo' } = {}) {
+async function giveForUser({ login, page = 1, type = 'photo' }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!login) {
         throw { message: msg.badParams };
     }
@@ -700,13 +706,15 @@ const getComments = (function () {
 }());
 
 // Take last comments of public photos
-const getCommentsFeed = (function () {
+const giveForFeed = (function () {
     const globalOptions = { limit: 30 };
     const globalFeed = Utils.memoizePromise(
         () => getComments(undefined, { del: null, hidden: null }, globalOptions), ms('10s')
     );
 
-    return iAm => {
+    return function () {
+        const { handshake: { usObj: iAm } } = this;
+
         if (_.isEmpty(iAm.rquery)) {
             // User withot region filter will get memozed result for global selection
             return globalFeed();
@@ -716,13 +724,9 @@ const getCommentsFeed = (function () {
     };
 }());
 
-/**
- * Создает комментарий
- * @param socket Сокет пользователя
- * @param data Объект
- */
-async function createComment(socket, data) {
-    const iAm = socket.handshake.usObj;
+// Create comment
+async function create(data) {
+    const { socket, handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered) {
         throw { message: msg.deny };
@@ -828,11 +832,10 @@ async function createComment(socket, data) {
 
 /**
  * Remove comment and its children
- * @param socket User's socket
  * @param data
  */
-async function removeComment(socket, data) {
-    const iAm = socket.handshake.usObj;
+async function remove(data) {
+    const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered) {
         throw { message: msg.deny };
@@ -1012,8 +1015,8 @@ async function removeComment(socket, data) {
 };
 
 // Restore comment and its descendants
-async function restoreComment(socket, { cid, type } = {}) {
-    const iAm = socket.handshake.usObj;
+async function restore({ cid, type }) {
+    const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered) {
         throw { message: msg.deny };
@@ -1176,8 +1179,8 @@ async function restoreComment(socket, { cid, type } = {}) {
 };
 
 // Edit comment
-async function updateComment(socket, data = {}) {
-    const iAm = socket.handshake.usObj;
+async function update(data) {
+    const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered) {
         throw { message: msg.deny };
@@ -1303,7 +1306,7 @@ function commentDeleteHist(doc, ret/* , options */) {
  * In other words event really will be shoed,
  * if it contains a fragment's change or text modification in another event in the future
  */
-async function giveCommentHist({ cid, type = 'photo' } = {}) {
+async function giveHist({ cid, type = 'photo' }) {
     cid = Number(cid);
 
     if (!cid) {
@@ -1397,7 +1400,9 @@ async function giveCommentHist({ cid, type = 'photo' } = {}) {
 };
 
 // Toggle ability to write comments for object (except administrators)
-async function setNoComments(iAm, { cid, type = 'photo', val: nocomments } = {}) {
+async function setNoComments({ cid, type = 'photo', val: nocomments }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!iAm.registered || !iAm.user.role) {
         throw { message: msg.deny };
     }
@@ -1484,99 +1489,15 @@ export async function changeObjComments(obj, hide, iAm) {
     return { myCount: usersCountMap.get(String(iAm.user._id)) || 0 };
 }
 
-export const loadController = io => {
-    io.sockets.on('connection', function (socket) {
-        const hs = socket.handshake;
-
-        socket.on('createComment', function (data) {
-            createComment(socket, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('createCommentResult', resultData);
-                });
-        });
-        socket.on('updateComment', function (data) {
-            updateComment(socket, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('updateCommentResult', resultData);
-                });
-        });
-        socket.on('giveCommentHist', function (data) {
-            giveCommentHist(data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeCommentHist', resultData);
-                });
-        });
-        socket.on('removeComment', function (data) {
-            removeComment(socket, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('removeCommentResult', resultData);
-                });
-        });
-        socket.on('restoreComment', function (data) {
-            restoreComment(socket, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('restoreCommentResult', resultData);
-                });
-        });
-        socket.on('setNoComments', function (data) {
-            setNoComments(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('setNoCommentsResult', resultData);
-                });
-        });
-        socket.on('giveCommentsObj', function (data) {
-            getCommentsObj(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeCommentsObj', resultData);
-                });
-        });
-        socket.on('giveCommentsDel', function (data) {
-            getDelTree(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeCommentsDel', resultData);
-                });
-        });
-        socket.on('giveCommentsUser', function (data) {
-            getCommentsUser(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeCommentsUser', resultData);
-                });
-        });
-        socket.on('giveCommentsFeed', function () {
-            getCommentsFeed(hs.usObj)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeCommentsFeed', resultData);
-                });
-        });
-    });
+export default {
+    create,
+    update,
+    remove,
+    restore,
+    giveHist,
+    giveForObj,
+    giveForFeed,
+    giveForUser,
+    giveDelTree,
+    setNoComments
 };

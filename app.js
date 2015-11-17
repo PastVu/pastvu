@@ -13,7 +13,6 @@ import { handleSocketConnection, registerSocketRequestHendler } from './app/requ
 
 import * as admin from './controllers/admin';
 import * as auth from './controllers/auth';
-import * as comment from './controllers/comment';
 import * as errors from './controllers/errors';
 import * as mail from './controllers/mail';
 import * as profile from './controllers/profile';
@@ -175,7 +174,6 @@ export async function configure(startStamp) {
 
     admin.loadController(io);
     auth.loadController(io);
-    comment.loadController(io);
     profile.loadController(io);
     reason.loadController(io);
     region.loadController(io);

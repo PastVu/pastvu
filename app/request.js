@@ -186,7 +186,7 @@ export const registerHTTPAPIHandler = (function () {
         }
 
         if (_.isEmpty(query)) {
-            return res.set({ 'Cache-Control': 'no-cache' }).status(200).send('Welcome to OORRAA Mobile Api');
+            return res.set({ 'Cache-Control': 'no-cache' }).status(200).send('Welcome to PastVu Api');
         }
 
         let params = query.params;
@@ -205,17 +205,16 @@ export const registerHTTPAPIHandler = (function () {
             }
         }
 
-        try {
-            const result = await callWebApi.call(context, methodName, params, req.handshake);
+        const result = await callWebApi.call(context, methodName, params, req.handshake);
 
-            finishRequest.call(context, 200, req, res, start, result);
-        } catch (error) {
-            // Сюда придет ошибка уже сконвертированная в тип APIError, отправляем её клиенту
-            if (error.code === constants.NO_SUCH_METHOD) {
-                finishRequest.call(context, 400, req, res, start);
+        if (result.error) {
+            if (result.error.code === constants.NO_SUCH_METHOD) {
+                finishRequest.call(context, 400, req, res, start, result.error.message);
             } else {
-                finishRequest.call(context, 200, req, res, start, error);
+                finishRequest.call(context, 200, req, res, start, result.error);
             }
+        } else {
+            finishRequest.call(context, 200, req, res, start, result);
         }
     };
 }());

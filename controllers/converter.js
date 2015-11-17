@@ -559,7 +559,7 @@ function conveyorStartStop({ value }) {
 }
 
 async function conveyorStat() {
-    const { hadshake: { usObj: iAm } } = this;
+    const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered) {
         throw { message: 'Not authorized for statConveyer' };

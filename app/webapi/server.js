@@ -45,26 +45,32 @@ export default async function callMethod(methodName, params = {}) {
         logger.warn(`No request context for ${methodName} calling`);
     }
 
+    if (!method) {
+        logger.error(`${this.ridMark} No such method "${methodName}" with params:`, inspect(params));
+        throw new APIError(constants.NO_SUCH_METHOD, 'Bad request. No such method');
+    }
+
     logger.info(`${this.ridMark} Calling method "${methodName}"`);
-    logger.debug(`${this.ridMark} Params:`, inspect(params));
+    // logger.debug(`${this.ridMark} Params:`, inspect(params));
 
     try {
         const result = await Bluebird.try(method, [params], this);  // Use try, because not all methods return promise
         const elapsed = Date.now() - start;
 
         logger.info(`${this.ridMark} WebApi Method "${methodName}" has executed in ${elapsed}ms`);
-        logger.debug(`${this.ridMark} Response:`, inspect(result));
+        // logger.debug(`${this.ridMark} Response:`, inspect(result));
         this.trace.push({ type: 'webapi', method: methodName, ms: elapsed });
 
         return result;
     } catch (err) {
         let error = err;
 
+        logger.error(`${this.ridMark} Error calling method "${methodName}" with params:`, inspect(params));
+        logger.error(`${this.ridMark}`, error);
+
         if (unhandledErrorFilter(error)) {
             error = new APIError(constants.UNHANDLED_ERROR);
         }
-
-        logger.error(`${this.ridMark} Error calling method "${methodName}":`, error);
 
         throw error;
     }

@@ -35,68 +35,73 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 			delete this.subscriptions.loggedIn;
 		},
 		receive: function (cb, ctx) {
-			socket.once('takeCommentsFeed', function (data) {
-				var photo,
-					user,
-					comment,
-					regions,
-					photoCommentsToInsert = [],
-					i, j;
+            socket.run('comment.giveForFeed', { limit: 30 }).then(function (data) {
+                var photo,
+                    user,
+                    comment,
+                    regions,
+                    photoCommentsToInsert = [],
+                    i, j;
 
-				if (!data || data.error || !Array.isArray(data.comments)) {
-					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
-				} else {
-					for (i in data.users) {
-						if (data.users[i] !== undefined) {
-							user = data.users[i];
-							user.link = '/u/' + user.login;
-						}
-					}
+                if (!data || data.error || !Array.isArray(data.comments)) {
+                    window.noty({
+                        text: _.get(data, 'error.message', 'Error occurred'),
+                        type: 'error',
+                        layout: 'center',
+                        timeout: 3000,
+                        force: true
+                    });
+                } else {
+                    for (i in data.users) {
+                        if (data.users[i] !== undefined) {
+                            user = data.users[i];
+                            user.link = '/u/' + user.login;
+                        }
+                    }
 
-					regions = data.regions;
+                    regions = data.regions;
 
-					for (i = 0; i < data.comments.length; i++) {
-						comment = data.comments[i];
+                    for (i = 0; i < data.comments.length; i++) {
+                        comment = data.comments[i];
 
-						//Убираем тэги ссылок (т.к. всё сообщение у нас ссылка, а ссылки в ссылках не разрешены)
-						//и заменяем перенос строки на пробел в каждом сообщении
-						comment.txt = comment.txt.replace(regexpAHrefTag, '').replace(regexpNewLine, ' ');
+                        //Убираем тэги ссылок (т.к. всё сообщение у нас ссылка, а ссылки в ссылках не разрешены)
+                        //и заменяем перенос строки на пробел в каждом сообщении
+                        comment.txt = comment.txt.replace(regexpAHrefTag, '').replace(regexpNewLine, ' ');
 
-						photo = data.photos[comment.obj];
-						user = data.users[comment.user];
+                        photo = data.photos[comment.obj];
+                        user = data.users[comment.user];
 
-						if (photo && user) {
-							comment.user = user;
+                        if (photo && user) {
+                            comment.user = user;
 
-							if (photo.comments === undefined) {
-								photo.link = '/p/' + photo.cid;
-								photo.sfile = (P.preaddrs.length ? P.preaddrs[i % P.preaddrs.length] : '') + Photo.picFormats.s + photo.file;
-								photo.comments = [];
+                            if (photo.comments === undefined) {
+                                photo.link = '/p/' + photo.cid;
+                                photo.sfile = (P.preaddrs.length ? P.preaddrs[i % P.preaddrs.length] : '') + Photo.picFormats.s + photo.file;
+                                photo.comments = [];
 
-								if (photo.rs) {
-									for (j = photo.rs.length; j--;) {
-										photo.rs[j] = regions[photo.rs[j]];
-									}
-								}
+                                if (photo.rs) {
+                                    for (j = photo.rs.length; j--;) {
+                                        photo.rs[j] = regions[photo.rs[j]];
+                                    }
+                                }
 
-								photoCommentsToInsert.push(photo);
-							}
-							comment.link = photo.link + '?hl=comment-' + comment.cid;
-							photo.comments.unshift(comment);
-						}
-					}
+                                photoCommentsToInsert.push(photo);
+                            }
+                            comment.link = photo.link + '?hl=comment-' + comment.cid;
+                            photo.comments.unshift(comment);
+                        }
+                    }
 
-					if (!tplComments) {
-						tplComments = doT.template(document.getElementById('cfeeddot').text);
-					}
+                    if (!tplComments) {
+                        tplComments = doT.template(document.getElementById('cfeeddot').text);
+                    }
 
-					this.$dom[0].querySelector('.commentsBody').innerHTML = tplComments(photoCommentsToInsert);
-				}
-				if (cb) {
-					cb.call(ctx);
-				}
-			}, this);
-			socket.emit('giveCommentsFeed', {limit: 30});
+                    this.$dom[0].querySelector('.commentsBody').innerHTML = tplComments(photoCommentsToInsert);
+                }
+                if (cb) {
+                    cb.call(ctx);
+                }
+            }.bind(this));
 		}
 	});
 });
