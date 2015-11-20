@@ -44,7 +44,7 @@ define(['module'], function (/* module */) {
                 window.addEventListener('beforeunload', function () {
                     manager.disconnect();
                 });
-                firstConnectSubscribers.push({cb: cb, ctx: ctx});
+                firstConnectSubscribers.push({ cb: cb, ctx: ctx });
             }
         };
 
@@ -82,6 +82,7 @@ define(['module'], function (/* module */) {
          */
         socket.on = function (name, cb, ctx, noConnectionNotify) {
             var registered = eventHandlerRegister('on', name, cb, ctx, noConnectionNotify);
+
             // Если указано уведомлять об отсутствии соединения и его сейчас нет,
             // то сразу после регистрации события уведомляем об этом
             if (registered && noConnectionNotify && !socket.connected) {
@@ -89,6 +90,7 @@ define(['module'], function (/* module */) {
                     eventHandlersNotify(name, null, true);
                 }, 4);
             }
+
             return registered;
         };
 
@@ -109,7 +111,7 @@ define(['module'], function (/* module */) {
                     // Если указано уведомлять об отсутствии соединения и его сейчас нет,
                     // то сразу уведомляем об этом и не регистрируем событие, так как подписка одноразовая
                     setTimeout(function () {
-                        cb.call(ctx, disconnectionDataReturn);
+                        cb.apply(ctx, [disconnectionDataReturn, _.noop]);
                     }, 4);
                     return false;
                 } else if (!registerEvenNoConnection) {
@@ -177,7 +179,11 @@ define(['module'], function (/* module */) {
                             if (_.isEmpty(queueName)) {
                                 delete socket.emitQueue[name];
                             }
-                            reject(new TimeoutError({ type: 'SOCKET_CONNECTION', name, data }, timeToWaitIfNoConnection));
+                            reject(new TimeoutError({
+                                type: 'SOCKET_CONNECTION',
+                                name,
+                                data
+                            }, timeToWaitIfNoConnection));
                         }, timeToWaitIfNoConnection);
                     }
 
@@ -205,10 +211,19 @@ define(['module'], function (/* module */) {
             return socket.request(name, data, timeToWaitIfNoConnection)
                 .then(function (result) {
                     if (!result || result.error) {
+                        console.error('socket.run "' + name + '" returned error\n', result);
+
                         if (notyOnError) {
-                            console.error('socket.run "' + name + '" returned error\n', result);
-                            noties.error(_.get(result, 'error.message', 'Error occured'));
+                            var message = _.get(result, 'error.message', 'Error occured');
+                            var rid = _.get(result, 'rid', '');
+
+                            if (rid) {
+                                rid = 'Error id: ' + rid;
+                            }
+
+                            noties.error(_.compact([message, rid]).join('<br>'), 4000);
                         }
+
                         throw result.error;
                     }
 
@@ -226,50 +241,63 @@ define(['module'], function (/* module */) {
         // Добавляем обработчик события
         // Если его еще нет в хеше, создаем в нем стек по имени и вешаем событие на manager
         function eventHandlerRegister(type, name, cb, ctx, noConnectionNotify) {
-            var nameStack = socket.ons[name],
-                stackRecord = { type: type, name: name, cb: cb, ctx: ctx, connoty: noConnectionNotify };
+            var nameStack = socket.ons[name];
+            var stackRecord = { type: type, name: name, cb: cb, ctx: ctx, connoty: noConnectionNotify };
 
             if (Array.isArray(nameStack)) {
                 nameStack.push(stackRecord);
             } else {
                 socket.ons[name] = [stackRecord];
-                manager.on(name, function (data) {
-                    eventHandlersNotify(name, data);
+                manager.on(name, function () {
+                    var data = _.first(arguments);
+                    var acknowledgementCallback = _.last(arguments);
+
+                    eventHandlersNotify(name, [data, acknowledgementCallback]);
                 });
             }
+
             return true;
         }
 
         // Вызывает обработчики события с переданными данными
         // Если обработчик установлен как once, удаляет его из стека после вызова
         // Если обработчиков после вызова не осталось, удаляем событие из хэша и отписываемся от manager
-        function eventHandlersNotify(name, data, aboutNoConnection) {
+        function eventHandlersNotify(name, result, aboutNoConnection) {
             var nameStack = socket.ons[name];
-            var item;
 
-            if (aboutNoConnection) {
-                data = disconnectionDataReturn;
+            if (!Array.isArray(nameStack)) {
+                return;
             }
 
-            if (Array.isArray(nameStack)) {
-                for (var i = 0; i < nameStack.length; i++) {
-                    item = nameStack[i];
-                    if (aboutNoConnection && !item.connoty) {
-                        // Если уведомляем про отсутствие соединения,
-                        // а флага уведомлять об этом на хэндлере нет, пропускаем его
-                        continue;
-                    }
-                    item.cb.call(item.ctx, data);
-                    // Если это once, удаляем из стека после вызова коллбэка
-                    if (item.type === 'once') {
-                        nameStack.splice(i--, 1);
-                    }
+            if (aboutNoConnection) {
+                result = [disconnectionDataReturn, _.noop];
+            }
+
+            if (!Array.isArray(result)) {
+                result = [result];
+            }
+
+            for (var i = 0, item; i < nameStack.length; i++) {
+                item = nameStack[i];
+
+                // Если уведомляем про отсутствие соединения,
+                // а флага уведомлять об этом на хэндлере нет, пропускаем его
+                if (aboutNoConnection && !item.connoty) {
+                    continue;
                 }
-                // Если обработчиков не осталось, удаляем подписку на событие manager
-                if (!nameStack.length) {
-                    manager.removeAllListeners(name);
-                    delete socket.ons[name];
+
+                item.cb.apply(item.ctx, result);
+
+                // Если это once, удаляем из стека после вызова коллбэка
+                if (item.type === 'once') {
+                    nameStack.splice(i--, 1);
                 }
+            }
+
+            // Если обработчиков не осталось, удаляем подписку на событие manager
+            if (!nameStack.length) {
+                manager.removeAllListeners(name);
+                delete socket.ons[name];
             }
         }
 
