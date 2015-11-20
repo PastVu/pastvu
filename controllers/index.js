@@ -344,6 +344,14 @@ const giveAbout = (function () {
     }, ms('1m'));
 }());
 
+giveIndexNews.isPublic = true;
+giveAllNews.isPublic = true;
+giveNewsFull.isPublic = true;
+giveNewsPublic.isPublic = true;
+giveRatings.isPublic = true;
+giveIndexStats.isPublic = true;
+giveAbout.isPublic = true;
+
 export default {
     giveIndexNews,
     giveAllNews,

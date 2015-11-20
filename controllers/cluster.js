@@ -335,6 +335,7 @@ async function getClusterPoster(cluster, yearCriteria) {
 // After connection to db read current cluster parameters
 waitDb.then(readClusterParams);
 
+recalcAll.isPublic = true;
 export default {
     recalcAll
 };

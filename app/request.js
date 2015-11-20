@@ -24,7 +24,7 @@ const errtypes = {
  * trace - array of execution webapi methods with timings, like { type: 'webapi', method: 'Accaunting.Method', ms: 10 }
  * rpc - объект, наследуемый от экземпляра rpc с теми же собственными свойствами, что и у coreApi
  *
- * @returns {{trace: Array, coreApi: coreApi, rid: string, ridMark: string}}
+ * @returns {{trace: Array, rid: string, ridMark: string}}
  */
 const genRequestContext = function () {
     const rid = Utils.randomString(10, true);
@@ -35,6 +35,10 @@ const genRequestContext = function () {
 };
 
 const logTrace = function (context, elapsedTotal, methodName) {
+    if (_.size(context.trace) < 2) {
+        return;
+    }
+
     const elapsedByType = { webapi: 0, rpc: 0 };
     const message = util.format(
         'Trace:',
@@ -62,12 +66,12 @@ const logTrace = function (context, elapsedTotal, methodName) {
     }
 };
 
-const callWebApi = async function () {
+const callWebApi = async function (methodName, params) {
     const context = this;
     let result;
 
     try {
-        result = { result: await webApi.apply(context, arguments) };
+        result = { result: await this.call(methodName, params, true) };
     } catch (error) {
         result = { error };
     }
@@ -205,7 +209,7 @@ export const registerHTTPAPIHandler = (function () {
             }
         }
 
-        const result = await callWebApi.call(context, methodName, params, req.handshake);
+        const result = await callWebApi.call(context, methodName, params);
 
         if (result.error) {
             if (result.error.code === constants.NO_SUCH_METHOD) {
@@ -235,7 +239,9 @@ export const handleSocketConnection = (function () {
 
         // If no more sockets in this session, remove session
         if (_.isEmpty(session.sockets)) {
-            sessionController.removeSessionFromHashes.call(connectionContext, usObj, session, 'onSocketDisconnection');
+            connectionContext.call(
+                'session.removeSessionFromHashes', { usObj, session, logPrefix: 'onSocketDisconnection' }
+            );
         }
     };
 
@@ -305,7 +311,7 @@ handleSocketRequest.on('*', async function handleSocketRequest(socket, args) {
 
     logger.info(`${context.ridMark} -> Socket request for "${methodName}" method has arrived`);
 
-    const response = await callWebApi.call(context, methodName, params, socket.handshake, socket);
+    const response = await callWebApi.call(context, methodName, params);
     const elapsed = Date.now() - start;
     const logmessage = `${context.ridMark} <- Socket request for "${methodName}" method finished in ${elapsed}ms`;
 

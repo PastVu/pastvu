@@ -579,6 +579,11 @@ const conveyorStatFast = () => ({
     conveyerConverted
 });
 
+conveyorStartStop.isPublic = true;
+conveyerClear.isPublic = true;
+conveyorStat.isPublic = true;
+conveyorStatFast.isPublic = true;
+
 export default {
     conveyorStartStop,
     conveyerClear,

@@ -1489,6 +1489,17 @@ export async function changeObjComments(obj, hide, iAm) {
     return { myCount: usersCountMap.get(String(iAm.user._id)) || 0 };
 }
 
+create.isPublic = true;
+update.isPublic = true;
+remove.isPublic = true;
+restore.isPublic = true;
+giveHist.isPublic = true;
+giveForObj.isPublic = true;
+giveForFeed.isPublic = true;
+giveForUser.isPublic = true;
+giveDelTree.isPublic = true;
+setNoComments.isPublic = true;
+
 export default {
     create,
     update,

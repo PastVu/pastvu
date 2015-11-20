@@ -36,7 +36,7 @@ const inspect = (function () {
     return obj => util.inspect(obj, inspectOptions);
 }());
 
-export default async function callMethod(methodName, params = {}) {
+export default async function callMethod(methodName, params = {}, isPublic = false) {
     const start = Date.now();
     const method = methodsHash[methodName];
     const logger = getMethodLogger(methodName);
@@ -47,6 +47,13 @@ export default async function callMethod(methodName, params = {}) {
 
     if (!method) {
         logger.error(`${this.ridMark} No such method "${methodName}" with params:`, inspect(params));
+        throw new APIError(constants.NO_SUCH_METHOD, 'Bad request. No such method');
+    }
+
+    if (isPublic && !method.isPublic) {
+        logger.error(
+            `${this.ridMark} Somebody from the outside trying to call private method "${methodName}" with params:`, inspect(params)
+        );
         throw new APIError(constants.NO_SUCH_METHOD, 'Bad request. No such method');
     }
 

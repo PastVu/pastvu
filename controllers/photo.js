@@ -1393,12 +1393,12 @@ export const givePhotoPrevNextCids = async function (cid) {
  * @param iAm Объект пользователя
  * @param filter Объект фильтра (распарсенный)
  * @param data Объект параметров, включая стринг фильтра
- * @param user_id _id пользователя, если хотим галерею только для него получить
+ * @param userId _id пользователя, если хотим галерею только для него получить
  */
-var givePhotos = Bluebird.method(function (iAm, filter, data, user_id) {
+var givePhotos = Bluebird.method(function (iAm, filter, data, userId) {
     var skip = Math.abs(Number(data.skip)) || 0;
     var limit = Math.min(data.limit || 40, 100);
-    var buildQueryResult = buildPhotosQuery(filter, user_id, iAm);
+    var buildQueryResult = buildPhotosQuery(filter, userId, iAm);
     var query = buildQueryResult.query;
     var fieldsSelect;
 
@@ -1411,15 +1411,15 @@ var givePhotos = Bluebird.method(function (iAm, filter, data, user_id) {
                 query.geo = { $size: 2 };
             }
         }
-        if (user_id) {
-            query.user = user_id;
+        if (userId) {
+            query.user = userId;
         }
 
         // Для подсчета новых комментариев нужны _id, а для проверки на изменение - ucdate
         fieldsSelect = iAm.registered ? compactFieldsForRegWithRegions : compactFieldsWithRegions;
 
         return Bluebird.join(
-                Photo.findAsync(query, fieldsSelect, { lean: true, skip: skip, limit: limit, sort: { sdate: -1 } }),
+                Photo.findAsync(query, fieldsSelect, { lean: true, skip, limit, sort: { sdate: -1 } }),
                 Photo.countAsync(query)
             )
             .bind({})
@@ -1456,11 +1456,11 @@ var givePhotos = Bluebird.method(function (iAm, filter, data, user_id) {
                 }
 
                 return {
-                    photos: photos,
+                    photos,
                     filter: { r: buildQueryResult.rarr, rp: filter.rp, s: buildQueryResult.s, geo: filter.geo },
                     rhash: shortRegionsHash,
                     count: this.count,
-                    skip: skip
+                    skip
                 };
             });
     }
@@ -1468,7 +1468,7 @@ var givePhotos = Bluebird.method(function (iAm, filter, data, user_id) {
         photos: [],
         filter: { r: buildQueryResult.rarr, rp: filter.rp, s: buildQueryResult.s, geo: filter.geo },
         count: 0,
-        skip: skip
+        skip
     });
 });
 
@@ -2863,6 +2863,38 @@ var getDownloadKey = Bluebird.method(function (data = {}) {
 
     return {};
 });
+
+create.isPublic = true;
+revoke.isPublic = true;
+readyPhoto.isPublic = true;
+toRevision.isPublic = true;
+reject.isPublic = true;
+rereject.isPublic = true;
+approve.isPublic = true;
+activateDeactivate.isPublic = true;
+remove.isPublic = true;
+removeIncoming.isPublic = true;
+restore.isPublic = true;
+giveForPage.isPublic = true;
+givePublicIndex.isPublic = true;
+givePublicNoGeoIndex.isPublic = true;
+givePS.isPublic = true;
+giveUserGallery.isPublic = true;
+giveForApprove.isPublic = true;
+giveUserPhotosAround.isPublic = true;
+giveUserPhotosPrivate.isPublic = true;
+giveFresh.isPublic = true;
+giveNearestPhotos.isPublic = true;
+giveCan.isPublic = true;
+save.isPublic = true;
+giveObjHist.isPublic = true;
+getByBounds.isPublic = true;
+convert.isPublic = true;
+convertAll.isPublic = true;
+convertByUser.isPublic = true;
+resetIndividualDownloadOrigin.isPublic = true;
+giveNewLimit.isPublic = true;
+getDownloadKey.isPublic = true;
 
 export default {
     create,
