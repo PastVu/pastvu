@@ -47,7 +47,9 @@ export const ready = new Promise(async function(resolve, reject) {
 });
 
 // Users login
-async function login(socket, { login, pass } = {}) {
+async function login({ login, pass }) {
+    const { socket } = this;
+
     if (!login) {
         throw { message: 'Fill in the login field' };
     }
@@ -59,7 +61,7 @@ async function login(socket, { login, pass } = {}) {
         const user = await User.getAuthenticated(login, pass);
 
         // Transfer user to session
-        const { userPlain } = await session.loginUser(socket, user);
+        const { userPlain } = await this.call('session.loginUser', { socket, user });
 
         return { message: 'Success login', youAre: userPlain };
     } catch (err) {
@@ -81,8 +83,8 @@ async function login(socket, { login, pass } = {}) {
 }
 
 // Users logout
-async function logout(socket) {
-    await session.logoutUser(socket);
+async function logout() {
+    await this.call('session.logoutUser');
 
     return {};
 }
@@ -322,29 +324,16 @@ const whoAmI = iAm => Promise.resolve({
     registered: iAm.registered
 });
 
+login.isPublic = true;
+login.logout = true;
+export default {
+    login,
+    logout
+};
+
 export function loadController(io) {
     io.sockets.on('connection', function (socket) {
         const hs = socket.handshake;
-
-        socket.on('loginRequest', function (data) {
-            login(socket, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('loginResult', resultData);
-                });
-        });
-
-        socket.on('logoutRequest', function () {
-            logout(socket)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('logouResult', resultData);
-                });
-        });
 
         socket.on('registerRequest', function (data) {
             register(hs.usObj, data)

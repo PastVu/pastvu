@@ -266,11 +266,12 @@ async function addSessionToHashes(session) {
 }
 
 // Remove session from hashes, and remove usObj if it doesn't contains sessiona anymore
-export function removeSessionFromHashes(usObj, session, logPrefix) {
-    const sessionKey = session.key;
-    const userKey = usObj.registered ? usObj.user.login : session.key;
+export function removeSessionFromHashes({ session: { key: sessionKey }, usObj, logPrefix = '' }) {
+    const userKey = usObj.registered ? usObj.user.login : sessionKey;
     let someCountPrev;
     let someCountNew;
+
+    logPrefix = _.get(this, 'ridMark', '') + ' ' + logPrefix;
 
     delete sessWaitingConnect[sessionKey];
     delete sessConnected[sessionKey];
@@ -408,10 +409,8 @@ export function regetUsers(filterFn, emitThem) {
 }
 
 // Session treatment when user logging in, invokes from auth-controller
-export async function loginUser(socket, user) {
-    const handshake = socket.handshake;
-    const usObjOld = handshake.usObj;
-    const sessionOld = handshake.session;
+export async function loginUser({ user }) {
+    const { socket, handshake: { session: sessionOld, usObj: usObjOld } } = this;
     const sessionNew = copySession(sessionOld);
     const sessHash = sessWaitingConnect[sessionOld.key] ? sessWaitingConnect : sessConnected;
 
@@ -429,39 +428,39 @@ export async function loginUser(socket, user) {
     // Add session to existing usObj or will create new usObj
     // usObj already exists if user already logged in on some other device (other session), in this case
     // user must be taken from usObj instaed of incoming
-    const usObj = await addSessionToUserObject(sessionNew);
+    const usObj = await addSessionToUserObject.call(this, sessionNew);
     user = usObj.user;
 
     // For all socket of currect (old) session assign new session and usObj
-    if (_.isObject(sessionOld.sockets)) {
-        _.forOwn(sessionOld.sockets, function (sock) {
-            sock.handshake.usObj = usObj;
-            sock.handshake.session = sessionNew;
+    if (_.isEmpty(sessionOld.sockets)) {
+        logger.warn(`${this.radMark} SessionOld have no sockets while login ${user.login}`);
+    } else {
+        _.forOwn(sessionOld.sockets, ({ handshake }) => {
+            handshake.usObj = usObj;
+            handshake.session = sessionNew;
         });
 
         // Transfer all sockets from old session to new
         sessionNew.sockets = sessionOld.sockets;
-    } else {
-        logger.warn('SessionOld have no sockets while login', user.login);
     }
     delete sessionOld.sockets;
 
     // Remove old session from sessions map
-    removeSessionFromHashes(usObjOld, sessionOld, 'loginUser');
+    this.call('session.removeSessionFromHashes', { usObj: usObjOld, session: sessionOld, logPrefix: 'loginUser' });
 
     // Put new session into sessions map
     sessHash[sessionNew.key] = sessionNew;
 
     // Send old session to archive
-    archiveSession(sessionOld);
+    await archiveSession(sessionOld);
 
     // Update cookie in current socket, all browser tabs will see it
     emitSidCookie(socket);
 
     const userPlain = getPlainUser(user);
 
-    // Send user to all sockets of session, except current socket (auth-controller send user there)
-    _.forOwn(sessionNew.sockets, function (sock) {
+    // Send user to all sockets of session, except current socket (auth-controller will send user there)
+    _.forOwn(sessionNew.sockets, sock => {
         if (sock !== socket && _.isFunction(sock.emit)) {
             sock.emit('youAre', { user: userPlain, registered: true });
         }
@@ -471,10 +470,8 @@ export async function loginUser(socket, user) {
 }
 
 // Session treatment when user exit, invokes from auth-controller
-export async function logoutUser(socket) {
-    const handshake = socket.handshake;
-    const usObjOld = handshake.usObj;
-    const sessionOld = handshake.session;
+export async function logoutUser() {
+    const { socket, handshake: { usObj: usObjOld, session: sessionOld } } = this;
     const sessionNew = copySession(sessionOld);
     const sessHash = sessWaitingConnect[sessionOld.key] ? sessWaitingConnect : sessConnected;
 
@@ -492,49 +489,35 @@ export async function logoutUser(socket) {
     await sessionNew.save();
 
     // Create new usObj and new session into it
-    const usObj = await addSessionToUserObject(sessionNew);
+    const usObj = await addSessionToUserObject.call(this, sessionNew);
 
     // For all socket of currect (old) session assign new session and usObj
-    if (_.isObject(sessionOld.sockets)) {
-        _.forOwn(sessionOld.sockets, function (sock) {
-            sock.handshake.usObj = usObj;
-            sock.handshake.session = sessionNew;
+    if (_.isEmpty(sessionOld.sockets)) {
+        logger.warn(`${this.radMark} SessionOld have no sockets while logout ${user.login}`);
+    } else {
+        _.forOwn(sessionOld.sockets, ({handshake}) => {
+            handshake.usObj = usObj;
+            handshake.session = sessionNew;
         });
 
         // Transfer all sockets from old session to new
         sessionNew.sockets = sessionOld.sockets;
-    } else {
-        logger.warn('SessionOld have no sockets while logout', user.login);
     }
     delete sessionOld.sockets;
 
     // Remove old session from sessions map
-    removeSessionFromHashes(usObjOld, sessionOld, 'logoutUser');
+    this.call('session.removeSessionFromHashes', { usObj: usObjOld, session: sessionOld, logPrefix: 'logoutUser' });
 
     // Put new session in sessions map
     sessHash[sessionNew.key] = sessionNew;
 
     // Send old session to archive
-    archiveSession(sessionOld);
+    await archiveSession(sessionOld);
 
-    await new Promise(resolve => {
-        socket.once('commandResult', function () {
-            sendReload(sessionNew);
-            resolve();
-        });
+    // Send client new cookie of anonym session
+    await emitSidCookie(socket, true);
 
-        // Send client new cookie of anonym session
-        emitSidCookie(socket);
-    });
-}
-
-// Send command to reload to all session's sockets
-function sendReload(session, excludeSocket) {
-    _.forOwn(session.sockets, function (socket) {
-        if (socket && socket !== excludeSocket && _.isFunction(socket.emit)) {
-            socket.emit('command', [{ name: 'location' }]);
-        }
-    });
+    sendReload(sessionNew);
 }
 
 // Send user to all his sockets
@@ -575,17 +558,39 @@ export async function saveEmitUser({ usObj, login, userId, sessId, excludeSocket
     return emitUser({ usObj, excludeSocket });
 }
 
-function emitSidCookie(socket) {
-    socket.emit('command', [
-        { name: 'updateCookie', data: createSidCookieObj(socket.handshake.session) }
-    ]);
+function emitSocket(socket, data, waitResponse) {
+    if (!Array.isArray(data)) {
+        data = [data];
+    }
+
+    if (waitResponse) {
+        return new Promise((resolve, reject) => {
+            socket.emit(...data, function (result) {
+                if (_.get(result, 'error')) {
+                    reject(result.error);
+                } else {
+                    resolve(result);
+                }
+            });
+        });
+    } else {
+        socket.emit(...data);
+    }
 }
 
-function emitLangCookie(socket, lang) {
-    socket.emit('command', [
-        { name: 'updateCookie', data: createLangCookieObj(lang) }
-    ]);
-}
+const emitSidCookie = (socket, waitResponse) => emitSocket(socket, [
+    'command', [{ name: 'updateCookie', data: createSidCookieObj(socket.handshake.session) }]
+], waitResponse);
+
+const emitLangCookie = (socket, lang, waitResponse) => emitSocket(socket, [
+    'command', [{ name: 'updateCookie', data: createLangCookieObj(lang) }]
+], waitResponse);
+
+// Send command to reload to all session's sockets
+const sendReload = (session, excludeSocket, waitResponse) => _.chain(session.sockets)
+    .filter(socket => socket && socket !== excludeSocket && _.isFunction(socket.emit))
+    .map(socket => emitSocket(socket, ['command', [{ name: 'location' }]], waitResponse))
+    .value();
 
 // Check user is online
 export function isOnline({ login, userId } = {}) {
@@ -619,7 +624,7 @@ const checkSessWaitingConnect = (function () {
             const stamp = new Date(session.stamp || 0).getTime();
 
             if (!stamp || stamp <= expiredFrontier) {
-                removeSessionFromHashes(usSid[sessionId], session, 'checkSessWaitingConnect');
+                removeSessionFromHashes({ usObj: usSid[sessionId], session, logPrefix: 'checkSessWaitingConnect' });
             }
         });
 
@@ -652,7 +657,7 @@ const checkExpiredSessions = (function () {
 
                 if (session) {
                     if (usObj !== undefined) {
-                        removeSessionFromHashes(usObj, session, 'checkExpiredSessions');
+                        removeSessionFromHashes({ usObj, session, logPrefix: 'checkExpiredSessions' });
                     }
 
                     // If session contains sockets, break connection
@@ -782,19 +787,17 @@ export async function handleConnection(ip, headers, overHTTP, req) {
 
 };
 
-function langChange(data) {
+async function langChange(data) {
     const { socket, handshake: { session } } = this;
 
     if (!config.locales.includes(data.lang)) {
         return;
     }
 
-    socket.once('commandResult', function () {
-        sendReload(session);
-    });
+    // Send client new language cookie
+    await emitLangCookie(socket, data.lang, true);
 
-    // Send lient new language cookie
-    emitLangCookie(socket, data.lang);
+    sendReload(session);
 }
 
 function giveInitData() {
@@ -808,9 +811,16 @@ function giveInitData() {
     };
 }
 
+giveInitData.isPublic = true;
+langChange.isPublic = true;
+
 export default {
+    loginUser,
+    logoutUser,
     giveInitData,
-    langChange
+    langChange,
+
+    removeSessionFromHashes
 };
 
 waitDb.then(() => {

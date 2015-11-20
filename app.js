@@ -11,8 +11,8 @@ import socketIO from 'socket.io';
 import Utils from './commons/Utils';
 import { handleSocketConnection, registerSocketRequestHendler } from './app/request';
 
+import { ready as authReady } from './controllers/auth';
 import * as admin from './controllers/admin';
-import * as auth from './controllers/auth';
 import * as errors from './controllers/errors';
 import * as mail from './controllers/mail';
 import * as profile from './controllers/profile';
@@ -154,7 +154,7 @@ export async function configure(startStamp) {
         app.get(/^\/(?:_a|_p)(?:\/.*)$/, static404);
     }
 
-    await* [settings.ready, region.ready, auth.ready, subscr.ready, mail.ready];
+    await* [settings.ready, region.ready, authReady, subscr.ready, mail.ready];
 
     const httpServer = http.createServer(app);
     const io = socketIO(httpServer, {
@@ -173,7 +173,6 @@ export async function configure(startStamp) {
     registerSocketRequestHendler(io); // Register router for socket.io events
 
     admin.loadController(io);
-    auth.loadController(io);
     profile.loadController(io);
     reason.loadController(io);
     region.loadController(io);
