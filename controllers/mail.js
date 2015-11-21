@@ -47,26 +47,18 @@ export async function send(options) {
         });
     }
 
-    return await new Promise((resolve, reject) => {
-        transport.sendMail(smtpobject, function (err, info = {}) {
-            if (err) {
-                logger.error(err, info);
-                reject(err);
-            } else {
-                const { accepted, rejected } = info;
+    try {
+        const { accepted, rejected } = transport.sendMail(smtpobject);
 
-                if (accepted) {
-                    logger.info('Message sent to: ' + _.get(accepted, '[0]'));
-                } else {
-                    logger.info('Message rejected from: ' + _.get(rejected, '[0]'));
-                }
-                resolve();
-            }
-
-            // if you don't want to use this transport object anymore, uncomment following line
-            // transport.close(); // close the connection pool
-        });
-    });
+        if (accepted) {
+            logger.info('Message sent to: ' + _.get(accepted, '[0]'));
+        } else {
+            logger.info('Message rejected from: ' + _.get(rejected, '[0]'));
+        }
+    } catch (err) {
+        logger.error(err);
+        throw err;
+    }
 };
 
 export const ready = new Promise((resolve, reject) => {
