@@ -1130,6 +1130,7 @@ async function restore({ cid, type }) {
 
     for (const [userId, ccount] of usersCountMap) {
         const userObj = session.getOnline({ userId });
+
         if (userObj !== undefined) {
             userObj.user.ccount = userObj.user.ccount + ccount;
             promises.push(session.saveEmitUser({ usObj: userObj }));

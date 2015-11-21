@@ -1,7 +1,7 @@
 import ms from 'ms';
 import ApplicationError from './Application';
 
-export class TimeoutError extends ApplicationError {
+export default class TimeoutError extends ApplicationError {
 
     constructor(event, timeout) {
         super();

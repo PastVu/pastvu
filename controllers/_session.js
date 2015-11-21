@@ -4,6 +4,7 @@ import log4js from 'log4js';
 import locale from 'locale';
 import config from '../config';
 import Utils from '../commons/Utils';
+import TimeoutError from '../app/errors/TimeoutError';
 import { waitDb, dbEval } from './connection';
 import * as regionController from './region';
 import cookie from 'express/node_modules/cookie';
@@ -137,6 +138,93 @@ class UsObj {
     get isModerator() {
         return this.registered && this.user.role === 5;
     }
+}
+
+// Emit data to specified socket
+function emitSocket(socket, data, waitResponse, timeout = 1000) {
+    if (!Array.isArray(data)) {
+        data = [data];
+    }
+
+    if (waitResponse) {
+        return new Promise((resolve, reject) => {
+            let alreadyDone = false;
+
+            if (timeout) {
+                setTimeout(function () {
+                    alreadyDone = true;
+                    reject(new TimeoutError(data, timeout));
+                }, timeout);
+            }
+
+            socket.emit(...data, function (result) {
+                if (alreadyDone) {
+                    return;
+                }
+
+                if (_.get(result, 'error')) {
+                    reject(result.error);
+                } else {
+                    resolve(result);
+                }
+            });
+        });
+    } else {
+        socket.emit(...data);
+    }
+}
+
+// Send command to all session's sockets
+const emitSessionSockets = (session, data, waitResponse, excludeSocket) => _.chain(session.sockets)
+    .filter(socket => socket && socket !== excludeSocket && _.isFunction(socket.emit))
+    .map(socket => emitSocket(socket, data, waitResponse)).value();
+
+const emitSidCookie = (socket, waitResponse) => emitSocket(socket, [
+    'command', [{ name: 'updateCookie', data: createSidCookieObj(socket.handshake.session) }]
+], waitResponse);
+
+const emitLangCookie = (socket, lang, waitResponse) => emitSocket(socket, [
+    'command', [{ name: 'updateCookie', data: createLangCookieObj(lang) }]
+], waitResponse);
+
+const sendReload = (session, waitResponse, excludeSocket) =>
+    emitSessionSockets(session, ['command', [{ name: 'location' }]], waitResponse, excludeSocket);
+
+// Send user to all his sockets
+export async function emitUser({ usObj, login, userId, sessId, wait, excludeSocket }) {
+    if (!usObj) {
+        usObj = usLogin[login] || usId[userId] || usSid[sessId];
+    }
+
+    if (!usObj) {
+        return Promise.resolve(0);
+    }
+
+    const params = ['youAre', { user: getPlainUser(usObj.user), registered: usObj.registered }];
+    const emits = _.transform(usObj.sessions,
+        (result, session) => result.concat(emitSessionSockets(session, params, wait, excludeSocket)), []
+    );
+
+    if (wait) {
+        await emits;
+    }
+
+    return _.size(emits);
+}
+
+// Save and send user to his sockets
+export async function saveEmitUser({ usObj, login, userId, sessId, wait, excludeSocket }) {
+    if (!usObj) {
+        usObj = usLogin[login] || usId[userId] || usSid[sessId];
+    }
+
+    if (!usObj || !usObj.user) {
+        return Promise.resolve(0);
+    }
+
+    await usObj.user.save();
+
+    return emitUser({ usObj, wait, excludeSocket });
 }
 
 // Create usObj in hashes (if doesn't exists) and add session to it
@@ -519,78 +607,6 @@ export async function logoutUser() {
 
     sendReload(sessionNew);
 }
-
-// Send user to all his sockets
-export function emitUser({ usObj, login, userId, sessId, excludeSocket } = {}) {
-    if (!usObj) {
-        usObj = usLogin[login] || usId[userId] || usSid[sessId];
-    }
-
-    let count = 0;
-
-    if (usObj) {
-        const sendObject = { user: getPlainUser(usObj.user), registered: usObj.registered };
-
-        _.forOwn(usObj.sessions, session => {
-            _.forOwn(session.sockets, socket => {
-                if (socket !== excludeSocket && _.isFunction(socket.emit)) {
-                    socket.emit('youAre', sendObject);
-                    count++;
-                }
-            });
-        });
-    }
-
-    return Promise.resolve(count);
-}
-
-// Save and send user to his sockets
-export async function saveEmitUser({ usObj, login, userId, sessId, excludeSocket } = {}) {
-    if (!usObj) {
-        usObj = usLogin[login] || usId[userId] || usSid[sessId];
-    }
-
-    if (!usObj || !usObj.user) {
-        return Promise.resolve(0);
-    }
-
-    await usObj.user.save();
-    return emitUser({ usObj, excludeSocket });
-}
-
-function emitSocket(socket, data, waitResponse) {
-    if (!Array.isArray(data)) {
-        data = [data];
-    }
-
-    if (waitResponse) {
-        return new Promise((resolve, reject) => {
-            socket.emit(...data, function (result) {
-                if (_.get(result, 'error')) {
-                    reject(result.error);
-                } else {
-                    resolve(result);
-                }
-            });
-        });
-    } else {
-        socket.emit(...data);
-    }
-}
-
-const emitSidCookie = (socket, waitResponse) => emitSocket(socket, [
-    'command', [{ name: 'updateCookie', data: createSidCookieObj(socket.handshake.session) }]
-], waitResponse);
-
-const emitLangCookie = (socket, lang, waitResponse) => emitSocket(socket, [
-    'command', [{ name: 'updateCookie', data: createLangCookieObj(lang) }]
-], waitResponse);
-
-// Send command to reload to all session's sockets
-const sendReload = (session, excludeSocket, waitResponse) => _.chain(session.sockets)
-    .filter(socket => socket && socket !== excludeSocket && _.isFunction(socket.emit))
-    .map(socket => emitSocket(socket, ['command', [{ name: 'location' }]], waitResponse))
-    .value();
 
 // Check user is online
 export function isOnline({ login, userId } = {}) {

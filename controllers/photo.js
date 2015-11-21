@@ -635,7 +635,7 @@ const create = Bluebird.method(function (data) {
             converter.addPhotos(cids, 1);
 
             user.pfcount = user.pfcount + data.length;
-            return session.saveEmitUser({ usObj: iAm, excludeSocket: socket });
+            return session.saveEmitUser({ usObj: iAm, wait: true, excludeSocket: socket });
         })
         .then(function () {
             return { message: data.length + ' photo successfully saved', cids };
@@ -934,7 +934,7 @@ var userPCountUpdate = function (user, newDelta, publicDelta, inactiveDelta) {
         ownerObj.user.pfcount = ownerObj.user.pfcount + (newDelta || 0);
         ownerObj.user.pcount = ownerObj.user.pcount + (publicDelta || 0);
         ownerObj.user.pdcount = ownerObj.user.pdcount + (inactiveDelta || 0);
-        return session.saveEmitUser({ usObj: ownerObj });
+        return session.saveEmitUser({ usObj: ownerObj, wait: true });
     } else {
         return User.update({ _id: userId }, {
             $inc: {

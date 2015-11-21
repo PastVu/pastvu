@@ -1,6 +1,6 @@
 import ApplicationError from './Application';
 
-export class NotFound extends ApplicationError {
+export default class NotFound extends ApplicationError {
 
     constructor() {
         super();

@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import ApplicationError from './Application';
 
-class APIError extends ApplicationError {
+export default class APIError extends ApplicationError {
     // constructor is optional; you should omit it if you just want a custom error
     // type for inheritance and type checking
     constructor(code, message, details = {}) {
@@ -42,4 +42,4 @@ class APIError extends ApplicationError {
     }
 }
 
-export default APIError;
+APIError.prototype.name = 'APIError';

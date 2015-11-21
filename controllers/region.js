@@ -1337,7 +1337,7 @@ async function saveUserHomeRegion(iAm, data) {
             await _session.regetUser(userObjOnline, true);
         }
     } else if (userObjOnline) {
-        await _session.emitUser({ usObj: usObjOnline });
+        await _session.emitUser({ usObj: userObjOnline, wait: true });
     }
 
     return { saved: 1, region: regionHome };

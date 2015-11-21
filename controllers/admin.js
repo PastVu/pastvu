@@ -207,7 +207,7 @@ async function saveUserCredentials(iAm, { login, role, regions } = {}) {
     await user.save();
 
     if (usObjOnline) {
-        sessionController.emitUser({ usObj: usObjOnline });
+        sessionController.emitUser({ usObj: usObjOnline, wait: true });
     }
 
     return {};
