@@ -136,19 +136,17 @@ require([
                     var auth = globalVM.repository['m/common/auth'];
                     router.params(_.assign({ key: key, _handler: 'confirm' }, qparams));
 
-                    socket.once('checkConfirmResult', function (data) {
-                        if (data.error) {
-                            console.log('checkConfirmResult', data.message);
+                    socket.run('auth.checkConfirm', { key: key })
+                        .catch(function (error) {
+                            console.error('checkConfirmResult', error);
                             globalVM.router.navigate('/');
-                        } else {
-                            renderer(
-                                [
-                                    { module: 'm/main/mainPage', container: '#bodyContainer' }
-                                ]
-                            );
+                        })
+                        .then(function (data) {
+                            renderer([{ module: 'm/main/mainPage', container: '#bodyContainer' }]);
 
                             ga('set', 'page', '/confirm');
                             ga('send', 'pageview', { title: 'Confirm' });
+
                             if (data.type === 'noty') {
                                 window.noty(
                                     {
@@ -165,12 +163,13 @@ require([
                                         },
                                         buttons: [
                                             {
-                                                addClass: 'btn btn-success', text: 'Ok (7)', onClick: function ($noty) {
-                                                // this = $button element
-                                                // $noty = $noty element
-                                                $noty.close();
-                                                globalVM.router.navigate('/');
-                                            }
+                                                addClass: 'btn btn-success', text: 'Ok (7)',
+                                                onClick: function ($noty) {
+                                                    // this = $button element
+                                                    // $noty = $noty element
+                                                    $noty.close();
+                                                    globalVM.router.navigate('/');
+                                                }
                                             }
                                         ],
                                         callback: {
@@ -194,9 +193,7 @@ require([
                                     globalVM.router.navigate('/');
                                 });
                             }
-                        }
-                    });
-                    socket.emit('checkConfirm', { key: key });
+                        });
                 }
             }
         };
@@ -211,7 +208,7 @@ require([
         router.start();
     });
 
-    //window.appRouter = globalVM.router;
-    //window.glob = globalVM;
+    // window.appRouter = globalVM.router;
+    // window.glob = globalVM;
     console.log('APP %s loaded', appHash);
 });

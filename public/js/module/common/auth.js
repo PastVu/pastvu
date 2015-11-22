@@ -189,157 +189,153 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
         },
 
         submit: function (data, evt) {
+            var self = this;
             var $form = $(evt.target);
             var formData = $form.serializeObject();
             $form.find(':focus').blur();
 
             try {
-                if (this.mode() === 'login') {
-                    this.doLogin(
+                if (self.mode() === 'login') {
+                    self.doLogin(
                         formData,
-                        function (data) {
-                            if (_.isFunction(this.callback)) {
-                                this.callback.call(this.ctx, { loggedIn: true });
+                        function () {
+                            if (_.isFunction(self.callback)) {
+                                self.callback.call(self.ctx, { loggedIn: true });
                             }
 
-                            this.hide();
+                            self.hide();
                             ga('send', 'event', 'auth', 'login', 'auth login success');
-                        }.bind(this),
+                        },
                         function (error) {
-                            this.setMessage(error.message, 'error');
+                            self.setMessage(error.message, 'error');
                             setTimeout(function () {
-                                this.formWorking(false);
-                                this.formFocus();
-                            }.bind(this), 420);
+                                self.formWorking(false);
+                                self.formFocus();
+                            }, 420);
 
                             ga('send', 'event', 'auth', 'login', 'auth login error');
-                        }.bind(this)
+                        }
                     );
 
-                } else if (this.mode() === 'reg') {
-                    this.doRegister(
+                } else if (self.mode() === 'reg') {
+                    self.doRegister(
                         $.extend(formData, {}),
                         function (data) {
-                            if (data.error) {
-                                this.setMessage(data.message, 'error');
-                                window.setTimeout(function () {
-                                    this.formFocus();
-                                    this.formWorking(false);
-                                }.bind(this), 420);
-                                ga('send', 'event', 'auth', 'register', 'auth register error');
-                            } else {
-                                this.finish(true);
-                                this.setMessage(data.message, 'success');
-                                window.setTimeout(function () {
-                                    this.formWorking(false);
-                                }.bind(this), 420);
-                                ga('send', 'event', 'auth', 'register', 'auth register success');
-                            }
-                        }.bind(this)
+                            self.finish(true);
+                            self.setMessage(data.message, 'success');
+                            setTimeout(function () {
+                                self.formWorking(false);
+                            }, 420);
+                            ga('send', 'event', 'auth', 'register', 'auth register success');
+                        },
+                        function (data) {
+                            self.setMessage(data.message, 'error');
+                            setTimeout(function () {
+                                self.formFocus();
+                                self.formWorking(false);
+                            }, 420);
+                            ga('send', 'event', 'auth', 'register', 'auth register error');
+                        }
                     );
-                } else if (this.mode() === 'recallRequest') {
-                    this.doPassRecall(
+                } else if (self.mode() === 'recallRequest') {
+                    self.doPassRecall(
                         $.extend(formData, {}),
                         function (data) {
-                            if (data.error) {
-                                this.setMessage(data.message, 'error');
-                                window.setTimeout(function () {
-                                    this.formFocus();
-                                    this.formWorking(false);
-                                }.bind(this), 420);
-                                ga('send', 'event', 'auth', 'passRecall', 'auth passRecall error');
-                            } else {
-                                this.finish(true);
-                                this.setMessage(data.message, 'success');
-                                window.setTimeout(function () {
-                                    this.formWorking(false);
-                                }.bind(this), 420);
-                                ga('send', 'event', 'auth', 'passRecall', 'auth passRecall success');
-                            }
-                        }.bind(this)
-                    );
-                } else if (this.mode() === 'passChangeRecall') {
-                    this.doPassRecallChange(
-                        $.extend(formData, { key: this.key() }),
+                            self.finish(true);
+                            self.setMessage(data.message, 'success');
+                            setTimeout(function () {
+                                self.formWorking(false);
+                            }, 420);
+                            ga('send', 'event', 'auth', 'passRecall', 'auth passRecall success');
+                        },
                         function (data) {
-                            if (data.error) {
-                                this.setMessage(data.message, 'error');
-                                window.setTimeout(function () {
-                                    this.formFocus();
-                                    this.formWorking(false);
-                                }.bind(this), 420);
-                                ga('send', 'event', 'auth', 'passChangeRecall', 'auth passChangeRecall error');
-                            } else {
-                                this.finish(true);
-                                this.setMessage(data.message, 'success');
-                                window.setTimeout(function () {
-                                    this.formWorking(false);
+                            self.setMessage(data.message, 'error');
+                            setTimeout(function () {
+                                self.formFocus();
+                                self.formWorking(false);
+                            }, 420);
+                            ga('send', 'event', 'auth', 'passRecall', 'auth passRecall error');
+                        }
+                    );
+                } else if (self.mode() === 'passChangeRecall') {
+                    self.doPassRecallChange(
+                        $.extend(formData, { key: self.key() }),
+                        function (data) {
+                            self.finish(true);
+                            self.setMessage(data.message, 'success');
+                            setTimeout(function () {
+                                self.formWorking(false);
 
-                                    // Если не залогинен, производим автоматический вход пользователем,
-                                    // для которого восстанавливали пароль
-                                    if (!this.loggedIn()) {
-                                        this.doLogin(
-                                            { login: this.login(), pass: formData.pass },
-                                            function () {
-                                                ga('send', 'event', 'auth', 'login', 'auth login success');
-                                            }
-                                        );
-                                    }
-                                }.bind(this), 420);
-                                ga('send', 'event', 'auth', 'passChangeRecall', 'auth passChangeRecall success');
-                            }
-                        }.bind(this)
-                    );
-                } else if (this.mode() === 'recallRequestForMe') {
-                    this.doPassRecall(
-                        $.extend(formData, { login: this.login() || this.iAm.login() }),
+                                // Если не залогинен, производим автоматический вход пользователем,
+                                // для которого восстанавливали пароль
+                                if (!self.loggedIn()) {
+                                    self.doLogin(
+                                        { login: self.login(), pass: formData.pass },
+                                        function () {
+                                            ga('send', 'event', 'auth', 'login', 'auth login success');
+                                        }
+                                    );
+                                }
+                            }, 420);
+                            ga('send', 'event', 'auth', 'passChangeRecall', 'auth passChangeRecall success');
+                        },
                         function (data) {
-                            if (data.error) {
-                                this.setMessage(data.message, 'error');
-                                window.setTimeout(function () {
-                                    this.formFocus();
-                                    this.formWorking(false);
-                                }.bind(this), 420);
-                                ga('send', 'event', 'auth', 'recallRequestFor', 'auth recallRequestFor error');
-                            } else {
-                                this.finish(true);
-                                this.setMessage(data.message, 'success');
-                                window.setTimeout(function () {
-                                    this.formWorking(false);
-                                }.bind(this), 420);
-                                ga('send', 'event', 'auth', 'recallRequestFor', 'auth recallRequestFor success');
-                            }
-                        }.bind(this)
+                            self.setMessage(data.message, 'error');
+                            setTimeout(function () {
+                                self.formFocus();
+                                self.formWorking(false);
+                            }, 420);
+                            ga('send', 'event', 'auth', 'passChangeRecall', 'auth passChangeRecall error');
+                        }
                     );
-                } else if (this.mode() === 'passChange') {
-                    this.doPassChange(
-                        $.extend(formData, { login: this.iAm.login() }),
+                } else if (self.mode() === 'recallRequestForMe') {
+                    self.doPassRecall(
+                        $.extend(formData, { login: self.login() || self.iAm.login() }),
                         function (data) {
-                            if (data.error) {
-                                this.setMessage(data.message, 'error');
-                                window.setTimeout(function () {
-                                    this.formFocus();
-                                    this.formWorking(false);
-                                }.bind(this), 420);
-                                ga('send', 'event', 'auth', 'passChange', 'auth passChange error');
-                            } else {
-                                this.finish(true);
-                                this.setMessage(data.message, 'success');
-                                window.setTimeout(function () {
-                                    this.formWorking(false);
-                                }.bind(this), 420);
-                                ga('send', 'event', 'auth', 'passChange', 'auth passChange success');
-                            }
-                        }.bind(this)
+                            self.finish(true);
+                            self.setMessage(data.message, 'success');
+                            setTimeout(function () {
+                                self.formWorking(false);
+                            }, 420);
+                            ga('send', 'event', 'auth', 'recallRequestFor', 'auth recallRequestFor success');
+                        },
+                        function (data) {
+                            self.setMessage(data.message, 'error');
+                            setTimeout(function () {
+                                self.formFocus();
+                                self.formWorking(false);
+                            }, 420);
+                            ga('send', 'event', 'auth', 'recallRequestFor', 'auth recallRequestFor error');
+                        }
                     );
-                } else if (this.mode() === 'passInput') {
-                    this.callback.call(this.ctx, formData.pass);
+                } else if (self.mode() === 'passChange') {
+                    self.doPassChange(
+                        $.extend(formData, { login: self.iAm.login() }),
+                        function (data) {
+                            self.finish(true);
+                            self.setMessage(data.message, 'success');
+                            setTimeout(function () {
+                                self.formWorking(false);
+                            }, 420);
+                            ga('send', 'event', 'auth', 'passChange', 'auth passChange success');
+                        },
+                        function (data) {
+                            self.setMessage(data.message, 'error');
+                            setTimeout(function () {
+                                self.formFocus();
+                                self.formWorking(false);
+                            }, 420);
+                            ga('send', 'event', 'auth', 'passChange', 'auth passChange error');
+                        }
+                    );
+                } else if (self.mode() === 'passInput') {
+                    self.callback.call(self.ctx, formData.pass);
                 }
 
-                this.formWorking(true);
+                self.formWorking(true);
             } catch (e) {
-                this.setMessage(e.message, 'error');
-                this.formWorking(false);
+                self.setMessage(e.message, 'error');
+                self.formWorking(false);
             }
 
             return false;
@@ -396,7 +392,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
             socket.run('auth.login', data)
                 .catch(function (error) {
                     if (_.isFunction(callbackError)) {
-                        callbackError(error.message);
+                        callbackError(error);
                     }
                 })
                 .then(function (result) {
@@ -421,69 +417,25 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
                 socket.run('auth.logout', undefined, true)
                     .catch(function (error) {
                         if (_.isFunction(callback)) {
-                            callback(error.message);
+                            callback(error);
                         }
                     })
-                    .then(function (data) {
+                    .then(function () {
                         logouting = false;
                     });
             };
         }()),
-        doRegister: function (data, callback) {
-            try {
-                socket.once('registerResult', function (json) {
-                    if (Utils.isType('function', callback)) {
-                        callback(json);
-                    }
-                });
-                socket.emit('registerRequest', data);
-            } catch (e) {
-                if (Utils.isType('function', callback)) {
-                    callback(e.message);
-                }
-            }
+        doRegister: function (data, callbackSuccess, callbackError) {
+            socket.run('auth.register', data).catch(callbackError).then(callbackSuccess);
         },
-        doPassRecall: function (data, callback) {
-            try {
-                socket.once('recallResult', function (json) {
-                    if (Utils.isType('function', callback)) {
-                        callback(json);
-                    }
-                });
-                socket.emit('recallRequest', data);
-            } catch (e) {
-                if (Utils.isType('function', callback)) {
-                    callback(e.message);
-                }
-            }
+        doPassRecall: function (data, callbackSuccess, callbackError) {
+            socket.run('auth.recall', data).catch(callbackError).then(callbackSuccess);
         },
-        doPassRecallChange: function (data, callback) {
-            try {
-                socket.once('passChangeRecallResult', function (json) {
-                    if (Utils.isType('function', callback)) {
-                        callback(json);
-                    }
-                });
-                socket.emit('passChangeRecall', data);
-            } catch (e) {
-                if (Utils.isType('function', callback)) {
-                    callback(e.message);
-                }
-            }
+        doPassRecallChange: function (data, callbackSuccess, callbackError) {
+            socket.run('auth.passChangeRecall', data).catch(callbackError).then(callbackSuccess);
         },
-        doPassChange: function (data, callback) {
-            try {
-                socket.once('passChangeResult', function (json) {
-                    if (Utils.isType('function', callback)) {
-                        callback(json);
-                    }
-                });
-                socket.emit('passChangeRequest', data);
-            } catch (e) {
-                if (Utils.isType('function', callback)) {
-                    callback(e.message);
-                }
-            }
+        doPassChange: function (data, callbackSuccess, callbackError) {
+            socket.run('auth.passChange', data).catch(callbackError).then(callbackSuccess);
         },
         passInputSet: function (data) {
             if (data.error) {

@@ -90,7 +90,7 @@ async function logout() {
 }
 
 // Registration
-async function register(iAm, { login, email, pass, pass2 } = {}) {
+async function register({ login, email, pass, pass2 }) {
     if (!login) {
         throw { message: 'Заполните имя пользователя' };
     }
@@ -188,7 +188,9 @@ async function register(iAm, { login, email, pass, pass2 } = {}) {
 }
 
 // Send to email request for password recovery
-async function recall(iAm, { login } = {}) {
+async function recall({ login }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!login || !_.isString(login)) {
         throw { message: 'Bad params' };
     }
@@ -231,7 +233,9 @@ async function recall(iAm, { login } = {}) {
 }
 
 // Password hange by recall request from email
-async function passChangeRecall(iAm, { key, pass, pass2 } = {}) {
+async function passChangeRecall({ key, pass, pass2 }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!_.isString(key) || key.length !== 8) {
         throw { message: 'Bad params' };
     }
@@ -266,7 +270,9 @@ async function passChangeRecall(iAm, { key, pass, pass2 } = {}) {
 }
 
 // Password changing in user's settings page with entering current password
-async function passChange(iAm, { login, pass, passNew, passNew2 } = {}) {
+async function passChange({ login, pass, passNew, passNew2 }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!iAm.registered || iAm.user.login !== login) {
         throw { message: msg.deny };
     }
@@ -290,7 +296,7 @@ async function passChange(iAm, { login, pass, passNew, passNew2 } = {}) {
 }
 
 // Check confirm key
-async function checkConfirm({ key } = {}) {
+async function checkConfirm({ key }) {
     if (!_.isString(key) || key.length < 7 || key.length > 8) {
         throw { message: 'Bad params' };
     }
@@ -319,79 +325,31 @@ async function checkConfirm({ key } = {}) {
     }
 }
 
-const whoAmI = iAm => Promise.resolve({
-    user: iAm.user && iAm.user.toObject ? iAm.user.toObject() : null,
-    registered: iAm.registered
-});
+function whoAmI() {
+    const { socket, handshake: { usObj: iAm } } = this;
+    const result = {
+        user: iAm.user && iAm.user.toObject ? iAm.user.toObject() : null,
+        registered: iAm.registered
+    };
+
+    this.call('session.emitSocket', { socket, data: ['youAre', result] });
+}
 
 login.isPublic = true;
-login.logout = true;
+logout.isPublic = true;
+register.isPublic = true;
+recall.isPublic = true;
+passChangeRecall.isPublic = true;
+passChange.isPublic = true;
+checkConfirm.isPublic = true;
+whoAmI.isPublic = true;
 export default {
     login,
-    logout
-};
-
-export function loadController(io) {
-    io.sockets.on('connection', function (socket) {
-        const hs = socket.handshake;
-
-        socket.on('registerRequest', function (data) {
-            register(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('registerResult', resultData);
-                });
-        });
-
-        socket.on('recallRequest', function (data) {
-            recall(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('recallResult', resultData);
-                });
-        });
-
-        socket.on('passChangeRecall', function (data) {
-            passChangeRecall(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('passChangeRecallResult', resultData);
-                });
-        });
-        socket.on('passChangeRequest', function (data) {
-            passChange(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('passChangeResult', resultData);
-                });
-        });
-
-        socket.on('checkConfirm', function (data) {
-            checkConfirm(data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('checkConfirmResult', resultData);
-                });
-        });
-
-        socket.on('whoAmI', function () {
-            whoAmI(hs.usObj)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('youAre', resultData);
-                });
-        });
-    });
+    logout,
+    register,
+    recall,
+    passChangeRecall,
+    passChange,
+    checkConfirm,
+    whoAmI
 };

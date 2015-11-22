@@ -141,7 +141,7 @@ class UsObj {
 }
 
 // Emit data to specified socket
-function emitSocket(socket, data, waitResponse, timeout = 1000) {
+function emitSocket({ socket, data, waitResponse, timeout = 1000 }) {
     if (!Array.isArray(data)) {
         data = [data];
     }
@@ -177,15 +177,19 @@ function emitSocket(socket, data, waitResponse, timeout = 1000) {
 // Send command to all session's sockets
 const emitSessionSockets = (session, data, waitResponse, excludeSocket) => _.chain(session.sockets)
     .filter(socket => socket && socket !== excludeSocket && _.isFunction(socket.emit))
-    .map(socket => emitSocket(socket, data, waitResponse)).value();
+    .map(socket => emitSocket({ socket, data, waitResponse })).value();
 
-const emitSidCookie = (socket, waitResponse) => emitSocket(socket, [
-    'command', [{ name: 'updateCookie', data: createSidCookieObj(socket.handshake.session) }]
-], waitResponse);
+const emitSidCookie = (socket, waitResponse) => emitSocket({
+    socket,
+    data: ['command', [{ name: 'updateCookie', data: createSidCookieObj(socket.handshake.session) }]],
+    waitResponse
+});
 
-const emitLangCookie = (socket, lang, waitResponse) => emitSocket(socket, [
-    'command', [{ name: 'updateCookie', data: createLangCookieObj(lang) }]
-], waitResponse);
+const emitLangCookie = (socket, lang, waitResponse) => emitSocket({
+    socket,
+    data: ['command', [{ name: 'updateCookie', data: createLangCookieObj(lang) }]],
+    waitResponse
+});
 
 const sendReload = (session, waitResponse, excludeSocket) =>
     emitSessionSockets(session, ['command', [{ name: 'location' }]], waitResponse, excludeSocket);
@@ -836,7 +840,8 @@ export default {
     giveInitData,
     langChange,
 
-    removeSessionFromHashes
+    removeSessionFromHashes,
+    emitSocket
 };
 
 waitDb.then(() => {
