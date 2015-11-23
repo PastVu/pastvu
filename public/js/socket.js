@@ -394,10 +394,9 @@ define(['module'], function (/* module */) {
             noConnFailShow();
             console.log('Failed to reconnect for %d attempts. Stopped trying', manager.io.reconnectionAttempts());
         });
-        manager.on('reconnect', function () {
+        manager.on('reconnect', function (/* attempt */) {
             console.log('ReConnected to server');
             socket.connected = true;
-            manager.emit('session.giveInitData', { path: location.pathname }); // После реконнекта заново запрашиваем initData
             noConnWaitHide(); // Скрываем сообщение об отсутствии соединения
             emitQueued(); // Отправляем все сообщения emit, которые ожидали восстановления соединения
         });

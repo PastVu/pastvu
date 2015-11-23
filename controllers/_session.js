@@ -87,9 +87,8 @@ export const identifyUserLocale = (function () {
 
 export const getPlainUser = (function () {
     const userToPublicObject = function (doc, ret/* , options */) {
-        // Этот метод вызовется и в дочерних популированных объектах.
         // Transforms are applied to the document and each of its sub-documents.
-        // Проверяем, что именно пользователь
+        // Check that it's exactly user
         if (doc.login !== undefined) {
             delete ret.cid;
             delete ret.pass;
@@ -141,7 +140,7 @@ class UsObj {
 }
 
 // Emit data to specified socket
-function emitSocket({ socket, data, waitResponse, timeout = 1000 }) {
+function emitSocket({ socket, data, waitResponse = false, timeout = 1000 }) {
     if (!Array.isArray(data)) {
         data = [data];
     }
@@ -821,14 +820,19 @@ async function langChange(data) {
 }
 
 function giveInitData() {
-    const { handshake: { session, usObj: iAm } } = this;
+    const { socket, handshake: { session, usObj: iAm } } = this;
 
-    return {
-        p: clientParams,
-        u: getPlainUser(iAm.user),
-        registered: iAm.registered,
-        cook: createSidCookieObj(session)
-    };
+    // Several client modules can have subscribtion for 'takeInitData',
+    // that's why use emit data instead of acknowledgment callback
+    emitSocket({
+        socket,
+        data: ['takeInitData', {
+            p: clientParams,
+            u: getPlainUser(iAm.user),
+            registered: iAm.registered,
+            cook: createSidCookieObj(session)
+        }]
+    });
 }
 
 giveInitData.isPublic = true;

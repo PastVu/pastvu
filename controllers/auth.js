@@ -328,7 +328,7 @@ async function checkConfirm({ key }) {
 function whoAmI() {
     const { socket, handshake: { usObj: iAm } } = this;
     const result = {
-        user: iAm.user && iAm.user.toObject ? iAm.user.toObject() : null,
+        user: session.getPlainUser(iAm.user),
         registered: iAm.registered
     };
 

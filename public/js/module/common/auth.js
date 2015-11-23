@@ -33,18 +33,17 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
             socket.on('youAre', this.processMe, this);
             // Подписываемся на команды с сервера
             socket.on('command', this.commandHandler, this);
-
-            //Подписываемся на получение новых первоначальных данных (пользователя, куки), на случай, если пока он был оффлайн, пользователь изменился
-            socket.on('takeInitData', function (data) {
-                if (data) {
-                    if (_.isObject(data.cook)) {
-                        updateCookie(data.cook); //Обновляем куки
-                    }
-                    if (_.isObject(data.u)) {
-                        this.processMe({ user: data.u, registered: data.registered });
-                    }
-                }
+            // После реконнекта заново запрашиваем initData
+            socket.on('reconnect', function () {
+                socket.emit('session.giveInitData', { path: location.pathname });
             }, this);
+            // Подписываемся на получение новых первоначальных данных (пользователя, куки),
+            // на случай, если пока он был оффлайн, пользователь изменился
+            socket.on('takeInitData', function (data) {
+                updateCookie(data.cook); // Обновляем куки
+                this.processMe({ user: data.u, registered: data.registered });
+            }, this);
+
             ko.applyBindings(globalVM, this.$dom[0]);
         },
         show: function (mode, callback, ctx) {
@@ -362,7 +361,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
             }
         },
 
-        //Обновление модели пользователя с сервера при логине или emitUser
+        // Обновление модели пользователя с сервера при логине или emitUser
         processMe: function (usObj) {
             var user = usObj.user,
                 loggedIn = !!usObj.registered || this.loggedIn(),
@@ -386,7 +385,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
             this.iAm._v_(user._v_ + 1);
         },
         reloadMe: function () {
-            socket.emit('whoAmI');
+            socket.emit('auth.whoAmI');
         },
         doLogin: function (data, callbackSuccess, callbackError) {
             socket.run('auth.login', data)
