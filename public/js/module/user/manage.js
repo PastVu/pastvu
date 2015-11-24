@@ -127,13 +127,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
         getRules: function () {
             var dfd = $.Deferred();
-            socket.once('takeUserRules', function (result) {
-                if (result && !result.error) {
+
+            socket.run('profile.giveUserRules', { login: this.u.login() }, true)
+                .then(function (result) {
                     this.setRules(result.rules || {}, result.info || {});
-                }
-                dfd.resolve(result);
-            }, this);
-            socket.emit('giveUserRules', { login: this.u.login() });
+                    dfd.resolve(result);
+                }.bind(this));
+
             return dfd.promise();
         },
         setRules: function (rules, info) {
@@ -253,21 +253,11 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
 
         changewaterchange: function (data, evt) {
-            socket.once('setUserWatermarkChangeResult', function (result) {
-                if (!result || result.error) {
-                    window.noty({
-                        text: result && result.message || 'Ошибка',
-                        type: 'error',
-                        layout: 'center',
-                        timeout: 4000,
-                        force: true
-                    });
-                } else {
+            socket.run('profile.setUserWatermarkChange', { login: this.u.login(), nowaterchange: !isYes(evt) }, true)
+                .then(function (result) {
                     this.u.nowaterchange(result.nowaterchange);
                     this.u_origin.nowaterchange = result.nowaterchange;
-                }
-            }, this);
-            socket.emit('setUserWatermarkChange', { login: this.u.login(), nowaterchange: !isYes(evt) });
+                }.bind(this));
         },
 
         ranksSelectedHandler: function (val) {
@@ -282,23 +272,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }
         },
         saveUserRanks: function (cb, ctx) {
-            socket.once('saveUserRanksResult', function (result) {
-                if (!result || result.error || !result.saved) {
-                    window.noty({
-                        text: result && result.message || 'Ошибка сохранения звания',
-                        type: 'error',
-                        layout: 'center',
-                        timeout: 4000,
-                        force: true
-                    });
-                } else {
+            socket.run('profile.saveUserRanks', { login: this.u.login(), ranks: this.u.ranks() }, true)
+                .then(function (result) {
                     this.u_origin.ranks = result.ranks;
-                }
-                if (Utils.isType('function', cb)) {
-                    cb.call(ctx, result);
-                }
-            }, this);
-            socket.emit('saveUserRanks', { login: this.u.login(), ranks: this.u.ranks() });
+                    if (Utils.isType('function', cb)) {
+                        cb.call(ctx, result);
+                    }
+                }.bind(this));
         },
 
         photoLimitHandler: function (val) {
@@ -310,20 +290,11 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             } else {
                 val = null;
             }
-            socket.once('saveUserRulesResult', function (result) {
-                if (!result || result.error || !result.saved) {
-                    window.noty({
-                        text: result && result.message || 'Ошибка сохранения звания',
-                        type: 'error',
-                        layout: 'center',
-                        timeout: 4000,
-                        force: true
-                    });
-                } else {
+
+            socket.run('profile.saveUserRules', { login: this.u.login(), rules: { photoNewLimit: val } }, true)
+                .then(function (result) {
                     this.setRules(result.rules || {}, result.info || {});
-                }
-            }, this);
-            socket.emit('saveUserRules', { login: this.u.login(), rules: { photoNewLimit: val } });
+                }.bind(this));
         }
     });
 });

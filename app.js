@@ -12,10 +12,8 @@ import Utils from './commons/Utils';
 import { handleSocketConnection, registerSocketRequestHendler } from './app/request';
 
 import { ready as authReady } from './controllers/auth';
-import * as admin from './controllers/admin';
 import * as errors from './controllers/errors';
 import * as mail from './controllers/mail';
-import * as profile from './controllers/profile';
 import * as reason from './controllers/reason';
 import * as region from './controllers/region';
 import * as routes from './controllers/routes';
@@ -172,8 +170,6 @@ export async function configure(startStamp) {
     io.use(handleSocketConnection); // Handler for esteblishing websocket connection
     registerSocketRequestHendler(io); // Register router for socket.io events
 
-    admin.loadController(io);
-    profile.loadController(io);
     reason.loadController(io);
     region.loadController(io);
     settings.loadController(io);

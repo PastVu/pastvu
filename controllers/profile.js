@@ -40,7 +40,9 @@ const getUserByLogin = async function (login) {
 };
 
 // Serve user
-async function giveUser(iAm, { login } = {}) {
+async function giveUser({ login }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!login) {
         throw { message: msg.badParams };
     }
@@ -74,7 +76,9 @@ async function giveUser(iAm, { login } = {}) {
 }
 
 // Save changes in user profile
-async function saveUser(iAm, { login, ...data } = {}) {
+async function saveUser({ login, ...data }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!login) {
         throw { message: msg.badParams };
     }
@@ -106,16 +110,18 @@ async function saveUser(iAm, { login, ...data } = {}) {
         session.emitUser({ usObj: usObjOnline });
     }
 
+    // TODO: return user through 'giveUser'
     return { saved: 1 };
 }
 
 // Changes value of specified user setting
-async function changeSetting(socket, { login, key, val } = {}) {
+async function changeSetting({ login, key, val }) {
+    const { socket, handshake: { usObj: iAm } } = this;
+
     if (!login || !key) {
         throw { message: msg.badParams };
     }
 
-    const iAm = socket.handshake.usObj;
     const itsMe = iAm.registered && iAm.user.login === login;
     let forbidden = !itsMe && !iAm.isAdmin;
 
@@ -167,7 +173,9 @@ async function changeSetting(socket, { login, key, val } = {}) {
 };
 
 // Change displayed name
-async function changeDispName(iAm, { login, showName } = {}) {
+async function changeDispName({ login, showName }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!login) {
         throw { message: msg.badParams };
     }
@@ -198,8 +206,9 @@ async function changeDispName(iAm, { login, showName } = {}) {
 }
 
 // Set watermark custom sign
-async function setWatersignCustom(socket, { login, watersign }) {
-    const iAm = socket.handshake.usObj;
+async function setWatersignCustom({ login, watersign }) {
+    const { socket, handshake: { usObj: iAm } } = this;
+
     const itsMe = iAm.registered && iAm.user.login === login;
 
     if (itsMe && iAm.user.nowaterchange || !itsMe && !iAm.isAdmin) {
@@ -251,7 +260,9 @@ async function setWatersignCustom(socket, { login, watersign }) {
 };
 
 // Change user's email
-async function changeEmail(iAm, { login, email, pass } = {}) {
+async function changeEmail({ login, email, pass }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!login || !_.isString(email) || !email) {
         throw { message: msg.badParams };
     }
@@ -297,7 +308,9 @@ async function changeEmail(iAm, { login, email, pass } = {}) {
     return { email: user.email };
 }
 
-async function changeAvatar(iAm, { login, file, type } = {}) {
+async function changeAvatar({ login, file, type }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!login || !file || !new RegExp('^[a-z0-9]{10}\\.(jpe?g|png)$', '').test(file)) {
         throw { message: msg.badParams };
     }
@@ -371,7 +384,9 @@ async function changeAvatar(iAm, { login, file, type } = {}) {
 }
 
 // Remove avatar
-async function delAvatar(iAm, { login } = {}) {
+async function delAvatar({ login }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!login) {
         throw { message: msg.badParams };
     }
@@ -405,8 +420,8 @@ async function delAvatar(iAm, { login } = {}) {
 }
 
 // Change (by administrator) user ability to change his watersign setting
-async function setUserWatermarkChange(socket, { login, nowaterchange } = {}) {
-    const iAm = socket.handshake.usObj;
+async function setUserWatermarkChange({ login, nowaterchange }) {
+    const { socket, handshake: { usObj: iAm } } = this;
 
     if (!iAm.isAdmin) {
         throw { message: msg.deny };
@@ -439,7 +454,9 @@ async function setUserWatermarkChange(socket, { login, nowaterchange } = {}) {
 };
 
 // Save user ranks
-async function saveUserRanks(iAm, { login, ranks } = {}) {
+async function saveUserRanks({ login, ranks }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!login || !Array.isArray(ranks)) {
         throw { message: msg.badParams};
     }
@@ -468,7 +485,9 @@ async function saveUserRanks(iAm, { login, ranks } = {}) {
     return { saved: true, ranks: user.ranks || [] };
 }
 
-async function giveUserRules(iAm, { login } = {}) {
+async function giveUserRules({ login }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!login) {
         throw { message: msg.badParams};
     }
@@ -482,7 +501,9 @@ async function giveUserRules(iAm, { login } = {}) {
     return { rules: user.rules || {}, info: { canPhotoNew: photoController.core.getNewPhotosLimit(user) } };
 }
 
-async function saveUserRules(iAm, { login, rules } = {}) {
+async function saveUserRules({ login, rules }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!login || !rules) {
         throw { message: msg.badParams};
     }
@@ -527,124 +548,29 @@ async function saveUserRules(iAm, { login, rules } = {}) {
     };
 }
 
-export function loadController(io) {
-    io.sockets.on('connection', function (socket) {
-        const hs = socket.handshake;
-
-        socket.on('giveUser', function (data) {
-            giveUser(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeUser', resultData);
-                });
-        });
-
-        socket.on('saveUser', function (data) {
-            saveUser(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('saveUserResult', resultData);
-                });
-        });
-
-        socket.on('changeDispName', function (data) {
-            changeDispName(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('changeDispNameResult', resultData);
-                });
-        });
-
-        socket.on('changeUserSetting', function (data) {
-            changeSetting(socket, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('changeUserSettingResult', resultData);
-                });
-        });
-        socket.on('setWatersignCustom', function (data) {
-            setWatersignCustom(socket, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('setWatersignCustomResult', resultData);
-                });
-        });
-        socket.on('setUserWatermarkChange', function (data) {
-            setUserWatermarkChange(socket, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('setUserWatermarkChangeResult', resultData);
-                });
-        });
-        socket.on('changeEmail', function (data) {
-            changeEmail(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('changeEmailResult', resultData);
-                });
-        });
-
-        socket.on('changeAvatar', function (data) {
-            changeAvatar(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('changeAvatarResult', resultData);
-                });
-        });
-        socket.on('delAvatar', function (data) {
-            delAvatar(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('delAvatarResult', resultData);
-                });
-        });
-
-        socket.on('saveUserRanks', function (data) {
-            saveUserRanks(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('saveUserRanksResult', resultData);
-                });
-        });
-
-        socket.on('giveUserRules', function (data) {
-            giveUserRules(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeUserRules', resultData);
-                });
-        });
-
-        socket.on('saveUserRules', function (data) {
-            saveUserRules(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('saveUserRulesResult', resultData);
-                });
-        });
-    });
+giveUser.isPublic = true;
+saveUser.isPublic = true;
+changeDispName.isPublic = true;
+changeSetting.isPublic = true;
+setWatersignCustom.isPublic = true;
+setUserWatermarkChange.isPublic = true;
+changeEmail.isPublic = true;
+changeAvatar.isPublic = true;
+delAvatar.isPublic = true;
+saveUserRanks.isPublic = true;
+giveUserRules.isPublic = true;
+saveUserRules.isPublic = true;
+export default {
+    giveUser,
+    saveUser,
+    changeDispName,
+    changeSetting,
+    setWatersignCustom,
+    setUserWatermarkChange,
+    changeEmail,
+    changeAvatar,
+    delAvatar,
+    saveUserRanks,
+    giveUserRules,
+    saveUserRules
 };

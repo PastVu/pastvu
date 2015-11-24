@@ -14,19 +14,18 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
                     { cb: callback, ctx: context }
                 ];
 
-                socket.once('takeUser', function (data) {
-                    if (data && !data.error && data.user && data.user.login === login) {
-                        User.factory(data.user, 'full');
-                        storage.users[login] = { origin: data.user, vm: User.vm(data.user, undefined, true) };
-                    }
-                    if (storage.waitings['u' + login]) {
-                        storage.waitings['u' + login].forEach(function (item) {
-                            item.cb.call(item.ctx, !data.user.error && data.user.login === login && storage.users[login]);
-                        });
-                        delete storage.waitings['u' + login];
-                    }
-                });
-                socket.emit('giveUser', { login: login });
+                socket.run('profile.giveUser', { login: login }, true)
+                    .then(function (data) {
+                        if (_.get(data, 'user.login') === login) {
+                            User.factory(data.user, 'full');
+                            storage.users[login] = { origin: data.user, vm: User.vm(data.user, undefined, true) };
+
+                            _.forEach(storage.waitings['u' + login], function (item) {
+                                item.cb.call(item.ctx, storage.users[login]);
+                            });
+                            delete storage.waitings['u' + login];
+                        }
+                    });
             }
         },
         userImmediate: function (login) {

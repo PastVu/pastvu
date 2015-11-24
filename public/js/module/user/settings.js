@@ -166,8 +166,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             if (!this.watersignCustomChanged()) {
                 return;
             }
-            socket.once('setWatersignCustomResult', function (result) {
-                if (result && !result.error) {
+            socket.run('profile.setWatersignCustom', { login: this.u.login(), watersign: this.u.watersignCustom() }, true)
+                .then(function (result) {
                     var photo_watermark_add_sign = result.photo_watermark_add_sign || false;
                     var watersignCustom = result.watersignCustom || '';
 
@@ -178,17 +178,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     this.originUser.watersignCustom = watersignCustom;
                     this.u.watersignCustom(_.random(9)); // Ugly hack to invoke watersignCustomChanged computing
                     this.u.watersignCustom(watersignCustom);
-                } else {
-                    window.noty({
-                        text: result && result.message || 'Error occurred',
-                        type: 'error',
-                        layout: 'center',
-                        timeout: 3000,
-                        force: true
-                    });
-                }
-            }, this);
-            socket.emit('setWatersignCustom', { login: this.u.login(), watersign: this.u.watersignCustom() });
+                }.bind(this));
         },
         watermarkCustomCancel: function () {
             this.u.watersignCustom(this.originUser.watersignCustom);
@@ -332,37 +322,28 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             if (!this.u.settings[key] || (checkValChange && val === this.u.settings[key]())) {
                 return;
             }
-            socket.once('changeUserSettingResult', function (result) {
-                var error = !result || result.error;
-
-                if (error) {
-                    window.noty({
-                        text: result && result.message || 'Error occurred',
-                        type: 'error',
-                        layout: 'center',
-                        timeout: 3000,
-                        force: true
-                    });
-                } else {
+            socket.run('profile.changeUserSetting', { login: this.u.login(), key: key, val: val }, true)
+                .catch(function (error) {
+                    if (_.isFunction(cb)) {
+                        cb.call(ctx, error);
+                    }
+                })
+                .then(function (result) {
                     this.u.settings[result.key](result.val);
                     this.originUser.settings[result.key] = result.val;
-                }
 
-                if (_.isFunction(cb)) {
-                    cb.call(ctx, error, result);
-                }
-            }, this);
-            socket.emit('changeUserSetting', { login: this.u.login(), key: key, val: val });
+                    if (_.isFunction(cb)) {
+                        cb.call(ctx, null, result);
+                    }
+                }.bind(this));
         },
 
         toggleDisp: function () {
-            socket.once('changeDispNameResult', function (result) {
-                if (result && !result.error && result.saved) {
+            socket.run('profile.changeDispName', { login: this.u.login(), showName: !this.showName() }, true)
+                .then(function (result) {
                     this.u.disp(result.disp);
                     this.originUser.disp = result.disp;
-                }
-            }, this);
-            socket.emit('changeDispName', { login: this.u.login(), showName: !this.showName() });
+                }.bind(this));
         },
 
         saveEmail: function () {
@@ -377,8 +358,21 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }
         },
         sendEmail: function (pass) {
-            socket.once('changeEmailResult', function (result) {
-                if (result && !result.error) {
+            socket.run('profile.changeEmail', { login: this.u.login(), email: this.u.email(), pass: pass })
+                .catch(function (error) {
+                    if (pass) {
+                        this.auth.passInputSet({ error: error });
+                    } else {
+                        window.noty({
+                            text: error.message || 'Error occurred',
+                            type: 'error',
+                            layout: 'center',
+                            timeout: 3000,
+                            force: true
+                        });
+                    }
+                }.bind(this))
+                .then(function (result) {
                     if (result.confirm === 'pass') {
                         this.auth.show('passInput', function (pass, cancel) {
                             if (!cancel) {
@@ -391,22 +385,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         this.editEmail(false);
                         this.auth.passInputSet(result);
                     }
-                } else {
-                    if (pass) {
-                        this.auth.passInputSet(result);
-                    } else {
-                        window.noty({
-                            text: result.message || 'Error occurred',
-                            type: 'error',
-                            layout: 'center',
-                            timeout: 3000,
-                            force: true
-                        });
-                    }
-                }
-            }, this);
-            socket.emit('changeEmail', { login: this.u.login(), email: this.u.email(), pass: pass });
-
+                }.bind(this));
         },
         cancelEmail: function () {
             if (this.editEmail()) {
