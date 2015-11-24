@@ -209,6 +209,13 @@ define(['module'], function (/* module */) {
          */
         socket.run = function (name, data, notyOnError, timeToWaitIfNoConnection) {
             return socket.request(name, data, timeToWaitIfNoConnection)
+                .catch(function (error) {
+                    if (error instanceof TimeoutError) {
+                        error.message = 'Превышено время ожидания запроса';
+                    }
+
+                    return { error: error };
+                })
                 .then(function (result) {
                     if (!result || result.error) {
                         console.error('socket.run "' + name + '" returned error\n', result);
@@ -224,7 +231,7 @@ define(['module'], function (/* module */) {
                             noties.error(_.compact([message, rid]).join('<br>'), 4000);
                         }
 
-                        throw result.error;
+                        throw result.error; // TODO: think about Uncaught promise error
                     }
 
                     return result.result;

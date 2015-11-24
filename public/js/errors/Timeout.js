@@ -18,4 +18,6 @@ define(['Utils', 'errors/Application'], function (Utils, ApplicationError) {
 
         return message;
     };
+
+    return TimeoutError;
 });
