@@ -322,11 +322,6 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 return;
             }
             socket.run('profile.changeSetting', { login: this.u.login(), key: key, val: val }, true)
-                .catch(function (error) {
-                    if (_.isFunction(cb)) {
-                        cb.call(ctx, error);
-                    }
-                })
                 .then(function (result) {
                     this.u.settings[result.key](result.val);
                     this.originUser.settings[result.key] = result.val;
@@ -334,7 +329,12 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     if (_.isFunction(cb)) {
                         cb.call(ctx, null, result);
                     }
-                }.bind(this));
+                }.bind(this))
+                .catch(function (error) {
+                    if (_.isFunction(cb)) {
+                        cb.call(ctx, error);
+                    }
+                });
         },
 
         toggleDisp: function () {
@@ -358,19 +358,6 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
         sendEmail: function (pass) {
             socket.run('profile.changeEmail', { login: this.u.login(), email: this.u.email(), pass: pass })
-                .catch(function (error) {
-                    if (pass) {
-                        this.auth.passInputSet({ error: error });
-                    } else {
-                        window.noty({
-                            text: error.message || 'Error occurred',
-                            type: 'error',
-                            layout: 'center',
-                            timeout: 3000,
-                            force: true
-                        });
-                    }
-                }.bind(this))
                 .then(function (result) {
                     if (result.confirm === 'pass') {
                         this.auth.show('passInput', function (pass, cancel) {
@@ -383,6 +370,19 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         this.originUser.email = result.email;
                         this.editEmail(false);
                         this.auth.passInputSet(result);
+                    }
+                }.bind(this))
+                .catch(function (error) {
+                    if (pass) {
+                        this.auth.passInputSet({ error: error });
+                    } else {
+                        window.noty({
+                            text: error.message || 'Error occurred',
+                            type: 'error',
+                            layout: 'center',
+                            timeout: 3000,
+                            force: true
+                        });
                     }
                 }.bind(this));
         },

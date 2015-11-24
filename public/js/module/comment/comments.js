@@ -791,10 +791,6 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                     return;
                 }
                 socket.run('comment.remove', { type: this.type, cid: cid, reason: reason }, true)
-                    .catch(function () {
-                        $('.hlRemove', this.$cmts).removeClass('hlRemove');
-                        ga('send', 'event', 'comment', 'delete', 'comment delete error');
-                    }.bind(this))
                     .then(function (result) {
                         var i,
                             count,
@@ -860,6 +856,10 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                             text: 'Удалено комментариев: ' + count + ',<br>от ' + result.countUsers + ' пользователя(ей)',
                             type: 'info', layout: 'center', timeout: 2200, force: true
                         });
+                    }.bind(this))
+                    .catch(function () {
+                        $('.hlRemove', this.$cmts).removeClass('hlRemove');
+                        ga('send', 'event', 'comment', 'delete', 'comment delete error');
                     }.bind(this));
             }, this);
         },
@@ -955,10 +955,6 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
             $('.delico', $c).addClass('loading').html('');
 
             socket.run('comment.giveDelTree', { type: that.type, cid: cid }, true)
-                .catch(function () {
-                    $('.delico', $c).removeClass('loading').html('Показать');
-                    that.loadingDel = false;
-                })
                 .then(function (data) {
                     // Если пока запрашивали удалённый, уже перешли на новый объект - ничего не делаем
                     if (objCid !== that.cid) {
@@ -1001,6 +997,10 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
                         that.loadingDel = false;
                     });
+                })
+                .catch(function () {
+                    $('.delico', $c).removeClass('loading').html('Показать');
+                    that.loadingDel = false;
                 });
         },
         delHide: function (cid, $c) {

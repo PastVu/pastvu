@@ -389,11 +389,6 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
         },
         doLogin: function (data, callbackSuccess, callbackError) {
             socket.run('auth.login', data)
-                .catch(function (error) {
-                    if (_.isFunction(callbackError)) {
-                        callbackError(error);
-                    }
-                })
                 .then(function (result) {
                     if (result.youAre) {
                         this.processMe({ user: result.youAre, registered: true });
@@ -402,7 +397,12 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
                     if (_.isFunction(callbackSuccess)) {
                         callbackSuccess(result);
                     }
-                }.bind(this));
+                }.bind(this))
+                .catch(function (error) {
+                    if (_.isFunction(callbackError)) {
+                        callbackError(error);
+                    }
+                });
         },
         doLogout: (function () {
             var logouting;
@@ -414,27 +414,27 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
                 ga('send', 'event', 'auth', 'logout');
 
                 socket.run('auth.logout', undefined, true)
+                    .then(function () {
+                        logouting = false;
+                    })
                     .catch(function (error) {
                         if (_.isFunction(callback)) {
                             callback(error);
                         }
-                    })
-                    .then(function () {
-                        logouting = false;
                     });
             };
         }()),
         doRegister: function (data, callbackSuccess, callbackError) {
-            socket.run('auth.register', data).catch(callbackError).then(callbackSuccess);
+            socket.run('auth.register', data).then(callbackSuccess).catch(callbackError);
         },
         doPassRecall: function (data, callbackSuccess, callbackError) {
-            socket.run('auth.recall', data).catch(callbackError).then(callbackSuccess);
+            socket.run('auth.recall', data).then(callbackSuccess).catch(callbackError);
         },
         doPassRecallChange: function (data, callbackSuccess, callbackError) {
-            socket.run('auth.passChangeRecall', data).catch(callbackError).then(callbackSuccess);
+            socket.run('auth.passChangeRecall', data).then(callbackSuccess).catch(callbackError);
         },
         doPassChange: function (data, callbackSuccess, callbackError) {
-            socket.run('auth.passChange', data).catch(callbackError).then(callbackSuccess);
+            socket.run('auth.passChange', data).then(callbackSuccess).catch(callbackError);
         },
         passInputSet: function (data) {
             if (data.error) {

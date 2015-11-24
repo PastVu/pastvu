@@ -137,10 +137,6 @@ require([
                     router.params(_.assign({ key: key, _handler: 'confirm' }, qparams));
 
                     socket.run('auth.checkConfirm', { key: key })
-                        .catch(function (error) {
-                            console.error('checkConfirmResult', error);
-                            globalVM.router.navigate('/');
-                        })
                         .then(function (data) {
                             renderer([{ module: 'm/main/mainPage', container: '#bodyContainer' }]);
 
@@ -193,6 +189,10 @@ require([
                                     globalVM.router.navigate('/');
                                 });
                             }
+                        })
+                        .catch(function (error) {
+                            console.error('checkConfirmResult', error);
+                            globalVM.router.navigate('/');
                         });
                 }
             }

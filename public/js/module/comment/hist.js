@@ -49,9 +49,6 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             var self = this;
 
             socket.run('comment.giveHist', { cid: this.cid, type: this.type }, true)
-                .catch(function (error) {
-                    cb.call(ctx, error);
-                })
                 .then(function (data) {
                     var i = data.hists.length,
                         hist,
@@ -74,6 +71,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     }
 
                     cb.call(ctx, null, data.hists);
+                })
+                .catch(function (error) {
+                    cb.call(ctx, error);
                 });
         }
     });
