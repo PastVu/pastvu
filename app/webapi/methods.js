@@ -5,6 +5,7 @@ import profile from '../../controllers/profile';
 import comment from '../../controllers/comment';
 import cluster from '../../controllers/cluster';
 import session from '../../controllers/_session';
+import settings from '../../controllers/settings';
 
 export default {
     auth,
@@ -13,5 +14,6 @@ export default {
     profile,
     comment,
     cluster,
-    session
+    session,
+    settings
 };

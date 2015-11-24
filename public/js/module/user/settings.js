@@ -137,15 +137,14 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.showing = true;
         },
         getSettingsVars: function (cb, ctx) {
-            socket.once('takeUserSettingsVars', function (result) {
-                if (result && !result.error) {
+            socket.run('settings.getUserSettingsVars', undefined, true)
+                .then(function (result) {
                     this.vars = result;
-                }
-                if (Utils.isType('function', cb)) {
-                    cb.call(ctx, result);
-                }
-            }, this);
-            socket.emit('giveUserSettingsVars');
+
+                    if (_.isFunction(cb)) {
+                        cb.call(ctx, result);
+                    }
+                }.bind(this));
         },
         hide: function () {
             globalVM.func.hideContainer(this.$container);
@@ -322,7 +321,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             if (!this.u.settings[key] || (checkValChange && val === this.u.settings[key]())) {
                 return;
             }
-            socket.run('profile.changeUserSetting', { login: this.u.login(), key: key, val: val }, true)
+            socket.run('profile.changeSetting', { login: this.u.login(), key: key, val: val }, true)
                 .catch(function (error) {
                     if (_.isFunction(cb)) {
                         cb.call(ctx, error);

@@ -12,12 +12,12 @@ import Utils from './commons/Utils';
 import { handleSocketConnection, registerSocketRequestHendler } from './app/request';
 
 import { ready as authReady } from './controllers/auth';
+import { ready as settingsReady } from './controllers/settings';
 import * as errors from './controllers/errors';
 import * as mail from './controllers/mail';
 import * as reason from './controllers/reason';
 import * as region from './controllers/region';
 import * as routes from './controllers/routes';
-import * as settings from './controllers/settings';
 import * as subscr from './controllers/subscr';
 import * as ourMiddlewares from './controllers/middleware';
 
@@ -152,7 +152,7 @@ export async function configure(startStamp) {
         app.get(/^\/(?:_a|_p)(?:\/.*)$/, static404);
     }
 
-    await* [settings.ready, region.ready, authReady, subscr.ready, mail.ready];
+    await* [authReady, settingsReady, region.ready, subscr.ready, mail.ready];
 
     const httpServer = http.createServer(app);
     const io = socketIO(httpServer, {
@@ -172,7 +172,6 @@ export async function configure(startStamp) {
 
     reason.loadController(io);
     region.loadController(io);
-    settings.loadController(io);
     subscr.loadController(io);
 
     if (env === 'development') {

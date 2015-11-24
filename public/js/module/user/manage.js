@@ -114,15 +114,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
         getAllRanks: function () {
             var dfd = $.Deferred();
-            socket.once('takeUserAllRanks', function (result) {
-                if (result && !result.error) {
+            socket.run('settings.getUserRanks')
+                .then(function (result) {
                     for (var i = 0; i < result.length; i++) {
                         this.ranks.push({ key: result[i], desc: ranksLang[result[i]] || i });
                     }
-                }
-                dfd.resolve(result);
-            }, this);
-            socket.emit('giveUserAllRanks');
+                    dfd.resolve(result);
+                }.bind(this));
             return dfd.promise();
         },
         getRules: function () {
