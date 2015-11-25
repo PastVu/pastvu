@@ -188,7 +188,7 @@ async function saveUserCredentials(iAm, { login, role, regions } = {}) {
         });
 
         if (!_.isEqual(regions, existsRegions)) {
-            await regionController.setUserRegions(login, regions, 'mod_regions');
+            await this.call('region.setUserRegions', { login, regions, field: 'mod_regions' });
 
             if (usObjOnline) {
                 await sessionController.regetUser(usObjOnline);

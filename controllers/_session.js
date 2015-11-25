@@ -845,7 +845,8 @@ export default {
     langChange,
 
     removeSessionFromHashes,
-    emitSocket
+    emitSocket,
+    regetUsers
 };
 
 waitDb.then(() => {

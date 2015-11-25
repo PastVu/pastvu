@@ -34,7 +34,7 @@ export const getReasonHashFromCache = cids => _.transform(cids, (result, cid) =>
     }
 }, {});
 
-async function giveActionReasons({ action: key } = {}) {
+async function giveActionReasons({ action: key }) {
     if (!_.isString(key) || !key.length) {
         throw { message: 'Need user action' };
     }
@@ -59,17 +59,7 @@ export const giveReasonTitle = function ({ cid }) {
 // After connection to db read reasons
 waitDb.then(periodicFetchReasons);
 
-module.exports.loadController = function (io) {
-    io.sockets.on('connection', function (socket) {
-        socket.on('giveActionReasons', function (data) {
-            giveActionReasons(data)
-                .then(function (result) {
-                    socket.emit('takeActionReasons', result);
-                })
-                .catch(function (err) {
-                    socket.emit('takeActionReasons', { message: err.message, error: true });
-                });
-        });
-
-    });
+giveActionReasons.isPublic = true;
+export default {
+    giveActionReasons
 };

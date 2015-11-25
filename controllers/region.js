@@ -614,10 +614,11 @@ async function changeRegionParentExternality(region, oldParentsArray, childLenAr
 
 /**
  * Save/Create region
- * @param iAm
  * @param data
  */
-async function saveRegion(iAm, data) {
+async function save(data) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!iAm.isAdmin) {
         throw { message: msg.deny };
     }
@@ -862,10 +863,11 @@ async function saveRegion(iAm, data) {
 /**
  * Region removal by administrator
  * Parameter 'reassignChilds' is reserved for moving child regions of removed under another region
- * @param iAm
  * @param data
  */
-async function removeRegion(iAm, data) {
+async function remove(data) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!iAm.isAdmin) {
         throw { message: msg.deny };
     }
@@ -982,7 +984,9 @@ async function removeRegionsFromMods(usersQuery, regionsIds) {
     return { affectedMods: 0, affectedModsLose: 0 };
 }
 
-async function getRegion(iAm, data) {
+async function give(data) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!iAm.isAdmin) {
         throw { message: msg.deny };
     }
@@ -1055,7 +1059,9 @@ async function getRegionsStatByLevel() {
     ]).exec();
 }
 
-async function getRegionsFull(iAm, data) {
+async function giveListFull(data) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!iAm.isAdmin) {
         throw { message: msg.deny };
     }
@@ -1084,10 +1090,10 @@ async function getRegionsFull(iAm, data) {
     return { regions, stat: { common: regionsStatCommon, byLevel: regionsStatByLevel } };
 }
 
-export const getRegionsPublic = () => regionCacheArrPromise;
+export const giveListPublic = () => regionCacheArrPromise;
 
 // Returns an array of regions in which a given point falls
-export const getRegionsByGeoPoint = (function () {
+const getRegionsByGeoPoint = (function () {
     const defRegion = 1000000; // If the region is not found, return the Open sea
 
     return async function(geo, fields = { _id: 0, geo: 0, __v: 0 }) {
@@ -1106,7 +1112,9 @@ export const getRegionsByGeoPoint = (function () {
     };
 }());
 
-async function giveRegionsByGeo(iAm, data) {
+async function giveRegionsByGeo(data) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!iAm.registered) {
         throw { message: msg.deny };
     }
@@ -1256,7 +1264,7 @@ export const clearObjRegions = obj => {
 };
 
 // Save array of regions _ids in specified user field
-export async function setUserRegions(login, regionsCids, field) {
+export async function setUserRegions({login, regions: regionsCids, field}) {
     const $update = {};
 
     if (_.isEmpty(regionsCids)) {
@@ -1296,14 +1304,17 @@ export async function setUserRegions(login, regionsCids, field) {
     return User.update({ login }, $update).exec();
 }
 
-async function saveUserHomeRegion(iAm, data) {
-    const login = _.get(data, 'login');
+async function saveUserHomeRegion({ login, cid }) {
+    const { handshake: { usObj: iAm } } = this;
     const itsMe = iAm.registered && iAm.user.login === login;
 
     if (!itsMe && !iAm.isAdmin) {
         throw { message: msg.deny };
     }
-    if (!_.isObject(data) || !login || !Number(data.cid)) {
+
+    cid = Number(cid);
+
+    if (!login || !cid) {
         throw { message: msg.badParams };
     }
 
@@ -1314,7 +1325,7 @@ async function saveUserHomeRegion(iAm, data) {
     [user, region] = await* [
         userObjOnline ? userObjOnline.user : User.findOne({ login }).exec(),
         Region.findOne(
-            { cid: Number(data.cid) },
+            { cid },
             { _id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1, center: 1, bbox: 1, bboxhome: 1 }
         ).exec()
     ];
@@ -1331,7 +1342,7 @@ async function saveUserHomeRegion(iAm, data) {
     const regionHome = _.omit(region.toObject(), '_id');
 
     if (user.settings.r_as_home) {
-        await setUserRegions(login, [regionHome.cid], 'regions');
+        await this.call('region.setUserRegions', { login, regions: [regionHome.cid], field: 'regions' });
 
         if (userObjOnline) {
             await _session.regetUser(userObjOnline, true);
@@ -1344,23 +1355,22 @@ async function saveUserHomeRegion(iAm, data) {
 }
 
 // Save regions to user
-async function saveUserRegions(socket, data) {
-    const iAm = socket.handshake.usObj;
-    const login = _.get(data, 'login');
+async function saveUserRegions({ login, regions }) {
+    const { socket, handshake: { usObj: iAm } } = this;
     const itsMe = iAm.registered && iAm.user.login === login;
 
     if (!itsMe && !iAm.isAdmin) {
         throw { message: msg.deny };
     }
-    if (!_.isObject(data) || !login || !Array.isArray(data.regions)) {
+    if (!login || !Array.isArray(regions)) {
         throw { message: msg.badParams };
     }
-    if (data.regions.length > maxRegionLevel) {
+    if (regions.length > maxRegionLevel) {
         throw { message: 'Вы можете выбрать до ' + maxRegionLevel + ' регионов' };
     }
 
     // Check that transfered valid region numbers
-    for (const cid of data.regions) {
+    for (const cid of regions) {
         if (typeof cid !== 'number' || !regionCacheHash[cid]) {
             throw { message: msg.badParams };
         }
@@ -1373,7 +1383,7 @@ async function saveUserRegions(socket, data) {
         throw { message: msg.nouser };
     }
 
-    await setUserRegions(login, data.regions, 'regions');
+    await this.call('region.setUserRegions', { login, regions, field: 'regions' });
 
     // We can't just assign array of regions to user and save him
     // https://github.com/LearnBoost/mongoose/wiki/3.6-Release-Notes
@@ -1438,81 +1448,23 @@ export const buildQuery = regions => {
     return { rquery, rhash };
 };
 
-export function loadController(io) {
-    io.sockets.on('connection', function (socket) {
-        const hs = socket.handshake;
+give.isPublic = true;
+save.isPublic = true;
+remove.isPublic = true;
+giveListFull.isPublic = true;
+giveListPublic.isPublic = true;
+giveRegionsByGeo.isPublic = true;
+saveUserHomeRegion.isPublic = true;
+saveUserRegions.isPublic = true;
+export default {
+    give,
+    save,
+    remove,
+    giveListFull,
+    giveListPublic,
+    giveRegionsByGeo,
+    saveUserHomeRegion,
+    saveUserRegions,
 
-        socket.on('saveRegion', function (data) {
-            saveRegion(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('saveRegionResult', resultData);
-                });
-        });
-        socket.on('removeRegion', function (data) {
-            removeRegion(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('removeRegionResult', resultData);
-                });
-        });
-        socket.on('giveRegion', function (data) {
-            getRegion(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeRegion', resultData);
-                });
-        });
-        socket.on('giveRegionsFull', function (data) {
-            getRegionsFull(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeRegionsFull', resultData);
-                });
-        });
-        socket.on('giveRegions', function (data) {
-            getRegionsPublic(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeRegions', resultData);
-                });
-        });
-        socket.on('giveRegionsByGeo', function (data) {
-            giveRegionsByGeo(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeRegionsByGeo', resultData);
-                });
-        });
-        socket.on('saveUserHomeRegion', function (data) {
-            saveUserHomeRegion(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('saveUserHomeRegionResult', resultData);
-                });
-        });
-        socket.on('saveUserRegions', function (data) {
-            saveUserRegions(socket, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('saveUserRegionsResult', resultData);
-                });
-        });
-    });
+    setUserRegions
 };

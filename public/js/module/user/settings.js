@@ -45,31 +45,27 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         if (valNew === 'home') {
                             // Если устанавляаем фильтрацию по Домашнему региону,
                             // сначала ставим домашний регион в фильтр, затем сохраняем настройку r_as_home
-                            this.saveFilterRegions([this.u.regionHome.cid()], function (err) {
-                                if (!err) {
-                                    this.changeSetting('r_as_home', true, true, function (err) {
-                                        if (!err) {
-                                            this.originUser.regions = [ko.toJS(this.u.regionHome)];
-                                            // Обновляем регионы в текущей вкладке вручную
-                                            User.vm({ regions: this.originUser.regions }, this.u, true);
-                                        }
-                                        ga('send', 'event', 'region', 'update', 'region update ' + (err ? 'error' : 'success'), 1);
-                                    }, this);
-                                }
+                            this.saveFilterRegions([this.u.regionHome.cid()], function () {
+                                this.changeSetting('r_as_home', true, true, function (err) {
+                                    if (!err) {
+                                        this.originUser.regions = [ko.toJS(this.u.regionHome)];
+                                        // Обновляем регионы в текущей вкладке вручную
+                                        User.vm({ regions: this.originUser.regions }, this.u, true);
+                                    }
+                                    ga('send', 'event', 'region', 'update', 'region update ' + (err ? 'error' : 'success'), 1);
+                                }, this);
                             }, this);
                         } else {
                             if (valNew === 'all') {
-                                this.saveFilterRegions([], function (err) {
-                                    if (!err) {
-                                        this.originUser.regions = [];
-                                        // Обновляем регионы в текущей вкладке вручную
-                                        User.vm({ regions: this.originUser.regions }, this.u, true);
-                                        ga('send', 'event', 'region', 'update', 'region update success', 1);
+                                this.saveFilterRegions([], function () {
+                                    this.originUser.regions = [];
+                                    // Обновляем регионы в текущей вкладке вручную
+                                    User.vm({ regions: this.originUser.regions }, this.u, true);
+                                    ga('send', 'event', 'region', 'update', 'region update success', 1);
 
-                                        // Если был установлена фильтрация по Домашнему региону, отменяем её
-                                        if (valPrev === 'home') {
-                                            this.changeSetting('r_as_home', false, true);
-                                        }
+                                    // Если был установлена фильтрация по Домашнему региону, отменяем её
+                                    if (valPrev === 'home') {
+                                        this.changeSetting('r_as_home', false, true);
                                     }
                                 }, this);
                             } else if (valNew === 'list') {
@@ -394,36 +390,16 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
 
         saveHomeRegion: function (cid, cb, ctx) {
-            socket.once('saveUserHomeRegionResult', function (data) {
-                var error = !data || data.error || !data.saved;
-                if (error) {
-                    window.noty({
-                        text: data.message || 'Error occurred',
-                        type: 'error',
-                        layout: 'center',
-                        timeout: 3000,
-                        force: true
-                    });
-                }
-                cb.call(ctx, error, data);
-            }, this);
-            socket.emit('saveUserHomeRegion', { login: this.u.login(), cid: cid });
+            socket.run('region.saveUserHomeRegion', { login: this.u.login(), cid: cid }, true)
+                .then(function (data) {
+                    cb.call(ctx, data);
+                });
         },
         saveFilterRegions: function (regions, cb, ctx) {
-            socket.once('saveUserRegionsResult', function (data) {
-                var error = !data || data.error || !data.saved;
-                if (error) {
-                    window.noty({
-                        text: data.message || 'Error occurred',
-                        type: 'error',
-                        layout: 'center',
-                        timeout: 3000,
-                        force: true
-                    });
-                }
-                cb.call(ctx, error);
-            }, this);
-            socket.emit('saveUserRegions', { login: this.u.login(), regions: regions });
+            socket.run('region.saveUserRegions', { login: this.u.login(), regions: regions }, true)
+                .then(function (data) {
+                    cb.call(ctx, data);
+                });
         },
         regionDrop: function (cid) {
             if (cid) {
@@ -432,10 +408,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 });
                 var regions = ko_mapping.toJS(this.u.regions);
                 this.saveFilterRegions(_.pluck(regions, 'cid'), function (err) {
-                    if (!err) {
-                        this.originUser.regions = regions;
-                        ga('send', 'event', 'region', 'update', 'photo update success', regions.length);
-                    }
+                    this.originUser.regions = regions;
+                    ga('send', 'event', 'region', 'update', 'photo update success', regions.length);
                 }, this);
             }
         },
@@ -459,16 +433,14 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             return;
                         }
 
-                        this.saveHomeRegion(regions[0].cid, function (err, data) {
-                            if (!err) {
-                                User.vm({ regionHome: Region.factory(data.region, 'home') }, this.u, true); //Обновляем регионы в текущей вкладке вручную
-                                this.originUser.regionHome = data.region;
+                        this.saveHomeRegion(regions[0].cid, function (data) {
+                            User.vm({ regionHome: Region.factory(data.region, 'home') }, this.u, true); //Обновляем регионы в текущей вкладке вручную
+                            this.originUser.regionHome = data.region;
 
-                                this.regHomeselectVM.destroy();
-                                delete this.regHomeselectVM;
+                            this.regHomeselectVM.destroy();
+                            delete this.regHomeselectVM;
 
-                                ga('send', 'event', 'region', 'update', 'region update success', regions.length);
-                            }
+                            ga('send', 'event', 'region', 'update', 'region update success', regions.length);
                         }, this);
                     },
                     function () {
@@ -497,16 +469,14 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             return;
                         }
 
-                        this.saveFilterRegions(_.pluck(regions, 'cid'), function (err) {
-                            if (!err) {
-                                User.vm({ regions: regions }, this.u, true); //Обновляем регионы в текущей вкладке вручную
-                                this.originUser.regions = regions;
+                        this.saveFilterRegions(_.pluck(regions, 'cid'), function () {
+                            User.vm({ regions: regions }, this.u, true); // Обновляем регионы в текущей вкладке вручную
+                            this.originUser.regions = regions;
 
-                                this.regselectVM.destroy();
-                                delete this.regselectVM;
+                            this.regselectVM.destroy();
+                            delete this.regselectVM;
 
-                                ga('send', 'event', 'region', 'update', 'region update success', regions.length);
-                            }
+                            ga('send', 'event', 'region', 'update', 'region update success', regions.length);
                         }, this);
                     },
                     function () {

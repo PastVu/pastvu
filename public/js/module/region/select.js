@@ -42,7 +42,7 @@ define([
 			this.show();
 
 			this.getRegions(function () {
-				//Создавать токены должны после отображения, чтобы появился скроллинг и правильно посчиталась ширина инпута для typehead
+				// Создавать токены должны после отображения, чтобы появился скроллинг и правильно посчиталась ширина инпута для typehead
 				setTimeout(function () {
 					this.loading(false);
 					this.createTokenfield();
@@ -129,21 +129,16 @@ define([
 			delete this.topShadowBacking;
 		},
 		getRegions: function (cb, ctx) {
-			socket.once('takeRegions', function (data) {
-				var error = !data || !!data.error || !data.regions;
+			socket.run('region.giveListPublic', undefined, true)
+                .then(function (data) {
 
-				if (error) {
-					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 4000, force: true});
-				} else {
-					this.regionsTree(this.treeBuild(data.regions));
-					this.regionsFlat = data.regions;
-				}
+                    this.regionsTree(this.treeBuild(data.regions));
+                    this.regionsFlat = data.regions;
 
-				if (Utils.isType('function', cb)) {
-					cb.call(ctx, data, error);
-				}
-			}, this);
-			socket.emit('giveRegions', {});
+                    if (Utils.isType('function', cb)) {
+                        cb.call(ctx, data);
+                    }
+                }.bind(this));
 		},
 		//Возвращает массив выбранных регионов с переданными полями
 		getSelectedRegions: function (fields) {

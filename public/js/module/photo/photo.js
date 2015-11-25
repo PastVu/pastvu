@@ -731,36 +731,20 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }
         },
 
-        getRegionsByGeo: function (geo, cb, ctx) {
+        getRegionsByGeo: function (geo) {
             this.exeregion(true);
-            // Отменяем возможно существующий прошлый обработчик, так как в нем замкнут неактуальный cb
-            socket.off('takeRegionsByGeo');
-            //Устанавливаем on, а не once, чтобы он срабатывал всегда, в том числе и на последнем обработчике, который нам и нужен
-            socket.on('takeRegionsByGeo', function (data) {
-                //Если вернулись данные для другой(прошлой) точки или мы уже не в режиме редактирования, то выходим
-                if (this.edit() && data && !_.isEqual(data.geo, this.p.geo())) {
-                    return;
-                }
 
-                var error = !data || !!data.error || !data.regions;
-                if (error) {
-                    window.noty({
-                        text: data && data.message || 'Error occurred',
-                        type: 'error',
-                        layout: 'center',
-                        timeout: 4000,
-                        force: true
-                    });
-                } else {
-                    Photo.vm({ regions: data.regions }, this.p, true); //Обновляем регионы
-                }
+            socket.run('region.giveRegionsByGeo', { geo: geo }, true)
+                .then(function (data) {
+                    // Если вернулись данные для другой(прошлой) точки или мы уже не в режиме редактирования, то выходим
+                    if (this.edit() && data && !_.isEqual(data.geo, this.p.geo())) {
+                        return;
+                    }
 
-                if (_.isFunction(cb)) {
-                    cb.call(ctx, error, data);
-                }
-                this.exeregion(false);
-            }, this);
-            socket.emit('giveRegionsByGeo', { geo: geo });
+                    Photo.vm({ regions: data.regions }, this.p, true); // Обновляем регионы
+
+                    this.exeregion(false);
+                }.bind(this));
         },
         regionSelect: function () {
             if (!this.regselectVM) {

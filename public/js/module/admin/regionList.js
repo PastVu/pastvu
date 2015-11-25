@@ -31,22 +31,16 @@ define([
 			this.showing = false;
 		},
 		getRegions: function (cb, ctx) {
-			socket.once('takeRegionsFull', function (data) {
-				var error = !data || !!data.error || !data.regions;
+			socket.run('region.giveListFull', undefined, true)
+                .then(function (data) {
+                    this.stat = data.stat;
+                    this.regions(this.treeBuild(data.regions));
+                    this.regionsFlat = data.regions;
 
-				if (error) {
-					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 4000, force: true});
-				} else {
-					this.stat = data.stat;
-					this.regions(this.treeBuild(data.regions));
-					this.regionsFlat = data.regions;
-				}
-
-				if (Utils.isType('function', cb)) {
-					cb.call(ctx, data, error);
-				}
-			}, this);
-			socket.emit('giveRegionsFull', {});
+                    if (Utils.isType('function', cb)) {
+                        cb.call(ctx, data);
+                    }
+                }.bind(this));
 		},
 		treeBuild: function (arr) {
 			var i = 0,
