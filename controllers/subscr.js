@@ -39,11 +39,10 @@ const declension = {
     commentUnread: [' непрочитанный', ' непрочитанных', ' непрочитанных']
 };
 
-/**
- * Subscribe to/unsubscribe from object (external, for current user by object cid)
- * @param iAm
- */
-async function subscribeUser(iAm, { cid, type = 'photo', subscribe } = {}) {
+// Subscribe to/unsubscribe from object (external, for current user by object cid)
+async function subscribeUser({ cid, type = 'photo', subscribe }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!iAm.registered) {
         throw { message: msg.deny };
     }
@@ -441,25 +440,27 @@ async function sendUserNotice(userId) {
 }
 
 // Return paged list of user's subscriptions
-async function getUserSubscr(iAm, data) {
-    if (!_.isObject(data)) {
+async function giveUserSubscriptions({ login, page = 1, type = 'photo' }) {
+    const { handshake: { usObj: iAm } } = this;
+
+    if (!login) {
         throw { message: msg.badParams };
     }
-    if (!iAm.registered || iAm.user.login !== data.login && !iAm.isAdmin) {
+    if (!iAm.registered || iAm.user.login !== login && !iAm.isAdmin) {
         throw { message: msg.deny };
     }
 
-    const userId = await User.getUserID(data.login);
+    const userId = await User.getUserID(login);
 
     if (!userId) {
         throw { message: msg.nouser };
     }
 
-    const page = (Math.abs(Number(data.page)) || 1) - 1;
+    page = (Math.abs(Number(page)) || 1) - 1;
     const skip = page * subscrPerPage;
 
     const rels = await UserObjectRel.find(
-        { user: userId, type: data.type, sbscr_create: { $exists: true } },
+        { user: userId, type, sbscr_create: { $exists: true } },
         { _id: 0, user: 0, type: 0, sbscr_noty_change: 0 },
         { lean: true, skip, limit: subscrPerPage, sort: { ccount_new: -1, sbscr_create: -1 } }
     ).exec();
@@ -474,7 +475,7 @@ async function getUserSubscr(iAm, data) {
             objIds.push(rel.obj);
         }
 
-        objs = await (data.type === 'news' ?
+        objs = await (type === 'news' ?
             News.find(
                 { _id: { $in: objIds } }, { _id: 1, cid: 1, title: 1, ccount: 1 }, { lean: true }
             ).exec() :
@@ -518,13 +519,13 @@ async function getUserSubscr(iAm, data) {
     objs.sort(sortSubscr); // $in doesn't guarantee sorting, so do manual sort
 
     return {
+        type,
+        nextNoty,
         countNews,
         countPhoto,
         subscr: objs,
         page: page + 1,
-        type: data.type,
-        perPage: subscrPerPage,
-        nextNoty
+        perPage: subscrPerPage
     };
 };
 
@@ -545,28 +546,9 @@ export const ready = new Promise(async function(resolve, reject) {
     }
 });
 
-export function loadController(io) {
-    io.sockets.on('connection', function (socket) {
-        const hs = socket.handshake;
-
-        socket.on('subscr', function (data) {
-            subscribeUser(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('subscrResult', resultData);
-                });
-        });
-        socket.on('giveUserSubscr', function (data) {
-            getUserSubscr(hs.usObj, data)
-                .catch(function (err) {
-                    console.error(err);
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeUserSubscr', resultData);
-                });
-        });
-    });
+subscribeUser.isPublic = true;
+giveUserSubscriptions.isPublic = true;
+export default {
+    subscribeUser,
+    giveUserSubscriptions
 };

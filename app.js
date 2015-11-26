@@ -11,13 +11,13 @@ import socketIO from 'socket.io';
 import Utils from './commons/Utils';
 import { handleSocketConnection, registerSocketRequestHendler } from './app/request';
 
+import { ready as mailReady } from './controllers/mail';
 import { ready as authReady } from './controllers/auth';
 import { ready as regionReady } from './controllers/region';
+import { ready as subscrReady } from './controllers/subscr';
 import { ready as settingsReady } from './controllers/settings';
 import * as errors from './controllers/errors';
-import * as mail from './controllers/mail';
 import * as routes from './controllers/routes';
-import * as subscr from './controllers/subscr';
 import * as ourMiddlewares from './controllers/middleware';
 
 import connectDb from './controllers/connection';
@@ -151,7 +151,7 @@ export async function configure(startStamp) {
         app.get(/^\/(?:_a|_p)(?:\/.*)$/, static404);
     }
 
-    await* [authReady, settingsReady, regionReady, subscr.ready, mail.ready];
+    await* [authReady, settingsReady, regionReady, subscrReady, mailReady];
 
     const httpServer = http.createServer(app);
     const io = socketIO(httpServer, {
@@ -168,8 +168,6 @@ export async function configure(startStamp) {
 
     io.use(handleSocketConnection); // Handler for esteblishing websocket connection
     registerSocketRequestHendler(io); // Register router for socket.io events
-
-    subscr.loadController(io);
 
     if (env === 'development') {
         require('./controllers/tpl').loadController(app);

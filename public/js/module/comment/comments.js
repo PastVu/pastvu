@@ -314,25 +314,15 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
         //Подписывается-отписывается от комментариев
         subscribe: function (data, event, byCommentCreate) {
-            socket.once('subscrResult', function (result) {
-                if (!result || result.error) {
-                    window.noty({
-                        text: result && result.message || 'Ошибка подписки',
-                        type: 'error',
-                        layout: 'center',
-                        timeout: 2000,
-                        force: true
-                    });
-                } else {
-                    var subscrFlag = !!result.subscribe,
-                        subscrGAction = subscrFlag ? (byCommentCreate ? 'createAutoReply' : 'create') : 'delete';
+            socket.run('subscr.subscribeUser', { cid: this.cid, type: this.type, subscribe: !this.subscr() }, true)
+                .then(function (result) {
+                    var subscrFlag = !!result.subscribe;
+                    var subscrGAction = subscrFlag ? (byCommentCreate ? 'createAutoReply' : 'create') : 'delete';
 
                     this.parentModule.setSubscr(subscrFlag);
                     this.subscr(subscrFlag);
                     ga('send', 'event', 'subscription', subscrGAction, 'subscription ' + subscrGAction);
-                }
-            }, this);
-            socket.emit('subscr', { cid: this.cid, type: this.type, subscribe: !this.subscr() });
+                }.bind(this);
         },
 
         receive: function (cb, ctx) {
