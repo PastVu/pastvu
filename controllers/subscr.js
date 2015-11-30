@@ -9,7 +9,7 @@ import config from '../config';
 import { waitDb } from './connection';
 import { send as sendMail } from './mail';
 import { userSettingsDef } from './settings';
-import { findPhoto, buildPhotosQuery } from './photo';
+import { buildPhotosQuery } from './photo';
 import * as userObjectRelController from './userobjectrel';
 
 import { News } from '../models/News';
@@ -52,7 +52,8 @@ async function subscribeUser({ cid, type = 'photo', subscribe }) {
         throw { message: msg.badParams };
     }
 
-    const obj = await (type === 'news' ? News.findOne({ cid }, { _id: 1 }).exec() : findPhoto(iAm, { cid }));
+    const obj = await (type === 'news' ?
+        News.findOne({ cid }, { _id: 1 }).exec() : this.call('photo.find', { query: { cid } }));
 
     if (_.isEmpty(obj)) {
         throw { message: msg.noObject };
@@ -99,7 +100,7 @@ export async function subscribeUserByIds(user, objId, setCommentView, type = 'ph
  * @param objId
  * @param [userId] Without it remove subscription to object from all users
  */
-export async function unSubscribeObj(objId, userId) {
+async function unSubscribeObj({ objId, userId }) {
     const query = { obj: objId };
 
     if (userId) {
@@ -550,5 +551,8 @@ subscribeUser.isPublic = true;
 giveUserSubscriptions.isPublic = true;
 export default {
     subscribeUser,
-    giveUserSubscriptions
+    giveUserSubscriptions,
+
+    subscribeUserByIds,
+    unSubscribeObj
 };

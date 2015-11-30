@@ -217,18 +217,12 @@ define(['module'], function (/* module */) {
                     return { error: error };
                 })
                 .then(function (result) {
-                    if (!result || result.error) {
+                    if (result.error) {
                         console.error('socket.run "' + name + '" returned error\n', result);
+                        result.error.rid = _.get(result, 'rid', '');
 
                         if (notyOnError) {
-                            var message = _.get(result, 'error.message', 'Error occured');
-                            var rid = _.get(result, 'rid', '');
-
-                            if (rid) {
-                                rid = 'Error id: ' + rid;
-                            }
-
-                            noties.error(_.compact([message, rid]).join('<br>'), 4000);
+                            noties.error(result.error);
                         }
 
                         throw result.error; // TODO: think about Uncaught promise error

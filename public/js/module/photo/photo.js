@@ -370,55 +370,53 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 self.photoLoading(true);
                 self.commentsVM.deactivate();
 
-                this.receivePhoto(cid, false, function (err, data) {
-                    if (!err && data) {
-                        var editModeCurr = self.edit();
-                        var editModeNew = !!data.forEdit;
+                this.receivePhoto(cid, false, function (data) {
+                    var editModeCurr = self.edit();
+                    var editModeNew = !!data.forEdit;
 
-                        self.rechargeData(data.photo, data.can);
+                    self.rechargeData(data.photo, data.can);
 
-                        Utils.title.setTitle({ title: self.p.title() });
+                    Utils.title.setTitle({ title: self.p.title() });
 
-                        if (self.photoLoadContainer) {
-                            self.photoLoadContainer.off('load').off('error');
-                        }
-                        self.photoLoadContainer = $(new Image())
-                            .on('load', self.onPhotoLoad.bind(self))
-                            .on('error', self.onPhotoError.bind(self))
-                            .attr('src', self.p.sfile());
-
-                        self.processRanks(self.p.user.ranks());
-                        self.getUserRibbon(3, 4, self.applyUserRibbon, self);
-                        self.getNearestRibbon(12, self.applyNearestRibbon, self);
-
-                        // В первый раз точку передаем сразу в модуль карты, в следующие устанавливам методами
-                        if (self.binded) {
-                            $.when(self.mapModulePromise).done(self.setMapPoint.bind(self));
-                        }
-
-                        if (editModeCurr !== editModeNew) {
-                            self.edit(editModeNew);
-                        } else {
-                            self.editHandler(editModeCurr);
-                        }
-
-                        if (!self.binded) {
-                            self.makeBinding();
-                        }
-
-                        if (self.share !== false && !self.edit()) {
-                            self.showShare();
-                        } else {
-                            self.destroyShare();
-                        }
-
-                        if (self.history !== false && !self.edit()) {
-                            self.showHistory();
-                        } else {
-                            self.destroyHistory();
-                        }
-                        ga('send', 'pageview', '/p');
+                    if (self.photoLoadContainer) {
+                        self.photoLoadContainer.off('load').off('error');
                     }
+                    self.photoLoadContainer = $(new Image())
+                        .on('load', self.onPhotoLoad.bind(self))
+                        .on('error', self.onPhotoError.bind(self))
+                        .attr('src', self.p.sfile());
+
+                    self.processRanks(self.p.user.ranks());
+                    self.getUserRibbon(3, 4, self.applyUserRibbon, self);
+                    self.getNearestRibbon(12, self.applyNearestRibbon, self);
+
+                    // В первый раз точку передаем сразу в модуль карты, в следующие устанавливам методами
+                    if (self.binded) {
+                        $.when(self.mapModulePromise).done(self.setMapPoint.bind(self));
+                    }
+
+                    if (editModeCurr !== editModeNew) {
+                        self.edit(editModeNew);
+                    } else {
+                        self.editHandler(editModeCurr);
+                    }
+
+                    if (!self.binded) {
+                        self.makeBinding();
+                    }
+
+                    if (self.share !== false && !self.edit()) {
+                        self.showShare();
+                    } else {
+                        self.destroyShare();
+                    }
+
+                    if (self.history !== false && !self.edit()) {
+                        self.showHistory();
+                    } else {
+                        self.destroyHistory();
+                    }
+                    ga('send', 'pageview', '/p');
                 }, this);
             } else {
                 if (self.toFrag || self.toComment) {
@@ -439,13 +437,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
         receivePhoto: function (cid, edit, cb, ctx) {
             var finish = function (data) {
-                var error = !data || data.error;
+                Photo.factory(data.photo, 'full', 'd', 'middle', 'middle');
 
-                if (!error) {
-                    Photo.factory(data.photo, 'full', 'd', 'middle', 'middle');
-                }
-
-                cb.call(ctx, error, data);
+                cb.call(ctx, data);
             };
 
             if (_.get(init, 'photo.photo.cid') === cid) {
@@ -454,8 +448,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 return;
             }
 
-            socket.once('takePhoto', finish);
-            socket.emit('photo.giveForPage', { cid: cid, forEdit: edit });
+            socket.run('photo.giveForPage', { cid: cid, forEdit: edit }, true).then(finish);
         },
 
         loggedInHandler: function () {
@@ -1101,9 +1094,12 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             var downloadPath = '//' + P.settings.server.hostname() + P.settings.server.dport() + '/download/';
             var getDownloadKey = function (cid) {
                 waitingForKey = true;
-                socket.once('getDownloadKeyResult', function (data) {
-                    if (data && !data.error && data.key) {
-                        ga('send', 'event', 'download', data.origin ? 'origin' : 'water', 'download ' + (data.origin ? 'origin' : 'water'));
+                socket.run('photo.getDownloadKey', { cid: cid })
+                    .then(function (data) {
+                        ga(
+                            'send', 'event', 'download',
+                            data.origin ? 'origin' : 'water', 'download ' + (data.origin ? 'origin' : 'water')
+                        );
 
                         var a = document.createElement('a');
                         a.setAttribute('href', downloadPath + data.key);
@@ -1118,14 +1114,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         Utils.clickElement(a);
 
                         document.body.removeChild(a);
-                    } else {
-                        ga('send', 'event', 'download', 'error', 'download error');
-                        console.warn(data);
-                    }
 
-                    waitingForKey = false;
-                });
-                socket.emit('photo.getDownloadKey', { cid: cid });
+                        waitingForKey = false;
+                    })
+                    .catch(function (error) {
+                        ga('send', 'event', 'download', 'error', 'download error');
+                        console.warn(error);
+                    });
             };
 
             return function (data, event) {
@@ -1170,6 +1165,58 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             };
         }()),
 
+        tryOperation: function (requestCreater, proceedText, customChangedMessage, confirmer) {
+            var self = this;
+
+            self.exe(true);
+            return requestCreater()
+                .catch(function (error) {
+                    if (error.changed) {
+                        if (confirmer) {
+                            confirmer.close();
+                            confirmer = null;
+                        }
+
+                        var message = error.message + (customChangedMessage ||
+                            '<br><a target="_blank" href="/p/' + self.p.cid() + '">Посмотреть последнюю версию</a>');
+                        var okText = proceedText || 'Продолжить операцию';
+                        var cancelText = 'Отменить операцию';
+
+                        noties.confirm({
+                            message: message,
+                            okText: okText,
+                            cancelText: cancelText,
+                            onOk: function (notiesConfirmer) {
+                                confirmer = notiesConfirmer;
+                                requestCreater(confirmer);
+                            },
+                            onCancel: function () {
+                                self.exe(false);
+                            }
+                        });
+                        throw error;
+                    }
+
+                    if (confirmer) {
+                        confirmer.error(error, 'Закрыть', 4000, function () {
+                            self.exe(false);
+                        });
+                    } else {
+                        noties.error(error);
+                    }
+
+                    return error;
+                })
+                .then(function (error) {
+                    if (confirmer) {
+                        confirmer.close();
+                    }
+
+                    return { done: true, error: error };
+                })
+                .catch(_.noop);
+        },
+
         editSave: function () {
             var self = this;
 
@@ -1195,7 +1242,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             var self = this;
 
             this.receivePhoto(self.p.cid(), true, function (err, data) {
-                if (!err && data && data.forEdit) {
+                if (data.forEdit) {
                     // Если включаем редактирование, обнуляем количество новых комментариев,
                     // так как после возврата комментарии будут запрошены заново и соответственно иметь статус прочитанных
                     data.photo.ccount_new = 0;
@@ -1206,6 +1253,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }, this);
 
         },
+
         savePhoto: function () {
             var self = this;
             var p = self.p;
@@ -1213,7 +1261,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             var cid = p.cid();
 
             var changes = _.chain(ko_mapping.toJS(p))
-                .pick('geo', 'dir', 'title', 'year', 'year2', 'address', 'nowaterchange', 'watersignIndividual', 'disallowDownloadOriginIndividual')
+                .pick(
+                    'geo', 'dir', 'title', 'year', 'year2', 'address',
+                    'nowaterchange', 'watersignIndividual', 'disallowDownloadOriginIndividual'
+                )
                 .transform(function (result, value, key) {
                     var valueOrigin = origin[key];
 
@@ -1273,118 +1324,66 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 }
             }
 
-            if (!_.isEmpty(changes)) {
-                self.exe(true);
-
-                (function request(confirmer) {
-                    socket.once('savePhotoResult', function (data) {
-                        if (data && data.changed) {
-                            noties.confirm({
-                                message: data.message +
-                                '<br>В случае продолжения сохранения, ваши изменения заменят более ранние' +
-                                '<br><a data-replace="true" href="?history=1">Посмотреть историю изменений</a>' +
-                                '<br><a target="_blank" href="/p/' + cid + '">Открыть последнюю версию</a>',
-                                okText: 'Продолжить сохранение',
-                                cancelText: 'Отменить',
-                                onOk: function (confirmer) {
-                                    request(confirmer);
-                                },
-                                onCancel: function () {
-                                    self.exe(false);
-                                }
-                            });
-                        } else if (data && data.emptySave) {
-                            self.exe(false);
-                            self.edit(false);
-                        } else {
-                            var error = !data || data.error;
-
-                            if (error) {
-                                noties.error(data && data.message);
-                            } else {
-                                self.rechargeData(data.photo, data.can);
-
-                                if (confirmer) {
-                                    confirmer.close();
-                                }
-                                if (p.s() === statusKeys.NEW) {
-                                    self.notifyReady();
-                                }
-                                if (data.reconvert) {
-                                    self.notifyReconvert();
-                                }
-
-                                // Заново запрашиваем ближайшие фотографии
-                                self.getNearestRibbon(12, self.applyNearestRibbon, self);
-                                self.edit(false);
-                            }
-                            self.exe(false);
-                            ga('send', 'event', 'photo', 'edit', 'photo edit ' + (error ? 'error' : 'success'));
-                        }
-                    });
-                    socket.emit('photo.save', {
-                        cid: cid,
-                        cdate: p.cdate(),
-                        s: p.s(),
-                        changes: changes,
-                        ignoreChange: !!confirmer
-                    });
-                }());
-            } else {
-                self.edit(false);
+            if (_.isEmpty(changes)) {
+                return self.edit(false);
             }
+
+            var params = { cid: cid, cdate: p.cdate(), s: p.s(), changes: changes };
+            var changedMessage = '<br>В случае продолжения сохранения, ваши изменения заменят более ранние' +
+                '<br><a data-replace="true" href="?history=1">Посмотреть историю изменений</a>' +
+                '<br><a target="_blank" href="/p/' + cid + '">Открыть последнюю версию</a>';
+
+            self.tryOperation(function (confirmer) {
+                return socket.run('photo.save', _.assign({ ignoreChange: !!confirmer }, params)).then(function (data) {
+                    if (!data.emptySave) {
+                        self.rechargeData(data.photo, data.can);
+
+                        if (p.s() === statusKeys.NEW) {
+                            self.notifyReady();
+                        }
+                        if (data.reconvert) {
+                            self.notifyReconvert();
+                        }
+
+                        // Заново запрашиваем ближайшие фотографии
+                        self.getNearestRibbon(12, self.applyNearestRibbon, self);
+                    }
+                });
+            }, 'Продолжить сохранение', changedMessage).then(function (result) {
+                if (_.get(result, 'done', false)) {
+                    self.exe(false);
+                    self.edit(false);
+                    ga('send', 'event', 'photo', 'edit', 'photo edit ' + (result.error ? 'error' : 'success'));
+                }
+            });
         },
 
         revoke: function () {
             var self = this;
-            var confimingChanges;
-            var cid = self.p.cid();
 
             if (!self.can.revoke()) {
                 return false;
             }
-
-            var request = function (cb, ctx) {
-                socket.once('revokePhotoCallback', function (data) {
-                    cb.call(ctx, data);
-                });
-                socket.emit('photo.revoke', {
-                    cid: cid,
-                    cdate: self.p.cdate(),
-                    s: self.p.s(),
-                    ignoreChange: confimingChanges
-                });
-            };
 
             self.exe(true);
             noties.confirm({
                 message: 'Фотография будет перемещена в корзину и не попадет в очередь на публикацию<br>Подтвердить операцию?',
                 okText: 'Да',
                 cancelText: 'Нет',
-                onOk: function (confirmer) {
-                    confirmer.disable();
+                onOk: function (initConfirmer) {
+                    initConfirmer.disable();
 
-                    request(function (data) {
-                        if (data && data.changed) {
-                            confimingChanges = true;
-
-                            confirmer.replaceTexts(
-                                data.message + '<br><a target="_blank" href="/p/' + cid + '">Посмотреть последнюю версию</a>',
-                                'Продолжить операцию',
-                                'Отменить'
-                            );
-                            confirmer.enable();
-                        } else if (data && !data.error) {
+                    var p = self.p;
+                    var params = { cid: p.cid(), cdate: p.cdate(), s: p.s() };
+                    self.tryOperation(function (confirmer) {
+                        return socket.run('photo.revoke', _.assign({ ignoreChange: !!confirmer }, params)).then(function (data) {
                             self.rechargeData(data.photo, data.can);
-
-                            confirmer.close();
-                            ga('send', 'event', 'photo', 'revoke', 'photo revoke success');
-                            globalVM.router.navigate('/u/' + self.p.user.login() + '/photo');
-                        } else {
-                            confirmer.error(data.message, 'Закрыть', function () {
-                                self.exe(false);
-                            });
-                            ga('send', 'event', 'photo', 'revoke', 'photo revoke error');
+                        });
+                    }, 'Продолжить отзыв', null, initConfirmer).then(function (result) {
+                        if (_.get(result, 'done', false)) {
+                            self.exe(false);
+                            ga('send', 'event', 'photo', 'revoke', 'photo revoke ' + (result.error ? 'error' : 'success'));
+                            globalVM.router.navigate('/u/' + p.user.login() + '/photo');
                         }
                     });
                 },
@@ -1397,7 +1396,6 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         ready: function () {
             var self = this;
             var p = self.p;
-            var cid = p.cid();
 
             if (!self.can.ready()) {
                 return false;
@@ -1406,38 +1404,18 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 return self.askForGeo();
             }
 
-            self.exe(true);
-            (function request(confirmer) {
-                socket.once('readyPhotoResult', function (data) {
-                    if (data && data.changed) {
-                        noties.confirm({
-                            message: data.message + '<br><a target="_blank" href="/p/' + cid + '">Посмотреть последнюю версию</a>',
-                            okText: 'Продолжить отправку',
-                            cancelText: 'Отменить',
-                            onOk: function (confirmer) {
-                                request(confirmer);
-                            },
-                            onCancel: function () {
-                                self.exe(false);
-                            }
-                        });
-                    } else {
-                        if (data && !data.error) {
-                            self.rechargeData(data.photo, data.can);
+            var params = { cid: p.cid(), cdate: p.cdate(), s: p.s() };
 
-                            if (confirmer) {
-                                confirmer.close();
-                            }
-                            ga('send', 'event', 'photo', 'ready', 'photo ready success');
-                        } else {
-                            noties.error(data.message);
-                            ga('send', 'event', 'photo', 'ready', 'photo ready error');
-                        }
-                        self.exe(false);
-                    }
+            self.tryOperation(function (confirmer) {
+                return socket.run('photo.ready', _.assign({ ignoreChange: !!confirmer }, params)).then(function (data) {
+                    self.rechargeData(data.photo, data.can);
                 });
-                socket.emit('photo.ready', { cid: cid, cdate: p.cdate(), s: p.s(), ignoreChange: !!confirmer });
-            }());
+            }, 'Продолжить отправку').then(function (result) {
+                if (_.get(result, 'done', false)) {
+                    self.exe(false);
+                    ga('send', 'event', 'photo', 'ready', 'photo ready ' + (result.error ? 'error' : 'success'));
+                }
+            });
         },
 
         toRevision: function () {
@@ -1447,219 +1425,112 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 return false;
             }
 
-            var p = self.p;
-            var cid = p.cid();
-
             self.exe(true);
-
             self.reasonSelect('photo.revision', 'Причина возврата', function (cancel, reason) {
                 if (cancel) {
                     self.exe(false);
                     return;
                 }
 
-                (function request(confirmer) {
-                    socket.once('revisionPhotoResult', function (data) {
-                        if (data && data.changed) {
-                            noties.confirm({
-                                message: data.message + '<br><a target="_blank" href="/p/' + cid + '">Посмотреть последнюю версию</a>',
-                                okText: 'Продолжить операцию',
-                                cancelText: 'Отменить',
-                                onOk: function (confirmer) {
-                                    request(confirmer);
-                                },
-                                onCancel: function () {
-                                    self.exe(false);
-                                }
-                            });
-                        } else {
-                            if (data && !data.error) {
-                                self.rechargeData(data.photo, data.can);
+                var p = self.p;
+                var params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), reason: reason };
 
-                                if (confirmer) {
-                                    confirmer.close();
-                                }
-                                ga('send', 'event', 'photo', 'revision', 'photo revision success');
-                            } else {
-                                noties.error(data.message);
-                                ga('send', 'event', 'photo', 'revision', 'photo revision error');
-                            }
-                            self.exe(false);
-                        }
+                self.tryOperation(function (confirmer) {
+                    return socket.run('photo.toRevision', _.assign({ ignoreChange: !!confirmer }, params)).then(function (data) {
+                        self.rechargeData(data.photo, data.can);
                     });
-                    socket.emit('photo.toRevision', {
-                        cid: cid,
-                        cdate: p.cdate(),
-                        s: p.s(),
-                        reason: reason,
-                        ignoreChange: !!confirmer
-                    });
-                }());
+                }, 'Продолжить операцию возврата').then(function (result) {
+                    if (_.get(result, 'done', false)) {
+                        self.exe(false);
+                        ga('send', 'event', 'photo', 'revision', 'photo revision ' + (result.error ? 'error' : 'success'));
+                    }
+                });
             });
         },
 
         reject: function () {
             var self = this;
-            var p = self.p;
-            var cid = p.cid();
 
             if (!self.can.reject()) {
                 return false;
             }
 
             self.exe(true);
-
             self.reasonSelect('photo.reject', 'Причина отклонения', function (cancel, reason) {
                 if (cancel) {
-                    self.exe(false);
-                    return;
+                    return self.exe(false);
                 }
 
-                (function request(confirmer) {
-                    socket.once('rejectPhotoResult', function (data) {
-                        if (data && data.changed) {
-                            noties.confirm({
-                                message: data.message + '<br><a target="_blank" href="/p/' + cid + '">Посмотреть последнюю версию</a>',
-                                okText: 'Продолжить операцию',
-                                cancelText: 'Отменить',
-                                onOk: function (confirmer) {
-                                    request(confirmer);
-                                },
-                                onCancel: function () {
-                                    self.exe(false);
-                                }
-                            });
-                        } else {
-                            var error = !data || data.error;
-                            if (error) {
-                                noties.error(data && data.message);
-                            } else {
-                                self.rechargeData(data.photo, data.can);
+                var p = self.p;
+                var params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), reason: reason };
 
-                                if (confirmer) {
-                                    confirmer.close();
-                                }
-                            }
-                            ga('send', 'event', 'photo', 'reject', 'photo reject ' + (error ? 'error' : 'success'));
-                            self.exe(false);
-                        }
+                self.tryOperation(function (confirmer) {
+                    return socket.run('photo.rereject', _.assign({ ignoreChange: !!confirmer }, params)).then(function (data) {
+                        self.rechargeData(data.photo, data.can);
                     });
-                    socket.emit('photo.reject', {
-                        cid: cid,
-                        cdate: p.cdate(),
-                        s: p.s(),
-                        reason: reason,
-                        ignoreChange: !!confirmer
-                    });
-                }());
+                }, 'Продолжить отклонение').then(function (result) {
+                    if (_.get(result, 'done', false)) {
+                        self.exe(false);
+                        ga('send', 'event', 'photo', 'reject', 'photo reject ' + (result.error ? 'error' : 'success'));
+                    }
+                });
             });
         },
 
         rereject: function () {
             var self = this;
-            var p = self.p;
-            var cid = p.cid();
 
             if (!self.can.rereject()) {
                 return false;
             }
 
             self.exe(true);
-
             self.reasonSelect('photo.rereject', 'Причина восстановления', function (cancel, reason) {
                 if (cancel) {
-                    self.exe(false);
-                    return;
+                    return self.exe(false);
                 }
 
-                (function request(confirmer) {
-                    socket.once('rerejectPhotoResult', function (data) {
-                        if (data && data.changed) {
-                            noties.confirm({
-                                message: data.message + '<br><a target="_blank" href="/p/' + cid + '">Посмотреть последнюю версию</a>',
-                                okText: 'Продолжить восстановление',
-                                cancelText: 'Отменить',
-                                onOk: function (confirmer) {
-                                    request(confirmer);
-                                },
-                                onCancel: function () {
-                                    self.exe(false);
-                                }
-                            });
-                        } else {
-                            var error = !data || data.error;
-                            if (error) {
-                                noties.error(data && data.message);
-                            } else {
-                                self.rechargeData(data.photo, data.can);
+                var p = self.p;
+                var params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), reason: reason };
 
-                                if (confirmer) {
-                                    confirmer.close();
-                                }
-                            }
-                            self.exe(false);
-                            ga('send', 'event', 'photo', 'rereject', 'photo rereject ' + (error ? 'error' : 'success'));
-                        }
+                self.tryOperation(function (confirmer) {
+                    return socket.run('photo.rereject', _.assign({ ignoreChange: !!confirmer }, params)).then(function (data) {
+                        self.rechargeData(data.photo, data.can);
                     });
-                    socket.emit('photo.rereject', {
-                        cid: cid,
-                        cdate: p.cdate(),
-                        s: p.s(),
-                        reason: reason,
-                        ignoreChange: !!confirmer
-                    });
-                }());
+                }, 'Продолжить восстановление').then(function (result) {
+                    if (_.get(result, 'done', false)) {
+                        self.exe(false);
+                        ga('send', 'event', 'photo', 'rereject', 'photo rereject ' + (result.error ? 'error' : 'success'));
+                    }
+                });
             });
         },
 
         approve: function () {
             var self = this;
-            var p = self.p;
-            var cid = p.cid();
 
             if (!self.can.approve()) {
                 return false;
             }
 
-            self.exe(true);
-            (function request(confirmer) {
-                socket.once('approvePhotoResult', function (data) {
-                    if (data && data.changed) {
-                        noties.confirm({
-                            message: data.message + '<br><a target="_blank" href="/p/' + cid + '">Посмотреть последнюю версию</a>',
-                            okText: 'Продолжить публикацию',
-                            cancelText: 'Отменить',
-                            onOk: function (confirmer) {
-                                request(confirmer);
-                            },
-                            onCancel: function () {
-                                self.exe(false);
-                            }
-                        });
-                    } else {
-                        if (data && !data.error) {
-                            self.rechargeData(data.photo, data.can);
-                            self.commentsActivate({ checkTimeout: 100 });
+            var p = self.p;
+            var params = { cid: p.cid(), cdate: p.cdate(), s: p.s() };
 
-                            if (confirmer) {
-                                confirmer.close();
-                            }
-                            ga('send', 'event', 'photo', 'approve', 'photo approve success');
-                        } else {
-                            noties.error(data.message);
-                            ga('send', 'event', 'photo', 'approve', 'photo approve error');
-                        }
-                        self.exe(false);
-                    }
+            self.tryOperation(function (confirmer) {
+                return socket.run('photo.approve', _.assign({ ignoreChange: !!confirmer }, params)).then(function (data) {
+                    self.rechargeData(data.photo, data.can);
+                    self.commentsActivate({ checkTimeout: 100 });
                 });
-                socket.emit('photo.approve', { cid: cid, cdate: p.cdate(), s: p.s(), ignoreChange: !!confirmer });
-            }());
+            }, 'Продолжить публикацию').then(function (result) {
+                if (_.get(result, 'done', false)) {
+                    self.exe(false);
+                    ga('send', 'event', 'photo', 'approve', 'photo approve ' + (result.error ? 'error' : 'success'));
+                }
+            });
         },
 
         toggleDisable: function () {
             var self = this;
-            var p = self.p;
-            var cid = p.cid();
             var disable = self.can.deactivate();
 
             if (!disable && !self.can.activate()) {
@@ -1680,167 +1551,90 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 request();
             }
 
-            function request(reason, confirmer) {
-                socket.once('disablePhotoResult', function (data) {
-                    if (data && data.changed) {
-                        noties.confirm({
-                            message: data.message + '<br><a target="_blank" href="/p/' + cid + '">Посмотреть последнюю версию</a>',
-                            okText: 'Продолжить операцию',
-                            cancelText: 'Отменить',
-                            onOk: function (confirmer) {
-                                request(reason, confirmer);
-                            },
-                            onCancel: function () {
-                                self.exe(false);
-                            }
-                        });
-                    } else {
-                        var error = !data || data.error;
-                        if (error) {
-                            noties.error(data && data.message);
-                        } else {
-                            self.rechargeData(data.photo, data.can);
+            function request(reason) {
+                var p = self.p;
+                var params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), disable: disable, reason: reason };
 
-                            if (confirmer) {
-                                confirmer.close();
-                            }
-                        }
-                        ga('send', 'event', 'photo', 'reject', 'photo ' + (p.s() === statusKeys.DEACTIVATE ? 'enabled ' : 'disabled ') + (error ? 'error' : 'success'));
+                self.tryOperation(function (confirmer) {
+                    return socket.run('photo.activateDeactivate', _.assign({ ignoreChange: !!confirmer }, params))
+                        .then(function (data) {
+                            self.rechargeData(data.photo, data.can);
+                        });
+                }).then(function (result) {
+                    if (_.get(result, 'done', false)) {
                         self.exe(false);
+                        var operation = p.s() === statusKeys.DEACTIVATE ? 'enabled' : 'disabled';
+                        ga(
+                            'send', 'event', 'photo', operation, 'photo ' + operation + (result.error ? 'error' : 'success')
+                        );
                     }
-                });
-                socket.emit('photo.activateDeactivate', {
-                    cid: cid,
-                    cdate: p.cdate(),
-                    s: p.s(),
-                    disable: disable,
-                    reason: reason,
-                    ignoreChange: !!confirmer
                 });
             }
         },
 
         remove: function () {
             var self = this;
-            var p = self.p;
-            var cid = p.cid();
 
             if (!self.can.remove()) {
                 return false;
             }
 
             self.exe(true);
-
             self.reasonSelect('photo.remove', 'Причина удаления', function (cancel, reason) {
                 if (cancel) {
-                    self.exe(false);
-                    return;
+                    return self.exe(false);
                 }
 
-                (function request(confirmer) {
-                    socket.once('removePhotoResult', function (data) {
-                        if (data && data.changed) {
-                            noties.confirm({
-                                message: data.message + '<br><a target="_blank" href="/p/' + cid + '">Посмотреть последнюю версию</a>',
-                                okText: 'Продолжить удаление',
-                                cancelText: 'Отменить',
-                                onOk: function (confirmer) {
-                                    request(confirmer);
-                                },
-                                onCancel: function () {
-                                    self.exe(false);
-                                }
-                            });
-                        } else {
-                            var error = !data || data.error;
-                            if (error) {
-                                self.exe(false);
-                                noties.error(data && data.message);
-                            } else {
-                                self.rechargeData(data.photo, data.can);
+                var p = self.p;
+                var params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), reason: reason };
 
-                                if (confirmer) {
-                                    confirmer.close();
-                                }
+                self.tryOperation(function (confirmer) {
+                    return socket.run('photo.remove', _.assign({ ignoreChange: !!confirmer }, params)).then(function (data) {
+                        self.rechargeData(data.photo, data.can);
+                    });
+                }, 'Продолжить удаление').then(function (result) {
+                    if (_.get(result, 'done', false)) {
+                        ga('send', 'event', 'photo', 'delete', 'photo delete ' + (result.error ? 'error' : 'success'));
 
-                                noties.alert({
-                                    message: 'Фотография удалена',
-                                    text: 'Завершить',
-                                    countdown: 5,
-                                    onOk: function () {
-                                        self.exe(false);
-                                        globalVM.router.navigate('/u/' + p.user.login() + '/photo');
-                                    }
-                                });
+                        noties.alert({
+                            message: 'Фотография удалена',
+                            text: 'Завершить',
+                            countdown: 5,
+                            onOk: function () {
+                                globalVM.router.navigate('/u/' + p.user.login() + '/photo');
                             }
-                            ga('send', 'event', 'photo', 'reject', 'photo delete ' + (error ? 'error' : 'success'));
-                        }
-                    });
-                    socket.emit('photo.remove', {
-                        cid: cid,
-                        cdate: p.cdate(),
-                        s: p.s(),
-                        reason: reason,
-                        ignoreChange: !!confirmer
-                    });
-                }());
+                        });
+                    }
+                });
             });
         },
 
         restore: function () {
             var self = this;
-            var p = self.p;
-            var cid = p.cid();
 
             if (!self.can.restore()) {
                 return false;
             }
 
             self.exe(true);
-
             self.reasonSelect('photo.restore', 'Причина восстановления', function (cancel, reason) {
                 if (cancel) {
-                    self.exe(false);
-                    return;
+                    return self.exe(false);
                 }
 
-                (function request(confirmer) {
-                    socket.once('restorePhotoResult', function (data) {
-                        if (data && data.changed) {
-                            noties.confirm({
-                                message: data.message + '<br><a target="_blank" href="/p/' + cid + '">Посмотреть последнюю версию</a>',
-                                okText: 'Продолжить восстановление',
-                                cancelText: 'Отменить',
-                                onOk: function (confirmer) {
-                                    request(confirmer);
-                                },
-                                onCancel: function () {
-                                    self.exe(false);
-                                }
-                            });
-                        } else {
-                            var error = !data || data.error;
-                            if (error) {
-                                noties.error(data && data.message);
-                            } else {
-                                self.rechargeData(data.photo, data.can);
+                var p = self.p;
+                var params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), reason: reason };
 
-                                if (confirmer) {
-                                    confirmer.close();
-                                }
-                            }
-                            self.exe(false);
-                            ga('send', 'event', 'photo', 'restore', 'photo restore ' + (error ? 'error' : 'success'));
-                        }
+                self.tryOperation(function (confirmer) {
+                    return socket.run('photo.restore', _.assign({ ignoreChange: !!confirmer }, params)).then(function (data) {
+                        self.rechargeData(data.photo, data.can);
                     });
-                    socket.emit('photo.restore', {
-                        cid: cid,
-                        cdate: p.cdate(),
-                        s: p.s(),
-                        reason: reason,
-                        ignoreChange: !!confirmer
-                    });
-                }());
+                }, 'Продолжить восстановление').then(function (result) {
+                    if (_.get(result, 'done', false)) {
+                        self.exe(false);
+                        ga('send', 'event', 'photo', 'restore', 'photo restore ' + (result.error ? 'error' : 'success'));
+                    }
+                });
             });
         },
 
@@ -2082,16 +1876,16 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         $wrap
                             .addClass('fragHover')
                             .find('.photoImg').imgAreaSelect({
-                                classPrefix: 'photoFragAreaShow imgareaselect',
-                                x1: fragPosition.left,
-                                y1: fragPosition.top,
-                                x2: fragPosition.left + fragWidth + 2,
-                                y2: fragPosition.top + $frag.height() + 2,
-                                imageHeightScaled: this.hs(),
-                                zIndex: 1,
-                                parent: $wrap,
-                                disable: true
-                            });
+                            classPrefix: 'photoFragAreaShow imgareaselect',
+                            x1: fragPosition.left,
+                            y1: fragPosition.top,
+                            x2: fragPosition.left + fragWidth + 2,
+                            y2: fragPosition.top + $frag.height() + 2,
+                            imageHeightScaled: this.hs(),
+                            zIndex: 1,
+                            parent: $wrap,
+                            disable: true
+                        });
 
                         if (fragOffset.left + fragWidth / 2 < 150) {
                             placement = 'right';

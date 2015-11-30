@@ -163,7 +163,7 @@ export const getObjRegionCids = obj => {
  * @param fields Selected region fields. Array, but in case of 'fromDb' - object
  * @param [fromDb] Select from db, not just from cache (in cahce not all fields presented)
  */
-export function getObjRegionList(obj, fields, fromDb) {
+function getObjRegionList({ obj, fields, fromDb }) {
     if (fromDb) {
         return getOrderedRegionList(getObjRegionCids(obj), fields);
     }
@@ -1096,7 +1096,7 @@ export const giveListPublic = () => regionCacheArrPromise;
 const getRegionsByGeoPoint = (function () {
     const defRegion = 1000000; // If the region is not found, return the Open sea
 
-    return async function(geo, fields = { _id: 0, geo: 0, __v: 0 }) {
+    return async function({ geo, fields = { _id: 0, geo: 0, __v: 0 } }) {
         const regions = await Region.find(
             { geo: { $nearSphere: { $geometry: { type: 'Point', coordinates: geo }, $maxDistance: 1 } } },
             fields, { lean: true, sort: { parents: -1 } }
@@ -1112,18 +1112,20 @@ const getRegionsByGeoPoint = (function () {
     };
 }());
 
-async function giveRegionsByGeo(data) {
+async function giveRegionsByGeo({ geo }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered) {
         throw { message: msg.deny };
     }
-    if (!_.isObject(data) || !Utils.geo.checkLatLng(data.geo)) {
+    if (!Utils.geo.checkLatLng(geo)) {
         throw { message: msg.badParams };
     }
-    data.geo = data.geo.reverse();
+    geo.reverse();
 
-    const regions = await getRegionsByGeoPoint(data.geo, { _id: 0, cid: 1, title_local: 1, parents: 1 });
+    const regions = await this.call(
+        'region.getRegionsByGeoPoint', { geo, fields: { _id: 0, cid: 1, title_local: 1, parents: 1 } }
+    );
 
     if (_.isEmpty(regions)) {
         throw { message: msg.noregions };
@@ -1138,7 +1140,7 @@ async function giveRegionsByGeo(data) {
     }
 
     // In case of missing regions in the hierarchy (such shouldn't be), remove empty values
-    return { geo: data.geo.reverse(), regions: _.compact(regionsArr) };
+    return { geo: geo.reverse(), regions: _.compact(regionsArr) };
 }
 
 /**
@@ -1147,13 +1149,13 @@ async function giveRegionsByGeo(data) {
  * @param geo Coordinate
  * @param returnArrFields Array of selecting fields. Array of regions with selected fields will be reterned
  */
-export async function setObjRegionsByGeo(obj, geo, returnArrFields = { _id: 0, cid: 1, parents: 1 }) {
+export async function setObjRegionsByGeo({ obj, geo, returnArrFields = { _id: 0, cid: 1, parents: 1 } }) {
     if (!returnArrFields.cid || !returnArrFields.parents) {
         returnArrFields.cid = 1;
         returnArrFields.parents = 1;
     }
 
-    const regions = await getRegionsByGeoPoint(geo, returnArrFields);
+    const regions = await this.call('region.getRegionsByGeoPoint', { geo, fields: returnArrFields });
 
     if (_.isEmpty(regions)) {
         throw { message: msg.noregions };
@@ -1221,7 +1223,7 @@ export const setObjRegionsByRegionCid = (obj, cid, returnArrFields) => {
  * @param regions Array or regions with mandatory cid
  * @param additionalUpdate
  */
-export async function updateObjsRegions(model, criteria = {}, regions = [], additionalUpdate) {
+async function updateObjsRegions({ model, criteria = {}, regions = [], additionalUpdate }) {
     const $set = {};
     const $unset = {};
     const $update = {};
@@ -1247,9 +1249,7 @@ export async function updateObjsRegions(model, criteria = {}, regions = [], addi
     }
 
     if (Object.keys($update).length) {
-        return await model.update(criteria, $update, { multi: true }).exec();
-    } else {
-        return null;
+        await model.update(criteria, $update, { multi: true }).exec();
     }
 };
 
@@ -1466,5 +1466,9 @@ export default {
     saveUserHomeRegion,
     saveUserRegions,
 
-    setUserRegions
+    setUserRegions,
+    getObjRegionList,
+    updateObjsRegions,
+    setObjRegionsByGeo,
+    getRegionsByGeoPoint
 };

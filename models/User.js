@@ -1,6 +1,5 @@
 import ms from 'ms';
 import bcrypt from 'bcrypt';
-import Bluebird from 'bluebird';
 import { Schema } from 'mongoose';
 import { registerModel } from '../controllers/connection';
 
@@ -250,12 +249,10 @@ registerModel(db => {
         }).exec(cb);
     };
 
-    UserScheme.statics.getUserID = function (login, cb) {
-        return this.collection.findOneAsync({ login }, { _id: 1 })
-            .then(function (user) {
-                return user && user._id;
-            })
-            .nodeify(cb);
+    UserScheme.statics.getUserID = async function (login) {
+        const user = await this.collection.findOne({ login }, { _id: 1 }).exec();
+
+        return user && user._id;
     };
 
     UserScheme.statics.isEqual = (function () {

@@ -70,9 +70,23 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
                                 );
                             }
                         },
-                        error: function (message, buttonText, onFinish, ctx) {
-                            this.replaceTexts(message, null, buttonText);
-                            finish(onFinish, ctx);
+                        error: function (error, buttonText, countdown, onFinish, ctx) {
+                            this.replaceTexts(getErrorMessage(error), null, buttonText);
+                            var finishButton = finish(onFinish, ctx);
+
+                            if (_.isNumber(countdown) && countdown > 0) {
+                                finishButton.text(buttonText + ' (' + (countdown - 1) + ')');
+
+                                Utils.timer(
+                                    countdown * 1000,
+                                    function (timeleft) {
+                                        finishButton.text(buttonText + ' (' + timeleft + ')');
+                                    },
+                                    function () {
+                                        finishButton.trigger('click');
+                                    }
+                                );
+                            }
                         }
                     };
 
@@ -132,14 +146,28 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
         }
     }
 
-    function notyError(message, timeout) {
-        window.noty({
-            text: message || 'Возникла ошибка',
-            type: 'error',
-            layout: 'center',
-            timeout: timeout || 3000,
-            force: true
-        });
+    function notyError(error, timeout) {
+        window.noty(
+            { text: getErrorMessage(error), type: 'error', layout: 'center', timeout: timeout || 3000, force: true }
+        );
+    }
+
+    function getErrorMessage(error) {
+        var message = 'Возникла ошибка';
+
+        if (!_.isEmpty(error)) {
+            if (_.isString(error)) {
+                message = error;
+            } else if (_.isObject(error)) {
+                message = _.get(error, 'message') || message;
+
+                if (error.rid) {
+                    message += '<br>Error id: ' + error.rid;
+                }
+            }
+        }
+
+        return message;
     }
 
     return {

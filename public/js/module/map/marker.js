@@ -476,11 +476,11 @@ define([
             curr,
             i;
 
-        //Считаем новые баунды для запроса
+        // Считаем новые баунды для запроса
         bounds = this.boundSubtraction(bound, this.calcBoundPrev);
 
         if (this.visBound) {
-            //Визуализация баундов, по которым будет отправлен запрос к серверу
+            // Визуализация баундов, по которым будет отправлен запрос к серверу
             i = 4;
             while (i--) {
                 if (this['b' + i] !== undefined) {
@@ -496,30 +496,27 @@ define([
         }
 
         socket
-            .request('photo.getByBounds', { z: zoom, bounds: bounds, year: this.year, year2: this.year2 })
+            .run('photo.getByBounds', { z: zoom, bounds: bounds, year: this.year, year2: this.year2 })
             .then(function (data) {
                 var localWork, // Находимся ли мы на уровне локальной работы
                     localCluster, // Смотрим нужно ли использовать клиентскую кластеризацию
                     boundChanged; // Если к моменту получения входящих данных нового зума, баунд изменился, значит мы успели подвигать картой, поэтому надо проверить пришедшие точки на вхождение в актуальный баунд
 
-                if (data && !data.error) {
-                    // Данные устарели и должны быть отброшены, если текущий зум не равен запрашиваемомоу или текущий баунд уже успел выйти за пределы запрашиваемого
-                    if (self.map.getZoom() !== data.z || !bound.intersects(self.calcBound)) {
-                        console.log('Полученные данные перемещения устарели');
-                        return;
-                    }
-
-                    localWork = self.currZoom >= self.firstClientWorkZoom;
-                    localCluster = localWork && self.clientClustering;
-                    boundChanged = !bound.equals(self.calcBound);
-
-                    //Удаляем маркеры и кластеры, не входящие в новый баунд после получения новой порции данных
-                    self.cropByBound(null, localWork);
-
-                    self.processIncomingDataMove(data, boundChanged, localWork, localCluster);
-                } else {
-                    console.log('Ошибка загрузки новых фотографий: ' + data.message);
+                // Данные устарели и должны быть отброшены,
+                // если текущий зум не равен запрашиваемомоу или текущий баунд уже успел выйти за пределы запрашиваемого
+                if (self.map.getZoom() !== data.z || !bound.intersects(self.calcBound)) {
+                    console.log('Полученные данные перемещения устарели');
+                    return;
                 }
+
+                localWork = self.currZoom >= self.firstClientWorkZoom;
+                localCluster = localWork && self.clientClustering;
+                boundChanged = !bound.equals(self.calcBound);
+
+                // Удаляем маркеры и кластеры, не входящие в новый баунд после получения новой порции данных
+                self.cropByBound(null, localWork);
+
+                self.processIncomingDataMove(data, boundChanged, localWork, localCluster);
                 zoom = bound = null;
             });
     };

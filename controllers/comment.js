@@ -384,16 +384,16 @@ async function getUsersHashForComments(usersArr) {
 
 export const core = {
     // Simplified comments distribution for anonymous users
-    async getCommentsObjAnonym(iAm, data) {
+    async getCommentsObjAnonym(iAm, { cid, type }) {
         let obj;
         let commentModel;
 
-        if (data.type === 'news') {
+        if (type === 'news') {
             commentModel = CommentN;
-            obj = await News.findOne({ cid: data.cid }, { _id: 1 }).exec();
+            obj = await News.findOne({ cid }, { _id: 1 }).exec();
         } else {
             commentModel = Comment;
-            obj = await photoController.findPhoto(iAm, { cid: data.cid });
+            obj = await this.call('photo.find', { query: { cid } });
         }
 
         if (!obj) {
@@ -441,7 +441,7 @@ export const core = {
             obj = await News.findOne({ cid }, { _id: 1, nocomments: 1 }).exec();
         } else {
             commentModel = Comment;
-            obj = await photoController.findPhoto(iAm, { cid });
+            obj = await this.call('photo.find', { query: { cid } });
         }
 
         if (!obj) {
@@ -505,7 +505,7 @@ export const core = {
         const [obj, childs] = await* [
             // Find the object that owns a comment
             data.type === 'news' ? News.findOne({ _id: objId }, { _id: 1, nocomments: 1 }).exec() :
-                photoController.findPhoto(iAm, { _id: objId }),
+                this.call('photo.find', { query: { _id: objId } }),
             // Take all removed comments, created after requested and below it
             commentModel.find(
                 {
@@ -746,7 +746,7 @@ async function create(data) {
 
     const [obj, parent] = await* [
         data.type === 'news' ? News.findOne({ cid: objCid }, { _id: 1, ccount: 1, nocomments: 1 }).exec() :
-            photoController.findPhoto(iAm, { cid: objCid }),
+            this.call('photo.find', { query: { cid: objCid } }),
         data.parent ? CommentModel.findOne({ cid: data.parent }, { _id: 0, level: 1, del: 1 }, { lean: true }).exec() :
             null
     ];
@@ -857,7 +857,7 @@ async function remove(data) {
 
     const obj = await (data.type === 'news' ?
         News.findOne({ _id: comment.obj }, { _id: 1, ccount: 1, nocomments: 1 }).exec() :
-        photoController.findPhoto(iAm, { _id: comment.obj })
+        this.call('photo.find', { query: { _id: comment.obj } })
     );
 
     if (!obj) {
@@ -1039,7 +1039,7 @@ async function restore({ cid, type }) {
 
     const obj = await (type === 'news' ?
         News.findOne({ _id: comment.obj }, { _id: 1, ccount: 1, nocomments: 1 }).exec() :
-        photoController.findPhoto(iAm, { _id: comment.obj })
+        this.call('photo.find', { query: { _id: comment.obj } })
     );
 
     if (!obj) {
@@ -1201,7 +1201,7 @@ async function update(data) {
         News.findOne({ cid: data.obj }, { cid: 1, frags: 1, nocomments: 1 }).exec(),
         CommentN.findOne({ cid }).exec()
     ] : [
-        photoController.findPhoto(iAm, { cid: data.obj }),
+        this.call('photo.find', { query: { cid: data.obj } }),
         Comment.findOne({ cid }).exec()
     ]);
 
@@ -1414,7 +1414,7 @@ async function setNoComments({ cid, type = 'photo', val: nocomments }) {
         throw { message: msg.badParams };
     }
 
-    const obj = await (type === 'news' ? News.findOne({ cid }).exec() : photoController.findPhoto(iAm, { cid }));
+    const obj = await (type === 'news' ? News.findOne({ cid }).exec() : this.call('photo.find', { query: { cid } }));
 
     if (!obj) {
         throw { message: msg.noObject };
@@ -1438,7 +1438,7 @@ async function setNoComments({ cid, type = 'photo', val: nocomments }) {
     if (type === 'photo') {
         // Save previous value of 'nocomments' in history
         obj.nocomments = !!obj.nocomments; // To set false in history instead of undefined
-        photoController.savePhotoHistory(iAm, oldPhotoObj, obj, canModerate);
+        await this.call('photo.saveHistory', { oldPhotoObj, obj, canModerate });
     }
 
     return { nocomments: obj.nocomments };
@@ -1448,25 +1448,24 @@ async function setNoComments({ cid, type = 'photo', val: nocomments }) {
  * Hide/show object comments (so doing them unpublic/public)
  * @param obj
  * @param {boolean} hide
- * @param iAm Count how many comments of user are affected
  */
-export async function changeObjComments(obj, hide, iAm) {
-    const command = { $set: { s: obj.s } };
-    const oid = obj._id;
+export async function changeObjCommentsVisibility({ obj: { _id: objId, s }, hide }) {
+    const { handshake: { usObj: iAm } } = this; // iAm for count how many comments of user are affected
+    const command = { $set: { s } };
 
-    if (obj.s === constants.photo.status.PUBLIC) {
+    if (s === constants.photo.status.PUBLIC) {
         command.$unset = { hidden: 1 };
     } else {
         command.$set.hidden = true;
     }
 
-    const { n: count } = await Comment.update({ obj: oid }, command, { multi: true }).exec();
+    const { n: count } = await Comment.update({ obj: objId }, command, { multi: true }).exec();
 
     if (count === 0) {
         return { myCount: 0 };
     }
 
-    const comments = await Comment.find({ obj: oid }, {}, { lean: true }).exec();
+    const comments = await Comment.find({ obj: objId }, {}, { lean: true }).exec();
 
     const usersCountMap = _.transform(comments, (result, comment) => {
         if (comment.del === undefined) {
@@ -1511,5 +1510,7 @@ export default {
     giveForFeed,
     giveForUser,
     giveDelTree,
-    setNoComments
+    setNoComments,
+
+    changeObjCommentsVisibility
 };

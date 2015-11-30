@@ -312,7 +312,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
             }
         },
 
-        //Подписывается-отписывается от комментариев
+        // Подписывается-отписывается от комментариев
         subscribe: function (data, event, byCommentCreate) {
             socket.run('subscr.subscribeUser', { cid: this.cid, type: this.type, subscribe: !this.subscr() }, true)
                 .then(function (result) {
@@ -322,7 +322,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                     this.parentModule.setSubscr(subscrFlag);
                     this.subscr(subscrFlag);
                     ga('send', 'event', 'subscription', subscrGAction, 'subscription ' + subscrGAction);
-                }.bind(this);
+                }.bind(this));
         },
 
         receive: function (cb, ctx) {

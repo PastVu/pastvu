@@ -6,7 +6,7 @@ import * as session from './_session';
 import { clientParams } from './settings';
 import { getRegionsArrFromCache } from './region';
 import { handleHTTPRequest, registerHTTPAPIHandler } from '../app/request';
-import { giveForPage, givePhotoPrevNextCids, parseFilter } from './photo';
+import { parseFilter } from './photo';
 
 export function loadController(app) {
     const origin = config.client.origin;
@@ -188,19 +188,20 @@ export function loadController(app) {
         const cid = Number(req.params[0]);
 
         try {
-            const photo = await giveForPage(req.handshake.usObj, { cid });
+            const { handshake: { context } } = req;
+            const photo = await context.call('photo.giveForPage', { cid } );
 
             if (!photo) {
                 throw { noPhoto: true };
             }
 
             req.photoData = photo;
-            req.photoRel = await givePhotoPrevNextCids(cid);
+            req.photoRel = await context.call('photo.givePrevNextCids', { cid });
 
             next();
         } catch (err) {
             if (err.noPhoto) {
-                next(new errors.neoError.e404('Photo ' + cid + ' does not exist'));
+                next(new errors.neoError.e404(`Photo ${cid} does not exist`));
             } else {
                 next(err);
             }

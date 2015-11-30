@@ -142,7 +142,7 @@ async function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos) {
  * @param geoPhotoOld Geo coordinates before changes
  * @param yearPhotoOld Year of photo before changes
  */
-export async function clusterPhoto(photo, geoPhotoOld, yearPhotoOld) {
+export async function clusterPhoto({ photo, geoPhotoOld, yearPhotoOld }) {
     if (!photo.year) {
         throw { message: 'Bad params to set photo cluster' };
     }
@@ -221,7 +221,7 @@ export async function clusterPhoto(photo, geoPhotoOld, yearPhotoOld) {
  * Remove photo from clusters
  * @param photo
  */
-export async function declusterPhoto(photo) {
+export async function declusterPhoto({ photo }) {
     if (!Utils.geo.check(photo.geo) || !photo.year) {
         throw { message: 'Bad params to decluster photo' };
     }
@@ -242,13 +242,10 @@ export async function declusterPhoto(photo) {
     });
 };
 
-/**
- * Returns clusters within bounds
- * @param data
- */
-export async function getBounds(data) {
-    const foundClusters = await* data.bounds.map(bound => Cluster.find(
-        { g: { $geoWithin: { $box: bound } }, z: data.z },
+// Returns clusters within bounds
+export async function getBounds({ bounds, z }) {
+    const foundClusters = await* bounds.map(bound => Cluster.find(
+        { g: { $geoWithin: { $box: bound } }, z },
         { _id: 0, c: 1, geo: 1, p: 1 },
         { lean: true }
     ).exec());
@@ -267,36 +264,33 @@ export async function getBounds(data) {
         }
     }
 
-    return [photos, clusters];
+    return { photos, clusters };
 };
 
-/**
- * Returns clusters within bounds within given years intervals
- * @param data
- */
-export async function getBoundsByYear(data) {
-    const findClusters = await* data.bounds.map(bound => Cluster.find(
-        { g: { $geoWithin: { $box: bound } }, z: data.z },
+// Returns clusters within bounds within given years intervals
+export async function getBoundsByYear({ bounds, z, year, year2 }) {
+    const foundClusters = await* bounds.map(bound => Cluster.find(
+        { g: { $geoWithin: { $box: bound } }, z },
         { _id: 0, c: 1, geo: 1, y: 1, p: 1 },
         { lean: true }
     ).exec());
 
     const clustersAll = [];
     const posterPromises = [];
-    const yearCriteria = data.year === data.year2 ? data.year : { $gte: data.year, $lte: data.year2 };
+    const yearCriteria = year === year2 ? year : { $gte: year, $lte: year2 };
 
-    for (const bound of findClusters) {
+    for (const bound of foundClusters) {
         for (const cluster of bound) {
             cluster.c = 0;
 
-            for (let year = data.year; year <= data.year2; year++) {
-                cluster.c += cluster.y[year] | 0;
+            for (let y = year; y <= year2; y++) {
+                cluster.c += cluster.y[y] | 0;
             }
 
             if (cluster.c > 0) {
                 clustersAll.push(cluster);
 
-                if (cluster.p.year < data.year || cluster.p.year > data.year2) {
+                if (cluster.p.year < year || cluster.p.year > year2) {
                     posterPromises.push(getClusterPoster(cluster, yearCriteria));
                 }
             }
@@ -319,7 +313,7 @@ export async function getBoundsByYear(data) {
         }
     }
 
-    return [photos, clusters];
+    return { photos, clusters };
 };
 
 async function getClusterPoster(cluster, yearCriteria) {
@@ -337,5 +331,9 @@ waitDb.then(readClusterParams);
 
 recalcAll.isPublic = true;
 export default {
-    recalcAll
+    recalcAll,
+
+    clusterPhoto,
+    getBounds,
+    getBoundsByYear
 };
