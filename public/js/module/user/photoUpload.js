@@ -286,26 +286,15 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
         },
         createPhotos: function (cb, ctx) {
             var toSaveArr = [];
-            _.forEach(this.fileUploaded, function (file, fileName) {
+
+            _.forEach(this.fileUploaded, function (file) {
                 toSaveArr.push(file);
             });
+
             if (toSaveArr.length > 0) {
-                socket.once('createPhotoCallback', function (data) {
-                    if (!data || data.error) {
-                        window.noty({
-                            text: data && data.message || 'Ошибка создания фотографий',
-                            type: 'error',
-                            layout: 'center',
-                            timeout: 4000,
-                            force: true
-                        });
-                        console.dir(data);
-                    }
-                    cb.call(ctx || window, data);
-                }, this);
-                socket.emit('photo.create', toSaveArr);
+                socket.run('photo.create', { files: toSaveArr }, true).then(cb.bind(ctx));
             } else {
-                cb.call(ctx || window, { cids: [] });
+                cb.call(ctx, { cids: [] });
             }
         },
         onFileFail: function (e, data) {

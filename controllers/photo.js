@@ -467,15 +467,15 @@ async function giveNewLimit({ login }) {
 };
 
 function getUserWaterSign(user, photo) {
-    var result;
-    var option;
-    var validOptionValues = userSettingsVars.photo_watermark_add_sign;
+    const validOptionValues = userSettingsVars.photo_watermark_add_sign;
+    let option;
+    let result;
 
     if (photo && _.get(photo, 'watersignIndividual')) {
         option = _.get(photo, 'watersignOption');
 
         if (validOptionValues.includes(option)) {
-            result = option === 'custom' && photo.watersignCustom ? photo.watersignCustom : !!option;
+            result = option === 'custom' && photo.watersignCustom ? photo.watersignCustom : Boolean(option);
         }
     }
 
@@ -487,7 +487,7 @@ function getUserWaterSign(user, photo) {
             option = userSettingsDef.photo_watermark_add_sign;
         }
 
-        result = option === 'custom' && user.watersignCustom ? user.watersignCustom : !!option;
+        result = option === 'custom' && user.watersignCustom ? user.watersignCustom : Boolean(option);
     }
 
     if (result === true) {
@@ -499,85 +499,78 @@ function getUserWaterSign(user, photo) {
     return result;
 }
 
-/**
- * Создает фотографии в базе данных
- * @param socket Сессия пользователя
- * @param data Объект или массив фотографий
- */
-//var dirs = ['w', 'nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'aero'];
-const create = Bluebird.method(function (data) {
+// Create photos
+// var dirs = ['w', 'nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'aero'];
+async function create({ files }) {
     const { socket, handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered) {
         throw { message: msg.deny };
     }
-    if (!Array.isArray(data) && !_.isObject(data)) {
+    if (!Array.isArray(files) && !_.isObject(files)) {
         throw { message: msg.badParams };
     }
 
-    if (!Array.isArray(data)) {
-        data = [data];
+    if (!Array.isArray(files)) {
+        files = [files];
     }
 
-    var cids = [];
-    var user = iAm.user;
-    var canCreate = getNewPhotosLimit(user);
+    const cids = [];
+    const user = iAm.user;
+    const canCreate = getNewPhotosLimit(user);
 
-    if (!canCreate || !data.length) {
+    if (!canCreate || !files.length) {
         return { message: 'Nothing to save', cids };
     }
-    if (data.length > canCreate) {
-        data = data.slice(0, canCreate);
+    if (files.length > canCreate) {
+        files = files.slice(0, canCreate);
     }
 
-    return Bluebird.all(data.map(function (item) {
-            item.fullfile = item.file.replace(/((.)(.)(.))/, '$2/$3/$4/$1');
-            return fs.renameAsync(path.join(incomeDir, item.file), path.join(privateDir, item.fullfile));
-        }))
-        .then(function () {
-            return Counter.incrementBy('photo', data.length);
-        })
-        .then(function savePhotos(count) {
-            if (!count) {
-                throw { message: 'Increment photo counter error' };
-            }
-            var now = Date.now();
-            var next = count.next - data.length + 1;
+    await* files.map(function (item) {
+        item.fullfile = item.file.replace(/((.)(.)(.))/, '$2/$3/$4/$1');
+        return fs.renameAsync(path.join(incomeDir, item.file), path.join(privateDir, item.fullfile));
+    });
 
-            return Bluebird.all(data.map(function (item, i) {
-                var photo = new Photo({
-                    cid: next + i,
-                    user,
-                    file: item.fullfile,
-                    ldate: new Date(now + i * 10), //Время загрузки каждого файла инкрементим на 10мс для правильной сортировки
-                    sdate: new Date(now + i * 10 + shift10y), //Новые фотографии должны быть всегда сверху
-                    type: item.type,
-                    size: item.size,
-                    geo: undefined,
-                    s: 0,
-                    title: item.name ? item.name.replace(/(.*)\.[^.]+$/, '$1') : undefined, //Отрезаем у файла расширение
-                    frags: undefined,
-                    watersignText: getUserWaterSign(user),
-                    convqueue: true
-                    //geo: [_.random(36546649, 38456140) / 1000000, _.random(55465922, 56103812) / 1000000],
-                    //dir: dirs[_.random(0, dirs.length - 1)],
-                });
-                item.photoObj = photo;
+    const count = await Counter.incrementBy('photo', files.length);
 
-                cids.push({ cid: photo.cid });
-                return photo.saveAsync();
-            }));
-        })
-        .then(function () {
-            converter.addPhotos(cids, 1);
+    if (!count) {
+        throw { message: 'Increment photo counter error' };
+    }
 
-            user.pfcount = user.pfcount + data.length;
-            return session.saveEmitUser({ usObj: iAm, wait: true, excludeSocket: socket });
-        })
-        .then(function () {
-            return { message: data.length + ' photo successfully saved', cids };
+    const now = Date.now();
+    const next = count.next - files.length + 1;
+
+    await* files.map((item, i) => {
+        const photo = new Photo({
+            user,
+            s: 0,
+            cid: next + i,
+            file: item.fullfile,
+            ldate: new Date(now + i * 10), // Increase loading time of each file  by 10 ms for proper sorting
+            sdate: new Date(now + i * 10 + shift10y), // New photos must be always on top
+            type: item.type,
+            size: item.size,
+            geo: undefined,
+            title: item.name ? item.name.replace(/(.*)\.[^.]+$/, '$1') : undefined, // Cut off file extension
+            frags: undefined,
+            watersignText: getUserWaterSign(user),
+            convqueue: true
+            // geo: [_.random(36546649, 38456140) / 1000000, _.random(55465922, 56103812) / 1000000],
+            // dir: dirs[_.random(0, dirs.length - 1)],
         });
-});
+
+        cids.push({ cid: photo.cid });
+        return photo.save();
+    });
+
+    converter.addPhotos(cids, 1);
+
+    user.pfcount = user.pfcount + files.length;
+
+    await session.saveEmitUser({ usObj: iAm, wait: true, excludeSocket: socket });
+
+    return { message: `${files.length} photo successfully saved`, cids };
+};
 
 // Add photo onto map
 async function photoToMap({ photo, geoPhotoOld, yearPhotoOld }) {
@@ -613,26 +606,28 @@ async function photoFromMap({ photo }) {
 }
 
 function getPhotoChangedFields(oldPhoto, newPhoto, parsedFileds) {
-    var region;
-    var diff = {};
-    var fields = [];
-    var oldValues = {};
-    var newValues = {};
-    var result = {};
+    const diff = {};
+    const fields = [];
+    const oldValues = {};
+    const newValues = {};
 
-    // Если хотя бы один регион изменился, записываем весь массив текущих регионов
-    for (var i = 0; i <= maxRegionLevel; i++) {
+    // If at least one region has been changed, writes the entire array of current regions
+    for (let i = 0; i <= maxRegionLevel; i++) {
         if (oldPhoto['r' + i] !== newPhoto['r' + i]) {
             oldValues.regions = [];
             newValues.regions = [];
+
             fields.push('regions');
 
-            for (i = 0; i <= maxRegionLevel; i++) {
-                region = oldPhoto['r' + i];
+            for (let j = 0; j <= maxRegionLevel; j++) {
+                let region = oldPhoto['r' + j];
+
                 if (region) {
                     oldValues.regions.push(region);
                 }
-                region = newPhoto['r' + i];
+
+                region = newPhoto['r' + j];
+
                 if (region) {
                     newValues.regions.push(region);
                 }
@@ -641,12 +636,12 @@ function getPhotoChangedFields(oldPhoto, newPhoto, parsedFileds) {
         }
     }
 
-    historyFields.forEach(function (field) {
-        var oldValue = oldPhoto[field];
-        var newValue = newPhoto[field];
+    for (const field of historyFields) {
+        let oldValue = oldPhoto[field];
+        let newValue = newPhoto[field];
 
         if (!_.isEqual(oldValue, newValue)) {
-            // Если это строка и она "", обнуляем её
+            // If it is a string and equals "", nullify it
             if (!oldValue && _.isString(oldValue)) {
                 oldValue = undefined;
             }
@@ -654,14 +649,15 @@ function getPhotoChangedFields(oldPhoto, newPhoto, parsedFileds) {
                 newValue = undefined;
             }
 
-            // Получаем форматированную разницу старого и нового текста (неформатированных)
-            // для полей, для которых нужно вычислять разницу, и только если они не пустые
+            // Get formatted difference of the old and new text (unformatted)
+            // for the fields for which need to calculate difference, and only if they are not empty
             if (historyFieldsDiffHash[field] && oldValue && newValue) {
                 diff[field] = Utils.txtdiff(
                     Utils.txtHtmlToPlain(oldValue),
-                    // Некоторые поля (описание, автор и др.) парсятся на предмет разметки и т.п.,
-                    // разницу с последней версии при этом надо брать с plain
-                    parsingFieldsSet.has(field) ? parsedFileds[field] ? parsedFileds[field].plain : Utils.txtHtmlToPlain(newValue) : newValue
+                    // Some fields (descripton, author etc) are parsed for markup,
+                    // difference with last version must be calculated with 'plain'
+                    parsingFieldsSet.has(field) ? parsedFileds[field] ? parsedFileds[field].plain :
+                        Utils.txtHtmlToPlain(newValue) : newValue
                 );
             }
 
@@ -671,16 +667,12 @@ function getPhotoChangedFields(oldPhoto, newPhoto, parsedFileds) {
             if (newValue !== undefined) {
                 newValues[field] = newValue;
             }
+
             fields.push(field);
         }
-    });
+    };
 
-    result.fields = fields;
-    result.oldValues = oldValues;
-    result.newValues = newValues;
-    result.diff = diff;
-
-    return result;
+    return { fields, oldValues, newValues, diff };
 }
 
 async function saveHistory({ oldPhotoObj, photo, canModerate, reason, parsedFileds }) {
@@ -719,7 +711,7 @@ async function saveHistory({ oldPhotoObj, photo, canModerate, reason, parsedFile
         }];
     }
 
-    var lastFieldsIndexes = histories.reduce((result, historyEntry, historyIndex) => {
+    const lastFieldsIndexes = histories.reduce((result, historyEntry, historyIndex) => {
         const del = historyEntry.del;
         const values = historyEntry.values;
 
@@ -1174,18 +1166,23 @@ async function givePrevNextCids({ cid }) {
 };
 
 /**
- * Отдаем полную галерею с учетом прав и фильтров в компактном виде
- * @param iAm Объект пользователя
- * @param filter Объект фильтра (распарсенный)
- * @param data Объект параметров, включая стринг фильтра
- * @param userId _id пользователя, если хотим галерею только для него получить
+ * Return full gallery based of user's rights and filters in compact view
+ * @param filter Filter object (parsed)
+ * @param options
+ * @param userId _id of user, if we need gallery by user
  */
-var givePhotos = Bluebird.method(function (iAm, filter, data, userId) {
-    var skip = Math.abs(Number(data.skip)) || 0;
-    var limit = Math.min(data.limit || 40, 100);
-    var buildQueryResult = buildPhotosQuery(filter, userId, iAm);
-    var query = buildQueryResult.query;
-    var fieldsSelect;
+async function givePhotos({ filter, options: { skip = 0, limit = 40 }, userId }) {
+    const { handshake: { usObj: iAm } } = this;
+
+    skip = Math.abs(Number(skip)) || 0;
+    limit = Math.min(Math.abs(Number(limit)), 100) || 40;
+
+    const buildQueryResult = buildPhotosQuery(filter, userId, iAm);
+    const { query } = buildQueryResult;
+
+    let shortRegionsHash;
+    let photos = [];
+    let count = 0;
 
     if (query) {
         if (filter.geo) {
@@ -1200,86 +1197,59 @@ var givePhotos = Bluebird.method(function (iAm, filter, data, userId) {
             query.user = userId;
         }
 
-        // Для подсчета новых комментариев нужны _id, а для проверки на изменение - ucdate
-        fieldsSelect = iAm.registered ? compactFieldsForRegWithRegions : compactFieldsWithRegions;
+        // To calculate new comments we need '_id', for checking of changes - 'ucdate'
+        const fieldsSelect = iAm.registered ? compactFieldsForRegWithRegions : compactFieldsWithRegions;
 
-        return Bluebird.join(
-            Photo.findAsync(query, fieldsSelect, { lean: true, skip, limit, sort: { sdate: -1 } }),
-            Photo.countAsync(query)
-            )
-            .bind({})
-            .spread(function (photos, count) {
-                this.count = count;
+        [photos, count] = await* [
+            Photo.find(query, fieldsSelect, { lean: true, skip, limit, sort: { sdate: -1 } }).exec(),
+            Photo.count(query).exec()
+        ];
 
-                if (!iAm.registered || !photos.length) {
-                    // Если аноним или фотографий нет, сразу возвращаем
-                    return photos;
-                } else {
-                    // Если пользователь залогинен, заполняем кол-во новых комментариев для каждого объекта
-                    return userObjectRelController.fillObjectByRels(photos, iAm.user._id, 'photo');
+        // If user is logged, fill amount of new comments for each object
+        if (iAm.registered && photos.length) {
+            await userObjectRelController.fillObjectByRels(photos, iAm.user._id, 'photo');
+        }
+
+        if (photos.length) {
+            if (iAm.registered) {
+                for (const photo of photos) {
+                    delete photo._id;
+                    delete photo.vdate;
+                    delete photo.ucdate;
                 }
-            })
-            .then(function (photos) {
-                var photo;
-                var shortRegionsHash;
-                var shortRegionsParams;
-                var i = photos.length;
+            }
 
-                if (i) {
-                    if (iAm.registered) {
-                        while (i--) {
-                            photo = photos[i];
-                            delete photo._id;
-                            delete photo.vdate;
-                            delete photo.ucdate;
-                        }
-                    }
-
-                    // Заполняем для каждой фотографии краткие регионы и хэш этих регионов
-                    shortRegionsParams = regionController.getShortRegionsParams(buildQueryResult.rhash);
-                    shortRegionsHash = regionController.genObjsShortRegionsArr(photos, shortRegionsParams.lvls, true);
-                }
-
-                return {
-                    photos,
-                    filter: { r: buildQueryResult.rarr, rp: filter.rp, s: buildQueryResult.s, geo: filter.geo },
-                    rhash: shortRegionsHash,
-                    count: this.count,
-                    skip
-                };
-            });
+            // For each photo fill short regions and hash of this regions
+            const shortRegionsParams = regionController.getShortRegionsParams(buildQueryResult.rhash);
+            shortRegionsHash = regionController.genObjsShortRegionsArr(photos, shortRegionsParams.lvls, true);
+        }
     }
-    return Bluebird.resolve({
-        photos: [],
-        filter: { r: buildQueryResult.rarr, rp: filter.rp, s: buildQueryResult.s, geo: filter.geo },
-        count: 0,
-        skip
-    });
-});
 
-// Отдаем последние публичные фотографии на главной
+    return {
+        skip, count, photos, rhash: shortRegionsHash,
+        filter: { r: buildQueryResult.rarr, rp: filter.rp, s: buildQueryResult.s, geo: filter.geo }
+    };
+};
+
+// Returns public photos for index page
 const givePublicIndex = (function () {
     const options = { skip: 0, limit: 30 };
     const filter = { s: [status.PUBLIC] };
 
     return function () {
-        const { handshake: { usObj: iAm } } = this;
-
-        // Всегда выбираем заново, т.к. могут быть региональные фильтры
-        return givePhotos(iAm, filter, options);
+        // Always select again, because could be region filters
+        return this.call('photo.givePhotos', { filter, options });
     };
 }());
 
-// Отдаем последние публичные "Где это?" фотографии для главной
+// Returns last public "Where is it?" photos for index page
 const givePublicNoGeoIndex = (function () {
     const options = { skip: 0, limit: 30 };
     const filter = { geo: ['0'], s: [status.PUBLIC] };
 
     return function () {
-        const { handshake: { usObj: iAm } } = this;
-
-        // Выбираем заново, т.к. могут быть региональные фильтры
-        return givePhotos(iAm, filter, options);
+        // Always select again, because could be region filters
+        return this.call('photo.givePhotos', { filter, options });
     };
 }());
 
@@ -1372,42 +1342,41 @@ export function parseFilter(filterString) {
     return result;
 }
 
-// Отдаем общую галерею
-var givePS = Bluebird.method(function (data = {}) {
-    const { handshake: { usObj: iAm } } = this;
+// Return general gallery
+function givePS(options) {
+    const filter = options.filter ? parseFilter(options.filter) : {};
 
-    var filter = data.filter ? parseFilter(data.filter) : {};
     if (!filter.s) {
         filter.s = [status.PUBLIC];
     }
 
-    return givePhotos(iAm, filter, data);
-});
+    return this.call('photo.givePhotos', { filter, options });
+};
 
-// Отдаем галерею пользователя
-const giveUserGallery = Bluebird.method(function (data = {}) {
-    if (!data.login) {
+// Returns user's gallery
+async function giveUserGallery({ login, filter, skip, limit }) {
+    if (!login) {
         throw { message: msg.badParams };
     }
 
     const { handshake: { usObj: iAm } } = this;
+    const userId = await User.getUserID(login);
 
-    return User.getUserID(data.login)
-        .then(function (user_id) {
-            if (!user_id) {
-                throw { message: msg.noUser };
-            }
-            var filter = data.filter ? parseFilter(data.filter) : {};
+    if (!userId) {
+        throw { message: msg.noUser };
+    }
 
-            // Если фильтр по регионам не установлен, это чужая галерея, есть свои регионы
-            // и стоит настройка не фильтровать по ним галереи пользователя, то задаем весь мир
-            if (filter.r === undefined && iAm.registered && iAm.user.login !== data.login && iAm.user.regions && iAm.user.regions.length && iAm.user.settings && !iAm.user.settings.r_f_user_gal) {
-                filter.r = 0;
-            }
+    filter = filter ? parseFilter(filter) : {};
 
-            return givePhotos(iAm, filter, data, user_id);
-        });
-});
+    // If regions filter is not set, this is another's gallery, current user has own regions and
+    // exists setting not filter gallery by own regions, then set whole world
+    if (filter.r === undefined && iAm.registered && iAm.user.login !== login &&
+        iAm.user.regions && iAm.user.regions.length && iAm.user.settings && !iAm.user.settings.r_f_user_gal) {
+        filter.r = 0;
+    }
+
+    return this.call('photo.givePhotos', { filter, options: { skip, limit }, userId });
+};
 
 // Отдаем последние фотографии, ожидающие подтверждения
 var giveForApprove = Bluebird.method(function (data = {}) {
@@ -2703,6 +2672,7 @@ export default {
 
     find,
     give,
+    givePhotos,
     update,
     getBounds,
     photoToMap,

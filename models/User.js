@@ -250,7 +250,7 @@ registerModel(db => {
     };
 
     UserScheme.statics.getUserID = async function (login) {
-        const user = await this.collection.findOne({ login }, { _id: 1 }).exec();
+        const user = await this.findOne({ login }, { _id: 1 }).exec();
 
         return user && user._id;
     };
