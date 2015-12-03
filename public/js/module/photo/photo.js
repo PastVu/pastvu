@@ -1687,18 +1687,16 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
         // Берем ленту ближайших фотографий к текущей в галерее пользователя
         getUserRibbon: function (left, right, cb, ctx) {
-            socket.once('takeUserPhotosAround', function (data) {
-                if (!data || data.error) {
-                    console.error('While loading user ribbon: ' + (data && data.message || 'Error occurred'));
-                } else {
+            socket.run('photo.giveUserPhotosAround', { cid: this.p.cid(), limitL: left, limitR: right })
+                .then(function (data) {
                     this.ribbonUserLeft = this.processRibbonItem(data.left.reverse(), this.ribbonUserLeft);
                     this.ribbonUserRight = this.processRibbonItem(data.right, this.ribbonUserRight);
-                }
-                if (Utils.isType('function', cb)) {
+
                     cb.call(ctx, data);
-                }
-            }, this);
-            socket.emit('photo.giveUserPhotosAround', { cid: this.p.cid(), limitL: left, limitR: right });
+                }.bind(this))
+                .catch(function (error) {
+                    console.error('While loading user ribbon:', error);
+                });
         },
         applyUserRibbon: function () {
             var n = this.thumbNUser();
@@ -1743,17 +1741,16 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.receiveNearestRibbon(Utils.geo.latlngToArr(this.mapVM.map.getCenter()), limit, undefined, cb, ctx);
         },
         receiveNearestRibbon: function (geo, limit, except, cb, ctx) {
-            socket.once('takeNearestPhotos', function (data) {
-                if (!data || data.error) {
-                    console.error('While loading nearest ribbon: ' + (data && data.message || 'Error occurred'));
-                } else {
+            socket.run('photo.giveNearestPhotos', { geo: geo, limit: limit, except: except })
+                .then(function (data) {
                     this.nearestRibbonOrigin = this.processRibbonItem(data.photos || [], this.nearestRibbonOrigin);
-                }
-                if (Utils.isType('function', cb)) {
-                    cb.call(ctx, data);
-                }
-            }, this);
-            socket.emit('photo.giveNearestPhotos', { geo: geo, limit: limit, except: except });
+                    if (Utils.isType('function', cb)) {
+                        cb.call(ctx, data);
+                    }
+                }.bind(this))
+                .catch(function (error) {
+                    console.error('While loading nearest ribbon:', error);
+                });
         },
         applyNearestRibbon: function () {
             this.nearestRibbon(this.nearestRibbonOrigin);

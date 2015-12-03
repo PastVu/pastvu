@@ -1168,7 +1168,6 @@ async function givePrevNextCids({ cid }) {
 /**
  * Return full gallery based of user's rights and filters in compact view
  * @param filter Filter object (parsed)
- * @param options
  * @param userId _id of user, if we need gallery by user
  */
 async function givePhotos({ filter, options: { skip = 0, limit = 40 }, userId }) {
@@ -1253,87 +1252,82 @@ const givePublicNoGeoIndex = (function () {
     };
 }());
 
-var filterProps = { geo: [], r: [], rp: [], s: [] };
-var delimeterParam = '_';
-var delimeterVal = '!';
+const filterProps = { geo: [], r: [], rp: [], s: [] };
+const delimeterParam = '_';
+const delimeterVal = '!';
 export function parseFilter(filterString) {
-    var filterParams = filterString && filterString.split(delimeterParam);
-    var filterParam;
-    var filterVal;
-    var filterValItem;
-    var dividerIndex;
-    var result = {};
-    var i;
-    var j;
+    const filterParams = filterString && filterString.split(delimeterParam);
+    const result = {};
+    let filterParam;
+    let filterVal;
+    let filterValItem;
 
-    if (filterParams) {
-        for (i = filterParams.length; i--;) {
-            filterParam = filterParams[i];
-            dividerIndex = filterParam.indexOf(delimeterVal);
+    if (!filterParams) {
+        return result;
+    }
 
-            if (dividerIndex > 0) {
-                filterVal = filterParam.substr(dividerIndex + 1);
-                filterParam = filterParam.substring(0, dividerIndex);
-            }
+    for (filterParam of filterParams) {
+        const dividerIndex = filterParam.indexOf(delimeterVal);
 
-            if (filterProps[filterParam] !== undefined) {
-                if (typeof filterProps[filterParam] === 'boolean') {
-                    result[filterParam] = true;
-                } else if (filterParam === 'r') {
-                    if (filterVal === '0') {
-                        result.r = 0;
-                    } else {
-                        filterVal = filterVal.split(delimeterVal).map(Number);
-                        if (Array.isArray(filterVal) && filterVal.length) {
-                            result.r = [];
-                            for (j = filterVal.length; j--;) {
-                                filterValItem = filterVal[j];
-                                if (filterValItem) {
-                                    result.r.unshift(filterValItem);
-                                }
-                            }
-                            if (!result.r.length) {
-                                delete result.r;
-                            }
-                        }
-                    }
-                } else if (filterParam === 'rp') {
-                    //Regions phantom. Неактивные регионы фильтра
+        if (dividerIndex > 0) {
+            filterVal = filterParam.substr(dividerIndex + 1);
+            filterParam = filterParam.substring(0, dividerIndex);
+        }
+
+        if (filterProps[filterParam] !== undefined) {
+            if (typeof filterProps[filterParam] === 'boolean') {
+                result[filterParam] = true;
+            } else if (filterParam === 'r') {
+                if (filterVal === '0') {
+                    result.r = 0;
+                } else {
                     filterVal = filterVal.split(delimeterVal).map(Number);
                     if (Array.isArray(filterVal) && filterVal.length) {
-                        result.rp = [];
-                        for (j = filterVal.length; j--;) {
-                            filterValItem = filterVal[j];
+                        result.r = [];
+                        for (filterValItem of filterVal) {
                             if (filterValItem) {
-                                result.rp.unshift(filterValItem);
+                                result.r.unshift(filterValItem);
                             }
                         }
-                        if (!result.rp.length) {
-                            delete result.rp;
+                        if (!result.r.length) {
+                            delete result.r;
                         }
                     }
-                } else if (filterParam === 's') {
-                    filterVal = filterVal.split(delimeterVal);
-                    if (Array.isArray(filterVal) && filterVal.length) {
-                        result.s = [];
-                        for (j = filterVal.length; j--;) {
-                            filterValItem = filterVal[j];
-                            if (filterValItem) {
-                                filterValItem = Number(filterValItem);
-                                if (!isNaN(filterValItem)) { //0 должен входить, поэтому проверка на NaN
-                                    result.s.unshift(filterValItem);
-                                }
+                }
+            } else if (filterParam === 'rp') {
+                // Regions phantom. Inactive filter regions
+                filterVal = filterVal.split(delimeterVal).map(Number);
+                if (Array.isArray(filterVal) && filterVal.length) {
+                    result.rp = [];
+                    for (filterValItem of filterVal.length) {
+                        if (filterValItem) {
+                            result.rp.unshift(filterValItem);
+                        }
+                    }
+                    if (!result.rp.length) {
+                        delete result.rp;
+                    }
+                }
+            } else if (filterParam === 's') {
+                filterVal = filterVal.split(delimeterVal);
+                if (Array.isArray(filterVal) && filterVal.length) {
+                    result.s = [];
+                    for (filterValItem of filterVal) {
+                        if (filterValItem) {
+                            filterValItem = Number(filterValItem);
+                            if (!isNaN(filterValItem)) { // 0 must be included, that is why check for NaN
+                                result.s.unshift(filterValItem);
                             }
                         }
-                        if (!result.s.length) {
-                            delete result.s;
-                        }
                     }
-                } else if (filterParam === 'geo') {
-                    filterVal = filterVal.split(delimeterVal);
-                    if (Array.isArray(filterVal) && filterVal.length === 1) {
-                        result.geo = filterVal;
+                    if (!result.s.length) {
+                        delete result.s;
                     }
+                }
+            } else if (filterParam === 'geo') {
+                filterVal = filterVal.split(delimeterVal);
+                if (Array.isArray(filterVal) && filterVal.length === 1) {
+                    result.geo = filterVal;
                 }
             }
         }
@@ -1378,11 +1372,10 @@ async function giveUserGallery({ login, filter, skip, limit }) {
     return this.call('photo.givePhotos', { filter, options: { skip, limit }, userId });
 };
 
-// Отдаем последние фотографии, ожидающие подтверждения
-var giveForApprove = Bluebird.method(function (data = {}) {
+// Returns last photos for approve
+async function giveForApprove(data) {
     const { handshake: { usObj: iAm } } = this;
-
-    var query = { s: status.READY };
+    const query = { s: status.READY };
 
     if (!iAm.registered || iAm.user.role < 5) {
         throw { message: msg.deny };
@@ -1391,66 +1384,52 @@ var giveForApprove = Bluebird.method(function (data = {}) {
         _.assign(query, iAm.mod_rquery);
     }
 
-    return Photo.findAsync(query, compactFieldsWithRegions, {
-            lean: true,
-            sort: { sdate: -1 },
-            skip: data.skip || 0,
-            limit: Math.min(data.limit || 20, 100)
-        })
-        .then(function (photos) {
-            if (!photos) {
-                throw { message: msg.noPhoto };
-            }
-            var shortRegionsHash = regionController.genObjsShortRegionsArr(photos, iAm.mod_rshortlvls, true);
+    const photos = await Photo.find(query, compactFieldsWithRegions, {
+        lean: true,
+        sort: { sdate: -1 },
+        skip: data.skip || 0,
+        limit: Math.min(data.limit || 20, 100)
+    }).exec();
 
-            return { photos: photos, rhash: shortRegionsHash };
-        });
-});
+    const shortRegionsHash = regionController.genObjsShortRegionsArr(photos, iAm.mod_rshortlvls, true);
 
-/**
- * Берем массив до и после указанной фотографии пользователя указанной длины
- * @param {Object} iAm Объект пользователя
- * @param {Object} data
- */
-var giveUserPhotosAround = Bluebird.method(function (data = {}) {
+    return { photos, rhash: shortRegionsHash };
+};
+
+// Returns array before and after specified photo (with specified length)
+async function giveUserPhotosAround({ cid, limitL, limitR }) {
     const { handshake: { usObj: iAm } } = this;
 
-    var cid = Number(data && data.cid);
-    var limitL = Math.min(Number(data.limitL), 100);
-    var limitR = Math.min(Number(data.limitR), 100);
+    cid = Number(cid);
+    limitL = Math.min(Math.abs(Number(limitL)), 100);
+    limitR = Math.min(Math.abs(Number(limitR)), 100);
 
     if (!cid || (!limitL && !limitR)) {
         throw { message: msg.badParams };
     }
 
-    return this.call('photo.find', { query: cid })
-        .then(function (photo) {
-            var filter = iAm.registered && iAm.user.settings && !iAm.user.settings.r_f_photo_user_gal ? { r: 0 } : {};
-            var query = buildPhotosQuery(filter, photo.user, iAm).query;
-            var promises = [];
+    const photo = await this.call('photo.find', { query: cid });
 
-            query.user = photo.user;
+    const filter = iAm.registered && iAm.user.settings && !iAm.user.settings.r_f_photo_user_gal ? { r: 0 } : {};
+    const query = buildPhotosQuery(filter, photo.user, iAm).query;
+    const promises = new Array(2);
 
-            if (limitL) {
-                query.sdate = { $gt: photo.sdate };
-                promises.push(Photo.findAsync(query, compactFields, { lean: true, sort: { sdate: 1 }, limit: limitL }));
-            }
+    query.user = photo.user;
 
-            if (limitR) {
-                query.sdate = { $lt: photo.sdate };
-                promises.push(Photo.findAsync(query, compactFields, {
-                    lean: true,
-                    sort: { sdate: -1 },
-                    limit: limitR
-                }));
-            }
+    if (limitL) {
+        query.sdate = { $gt: photo.sdate };
+        promises[0] = Photo.find(query, compactFields, { lean: true, sort: { sdate: 1 }, limit: limitL }).exec();
+    }
 
-            return Bluebird.all(promises);
-        })
-        .spread(function (photosL, photosR) {
-            return { left: photosL || [], right: photosR || [] };
-        });
-});
+    if (limitR) {
+        query.sdate = { $lt: photo.sdate };
+        promises[1] = Photo.find(query, compactFields, { lean: true, sort: { sdate: -1 }, limit: limitR }).exec();
+    }
+
+    const [left = [], right = []] = await* promises;
+
+    return { left, right };
+};
 
 // Returns array of nearest photos
 async function giveNearestPhotos({ geo, except, distance, limit, skip }) {
@@ -1525,47 +1504,45 @@ async function giveUserPhotosPrivate({ login, startTime, endTime }) {
     return { photos };
 };
 
-// Отдаем новые фотографии
-var giveFresh = Bluebird.method(function (data = {}) {
+// Returns new photos
+async function giveFresh({ login, after, skip, limit }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered ||
-        (!data.login && iAm.user.role < 5) ||
-        (data.login && iAm.user.role < 5 && iAm.user.login !== data.login)) {
+        (!login && iAm.user.role < 5) ||
+        (login && iAm.user.role < 5 && iAm.user.login !== login)) {
         throw { message: msg.deny };
     }
 
-    return (data.login ? User.getUserID(data.login) : Bluebird.resolve)
-        .bind({})
-        .then(function (userid) {
-            var query = { s: status.NEW };
-            this.asModerator = iAm.user.login !== data.login && iAm.isModerator;
+    const userId = login ? await User.getUserID(login) : null;
 
-            if (this.asModerator) {
-                _.assign(query, iAm.mod_rquery);
-            }
-            if (userid) {
-                query.user = userid;
-            }
-            if (data.after) {
-                query.ldate = { $gt: new Date(data.after) };
-            }
+    const query = { s: status.NEW };
+    const asModerator = iAm.user.login !== login && iAm.isModerator;
 
-            return Photo.findAsync(
-                query,
-                compactFields,
-                { lean: true, skip: data.skip || 0, limit: Math.min(data.limit || 100, 100) }
-            );
-        })
-        .then(function (photos) {
-            var shortRegionsHash = regionController.genObjsShortRegionsArr(
-                photos || [],
-                this.asModerator ? iAm.mod_rshortlvls : iAm.rshortlvls,
-                true
-            );
-            return { photos: photos || [], rhash: shortRegionsHash };
-        });
-});
+    if (asModerator) {
+        _.assign(query, iAm.mod_rquery);
+    }
+    if (userId) {
+        query.user = userId;
+    }
+    if (after) {
+        query.ldate = { $gt: new Date(after) };
+    }
+
+    const photos = await Photo.find(
+        query,
+        compactFields,
+        { lean: true, skip: Math.abs(skip || 0), limit: Math.min(Math.abs(limit || 100), 100) }
+    ).exec();
+
+    const shortRegionsHash = regionController.genObjsShortRegionsArr(
+        photos || [],
+        asModerator ? iAm.mod_rshortlvls : iAm.rshortlvls,
+        true
+    );
+
+    return { photos, rhash: shortRegionsHash };
+};
 
 // Return 'can' object for photo
 async function giveCan({ cid }) {

@@ -615,37 +615,29 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
             if (this.uploadVM) {
                 if (newCount) {
                     this.loading(true);
-                    socket.once('takePhotosFresh', function (data) {
-                        if (!data || data.error) {
-                            window.noty({
-                                text: data.message || 'Error occurred',
-                                type: 'error',
-                                layout: 'center',
-                                timeout: 3000,
-                                force: true
-                            });
-                        } else {
-                            if (data.photos.length > 0) {
+                    socket.run('photo.giveFresh', { login: this.u.login(), after: this.waitUploadSince }, true)
+                        .catch(_.noop)
+                        .then(function (data) {
+                            if (!_.isEmpty(data)) {
                                 this.processPhotos(data.photos, data.rhash);
                                 this.count(this.count() + data.photos.length);
                                 this.auth.setProps({ pfcount: this.auth.iAm.pfcount() + data.photos.length });
 
                                 if (this.page() > 1 || this.filter.origin) {
-                                    //Если в постраничном режиме не на первой странице или активен фильтр,
-                                    //то переходим на первую без фильтров
+                                    // Если в постраничном режиме не на первой странице или активен фильтр,
+                                    // то переходим на первую без фильтров
                                     globalVM.router.navigate(this.pageUrl());
                                 } else {
-                                    //Если с учетом добавленных текущие вылезут за лимит страницы, удаляем текущие
+                                    // Если с учетом добавленных текущие вылезут за лимит страницы, удаляем текущие
                                     if (!this.feed() && this.photos().length + data.photos.length > this.limit) {
                                         this.photos.splice(this.limit - data.photos.length);
                                     }
                                     this.photos.concat(data.photos, true);
                                 }
                             }
-                        }
-                        this.loading(false);
-                    }, this);
-                    socket.emit('photo.giveFresh', { login: this.u.login(), after: this.waitUploadSince });
+
+                            this.loading(false);
+                        }.bind(this));
                 }
                 this.closeUpload();
             }
