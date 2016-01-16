@@ -1639,34 +1639,24 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
 
         toConvert: function () {
+            var self = this;
             if (!this.can.convert()) {
                 return false;
             }
 
-            this.exe(true);
-            socket.once('convertPhotosResult', function (data) {
-                if (data && !data.error) {
-                    window.noty({
-                        text: data.message || 'OK',
-                        type: 'success',
-                        layout: 'center',
-                        timeout: 1000,
-                        force: true
-                    });
-                } else {
-                    window.noty({
-                        text: (data && data.message) || 'Error occurred',
-                        type: 'error',
-                        layout: 'center',
-                        timeout: 2000,
-                        force: true
-                    });
-                }
+            self.exe(true);
+
+            socket.run('photo.convert', { cids: [this.p.cid()] }, true).then(function (result) {
                 this.exe(false);
-            }, this);
-            socket.emit('photo.convert', [
-                { cid: this.p.cid() }
-            ]);
+
+                window.noty({
+                    text: _.get(result, 'message') || 'Error occurred',
+                    type: 'error',
+                    layout: 'center',
+                    timeout: 2000,
+                    force: true
+                });
+            });
         },
 
         // Стандартная обработка поступающего массива лент фотографий,

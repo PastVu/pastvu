@@ -486,32 +486,25 @@ define([
         },
 
         toConvert: function () {
-            this.exe(true);
-            socket.once('convertPhotosAllResult', function (data) {
-                if (data && !data.error) {
+            var self = this;
+            self.exe(true);
+            socket
+                .run('photo.convertAll', {
+                    min: Number(self.reconvertCidMin()),
+                    max: Number(self.reconvertCidMax()),
+                    r: Number(self.reconvertRegion())
+                }, true)
+                .then(function (result) {
+                    self.exe(false);
+
                     window.noty({
-                        text: 'Added ' + data.conveyorAdded + ' photos to conveyer in ' + data.time + 's',
-                        type: 'success',
-                        layout: 'center',
-                        timeout: 2000,
-                        force: true
-                    });
-                } else {
-                    window.noty({
-                        text: (data && data.message) || 'Error occurred',
+                        text: _.get(result, 'message') || 'Error occurred',
                         type: 'error',
                         layout: 'center',
                         timeout: 2000,
                         force: true
                     });
-                }
-                this.exe(false);
-            }, this);
-            socket.emit('photo.convertAll', {
-                min: Number(this.reconvertCidMin()),
-                max: Number(this.reconvertCidMax()),
-                r: Number(this.reconvertRegion())
-            });
+                });
         },
 
         statFast: function () {

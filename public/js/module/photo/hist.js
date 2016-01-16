@@ -263,35 +263,31 @@ define(
                 });
             },
             getHist: function (cb, ctx) {
-                this.fetchId += 1;
+                var self = this;
+                self.fetchId += 1;
 
-                socket.once('takeObjHist', function (data) {
-                    // Проверяем что запрос не устарел
-                    if (data && data.fetchId !== this.fetchId) {
-                        return;
-                    }
-
-                    var error = !data || data.error || !Array.isArray(data.hists);
-
-                    if (error) {
-                        window.noty({
-                            text: data && data.message || 'Error occurred',
-                            type: 'error',
-                            layout: 'center',
-                            timeout: 3000,
-                            force: true
-                        });
-                    } else {
-                        if (data.haveDiff === true) {
-                            this.haveDiff(data.haveDiff);
+                socket
+                    .run('photo.giveObjHist', {
+                        cid: self.cid,
+                        fetchId: self.fetchId,
+                        showDiff: self.showDiff()
+                    }, true)
+                    .then(function (result) {
+                        // Проверяем что запрос не устарел
+                        if (_.get(result, 'fetchId') !== self.fetchId) {
+                            return;
                         }
-                        this.switchDiff2(data.hists.length > 4);
-                    }
 
-                    cb.call(ctx, error, data);
-                }, this);
+                        if (result.haveDiff === true) {
+                            self.haveDiff(result.haveDiff);
+                        }
+                        self.switchDiff2(result.hists.length > 4);
 
-                socket.emit('photo.giveObjHist', { cid: this.cid, showDiff: this.showDiff(), fetchId: this.fetchId });
+                        cb.call(ctx, null, result);
+                    })
+                    .catch(function (err) {
+                        cb.call(ctx, err)
+                    });
             }
         });
     });

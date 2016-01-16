@@ -180,6 +180,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.photo_watermark_add_sign(this.u.settings.photo_watermark_add_sign());
         },
         reconvertPhotos: function () {
+            var self = this;
             this.reconvertingPhotos(true);
 
             var option = this.reconvertcheck();
@@ -189,23 +190,23 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 region = Number(region) || undefined;
             }
 
-            socket.once('convertUserPhotosResult', function (data) {
-                var error = !data || data.error;
-                var warning = !error && !data.updated;
+            socket.run('photo.convertByUser', { login: this.u.login(), r: region }, true)
+                .then(function (result) {
+                    var warning = !result.updated;
 
-                window.noty({
-                    text: error ? data && data.message || 'Error occurred' :
-                        warning ? 'Ни одной фотографии не отправлено на конвертацию' :
-                        data.updated + ' фотографий отправлено на повторную конвертацию',
-                    type: error ? 'error' : warning ? 'warning' : 'success',
-                    layout: 'center',
-                    timeout: 3000,
-                    force: true
+                    window.noty({
+                        text: warning ? 'Ни одной фотографии не отправлено на конвертацию' :
+                            result.updated + ' фотографий отправлено на повторную конвертацию',
+                        type: warning ? 'warning' : 'success',
+                        layout: 'center',
+                        timeout: 3000,
+                        force: true
+                    });
+                })
+                .catch(_.noop)
+                .then(function () {
+                    self.reconvertingPhotos(false);
                 });
-
-                this.reconvertingPhotos(false);
-            }, this);
-            socket.emit('photo.convertByUser', { login: this.u.login(), r: region });
         },
         individualWatersignReset: function () {
             var self = this;
@@ -225,25 +226,24 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 okText: 'Да, сбросить',
                 cancelText: 'Отменить',
                 onOk: function (confirmer) {
-                    socket.once('convertUserPhotosResult', function (data) {
-                        var error = !data || data.error;
-                        var warning = !error && !data.updated;
+                    socket.run('photo.convertByUser', { login: self.u.login(), r: region, resetIndividual: true }, true)
+                        .then(function (result) {
+                            var warning = !result.updated;
 
-                        confirmer.close();
-
-                        window.noty({
-                            text: error ? data && data.message || 'Error occurred' :
-                                warning ? 'Не найдено ни одной фотографии с индивидуальными настройками подписи' :
-                                'У ' + data.updated + ' фотографий сброшены индивидуальные настройки подписи и они отправлены на повторную конвертацию',
-                            type: error ? 'error' : warning ? 'warning' : 'success',
-                            layout: 'center',
-                            timeout: 3000,
-                            force: true
+                            window.noty({
+                                text: warning ? 'Не найдено ни одной фотографии с индивидуальными настройками подписи' :
+                                'У ' + result.updated + ' фотографий сброшены индивидуальные настройки подписи и они отправлены на повторную конвертацию',
+                                type: warning ? 'warning' : 'success',
+                                layout: 'center',
+                                timeout: 3000,
+                                force: true
+                            });
+                        })
+                        .catch(_.noop)
+                        .then(function () {
+                            confirmer.close();
+                            self.reconvertingPhotos(false);
                         });
-
-                        self.reconvertingPhotos(false);
-                    });
-                    socket.emit('photo.convertByUser', { login: self.u.login(), r: region, resetIndividual: true });
                 },
                 onCancel: function () {
                     self.reconvertingPhotos(false);
