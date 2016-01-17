@@ -153,17 +153,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }
 
             this.exe(true);
-            socket.once('saveUserCredentialsResult', function (data) {
-                var error = !data || data.error;
-                if (error) {
-                    window.noty({
-                        text: _.get(data, 'message', 'Error occurred'),
-                        type: 'error',
-                        layout: 'center',
-                        timeout: 3000,
-                        force: true
-                    });
-                } else {
+            socket.run('admin.saveUserCredentials', { login: this.u.login(), role: role, regions: regionsCids }, true)
+                .then(function (data) {
                     var regions = regionsCids ? this.regions() : [];
                     var updatedProps = { role: role, mod_regions: regions };
 
@@ -171,10 +162,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     User.vm(updatedProps, this.u, true);
 
                     this.regions(regions); //Переприсваиваем, чтобы сработал computed
-                }
-                this.exe(false);
-            }, this);
-            socket.emit('saveUserCredentials', { login: this.u.login(), role: role, regions: regionsCids });
+                    this.exe(false);
+                }.bind(this));
         },
         cancelCredentials: function () {
             this.role(String(this.u_origin.role));

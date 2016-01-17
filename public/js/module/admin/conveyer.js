@@ -348,62 +348,55 @@ define([
             this.show();
         },
         show: function () {
+            var self = this;
+
             this.statFast();
-            globalVM.func.showContainer(this.$container, function () {
-                socket.once('getStatConveyer', function (data) {
-                    if (!data || data.error) {
-                        window.noty({
-                            text: data.message || 'Error occurred',
-                            type: 'error',
-                            layout: 'center',
-                            timeout: 3000,
-                            force: true
-                        });
-                    } else {
-                        data = data.data;
+            globalVM.func.showContainer(self.$container, function () {
+                socket.run('converter.conveyorStat', true)
+                    .then(function (result) {
+                        var data = result.data;
+
                         var i = 0,
                             timeZoneOffset = -((new Date()).getTimezoneOffset()) * 60000,
                             stampLocal;
                         while (++i < data.length) {
                             stampLocal = data[i].stamp + timeZoneOffset;
-                            this.conveyerLengthData.push(
+                            self.conveyerLengthData.push(
                                 [stampLocal, data[i].clength]
                             );
-                            this.conveyerConvertData.push(
+                            self.conveyerConvertData.push(
                                 [stampLocal, data[i].converted]
                             );
                         }
-                        this.conveyerLengthChart = new Highcharts.StockChart(_.assign({
+                        self.conveyerLengthChart = new Highcharts.StockChart(_.assign({
                             chart: {
                                 renderTo: 'conveyerLengthGraph'
                             },
                             series: [
                                 {
                                     name: 'Фотографий в очереди',
-                                    data: this.conveyerLengthData,
+                                    data: self.conveyerLengthData,
                                     tooltip: {
                                         valueDecimals: 0
                                     }
                                 }
                             ]
-                        }, this.chartsOptions));
-                        this.conveyerConvertChart = new Highcharts.StockChart(_.assign({
+                        }, self.chartsOptions));
+                        self.conveyerConvertChart = new Highcharts.StockChart(_.assign({
                             chart: {
                                 renderTo: 'conveyerConvertGraph'
                             },
                             series: [
                                 {
                                     name: 'Фотографий конвертированно',
-                                    data: this.conveyerConvertData,
+                                    data: self.conveyerConvertData,
                                     tooltip: {
                                         valueDecimals: 0
                                     }
                                 }
                             ]
-                        }, this.chartsOptions));
-                    }
-                }, this);
-                socket.emit('converter.conveyorStat');
+                        }, self.chartsOptions));
+                    });
             }, this);
 
             this.showing = true;
@@ -420,13 +413,13 @@ define([
 
         startstop: function () {
             this.exe(true);
-            socket.once('conveyorStartStopResult', function (data) {
-                if (data && Utils.isType('boolean', data.conveyerEnabled)) {
-                    this.conveyerEnabled(data.conveyerEnabled);
-                }
-                this.exe(false);
-            }, this);
-            socket.emit('converter.conveyorStartStop', !this.conveyerEnabled());
+            socket.run('converter.conveyorStartStop', !this.conveyerEnabled(), true)
+                .then(function (data) {
+                    if (data && Utils.isType('boolean', data.conveyerEnabled)) {
+                        this.conveyerEnabled(data.conveyerEnabled);
+                    }
+                    this.exe(false);
+                }.bind(this));
         },
         clearConveyer: function () {
             var _this = this;
@@ -455,22 +448,22 @@ define([
                                     $noty.$buttons.find('button').attr('disabled', true).addClass('disabled');
                                 }
 
-                                socket.once('conveyerClearResult', function (data) {
-                                    $noty.$buttons.find('.btn-danger').remove();
-                                    var okButton = $noty.$buttons.find('button')
-                                        .attr('disabled', false)
-                                        .removeClass('disabled')
-                                        .off('click');
+                                socket.run('conveyerClear', { value: true }, true)
+                                    .then(function (data) {
+                                        $noty.$buttons.find('.btn-danger').remove();
+                                        var okButton = $noty.$buttons.find('button')
+                                            .attr('disabled', false)
+                                            .removeClass('disabled')
+                                            .off('click');
 
-                                    $noty.$message.children().html((data && data.message) || '');
+                                        $noty.$message.children().html((data && data.message) || '');
 
-                                    okButton.text('Закрыть').on('click', function () {
-                                        $noty.close();
-                                        this.exe(false);
-                                        this.statFast();
-                                    }.bind(this));
-                                }, _this);
-                                socket.emit('conveyerClear', true);
+                                        okButton.text('Закрыть').on('click', function () {
+                                            $noty.close();
+                                            this.exe(false);
+                                            this.statFast();
+                                        }.bind(this));
+                                    }.bind(_this));
                             }
                         },
                         {
@@ -509,16 +502,16 @@ define([
 
         statFast: function () {
             window.clearTimeout(this.timeoutUpdate);
-            socket.once('takeStatFastConveyer', function (data) {
-                if (data) {
-                    this.conveyerEnabled(data.conveyerEnabled);
-                    this.clength(data.conveyerLength);
-                    this.cmaxlength(data.conveyerMaxLength);
-                    this.converted(data.conveyerConverted);
-                }
-                this.timeoutUpdate = window.setTimeout(this.statFast.bind(this), 2000);
-            }, this);
-            socket.emit('converter.conveyorStatFast');
+            socket.run('converter.conveyorStatFast')
+                .then(function (data) {
+                    if (data) {
+                        this.conveyerEnabled(data.conveyerEnabled);
+                        this.clength(data.conveyerLength);
+                        this.cmaxlength(data.conveyerMaxLength);
+                        this.converted(data.conveyerConverted);
+                    }
+                    this.timeoutUpdate = window.setTimeout(this.statFast.bind(this), 2000);
+                }.bind(this));
         }
     });
 });

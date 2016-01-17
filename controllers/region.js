@@ -346,10 +346,11 @@ async function calcRegionIncludes(cidOrRegion) {
 
 /**
  * Recalculate what objects belong to list of region. If list is empty - recalc all regions
- * @param iAm
  * @param cids Array of regions cids
  */
-export async function calcRegionsIncludes(iAm, cids) {
+export async function calcRegionsIncludes(cids) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!iAm.isAdmin) {
         throw { message: msg.deny };
     }

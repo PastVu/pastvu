@@ -1071,7 +1071,7 @@ async function activateDeactivate(data) {
 }
 
 // Remove from 'incoming' directory uploaded but not created photo
-const removeIncoming = function ({ file }) {
+function removeIncoming({ file }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!file) {

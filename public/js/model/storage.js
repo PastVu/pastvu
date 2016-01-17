@@ -41,7 +41,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
                     { cb: callback, ctx: context }
                 ];
 
-                socket.emit('photo.giveForPage', { cid: cid }, true)
+                socket.run('photo.giveForPage', { cid: cid }, true)
                     .then(function (data) {
                         if (data.photo.cid === cid) {
                             Photo.factory(data.photo, 'full', 'd');
@@ -73,15 +73,14 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
                 return;
             }
 
-            socket.once('takeCanPhoto', function (data) {
-                if (!data.error) {
+            socket.run('photo.giveCan', { cid: cid })
+                .then(function (data) {
                     storage.photos[cid].can = data.can || Photo.canDef;
-                }
-                if (callback) {
-                    callback.call(context, data);
-                }
-            });
-            socket.emit('photo.giveCan', { cid: cid });
+
+                    if (callback) {
+                        callback.call(context, data);
+                    }
+                });
         }
     };
 

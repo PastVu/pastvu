@@ -191,7 +191,7 @@ export async function configure(startStamp) {
     const manualGC = manualGarbageCollect && global.gc;
 
     if (manualGC) {
-        // Самостоятельно вызываем garbage collector через определеное время
+        // Call the garbage collector after a certain time
         logger.info(`Manual garbage collection every ${manualGarbageCollect / 1000}s`);
     }
 

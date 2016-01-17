@@ -161,18 +161,12 @@ define([
 			}
 		},
 		getOneNews: function (cid, cb, ctx) {
-			socket.once('takeNews', function (data) {
-				if (!data || data.error || !data.news) {
-					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
-				} else {
-					ko_mapping.fromJS(data.news, this.news);
-				}
+			socket.run('index.giveNewsFull', {cid: cid}, true)
+                .then(function (data) {
+                    ko_mapping.fromJS(data.news, this.news);
 
-				if (Utils.isType('function', cb)) {
-					cb.call(ctx, data);
-				}
-			}, this);
-			socket.emit('giveNews', {cid: cid});
+                    cb.call(ctx, data);
+                }.bind(this));
 		},
 		save: function () {
 			var saveData = ko_mapping.toJS(this.news);
@@ -192,17 +186,13 @@ define([
 			saveData.pdate = this.$dom.find('#newsPdate').data('DateTimePicker').getDate().toDate();
 			saveData.txt = this.$dom.find('textarea#newsPrimary').redactor('get');
 
-			socket.once('saveNewsResult', function (data) {
-				if (!data || data.error || !data.news) {
-					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
-				} else {
-					window.noty({text: 'Сохранено', type: 'success', layout: 'center', timeout: 1800, force: true});
-					if (this.createMode()) {
-						globalVM.router.navigate('/admin/news/edit/' + data.news.cid);
-					}
-				}
-			}, this);
-			socket.emit('saveNews', saveData);
+			socket.run('admin.saveOrCreateNews', saveData, true)
+                .then(function (data) {
+                    window.noty({text: 'Сохранено', type: 'success', layout: 'center', timeout: 1800, force: true});
+                    if (this.createMode()) {
+                        globalVM.router.navigate('/admin/news/edit/' + data.news.cid);
+                    }
+                }.bind(this));
 		},
 		submit: function (data, evt) {
 			var $form = $(evt.target);

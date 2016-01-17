@@ -1,5 +1,4 @@
 import _ from 'lodash';
-import * as regionController from './region.js';
 import * as sessionController from './_session';
 
 import { News } from '../models/News';
@@ -10,7 +9,9 @@ const msg = {
     deny: 'You do not have permission for this action'
 };
 
-function saveOrCreateNews(iAm, data = {}) {
+function saveOrCreateNews(data) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!iAm.isAdmin) {
         throw { message: msg.deny };
     }
@@ -49,7 +50,9 @@ async function saveNews(iAm, { cid, pdate, tdate, title, notice, txt, nocomments
     return { news: novel };
 }
 
-function getOnlineStat(iAm) {
+function getOnlineStat() {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!iAm.isAdmin) {
         throw { message: msg.deny };
     }
@@ -148,7 +151,9 @@ function getOnlineStat(iAm) {
     });
 }
 
-async function saveUserCredentials(iAm, { login, role, regions } = {}) {
+async function saveUserCredentials({ login, role, regions }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!iAm.isAdmin) {
         throw { message: msg.deny };
     }
@@ -213,38 +218,12 @@ async function saveUserCredentials(iAm, { login, role, regions } = {}) {
     return {};
 }
 
-export function loadController(io) {
-    io.sockets.on('connection', function (socket) {
-        const hs = socket.handshake;
+getOnlineStat.isPublic = true;
+saveOrCreateNews.isPublic = true;
+saveUserCredentials.isPublic = true;
 
-        socket.on('saveNews', function (data) {
-            saveOrCreateNews(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('saveNewsResult', resultData);
-                });
-        });
-
-        socket.on('getOnlineStat', function () {
-            getOnlineStat(hs.usObj)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeOnlineStat', resultData);
-                });
-        });
-        socket.on('saveUserCredentials', function (data) {
-            saveUserCredentials(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('saveUserCredentialsResult', resultData);
-                });
-        });
-    });
-
+export default {
+    getOnlineStat,
+    saveOrCreateNews,
+    saveUserCredentials
 };

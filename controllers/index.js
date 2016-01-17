@@ -286,7 +286,7 @@ async function giveAllNews() {
 };
 
 // Full news object for administration (create/edit)
-async function giveNewsFull({ cid } = {}) {
+async function giveNewsFull({ cid }) {
     if (!_.isNumber(cid) || cid < 1) {
         throw { message: 'Bad params' };
     }

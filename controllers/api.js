@@ -3,7 +3,7 @@ import Bluebird from 'bluebird';
 import { logIt } from './apilog.js';
 import Utils from '../commons/Utils';
 
-var core;
+let core;
 const REQUEST_SELF_LIFE = ms('60s');
 const apps = {
     test: { limit: 2, interval: 1e3, lastCall: 0, count: 0 },

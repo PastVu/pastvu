@@ -11,7 +11,7 @@ Utils.walkParallel(path.normalize('./views/module'), function (err, files) {
     tpls = Utils.filesListProcess(files, 'views/module/');
 });
 
-module.exports.loadController = function (app) {
+export function loadController(app) {
     app.get('/tpl/*', function (req, res) {
         if (tpls.includes(req.params[0])) {
             res.status(200).render('module/' + req.params[0]);

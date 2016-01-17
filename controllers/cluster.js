@@ -22,15 +22,17 @@ async function readClusterParams() {
 }
 
 // Set new cluster parameters and send clusters to recalculate
-async function recalcAll(iAm, data) {
+async function recalcAll({ params, conditions }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!iAm.isAdmin) {
         throw { message: msg.deny };
     }
 
     await ClusterParams.remove({}).exec();
     await* [
-        ClusterParams.collection.insert(data.params, { safe: true }),
-        ClusterParams.collection.insert(data.conditions, { safe: true })
+        ClusterParams.collection.insert(params, { safe: true }),
+        ClusterParams.collection.insert(conditions, { safe: true })
     ];
     await readClusterParams();
     await dbEval('clusterPhotosAll', [true], { nolock: true });
