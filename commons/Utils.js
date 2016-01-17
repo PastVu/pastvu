@@ -82,7 +82,7 @@ Utils.checkUserAgent = (function () {
 //FB 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)'
 //VK 'Mozilla/5.0 (compatible; vkShare; +http://vk.com/dev/Share)'
 Utils.getMyAgentParsed = (function () {
-    var cache = require('lru-cache')({ max: 500 });
+    const cache = require('lru-cache')({ max: 500 });
 
     return function (userAgent) {
         if (!userAgent) {
