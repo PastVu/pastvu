@@ -250,7 +250,7 @@ define(['module'], function (/* module */) {
             } else {
                 socket.ons[name] = [stackRecord];
                 manager.on(name, function () {
-                    var data = _.first(arguments);
+                    var data = _.head(arguments);
                     var acknowledgementCallback = _.last(arguments);
 
                     eventHandlersNotify(name, [data, acknowledgementCallback]);

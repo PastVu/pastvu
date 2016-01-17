@@ -487,7 +487,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                         // Если количество регионов равно, они пусты или массивы их cid равны,
                         // то и заменять их не надо, чтобы небыло "прыжка"
                         var rEquals = this.filter.disp.r().length === data.filter.r.length &&
-                            (!data.filter.r.length || _.isEqual(_.pluck(this.filter.disp.r(), 'cid'), _.pluck(data.filter.r, 'cid')));
+                            (!data.filter.r.length || _.isEqual(_.map(this.filter.disp.r(), 'cid'), _.map(data.filter.r, 'cid')));
 
                         if (!rEquals) {
                             this.filter.disp.r(data.filter.r || []);

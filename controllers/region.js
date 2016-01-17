@@ -506,9 +506,9 @@ async function changeRegionParentExternality(region, oldParentsArray, childLenAr
         ];
 
         // Array of _id of parents regions
-        const parentRegionsIds = _.pluck(parentRegions, '_id');
+        const parentRegionsIds = _.map(parentRegions, '_id');
         // Array of _ids of regions of moving branch (ie region itself and its children)
-        const movingRegionsIds = _.pluck(childRegions, '_id');
+        const movingRegionsIds = _.map(childRegions, '_id');
         movingRegionsIds.unshift(region._id);
 
         const [{ n: affectedUsers = 0 }, { n: affectedMods = 0 }] = await* [
@@ -907,7 +907,7 @@ async function remove(data) {
     }
 
     // _ids of all removing regoions
-    const removingRegionsIds = childRegions ? _.pluck(childRegions, '_id') : [];
+    const removingRegionsIds = childRegions ? _.map(childRegions, '_id') : [];
     removingRegionsIds.push(regionToRemove._id);
 
     // Replace home regions
@@ -962,7 +962,7 @@ async function remove(data) {
 async function removeRegionsFromMods(usersQuery, regionsIds) {
     // Find all moderators of removing regions
     const modUsers = await User.find(usersQuery, { cid: 1 }, { lean: true }).exec();
-    const modUsersCids = _.isEmpty(modUsers) ? [] : _.pluck(modUsers, 'cid');
+    const modUsersCids = _.isEmpty(modUsers) ? [] : _.map(modUsers, 'cid');
 
     if (modUsersCids.length) {
         // Remove regions from finded moderators

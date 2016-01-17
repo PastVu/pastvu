@@ -593,7 +593,7 @@ Utils.geo = (function () {
         var area = 0;
         var isSigned = signed || false;
 
-        if (!_.isEqual(_.first(points), _.last(points))) {
+        if (!_.isEqual(_.head(points), _.last(points))) {
             points = points.concat(points[0]);
         }
 

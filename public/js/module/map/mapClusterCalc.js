@@ -263,7 +263,7 @@ define([
             // Подписываемся на изменение зума карты
             this.map.on('moveend', changeZoomRecursive, this);
             // Начинаем подсчет
-            setZoom(_.first(zooms));
+            setZoom(_.head(zooms));
             // По окончании пересчета вызываем функцию отправки данных
             $.when(this.calcDeffered.promise()).done(this.send.bind(this));
         },

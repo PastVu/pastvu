@@ -149,7 +149,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             var regionsCids;
             var role = Number(this.role());
             if (role === 5 && !_.isEqual(this.u_origin.mod_regions, this.regions())) {
-                regionsCids = _.pluck(this.regions(), 'cid');
+                regionsCids = _.map(this.regions(), 'cid');
             }
 
             this.exe(true);

@@ -36,7 +36,7 @@
         "mongoose": "4.2.7",
         "posix": "4.0.0",
         "mkdirp": "0.5.1",
-        "lodash": "3.10.1",
+        "lodash": "4.0.0",
         "bluebird": "2.10.2",
         "underscore.string": "3.2.2",
         "yargs": "3.31.0",

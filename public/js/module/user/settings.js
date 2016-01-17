@@ -406,7 +406,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     return item.cid() === cid;
                 });
                 var regions = ko_mapping.toJS(this.u.regions);
-                this.saveFilterRegions(_.pluck(regions, 'cid'), function (err) {
+                this.saveFilterRegions(_.map(regions, 'cid'), function (err) {
                     this.originUser.regions = regions;
                     ga('send', 'event', 'region', 'update', 'photo update success', regions.length);
                 }, this);
@@ -468,7 +468,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             return;
                         }
 
-                        this.saveFilterRegions(_.pluck(regions, 'cid'), function () {
+                        this.saveFilterRegions(_.map(regions, 'cid'), function () {
                             User.vm({ regions: regions }, this.u, true); // Обновляем регионы в текущей вкладке вручную
                             this.originUser.regions = regions;
 
