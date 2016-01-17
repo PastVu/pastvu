@@ -271,25 +271,24 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 okText: 'Да, сбросить',
                 cancelText: 'Отменить',
                 onOk: function (confirmer) {
-                    socket.once('resetIndividualDownloadOriginResult', function (data) {
-                        var error = !data || data.error;
-                        var warning = !error && !data.updated;
+                    socket.run('photo.resetIndividualDownloadOrigin', { login: self.u.login(), r: region}, true)
+                        .then(function (result) {
+                            var warning = !result.updated;
 
-                        confirmer.close();
-
-                        window.noty({
-                            text: error ? data && data.message || 'Error occurred' :
-                                warning ? 'Не найдено ни одной фотографии с индивидуальными настройками скачивания' :
-                                'У ' + data.updated + ' фотографий сброшены индивидуальные настройки скачивания',
-                            type: error ? 'error' : warning ? 'warning' : 'success',
-                            layout: 'center',
-                            timeout: 3000,
-                            force: true
+                            window.noty({
+                                text: warning ? 'Не найдено ни одной фотографии с индивидуальными настройками скачивания' :
+                                    'У ' + result.updated + ' фотографий сброшены индивидуальные настройки скачивания',
+                                type: warning ? 'warning' : 'success',
+                                layout: 'center',
+                                timeout: 3000,
+                                force: true
+                            });
+                        })
+                        .catch(_.noop)
+                        .then(function () {
+                            confirmer.close();
+                            self.reconvertingPhotos(false);
                         });
-
-                        self.reconvertingPhotos(false);
-                    });
-                    socket.emit('photo.resetIndividualDownloadOrigin', { login: self.u.login(), r: region});
                 },
                 onCancel: function () {
                     self.reconvertingPhotos(false);

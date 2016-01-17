@@ -1459,7 +1459,7 @@ export async function changeObjCommentsVisibility({ obj: { _id: objId, s }, hide
         command.$set.hidden = true;
     }
 
-    const { n: count } = await Comment.update({ obj: objId }, command, { multi: true }).exec();
+    const { n: count = 0 } = await Comment.update({ obj: objId }, command, { multi: true }).exec();
 
     if (count === 0) {
         return { myCount: 0 };

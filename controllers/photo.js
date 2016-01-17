@@ -5,7 +5,6 @@ import path from 'path';
 import log4js from 'log4js';
 import moment from 'moment';
 import config from '../config';
-import Bluebird from 'bluebird';
 import Utils from '../commons/Utils';
 import { waitDb } from './connection';
 import constants from './constants.js';
@@ -2098,274 +2097,266 @@ async function convertByUser({ login, resetIndividual, r }) {
     }
 }
 
-var resetIndividualDownloadOrigin = Bluebird.method(function (data) {
+async function resetIndividualDownloadOrigin({ login, r }) {
     const { handshake: { usObj: iAm } } = this;
 
-    if (!data.login) {
+    if (!login) {
         throw { message: msg.badParams };
     }
-    if (!iAm.registered || iAm.user.login !== data.login && !iAm.isAdmin) {
+    if (!iAm.registered || iAm.user.login !== login && !iAm.isAdmin) {
         throw { message: msg.deny };
     }
 
-    var stampStart = new Date();
-    var region;
-    if (_.isNumber(data.r) && data.r > 0) {
-        region = regionController.getRegionFromCache(data.r);
+    const stampStart = new Date();
+    let region;
+
+    if (_.isNumber(r) && r > 0) {
+        region = regionController.getRegionFromCache(r);
 
         if (region) {
             region = { level: _.size(region.parents), cid: region.cid };
         }
     }
 
-    return User.findOneAsync({ login: data.login }, { login: 1, settings: 1 }, { lean: true })
-        .bind({})
-        .then(function (user) {
-            if (!user) {
-                throw { message: msg.noUser };
-            }
+    const user = await User.findOne({ login }, { login: 1, settings: 1 }, { lean: true }).exec();
+    if (!user) {
+        throw { message: msg.noUser };
+    }
 
-            var query = { user: user._id, disallowDownloadOriginIndividual: true };
+    const query = { user: user._id, disallowDownloadOriginIndividual: true };
 
-            if (region) {
-                query['r' + region.level] = region.cid;
-            }
+    if (region) {
+        query[`r${region.level}`] = region.cid;
+    }
 
-            return Photo.updateAsync(query, { $unset: { disallowDownloadOriginIndividual: 1 } }, { multi: true });
-        })
-        .spread(function (updated) {
-            var spent = Date.now() - stampStart;
+    const { n: updated = 0 } = await Photo.update(
+        query, { $unset: { disallowDownloadOriginIndividual: 1 } }, { multi: true }
+    ).exec();
 
-            logger.info(
-                'Resetting individual download setting in %d photos has finished in %ds of user %s %s. %s', updated,
-                spent / 1000, data.login, region ? 'in region ' + region.cid : '', 'Invoked by ' + iAm.user.login
-            );
+    const time = Date.now() - stampStart;
 
-            return { updated: updated, time: spent };
-        });
-});
+    logger.info(
+        `Resetting individual download setting in ${updated} photos has finished in ${time / 1000}s`,
+        `of user ${login} ${region ? `in region ${region.cid}` : ''}. Invoked by ${iAm.user.login}`
+    );
+
+    return { updated, time };
+}
 
 /**
- * Строим параметры запроса (query) для запроса фотографий с фильтром с учетом прав на статусы и регионы
+ * Build request parameters (query) for requesting photo with filter considering rights on statuses and regions
  * @param filter
  * @param forUserId
- * @param iAm Объект пользователя сессии
+ * @param iAm Session object of user
  */
 export function buildPhotosQuery(filter, forUserId, iAm) {
-    var query, //Результирующий запрос
-        query_pub, //Запрос в рамках публичных регионов
-        query_mod, //Запрос в рамках модерируемых регионов
-        rquery_pub,
-        rquery_mod,
+    let query; // Result query
+    let queryPub; // Request within the public regions
+    let queryMod; // Request within the moderated regions
+    let rqueryPub;
+    let rqueryMod;
 
-        regions_cids = [],
-        regions_arr = [],
-        regions_arr_all = [],//Массив объектов регионов, включая неактивные (phantom в фильтре)
-        regions_hash = {},
+    let regionsArr = [];
+    let regionsCids = [];
+    let regionsHash = {};
+    let regionsArrAll = []; // Array of regions objects, including inactive (phantom in filters)
 
-        squery_public_have = !filter.s || !filter.s.length || filter.s.includes(5),
-        squery_public_only = !iAm.registered || filter.s && filter.s.length === 1 && filter.s[0] === status.PUBLIC,
+    const squeryPublicHave = !filter.s || !filter.s.length || filter.s.includes(5);
+    const squeryPublicOnly = !iAm.registered || filter.s && filter.s.length === 1 && filter.s[0] === status.PUBLIC;
 
-        region,
-        contained,
-        result = { query: null, s: [], rcids: [], rarr: [] },
+    const result = { query: null, s: [], rcids: [], rarr: [] };
 
-        someVar,
-        i,
-        j;
-
-    if (!squery_public_only && filter.s && filter.s.length) {
-        //Если есть публичный, убираем, так как непубличный squery будет использован только в rquery_mod
+    if (!squeryPublicOnly && filter.s && filter.s.length) {
+        // If public exists, remove, because non-public squery is used only in rqueryMod
         filter.s = _.without(filter.s, status.PUBLIC, !iAm.isAdmin ? status.REMOVE : undefined);
     }
 
     if (Array.isArray(filter.r) && filter.r.length) {
-        regions_arr_all = regionController.getRegionsArrFromCache(filter.r);
+        regionsArrAll = regionController.getRegionsArrFromCache(filter.r);
 
         if (Array.isArray(filter.rp) && filter.rp.length) {
-            //Если есть массив неактивных (phantom) регионов фильтра, берем разницу
-            regions_cids = _.difference(filter.r, filter.rp);
-            regions_arr = regionController.getRegionsArrFromCache(regions_cids);
+            // If exists array of inactive (phantom) regions of filter, take the difference
+            regionsCids = _.difference(filter.r, filter.rp);
+            regionsArr = regionController.getRegionsArrFromCache(regionsCids);
         } else {
-            regions_cids = filter.r;
-            regions_arr = regions_arr_all;
+            regionsCids = filter.r;
+            regionsArr = regionsArrAll;
         }
 
-        someVar = regionController.buildQuery(regions_arr);
-        rquery_pub = rquery_mod = someVar.rquery;
-        regions_hash = someVar.rhash;
+        const regionQuery = regionController.buildQuery(regionsArr);
+        rqueryPub = rqueryMod = regionQuery.rquery;
+        regionsHash = regionQuery.rhash;
     } else if (filter.r === undefined && iAm.registered && iAm.user.regions.length && (!forUserId || !forUserId.equals(iAm.user._id))) {
-        regions_hash = iAm.rhash;
-        regions_cids = _.pluck(iAm.user.regions, 'cid');
-        regions_arr = regions_arr_all = regionController.getRegionsArrFromHash(regions_hash, regions_cids);
+        regionsHash = iAm.rhash;
+        regionsCids = _.map(iAm.user.regions, 'cid');
+        regionsArr = regionsArrAll = regionController.getRegionsArrFromHash(regionsHash, regionsCids);
     }
-    if (regions_cids.length) {
-        regions_cids = regions_cids.map(Number);
+    if (regionsCids.length) {
+        regionsCids = regionsCids.map(Number);
     }
 
-    if (squery_public_only) {
-        query_pub = {};  //Анонимам или при фильтрации для публичных отдаем только публичные
+    if (squeryPublicOnly) {
+        queryPub = {};  // Give only public photos to anonymous or when filter for public is active
 
         if (filter.r === undefined && iAm.registered && iAm.user.regions.length) {
-            rquery_pub = iAm.rquery; //Если фильтр не указан - отдаем по собственным регионам
+            rqueryPub = iAm.rquery; // If filter is not specified - give by own regions
         }
     } else if (forUserId && forUserId.equals(iAm.user._id)) {
-        //Собственную галерею отдаем без удаленных(не админам) и без регионов в настройках, только по filter.r
-        query_mod = {};
+        // Own gallery give without removed regions(for non-admins) and without regions in settings, only by filter.r
+        queryMod = {};
     } else {
         if (filter.r === undefined && iAm.user.regions.length) {
-            rquery_pub = rquery_mod = iAm.rquery; //Если фильтр не указан - отдаем по собственным регионам
+            rqueryPub = rqueryMod = iAm.rquery; // If filter not specified - give by own regions
         }
 
         if (iAm.isAdmin) {
-            //Админам отдаем все статусы
-            query_mod = {};
+            // Give all statises to the admins
+            queryMod = {};
         } else if (!iAm.user.role || iAm.user.role < 5) {
-            //Ниже чем модераторам региона отдаем только публичные
-            query_pub = {};
+            // Give only public to users, who role is below regions moderators
+            queryPub = {};
         } else if (iAm.isModerator) {
-            //Региональным модераторам отдаем в своих регионах без удаленных, в остальных - только публичные
+            // To regions moderators give within theirs regions without removed regions,
+            // within other regions - only public regions
 
             if (!iAm.user.mod_regions.length || iAm.mod_regions_equals) {
-                //Глобальным модераторам и региональным, у которых совпадают регионы модерирования с собственными,
-                //(т.е. область модерирования включает в себя пользовательскую)
-                //отдаем пользовательскую область как модерируемую
-                query_mod = {};
+                // Give area as moderated for global moderators or regional moderators,
+                // whose moderators regions match with own, i.e. moderation area includes users area
+                queryMod = {};
             } else if (filter.r === 0 || !iAm.user.regions.length) {
-                //Если запрашиваются все пользовательские регионы (т.е. весь мир),
-                //то делаем глобальный запрос по публичным, а со статусами по модерируемым
-                query_pub = {};
-                query_mod = {};
-                rquery_mod = iAm.mod_rquery;
+                // If all users regions requested (i.e. whole world)
+                // do global request for public, and with statuses for moderated
+                queryPub = {};
+                queryMod = {};
+                rqueryMod = iAm.mod_rquery;
             } else {
-                //В случае, когда массив пользовательских и модерируемых регионов различается,
-                //"вычитаем" публичные из модерируемых, получая два новых чистых массива
+                // If arrays of users and moderated regions are different,
+                // "subtract" public from moderated, obtaining two new clean arrays
 
-                var regions_pub = [], //Чистый массив публичных регионов
-                    regions_mod = []; //Чистый массив модерируемых регионов
+                const regionsPub = []; // Pure array of public regions
+                const regionsMod = []; // Pure array of moderated regions
 
-                //Если сам пользовательский регион или один из его родителей является модерируемым,
-                //то включаем его в массив модерируемых
-                for (i = regions_arr.length; i--;) {
-                    region = regions_arr[i];
-                    contained = false;
+                // If user region or one of its parent is moderated,
+                // then include it into array of moderation regions
+                for (const region of regionsArr) {
+                    let contained = false;
 
                     if (iAm.mod_rhash[region.cid]) {
                         contained = true;
                     } else if (region.parents) {
-                        for (j = region.parents.length; j--;) {
-                            if (iAm.mod_rhash[region.parents[j]]) {
+                        for (const parentCid of region.parents) {
+                            if (iAm.mod_rhash[parentCid]) {
                                 contained = true;
                                 break;
                             }
                         }
                     }
                     if (contained) {
-                        regions_mod.push(region);
+                        regionsMod.push(region);
                     } else {
-                        regions_pub.push(region);
+                        regionsPub.push(region);
                     }
                 }
 
-                //Если один из модерируемых регионов является дочерним какому-либо пользовательскому региону,
-                //то включаем такой модерируемый регион в массив модерируемых,
-                //несмотря на то, что родительский лежит в массиве публичных
-                for (i = iAm.user.mod_regions.length; i--;) {
-                    region = iAm.mod_rhash[iAm.user.mod_regions[i].cid];
+                // If one of moderated regions is a child to one of users regions,
+                // then include that moderated region in array of moderated,
+                // despite the fact that the parent is an array of public
+                for (let region of iAm.user.mod_regions) {
+                    region = iAm.mod_rhash[region.cid];
                     if (region.parents) {
-                        for (j = region.parents.length; j--;) {
-                            if (regions_hash[region.parents[j]]) {
-                                regions_mod.push(region);
+                        for (const parentCid of region.parents) {
+                            if (regionsHash[parentCid]) {
+                                regionsMod.push(region);
                             }
                         }
                     }
                 }
 
-                if (regions_pub.length) {
-                    query_pub = {};
-                    someVar = regionController.buildQuery(regions_pub);
-                    rquery_pub = someVar.rquery;
+                if (regionsPub.length) {
+                    const regionQuery = regionController.buildQuery(regionsPub);
+                    rqueryPub = regionQuery.rquery;
+                    queryPub = {};
                 }
-                if (regions_mod.length) {
-                    query_mod = {};
-                    someVar = regionController.buildQuery(regions_mod);
-                    rquery_mod = someVar.rquery;
+                if (regionsMod.length) {
+                    const regionQuery = regionController.buildQuery(regionsMod);
+                    rqueryMod = regionQuery.rquery;
+                    queryMod = {};
                 }
             }
         }
     }
 
-    if (query_pub && squery_public_have) {
-        query_pub.s = status.PUBLIC;
-        if (rquery_pub) {
-            _.assign(query_pub, rquery_pub);
+    if (queryPub && squeryPublicHave) {
+        queryPub.s = status.PUBLIC;
+        if (rqueryPub) {
+            _.assign(queryPub, rqueryPub);
         }
         result.s.push(status.PUBLIC);
     }
-    if (!squery_public_have) {
-        //Если указан фильтр и в нем нет публичных, удаляем запрос по ним
-        query_pub = undefined;
+    if (!squeryPublicHave) {
+        // If filter specified and doesn't contain public, delete query for public
+        queryPub = undefined;
     }
-    if (query_mod) {
+    if (queryMod) {
         if (filter.s && filter.s.length) {
-            if (!query_pub && squery_public_have) {
-                //Если запроса по публичным нет, но должен, то добавляем публичные в модерируемые
-                //Это произойдет с админами и глобальными модераторами, так как у них один query_mod
+            if (!queryPub && squeryPublicHave) {
+                // If query for public doesn't exists, but it has to, add public to moderated
+                // It happens to the admins and global moderators, because they have one queryMod
                 filter.s.push(status.PUBLIC);
             }
             if (filter.s.length === 1) {
-                query_mod.s = filter.s[0];
+                queryMod.s = filter.s[0];
             } else {
-                query_mod.s = { $in: filter.s };
+                queryMod.s = { $in: filter.s };
             }
             Array.prototype.push.apply(result.s, filter.s);
         } else if (!iAm.isAdmin) {
-            query_mod.s = { $ne: status.REMOVE };
+            queryMod.s = { $ne: status.REMOVE };
         }
 
-        if (rquery_mod) {
-            _.assign(query_mod, rquery_mod);
+        if (rqueryMod) {
+            _.assign(queryMod, rqueryMod);
         }
     }
 
-    if (query_pub && query_mod) {
-        query = {
-            $or: [
-                query_pub,
-                query_mod
-            ]
-        };
+    if (queryPub && queryMod) {
+        query = { $or: [queryPub, queryMod] };
     } else {
-        query = query_pub || query_mod;
+        query = queryPub || queryMod;
     }
 
     if (query) {
         result.query = query;
-        result.rcids = regions_cids;
-        result.rhash = regions_hash;
-        result.rarr = regions_arr_all;
+        result.rcids = regionsCids;
+        result.rhash = regionsHash;
+        result.rarr = regionsArrAll;
     }
 
-    //console.log(JSON.stringify(query));
+    // console.log(JSON.stringify(query));
     return result;
 }
 
-// Обнуляет статистику просмотров за день и неделю
+// Resets the view statistics for the day and week
 const planResetDisplayStat = (function () {
-    function resetStat() {
-        var setQuery = { vdcount: 0 },
-            needWeek = moment.utc().day() === 1; // Начало недели - понедельник
+    async function resetStat() {
+        const setQuery = { vdcount: 0 };
+        const needWeek = moment.utc().day() === 1; // Week start - monday
 
         if (needWeek) {
             setQuery.vwcount = 0;
         }
-        Photo.update({ s: { $in: [status.PUBLIC, status.DEACTIVATE, status.REMOVE] } }, { $set: setQuery }, { multi: true }, function (err, count) {
-            planResetDisplayStat();
-            if (err) {
-                return logger.error(err);
-            }
-            logger.info('Reset day' + (needWeek ? ' and week ' : ' ') + 'display statistics for %s photos', count.n);
-        });
+
+        try {
+            const { n: count = 0 } = await Photo.update(
+                { s: { $in: [status.PUBLIC, status.DEACTIVATE, status.REMOVE] } }, { $set: setQuery }, { multi: true }
+            ).exec();
+
+            logger.info(`Reset day ${needWeek ? 'and week ' : ''}display statistics for ${count} photos`);
+        } catch (err) {
+            return logger.error(err);
+        }
+
+        planResetDisplayStat();
     }
 
     return function () {
@@ -2380,18 +2371,20 @@ async function giveObjHist({ cid, fetchId, showDiff }) {
     }
 
     const photo = await this.call('photo.find', { query: { cid }, fieldSelect: { _id: 0 } });
+
+    if (!photo) {
+        throw { message: msg.noPhoto };
+    }
+
     const historySelect = { _id: 0, cid: 0 };
 
     if (!showDiff) {
         historySelect.diff = 0;
     }
 
-    const [photoUser, histories] = await Promise.all([
-        User.findOne({ _id: photo.user }, { _id: 0, login: 1, avatar: 1, disp: 1 }, { lean: true }).exec(),
-        PhotoHistory
-            .find({ cid }, historySelect, { lean: true, sort: { stamp: 1 } })
-            .populate({ path: 'user', select: { _id: 0, login: 1, avatar: 1, disp: 1 } }).exec()
-    ]);
+    const histories = await PhotoHistory
+        .find({ cid }, historySelect, { lean: true, sort: { stamp: 1 } })
+        .populate({ path: 'user', select: { _id: 0, login: 1, avatar: 1, disp: 1 } }).exec();
 
     if (_.isEmpty(histories)) {
         throw { message: 'Для объекта еще нет истории' };
@@ -2480,50 +2473,40 @@ async function giveObjHist({ cid, fetchId, showDiff }) {
     return result;
 }
 
-var getDownloadKey = Bluebird.method(function (data = {}) {
+async function getDownloadKey({ cid }) {
     const { handshake: { usObj: iAm } } = this;
-
-    var cid = Number(data.cid);
 
     if (!iAm.registered) {
         throw { message: msg.deny };
     }
 
+    cid = Number(cid);
+
     if (!cid) {
         throw { message: msg.noPhoto };
     }
 
-    return this.call('photo.find', { query: { cid }, options: { lean: true }, populateUser: true })
-        .bind({})
-        .then(function (photo) {
-            var canDownload = permissions.getCan(photo, iAm).download;
+    const photo = await this.call('photo.find', { query: { cid }, options: { lean: true }, populateUser: true });
+    const canDownload = permissions.getCan(photo, iAm).download;
 
-            if (canDownload === 'login') {
-                throw { message: msg.deny };
-            }
+    if (canDownload === 'login') {
+        throw { message: msg.deny };
+    }
 
-            this.origin = canDownload === true || canDownload === 'byrole';
+    const origin = canDownload === true || canDownload === 'byrole';
 
-            var key = Utils.randomString(32);
-            var path = (this.origin ? 'private/photos/' : 'public/photos/a/') + photo.file;
-            var fileName = photo.cid + ' ' + (photo.title || '').replace(/[\/|]/g, '-') + '.jpg';
-            // We keep only size of origin file, size with watermark must be calculated by downloader.js
-            var size = this.origin ? photo.size : null;
+    const key = Utils.randomString(32);
+    const path = (origin ? 'private/photos/' : 'public/photos/a/') + photo.file;
+    const fileName = `photo.cid ${(photo.title || '').replace(/[\/|]/g, '-')}.jpg`;
+    // We keep only size of origin file, size with watermark must be calculated by downloader.js
+    const size = origin ? photo.size : null;
 
-            return new Download({
-                key,
-                data: {
-                    fileName, path, size, type: 'image/jpeg',
-                    login: iAm.user.login, cid: photo.cid, origin: this.origin
-                }
-            }).saveAsync();
-        })
-        .spread(function (download) {
-            return { key: download.key, origin: this.origin || undefined };
-        });
+    await (new Download({
+        key, data: { fileName, path, size, type: 'image/jpeg', login: iAm.user.login, cid, origin }
+    }).save());
 
-    return {};
-});
+    return { key, origin };
+}
 
 save.isPublic = true;
 create.isPublic = true;
