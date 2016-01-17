@@ -66,6 +66,7 @@ export const ready = new Promise((resolve, reject) => {
 
     if (mailConf.type === 'SMTP') {
         options.rateLimit = 10;
+        options.pool = true;
 
         if (mailConf.service) {
             options.service = mailConf.service;
@@ -80,8 +81,7 @@ export const ready = new Promise((resolve, reject) => {
             options.auth = mailConf.auth;
         }
 
-        // With simple option uses 'nodemailer-smtp-transport'
-        transport = nodemailer.createTransport(require('nodemailer-smtp-pool')(options));
+        transport = nodemailer.createTransport(options);
     } else if (mailConf.type === 'SES') {
         options.accessKeyId = mailConf.AWSAccessKeyID;
         options.secretAccessKey = mailConf.AWSSecretKey;
