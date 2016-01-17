@@ -89,7 +89,12 @@ if (require.main !== module) { // If run.js is required by another module (for e
     // Enable verbose stack trace of Bluebird promises (not in production)
     if (env !== 'production') {
         logger.info('Bluebird long stack traces are enabled');
-        Bluebird.longStackTraces();
+        Bluebird.config({
+            // Enable warnings.
+            warnings: true,
+            // Enable long stack traces.
+            longStackTraces: true
+        });
     }
     Bluebird.promisifyAll(fs);
 

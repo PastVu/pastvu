@@ -2,7 +2,6 @@ import _ from 'lodash';
 import util from 'util';
 import log4js from 'log4js';
 import methods from './methods';
-import Bluebird from 'bluebird';
 import config from '../../config';
 import Utils from '../../commons/Utils';
 import APIError from '../errors/APIError';
@@ -61,7 +60,8 @@ export default async function callMethod(methodName, params = {}, isPublic = fal
     // logger.debug(`${this.ridMark} Params:`, inspect(params));
 
     try {
-        const result = await Bluebird.try(method, [params], this);  // Use try, because not all methods return promise
+        const call = method.call(this, params);
+        const result = typeof call.then === 'function' ? await call : call;
         const elapsed = Date.now() - start;
 
         logger.info(`${this.ridMark} WebApi Method "${methodName}" has executed in ${elapsed}ms`);
