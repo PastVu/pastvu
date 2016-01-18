@@ -32,6 +32,7 @@
         "serve-favicon": "2.3.0",
         "basic-auth-connect": "1.0.0",
         "locale": "0.0.20",
+        "cookie": "0.2.3",
         "jade": "1.11.0",
         "mongoose": "4.3.6",
         "posix": "4.0.0",
@@ -85,6 +86,6 @@
         "eslint-plugin-babel": "2.1.1"
     },
     "engines": {
-        "node": "~4.1.1"
+        "node": "~5.3.0"
     }
 }

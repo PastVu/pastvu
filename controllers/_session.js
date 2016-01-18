@@ -7,7 +7,7 @@ import Utils from '../commons/Utils';
 import TimeoutError from '../app/errors/TimeoutError';
 import { waitDb, dbEval } from './connection';
 import * as regionController from './region';
-import cookie from 'express/node_modules/cookie';
+import {parse as parseCookie} from 'cookie';
 import { userSettingsDef, clientParams } from './settings';
 import { Session, SessionArchive } from '../models/Sessions';
 import { User } from '../models/User';
@@ -727,7 +727,7 @@ export async function handleConnection(ip, headers, overHTTP, req) {
         throw { type: ERROR_TYPES.BAD_BROWSER, agent: browser.agent };
     }
 
-    const cookieObj = cookie.parse(headers.cookie || ''); // Parse cookie
+    const cookieObj = parseCookie(headers.cookie || ''); // Parse cookie
     const sid = cookieObj[SESSION_COOKIE_KEY]; // Get session key from cookie
     let session;
     let track;

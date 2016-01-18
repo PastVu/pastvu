@@ -48,7 +48,7 @@ export async function send(options) {
     }
 
     try {
-        const { accepted, rejected } = transport.sendMail(smtpobject);
+        const { accepted, rejected } = await transport.sendMail(smtpobject);
 
         if (accepted) {
             logger.info('Message sent to: ' + _.get(accepted, '[0]'));
