@@ -151,7 +151,7 @@ export async function configure(startStamp) {
         app.get(/^\/(?:_a|_p)(?:\/.*)$/, static404);
     }
 
-    await* [authReady, settingsReady, regionReady, subscrReady, mailReady];
+    await Promise.all([authReady, settingsReady, regionReady, subscrReady, mailReady]);
 
     const httpServer = http.createServer(app);
     const io = socketIO(httpServer, {

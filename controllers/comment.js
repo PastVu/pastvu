@@ -448,7 +448,7 @@ export const core = {
             throw { message: msg.noObject };
         }
 
-        const [comments, relBeforeUpdate] = await* [
+        const [comments, relBeforeUpdate] = await Promise.all([
             // Take all object comments
             commentModel.find(
                 { obj: obj._id },
@@ -458,7 +458,7 @@ export const core = {
             // Get last user's view time of comments and object and replace it with current time
             // with notification reset if it scheduled
             userObjectRelController.setCommentView(obj._id, iAm.user._id, type)
-        ];
+        ]);
 
         let previousViewStamp;
 
@@ -502,7 +502,7 @@ export const core = {
             throw { message: msg.noCommentExists };
         }
 
-        const [obj, childs] = await* [
+        const [obj, childs] = await Promise.all([
             // Find the object that owns a comment
             data.type === 'news' ? News.findOne({ _id: objId }, { _id: 1, nocomments: 1 }).exec() :
                 this.call('photo.find', { query: { _id: objId } }),
@@ -515,7 +515,7 @@ export const core = {
                 { _id: 0, obj: 0, hist: 0, 'del.reason': 0, geo: 0, r0: 0, r1: 0, r2: 0, r3: 0, r4: 0, r5: 0, __v: 0 },
                 { lean: true, sort: { stamp: 1 } }
             ).exec()
-        ];
+        ]);
 
         if (!obj) {
             throw { message: msg.noObject };
@@ -585,11 +585,11 @@ async function giveForUser({ login, page = 1, type = 'photo' }) {
     const fields = { _id: 0, lastChanged: 1, cid: 1, obj: 1, stamp: 1, txt: 1 };
     const options = { lean: true, sort: { stamp: -1 }, skip: page * commentsUserPerPage, limit: commentsUserPerPage };
 
-    const [comments, countNews, countPhoto] = await* [
+    const [comments, countNews, countPhoto] = await Promise.all([
         commentModel.find(type === 'news' ? queryNews : queryPhotos, fields, options).exec(),
         CommentN.count(queryNews).exec(),
         Comment.count(queryPhotos).exec()
-    ];
+    ]);
 
     if (_.isEmpty(comments)) {
         return { type, page: page + 1, countNews, countPhoto, perPage: commentsUserPerPage, comments: [], objs: {} };
@@ -672,7 +672,7 @@ const getComments = (function () {
             }
         }
 
-        const [photos, users] = await* [
+        const [photos, users] = await Promise.all([
             Photo.find(
                 { _id: { $in: photosArr } },
                 iAm && iAm.rshortsel ?
@@ -681,7 +681,7 @@ const getComments = (function () {
                 { lean: true }
             ).exec(),
             User.find({ _id: { $in: usersArr } }, { _id: 1, login: 1, disp: 1 }, { lean: true }).exec()
-        ];
+        ]);
 
         const shortRegionsHash = regionController.genObjsShortRegionsArr(photos, iAm && iAm.rshortlvls || undefined);
         const photoFormattedHash = {};
@@ -744,12 +744,12 @@ async function create(data) {
     const objCid = Number(data.obj);
     const stamp = new Date();
 
-    const [obj, parent] = await* [
+    const [obj, parent] = await Promise.all([
         data.type === 'news' ? News.findOne({ cid: objCid }, { _id: 1, ccount: 1, nocomments: 1 }).exec() :
             this.call('photo.find', { query: { cid: objCid } }),
         data.parent ? CommentModel.findOne({ cid: data.parent }, { _id: 0, level: 1, del: 1 }, { lean: true }).exec() :
             null
-    ];
+    ]);
 
     if (!obj) {
         throw { message: msg.noObject };
@@ -814,7 +814,7 @@ async function create(data) {
         promises.push(userObjectRelController.onCommentAdd(obj._id, iAm.user._id, data.type));
     }
 
-    await* promises;
+    await Promise.all(promises);
 
     comment.user = iAm.user.login;
     comment.obj = objCid;
@@ -977,7 +977,7 @@ async function remove(data) {
         promises.push(userObjectRelController.onCommentsRemove(obj._id, commentsForRelArr, data.type));
     }
 
-    await* promises;
+    await Promise.all(promises);
 
     // Pass to client only fragments of unremoved comments, for replacement on client
     if (obj.frags) {
@@ -1143,7 +1143,7 @@ async function restore({ cid, type }) {
         promises.push(userObjectRelController.onCommentsRestore(obj._id, commentsForRelArr, type));
     }
 
-    await* promises;
+    await Promise.all(promises);
 
     // Pass to client only fragments of unremoved comments, for replacement on client
     if (obj.frags) {
@@ -1197,7 +1197,7 @@ async function update(data) {
         throw { message: msg.maxLength };
     }
 
-    const [obj, comment] = await* (data.type === 'news' ? [
+    const [obj, comment] = await Promise.all(data.type === 'news' ? [
         News.findOne({ cid: data.obj }, { cid: 1, frags: 1, nocomments: 1 }).exec(),
         CommentN.findOne({ cid }).exec()
     ] : [
@@ -1284,7 +1284,7 @@ async function update(data) {
         comment.lastChanged = new Date();
         comment.txt = content;
 
-        await* [comment.save(), fragChangedType ? obj.save() : null];
+        await Promise.all([comment.save(), fragChangedType ? obj.save() : null]);
     }
 
     return { comment: comment.toObject({ transform: commentDeleteHist }), frag: fragRecieved };

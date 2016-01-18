@@ -164,7 +164,7 @@ const giveStats = (function () {
             [photoYear],
             pallCount, userCount, pdayCount, pweekCount, callCount,
             cnallCount, cdayCount, cndayCount, cweekCount, cnweekCount
-        ] = await* [
+        ] = await Promise.all([
             Photo.aggregate(aggregateParams).exec(),
 
             Photo.count({ s: 5 }).exec(),
@@ -179,7 +179,7 @@ const giveStats = (function () {
             CommentN.count({ stamp: { $gt: dayStart }, del: null, hidden: null }).exec(),
             Comment.count({ stamp: { $gt: weekStart }, del: null, hidden: null }).exec(),
             CommentN.count({ stamp: { $gt: weekStart }, del: null, hidden: null }).exec()
-        ];
+        ]);
 
         return {
             all: {
@@ -210,7 +210,7 @@ const giveOnlineStats = (function () {
 }());
 
 async function giveIndexStats() {
-    const [stat, statFast] = await* [giveStats(), giveOnlineStats()];
+    const [stat, statFast] = await Promise.all([giveStats(), giveOnlineStats()]);
 
     stat.common = statFast;
 

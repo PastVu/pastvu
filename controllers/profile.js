@@ -328,15 +328,15 @@ async function changeAvatar({ login, file, type }) {
     const dirPrefix = fullfile.substr(0, 4);
     const lossless = type === 'image/png';
 
-    await* [
+    await Promise.all([
         // Transfer file from incoming to private
         fs.renameAsync(incomeDir + file, path.normalize(originPath)),
         // Create folders inside public
         mkdirpAsync(path.join(publicDir, 'd/', dirPrefix)),
         mkdirpAsync(path.join(publicDir, 'h/', dirPrefix))
-    ];
+    ]);
 
-    await* [
+    await Promise.all([
         // Copy 100px from private to public/d/
         Utils.copyFile(originPath, publicDir + 'd/' + fullfile),
 
@@ -359,7 +359,7 @@ async function changeAvatar({ login, file, type }) {
             `cwebp -preset photo -m 5 -resize 50 50 ${lossless ? '-lossless ' : ''}${originPath} ` +
             `-o ${publicDir}h/${fullfile}.webp`
         )
-    ];
+    ]);
 
     const currentAvatar = user.avatar;
 

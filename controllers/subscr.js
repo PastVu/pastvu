@@ -209,13 +209,13 @@ export async function userThrottleChange(userId, newThrottle) {
  * @param users Array of users _id
  */
 async function scheduleUserNotice(users) {
-    const [usersThrottle, usersNoty] = await* [
+    const [usersThrottle, usersNoty] = await Promise.all([
         // Find for every user 'throttle' value
         User.find({ _id: { $in: users } }, { _id: 1, 'settings.subscr_throttle': 1 }, { lean: true }).exec(),
         // Find noty of users, even scheduled
         // (if we won't, we can't understand which is planed already, and wich is planning for the first time)
         UserNoty.find({ user: { $in: users } }, { _id: 0 }, { lean: true }).exec()
-    ];
+    ]);
 
     const usersNotyHash = {};
     const usersTrottleHash = {};
@@ -294,10 +294,10 @@ const notifierConveyor = (function () {
             const userIds = [];
             const nowDate = new Date();
 
-            await* usersNoty.map(({ user }) => {
+            await Promise.all(usersNoty.map(({ user }) => {
                 userIds.push(user);
                 return sendUserNotice(user).catch(err => logger.error('sendUserNotice', err));
-            });
+            }));
 
             await UserNoty.update(
                 { user: { $in: userIds } },
@@ -322,8 +322,8 @@ const notifierConveyor = (function () {
  */
 async function sendUserNotice(userId) {
     const userObj = session.getOnline({ userId });
-    const user = await (userObj ? Promise.resolve(userObj.user) :
-        User.findOne({ _id: userId }, { _id: 1, login: 1, disp: 1, email: 1 }, { lean: true }).exec());
+    const user = userObj ? userObj.user :
+        await User.findOne({ _id: userId }, { _id: 1, login: 1, disp: 1, email: 1 }, { lean: true }).exec();
 
     if (!user) {
         throw { message: msg.nouser };
@@ -368,7 +368,7 @@ async function sendUserNotice(userId) {
     }
 
     // Select each object and amount of unread and new comments for it
-    const [news = [], photos = []] = await* [
+    const [news = [], photos = []] = await Promise.all([
         objsIdNews.length ? News.find(
             { _id: { $in: objsIdNews }, ccount: { $gt: 0 } },
             { _id: 1, cid: 1, title: 1, ccount: 1 }, { lean: true }
@@ -378,7 +378,7 @@ async function sendUserNotice(userId) {
             { _id: { $in: objsIdPhotos }, ccount: { $gt: 0 } },
             { _id: 1, cid: 1, title: 1, ccount: 1 }, { lean: true }
         ).exec().then(photos => userObjectRelController.getNewCommentsBrief(photos, relHash, userId)) : undefined
-    ];
+    ]);
 
     if (_.isEmpty(news) && _.isEmpty(photos)) {
         return await resetRelsNoty();
@@ -486,7 +486,7 @@ async function giveUserSubscriptions({ login, page = 1, type = 'photo' }) {
             ).exec());
     }
 
-    const [countPhoto = 0, countNews = 0, { nextnoty: nextNoty } = {}] = await* [
+    const [countPhoto = 0, countNews = 0, { nextnoty: nextNoty } = {}] = await Promise.all([
         // Count total number of photos in subscriptions
         UserObjectRel.count({ user: userId, type: 'photo', sbscr_create: { $exists: true } }).exec(),
 
@@ -499,7 +499,7 @@ async function giveUserSubscriptions({ login, page = 1, type = 'photo' }) {
         ).exec() || undefined
         // ( await xxx || undefined ) needed for 'null' to be replaced with default value '{}' in desctruction
         // https://github.com/Automattic/mongoose/issues/3457
-    ];
+    ]);
 
     for (const obj of objs) {
         const rel = relHash[obj._id];

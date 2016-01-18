@@ -254,7 +254,7 @@ async function conveyerControl() {
 
         photo.conv = true;
         photoConv.converting = true;
-        await* [photo.save(), photoConv.save()];
+        await Promise.all([photo.save(), photoConv.save()]);
 
         try {
             await conveyerStep(photo, photoConv);
@@ -268,7 +268,7 @@ async function conveyerControl() {
 
         photo.conv = undefined; // Присваиваем undefined, чтобы удалить свойства
         photo.convqueue = undefined;
-        await* [photo.save(), photoConv.remove()];
+        await Promise.all([photo.save(), photoConv.remove()]);
 
         working -= 1;
         if (conveyerLength) {

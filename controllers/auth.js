@@ -32,10 +32,10 @@ let regTpl;
 
 export const ready = new Promise(async function(resolve, reject) {
     try {
-        const [regData, recallData] = await* [
+        const [regData, recallData] = await Promise.all([
             fs.readFileAsync(path.normalize('./views/mail/registration.jade'), 'utf-8'),
             fs.readFileAsync(path.normalize('./views/mail/recall.jade'), 'utf-8')
-        ];
+        ]);
 
         regTpl = jade.compile(regData, { filename: path.normalize('./views/mail/registration.jade'), pretty: false });
         recallTpl = jade.compile(recallData, { filename: path.normalize('./views/mail/recall.jade'), pretty: false });
@@ -264,7 +264,7 @@ async function passChangeRecall({ key, pass, pass2 }) {
         user.activatedate = new Date();
     }
 
-    await* [user.save(), confirm.remove()];
+    await Promise.all([user.save(), confirm.remove()]);
 
     return { message: 'Новый пароль сохранен успешно' };
 }
@@ -312,7 +312,7 @@ async function checkConfirm({ key }) {
     if (key.length === 7) { // Confirm registration
         user.active = true;
         user.activatedate = new Date();
-        await* [user.save(), confirm.remove()];
+        await Promise.all([user.save(), confirm.remove()]);
 
         return {
             message: 'Спасибо, регистрация подтверждена! Теперь вы можете войти в систему, используя ваш логин и пароль',

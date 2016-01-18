@@ -15,10 +15,10 @@ export let clusterParams; // Parameters of cluster
 export let clusterConditions; // Parameters of cluster settings
 
 async function readClusterParams() {
-    [clusterParams, clusterConditions] = await* [
+    [clusterParams, clusterConditions] = await Promise.all([
         ClusterParams.find({ sgeo: { $exists: false } }, { _id: 0 }, { lean: true, sort: { z: 1 } }).exec(),
         ClusterParams.find({ sgeo: { $exists: true } }, { _id: 0 }, { lean: true }).exec()
-    ];
+    ]);
 }
 
 // Set new cluster parameters and send clusters to recalculate
@@ -30,10 +30,10 @@ async function recalcAll({ params, conditions }) {
     }
 
     await ClusterParams.remove({}).exec();
-    await* [
+    await Promise.all([
         ClusterParams.collection.insert(params, { safe: true }),
         ClusterParams.collection.insert(conditions, { safe: true })
-    ];
+    ]);
     await readClusterParams();
     await dbEval('clusterPhotosAll', [true], { nolock: true });
     const result = await dbEval('photosToMapAll', [], { nolock: true });
@@ -216,7 +216,7 @@ export async function clusterPhoto({ photo, geoPhotoOld, yearPhotoOld }) {
         }
     }
 
-    return await* recalcPromises;
+    return await Promise.all(recalcPromises);
 };
 
 /**
@@ -231,7 +231,7 @@ export async function declusterPhoto({ photo }) {
     const geoPhoto = photo.geo;
     const geoPhotoCorrection = [geoPhoto[0] < 0 ? -1 : 0, geoPhoto[1] > 0 ? 1 : 0];
 
-    return await* clusterParams.map(clusterZoom => {
+    return await Promise.all(clusterParams.map(clusterZoom => {
         clusterZoom.wHalf = Utils.math.toPrecisionRound(clusterZoom.w / 2);
         clusterZoom.hHalf = Utils.math.toPrecisionRound(clusterZoom.h / 2);
 
@@ -241,16 +241,16 @@ export async function declusterPhoto({ photo }) {
         ]);
 
         return clusterRecalcByPhoto(g, clusterZoom, { o: geoPhoto }, { o: photo.year });
-    });
+    }));
 };
 
 // Returns clusters within bounds
 export async function getBounds({ bounds, z }) {
-    const foundClusters = await* bounds.map(bound => Cluster.find(
+    const foundClusters = await Promise.all(bounds.map(bound => Cluster.find(
         { g: { $geoWithin: { $box: bound } }, z },
         { _id: 0, c: 1, geo: 1, p: 1 },
         { lean: true }
-    ).exec());
+    ).exec()));
 
     const photos = []; // Photos array
     const clusters = [];  // Clusters array
@@ -271,11 +271,11 @@ export async function getBounds({ bounds, z }) {
 
 // Returns clusters within bounds within given years intervals
 export async function getBoundsByYear({ bounds, z, year, year2 }) {
-    const foundClusters = await* bounds.map(bound => Cluster.find(
+    const foundClusters = await Promise.all(bounds.map(bound => Cluster.find(
         { g: { $geoWithin: { $box: bound } }, z },
         { _id: 0, c: 1, geo: 1, y: 1, p: 1 },
         { lean: true }
-    ).exec());
+    ).exec()));
 
     const clustersAll = [];
     const posterPromises = [];
@@ -300,7 +300,7 @@ export async function getBoundsByYear({ bounds, z, year, year2 }) {
     }
 
     if (posterPromises.length) {
-        await* posterPromises;
+        await Promise.all(posterPromises);
     }
 
     const photos = []; // Photos array
