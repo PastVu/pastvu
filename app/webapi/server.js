@@ -44,7 +44,7 @@ export default async function callMethod(methodName, params = {}, isPublic = fal
         logger.warn(`No request context for ${methodName} calling`);
     }
 
-    if (!method) {
+    if (typeof method !== 'function') {
         logger.error(`${this.ridMark} No such method "${methodName}" with params:`, inspect(params));
         throw new APIError(constants.NO_SUCH_METHOD, 'Bad request. No such method', { methodName });
     }
@@ -61,7 +61,7 @@ export default async function callMethod(methodName, params = {}, isPublic = fal
 
     try {
         const call = method.call(this, params);
-        const result = typeof call.then === 'function' ? await call : call;
+        const result = call && typeof call.then === 'function' ? await call : call;
         const elapsed = Date.now() - start;
 
         logger.info(`${this.ridMark} WebApi Method "${methodName}" has executed in ${elapsed}ms`);
