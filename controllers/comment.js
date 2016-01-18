@@ -382,153 +382,115 @@ async function getUsersHashForComments(usersArr) {
     return { usersById, usersByLogin };
 }
 
-export const core = {
-    // Simplified comments distribution for anonymous users
-    async getCommentsObjAnonym(iAm, { cid, type }) {
-        let obj;
-        let commentModel;
+// Simplified comments distribution for anonymous users
+async function getCommentsObjAnonym({ cid, type = 'photo' }) {
+    let commentModel;
+    let obj;
 
-        if (type === 'news') {
-            commentModel = CommentN;
-            obj = await News.findOne({ cid }, { _id: 1 }).exec();
-        } else {
-            commentModel = Comment;
-            obj = await this.call('photo.find', { query: { cid } });
-        }
-
-        if (!obj) {
-            throw { message: msg.noObject };
-        }
-
-        const comments = await commentModel.find(
-            { obj: obj._id, del: null },
-            { _id: 0, obj: 0, hist: 0, del: 0, geo: 0, r0: 0, r1: 0, r2: 0, r3: 0, r4: 0, r5: 0, __v: 0 },
-            { lean: true, sort: { stamp: 1 } }
-        ).exec();
-
-        const usersArr = [];
-
-        if (comments.length) {
-            const usersHash = {};
-
-            for (const comment of comments) {
-                const userId = String(comment.user);
-
-                if (usersHash[userId] === undefined) {
-                    usersHash[userId] = true;
-                    usersArr.push(userId);
-                }
-            }
-        }
-
-        let tree;
-        let usersById;
-        let usersByLogin;
-
-        if (usersArr.length) {
-            ({ usersById, usersByLogin } = await getUsersHashForComments(usersArr));
-            tree = commentsTreeBuildAnonym(comments, usersById);
-        }
-
-        return { comments: tree || [], countTotal: comments.length, users: usersByLogin };
-    },
-    async getCommentsObjAuth(iAm, { cid, type = 'photo' }) {
-        let obj;
-        let commentModel;
-
-        if (type === 'news') {
-            commentModel = CommentN;
-            obj = await News.findOne({ cid }, { _id: 1, nocomments: 1 }).exec();
-        } else {
-            commentModel = Comment;
-            obj = await this.call('photo.find', { query: { cid } });
-        }
-
-        if (!obj) {
-            throw { message: msg.noObject };
-        }
-
-        const [comments, relBeforeUpdate] = await Promise.all([
-            // Take all object comments
-            commentModel.find(
-                { obj: obj._id },
-                { _id: 0, obj: 0, hist: 0, 'del.reason': 0, geo: 0, r0: 0, r1: 0, r2: 0, r3: 0, r4: 0, r5: 0, __v: 0 },
-                { lean: true, sort: { stamp: 1 } }
-            ).exec(),
-            // Get last user's view time of comments and object and replace it with current time
-            // with notification reset if it scheduled
-            userObjectRelController.setCommentView(obj._id, iAm.user._id, type)
-        ]);
-
-        let previousViewStamp;
-
-        if (relBeforeUpdate) {
-            if (relBeforeUpdate.comments) {
-                previousViewStamp = relBeforeUpdate.comments.getTime();
-            }
-            if (relBeforeUpdate.sbscr_noty) {
-                // Если было заготовлено уведомление,
-                // просим менеджер подписок проверить есть ли уведомления по другим объектам
-                subscrController.commentViewed(obj._id, iAm.user);
-            }
-        }
-
-        const canModerate = permissions.canModerate(type, obj, iAm);
-        const canReply = canModerate || permissions.canReply(type, obj, iAm);
-
-        if (!comments.length) {
-            return { comments: [], users: {}, countTotal: 0, countNew: 0, canModerate, canReply };
-        }
-
-        const { tree, users, countTotal, countNew } = await (canModerate ?
-            // Если это модератор данной фотографии или администратор новости
-            commentsTreeBuildCanModerate(String(iAm.user._id), comments, previousViewStamp) :
-            // Если это зарегистрированный пользователь
-            commentsTreeBuildAuth(String(iAm.user._id), comments, previousViewStamp, !obj.nocomments)
-        );
-
-        return ({ comments: tree, users, countTotal, countNew, canModerate, canReply });
-    },
-    async giveDelTree(iAm, data) {
-        const commentModel = data.type === 'news' ? CommentN : Comment;
-
-        const { obj: objId, ...comment } = await commentModel.findOne(
-            { cid: data.cid, del: { $exists: true } },
-            { _id: 0, hist: 0, 'del.reason': 0, geo: 0, r0: 0, r1: 0, r2: 0, r3: 0, r4: 0, r5: 0, __v: 0 },
-            { lean: true }
-        ).exec() || {};
-
-        if (!objId) {
-            throw { message: msg.noCommentExists };
-        }
-
-        const [obj, childs] = await Promise.all([
-            // Find the object that owns a comment
-            data.type === 'news' ? News.findOne({ _id: objId }, { _id: 1, nocomments: 1 }).exec() :
-                this.call('photo.find', { query: { _id: objId } }),
-            // Take all removed comments, created after requested and below it
-            commentModel.find(
-                {
-                    obj: objId, del: { $exists: true },
-                    stamp: { $gte: comment.stamp }, level: { $gt: comment.level || 0 }
-                },
-                { _id: 0, obj: 0, hist: 0, 'del.reason': 0, geo: 0, r0: 0, r1: 0, r2: 0, r3: 0, r4: 0, r5: 0, __v: 0 },
-                { lean: true, sort: { stamp: 1 } }
-            ).exec()
-        ]);
-
-        if (!obj) {
-            throw { message: msg.noObject };
-        }
-
-        const canModerate = permissions.canModerate(data.type, obj, iAm);
-        const commentsTree = await commentsTreeBuildDel(
-            comment, childs, canModerate ? undefined : String(iAm.user._id)
-        );
-
-        return { comments: commentsTree.tree, users: commentsTree.users };
+    if (type === 'news') {
+        commentModel = CommentN;
+        obj = await News.findOne({ cid }, { _id: 1 }).exec();
+    } else {
+        commentModel = Comment;
+        obj = await this.call('photo.find', { query: { cid } });
     }
-};
+
+    if (!obj) {
+        throw { message: msg.noObject };
+    }
+
+    const comments = await commentModel.find(
+        { obj: obj._id, del: null },
+        { _id: 0, obj: 0, hist: 0, del: 0, geo: 0, r0: 0, r1: 0, r2: 0, r3: 0, r4: 0, r5: 0, __v: 0 },
+        { lean: true, sort: { stamp: 1 } }
+    ).exec();
+
+    const usersArr = [];
+
+    if (comments.length) {
+        const usersHash = {};
+
+        for (const comment of comments) {
+            const userId = String(comment.user);
+
+            if (usersHash[userId] === undefined) {
+                usersHash[userId] = true;
+                usersArr.push(userId);
+            }
+        }
+    }
+
+    let tree;
+    let usersById;
+    let usersByLogin;
+
+    if (usersArr.length) {
+        ({ usersById, usersByLogin } = await getUsersHashForComments(usersArr));
+        tree = commentsTreeBuildAnonym(comments, usersById);
+    }
+
+    return { comments: tree || [], countTotal: comments.length, users: usersByLogin };
+}
+
+async function getCommentsObjAuth({ cid, type = 'photo' }) {
+    const { handshake: { usObj: iAm } } = this;
+
+    let obj;
+    let commentModel;
+
+    if (type === 'news') {
+        commentModel = CommentN;
+        obj = await News.findOne({ cid }, { _id: 1, nocomments: 1 }).exec();
+    } else {
+        commentModel = Comment;
+        obj = await this.call('photo.find', { query: { cid } });
+    }
+
+    if (!obj) {
+        throw { message: msg.noObject };
+    }
+
+    const [comments, relBeforeUpdate] = await Promise.all([
+        // Take all object comments
+        commentModel.find(
+            { obj: obj._id },
+            { _id: 0, obj: 0, hist: 0, 'del.reason': 0, geo: 0, r0: 0, r1: 0, r2: 0, r3: 0, r4: 0, r5: 0, __v: 0 },
+            { lean: true, sort: { stamp: 1 } }
+        ).exec(),
+        // Get last user's view time of comments and object and replace it with current time
+        // with notification reset if it scheduled
+        userObjectRelController.setCommentView(obj._id, iAm.user._id, type)
+    ]);
+
+    let previousViewStamp;
+
+    if (relBeforeUpdate) {
+        if (relBeforeUpdate.comments) {
+            previousViewStamp = relBeforeUpdate.comments.getTime();
+        }
+        if (relBeforeUpdate.sbscr_noty) {
+            // Если было заготовлено уведомление,
+            // просим менеджер подписок проверить есть ли уведомления по другим объектам
+            subscrController.commentViewed(obj._id, iAm.user);
+        }
+    }
+
+    const canModerate = permissions.canModerate(type, obj, iAm);
+    const canReply = canModerate || permissions.canReply(type, obj, iAm);
+
+    if (!comments.length) {
+        return { comments: [], users: {}, countTotal: 0, countNew: 0, canModerate, canReply };
+    }
+
+    const { tree, users, countTotal, countNew } = await (canModerate ?
+        // Если это модератор данной фотографии или администратор новости
+        commentsTreeBuildCanModerate(String(iAm.user._id), comments, previousViewStamp) :
+        // Если это зарегистрированный пользователь
+        commentsTreeBuildAuth(String(iAm.user._id), comments, previousViewStamp, !obj.nocomments)
+    );
+
+    return ({ comments: tree, users, countTotal, countNew, canModerate, canReply });
+}
 
 // Select comments for object
 async function giveForObj(data) {
@@ -540,7 +502,7 @@ async function giveForObj(data) {
         throw { message: msg.badParams };
     }
 
-    const result = await (iAm.registered ? core.getCommentsObjAuth(iAm, data) : core.getCommentsObjAnonym(iAm, data));
+    const result = await (iAm.registered ? getCommentsObjAuth.call(this, data) : getCommentsObjAnonym.call(this, data));
 
     result.cid = data.cid;
 
@@ -548,19 +510,49 @@ async function giveForObj(data) {
 };
 
 // Select branch of removed comments starting from requested
-async function giveDelTree(data) {
+async function giveDelTree({ cid, type = 'photo' }) {
     const { handshake: { usObj: iAm } } = this;
 
-    data.cid = Number(data.cid);
+    cid = Number(cid);
 
-    if (!data.cid) {
+    if (!cid || cid < 1) {
         throw { message: msg.badParams };
     }
 
-    const result = await core.giveDelTree(iAm, data);
-    result.cid = data.cid;
+    const commentModel = type === 'news' ? CommentN : Comment;
 
-    return result;
+    const { obj: objId, ...comment } = await commentModel.findOne(
+        { cid, del: { $exists: true } },
+        { _id: 0, hist: 0, 'del.reason': 0, geo: 0, r0: 0, r1: 0, r2: 0, r3: 0, r4: 0, r5: 0, __v: 0 },
+        { lean: true }
+    ).exec() || {};
+
+    if (!objId) {
+        throw { message: msg.noCommentExists };
+    }
+
+    const [obj, childs] = await Promise.all([
+        // Find the object that owns a comment
+        type === 'news' ? News.findOne({ _id: objId }, { _id: 1, nocomments: 1 }).exec() :
+            this.call('photo.find', { query: { _id: objId } }),
+        // Take all removed comments, created after requested and below it
+        commentModel.find(
+            { obj: objId, del: { $exists: true }, stamp: { $gte: comment.stamp }, level: { $gt: comment.level || 0 } },
+            { _id: 0, obj: 0, hist: 0, 'del.reason': 0, geo: 0, r0: 0, r1: 0, r2: 0, r3: 0, r4: 0, r5: 0, __v: 0 },
+            { lean: true, sort: { stamp: 1 } }
+        ).exec()
+    ]);
+
+    if (!obj) {
+        throw { message: msg.noObject };
+    }
+
+    const canModerate = permissions.canModerate(type, obj, iAm);
+    const commentsTree = await commentsTreeBuildDel(
+        comment, childs, canModerate ? undefined : String(iAm.user._id)
+    );
+
+    return { comments: commentsTree.tree, users: commentsTree.users, cid };
 };
 
 // Select comment of user

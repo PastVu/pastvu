@@ -498,7 +498,7 @@ async function giveUserRules({ login }) {
 
     const { user } = await getUserByLogin(login);
 
-    return { rules: user.rules || {}, info: { canPhotoNew: photoController.core.getNewPhotosLimit(user) } };
+    return { rules: user.rules || {}, info: { canPhotoNew: photoController.getNewPhotosLimit(user) } };
 }
 
 async function saveUserRules({ login, rules }) {
@@ -521,7 +521,7 @@ async function saveUserRules({ login, rules }) {
     if (rules.photoNewLimit !== undefined) {
         if (_.isNumber(rules.photoNewLimit)) {
             user.rules.photoNewLimit = Math.min(
-                Math.max(0, rules.photoNewLimit), photoController.core.maxNewPhotosLimit
+                Math.max(0, rules.photoNewLimit), photoController.maxNewPhotosLimit
             );
         } else {
             delete user.rules.photoNewLimit;
@@ -544,7 +544,7 @@ async function saveUserRules({ login, rules }) {
     return {
         saved: true,
         rules: user.rules,
-        info: { canPhotoNew: photoController.core.getNewPhotosLimit(user) }
+        info: { canPhotoNew: photoController.getNewPhotosLimit(user) }
     };
 }
 

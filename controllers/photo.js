@@ -22,7 +22,6 @@ import { Download } from '../models/Download';
 import { Photo, PhotoMap, PhotoHistory } from '../models/Photo';
 
 const shift10y = ms('10y');
-const maxNewPhotosLimit = 1e4;
 const logger = log4js.getLogger('photo.js');
 const incomeDir = path.join(config.storePath, 'incoming');
 const privateDir = path.join(config.storePath, 'private/photos');
@@ -39,6 +38,8 @@ const msg = {
     anotherStatus: 'Фотография уже в другом статусе, обновите страницу',
     mustCoord: 'Фотография должна иметь координату или быть привязана к региону вручную'
 };
+
+export const maxNewPhotosLimit = 1e4;
 
 const {
     photo: {
@@ -266,7 +267,7 @@ export async function find({ query, fieldSelect, options, populateUser }) {
     return photo;
 }
 
-function getNewPhotosLimit(user) {
+export function getNewPhotosLimit(user) {
     let canCreate = 0;
     const pfcount = user.pfcount;
 
@@ -2583,7 +2584,7 @@ export default {
     photoFromMap,
     prefetchForEdit,
     givePrevNextCids,
-    changePublicExternality
+    changePublicExternality,
 };
 
 waitDb.then(planResetDisplayStat); // Plan statistic clean up
