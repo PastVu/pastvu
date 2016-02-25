@@ -1298,7 +1298,7 @@ export function parseFilter(filterString) {
                 filterVal = filterVal.split(delimeterVal).map(Number);
                 if (Array.isArray(filterVal) && filterVal.length) {
                     result.rp = [];
-                    for (filterValItem of filterVal.length) {
+                    for (filterValItem of filterVal) {
                         if (filterValItem) {
                             result.rp.unshift(filterValItem);
                         }
@@ -1407,7 +1407,7 @@ async function giveUserPhotosAround({ cid, limitL, limitR }) {
         throw { message: msg.badParams };
     }
 
-    const photo = await this.call('photo.find', { query: cid });
+    const photo = await this.call('photo.find', { query: { cid } });
 
     const filter = iAm.registered && iAm.user.settings && !iAm.user.settings.r_f_photo_user_gal ? { r: 0 } : {};
     const query = buildPhotosQuery(filter, photo.user, iAm).query;
