@@ -353,7 +353,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                 this.filterChangeHandle();
             }
         },
-        //Активирует/деактивирует в фильтре переданный регион
+        // Активирует/деактивирует в фильтре переданный регион
         frdis: function (cid) {
             if (this.loading()) {
                 return false;
@@ -363,7 +363,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                     return item.cid === cid;
                 }, this);
                 if (region) {
-                    if (_.contains(this.filter.disp.rdis(), cid)) {
+                    if (_.includes(this.filter.disp.rdis(), cid)) {
                         this.filter.disp.rdis.remove(cid);
                     } else {
                         this.filter.disp.rdis.push(cid);
