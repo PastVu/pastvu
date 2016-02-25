@@ -1,9 +1,25 @@
+import errorMsgs from './intl';
+
 const CAPTURE_STACK_TRACE_SUPPORT = Boolean(Error.captureStackTrace);
 const FIREFOX_ERROR_INFO = /@(.+?):(\d+):(\d+)$/;
 
+/**
+ * PastVu main error type
+ */
 export default class ApplicationError extends Error {
-    constructor(message) {
-        super(message); // TODO: Make ...arguments in Node 5
+
+    constructor(data = {}) {
+        if (typeof data === 'string') {
+            data = { code: data };
+        }
+
+        const { code, message, logged, ...details } = data;
+
+        super(message || errorMsgs[code] || code); // Native Error contructor accepts message
+
+        this.code = code;
+        this.logged = logged;
+        this.details = details;
 
         // Ensure we get a proper stack trace in most Javascript environments
         if (CAPTURE_STACK_TRACE_SUPPORT) {
@@ -26,6 +42,22 @@ export default class ApplicationError extends Error {
             }
         }
     }
+
+    toJSON() {
+        return {
+            code: this.code,
+            message: this.message,
+            details: this.details
+        };
+    }
+
+    // Set flag, that error was logged. For example, if we logged it in webapi call and throw further in express routes
+    setLogged() {
+        this.logged = true;
+    }
+
 }
 
+// Needed if we want to take name from error instance.
+// For example as this.name, when we override toString method
 ApplicationError.prototype.name = 'ApplicationError';

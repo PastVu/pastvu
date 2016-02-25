@@ -1,11 +1,16 @@
+import constants from './constants';
 import ApplicationError from './Application';
 
-export default class NotFound extends ApplicationError {
+export default class NotFoundError extends ApplicationError {
 
-    constructor() {
-        super();
+    constructor(data = {}) {
+        if (!data.code) {
+            data.code = constants.NO_SUCH_RESOURCE;
+        }
+
+        super(data);
     }
 
 }
 
-NotFound.prototype.name = 'NotFound';
+NotFoundError.prototype.name = 'NotFoundError';

@@ -4,14 +4,11 @@ import log4js from 'log4js';
 import methods from './methods';
 import config from '../../config';
 import Utils from '../../commons/Utils';
-import APIError from '../errors/APIError';
+import NotFound from '../errors/NotFound';
+import ApplicationError from '../errors/Application';
 import constants from '../../controllers/constants';
 
 const methodsHash = Utils.flattenObject(methods);
-
-function unhandledErrorFilter(error) {
-    return !(error instanceof APIError);
-}
 
 /**
  * Return logger for methods group (photo, comments, region, etc.)
@@ -37,6 +34,7 @@ const inspect = (function () {
 
 export default async function callMethod(methodName, params = {}, isPublic = false) {
     const start = Date.now();
+    const { ridMark } = this;
     const method = methodsHash[methodName];
     const logger = getMethodLogger(methodName);
 
@@ -45,39 +43,54 @@ export default async function callMethod(methodName, params = {}, isPublic = fal
     }
 
     if (typeof method !== 'function') {
-        logger.error(`${this.ridMark} No such method "${methodName}" with params:`, inspect(params));
-        throw new APIError(constants.NO_SUCH_METHOD, 'Bad request. No such method', { methodName });
+        logger.error(`${ridMark} No such method "${methodName}" with params:`, inspect(params));
+        throw new NotFound({ code: constants.NO_SUCH_METHOD, methodName, logged: true });
     }
 
     if (isPublic && !method.isPublic) {
         logger.error(
-            `${this.ridMark} Somebody from the outside trying to call private method "${methodName}" with params:`, inspect(params)
+            `${ridMark} Somebody from the outside trying to call private method "${methodName}" with params:`,
+            inspect(params)
         );
-        throw new APIError(constants.NO_SUCH_METHOD, 'Bad request. No such method', { methodName });
+        throw new NotFound({ code: constants.NO_SUCH_METHOD, methodName, logged: true });
     }
 
-    logger.info(`${this.ridMark} Calling method "${methodName}"`);
-    // logger.debug(`${this.ridMark} Params:`, inspect(params));
+    logger.info(`${ridMark} Calling webapi method "${methodName}"`);
+    // logger.debug(`${ridMark} Params:`, inspect(params));
 
     try {
         const call = method.call(this, params);
         const result = call && typeof call.then === 'function' ? await call : call;
         const elapsed = Date.now() - start;
 
-        logger.info(`${this.ridMark} WebApi Method "${methodName}" has executed in ${elapsed}ms`);
-        // logger.debug(`${this.ridMark} Response:`, inspect(result));
+        logger.info(`${ridMark} webapi method "${methodName}" has executed in ${elapsed}ms`);
+        // logger.debug(`${ridMark} Response:`, inspect(result));
         this.trace.push({ type: 'webapi', method: methodName, ms: elapsed });
 
         return result;
     } catch (err) {
         let error = err;
 
-        logger.error(`${this.ridMark} Error calling method "${methodName}" with params:`, inspect(params));
-        logger.error(`${this.ridMark}`, error);
-
-        if (unhandledErrorFilter(error)) {
-            error = new APIError(constants.UNHANDLED_ERROR);
+        if (error instanceof ApplicationError) {
+            if (!error.logged) {
+                // If it handled error (with our type), inspect it through our toJSON method
+                logger.error(
+                    `${ridMark} Error calling method "${methodName}" with params: ${inspect(params)}\n`,
+                    `${inspect(error.toJSON())}\n`,
+                    error.stack
+                );
+            }
+            throw error;
         }
+
+        // If it unhandled error (some unpredictable runtime), log it and throw our UNHANDLED_ERROR further
+        logger.error(
+            `${ridMark} Error calling method "${methodName}" with params: ${inspect(params)}\n`,
+            error.stack
+        );
+        error = new ApplicationError(constants.UNHANDLED_ERROR);
+
+        error.setLogged(); // Do not log this error anymore, because it was logged here
 
         throw error;
     }

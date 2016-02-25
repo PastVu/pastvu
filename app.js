@@ -16,7 +16,6 @@ import { ready as authReady } from './controllers/auth';
 import { ready as regionReady } from './controllers/region';
 import { ready as subscrReady } from './controllers/subscr';
 import { ready as settingsReady } from './controllers/settings';
-import * as errors from './controllers/errors';
 import * as routes from './controllers/routes';
 import * as ourMiddlewares from './controllers/middleware';
 
@@ -173,7 +172,8 @@ export async function configure(startStamp) {
         require('./controllers/tpl').loadController(app);
     }
 
-    routes.loadController(app);
+    // Handle appliaction routes
+    routes.bindRoutes(app);
 
     if (config.serveLog) {
         app.use(
@@ -184,7 +184,8 @@ export async function configure(startStamp) {
         );
     }
 
-    errors.registerErrorHandling(app);
+    // Handle route (express) errors
+    routes.bindErrorHandler(app);
 
     const CoreServer = require('./controllers/coreadapter').Server;
 

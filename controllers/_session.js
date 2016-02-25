@@ -4,7 +4,7 @@ import log4js from 'log4js';
 import locale from 'locale';
 import config from '../config';
 import Utils from '../commons/Utils';
-import TimeoutError from '../app/errors/TimeoutError';
+import TimeoutError from '../app/errors/Timeout';
 import { waitDb, dbEval } from './connection';
 import * as regionController from './region';
 import {parse as parseCookie} from 'cookie';
@@ -147,17 +147,17 @@ function emitSocket({ socket, data, waitResponse = false, timeout = 1000 }) {
 
     if (waitResponse) {
         return new Promise((resolve, reject) => {
-            let alreadyDone = false;
+            let overdue = false;
 
             if (timeout) {
-                setTimeout(function () {
-                    alreadyDone = true;
-                    reject(new TimeoutError(data, timeout));
+                setTimeout(() => {
+                    overdue = true;
+                    reject(new TimeoutError({ timeout, data }));
                 }, timeout);
             }
 
-            socket.emit(...data, function (result) {
-                if (alreadyDone) {
+            socket.emit(...data, result => {
+                if (overdue) {
                     return;
                 }
 

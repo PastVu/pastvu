@@ -162,7 +162,7 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
                 message = _.get(error, 'message') || message;
 
                 if (error.rid) {
-                    message += '<br>Error id: ' + error.rid;
+                    message += '<br>Номер ошибки: ' + error.rid;
                 }
             }
         }

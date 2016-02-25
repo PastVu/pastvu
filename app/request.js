@@ -1,10 +1,11 @@
 import _ from 'lodash';
+import http from 'http';
 import util from 'util';
 import log4js from 'log4js';
 import config from '../config';
 import Utils from '../commons/Utils';
 import sioRouter from 'socket.io-events';
-import webApi from './webapi';
+import webApiCall from './webapi';
 import constants from '../controllers/constants';
 import * as sessionController from '../controllers/_session';
 
@@ -31,7 +32,7 @@ const genRequestContext = function () {
     const ridMark = `[RID-${rid}]`;
     const requestTrace = [];
 
-    return { rid, ridMark, call: webApi, trace: requestTrace };
+    return { rid, ridMark, call: webApiCall, trace: requestTrace };
 };
 
 const logTrace = function (context, elapsedTotal, methodName) {
@@ -101,7 +102,7 @@ export const handleHTTPRequest = async function (req, res, next) {
     res.writeHead = function () {
         const elapsed = Date.now() - start;
 
-        logger.info(`${context.ridMark} <- HTTP request finished in ${elapsed}ms`);
+        logger.info(`${context.ridMark} <- HTTP request finished with status ${res.statusCode} in ${elapsed}ms`);
         logTrace(context, elapsed);
 
         res.setHeader('X-Response-Time', elapsed + 'ms');
@@ -157,8 +158,6 @@ export const handleHTTPRequest = async function (req, res, next) {
  * Handler of API requests through http (for mobile applications)
  */
 export const registerHTTPAPIHandler = (function () {
-    const http = require('http');
-
     function finishRequest(status, req, res, start, result) {
         const query = req.query;
         const now = Date.now();

@@ -39,8 +39,8 @@ module.exports = {
         // 'es6.properties.shorthand',
         // 'es6.regex.sticky', // Proposed
         // 'es6.regex.unicode', // Proposed
-        'es6.spec.templateLiterals' // Enabled in V8 4.1 (Node 4)
-        // 'es6.spread', // Will be enabled in V8 4.6 (Node 5)
+        'es6.spec.templateLiterals', // Enabled in V8 4.1 (Node 4)
+        'es6.spread' // Enabled in V8 4.6 (Node 5)
         // 'es6.tailCall', // In development
 
         // 'flow',
