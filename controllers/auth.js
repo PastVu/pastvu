@@ -12,7 +12,7 @@ import { send as sendMail } from './mail';
 import { userSettingsDef } from './settings';
 import { getRegionsArrFromCache } from './region';
 import constants from '../app/errors/constants';
-import {AuthenticationError, AuthorizationError, BadParamsError, InputError} from '../app/errors';
+import { AuthenticationError, AuthorizationError, BadParamsError, InputError } from '../app/errors';
 
 import { User, UserConfirm } from '../models/User';
 import { Counter } from '../models/Counter';
@@ -26,7 +26,7 @@ const logger = log4js.getLogger('auth.js');
 let recallTpl;
 let regTpl;
 
-export const ready = new Promise(async function(resolve, reject) {
+export const ready = new Promise(async function (resolve, reject) {
     try {
         const [regData, recallData] = await Promise.all([
             fs.readFileAsync(path.normalize('./views/mail/registration.jade'), 'utf-8'),
@@ -66,12 +66,11 @@ async function login({ login, pass }) {
             case constants.AUTHENTICATION_PASS_WRONG:
                 // These cases are usually treated the same, don't tell the user why the login failed, only that it did
                 throw new AuthenticationError(constants.AUTHENTICATION_DOESNT_MATCH);
-            case User.failedLogin.MAX_ATTEMPTS:
+            case constants.AUTHENTICATION_MAX_ATTEMPTS:
                 // send email or otherwise notify user that account is temporarily locked
                 throw error;
             default:
-                logger.error('Auth login session.loginUser: ', error);
-                throw new AuthenticationError();
+                throw error;
         }
     }
 }

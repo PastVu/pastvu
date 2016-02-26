@@ -74,11 +74,11 @@ export default async function callMethod(methodName, params = {}, isPublic = fal
         if (error instanceof ApplicationError) {
             if (!error.logged) {
                 // If it handled error (with our type), inspect it through our toJSON method
-                logger.error(
-                    `${ridMark} Error calling method "${methodName}" with params: ${inspect(params)}\n`,
-                    `${inspect(error.toJSON())}\n`,
-                    error.stack
-                );
+                logger.error(_.compact([
+                    `${ridMark} Error calling method "${methodName}" with params: ${inspect(params)}`,
+                    `${inspect(error.toJSON())}`,
+                    error.trace ? error.stack : undefined
+                ]).join('\n'));
             }
             throw error;
         }

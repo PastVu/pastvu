@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import errorMsgs from './intl';
 
 const CAPTURE_STACK_TRACE_SUPPORT = Boolean(Error.captureStackTrace);
@@ -13,11 +14,12 @@ export default class ApplicationError extends Error {
             data = { code: data };
         }
 
-        const { code, message, logged, ...details } = data;
+        const { code, message, logged, trace, ...details } = data;
 
         super(message || errorMsgs[code] || code); // Native Error contructor accepts message
 
         this.code = code;
+        this.trace = trace;
         this.logged = logged;
         this.details = details;
 
@@ -44,12 +46,17 @@ export default class ApplicationError extends Error {
     }
 
     toJSON() {
-        return {
+        const result = {
             type: this.name,
             code: this.code,
-            message: this.message,
-            details: this.details
+            message: this.message
         };
+
+        if (!_.isEmpty(this.details)) {
+            result.details = this.details;
+        }
+
+        return result;
     }
 
     // Set flag, that error was logged. For example, if we logged it in webapi call and throw further in express routes

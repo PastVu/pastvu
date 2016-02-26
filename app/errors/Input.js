@@ -5,6 +5,7 @@ import ApplicationError from './Application';
 /**
  * Input error
  * Raised on user inputs, for example, required fields
+ * By default stack will not be printed (trace: false)
  */
 export default class InputError extends ApplicationError {
 
@@ -14,7 +15,8 @@ export default class InputError extends ApplicationError {
         }
 
         _.defaults(data, {
-            code: constants.INPUT
+            code: constants.INPUT,
+            trace: false
         });
 
         super(data);

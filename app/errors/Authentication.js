@@ -5,6 +5,7 @@ import ApplicationError from './Application';
 /**
  * Authentication error
  * Responsible for login, registration, password forms
+ * By default stack will not be printed (trace: false)
  */
 export default class AuthenticationError extends ApplicationError {
 
@@ -14,7 +15,8 @@ export default class AuthenticationError extends ApplicationError {
         }
 
         _.defaults(data, {
-            code: constants.AUTHENTICATION
+            code: constants.AUTHENTICATION,
+            trace: false
         });
 
         super(data);
