@@ -45,6 +45,7 @@ export default class ApplicationError extends Error {
 
     toJSON() {
         return {
+            type: this.name,
             code: this.code,
             message: this.message,
             details: this.details

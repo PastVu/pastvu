@@ -4,7 +4,7 @@ import log4js from 'log4js';
 import methods from './methods';
 import config from '../../config';
 import Utils from '../../commons/Utils';
-import NotFound from '../errors/NotFound';
+import NotFoundError from '../errors/NotFound';
 import ApplicationError from '../errors/Application';
 import constants from '../../controllers/constants';
 
@@ -44,7 +44,7 @@ export default async function callMethod(methodName, params = {}, isPublic = fal
 
     if (typeof method !== 'function') {
         logger.error(`${ridMark} No such method "${methodName}" with params:`, inspect(params));
-        throw new NotFound({ code: constants.NO_SUCH_METHOD, methodName, logged: true });
+        throw new NotFoundError({ code: constants.NO_SUCH_METHOD, methodName, logged: true });
     }
 
     if (isPublic && !method.isPublic) {
@@ -52,7 +52,7 @@ export default async function callMethod(methodName, params = {}, isPublic = fal
             `${ridMark} Somebody from the outside trying to call private method "${methodName}" with params:`,
             inspect(params)
         );
-        throw new NotFound({ code: constants.NO_SUCH_METHOD, methodName, logged: true });
+        throw new NotFoundError({ code: constants.NO_SUCH_METHOD, methodName, logged: true });
     }
 
     logger.info(`${ridMark} Calling webapi method "${methodName}"`);
