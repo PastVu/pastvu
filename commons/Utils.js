@@ -283,6 +283,12 @@ Utils.flattenObject = (obj, opts, prefix, resultObj) => {
     return resultObj;
 };
 
+Utils.reflectKeys = function (obj) {
+    return _.forOwn(obj, (value, key, object) => {
+        object[key] = key;
+    });
+};
+
 Utils.linkifyMailString = function (inputText, className) {
     var replacedText, replacePattern;
     className = className ? ' class="' + className + '"' : '';
