@@ -7,11 +7,17 @@ export default Utils.reflectKeys({
 
     TIMEOUT: null,
     UNHANDLED_ERROR: null,
+    COUNTER_ERROR: null,
+
+    NOTICE: null,
 
     NOT_FOUND: null,
     NOT_FOUND_USER: null,
     NO_SUCH_METHOD: null,
     NO_SUCH_RESOURCE: null,
+    NO_SUCH_PHOTO: null,
+    NO_SUCH_USER: null,
+    NO_SUCH_REGION: null,
 
     INPUT: null,
     INPUT_FIELD_REQUIRED: null,
@@ -31,5 +37,15 @@ export default Utils.reflectKeys({
     AUTHENTICATION_USER_EXISTS: null,
     AUTHENTICATION_USER_DOESNT_EXISTS: null,
     AUTHENTICATION_EMAIL_EXISTS: null,
-    AUTHENTICATION_KEY_DOESNT_EXISTS: null
+    AUTHENTICATION_KEY_DOESNT_EXISTS: null,
+
+    PHOTO_CHANGED: null,
+    PHOTO_NEED_REASON: null,
+    PHOTO_NEED_COORD: null,
+    PHOTO_NEED_TITLE: null,
+    PHOTO_ANOTHER_STATUS: null,
+    PHOTO_YEARS_CONSTRAINT: null,
+    PHOTO_CONVERT_PROCEEDING: null,
+
+    HISTORY_DOESNT_EXISTS: null,
 });

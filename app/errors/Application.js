@@ -14,7 +14,7 @@ export default class ApplicationError extends Error {
             data = { code: data };
         }
 
-        const { code, message, logged, trace, ...details } = data;
+        const { code, message, logged = false, trace = true, ...details } = data;
 
         super(message || errorMsgs[code] || code); // Native Error contructor accepts message
 

@@ -6,7 +6,7 @@ import config from '../config';
 import Utils from '../commons/Utils';
 import sioRouter from 'socket.io-events';
 import webApiCall from './webapi';
-import constants from '../controllers/constants';
+import constants from './errors/constants';
 import * as sessionController from '../controllers/_session';
 
 const logger = log4js.getLogger('request');

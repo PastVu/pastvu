@@ -7,13 +7,15 @@ import moment from 'moment';
 import config from '../config';
 import Utils from '../commons/Utils';
 import { waitDb } from './connection';
-import constants from './constants.js';
+import constants from './constants';
+import constantsError from '../app/errors/constants';
 import * as session from './_session';
 import * as regionController from './region';
 import * as converter from './converter';
 import * as userObjectRelController from './userobjectrel';
 import { getReasonHashFromCache } from './reason';
 import { userSettingsDef, userSettingsVars } from './settings';
+import { ApplicationError, AuthorizationError, BadParamsError, InputError, NotFoundError, NoticeError } from '../app/errors';
 
 import { User } from '../models/User';
 import { Counter } from '../models/Counter';
@@ -25,19 +27,6 @@ const shift10y = ms('10y');
 const logger = log4js.getLogger('photo.js');
 const incomeDir = path.join(config.storePath, 'incoming');
 const privateDir = path.join(config.storePath, 'private/photos');
-
-const msg = {
-    deny: 'У вас нет прав на это действие',
-    noUser: 'Запрашиваемый пользователь не существует',
-    noPhoto: 'Запрашиваемой фотографии не существует или не доступна',
-    noRegion: 'Такого региона не существует',
-    badParams: 'Неверные параметры запроса',
-    needReason: 'Необходимо указать причину операции',
-    // Две кнопки: "Посмотреть", "Продолжить <сохранение|изменение статуса>"
-    changed: 'С момента обновления вами страницы, информация на ней была кем-то изменена',
-    anotherStatus: 'Фотография уже в другом статусе, обновите страницу',
-    mustCoord: 'Фотография должна иметь координату или быть привязана к региону вручную'
-};
 
 export const maxNewPhotosLimit = 1e4;
 
@@ -257,7 +246,7 @@ export async function find({ query, fieldSelect, options, populateUser }) {
     photo = await photo.exec();
 
     if (!photo || !photo.user || !permissions.canSee(photo, iAm)) {
-        throw { message: msg.noPhoto };
+        throw new NotFoundError(constantsError.NO_SUCH_PHOTO);
     }
 
     if (populateUser) {
@@ -342,7 +331,7 @@ async function give(params) {
     let photo = await Photo.findOne({ cid }, fieldNoSelect).exec();
 
     if (!photo || !permissions.canSee(photo, iAm)) {
-        throw { message: msg.noPhoto, noPhoto: true };
+        throw new NotFoundError(constantsError.NO_SUCH_PHOTO);
     }
 
     let owner;
@@ -357,7 +346,7 @@ async function give(params) {
         owner = await User.findOne({ _id: photo.user }).exec();
 
         if (!owner) {
-            throw { message: msg.noUser, noPhoto: true };
+            throw new NotFoundError(constantsError.NO_SUCH_PHOTO);
         }
     }
 
@@ -453,14 +442,14 @@ async function giveNewLimit({ login }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered || iAm.user.login !== login && !iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     const userObj = session.getOnline({ login });
     const user = userObj ? userObj.user : await User.findOne({ login }).exec();
 
     if (!user) {
-        throw { message: msg.noUser };
+        throw new NotFoundError(constantsError.NO_SUCH_USER);
     }
 
     return { limit: getNewPhotosLimit(user) };
@@ -505,10 +494,10 @@ async function create({ files }) {
     const { socket, handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
     if (!Array.isArray(files) && !_.isObject(files)) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     if (!Array.isArray(files)) {
@@ -534,7 +523,7 @@ async function create({ files }) {
     const count = await Counter.incrementBy('photo', files.length);
 
     if (!count) {
-        throw { message: 'Increment photo counter error' };
+        throw new ApplicationError(constantsError.COUNTER_ERROR);
     }
 
     const now = Date.now();
@@ -800,39 +789,40 @@ async function saveHistory({ oldPhotoObj, photo, canModerate, reason, parsedFile
 }
 
 /**
- * Выборка объекта фотографии для редактирования с проверкой прав на указанный can
- * Проверяет не редактировался ли объект после указанного времени cdate. Если да - бросит { changed: true }
- * Возвращает объект и свойство canModerate
+ * Fetching photo object for editing with access rights validation
+ * Check if object was edited after specified time in 'cdate'. If yes - throws 'PHOTO_CHANGED'
+ * Returns photo object and 'canModerate' flag
  */
 async function prefetchForEdit({ data: { cid, s, cdate, ignoreChange }, can }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     cid = Number(cid);
 
     if (isNaN(cid) || cid < 1) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const photo = await this.call('photo.find', { query: { cid }, populateUser: true });
 
     if (_.isNumber(s) && s !== photo.s) {
-        throw { message: msg.anotherStatus };
+        // Две кнопки: "Посмотреть", "Продолжить <сохранение|изменение статуса>"
+        throw new ApplicationError(constantsError.PHOTO_ANOTHER_STATUS);
     }
 
     const canModerate = permissions.canModerate(photo, iAm);
 
     if (can && permissions.getCan(photo, iAm, null, canModerate)[can] !== true) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
-    // Если фотография изменилась после отображения и не стоит флаг игнорирования изменения,
-    // то возвращаем статус, что изменено
+    // If photo has changed after last fetching and flag to ignore changes is not specified,
+    // then throw changed error
     if (ignoreChange !== true && _.isDate(photo.cdate) && (!cdate || !_.isEqual(new Date(cdate), photo.cdate))) {
-        throw { message: msg.changed, changed: true };
+        throw new NoticeError(constantsError.PHOTO_CHANGED);
     }
 
     return { photo, canModerate };
@@ -932,7 +922,7 @@ async function toRevision(data) {
     const { reason } = data;
 
     if (_.isEmpty(reason)) {
-        throw { message: msg.needReason };
+        throw new BadParamsError(constantsError.PHOTO_NEED_REASON);
     }
 
     const { photo, canModerate } = await this.call('photo.prefetchForEdit', { data, can: 'revision' });
@@ -955,7 +945,7 @@ async function reject(data) {
     const { reason } = data;
 
     if (_.isEmpty(reason)) {
-        throw { message: msg.needReason };
+        throw new BadParamsError(constantsError.PHOTO_NEED_REASON);
     }
 
     const { photo, canModerate } = await this.call('photo.prefetchForEdit', { data, can: 'reject' });
@@ -981,7 +971,7 @@ async function rereject(data) {
     const { reason } = data;
 
     if (_.isEmpty(reason)) {
-        throw { message: msg.needReason };
+        throw new BadParamsError(constantsError.PHOTO_NEED_REASON);
     }
 
     const { photo, canModerate } = await this.call('photo.prefetchForEdit', { data, can: 'rereject' });
@@ -1044,7 +1034,7 @@ async function activateDeactivate(data) {
     const { reason, disable } = data;
 
     if (disable && _.isEmpty(reason)) {
-        throw { message: msg.needReason };
+        throw new BadParamsError(constantsError.PHOTO_NEED_REASON);
     }
 
     const { photo, canModerate } = await this.call(
@@ -1076,10 +1066,10 @@ function removeIncoming({ file }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!file) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
     if (!iAm.registered) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     return fs.unlinkAsync(path.join(incomeDir, file));
@@ -1090,7 +1080,7 @@ async function remove(data) {
     const { reason } = data;
 
     if (_.isEmpty(reason)) {
-        throw { message: msg.needReason };
+        throw new BadParamsError(constantsError.PHOTO_NEED_REASON);
     }
 
     const { photo, canModerate } = await this.call('photo.prefetchForEdit', { data, can: 'remove' });
@@ -1120,7 +1110,7 @@ async function restore(data) {
     const { reason } = data;
 
     if (_.isEmpty(reason)) {
-        throw { message: msg.needReason };
+        throw new BadParamsError(constantsError.PHOTO_NEED_REASON);
     }
 
     const { photo, canModerate } = await this.call('photo.prefetchForEdit', { data, can: 'restore' });
@@ -1148,7 +1138,7 @@ export async function giveForPage({ cid, forEdit }) {
     cid = Number(cid);
 
     if (!cid || cid < 1) {
-        throw ({ message: msg.badParams });
+        throw new BadParamsError();
     }
 
     const { photo, can } = await this.call('photo.give', { cid, fullView: true, countView: !forEdit, forEdit });
@@ -1349,14 +1339,14 @@ function givePS(options) {
 // Returns user's gallery
 async function giveUserGallery({ login, filter, skip, limit }) {
     if (!login) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const { handshake: { usObj: iAm } } = this;
     const userId = await User.getUserID(login);
 
     if (!userId) {
-        throw { message: msg.noUser };
+        throw new NotFoundError(constantsError.NO_SUCH_USER);
     }
 
     filter = filter ? parseFilter(filter) : {};
@@ -1377,7 +1367,7 @@ async function giveForApprove(data) {
     const query = { s: status.READY };
 
     if (!iAm.registered || iAm.user.role < 5) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
     if (iAm.isModerator) {
         _.assign(query, iAm.mod_rquery);
@@ -1404,7 +1394,7 @@ async function giveUserPhotosAround({ cid, limitL, limitR }) {
     limitR = Math.min(Math.abs(Number(limitR)), 100);
 
     if (!cid || (!limitL && !limitR)) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const photo = await this.call('photo.find', { query: { cid } });
@@ -1433,7 +1423,7 @@ async function giveUserPhotosAround({ cid, limitL, limitR }) {
 // Returns array of nearest photos
 async function giveNearestPhotos({ geo, except, distance, limit, skip }) {
     if (!Utils.geo.checkLatLng(geo)) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     geo.reverse();
@@ -1471,13 +1461,13 @@ async function giveUserPhotosPrivate({ login, startTime, endTime }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered || (iAm.user.role < 5 && iAm.user.login !== login)) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     const userId = await User.getUserID(login);
 
     if (!userId) {
-        throw { message: msg.noUser };
+        throw new NotFoundError(constantsError.NO_SUCH_USER);
     }
 
     const query = { user: userId, s: { $nin: [status.PUBLIC] } };
@@ -1510,7 +1500,7 @@ async function giveFresh({ login, after, skip, limit }) {
     if (!iAm.registered ||
         (!login && iAm.user.role < 5) ||
         (login && iAm.user.role < 5 && iAm.user.login !== login)) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     const userId = login ? await User.getUserID(login) : null;
@@ -1550,7 +1540,7 @@ async function giveCan({ cid }) {
     cid = Number(cid);
 
     if (!cid) {
-        throw { message: msg.noPhoto };
+        throw new NotFoundError(constantsError.NO_SUCH_PHOTO);
     }
 
     // Need to get can for anonymous too, but there is nothing to check with owner in this case, so do not populate him
@@ -1561,18 +1551,16 @@ async function giveCan({ cid }) {
 
 function photoCheckPublickRequired(photo) {
     if (!photo.r0) {
-        throw { message: msg.mustCoord };
+        throw new NoticeError(constantsError.PHOTO_NEED_COORD);
     }
 
     if (_.isEmpty(photo.title)) {
-        throw { message: 'Необходимо заполнить название фотографии' };
+        throw new InputError(constantsError.PHOTO_NEED_TITLE);
     }
 
     if (!_.isNumber(photo.year) || !_.isNumber(photo.year2) ||
         photo.year < 1826 || photo.year > 2000 || photo.year2 < photo.year && photo.year2 > 2000) {
-        throw {
-            message: 'Опубликованные фотографии должны иметь предполагаемую датировку в интервале 1826—2000гг.'
-        };
+        throw new NoticeError(constantsError.PHOTO_YEARS_CONSTRAINT);
     }
 
     return true;
@@ -1773,7 +1761,7 @@ async function save(data) {
             );
             // If false was returned, means such region doesn't exists
             if (!newRegions) {
-                throw { message: msg.noRegion };
+                throw new NotFoundError(constantsError.NO_SUCH_REGION);
             }
         } else {
             // Clear region assignment
@@ -1889,7 +1877,7 @@ function getByBounds(data) {
     const { bounds, z, startAt } = data;
 
     if (!Array.isArray(bounds) || !_.isNumber(z) || z < 1) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     // Reverse bound's borders
@@ -1906,16 +1894,16 @@ async function convert({ cids = []}) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
     if (!Array.isArray(cids)) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     cids = cids.filter(cid => _.isNumber(cid) && cid > 0);
 
     if (!cids.length) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const photos = await Photo
@@ -1936,7 +1924,7 @@ function convertAll({ min, max, r }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     const params = { priority: 4 };
@@ -1964,13 +1952,13 @@ async function convertByUser({ login, resetIndividual, r }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!login) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
     if (!iAm.registered || iAm.user.login !== login && !iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
     if (usersWhoConvertingNonIndividualPhotos.has(login)) {
-        throw { message: 'Вы уже отправили запрос и он еще выполняется. Попробуйте позже' };
+        throw new NoticeError(constantsError.PHOTO_CONVERT_PROCEEDING);
     }
 
     const stampStart = new Date();
@@ -1987,7 +1975,7 @@ async function convertByUser({ login, resetIndividual, r }) {
 
     const user = await User.findOne({ login }, { login: 1, watersignCustom: 1, settings: 1 }, { lean: true }).exec();
     if (!user) {
-        throw { message: msg.noUser };
+        throw new NotFoundError(constantsError.NO_SUCH_USER);
     }
 
     usersWhoConvertingNonIndividualPhotos.add(login);
@@ -2044,7 +2032,7 @@ async function convertByUser({ login, resetIndividual, r }) {
 
             if (!itsMe && !canModerate) {
                 // If at least for one photo user have no rights, deny whole operation
-                throw { message: msg.deny };
+                throw new AuthorizationError();
             }
 
             historyCalls.push({ iAm, oldPhotoObj: photoOld, photo, canModerate: itsMe ? false : canModerate });
@@ -2102,10 +2090,10 @@ async function resetIndividualDownloadOrigin({ login, r }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!login) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
     if (!iAm.registered || iAm.user.login !== login && !iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     const stampStart = new Date();
@@ -2121,7 +2109,7 @@ async function resetIndividualDownloadOrigin({ login, r }) {
 
     const user = await User.findOne({ login }, { login: 1, settings: 1 }, { lean: true }).exec();
     if (!user) {
-        throw { message: msg.noUser };
+        throw new NotFoundError(constantsError.NO_SUCH_USER);
     }
 
     const query = { user: user._id, disallowDownloadOriginIndividual: true };
@@ -2368,13 +2356,13 @@ const planResetDisplayStat = (function () {
 // Return history of photo edit
 async function giveObjHist({ cid, fetchId, showDiff }) {
     if (!Number(cid) || cid < 1 || !Number(fetchId)) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const photo = await this.call('photo.find', { query: { cid }, fieldSelect: { _id: 0 } });
 
     if (!photo) {
-        throw { message: msg.noPhoto };
+        throw new NotFoundError(constantsError.NO_SUCH_PHOTO);
     }
 
     const historySelect = { _id: 0, cid: 0 };
@@ -2388,7 +2376,7 @@ async function giveObjHist({ cid, fetchId, showDiff }) {
         .populate({ path: 'user', select: { _id: 0, login: 1, avatar: 1, disp: 1 } }).exec();
 
     if (_.isEmpty(histories)) {
-        throw { message: 'Для объекта еще нет истории' };
+        throw new NoticeError(constantsError.HISTORY_DOESNT_EXISTS);
     }
 
     const reasons = new Set();
@@ -2478,20 +2466,20 @@ async function getDownloadKey({ cid }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     cid = Number(cid);
 
     if (!cid) {
-        throw { message: msg.noPhoto };
+        throw new NotFoundError(constantsError.NO_SUCH_PHOTO);
     }
 
     const photo = await this.call('photo.find', { query: { cid }, options: { lean: true }, populateUser: true });
     const canDownload = permissions.getCan(photo, iAm).download;
 
     if (canDownload === 'login') {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     const origin = canDownload === true || canDownload === 'byrole';
@@ -2584,7 +2572,7 @@ export default {
     photoFromMap,
     prefetchForEdit,
     givePrevNextCids,
-    changePublicExternality,
+    changePublicExternality
 };
 
 waitDb.then(planResetDisplayStat); // Plan statistic clean up

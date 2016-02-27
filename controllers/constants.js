@@ -1,7 +1,4 @@
 export default {
-    NO_SUCH_METHOD: 'NO_SUCH_METHOD',
-    UNHANDLED_ERROR: 'UNHANDLED_ERROR',
-
     region: {
         maxLevel: 5 // 6 levels of regions: 0..5
     },

@@ -1171,7 +1171,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             self.exe(true);
             return requestCreater()
                 .catch(function (error) {
-                    if (error.changed) {
+                    if (error.code === 'PHOTO_CHANGED') {
                         if (confirmer) {
                             confirmer.close();
                             confirmer = null;
@@ -1241,7 +1241,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         editPhoto: function () {
             var self = this;
 
-            this.receivePhoto(self.p.cid(), true, function (err, data) {
+            this.receivePhoto(self.p.cid(), true, function (data) {
                 if (data.forEdit) {
                     // Если включаем редактирование, обнуляем количество новых комментариев,
                     // так как после возврата комментарии будут запрошены заново и соответственно иметь статус прочитанных
@@ -1333,23 +1333,25 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 '<br><a data-replace="true" href="?history=1">Посмотреть историю изменений</a>' +
                 '<br><a target="_blank" href="/p/' + cid + '">Открыть последнюю версию</a>';
 
-            self.tryOperation(function (confirmer) {
-                return socket.run('photo.save', _.assign({ ignoreChange: !!confirmer }, params)).then(function (data) {
-                    if (!data.emptySave) {
-                        self.rechargeData(data.photo, data.can);
+            self.tryOperation(
+                function (confirmer) {
+                    return socket.run('photo.save', _.assign({ ignoreChange: !!confirmer }, params)).then(function (data) {
+                        if (!data.emptySave) {
+                            self.rechargeData(data.photo, data.can);
 
-                        if (p.s() === statusKeys.NEW) {
-                            self.notifyReady();
-                        }
-                        if (data.reconvert) {
-                            self.notifyReconvert();
-                        }
+                            if (p.s() === statusKeys.NEW) {
+                                self.notifyReady();
+                            }
+                            if (data.reconvert) {
+                                self.notifyReconvert();
+                            }
 
-                        // Заново запрашиваем ближайшие фотографии
-                        self.getNearestRibbon(12, self.applyNearestRibbon, self);
-                    }
-                });
-            }, 'Продолжить сохранение', changedMessage).then(function (result) {
+                            // Заново запрашиваем ближайшие фотографии
+                            self.getNearestRibbon(12, self.applyNearestRibbon, self);
+                        }
+                    });
+                }, 'Продолжить сохранение', changedMessage
+            ).then(function (result) {
                 if (_.get(result, 'done', false)) {
                     self.exe(false);
                     self.edit(false);
