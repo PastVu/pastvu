@@ -1,6 +1,7 @@
 import auth from '../../controllers/auth';
 import index from '../../controllers/index';
 import photo from '../../controllers/photo';
+import reason from '../../controllers/reason';
 import region from '../../controllers/region';
 import subscr from '../../controllers/subscr';
 import profile from '../../controllers/profile';
@@ -13,6 +14,7 @@ export default {
     auth,
     index,
     photo,
+    reason,
     region,
     subscr,
     profile,

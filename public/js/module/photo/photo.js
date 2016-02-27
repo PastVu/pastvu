@@ -1165,11 +1165,17 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             };
         }()),
 
-        tryOperation: function (requestCreater, proceedText, customChangedMessage, confirmer) {
+        tryOperation: function (options) {
             var self = this;
+            var callback = options.callback;
+            var confirmer = options.confirmer;
+            var proceedText = options.proceedText;
+            var ignoreChange = options.ignoreChange;
+            var requestCreater = options.requestCreater;
+            var customChangedMessage = options.customChangedMessage;
 
             self.exe(true);
-            return requestCreater()
+            return requestCreater(ignoreChange)
                 .catch(function (error) {
                     if (error.code === 'PHOTO_CHANGED') {
                         if (confirmer) {
@@ -1188,7 +1194,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             cancelText: cancelText,
                             onOk: function (notiesConfirmer) {
                                 confirmer = notiesConfirmer;
-                                requestCreater(confirmer);
+                                self.tryOperation(_.assign({}, options, { confirmer: confirmer, ignoreChange: true }));
                             },
                             onCancel: function () {
                                 self.exe(false);
@@ -1212,7 +1218,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         confirmer.close();
                     }
 
-                    return { done: true, error: error };
+                    if (callback) {
+                        callback({ done: true, error: error });
+                    }
                 })
                 .catch(_.noop);
         },
@@ -1333,29 +1341,32 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 '<br><a data-replace="true" href="?history=1">Посмотреть историю изменений</a>' +
                 '<br><a target="_blank" href="/p/' + cid + '">Открыть последнюю версию</a>';
 
-            self.tryOperation(
-                function (confirmer) {
-                    return socket.run('photo.save', _.assign({ ignoreChange: !!confirmer }, params)).then(function (data) {
-                        if (!data.emptySave) {
-                            self.rechargeData(data.photo, data.can);
+            self.tryOperation({
+                proceedText: 'Продолжить сохранение', customChangedMessage: changedMessage,
+                requestCreater: function (ignoreChange) {
+                    return socket.run('photo.save', _.assign({ ignoreChange: ignoreChange }, params))
+                        .then(function (data) {
+                            if (!data.emptySave) {
+                                self.rechargeData(data.photo, data.can);
 
-                            if (p.s() === statusKeys.NEW) {
-                                self.notifyReady();
-                            }
-                            if (data.reconvert) {
-                                self.notifyReconvert();
-                            }
+                                if (p.s() === statusKeys.NEW) {
+                                    self.notifyReady();
+                                }
+                                if (data.reconvert) {
+                                    self.notifyReconvert();
+                                }
 
-                            // Заново запрашиваем ближайшие фотографии
-                            self.getNearestRibbon(12, self.applyNearestRibbon, self);
-                        }
-                    });
-                }, 'Продолжить сохранение', changedMessage
-            ).then(function (result) {
-                if (_.get(result, 'done', false)) {
-                    self.exe(false);
-                    self.edit(false);
-                    ga('send', 'event', 'photo', 'edit', 'photo edit ' + (result.error ? 'error' : 'success'));
+                                // Заново запрашиваем ближайшие фотографии
+                                self.getNearestRibbon(12, self.applyNearestRibbon, self);
+                            }
+                        });
+                },
+                callback: function (result) {
+                    if (_.get(result, 'done', false)) {
+                        self.exe(false);
+                        self.edit(false);
+                        ga('send', 'event', 'photo', 'edit', 'photo edit ' + (result.error ? 'error' : 'success'));
+                    }
                 }
             });
         },
@@ -1377,15 +1388,19 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
                     var p = self.p;
                     var params = { cid: p.cid(), cdate: p.cdate(), s: p.s() };
-                    self.tryOperation(function (confirmer) {
-                        return socket.run('photo.revoke', _.assign({ ignoreChange: !!confirmer }, params)).then(function (data) {
-                            self.rechargeData(data.photo, data.can);
-                        });
-                    }, 'Продолжить отзыв', null, initConfirmer).then(function (result) {
-                        if (_.get(result, 'done', false)) {
-                            self.exe(false);
-                            ga('send', 'event', 'photo', 'revoke', 'photo revoke ' + (result.error ? 'error' : 'success'));
-                            globalVM.router.navigate('/u/' + p.user.login() + '/photo');
+                    self.tryOperation({
+                        proceedText: 'Продолжить отзыв', confirmer: initConfirmer,
+                        requestCreater: function (ignoreChange) {
+                            return socket.run('photo.revoke', _.assign({ ignoreChange: ignoreChange }, params)).then(function (data) {
+                                self.rechargeData(data.photo, data.can);
+                            });
+                        },
+                        callback: function (result) {
+                            if (_.get(result, 'done', false)) {
+                                self.exe(false);
+                                ga('send', 'event', 'photo', 'revoke', 'photo revoke ' + (result.error ? 'error' : 'success'));
+                                globalVM.router.navigate('/u/' + p.user.login() + '/photo');
+                            }
                         }
                     });
                 },
@@ -1407,15 +1422,18 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }
 
             var params = { cid: p.cid(), cdate: p.cdate(), s: p.s() };
-
-            self.tryOperation(function (confirmer) {
-                return socket.run('photo.ready', _.assign({ ignoreChange: !!confirmer }, params)).then(function (data) {
-                    self.rechargeData(data.photo, data.can);
-                });
-            }, 'Продолжить отправку').then(function (result) {
-                if (_.get(result, 'done', false)) {
-                    self.exe(false);
-                    ga('send', 'event', 'photo', 'ready', 'photo ready ' + (result.error ? 'error' : 'success'));
+            self.tryOperation({
+                proceedText: 'Продолжить отправку',
+                requestCreater: function (ignoreChange) {
+                    return socket.run('photo.ready', _.assign({ ignoreChange: ignoreChange }, params)).then(function (data) {
+                        self.rechargeData(data.photo, data.can);
+                    });
+                },
+                callback: function (result) {
+                    if (_.get(result, 'done', false)) {
+                        self.exe(false);
+                        ga('send', 'event', 'photo', 'ready', 'photo ready ' + (result.error ? 'error' : 'success'));
+                    }
                 }
             });
         },
@@ -1436,15 +1454,18 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
                 var p = self.p;
                 var params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), reason: reason };
-
-                self.tryOperation(function (confirmer) {
-                    return socket.run('photo.toRevision', _.assign({ ignoreChange: !!confirmer }, params)).then(function (data) {
-                        self.rechargeData(data.photo, data.can);
-                    });
-                }, 'Продолжить операцию возврата').then(function (result) {
-                    if (_.get(result, 'done', false)) {
-                        self.exe(false);
-                        ga('send', 'event', 'photo', 'revision', 'photo revision ' + (result.error ? 'error' : 'success'));
+                self.tryOperation({
+                    proceedText: 'Продолжить операцию возврата',
+                    requestCreater: function (ignoreChange) {
+                        return socket.run('photo.toRevision', _.assign({ ignoreChange: ignoreChange }, params)).then(function (data) {
+                            self.rechargeData(data.photo, data.can);
+                        });
+                    },
+                    callback: function (result) {
+                        if (_.get(result, 'done', false)) {
+                            self.exe(false);
+                            ga('send', 'event', 'photo', 'revision', 'photo revision ' + (result.error ? 'error' : 'success'));
+                        }
                     }
                 });
             });
@@ -1465,15 +1486,18 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
                 var p = self.p;
                 var params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), reason: reason };
-
-                self.tryOperation(function (confirmer) {
-                    return socket.run('photo.rereject', _.assign({ ignoreChange: !!confirmer }, params)).then(function (data) {
-                        self.rechargeData(data.photo, data.can);
-                    });
-                }, 'Продолжить отклонение').then(function (result) {
-                    if (_.get(result, 'done', false)) {
-                        self.exe(false);
-                        ga('send', 'event', 'photo', 'reject', 'photo reject ' + (result.error ? 'error' : 'success'));
+                self.tryOperation({
+                    proceedText: 'Продолжить отклонение',
+                    requestCreater: function (ignoreChange) {
+                        return socket.run('photo.rereject', _.assign({ ignoreChange: ignoreChange }, params)).then(function (data) {
+                            self.rechargeData(data.photo, data.can);
+                        });
+                    },
+                    callback: function (result) {
+                        if (_.get(result, 'done', false)) {
+                            self.exe(false);
+                            ga('send', 'event', 'photo', 'reject', 'photo reject ' + (result.error ? 'error' : 'success'));
+                        }
                     }
                 });
             });
@@ -1494,15 +1518,18 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
                 var p = self.p;
                 var params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), reason: reason };
-
-                self.tryOperation(function (confirmer) {
-                    return socket.run('photo.rereject', _.assign({ ignoreChange: !!confirmer }, params)).then(function (data) {
-                        self.rechargeData(data.photo, data.can);
-                    });
-                }, 'Продолжить восстановление').then(function (result) {
-                    if (_.get(result, 'done', false)) {
-                        self.exe(false);
-                        ga('send', 'event', 'photo', 'rereject', 'photo rereject ' + (result.error ? 'error' : 'success'));
+                self.tryOperation({
+                    proceedText: 'Продолжить восстановление',
+                    requestCreater: function (ignoreChange) {
+                        return socket.run('photo.rereject', _.assign({ ignoreChange: ignoreChange }, params)).then(function (data) {
+                            self.rechargeData(data.photo, data.can);
+                        });
+                    },
+                    callback: function (result) {
+                        if (_.get(result, 'done', false)) {
+                            self.exe(false);
+                            ga('send', 'event', 'photo', 'rereject', 'photo rereject ' + (result.error ? 'error' : 'success'));
+                        }
                     }
                 });
             });
@@ -1517,16 +1544,19 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
             var p = self.p;
             var params = { cid: p.cid(), cdate: p.cdate(), s: p.s() };
-
-            self.tryOperation(function (confirmer) {
-                return socket.run('photo.approve', _.assign({ ignoreChange: !!confirmer }, params)).then(function (data) {
-                    self.rechargeData(data.photo, data.can);
-                    self.commentsActivate({ checkTimeout: 100 });
-                });
-            }, 'Продолжить публикацию').then(function (result) {
-                if (_.get(result, 'done', false)) {
-                    self.exe(false);
-                    ga('send', 'event', 'photo', 'approve', 'photo approve ' + (result.error ? 'error' : 'success'));
+            self.tryOperation({
+                proceedText: 'Продолжить публикацию',
+                requestCreater: function (ignoreChange) {
+                    return socket.run('photo.approve', _.assign({ ignoreChange: ignoreChange }, params)).then(function (data) {
+                        self.rechargeData(data.photo, data.can);
+                        self.commentsActivate({ checkTimeout: 100 });
+                    });
+                },
+                callback: function (result) {
+                    if (_.get(result, 'done', false)) {
+                        self.exe(false);
+                        ga('send', 'event', 'photo', 'approve', 'photo approve ' + (result.error ? 'error' : 'success'));
+                    }
                 }
             });
         },
@@ -1556,19 +1586,21 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             function request(reason) {
                 var p = self.p;
                 var params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), disable: disable, reason: reason };
-
-                self.tryOperation(function (confirmer) {
-                    return socket.run('photo.activateDeactivate', _.assign({ ignoreChange: !!confirmer }, params))
-                        .then(function (data) {
-                            self.rechargeData(data.photo, data.can);
-                        });
-                }).then(function (result) {
-                    if (_.get(result, 'done', false)) {
-                        self.exe(false);
-                        var operation = p.s() === statusKeys.DEACTIVATE ? 'enabled' : 'disabled';
-                        ga(
-                            'send', 'event', 'photo', operation, 'photo ' + operation + (result.error ? 'error' : 'success')
-                        );
+                self.tryOperation({
+                    requestCreater: function (ignoreChange) {
+                        return socket.run('photo.activateDeactivate', _.assign({ ignoreChange: ignoreChange }, params))
+                            .then(function (data) {
+                                self.rechargeData(data.photo, data.can);
+                            });
+                    },
+                    callback: function (result) {
+                        if (_.get(result, 'done', false)) {
+                            self.exe(false);
+                            var operation = p.s() === statusKeys.DEACTIVATE ? 'enabled' : 'disabled';
+                            ga(
+                                'send', 'event', 'photo', operation, 'photo ' + operation + (result.error ? 'error' : 'success')
+                            );
+                        }
                     }
                 });
             }
@@ -1589,23 +1621,26 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
                 var p = self.p;
                 var params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), reason: reason };
-
-                self.tryOperation(function (confirmer) {
-                    return socket.run('photo.remove', _.assign({ ignoreChange: !!confirmer }, params)).then(function (data) {
-                        self.rechargeData(data.photo, data.can);
-                    });
-                }, 'Продолжить удаление').then(function (result) {
-                    if (_.get(result, 'done', false)) {
-                        ga('send', 'event', 'photo', 'delete', 'photo delete ' + (result.error ? 'error' : 'success'));
-
-                        noties.alert({
-                            message: 'Фотография удалена',
-                            text: 'Завершить',
-                            countdown: 5,
-                            onOk: function () {
-                                globalVM.router.navigate('/u/' + p.user.login() + '/photo');
-                            }
+                self.tryOperation({
+                    proceedText: 'Продолжить удаление',
+                    requestCreater: function (ignoreChange) {
+                        return socket.run('photo.remove', _.assign({ ignoreChange: ignoreChange }, params)).then(function (data) {
+                            self.rechargeData(data.photo, data.can);
                         });
+                    },
+                    callback: function (result) {
+                        if (_.get(result, 'done', false)) {
+                            ga('send', 'event', 'photo', 'delete', 'photo delete ' + (result.error ? 'error' : 'success'));
+
+                            noties.alert({
+                                message: 'Фотография удалена',
+                                text: 'Завершить',
+                                countdown: 5,
+                                onOk: function () {
+                                    globalVM.router.navigate('/u/' + p.user.login() + '/photo');
+                                }
+                            });
+                        }
                     }
                 });
             });
@@ -1626,15 +1661,18 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
                 var p = self.p;
                 var params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), reason: reason };
-
-                self.tryOperation(function (confirmer) {
-                    return socket.run('photo.restore', _.assign({ ignoreChange: !!confirmer }, params)).then(function (data) {
-                        self.rechargeData(data.photo, data.can);
-                    });
-                }, 'Продолжить восстановление').then(function (result) {
-                    if (_.get(result, 'done', false)) {
-                        self.exe(false);
-                        ga('send', 'event', 'photo', 'restore', 'photo restore ' + (result.error ? 'error' : 'success'));
+                self.tryOperation({
+                    proceedText: 'Продолжить восстановление',
+                    requestCreater: function (ignoreChange) {
+                        return socket.run('photo.restore', _.assign({ ignoreChange: !!confirmer }, params)).then(function (data) {
+                            self.rechargeData(data.photo, data.can);
+                        });
+                    },
+                    callback: function (result) {
+                        if (_.get(result, 'done', false)) {
+                            self.exe(false);
+                            ga('send', 'event', 'photo', 'restore', 'photo restore ' + (result.error ? 'error' : 'success'));
+                        }
                     }
                 });
             });
