@@ -2,6 +2,8 @@ import _ from 'lodash';
 import log4js from 'log4js';
 import config from '../config';
 import nodemailer from 'nodemailer';
+import constantsError from '../app/errors/constants';
+import { ApplicationError } from '../app/errors';
 
 const { env, mail: mailConf } = config;
 
@@ -57,7 +59,7 @@ export async function send(options) {
         }
     } catch (err) {
         logger.error(err);
-        throw err;
+        throw new ApplicationError(constantsError.MAIL_SEND);
     }
 };
 

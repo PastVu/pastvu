@@ -67,5 +67,7 @@ export default Utils.reflectKeys({
     CONVERT_PHOTOS_ALL: null,
     CONVERT_PROMISE_GENERATOR: null,
 
-    HISTORY_DOESNT_EXISTS: null
+    HISTORY_DOESNT_EXISTS: null,
+
+    MAIL_SEND: null
 });

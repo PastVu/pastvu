@@ -4,6 +4,8 @@ import moment from 'moment';
 import Utils from '../commons/Utils';
 import * as session from './_session';
 import * as userObjectRelController from './userobjectrel';
+import constantsError from '../app/errors/constants';
+import { BadParamsError, NotFoundError } from '../app/errors';
 
 import { News } from '../models/News';
 import { User } from '../models/User';
@@ -288,7 +290,7 @@ async function giveAllNews() {
 // Full news object for administration (create/edit)
 async function giveNewsFull({ cid }) {
     if (!_.isNumber(cid) || cid < 1) {
-        throw { message: 'Bad params' };
+        throw new BadParamsError();
     }
 
     const news = await News.findOne({ cid }, { _id: 0 }).exec();
@@ -299,7 +301,7 @@ async function giveNewsFull({ cid }) {
 // Return news for its public page
 async function giveNewsPublic({ cid } = {}) {
     if (!_.isNumber(cid) || cid < 1) {
-        throw { message: 'Bad params' };
+        throw new BadParamsError();
     }
 
     const { handshake: { usObj: iAm } } = this;
@@ -308,7 +310,7 @@ async function giveNewsPublic({ cid } = {}) {
     ).exec();
 
     if (!news) {
-        throw { message: 'No such news' };
+        throw new NotFoundError(constantsError.NO_SUCH_NEWS);
     }
 
     const userObj = session.getOnline({ userId: news.user });

@@ -67,4 +67,6 @@ export default {
     CONVERT_PROMISE_GENERATOR: 'Ошибка выполнения операции в конвейере конвертации',
 
     HISTORY_DOESNT_EXISTS: 'Для объекта еще нет истории',
+
+    MAIL_SEND: 'Ошибка отправки письма'
 };
