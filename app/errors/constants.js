@@ -47,5 +47,11 @@ export default Utils.reflectKeys({
     PHOTO_YEARS_CONSTRAINT: null,
     PHOTO_CONVERT_PROCEEDING: null,
 
-    HISTORY_DOESNT_EXISTS: null,
+    COMMENT_NO_OBJECT: null,
+    COMMENT_NOT_ALLOWED: null,
+    COMMENT_DOESNT_EXISTS: null,
+    COMMENT_WRONG_PARENT: null,
+    COMMENT_TOO_LONG: null,
+
+    HISTORY_DOESNT_EXISTS: null
 });

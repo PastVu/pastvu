@@ -2,15 +2,16 @@ import ms from 'ms';
 import _ from 'lodash';
 import log4js from 'log4js';
 import Utils from '../commons/Utils';
-import constants from './constants.js';
+import constants from './constants';
+import constantsError from '../app/errors/constants';
 import * as session from './_session';
+import { giveReasonTitle } from './reason';
+import * as photoController from './photo';
 import * as subscrController from './subscr';
 import * as regionController from './region.js';
 import * as actionLogController from './actionlog.js';
 import * as userObjectRelController from './userobjectrel';
-import { giveReasonTitle } from './reason';
-
-const photoController = require('./photo');
+import { ApplicationError, AuthorizationError, BadParamsError, InputError, NotFoundError, NoticeError } from '../app/errors';
 
 import { News } from '../models/News';
 import { User } from '../models/User';
@@ -23,16 +24,6 @@ const commentMaxLength = 12e3;
 const logger = log4js.getLogger('comment.js');
 const maxRegionLevel = constants.region.maxLevel;
 const commentsUserPerPage = 20;
-
-const msg = {
-    deny: 'У вас нет разрешения на это действие', // 'You do not have permission for this action'
-    noUser: 'Запрашиваемый пользователь не существует',
-    noObject: 'Комментируемого объекта не существует, или модераторы перевели его в недоступный вам режим',
-    noComments: 'Операции с комментариями на этой странице запрещены',
-    noCommentExists: 'Комментария не существует',
-    badParams: 'Неверные параметры запроса',
-    maxLength: 'Комментарий длиннее допустимого значения (' + commentMaxLength + ')'
-};
 
 const permissions = {
     canModerate(type, obj, usObj) {
@@ -347,7 +338,7 @@ async function commentsTreeBuildDel(comment, childs, checkMyId) {
     // If user who request is not moderator, and not whose comments are inside branch,
     // means that he can't see branch, return 'not exists'
     if (!canSee) {
-        throw { message: msg.noCommentExists };
+        throw NotFoundError(constantsError.COMMENT_DOESNT_EXISTS);
     }
 
     const { usersById, usersByLogin } = await getUsersHashForComments(usersArr);
@@ -396,7 +387,7 @@ async function getCommentsObjAnonym({ cid, type = 'photo' }) {
     }
 
     if (!obj) {
-        throw { message: msg.noObject };
+        throw new NotFoundError(constantsError.COMMENT_NO_OBJECT);
     }
 
     const comments = await commentModel.find(
@@ -447,7 +438,7 @@ async function getCommentsObjAuth({ cid, type = 'photo' }) {
     }
 
     if (!obj) {
-        throw { message: msg.noObject };
+        throw new NotFoundError(constantsError.COMMENT_NO_OBJECT);
     }
 
     const [comments, relBeforeUpdate] = await Promise.all([
@@ -499,7 +490,7 @@ async function giveForObj(data) {
     data.cid = Number(data.cid);
 
     if (!data.cid) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const result = await (iAm.registered ? getCommentsObjAuth.call(this, data) : getCommentsObjAnonym.call(this, data));
@@ -516,7 +507,7 @@ async function giveDelTree({ cid, type = 'photo' }) {
     cid = Number(cid);
 
     if (!cid || cid < 1) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const commentModel = type === 'news' ? CommentN : Comment;
@@ -528,7 +519,7 @@ async function giveDelTree({ cid, type = 'photo' }) {
     ).exec() || {};
 
     if (!objId) {
-        throw { message: msg.noCommentExists };
+        throw NotFoundError(constantsError.COMMENT_DOESNT_EXISTS);
     }
 
     const [obj, childs] = await Promise.all([
@@ -544,7 +535,7 @@ async function giveDelTree({ cid, type = 'photo' }) {
     ]);
 
     if (!obj) {
-        throw { message: msg.noObject };
+        throw new NotFoundError(constantsError.COMMENT_NO_OBJECT);
     }
 
     const canModerate = permissions.canModerate(type, obj, iAm);
@@ -560,13 +551,13 @@ async function giveForUser({ login, page = 1, type = 'photo' }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!login) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const userid = await User.getUserID(login);
 
     if (!userid) {
-        throw { message: msg.noUser };
+        throw new NotFoundError(constantsError.NO_SUCH_USER);
     }
 
     page = (Math.abs(Number(page)) || 1) - 1;
@@ -598,7 +589,7 @@ async function giveForUser({ login, page = 1, type = 'photo' }) {
         ).exec());
 
     if (_.isEmpty(objs)) {
-        throw { message: msg.noObject };
+        throw new NotFoundError(constantsError.COMMENT_NO_OBJECT);
     }
 
     const objFormattedHashCid = {};
@@ -721,14 +712,14 @@ async function create(data) {
     const { socket, handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     if (!_.isObject(data) || !Number(data.obj) || !data.txt || data.level > 9) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
     if (data.txt.length > commentMaxLength) {
-        throw { message: msg.maxLength };
+        throw new InputError(constantsError.COMMENT_TOO_LONG);
     }
 
     const fragAdded = data.type === 'photo' && !data.frag && _.isObject(data.fragObj);
@@ -744,18 +735,18 @@ async function create(data) {
     ]);
 
     if (!obj) {
-        throw { message: msg.noObject };
+        throw new NotFoundError(constantsError.COMMENT_NO_OBJECT);
     }
     if (!permissions.canReply(data.type, obj, iAm) && !permissions.canModerate(data.type, obj, iAm)) {
-        throw { message: obj.nocomments ? msg.noComments : msg.deny };
+        throw obj.nocomments ? new NoticeError(constantsError.COMMENT_NOT_ALLOWED) : new AuthorizationError();
     }
     if (data.parent && (!parent || parent.del || parent.level >= 9 || data.level !== (parent.level || 0) + 1)) {
-        throw { message: 'Something wrong with parent comment. Maybe it was removed. Please, refresh the page' };
+        throw new NoticeError(constantsError.COMMENT_WRONG_PARENT);
     }
 
     const { next: cid } = await Counter.increment('comment');
     if (!cid) {
-        throw { message: 'Increment comment counter error' };
+        throw new ApplicationError(constantsError.COUNTER_ERROR);
     }
 
     const comment = { cid, obj, user: iAm.user, stamp, txt: Utils.inputIncomingParse(data.txt).result, del: undefined };
@@ -830,10 +821,10 @@ async function remove(data) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered) {
-        throw { message: msg.deny };
+        new AuthorizationError();
     }
     if (!_.isObject(data) || !Number(data.cid) || !data.reason || (!Number(data.reason.cid) && !data.reason.desc)) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const cid = Number(data.cid);
@@ -844,7 +835,7 @@ async function remove(data) {
     ).exec();
 
     if (!comment) {
-        throw { message: msg.noCommentExists };
+        throw NotFoundError(constantsError.COMMENT_DOESNT_EXISTS);
     }
 
     const obj = await (data.type === 'news' ?
@@ -853,7 +844,7 @@ async function remove(data) {
     );
 
     if (!obj) {
-        throw { message: msg.noObject };
+        throw new NotFoundError(constantsError.COMMENT_NO_OBJECT);
     }
 
     // Count amout of unremoved children
@@ -868,7 +859,7 @@ async function remove(data) {
         canModerate = permissions.canModerate(data.type, obj, iAm);
 
         if (!canModerate) {
-            throw { message: obj.nocomments ? msg.noComments : msg.deny };
+            throw obj.nocomments ? new NoticeError(constantsError.COMMENT_NOT_ALLOWED) : new AuthorizationError();
         }
     }
 
@@ -1011,13 +1002,13 @@ async function restore({ cid, type }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();;
     }
 
     cid = Number(cid);
 
     if (!cid) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const commentModel = type === 'news' ? CommentN : Comment;
@@ -1026,7 +1017,7 @@ async function restore({ cid, type }) {
     ).exec();
 
     if (!comment) {
-        throw { message: msg.noCommentExists };
+        throw NotFoundError(constantsError.COMMENT_DOESNT_EXISTS);
     }
 
     const obj = await (type === 'news' ?
@@ -1035,12 +1026,12 @@ async function restore({ cid, type }) {
     );
 
     if (!obj) {
-        throw { message: msg.noObject };
+        throw new NotFoundError(constantsError.COMMENT_NO_OBJECT);
     }
 
     const canModerate = permissions.canModerate(type, obj, iAm);
     if (!canModerate) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();;
     }
 
     // Find all comments directly descendants to restoring, which were deleted with it,
@@ -1176,17 +1167,17 @@ async function update(data) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();;
     }
 
     const cid = Number(data.cid);
 
     if (!data.obj || !cid || !data.txt) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     if (data.txt.length > commentMaxLength) {
-        throw { message: msg.maxLength };
+        throw new InputError(constantsError.COMMENT_TOO_LONG);
     }
 
     const [obj, comment] = await Promise.all(data.type === 'news' ? [
@@ -1198,7 +1189,7 @@ async function update(data) {
     ]);
 
     if (!comment || !obj || data.obj !== obj.cid) {
-        throw { message: msg.noCommentExists };
+        throw NotFoundError(constantsError.COMMENT_DOESNT_EXISTS);
     }
 
     const hist = { user: iAm.user };
@@ -1210,7 +1201,7 @@ async function update(data) {
         // В противном случае нужны права модератора/администратора
         canModerate = permissions.canModerate(data.type, obj, iAm);
         if (!canModerate) {
-            throw { message: obj.nocomments ? msg.noComments : msg.deny };
+            throw obj.nocomments ? new NoticeError(constantsError.COMMENT_NOT_ALLOWED) : new AuthorizationError();
         }
     }
 
@@ -1303,7 +1294,7 @@ async function giveHist({ cid, type = 'photo' }) {
     cid = Number(cid);
 
     if (!cid) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const commentModel = type === 'news' ? CommentN : Comment;
@@ -1313,7 +1304,7 @@ async function giveHist({ cid, type = 'photo' }) {
     ).populate({ path: 'user hist.user del.user', select: { _id: 0, login: 1, avatar: 1, disp: 1 } }).exec();
 
     if (!comment) {
-        throw { message: msg.noCommentExists };
+        throw NotFoundError(constantsError.COMMENT_DOESNT_EXISTS);
     }
 
     const result = [];
@@ -1397,25 +1388,25 @@ async function setNoComments({ cid, type = 'photo', val: nocomments }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered || !iAm.user.role) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     cid = Number(cid);
 
     if (!cid) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const obj = await (type === 'news' ? News.findOne({ cid }).exec() : this.call('photo.find', { query: { cid } }));
 
     if (!obj) {
-        throw { message: msg.noObject };
+        throw new NotFoundError(constantsError.COMMENT_NO_OBJECT);
     }
 
     const canModerate = permissions.canModerate(type, obj, iAm);
 
     if (!canModerate) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     let oldPhotoObj;
