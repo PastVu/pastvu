@@ -11,7 +11,14 @@ import * as subscrController from './subscr';
 import * as regionController from './region.js';
 import * as actionLogController from './actionlog.js';
 import * as userObjectRelController from './userobjectrel';
-import { ApplicationError, AuthorizationError, BadParamsError, InputError, NotFoundError, NoticeError } from '../app/errors';
+import {
+    ApplicationError,
+    AuthorizationError,
+    BadParamsError,
+    InputError,
+    NotFoundError,
+    NoticeError
+} from '../app/errors';
 
 import { News } from '../models/News';
 import { User } from '../models/User';
@@ -54,7 +61,7 @@ function commentsTreeBuildAnonym(comments, usersHash) {
                 `User for comment undefined. Comment userId: ${String(comment.user)}`,
                 `Comment: ${JSON.stringify(comment)}`
             );
-            throw { message: 'Unknow user in comments' };
+            throw new ApplicationError({ code: constantsError.COMMENT_UNKNOWN_USER, userId: comment.user });
         }
 
         comment.user = user.login;
@@ -145,8 +152,7 @@ async function commentsTreeBuildAuth(myId, comments, previousViewStamp, canReply
                 }
             }
             if (commentParent.comments === undefined) {
-                if (canReply && commentParent.del === undefined &&
-                    !commentIsDeleted && commentParent.can.del === true) {
+                if (canReply && commentParent.del === undefined && !commentIsDeleted && commentParent.can.del === true) {
                     // If under not removed parent comment we find first child not removed comment,
                     // and user can remove parent (i.e it's his own comment), cancel remove ability,
                     // because user can't remove his own comments with replies
@@ -563,7 +569,7 @@ async function giveForUser({ login, page = 1, type = 'photo' }) {
     page = (Math.abs(Number(page)) || 1) - 1;
 
     const commentModel = type === 'news' ? CommentN : Comment;
-    const queryNews = { user: userid, del: null};
+    const queryNews = { user: userid, del: null };
     const queryPhotos = Object.assign({}, queryNews, photoController.buildPhotosQuery({ r: 0 }, null, iAm).query);
     const fields = { _id: 0, lastChanged: 1, cid: 1, obj: 1, stamp: 1, txt: 1 };
     const options = { lean: true, sort: { stamp: -1 }, skip: page * commentsUserPerPage, limit: commentsUserPerPage };
@@ -1002,7 +1008,7 @@ async function restore({ cid, type }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered) {
-        throw new AuthorizationError();;
+        throw new AuthorizationError();
     }
 
     cid = Number(cid);
@@ -1031,7 +1037,7 @@ async function restore({ cid, type }) {
 
     const canModerate = permissions.canModerate(type, obj, iAm);
     if (!canModerate) {
-        throw new AuthorizationError();;
+        throw new AuthorizationError();
     }
 
     // Find all comments directly descendants to restoring, which were deleted with it,
@@ -1076,7 +1082,7 @@ async function restore({ cid, type }) {
     }
 
     await commentModel.update(
-        { cid }, { $set: { lastChanged: stamp }, $unset: { del: 1 }, $push: { hist: { $each: hist } }}
+        { cid }, { $set: { lastChanged: stamp }, $unset: { del: 1 }, $push: { hist: { $each: hist } } }
     ).exec();
 
     if (childsCids.length) {
@@ -1167,7 +1173,7 @@ async function update(data) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered) {
-        throw new AuthorizationError();;
+        throw new AuthorizationError();
     }
 
     const cid = Number(data.cid);
@@ -1467,7 +1473,7 @@ export async function changeObjCommentsVisibility({ obj: { _id: objId, s }, hide
         } else {
             User.update({ _id: userId }, { $inc: { ccount: cdelta } }).exec();
         }
-    };
+    }
 
     return { myCount: usersCountMap.get(String(iAm.user._id)) || 0 };
 }
