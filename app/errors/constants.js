@@ -24,6 +24,7 @@ export default Utils.reflectKeys({
     NO_SUCH_PHOTO: null,
     NO_SUCH_USER: null,
     NO_SUCH_REGION: null,
+    NO_SUCH_NEWS: null,
 
     INPUT: null,
     INPUT_FIELD_REQUIRED: null,
@@ -58,6 +59,10 @@ export default Utils.reflectKeys({
     COMMENT_DOESNT_EXISTS: null,
     COMMENT_WRONG_PARENT: null,
     COMMENT_TOO_LONG: null,
+
+    ADMIN_CANT_CHANGE_HIS_ROLE: null,
+    ADMIN_SUPER_CANT_BE_ASSIGNED: null,
+    ADMIN_ONLY_SUPER_CAN_ASSIGN: null,
 
     HISTORY_DOESNT_EXISTS: null
 });

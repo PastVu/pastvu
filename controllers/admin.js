@@ -1,22 +1,20 @@
 import _ from 'lodash';
 import * as sessionController from './_session';
+import constantsError from '../app/errors/constants';
+import { AuthorizationError, BadParamsError, NotFoundError, NoticeError } from '../app/errors';
 
 import { News } from '../models/News';
 import { User } from '../models/User';
 import { Counter } from '../models/Counter';
 
-const msg = {
-    deny: 'You do not have permission for this action'
-};
-
 function saveOrCreateNews(data) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
     if (!data.txt) {
-        throw { message: 'Bad params' };
+        throw new BadParamsError();
     }
 
     return data.cid ? saveNews(iAm, data) : createNews(iAm, data);
@@ -40,7 +38,7 @@ async function saveNews(iAm, { cid, pdate, tdate, title, notice, txt, nocomments
     const novel = await News.findOne({ cid }).exec();
 
     if (!novel) {
-        throw { message: 'No such news' };
+        throw new NotFoundError(constantsError.NO_SUCH_NEWS);
     }
 
     Object.assign(novel, { pdate, tdate, title, notice, txt, nocomments: Boolean(nocomments) || undefined });
@@ -54,7 +52,7 @@ function getOnlineStat() {
     const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     const usersCount = _.size(sessionController.usLogin);
@@ -155,17 +153,17 @@ async function saveUserCredentials({ login, role, regions }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     if (!login || !_.isNumber(role) || role < 0 || role > 11) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const itsMe = iAm.user.login === login;
 
     if (itsMe && iAm.user.role !== role) {
-        throw { message: 'Administrators can not change their role :)' };
+        throw new NoticeError(constantsError.ADMIN_CANT_CHANGE_HIS_ROLE);
     }
 
     const usObjOnline = sessionController.getOnline({ login });
@@ -173,17 +171,15 @@ async function saveUserCredentials({ login, role, regions }) {
         await User.findOne({ login }).populate('mod_regions', { _id: 0, cid: 1 }).exec();
 
     if (!user) {
-        throw { message: msg.nouser };
+        throw new NotFoundError(constantsError.NO_SUCH_USER);
     }
 
     if (!itsMe) {
         if (user.role < 11 && role === 11) {
-            throw {
-                message: 'The role of the super admin can not be assigned through the user management interface'
-            };
+            throw new NoticeError(constantsError.ADMIN_SUPER_CANT_BE_ASSIGNED);
         }
         if (iAm.user.role === 10 && user.role < 10 && role > 9) {
-            throw { message: 'Only super administrators can assign other administrators' };
+            throw new NoticeError(constantsError.ADMIN_ONLY_SUPER_CAN_ASSIGN);
         }
     }
 
