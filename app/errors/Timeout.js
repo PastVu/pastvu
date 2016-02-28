@@ -16,7 +16,7 @@ import ApplicationError from './Application';
  */
 export default class TimeoutError extends ApplicationError {
 
-    constructor(data = {}) {
+    constructor(data = {}, rid) {
         if (typeof data === 'number') {
             data = { timeout: data };
         }
@@ -27,7 +27,7 @@ export default class TimeoutError extends ApplicationError {
             message: `${errorMsgs[constants.TIMEOUT]} (${ms(timeout, { long: true })})`
         });
 
-        super(details);
+        super(details, rid);
 
         this.timeout = timeout;
     }

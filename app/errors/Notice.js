@@ -8,7 +8,7 @@ import ApplicationError from './Application';
  */
 export default class NoticeError extends ApplicationError {
 
-    constructor(data = {}) {
+    constructor(data = {}, rid) {
         if (typeof data === 'string') {
             data = { code: data };
         }
@@ -18,7 +18,7 @@ export default class NoticeError extends ApplicationError {
             trace: false
         });
 
-        super(data);
+        super(data, rid);
     }
 
 }

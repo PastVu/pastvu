@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import errorMsgs from './intl';
+import constants from './constants';
 
 const CAPTURE_STACK_TRACE_SUPPORT = Boolean(Error.captureStackTrace);
 const FIREFOX_ERROR_INFO = /@(.+?):(\d+):(\d+)$/;
@@ -9,15 +10,16 @@ const FIREFOX_ERROR_INFO = /@(.+?):(\d+):(\d+)$/;
  */
 export default class ApplicationError extends Error {
 
-    constructor(data = {}) {
+    constructor(data = {}, rid) {
         if (typeof data === 'string') {
             data = { code: data };
         }
 
-        const { code, message, logged = false, trace = true, ...details } = data;
+        const { code = constants.UNHANDLED_ERROR, message, logged = false, trace = true, ...details } = data;
 
         super(message || errorMsgs[code] || code); // Native Error contructor accepts message
 
+        this.rid = rid;
         this.code = code;
         this.trace = trace;
         this.logged = logged;
@@ -52,6 +54,9 @@ export default class ApplicationError extends Error {
             message: this.message
         };
 
+        if (!_.isEmpty(this.rid)) {
+            result.rid = this.rid;
+        }
         if (!_.isEmpty(this.details)) {
             result.details = this.details;
         }
