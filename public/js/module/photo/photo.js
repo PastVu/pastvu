@@ -1,7 +1,7 @@
 /**
  * Модель страницы фотографии
  */
-define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'noties', 'model/Photo', 'model/Region', 'model/storage', 'm/photo/fields', 'm/photo/status', 'text!tpl/photo/photo.jade', 'css!style/photo/photo', 'bs/ext/multiselect', 'jquery-plugins/imgareaselect'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, noties, Photo, Region, storage, fields, statuses, jade) {
+define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'noties', 'model/Photo', 'model/Region', 'model/storage', 'm/photo/fields', 'm/photo/status', 'text!tpl/photo/photo.jade', 'css!style/photo/photo', 'bs/ext/multiselect', 'jquery-plugins/imgareaselect'], function (_, Utils, socket, P, ko, koMapping, Cliche, globalVM, renderer, moment, noties, Photo, Region, storage, fields, statuses, jade) {
     var $window = $(window);
     var imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
     var statusKeys = statuses.keys;
@@ -37,7 +37,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.exe = ko.observable(false); // Указывает, что сейчас идет обработка запроса на действие к серверу
             this.exeregion = ko.observable(false); // Указывает, что сейчас идет запрос региона по координате
 
-            this.can = ko_mapping.fromJS(Photo.canDef);
+            this.can = koMapping.fromJS(Photo.canDef);
 
             this.IOwner = this.co.IOwner = ko.computed(function () {
                 return this.auth.iAm.login() === this.p.user.login();
@@ -340,7 +340,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }
 
             this.p = Photo.vm(photo, this.p);
-            this.can = ko_mapping.fromJS(_.defaults({}, can, Photo.canDef), this.can);
+            this.can = koMapping.fromJS(_.defaults({}, can, Photo.canDef), this.can);
 
             this.watersignOptionTrigger(_.random(9e9));
         },
@@ -457,7 +457,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             // Запрашиваем разрешенные действия для фото
             storage.photoCan(this.p.cid(), function (data) {
                 if (!data.error) {
-                    this.can = ko_mapping.fromJS(_.defaults({}, data.can, Photo.canDef), this.can);
+                    this.can = koMapping.fromJS(_.defaults({}, data.can, Photo.canDef), this.can);
                     this.sizesCalc();
                 }
             }, this);
@@ -741,7 +741,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
         regionSelect: function () {
             if (!this.regselectVM) {
-                var selected = _.last(ko_mapping.toJS(this.p.regions()));
+                var selected = _.last(koMapping.toJS(this.p.regions()));
                 if (selected) {
                     selected = [selected];
                 } else {
@@ -908,12 +908,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             }.bind(this)
                         },
                         {
-                            addClass: 'btn btn-danger margBott', text: 'Отмена', onClick: function ($noty) {
-                            if (cb) {
-                                cb.call(ctx);
+                            addClass: 'btn btn-danger margBott', text: 'Отмена',
+                            onClick: function ($noty) {
+                                if (cb) {
+                                    cb.call(ctx);
+                                }
+                                $noty.close();
                             }
-                            $noty.close();
-                        }
                         }
                     ]
                 }
@@ -943,19 +944,21 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         },
                         btns: [
                             {
-                                css: 'btn-warning', text: 'Выполнить', glyphicon: 'glyphicon-ok', click: function () {
-                                var reason = this.reasonVM.getReason();
-                                if (reason) {
-                                    cb.call(ctx, null, reason);
-                                    this.reasonDestroy();
-                                }
-                            }, ctx: this
+                                css: 'btn-warning', text: 'Выполнить', glyphicon: 'glyphicon-ok',
+                                click: function () {
+                                    var reason = this.reasonVM.getReason();
+                                    if (reason) {
+                                        cb.call(ctx, null, reason);
+                                        this.reasonDestroy();
+                                    }
+                                }, ctx: this
                             },
                             {
-                                css: 'btn-success', text: 'Отмена', click: function () {
-                                cb.call(ctx, true);
-                                this.reasonDestroy();
-                            }, ctx: this
+                                css: 'btn-success', text: 'Отмена',
+                                click: function () {
+                                    cb.call(ctx, true);
+                                    this.reasonDestroy();
+                                }, ctx: this
                             }
                         ]
                     },
@@ -1050,7 +1053,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     }, '');
                 }
 
-                renderer([{
+                renderer(
+                    [{
                         module: 'm/common/share',
                         options: {
                             title: title,
@@ -1268,7 +1272,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             var origin = self.originData;
             var cid = p.cid();
 
-            var changes = _.chain(ko_mapping.toJS(p))
+            var changes = _.chain(koMapping.toJS(p))
                 .pick(
                     'geo', 'dir', 'title', 'year', 'year2', 'address',
                     'nowaterchange', 'watersignIndividual', 'disallowDownloadOriginIndividual'
@@ -1293,7 +1297,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
             if (_.isEmpty(p.geo())) {
                 if (p.regions().length) {
-                    changes.region = _.last(ko_mapping.toJS(p.regions)).cid;
+                    changes.region = _.last(koMapping.toJS(p.regions)).cid;
                 } else {
                     changes.region = null;
                 }
@@ -1664,7 +1668,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 self.tryOperation({
                     proceedText: 'Продолжить восстановление',
                     requestCreater: function (ignoreChange) {
-                        return socket.run('photo.restore', _.assign({ ignoreChange: !!confirmer }, params)).then(function (data) {
+                        return socket.run('photo.restore', _.assign({ ignoreChange: ignoreChange }, params)).then(function (data) {
                             self.rechargeData(data.photo, data.can);
                         });
                     },
@@ -1902,17 +1906,18 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     if ($comment.length === 1) {
                         $wrap
                             .addClass('fragHover')
-                            .find('.photoImg').imgAreaSelect({
-                            classPrefix: 'photoFragAreaShow imgareaselect',
-                            x1: fragPosition.left,
-                            y1: fragPosition.top,
-                            x2: fragPosition.left + fragWidth + 2,
-                            y2: fragPosition.top + $frag.height() + 2,
-                            imageHeightScaled: this.hs(),
-                            zIndex: 1,
-                            parent: $wrap,
-                            disable: true
-                        });
+                            .find('.photoImg')
+                            .imgAreaSelect({
+                                classPrefix: 'photoFragAreaShow imgareaselect',
+                                x1: fragPosition.left,
+                                y1: fragPosition.top,
+                                x2: fragPosition.left + fragWidth + 2,
+                                y2: fragPosition.top + $frag.height() + 2,
+                                imageHeightScaled: this.hs(),
+                                zIndex: 1,
+                                parent: $wrap,
+                                disable: true
+                            });
 
                         if (fragOffset.left + fragWidth / 2 < 150) {
                             placement = 'right';
@@ -1994,7 +1999,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             return result;
         },
         fragAdd: function (frag) {
-            this.p.frags.push(ko_mapping.fromJS(frag));
+            this.p.frags.push(koMapping.fromJS(frag));
         },
         fragEdit: function (ccid, options) {
             var frag = this.fragGetByCid(ccid);
@@ -2012,7 +2017,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.p.frags.remove(this.fragGetByCid(ccid));
         },
         fragReplace: function (frags) {
-            this.p.frags(ko_mapping.fromJS({ arr: frags }).arr());
+            this.p.frags(koMapping.fromJS({ arr: frags }).arr());
         },
         fragGetByCid: function (ccid) {
             return _.find(this.p.frags(), function (frag) {
