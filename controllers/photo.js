@@ -587,8 +587,8 @@ async function photoToMap({ photo, geoPhotoOld, yearPhotoOld }) {
 }
 
 // Remove photo from map
-async function photoFromMap({ photo }) {
-    return await Promise.all([
+function photoFromMap({ photo }) {
+    return Promise.all([
         this.call('cluster.declusterPhoto', { photo }),
         PhotoMap.remove({ cid: photo.cid }).exec()
     ]);
@@ -864,7 +864,7 @@ function userPCountUpdate(user, newDelta = 0, publicDelta = 0, inactiveDelta = 0
     }
 }
 
-const changePublicExternality = async function (photo, makePublic) {
+const changePublicExternality = async function ({ photo, makePublic }) {
     return await Promise.all([
         // Show or hide comments and recalculate it amount of users
         this.call('comment.changeObjCommentsVisibility', { obj: photo, hide: !makePublic }),

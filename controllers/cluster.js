@@ -223,7 +223,7 @@ export async function clusterPhoto({ photo, geoPhotoOld, yearPhotoOld }) {
  * Remove photo from clusters
  * @param photo
  */
-export async function declusterPhoto({ photo }) {
+export function declusterPhoto({ photo }) {
     if (!Utils.geo.check(photo.geo) || !photo.year) {
         throw { message: 'Bad params to decluster photo' };
     }
@@ -231,7 +231,7 @@ export async function declusterPhoto({ photo }) {
     const geoPhoto = photo.geo;
     const geoPhotoCorrection = [geoPhoto[0] < 0 ? -1 : 0, geoPhoto[1] > 0 ? 1 : 0];
 
-    return await Promise.all(clusterParams.map(clusterZoom => {
+    return Promise.all(clusterParams.map(clusterZoom => {
         clusterZoom.wHalf = Utils.math.toPrecisionRound(clusterZoom.w / 2);
         clusterZoom.hHalf = Utils.math.toPrecisionRound(clusterZoom.h / 2);
 
@@ -336,6 +336,7 @@ export default {
     recalcAll,
 
     clusterPhoto,
+    declusterPhoto,
     getBounds,
     getBoundsByYear
 };
