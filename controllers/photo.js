@@ -810,7 +810,7 @@ async function prefetchForEdit({ data: { cid, s, cdate, ignoreChange }, can }) {
 
     if (_.isNumber(s) && s !== photo.s) {
         // Две кнопки: "Посмотреть", "Продолжить <сохранение|изменение статуса>"
-        throw new ApplicationError(constantsError.PHOTO_ANOTHER_STATUS);
+        throw new NoticeError(constantsError.PHOTO_ANOTHER_STATUS);
     }
 
     const canModerate = permissions.canModerate(photo, iAm);

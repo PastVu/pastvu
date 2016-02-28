@@ -1181,7 +1181,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             self.exe(true);
             return requestCreater(ignoreChange)
                 .catch(function (error) {
-                    if (error.code === 'PHOTO_CHANGED') {
+                    if (error.code === 'PHOTO_CHANGED' || error.code === 'PHOTO_ANOTHER_STATUS') {
                         if (confirmer) {
                             confirmer.close();
                             confirmer = null;
@@ -1192,18 +1192,31 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         var okText = proceedText || 'Продолжить операцию';
                         var cancelText = 'Отменить операцию';
 
-                        noties.confirm({
-                            message: message,
-                            okText: okText,
-                            cancelText: cancelText,
-                            onOk: function (notiesConfirmer) {
-                                confirmer = notiesConfirmer;
-                                self.tryOperation(_.assign({}, options, { confirmer: confirmer, ignoreChange: true }));
-                            },
-                            onCancel: function () {
-                                self.exe(false);
-                            }
-                        });
+                        if (error.code === 'PHOTO_ANOTHER_STATUS') {
+                            noties.alert({
+                                message: error.message,
+                                onOk: function () {
+                                    self.exe(false);
+                                }
+                            });
+                            noties.alert();
+                        } else {
+                            noties.confirm({
+                                message: message,
+                                okText: okText,
+                                cancelText: cancelText,
+                                onOk: function (notiesConfirmer) {
+                                    confirmer = notiesConfirmer;
+                                    self.tryOperation(_.assign({}, options, {
+                                        confirmer: confirmer, ignoreChange: true
+                                    }));
+                                },
+                                onCancel: function () {
+                                    self.exe(false);
+                                }
+                            });
+                        }
+
                         throw error;
                     }
 
