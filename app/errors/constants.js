@@ -24,6 +24,7 @@ export default Utils.reflectKeys({
     NO_SUCH_PHOTO: null,
     NO_SUCH_USER: null,
     NO_SUCH_REGION: null,
+    NO_SUCH_REGIONS: null,
     NO_SUCH_NEWS: null,
 
     INPUT: null,
@@ -53,6 +54,19 @@ export default Utils.reflectKeys({
     PHOTO_ANOTHER_STATUS: null,
     PHOTO_YEARS_CONSTRAINT: null,
     PHOTO_CONVERT_PROCEEDING: null,
+
+    REGION_ASSIGN_OBJECTS: null,
+    REGION_PARENT_THE_SAME: null,
+    REGION_PARENT_DOESNT_EXISTS: null,
+    REGION_PARENT_LOOP: null,
+    REGION_NO_RELATIVES: null,
+    REGION_GEOJSON_PARSE: null,
+    REGION_GEOJSON_GEOMETRY: null,
+    REGION_MOVE_EXCEED_MAX_LEVEL: null,
+    REGION_SAVED_BUT_INCL_PHOTO: null,
+    REGION_SAVED_BUT_PARENT_EXTERNALITY: null,
+    REGION_SAVED_BUT_REFILL_CACHE: null,
+    REGION_SELECT_LIMIT: null,
 
     COMMENT_NO_OBJECT: null,
     COMMENT_NOT_ALLOWED: null,

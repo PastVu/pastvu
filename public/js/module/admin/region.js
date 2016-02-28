@@ -5,9 +5,9 @@
  */
 define([
     'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
-    'leaflet', 'model/storage',
+    'leaflet', 'noties', 'model/storage',
     'text!tpl/admin/region.jade', 'css!style/admin/region', 'css!style/leaflet/leaflet'
-], function (_, $, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, L, storage, jade) {
+], function (_, $, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, L, noties, storage, jade) {
     'use strict';
 
     var regionDef = {
@@ -617,7 +617,13 @@ define([
                     if (Utils.isType('function', cb)) {
                         cb.call(ctx, data);
                     }
-                }.bind(this));
+                }.bind(this))
+                .catch(function (error) {
+                    if (error.code === 'REGION_GEOJSON_PARSE') {
+                        error.message += '\n' + error.why;
+                    }
+                    noties.error(error);
+                });
         },
         remove: function () {
             if (this.exe()) {

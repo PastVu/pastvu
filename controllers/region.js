@@ -10,6 +10,8 @@ import { Photo } from '../models/Photo';
 import { Region } from '../models/Region';
 import { Comment } from '../models/Comment';
 import { Counter } from '../models/Counter';
+import constantsError from '../app/errors/constants';
+import { ApplicationError, AuthenticationError, AuthorizationError, BadParamsError, InputError, NotFoundError, NoticeError } from '../app/errors';
 
 export let DEFAULT_HOME = null;
 export const regionsAllSelectHash = Object.create(null);
@@ -17,13 +19,6 @@ export const regionsAllSelectHash = Object.create(null);
 const logger = log4js.getLogger('region.js');
 const maxRegionLevel = constants.region.maxLevel;
 const nogeoRegion = { cid: 0, title_en: 'Where is it?', title_local: 'Где это?' };
-const msg = {
-    badParams: 'Bad params',
-    deny: 'You do not have permission for this action',
-    nouser: 'Requested user does not exist',
-    noregion: 'Requested region does not exist',
-    noregions: 'No regions'
-};
 
 let regionCacheArr = []; // Array-cache of regions  [{ _id, cid, parents }]
 let regionCacheHash = {}; // Hash-cache of regions { cid: { _id, cid, parents } }
@@ -322,14 +317,16 @@ async function calcRegionIncludes(cidOrRegion) {
         cidOrRegion;
 
     if (!region) {
-        throw { message: `Cant find region ${cidOrRegion}] find for calcRegionIncludes` };
+        throw new NotFoundError({
+            code: constantsError.NO_SUCH_REGION, what: `Cant find region ${cidOrRegion} for calcRegionIncludes`
+        });
     }
 
     const level = 'r' + region.parents.length;
 
     // First clear assignment of objects with coordinates to region
     const unsetObject = { $unset: { [level]: 1 } };
-    const [{n: photosCountBefore = 0 }, { n: commentsCountBefore = 0 }] = await Promise.all([
+    const [{ n: photosCountBefore = 0 }, { n: commentsCountBefore = 0 }] = await Promise.all([
         Photo.update({ geo: { $exists: true }, [level]: region.cid }, unsetObject, { multi: true }).exec(),
         Comment.update({ geo: { $exists: true }, [level]: region.cid }, unsetObject, { multi: true }).exec()
     ]);
@@ -352,10 +349,10 @@ export async function calcRegionsIncludes(cids) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
     if (!Array.isArray(cids)) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     let result;
@@ -365,7 +362,7 @@ export async function calcRegionsIncludes(cids) {
         result = await dbEval('regionsAssignObjects', [], { nolock: true });
 
         if (result && result.error) {
-            throw { message: result.message };
+            throw new ApplicationError({ code: constantsError.REGION_ASSIGN_OBJECTS, result });
         }
     } else {
         // Recalc every region in loop
@@ -448,7 +445,7 @@ async function changeRegionParentExternality(region, oldParentsArray, childLenAr
         // will still be belong to intermediate upper levels,
         // because $rename doesn't remove exists fields if renamed field doesn't exists
         if (levelDiff > 1) {
-            queryObj = {['r' + levelWas]: region.cid};
+            queryObj = { ['r' + levelWas]: region.cid };
             setObj = { $unset: {} };
             for (i = levelNew; i < levelWas; i++) {
                 setObj.$unset['r' + i] = 1;
@@ -621,17 +618,17 @@ async function save(data) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     if (!_.isObject(data) || !data.title_en || !data.title_local) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     data.title_en = data.title_en.trim();
     data.title_local = data.title_local.trim();
     if (!data.title_en || !data.title_local) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     data.parent = data.parent && Number(data.parent);
@@ -640,7 +637,7 @@ async function save(data) {
 
     if (data.parent) {
         if (data.cid && data.cid === data.parent) {
-            throw { message: 'You trying to specify a parent himself' };
+            throw new NoticeError(constantsError.REGION_PARENT_THE_SAME);
         }
 
         const parentRegion = await Region.findOne(
@@ -648,13 +645,13 @@ async function save(data) {
         ).exec();
 
         if (_.isEmpty(parentRegion)) {
-            throw { message: `Such parent region doesn't exists` };
+            throw new NoticeError(constantsError.REGION_PARENT_DOESNT_EXISTS);
         }
 
         parentsArray = parentRegion.parents || [];
 
         if (data.cid && parentsArray.includes(data.cid)) {
-            throw { message: 'You specify the parent, which already has this region as his own parent' };
+            throw new NoticeError(constantsError.REGION_PARENT_LOOP);
         }
 
         parentsArray.push(parentRegion.cid);
@@ -666,17 +663,17 @@ async function save(data) {
         try {
             data.geo = JSON.parse(data.geo);
         } catch (err) {
-            throw { message: `GeoJSON parse error! ${err.message}` };
+            throw new BadParamsError({ code: constantsError.REGION_GEOJSON_PARSE, why: err.message });
         }
 
         if (data.geo.type === 'GeometryCollection') {
             data.geo = data.geo.geometries[0];
         }
 
-        if (Object.keys(data.geo).length !== 2 ||
-            !Array.isArray(data.geo.coordinates) || !data.geo.coordinates.length ||
-            !data.geo.type || (data.geo.type !== 'Polygon' && data.geo.type !== 'MultiPolygon')) {
-            throw { message: `It's not GeoJSON geometry!` };
+        if (Object.keys(data.geo).length !== 2 || !Array.isArray(data.geo.coordinates) ||
+            !data.geo.coordinates.length || !data.geo.type ||
+            data.geo.type !== 'Polygon' && data.geo.type !== 'MultiPolygon') {
+            throw new BadParamsError(constantsError.REGION_GEOJSON_GEOMETRY);
         }
     } else if (data.geo) {
         delete data.geo;
@@ -693,7 +690,7 @@ async function save(data) {
         const count = await Counter.increment('region');
 
         if (!count) {
-            throw ({ message: 'Increment comment counter error' });
+            throw new ApplicationError(constantsError.COUNTER_ERROR);
         }
 
         region = new Region({ cid: count.next, parents: parentsArray });
@@ -702,7 +699,7 @@ async function save(data) {
         region = await Region.findOne({ cid: data.cid }).exec();
 
         if (!region) {
-            throw ({ message: `Such region doesn't exists` });
+            throw new NotFoundError(constantsError.NO_SUCH_REGION);
         }
 
         parentChange = !_.isEqual(parentsArray, region.parents);
@@ -714,10 +711,7 @@ async function save(data) {
         if (parentChange) {
             if (parentsArray.length > region.parents.length &&
                 (parentsArray.length + childLenArray.length > maxRegionLevel)) {
-                throw ({
-                    message: `After moving the region, ` +
-                    `it or its descendants will be greater than the maximum level (${maxRegionLevel + 1}).`
-                });
+                throw new NoticeError(constantsError.REGION_MOVE_EXCEED_MAX_LEVEL);
             }
 
             parentsArrayOld = region.parents;
@@ -799,7 +793,7 @@ async function save(data) {
                 Object.assign(resultStat, geoRecalcRes);
             }
         } catch (err) {
-            throw { message: `Saved, but while calculating included photos for the new geojson: ${err.message}` };
+            throw new ApplicationError({ code: constantsError.REGION_SAVED_BUT_INCL_PHOTO, why: err.message });
         }
     }
 
@@ -812,14 +806,14 @@ async function save(data) {
                 Object.assign(resultStat, moveRes);
             }
         } catch (err) {
-            throw { message: `Saved, but while change parent externality: ${err.message}` };
+            throw new ApplicationError({ code: constantsError.REGION_SAVED_BUT_PARENT_EXTERNALITY, why: err.message });
         }
     }
 
     try {
         await fillCache(); // Refresh regions cache
     } catch (err) {
-        throw { message: `Saved, but while refilling cache: ${err.message}` };
+        throw new ApplicationError({ code: constantsError.REGION_SAVED_BUT_REFILL_CACHE, why: err.message });
     }
 
     const [childLenArr, parentsSortedArr] = await getParentsAndChilds(region);
@@ -870,17 +864,17 @@ async function remove(data) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     if (!_.isObject(data) || !data.cid) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const regionToRemove = await Region.findOne({ cid: data.cid }).exec();
 
     if (!regionToRemove) {
-        throw { message: 'Deleting region does not exists'};
+        throw new NotFoundError(constantsError.NO_SUCH_REGION);
     }
 
     // if (data.reassignChilds && !regionToReassignChilds) {
@@ -903,7 +897,7 @@ async function remove(data) {
     ]);
 
     if (_.isEmpty(parentRegion)) {
-        throw { message: `Can't find parent`};
+        throw new NotFoundError(constantsError.REGION_PARENT_DOESNT_EXISTS);
     }
 
     // _ids of all removing regoions
@@ -954,7 +948,7 @@ async function remove(data) {
     // If some users affected with region removal, reget all online users (because we don't know concrete of them)
     if (homeAffectedUsers || affectedUsers || modsResult.affectedMods) {
         _session.regetUsers('all', true);
-    };
+    }
 
     return { removed: true, homeAffectedUsers, affectedUsers, affectedPhotos, affectedComments, ...modsResult };
 }
@@ -989,17 +983,17 @@ async function give(data) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     if (!_.isObject(data) || !data.cid) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const region = await Region.findOne({ cid: data.cid }, { _id: 0, __v: 0 }, { lean: true }).exec();
 
     if (!region) {
-        throw { message: `Such region doesn't exists` };
+        throw new NotFoundError(constantsError.NO_SUCH_REGION);
     }
 
     const [childLenArr, parentsSortedArr] = await getParentsAndChilds(region);
@@ -1064,11 +1058,11 @@ async function giveListFull(data) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     if (!_.isObject(data)) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const [regions, regionsStatByLevel] = await Promise.all([
@@ -1077,7 +1071,7 @@ async function giveListFull(data) {
     ]);
 
     if (!regions) {
-        throw { message: 'No regions' };
+        throw new NotFoundError(constantsError.NO_SUCH_REGIONS);
     }
 
     const regionsStatCommon = { regionsCount: 0, pointsCount: 0 };
@@ -1097,7 +1091,7 @@ export const giveListPublic = () => regionCacheArrPromise;
 const getRegionsByGeoPoint = (function () {
     const defRegion = 1000000; // If the region is not found, return the Open sea
 
-    return async function({ geo, fields = { _id: 0, geo: 0, __v: 0 } }) {
+    return async function ({ geo, fields = { _id: 0, geo: 0, __v: 0 } }) {
         const regions = await Region.find(
             { geo: { $nearSphere: { $geometry: { type: 'Point', coordinates: geo }, $maxDistance: 1 } } },
             fields, { lean: true, sort: { parents: -1 } }
@@ -1117,10 +1111,10 @@ async function giveRegionsByGeo({ geo }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
     if (!Utils.geo.checkLatLng(geo)) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
     geo.reverse();
 
@@ -1129,7 +1123,7 @@ async function giveRegionsByGeo({ geo }) {
     );
 
     if (_.isEmpty(regions)) {
-        throw { message: msg.noregions };
+        throw new NotFoundError(constantsError.NO_SUCH_REGIONS);
     }
 
     const regionsArr = [];
@@ -1159,7 +1153,7 @@ export async function setObjRegionsByGeo({ obj, geo, returnArrFields = { _id: 0,
     const regions = await this.call('region.getRegionsByGeoPoint', { geo, fields: returnArrFields });
 
     if (_.isEmpty(regions)) {
-        throw { message: msg.noregions };
+        throw new NotFoundError(constantsError.NO_SUCH_REGIONS);
     }
 
     const regionsArr = [];
@@ -1265,7 +1259,7 @@ export const clearObjRegions = obj => {
 };
 
 // Save array of regions _ids in specified user field
-export async function setUserRegions({login, regions: regionsCids, field}) {
+export async function setUserRegions({ login, regions: regionsCids, field }) {
     const $update = {};
 
     if (_.isEmpty(regionsCids)) {
@@ -1274,14 +1268,14 @@ export async function setUserRegions({login, regions: regionsCids, field}) {
         // Check that transfered valid region numbers
         for (const cid of regionsCids) {
             if (typeof cid !== 'number' || !regionCacheHash[cid]) {
-                throw { message: msg.badParams };
+                throw new BadParamsError();
             }
         }
 
         const regions = await getOrderedRegionList(regionsCids, { geo: 0 });
 
         if (regions.length !== regionsCids.length) {
-            throw { message: 'You want to save nonexistent regions' };
+            throw new NotFoundError(constantsError.NO_SUCH_REGIONS);
         }
 
         const regionsIdsSet = new Set();
@@ -1294,7 +1288,7 @@ export async function setUserRegions({login, regions: regionsCids, field}) {
         for (const region of regions) {
             for (const parent of region.parents) {
                 if (regionsIdsSet.has(String(parent))) {
-                    throw { message: 'Selected regions should not be relatives' };
+                    throw new NotFoundError(constantsError.REGION_NO_RELATIVES);
                 }
             }
         }
@@ -1310,13 +1304,13 @@ async function saveUserHomeRegion({ login, cid }) {
     const itsMe = iAm.registered && iAm.user.login === login;
 
     if (!itsMe && !iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     cid = Number(cid);
 
     if (!login || !cid) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const userObjOnline = _session.getOnline({ login });
@@ -1332,7 +1326,7 @@ async function saveUserHomeRegion({ login, cid }) {
     ]);
 
     if (!user || !region) {
-        throw { message: !user ? msg.nouser : msg.noregion };
+        throw new NotFoundError(constantsError[!user ? 'NO_SUCH_USER' : 'NO_SUCH_REGION']);
     }
 
     user.regionHome = region;
@@ -1361,19 +1355,19 @@ async function saveUserRegions({ login, regions }) {
     const itsMe = iAm.registered && iAm.user.login === login;
 
     if (!itsMe && !iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
     if (!login || !Array.isArray(regions)) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
     if (regions.length > maxRegionLevel) {
-        throw { message: 'Вы можете выбрать до ' + maxRegionLevel + ' регионов' };
+        throw new BadParamsError(constantsError.REGION_SELECT_LIMIT);
     }
 
     // Check that transfered valid region numbers
     for (const cid of regions) {
         if (typeof cid !== 'number' || !regionCacheHash[cid]) {
-            throw { message: msg.badParams };
+            throw new BadParamsError();
         }
     }
 
@@ -1381,7 +1375,7 @@ async function saveUserRegions({ login, regions }) {
     const user = userObjOnline ? userObjOnline.user : await User.findOne({ login }).exec();
 
     if (!user) {
-        throw { message: msg.nouser };
+        throw new NotFoundError(constantsError.NO_SUCH_USER);
     }
 
     await this.call('region.setUserRegions', { login, regions, field: 'regions' });

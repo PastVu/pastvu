@@ -3,6 +3,7 @@ import _ from 'lodash';
 import { waitDb } from './connection';
 import { Reason } from '../models/Reason';
 import { UserAction } from '../models/UserAction';
+import { BadParamsError } from '../app/errors';
 
 let reasonsHash = {};
 
@@ -36,7 +37,7 @@ export const getReasonHashFromCache = cids => _.transform(cids, (result, cid) =>
 
 async function giveActionReasons({ action: key }) {
     if (!_.isString(key) || !key.length) {
-        throw { message: 'Need user action' };
+        throw new BadParamsError();
     }
 
     const action = await UserAction.findOne({ key }, { _id: 0, reasons: 1, reason_text: 1 }, { lean: true }).exec();
