@@ -6,16 +6,22 @@ import config from '../config';
 import Utils from '../commons/Utils';
 import sioRouter from 'socket.io-events';
 import webApiCall from './webapi';
+import { send500 } from '../controllers/routes';
 import constants from './errors/constants';
+import constantsError from './errors/constants';
 import * as sessionController from '../controllers/_session';
+import { ApplicationError } from './errors';
 
 const logger = log4js.getLogger('request');
 const loggerLong = log4js.getLogger('requestLong');
 
-const errtypes = {
-    NO_HEADERS: 'Bad request - no header or user agent',
-    BAD_BROWSER: 'Bad browser, we do not support it'
-};
+/**
+ * Inspect data to logger
+ */
+const inspect = (function () {
+    const inspectOptions = { depth: null, colors: config.env === 'development' };
+    return obj => util.inspect(obj, inspectOptions);
+}());
 
 /**
  * Request's context generator
@@ -89,9 +95,10 @@ const callWebApi = async function (methodName, params) {
 export const handleHTTPRequest = async function (req, res, next) {
     const start = Date.now();
     const context = genRequestContext();
+    const { ridMark } = context;
     const writeHeadOriginal = res.writeHead;
 
-    logger.info(`${context.ridMark} -> HTTP request`);
+    logger.info(`${ridMark} -> HTTP request`);
 
     req.handshake = context.handshake = {
         host: req.headers.host,
@@ -102,7 +109,7 @@ export const handleHTTPRequest = async function (req, res, next) {
     res.writeHead = function () {
         const elapsed = Date.now() - start;
 
-        logger.info(`${context.ridMark} <- HTTP request finished with status ${res.statusCode} in ${elapsed}ms`);
+        logger.info(`${ridMark} <- HTTP request finished with status ${res.statusCode} in ${elapsed}ms`);
         logTrace(context, elapsed);
 
         res.setHeader('X-Response-Time', elapsed + 'ms');
@@ -131,23 +138,33 @@ export const handleHTTPRequest = async function (req, res, next) {
         req.cookie = data.cookie;
 
         next();
-    } catch (err) {
-        logger.warn(`${context.ridMark} HTTP request`, err);
+    } catch (error) {
+        if (error instanceof ApplicationError) {
+            if (!error.logged) {
+                logger.warn(_.compact([
+                    `${ridMark} HTTP request`,
+                    `${inspect(error.toJSON())}`,
+                    error.trace ? error.stack : undefined
+                ]).join('\n'));
+            }
+        } else {
+            logger.warn(`${context.ridMark} HTTP request`, error);
+        }
 
-        if (err.type === errtypes.NO_HEADERS) {
-            return res.status(400).send(err.type);
+        if (error.code === constantsError.SESSION_NO_HEADERS) {
+            return res.status(400).send(error.code);
         }
 
         const locale = sessionController.identifyUserLocale(req.headers['accept-language']);
 
-        if (err.type === errtypes.BAD_BROWSER) {
+        if (error.code === constantsError.BAD_BROWSER) {
             res.statusCode = 200;
-            res.render('status/badbrowser', { agent: err.agent, locale });
-        } else if (err.code === 'ETIMEDOUT') {
+            res.render('status/badbrowser', { agent: error.details.agent, locale });
+        } else if (error.code === 'ETIMEDOUT') {
             res.setHeader('Retry-After', 60);
-            res.status(503).send('Service Unavailable: ' + (_.isFunction(err.toString) ? err.toString() : err));
-        } else if (err) {
-            res.status(500).send(_.isFunction(err.toString) ? err.toString() : err);
+            res.status(503).send('Service Unavailable: ' + (_.isFunction(error.toString) ? error.toString() : error));
+        } else if (error) {
+            send500(req, res, error);
         } else {
             res.sendStatus(500);
         }
@@ -273,8 +290,8 @@ export const handleSocketConnection = (function () {
 
             socket.on('disconnect', _.partial(onSocketDisconnection, context)); // Disconnect handler
             next();
-        } catch (err) {
-            next(new Error(err.type || err));
+        } catch (error) {
+            next(error);
         } finally {
             const elapsed = Date.now() - start;
             let message = `${context.ridMark} Socket connection handled in ${elapsed}ms`;

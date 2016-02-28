@@ -3,7 +3,6 @@ import http from 'http';
 import log4js from 'log4js';
 import config from '../config';
 import Utils from '../commons/Utils';
-import { waitDb } from './connection';
 import * as session from './_session';
 import { clientParams, ready as settingsReady } from './settings';
 import NotFoundError from '../app/errors/NotFound';
@@ -298,7 +297,7 @@ export function bindRoutes(app) {
     });
 };
 
-const send404 = (function () {
+export const send404 = (function () {
     const status404 = http.STATUS_CODES[404];
     const json404 = JSON.stringify({ error: status404 });
     let html404;
@@ -325,10 +324,9 @@ const send404 = (function () {
     };
 }());
 
-const send500 = (function () {
+export const send500 = (function () {
     const status500 = http.STATUS_CODES[500];
     const json500 = JSON.stringify({ error: status500 });
-    let html500;
 
     return function (req, res, error) {
         res.statusCode = 500;
@@ -336,18 +334,12 @@ const send500 = (function () {
         if (req.xhr) {
             return res.end(error.toJSON ? error.toJSON() : json500);
         }
-        if (html500) {
-            return res.end(html500);
-        }
 
-        res.render('status/500', function (err, html) {
+        res.render('status/500', { error }, function (err, html) {
             if (err) {
                 loggerError.error('Cannot render 500 page', err);
-                html500 = status500;
-            } else {
-                html500 = html;
             }
-            res.end(html500);
+            res.end(html || '');
         });
     };
 }());
