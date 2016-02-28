@@ -2,6 +2,12 @@ export default {
     DENY: 'У вас нет прав на это действие',
 
     BAD_PARAMS: 'Неверные параметры запроса',
+    BAD_BROWSER: 'Bad browser, we do not support it',
+
+    SESSION_CAN_REGET_REGISTERED_ONLY: 'Ошибка выборки пользователей',
+    SESSION_EXPIRED_ARCHIVE_NO_RESULT: 'Ошибка архивации сессий',
+    SESSION_NO_HEADERS: 'Bad request - no header or user agent',
+    SESSION_NOT_FOUND: 'Сессия не найдена',
 
     TIMEOUT: 'Превышено время ожидания',
     UNHANDLED_ERROR: 'На сервере возникла ошибка',

@@ -4,25 +4,18 @@ import log4js from 'log4js';
 import locale from 'locale';
 import config from '../config';
 import Utils from '../commons/Utils';
-import TimeoutError from '../app/errors/Timeout';
 import { waitDb, dbEval } from './connection';
 import * as regionController from './region';
-import {parse as parseCookie} from 'cookie';
+import { parse as parseCookie } from 'cookie';
 import { userSettingsDef, clientParams } from './settings';
 import { Session, SessionArchive } from '../models/Sessions';
 import { User } from '../models/User';
+import constantsError from '../app/errors/constants';
+import { ApplicationError, BadParamsError, NotFoundError, TimeoutError } from '../app/errors';
 
 const logger = log4js.getLogger('session');
 const SESSION_COOKIE_KEY = 'past.sid'; // Session key in client cookies
 const SESSION_SHELF_LIFE = ms('21d'); // Period of session validity since last activity
-const ERROR_TYPES = {
-    BAD_BROWSER: 'Bad browser, we do not support it',
-    CANT_CREATE_SESSION: 'Can not create session',
-    CANT_UPDATE_SESSION: 'Can not update session',
-    CANT_GET_SESSION: 'Can not get session',
-    CANT_POPUSER_SESSION: 'Can not populate user session',
-    ANOTHER: 'Some error occured'
-};
 
 // Locales Map for checking their presence after header parsing
 const localesMap = new Map(config.locales.map(locale => [locale, locale]));
@@ -459,13 +452,13 @@ async function popUserRegions(usObj) {
 // Reget user from db and populate all his dependencies
 export async function regetUser(usObj, emitHim, excludeSocket) {
     if (!usObj.registered) {
-        throw { message: 'Can reget only registered user' };
+        throw new ApplicationError(constantsError.SESSION_CAN_REGET_REGISTERED_ONLY);
     }
 
     const user = await User.findOne({ login: usObj.user.login }).exec();
 
     if (!user) {
-        throw { message: 'No such user for reget' };
+        throw new NotFoundError(constantsError.NO_SUCH_USER);
     }
 
     // Assign new user object to usObj and to all its sessions
@@ -586,7 +579,7 @@ export async function logoutUser() {
     if (_.isEmpty(sessionOld.sockets)) {
         logger.warn(`${this.radMark} SessionOld have no sockets while logout ${user.login}`);
     } else {
-        _.forOwn(sessionOld.sockets, ({handshake}) => {
+        _.forOwn(sessionOld.sockets, ({ handshake }) => {
             handshake.usObj = usObj;
             handshake.session = sessionNew;
         });
@@ -664,7 +657,7 @@ const checkExpiredSessions = (function () {
             const result = await dbEval('archiveExpiredSessions', [new Date() - SESSION_SHELF_LIFE], { nolock: true });
 
             if (!result) {
-                throw { message: 'undefined result from dbEval' };
+                throw new ApplicationError(constantsError.SESSION_EXPIRED_ARCHIVE_NO_RESULT);
             }
 
             logger.info(`${result.count} sessions moved to archive`);
@@ -704,7 +697,8 @@ const checkExpiredSessions = (function () {
 // Handler of http-request or websocket-connection for session and usObj create/select
 export async function handleConnection(ip, headers, overHTTP, req) {
     if (!headers || !headers['user-agent']) {
-        throw { type: ERROR_TYPES.NO_HEADERS }; // If session doesn't contain header or user-agent - deny
+        // If session doesn't contain header or user-agent - deny
+        throw new BadParamsError(constantsError.SESSION_NO_HEADERS, this.rid);
     }
 
     if (overHTTP) {
@@ -724,7 +718,7 @@ export async function handleConnection(ip, headers, overHTTP, req) {
     // Parse user-agent information
     const browser = checkUserAgent(headers['user-agent']);
     if (browser.badbrowser) {
-        throw { type: ERROR_TYPES.BAD_BROWSER, agent: browser.agent };
+        throw new BadParamsError({ code: constantsError.BAD_BROWSER, agent: browser.agent, trace: false }, this.rid);
     }
 
     const cookieObj = parseCookie(headers.cookie || ''); // Parse cookie
@@ -792,7 +786,8 @@ export async function handleConnection(ip, headers, overHTTP, req) {
             `${this.ridMark} Handling incoming ${overHTTP ? 'http' : 'websocket'} connection`,
             `finished with empty ${!usObj ? 'usObj' : 'session'}, incoming sid: ${sid}, track: ${track}`
         );
-        throw { type: ERROR_TYPES.CANT_GET_SESSION, agent: browser.agent };
+
+        throw new ApplicationError({ code: constantsError.SESSION_NOT_FOUND, agent: browser.agent, trace: false }, this.rid);
     }
 
     if (!overHTTP) {

@@ -4,10 +4,16 @@ export default Utils.reflectKeys({
     DENY: null,
 
     BAD_PARAMS: null,
+    BAD_BROWSER: null,
 
     TIMEOUT: null,
     UNHANDLED_ERROR: null,
     COUNTER_ERROR: null,
+
+    SESSION_CAN_REGET_REGISTERED_ONLY: null,
+    SESSION_EXPIRED_ARCHIVE_NO_RESULT: null,
+    SESSION_NO_HEADERS: null,
+    SESSION_NOT_FOUND: null,
 
     NOTICE: null,
 
