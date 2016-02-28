@@ -11,6 +11,8 @@ import { send as sendMail } from './mail';
 import { userSettingsDef } from './settings';
 import { buildPhotosQuery } from './photo';
 import * as userObjectRelController from './userobjectrel';
+import constantsError from '../app/errors/constants';
+import { AuthorizationError, BadParamsError, NotFoundError } from '../app/errors';
 
 import { News } from '../models/News';
 import { User } from '../models/User';
@@ -19,12 +21,6 @@ import { Session } from '../models/Sessions';
 import { UserNoty, UserObjectRel } from '../models/UserStates';
 
 const logger = log4js.getLogger('subscr.js');
-const msg = {
-    badParams: 'Неверные параметры запроса',
-    deny: 'У вас нет разрешения на это действие', // 'You do not have permission for this action'
-    noObject: 'Комментируемого объекта не существует, или модераторы перевели его в недоступный вам режим',
-    nouser: 'Requested user does not exist'
-};
 
 let noticeTpl;
 const noticeTplPath = path.normalize('./views/mail/notice.jade');
@@ -32,8 +28,8 @@ const sendFreq = 1500; // Conveyor step frequency in ms
 const sendPerStep = 10; // Amount of sending emails in conveyor step
 const subscrPerPage = 24;
 const sortNotice = (a, b) => a.brief.newest < b.brief.newest ? 1 : (a.brief.newest > b.brief.newest ? -1 : 0);
-const sortSubscr = ({ ccount_new: aCount = 0, sbscr_create: aDate}, { ccount_new: bCount = 0, sbscr_create: bDate}) =>
-    aCount < bCount ? 1 : aCount > bCount ? - 1 : aDate < bDate ? 1 : aDate > bDate ? -1 : 0;
+const sortSubscr = ({ ccount_new: aCount = 0, sbscr_create: aDate }, { ccount_new: bCount = 0, sbscr_create: bDate }) =>
+    aCount < bCount ? 1 : aCount > bCount ? -1 : aDate < bDate ? 1 : aDate > bDate ? -1 : 0;
 const declension = {
     comment: [' новый комментарий', ' новых комментария', ' новых комментариев'],
     commentUnread: [' непрочитанный', ' непрочитанных', ' непрочитанных']
@@ -44,19 +40,19 @@ async function subscribeUser({ cid, type = 'photo', subscribe }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
     cid = Number(cid);
 
     if (!cid || cid < 1) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const obj = await (type === 'news' ?
         News.findOne({ cid }, { _id: 1 }).exec() : this.call('photo.find', { query: { cid } }));
 
     if (_.isEmpty(obj)) {
-        throw { message: msg.noObject };
+        throw new NotFoundError(constantsError.COMMENT_NO_OBJECT);
     }
 
     if (subscribe) {
@@ -198,8 +194,8 @@ export async function userThrottleChange(userId, newThrottle) {
 
     const nearestNoticeTimeStamp = Date.now() + 10000;
     const newNextNoty = userNoty.lastnoty && userNoty.lastnoty.getTime ?
-            Math.max(userNoty.lastnoty.getTime() + newThrottle, nearestNoticeTimeStamp) :
-            nearestNoticeTimeStamp;
+        Math.max(userNoty.lastnoty.getTime() + newThrottle, nearestNoticeTimeStamp) :
+        nearestNoticeTimeStamp;
 
     await UserNoty.update({ user: userId }, { $set: { nextnoty: new Date(newNextNoty) } }).exec();
 }
@@ -326,7 +322,7 @@ async function sendUserNotice(userId) {
         await User.findOne({ _id: userId }, { _id: 1, login: 1, disp: 1, email: 1 }, { lean: true }).exec();
 
     if (!user) {
-        throw { message: msg.nouser };
+        throw new NotFoundError(constantsError.NO_SUCH_USER);
     }
 
     // Find all subscriptions of users, which ready for notyfication (sbscr_noty: true)
@@ -409,6 +405,7 @@ async function sendUserNotice(userId) {
 
         return obj;
     }
+
     news.forEach(_.partial(objProcess, newsResult));
     photos.forEach(_.partial(objProcess, photosResult));
 
@@ -445,16 +442,16 @@ async function giveUserSubscriptions({ login, page = 1, type = 'photo' }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!login) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
     if (!iAm.registered || iAm.user.login !== login && !iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     const userId = await User.getUserID(login);
 
     if (!userId) {
-        throw { message: msg.nouser };
+        throw new NotFoundError(constantsError.NO_SUCH_USER);
     }
 
     page = (Math.abs(Number(page)) || 1) - 1;
@@ -530,7 +527,7 @@ async function giveUserSubscriptions({ login, page = 1, type = 'photo' }) {
     };
 };
 
-export const ready = new Promise(async function(resolve, reject) {
+export const ready = new Promise(async function (resolve, reject) {
     try {
         const data = await fs.readFileAsync(noticeTplPath, 'utf-8');
 

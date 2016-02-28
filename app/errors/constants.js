@@ -73,6 +73,7 @@ export default Utils.reflectKeys({
     COMMENT_DOESNT_EXISTS: null,
     COMMENT_WRONG_PARENT: null,
     COMMENT_TOO_LONG: null,
+    COMMENT_UNKNOWN_USER: null,
 
     ADMIN_CANT_CHANGE_HIS_ROLE: null,
     ADMIN_SUPER_CANT_BE_ASSIGNED: null,

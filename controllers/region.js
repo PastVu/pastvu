@@ -11,7 +11,7 @@ import { Region } from '../models/Region';
 import { Comment } from '../models/Comment';
 import { Counter } from '../models/Counter';
 import constantsError from '../app/errors/constants';
-import { ApplicationError, AuthenticationError, AuthorizationError, BadParamsError, InputError, NotFoundError, NoticeError } from '../app/errors';
+import { ApplicationError, AuthorizationError, BadParamsError, NotFoundError, NoticeError } from '../app/errors';
 
 export let DEFAULT_HOME = null;
 export const regionsAllSelectHash = Object.create(null);
