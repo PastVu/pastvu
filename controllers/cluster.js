@@ -5,11 +5,9 @@ import constants from './constants.js';
 import { waitDb, dbEval } from './connection';
 import { Photo } from '../models/Photo';
 import { Cluster, ClusterParams } from '../models/Cluster';
+import { ApplicationError, AuthorizationError, BadParamsError } from '../app/errors';
 
 const logger = log4js.getLogger('cluster.js');
-const msg = {
-    deny: 'У вас нет прав на это действие'
-};
 
 export let clusterParams; // Parameters of cluster
 export let clusterConditions; // Parameters of cluster settings
@@ -26,7 +24,7 @@ async function recalcAll({ params, conditions }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     await ClusterParams.remove({}).exec();
@@ -39,7 +37,7 @@ async function recalcAll({ params, conditions }) {
     const result = await dbEval('photosToMapAll', [], { nolock: true });
 
     if (result && result.error) {
-        throw { message: result.message };
+        throw new ApplicationError({ message: result.error.message });
     }
 
     return result;
@@ -146,7 +144,7 @@ async function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos) {
  */
 export async function clusterPhoto({ photo, geoPhotoOld, yearPhotoOld }) {
     if (!photo.year) {
-        throw { message: 'Bad params to set photo cluster' };
+        throw BadParamsError();
     }
 
     let g; // Coordinates of top left corner of cluster for new coordinates
@@ -225,7 +223,7 @@ export async function clusterPhoto({ photo, geoPhotoOld, yearPhotoOld }) {
  */
 export function declusterPhoto({ photo }) {
     if (!Utils.geo.check(photo.geo) || !photo.year) {
-        throw { message: 'Bad params to decluster photo' };
+        throw BadParamsError();
     }
 
     const geoPhoto = photo.geo;
