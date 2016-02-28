@@ -68,5 +68,9 @@ export default {
 
     HISTORY_DOESNT_EXISTS: 'Для объекта еще нет истории',
 
-    MAIL_SEND: 'Ошибка отправки письма'
+    SETTING_DOESNT_EXISTS: 'Такой настройки не существует',
+
+    MAIL_SEND: 'Ошибка отправки письма',
+    MAIL_WRONG: 'Неверный формат email, проверьте еще раз',
+    MAIL_IN_USE: 'Этот email уже используется другим пользователем'
 };

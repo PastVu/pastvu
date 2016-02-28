@@ -11,7 +11,9 @@ import * as session from './_session';
 import constants from './constants.js';
 import * as photoController from './photo';
 import { userThrottleChange } from './subscr';
+import constantsError from '../app/errors/constants';
 import { userSettingsDef, userSettingsVars, userRanksHash } from './settings';
+import { AuthenticationError, AuthorizationError, BadParamsError, InputError, NotFoundError } from '../app/errors';
 
 import { User } from '../models/User';
 
@@ -20,20 +22,14 @@ const privateDir = path.join(config.storePath, 'private/avatars/');
 const publicDir = path.join(config.storePath, 'public/avatars/');
 const mkdirpAsync = Bluebird.promisify(mkdirp);
 const execAsync = Bluebird.promisify(exec);
-const msg = {
-    badParams: 'Bad params',
-    deny: 'У вас нет прав на это действие',
-
-    nouser: 'Requested user does not exist',
-    nosetting: 'Such setting does not exists'
-};
+const emailRegexp = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 
 const getUserByLogin = async function (login) {
     const usObjOnline = session.getOnline({ login });
     const user = usObjOnline ? usObjOnline.user : await User.findOne({ login }).exec();
 
     if (!user) {
-        throw { message: msg.nouser };
+        throw new NotFoundError(constantsError.NO_SUCH_USER);
     }
 
     return { usObjOnline, user };
@@ -44,7 +40,7 @@ async function giveUser({ login }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!login) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const userObj = session.getOnline({ login });
@@ -63,7 +59,7 @@ async function giveUser({ login }) {
     ]).exec();
 
     if (!user) {
-        throw { message: msg.nouser };
+        throw new NotFoundError(constantsError.NO_SUCH_USER);
     }
 
     if (itsMe || iAm.isAdmin) {
@@ -80,10 +76,10 @@ async function saveUser({ login, ...data }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!login) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
     if (!iAm.registered || iAm.user.login !== login && !iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     const { usObjOnline, user } = await getUserByLogin(login);
@@ -119,7 +115,7 @@ async function changeSetting({ login, key, val }) {
     const { socket, handshake: { usObj: iAm } } = this;
 
     if (!login || !key) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const itsMe = iAm.registered && iAm.user.login === login;
@@ -132,7 +128,7 @@ async function changeSetting({ login, key, val }) {
     }
 
     if (forbidden) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     const { usObjOnline, user } = await getUserByLogin(login);
@@ -142,7 +138,7 @@ async function changeSetting({ login, key, val }) {
 
     // If this setting does not exist or its value is not allowed - throw error
     if (defSetting === undefined || vars === undefined || vars.indexOf(val) < 0) {
-        throw { message: msg.nosetting };
+        throw new BadParamsError(constantsError.SETTING_DOESNT_EXISTS);
     }
 
     if (!user.settings) {
@@ -177,13 +173,13 @@ async function changeDispName({ login, showName }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!login) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const itsMe = iAm.registered && iAm.user.login === login;
 
     if (!itsMe && !iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     const { usObjOnline, user } = await getUserByLogin(login);
@@ -212,10 +208,10 @@ async function setWatersignCustom({ login, watersign }) {
     const itsMe = iAm.registered && iAm.user.login === login;
 
     if (itsMe && iAm.user.nowaterchange || !itsMe && !iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
     if (!login) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const { usObjOnline, user } = await getUserByLogin(login);
@@ -264,18 +260,18 @@ async function changeEmail({ login, email, pass }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!login || !_.isString(email) || !email) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const itsMe = iAm.registered && iAm.user.login === login;
 
     if (!itsMe && !iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     email = email.toLowerCase();
-    if (!email.match(/^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/)) {
-        throw { message: 'Wrong email, check it one more time' };
+    if (!email.match(emailRegexp)) {
+        throw new InputError(constantsError.MAIL_WRONG);
     }
 
     const { usObjOnline, user } = await getUserByLogin(login);
@@ -285,7 +281,7 @@ async function changeEmail({ login, email, pass }) {
         if (existsEmailUser.login === login) {
             return { email };
         }
-        throw { message: 'This email already in use by another user' };
+        throw new InputError(constantsError.MAIL_IN_USE);
     }
 
     if (!pass) {
@@ -295,7 +291,7 @@ async function changeEmail({ login, email, pass }) {
     const isMatch = await iAm.user.checkPass(pass);
 
     if (!isMatch) {
-        throw { message: 'Wrong password' };
+        throw AuthenticationError(constantsError.AUTHENTICATION_PASS_WRONG);
     }
 
     user.email = email;
@@ -312,13 +308,13 @@ async function changeAvatar({ login, file, type }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!login || !file || !new RegExp('^[a-z0-9]{10}\\.(jpe?g|png)$', '').test(file)) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const itsMe = iAm.registered && iAm.user.login === login;
 
     if (!itsMe && !iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     const { usObjOnline, user } = await getUserByLogin(login);
@@ -388,13 +384,13 @@ async function delAvatar({ login }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!login) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const itsMe = iAm.registered && iAm.user.login === login;
 
     if (!itsMe && !iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     const { usObjOnline, user } = await getUserByLogin(login);
@@ -424,10 +420,10 @@ async function setUserWatermarkChange({ login, nowaterchange }) {
     const { socket, handshake: { usObj: iAm } } = this;
 
     if (!iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
     if (!login) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const { usObjOnline, user } = await getUserByLogin(login);
@@ -458,17 +454,17 @@ async function saveUserRanks({ login, ranks }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!login || !Array.isArray(ranks)) {
-        throw { message: msg.badParams};
+        throw new BadParamsError();
     }
 
     if (!iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     // Check that all values are allowed
     for (const rank of ranks) {
         if (!userRanksHash[rank]) {
-            throw { message: msg.badParams };
+            throw new BadParamsError();
         }
     }
 
@@ -489,11 +485,11 @@ async function giveUserRules({ login }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!login) {
-        throw { message: msg.badParams};
+        throw new BadParamsError();
     }
 
     if (!iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     const { user } = await getUserByLogin(login);
@@ -505,11 +501,11 @@ async function saveUserRules({ login, rules }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!login || !rules) {
-        throw { message: msg.badParams};
+        throw new BadParamsError();
     }
 
     if (!iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     const { usObjOnline, user } = await getUserByLogin(login);

@@ -69,5 +69,9 @@ export default Utils.reflectKeys({
 
     HISTORY_DOESNT_EXISTS: null,
 
-    MAIL_SEND: null
+    SETTING_DOESNT_EXISTS: null,
+
+    MAIL_SEND: null,
+    MAIL_WRONG: null,
+    MAIL_IN_USE: null
 });
