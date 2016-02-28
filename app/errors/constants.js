@@ -64,5 +64,8 @@ export default Utils.reflectKeys({
     ADMIN_SUPER_CANT_BE_ASSIGNED: null,
     ADMIN_ONLY_SUPER_CAN_ASSIGN: null,
 
+    CONVERT_PHOTOS_ALL: null,
+    CONVERT_PROMISE_GENERATOR: null,
+
     HISTORY_DOESNT_EXISTS: null
 });

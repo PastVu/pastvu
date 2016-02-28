@@ -1,6 +1,6 @@
-import _ from 'lodash';
 import ms from 'ms';
 import gm from 'gm';
+import _ from 'lodash';
 import path from 'path';
 import log4js from 'log4js';
 import mkdirp from 'mkdirp';
@@ -11,6 +11,8 @@ import Utils from '../commons/Utils';
 import { exec } from 'child_process';
 import { waitDb, dbEval } from './connection';
 import { Photo, PhotoConveyer, PhotoConveyerError, STPhotoConveyer } from '../models/Photo';
+import constantsError from '../app/errors/constants';
+import { ApplicationError, AuthorizationError } from '../app/errors';
 
 const execAsync = Bluebird.promisify(exec);
 const mkdirpAsync = Bluebird.promisify(mkdirp);
@@ -461,7 +463,8 @@ async function tryPromise(attemps, promiseGenerator, data, attemp) {
             `After ${attemps} attemps promise execution considered failed. ${data || ''}
             ${err}`
         );
-        throw err;
+
+        throw new ApplicationError({ code: constantsError.CONVERT_PROMISE_GENERATOR, stack: false });
     }
 }
 
@@ -502,7 +505,7 @@ export async function addPhotosAll(params) {
     const result = await dbEval('convertPhotosAll', [params], { nolock: true });
 
     if (result && result.error) {
-        throw { message: result.message || '' };
+        throw new ApplicationError({ code: constantsError.CONVERT_PHOTOS_ALL, result });
     }
 
     conveyerLength += result.conveyorAdded;
@@ -562,7 +565,7 @@ async function conveyorStat() {
     const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered) {
-        throw { message: 'Not authorized for statConveyer' };
+        throw new AuthorizationError();
     }
 
     const docs = await STPhotoConveyer.find({}, { _id: 0, __v: 0 }, { sort: 'stamp', lean: true }).exec();
