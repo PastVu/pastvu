@@ -8,7 +8,7 @@ module.exports = {
     presets: ['stage-1', 'es2015-node5'],
     plugins: [
         ['transform-runtime', {
-            polyfill: true, regenerator: false
+            polyfill: false, regenerator: false
         }]
     ]
 };
