@@ -88,7 +88,7 @@ const giveRatings = (function () {
     });
 
     return Utils.memoizePromise(async function () {
-        const [pday, pweek, pall, pcday, pcweek, pcall, ucday, ucweek, ucall, upday, upweek, upall] = await * [
+        const [pday, pweek, pall, pcday, pcweek, pcall, ucday, ucweek, ucall, upday, upweek, upall] = await Promise.all([
             // Photo by views count
             Photo.find(
                 { s: 5, vdcount: { $gt: 0 } },
@@ -129,7 +129,7 @@ const giveRatings = (function () {
                 { pcount: { $gt: 0 } }, { _id: 0, login: 1, avatar: 1, disp: 1, pcount: 1 },
                 { lean: true, limit, sort: { pcount: -1 } }
             ).exec().then(users => _.forEach(users, user => user.online = session.usLogin[user.login] !== undefined))
-        ];
+        ]);
 
         return { pday, pweek, pall, pcday, pcweek, pcall, ucday, ucweek, ucall, upday, upweek, upall };
 
