@@ -515,10 +515,10 @@ async function create({ files }) {
         files = files.slice(0, canCreate);
     }
 
-    await Promise.allfiles.map(function (item) {
+    await Promise.all(files.map(function (item) {
         item.fullfile = item.file.replace(/((.)(.)(.))/, '$2/$3/$4/$1');
         return fs.renameAsync(path.join(incomeDir, item.file), path.join(privateDir, item.fullfile));
-    });
+    }));
 
     const count = await Counter.incrementBy('photo', files.length);
 
@@ -529,7 +529,7 @@ async function create({ files }) {
     const now = Date.now();
     const next = count.next - files.length + 1;
 
-    await Promise.allfiles.map((item, i) => {
+    await Promise.all(files.map((item, i) => {
         const photo = new Photo({
             user,
             s: 0,
@@ -550,7 +550,7 @@ async function create({ files }) {
 
         cids.push({ cid: photo.cid });
         return photo.save();
-    });
+    }));
 
     converter.addPhotos(cids, 1);
 
