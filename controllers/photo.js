@@ -1275,7 +1275,7 @@ export function parseFilter(filterString) {
                         result.r = [];
                         for (filterValItem of filterVal) {
                             if (filterValItem) {
-                                result.r.unshift(filterValItem);
+                                result.r.push(filterValItem);
                             }
                         }
                         if (!result.r.length) {
@@ -1290,7 +1290,7 @@ export function parseFilter(filterString) {
                     result.rp = [];
                     for (filterValItem of filterVal) {
                         if (filterValItem) {
-                            result.rp.unshift(filterValItem);
+                            result.rp.push(filterValItem);
                         }
                     }
                     if (!result.rp.length) {
@@ -1305,7 +1305,7 @@ export function parseFilter(filterString) {
                         if (filterValItem) {
                             filterValItem = Number(filterValItem);
                             if (!isNaN(filterValItem)) { // 0 must be included, that is why check for NaN
-                                result.s.unshift(filterValItem);
+                                result.s.push(filterValItem);
                             }
                         }
                     }
@@ -2321,7 +2321,7 @@ export function buildPhotosQuery(filter, forUserId, iAm) {
         result.rarr = regionsArrAll;
     }
 
-    // console.log(JSON.stringify(query));
+    // console.log(JSON.stringify(result));
     return result;
 }
 

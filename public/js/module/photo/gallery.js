@@ -1,13 +1,13 @@
 /**
  * Модель галереи фотографий
  */
-define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/Photo', 'model/storage', 'm/photo/status', 'lib/jsuri', 'text!tpl/photo/gallery.jade', 'css!style/photo/gallery'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, Photo, storage, statuses, Uri, jade) {
+define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/Photo', 'model/storage', 'm/photo/status', 'lib/jsuri', 'text!tpl/photo/gallery.jade', 'css!style/photo/gallery'], function (_, Browser, Utils, socket, P, ko, koMapping, Cliche, globalVM, renderer, Photo, storage, statuses, Uri, jade) {
     'use strict';
     var $window = $(window);
     var imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
     var statusNums = statuses.nums;
 
-    var filter_s = _.transform(statusNums, function (result, status, num) {
+    var filterS = _.transform(statusNums, function (result, status, num) {
         result.push({ s: num, title: status.filter_title });
     }, []);
 
@@ -68,7 +68,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                         if (this.auth.iAm) {
                             // Владелец или модератор видят все статусы, можно регулировать
                             if (this.auth.iAm.role() > 4 || this.itsMine()) {
-                                return filter_s;
+                                return filterS;
                             }
                         }
                         return [];
@@ -79,7 +79,6 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
             this.subscriptions.filter_disp_s = this.filter.disp.s.subscribe(this.filterChangeHandle, this);
             this.subscriptions.filter_active = this.filter.active.subscribe(this.filterActiveChange, this);
             this.filterChangeHandleBlock = false;
-
 
             this.panelW = ko.observable('0px');
             this.w = ko.observable('0px');
@@ -105,11 +104,11 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                 return Math.min(this.pageFirstItem() + this.pageSize() - 1, this.count());
             }, this);
             this.pages = this.co.pages = ko.computed(function () {
-                var pageCount = this.pageLast(),
-                    pageFrom = Math.max(1, this.page() - this.pageSlide()),
-                    pageTo = Math.min(pageCount, this.page() + this.pageSlide()),
-                    result = [],
-                    i;
+                var pageCount = this.pageLast();
+                var pageFrom = Math.max(1, this.page() - this.pageSlide());
+                var pageTo = Math.min(pageCount, this.page() + this.pageSlide());
+                var result = [];
+                var i;
 
                 pageFrom = Math.max(1, Math.min(pageTo - 2 * this.pageSlide(), pageFrom));
                 pageTo = Math.min(pageCount, Math.max(pageFrom + 2 * this.pageSlide(), pageTo));
@@ -124,8 +123,9 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
             }, this);
 
             this.briefText = this.co.briefText = ko.computed(function () {
-                var count = this.count(),
-                    txt = '';
+                var count = this.count();
+                var txt = '';
+
                 if (count) {
                     if (this.feed()) {
                         txt = 'Всего ' + count + ' фотографий';
@@ -135,6 +135,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                 } else {
                     txt = 'Пока нет ни одной фотографии';
                 }
+
                 return txt;
             }, this);
 
@@ -197,13 +198,13 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
             }
         },
         routeHandler: function () {
-            var params = globalVM.router.params(),
-                page = params.page,
-                filterString = params.f || '',
-                filterChange = false,
-                currPhotoLength = this.photos().length,
-                needRecieve = true,
-                preTitle = '';
+            var params = globalVM.router.params();
+            var page = params.page;
+            var filterString = params.f || '';
+            var filterChange = false;
+            var currPhotoLength = this.photos().length;
+            var needRecieve = true;
+            var preTitle = '';
 
             // Если сразу открываем загрузку, то обрабатываем галерею как обычный запуск, т.е. page будет 1
             // Если галерея уже загружена и затем открываем загрузку, то ничего делать не надо
@@ -272,12 +273,12 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
             }
         },
         buildFilterString: function () {
-            var filterString = '',
-                r = this.filter.disp.r(),
-                rp = this.filter.disp.rdis(),
-                s = this.filter.disp.s(),
-                geo = this.filter.disp.geo(),
-                i;
+            var filterString = '';
+            var r = this.filter.disp.r();
+            var rp = this.filter.disp.rdis();
+            var s = this.filter.disp.s();
+            var geo = this.filter.disp.geo();
+            var i;
 
             if (geo.length === 1) {
                 filterString += (filterString ? '_' : '') + 'geo!' + geo[0];
@@ -375,8 +376,8 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
         //Обработка клика вариантов присутствия координат в фильтре
         //Чтобы постаыить вторую галку, если обе сняты, т.к. должно быть хотя-бы одно из состояний
         fgeoclk: function (data, event) {
-            var currDispGeo = data.filter.disp.geo(),
-                clickedGeo = event.target.value;
+            var currDispGeo = data.filter.disp.geo();
+            var clickedGeo = event.target.value;
 
             if (!currDispGeo.length) {
                 //Если все варианты сняты, делаем активным второй вариант
@@ -510,7 +511,10 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                 }.bind(this));
         },
         processPhotos: function (arr, regionsHash) {
-            var photo, i = arr.length, j;
+            var photo;
+            var i = arr.length;
+            var j;
+
             while (i--) {
                 photo = arr[i];
                 Photo.factory(photo, 'compact', 'h', { title: 'Без названия' });
@@ -523,14 +527,14 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
         },
 
         sizesCalc: function () {
-            var windowW = window.innerWidth, //В @media ширина считается с учетом ширины скролла (кроме chrome<29), поэтому мы тоже должны брать этот размер
-                domW = this.$dom.width(),
-                thumbW,
-                thumbH,
-                thumbN,
-                thumbWMin = 120,
-                thumbWMax = 246,
-                marginMin;
+            var windowW = window.innerWidth; //В @media ширина считается с учетом ширины скролла (кроме chrome<29), поэтому мы тоже должны брать этот размер
+            var domW = this.$dom.width();
+            var thumbW;
+            var thumbH;
+            var thumbN;
+            var thumbWMin = 120;
+            var thumbWMax = 246;
+            var marginMin;
 
             if (windowW < 1000) {
                 marginMin = 8;
@@ -580,21 +584,23 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                                 },
                                 btns: [
                                     {
-                                        css: 'btn-success', text: 'Завершить', click: function () {
-                                        this.uploadVM.createPhotos(function (data) {
-                                            if (data && !data.error) {
-                                                this.getAndCloseUpload(data.cids.length);
-                                                ga('send', 'event', 'photo', 'create', 'photo create success', data.cids.length);
-                                            } else {
-                                                ga('send', 'event', 'photo', 'create', 'photo create error');
-                                            }
-                                        }, this);
-                                    }, ctx: this
+                                        css: 'btn-success', text: 'Завершить',
+                                        click: function () {
+                                            this.uploadVM.createPhotos(function (data) {
+                                                if (data && !data.error) {
+                                                    this.getAndCloseUpload(data.cids.length);
+                                                    ga('send', 'event', 'photo', 'create', 'photo create success', data.cids.length);
+                                                } else {
+                                                    ga('send', 'event', 'photo', 'create', 'photo create error');
+                                                }
+                                            }, this);
+                                        }, ctx: this
                                     },
                                     {
-                                        css: 'btn-warning', text: 'Отмена', click: function () {
-                                        this.closeUpload();
-                                    }, ctx: this
+                                        css: 'btn-warning', text: 'Отмена',
+                                        click: function () {
+                                            this.closeUpload();
+                                        }, ctx: this
                                     }
                                 ]
                             },
@@ -658,9 +664,9 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
             event.target.parentNode.parentNode.classList.add('showPrv');
         },
         onPreviewErr: function (data, event) {
-            var $photoBox = $(event.target.parentNode),
-                parent = $photoBox[0].parentNode,
-                content = '';
+            var $photoBox = $(event.target.parentNode);
+            var parent = $photoBox[0].parentNode;
+            var content = '';
 
             event.target.style.visibility = 'hidden';
             if (data.conv) {
