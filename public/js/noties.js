@@ -35,8 +35,8 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
             } else if (_.isObject(error)) {
                 message = _.get(error, 'message') || message;
 
-                if (error.rid) {
-                    message += '<br>Номер ошибки: ' + error.rid;
+                if (error.rid && error.type !== 'NoticeError') {
+                    message += '<br><span style="color:#A7A7A7">Номер ошибки: ' + error.rid + '</span>';
                 }
             }
         }
@@ -51,7 +51,7 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
             layout: 'center',
             modal: true,
             force: true,
-            animation: { open: { height: 'toggle' }, close: {}, easing: 'swing', speed: 500 },
+            animation: { open: 'animated fadeIn' },
             buttons: [
                 {
                     addClass: 'btn btn-danger', text: params.okText || 'Ok',
@@ -178,6 +178,8 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
                     }
                 }
             ];
+        } else if (params.buttons) {
+            buttons = params.buttons;
         }
 
         var $noty = window.noty(_.assign({

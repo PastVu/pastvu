@@ -82,7 +82,7 @@
             });
 
             this.$buttons.css({
-                padding        : 5,
+                padding        : '5px 5px 7px',
                 textAlign      : 'center',
                 borderTop      : '1px solid #ccc',
                 backgroundColor: '#fff'
@@ -166,8 +166,8 @@
                     this.$buttons.css({borderTop: '1px solid #FFC237'});
                     break;
                 case 'error':
-                    this.$bar.css({backgroundColor: 'red', borderColor: 'darkred', color: '#FFF'});
-                    this.$message.css({fontWeight: 'bold'});
+                    this.$bar.css({backgroundColor: '#D12A14', borderColor: 'darkred', color: '#FFF'});
+                    this.$message.css({fontWeight: 'normal'});
                     this.$buttons.css({borderTop: '1px solid darkred'});
                     break;
                 case 'information':

@@ -773,12 +773,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                                             var regions = this.regselectVM.getSelectedRegionsFull(['cid', 'title_local']);
 
                                             if (regions.length > 1) {
-                                                window.noty({
-                                                    text: 'Допускается выбирать один регион',
+                                                noties.alert({
+                                                    message: 'Допускается выбрать только один регион',
                                                     type: 'error',
-                                                    layout: 'center',
-                                                    timeout: 3000,
-                                                    force: true
+                                                    timeout: 2500
                                                 });
                                                 return;
                                             }
@@ -836,89 +834,61 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
 
         notifyReady: function () {
-            window.noty(
-                {
-                    text: 'Чтобы фотография была опубликована, необходимо оповестить об этом модераторов<br>Вы можете сделать это в любое время, нажав кнопку «На публикацию»',
-                    type: 'information',
-                    layout: 'topRight',
-                    force: true,
-                    timeout: 6000,
-                    closeWith: ['click'],
-                    animation: {
-                        open: { height: 'toggle' },
-                        close: { height: 'toggle' },
-                        easing: 'swing',
-                        speed: 500
-                    }
-                }
-            );
+            noties.alert({
+                message: 'Чтобы фотография была опубликована, необходимо оповестить об этом модераторов<br>' +
+                'Вы можете сделать это в любое время, нажав кнопку «На публикацию»',
+                type: 'information',
+                layout: 'topRight',
+                timeout: 6000
+            });
         },
         notifyReconvert: function () {
-            window.noty(
-                {
-                    text: 'Вы изменили настройки подписи на вотермарке фотографии.<br>Изображение изменится в течении нескольких минут, обновите страницу позже',
-                    type: 'information',
-                    layout: 'topRight',
-                    force: true,
-                    timeout: 5000,
-                    closeWith: ['click'],
-                    animation: {
-                        open: { height: 'toggle' },
-                        close: { height: 'toggle' },
-                        easing: 'swing',
-                        speed: 500
-                    }
-                }
-            );
+            noties.alert({
+                message: 'Вы изменили настройки подписи на вотермарке фотографии.<br>' +
+                'Изображение изменится в течении нескольких минут, обновите страницу позже',
+                type: 'information',
+                layout: 'topRight',
+                timeout: 5000
+            });
         },
         askForGeo: function (cb, ctx) {
-            window.noty(
-                {
-                    text: 'Вы не указали точку съемки фотографии на карте и регион, к которому она может принадлежать.<br><br>' +
-                    'Установить точку можно в режиме редактирования, кликнув по карте справа и перемещая появившийся маркер.<br><br>' +
-                    'Без точки на карте фотография попадет в раздел «Где это?». ' +
-                    'В этом случае, чтобы сообщество в дальнейшем помогло определить координаты, необходимо указать регион, ' +
-                    'в котором предположительно сделана данная фотография<br><br>',
-                    type: 'confirm',
-                    layout: 'center',
-                    modal: true,
-                    force: true,
-                    animation: {
-                        open: { height: 'toggle' },
-                        close: {},
-                        easing: 'swing',
-                        speed: 500
+            noties.alert({
+                message: 'Вы не указали точку съемки фотографии на карте и регион, к которому она может принадлежать.<br><br>' +
+                'Установить точку можно в режиме редактирования, кликнув по карте справа и перемещая появившийся маркер.<br><br>' +
+                'Без точки на карте фотография попадет в раздел «Где это?». ' +
+                'В этом случае, чтобы сообщество в дальнейшем помогло определить координаты, необходимо указать регион, ' +
+                'в котором предположительно сделана данная фотография<br><br>',
+                type: 'confirm',
+                animation: { open: 'animated fadeIn' },
+                buttons: [
+                    {
+                        addClass: 'btn btn-success margBott',
+                        text: 'Указать координаты',
+                        onClick: function ($noty) {
+                            this.edit(true);
+                            $noty.close();
+                        }.bind(this)
                     },
-                    buttons: [
-                        {
-                            addClass: 'btn btn-success margBott',
-                            text: 'Указать координаты',
-                            onClick: function ($noty) {
-                                this.edit(true);
-                                $noty.close();
-                            }.bind(this)
-                        },
-                        {
-                            addClass: 'btn btn-warning margBott',
-                            text: 'Выбрать регион вручную',
-                            onClick: function ($noty) {
-                                this.edit(true);
-                                $noty.close();
-                                this.regionSelect();
-                            }.bind(this)
-                        },
-                        {
-                            addClass: 'btn btn-danger margBott', text: 'Отмена',
-                            onClick: function ($noty) {
-                                if (cb) {
-                                    cb.call(ctx);
-                                }
-                                $noty.close();
+                    {
+                        addClass: 'btn btn-warning margBott',
+                        text: 'Выбрать регион вручную',
+                        onClick: function ($noty) {
+                            this.edit(true);
+                            $noty.close();
+                            this.regionSelect();
+                        }.bind(this)
+                    },
+                    {
+                        addClass: 'btn btn-danger margBott', text: 'Отмена',
+                        onClick: function ($noty) {
+                            if (cb) {
+                                cb.call(ctx);
                             }
+                            $noty.close();
                         }
-                    ]
-                }
-            );
+                    }
+                ]
+            });
         },
 
         reasonSelect: function (action, topic, cb, ctx) {
@@ -1599,7 +1569,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 request();
             }
 
-            function request(reason) {
+            function request (reason) {
                 var p = self.p;
                 var params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), disable: disable, reason: reason };
                 self.tryOperation({

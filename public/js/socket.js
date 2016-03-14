@@ -218,7 +218,9 @@ define(['module'], function (/* module */) {
                 })
                 .then(function (result) {
                     if (result.error) {
-                        console.error('socket.run "' + name + '" returned error\n', result);
+                        console[result.error.type === 'NoticeError' ? 'warn' : 'error'](
+                            'socket.run "' + name + '" returned error\n', result
+                        );
                         result.error.rid = _.get(result, 'rid', '');
 
                         if (notyOnError) {
