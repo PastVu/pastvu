@@ -1569,7 +1569,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 request();
             }
 
-            function request (reason) {
+            function request(reason) {
                 var p = self.p;
                 var params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), disable: disable, reason: reason };
                 self.tryOperation({

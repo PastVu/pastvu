@@ -34,7 +34,6 @@ const inspect = (function () {
 
 export default async function callMethod(methodName, params = {}, isPublic = false) {
     const start = Date.now();
-    const { ridMark } = this;
     const method = methodsHash[methodName];
     const logger = getMethodLogger(methodName);
 
@@ -43,28 +42,28 @@ export default async function callMethod(methodName, params = {}, isPublic = fal
     }
 
     if (typeof method !== 'function') {
-        logger.error(`${ridMark} No such method "${methodName}" with params:`, inspect(params));
+        logger.error(`${this.ridMark} No such method "${methodName}" with params:`, inspect(params));
         throw new NotFoundError({ code: constants.NO_SUCH_METHOD, methodName, logged: true });
     }
 
     if (isPublic && !method.isPublic) {
         logger.error(
-            `${ridMark} Somebody from the outside trying to call private method "${methodName}" with params:`,
+            `${this.ridMark} Somebody from the outside trying to call private method "${methodName}" with params:`,
             inspect(params)
         );
         throw new NotFoundError({ code: constants.NO_SUCH_METHOD, methodName, logged: true });
     }
 
-    logger.info(`${ridMark} Calling webapi method "${methodName}"`);
-    // logger.debug(`${ridMark} Params:`, inspect(params));
+    logger.info(`${this.ridMark} Calling webapi method "${methodName}"`);
+    // logger.debug(`${this.ridMark} Params:`, inspect(params));
 
     try {
         const call = method.call(this, params);
         const result = call && typeof call.then === 'function' ? await call : call;
         const elapsed = Date.now() - start;
 
-        logger.info(`${ridMark} webapi method "${methodName}" has executed in ${elapsed}ms`);
-        // logger.debug(`${ridMark} Response:`, inspect(result));
+        logger.info(`${this.ridMark} webapi method "${methodName}" has executed in ${elapsed}ms`);
+        // logger.debug(`${this.ridMark} Response:`, inspect(result));
         this.trace.push({ type: 'webapi', method: methodName, ms: elapsed });
 
         return result;
@@ -75,7 +74,7 @@ export default async function callMethod(methodName, params = {}, isPublic = fal
             if (!error.logged) {
                 // If it handled error (with our type), inspect it through our toJSON method
                 logger.error(_.compact([
-                    `${ridMark} Error calling method "${methodName}" with params: ${inspect(params)}`,
+                    `${this.ridMark} Error calling method "${methodName}" with params: ${inspect(params)}`,
                     `${inspect(error.toJSON())}`,
                     error.trace ? error.stack : undefined
                 ]).join('\n'));
@@ -85,7 +84,7 @@ export default async function callMethod(methodName, params = {}, isPublic = fal
 
         // If it unhandled error (some unpredictable runtime), log it and throw our UNHANDLED_ERROR further
         logger.error(
-            `${ridMark} Error calling method "${methodName}" with params: ${inspect(params)}\n`,
+            `${this.ridMark} Error calling method "${methodName}" with params: ${inspect(params)}\n`,
             error.stack
         );
         error = new ApplicationError(constants.UNHANDLED_ERROR);

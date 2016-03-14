@@ -33,13 +33,27 @@ const inspect = (function () {
  *
  * @returns {{trace: Array, rid: string, ridMark: string}}
  */
-const genRequestContext = function () {
+const genRequestContext = function ({ handshake, socket } = {}) {
     const rid = Utils.randomString(10, true);
-    const ridMark = `[RID-${rid}]`;
     const requestTrace = [];
+    let ridMark;
 
-    return { rid, ridMark, call: webApiCall, trace: requestTrace };
+    if (handshake && handshake.usObj) {
+        const { usObj, session } = handshake;
+        ridMark = getUserIdForRidMark(rid, usObj, session);
+    } else {
+        ridMark = `[RID-${rid}]`;
+    }
+
+    return { rid, ridMark, call: webApiCall, trace: requestTrace, addUserIdToRidMark, handshake, socket };
 };
+
+function addUserIdToRidMark(usObj, session) {
+    this.ridMark = getUserIdForRidMark(this.rid, usObj, session);
+}
+function getUserIdForRidMark(rid, usObj, session) {
+    return `[RID-${rid} ${usObj.registered ? `U-${usObj.user.login}` : `S-${session.key}`}]`;
+}
 
 const logTrace = function (context, elapsedTotal, methodName) {
     if (_.size(context.trace) < 2) {
@@ -95,10 +109,9 @@ const callWebApi = async function (methodName, params) {
 export const handleHTTPRequest = async function (req, res, next) {
     const start = Date.now();
     const context = genRequestContext();
-    const { ridMark } = context;
     const writeHeadOriginal = res.writeHead;
 
-    logger.info(`${ridMark} -> HTTP request`);
+    logger.info(`${context.ridMark} -> HTTP request`);
 
     req.handshake = context.handshake = {
         host: req.headers.host,
@@ -109,7 +122,7 @@ export const handleHTTPRequest = async function (req, res, next) {
     res.writeHead = function () {
         const elapsed = Date.now() - start;
 
-        logger.info(`${ridMark} <- HTTP request finished with status ${res.statusCode} in ${elapsed}ms`);
+        logger.info(`${context.ridMark} <- HTTP request finished with status ${res.statusCode} in ${elapsed}ms`);
         logTrace(context, elapsed);
 
         res.setHeader('X-Response-Time', elapsed + 'ms');
@@ -142,7 +155,7 @@ export const handleHTTPRequest = async function (req, res, next) {
         if (error instanceof ApplicationError) {
             if (!error.logged) {
                 logger.warn(_.compact([
-                    `${ridMark} HTTP request`,
+                    `${context.ridMark} HTTP request`,
                     `${inspect(error.toJSON())}`,
                     error.trace ? error.stack : undefined
                 ]).join('\n'));
@@ -263,13 +276,10 @@ export const handleSocketConnection = (function () {
 
     return async function (socket, next) {
         const start = Date.now();
-        const context = genRequestContext();
         const handshake = socket.handshake;
         const headers = handshake.headers;
+        const context = genRequestContext({ handshake, socket });
         const ip = _.get(socket, 'client.conn.remoteAddress') || handshake.address || headers['x-real-ip'];
-
-        context.socket = socket;
-        context.handshake = handshake;
 
         logger.info(`${context.ridMark} -> Socket connection`);
 
@@ -321,9 +331,7 @@ handleSocketRequest.on('*', async function handleSocketRequest(socket, args) {
 
     socket = socket.sock;
 
-    const context = genRequestContext();
-    context.handshake = socket.handshake;
-    context.socket = socket;
+    const context = genRequestContext({ handshake: socket.handshake, socket });
 
     logger.info(`${context.ridMark} -> Socket request for "${methodName}" method has arrived`);
 

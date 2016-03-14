@@ -219,6 +219,6 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
     return {
         alert: notyAlert,
         error: notyError,
-        confirm: notyConfirm,
+        confirm: notyConfirm
     };
 });

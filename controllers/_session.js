@@ -251,6 +251,7 @@ async function addSessionToUserObject(session) {
     } else {
         logger.warn(`${this.ridMark} Anonym trying to add new session?! Key: ${session.key}`);
     }
+    this.addUserIdToRidMark(usObj, session);
 
     usObj.sessions[session.key] = session; // Add session to sessions hash of usObj
 
@@ -739,6 +740,7 @@ export async function handleConnection(ip, headers, overHTTP, req) {
         track = `Session found among ${sessConnected[sid] ? 'connected' : 'waiting connect'} sessions`;
         session = sessConnected[sid] || sessWaitingConnect[sid];
         usObj = usSid[sid];
+        this.addUserIdToRidMark(usObj, session);
 
         if (overHTTP) {
             // If client made http request again (open new browser tab), update session data, to set current stamp,
