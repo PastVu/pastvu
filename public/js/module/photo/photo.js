@@ -1199,7 +1199,6 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                                     self.exe(false);
                                 }
                             });
-                            noties.alert();
                         } else {
                             noties.confirm({
                                 message: message,
@@ -1651,6 +1650,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
                             noties.alert({
                                 message: 'Фотография удалена',
+                                ok: true,
                                 text: 'Завершить',
                                 countdown: 5,
                                 onOk: function () {
@@ -1697,23 +1697,24 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
         toConvert: function () {
             var self = this;
-            if (!this.can.convert()) {
+            if (!self.can.convert()) {
                 return false;
             }
 
             self.exe(true);
 
-            socket.run('photo.convert', { cids: [this.p.cid()] }, true).then(function (result) {
-                this.exe(false);
+            socket.run('photo.convert', { cids: [this.p.cid()] }, true)
+                .then(function (result) {
+                    self.exe(false);
 
-                window.noty({
-                    text: _.get(result, 'message') || 'Error occurred',
-                    type: 'error',
-                    layout: 'center',
-                    timeout: 2000,
-                    force: true
+                    noties.alert({
+                        message: _.get(result, 'message') || 'Отправлено',
+                        layout: 'topRight'
+                    });
+                })
+                .catch(function () {
+                    self.exe(false);
                 });
-            });
         },
 
         // Стандартная обработка поступающего массива лент фотографий,

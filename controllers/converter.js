@@ -494,7 +494,10 @@ export async function addPhotos(data, priority) {
         conveyerControl();
     }
 
-    return { message: toConvertObjs.length + ' photos added to convert conveyer' };
+    return {
+        message: (toConvertObjs.length === 1 ? 'Фотография отправлена' : `${toConvertObjs.length} фотографии отправлено`)
+        + ' на конвертацию'
+    };
 }
 
 /**

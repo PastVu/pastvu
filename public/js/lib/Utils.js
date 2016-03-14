@@ -456,7 +456,7 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
 					} else if (update) {
 						update(now / 1000 >> 0);
 					}
-				}, 100); // the smaller this number, the more accurate the timer will be
+				}, 200); // the smaller this number, the more accurate the timer will be
 		},
 		times: (function () {
 			var times = {
