@@ -79,7 +79,7 @@ async function subscribeUser({ cid, type = 'photo', subscribe }) {
  * @param setCommentView
  * @param {string} [type=photo]
  */
-export async function subscribeUserByIds(user, objId, setCommentView, type = 'photo') {
+export async function subscribeUserByIds({user, objId, setCommentView, type = 'photo'}) {
     const userId = user._id || user;
     const stamp = new Date();
     const $update = { $set: { sbscr_create: stamp } };
