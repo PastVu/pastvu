@@ -190,18 +190,25 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
             buttons: buttons
         }, getPosition(params), params.override));
 
-        if (params.ok && countdown > 0) {
+        if (params.ok && (countdown || timeout)) {
             var okButton = $('.btn', $noty.$bar);
-            okButton.text(okText + ' (' + (countdown - 1) + ')');
 
-            Utils.timer(countdown * 1000,
-                function (timeleft) {
-                    okButton.text(okText + ' (' + timeleft + ')');
-                },
-                function () {
+            if (countdown) {
+                okButton.text(okText + ' (' + (countdown - 1) + ')');
+
+                Utils.timer(countdown * 1000,
+                    function (timeleft) {
+                        okButton.text(okText + ' (' + timeleft + ')');
+                    },
+                    function () {
+                        okButton.trigger('click');
+                    }
+                );
+            } else if (timeout) {
+                setTimeout(function () {
                     okButton.trigger('click');
-                }
-            );
+                }, timeout);
+            }
         }
     }
 

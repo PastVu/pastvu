@@ -1,7 +1,12 @@
 /**
  * Модель галереи фотографий
  */
-define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/Photo', 'model/storage', 'm/photo/status', 'lib/jsuri', 'text!tpl/photo/gallery.jade', 'css!style/photo/gallery'], function (_, Browser, Utils, socket, P, ko, koMapping, Cliche, globalVM, renderer, Photo, storage, statuses, Uri, jade) {
+define([
+    'underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche',
+    'globalVM', 'renderer', 'model/Photo', 'model/storage', 'm/photo/status', 'lib/jsuri',
+    'noties', 'text!tpl/photo/gallery.jade', 'css!style/photo/gallery'
+], function (_, Browser, Utils, socket, P, ko, koMapping, Cliche, globalVM,
+             renderer, Photo, storage, statuses, Uri, noties, jade) {
     'use strict';
     var $window = $(window);
     var imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
@@ -716,14 +721,13 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                                             var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']);
 
                                             if (regions.length > 5) {
-                                                window.noty({
-                                                    text: 'Допускается выбирать до 5 регионов',
-                                                    type: 'error',
-                                                    layout: 'center',
-                                                    timeout: 3000,
-                                                    force: true
+                                                return noties.alert({
+                                                    message: 'Допускается выбирать до 5 регионов',
+                                                    type: 'warning',
+                                                    timeout: 4000,
+                                                    okClass: 'btn-warning',
+                                                    ok: true
                                                 });
-                                                return;
                                             }
 
                                             this.filter.disp.r(regions);

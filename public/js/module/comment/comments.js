@@ -1,7 +1,15 @@
 /**
  * Модель комментариев к объекту
  */
-define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'noties', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'lib/doT', 'text!tpl/comment/comments.jade', 'text!tpl/comment/cdot.jade', 'text!tpl/comment/cdotanonym.jade', 'text!tpl/comment/cdotauth.jade', 'text!tpl/comment/cdotdel.jade', 'text!tpl/comment/cdotadd.jade', 'css!style/comment/comments'], function (_, _s, Browser, Utils, socket, P, ko, koMapping, noties, Cliche, globalVM, renderer, moment, doT, html, doTComments, doTCommentAnonym, doTCommentAuth, dotCommentDel, dotCommentAdd) {
+define([
+    'underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping',
+    'noties', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'lib/doT', 'text!tpl/comment/comments.jade',
+    'text!tpl/comment/cdot.jade', 'text!tpl/comment/cdotanonym.jade', 'text!tpl/comment/cdotauth.jade',
+    'text!tpl/comment/cdotdel.jade', 'text!tpl/comment/cdotadd.jade', 'css!style/comment/comments'
+], function (_, _s, Browser, Utils, socket, P, ko, koMapping,
+             noties, Cliche, globalVM, renderer, moment, doT, html,
+             doTComments, doTCommentAnonym, doTCommentAuth,
+             dotCommentDel, dotCommentAdd) {
     'use strict';
 
     var $window = $(window);

@@ -1,7 +1,11 @@
 /**
  * Модель настроек пользователя
  */
-define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'noties', 'm/photo/fields', 'model/Region', 'model/User', 'model/storage', 'text!tpl/user/settings.jade', 'css!style/user/settings', 'bs/collapse'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, noties, fields, Region, User, storage, jade) {
+define([
+    'underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
+    'renderer', 'noties', 'm/photo/fields', 'model/Region', 'model/User', 'model/storage',
+    'text!tpl/user/settings.jade', 'css!style/user/settings', 'bs/collapse'
+], function (_, Utils, socket, P, ko, koMapping, Cliche, globalVM, renderer, noties, fields, Region, User, storage, jade) {
     function isYes(evt) {
         return !!evt.target.classList.contains('yes');
     }
@@ -161,19 +165,20 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             if (!this.watersignCustomChanged()) {
                 return;
             }
-            socket.run('profile.setWatersignCustom', { login: this.u.login(), watersign: this.u.watersignCustom() }, true)
-                .then(function (result) {
-                    var photo_watermark_add_sign = result.photo_watermark_add_sign || false;
-                    var watersignCustom = result.watersignCustom || '';
+            socket.run(
+                'profile.setWatersignCustom', { login: this.u.login(), watersign: this.u.watersignCustom() }, true
+            ).then(function (result) {
+                var photoWatermarkAddSign = result.photo_watermark_add_sign || false;
+                var watersignCustom = result.watersignCustom || '';
 
-                    this.u.settings.photo_watermark_add_sign(photo_watermark_add_sign);
-                    this.originUser.settings.photo_watermark_add_sign = photo_watermark_add_sign;
-                    this.photo_watermark_add_sign(photo_watermark_add_sign);
+                this.u.settings.photo_watermark_add_sign(photoWatermarkAddSign);
+                this.originUser.settings.photo_watermark_add_sign = photoWatermarkAddSign;
+                this.photo_watermark_add_sign(photoWatermarkAddSign);
 
-                    this.originUser.watersignCustom = watersignCustom;
-                    this.u.watersignCustom(_.random(9)); // Ugly hack to invoke watersignCustomChanged computing
-                    this.u.watersignCustom(watersignCustom);
-                }.bind(this));
+                this.originUser.watersignCustom = watersignCustom;
+                this.u.watersignCustom(_.random(9)); // Ugly hack to invoke watersignCustomChanged computing
+                this.u.watersignCustom(watersignCustom);
+            }.bind(this));
         },
         watermarkCustomCancel: function () {
             this.u.watersignCustom(this.originUser.watersignCustom);
@@ -194,13 +199,12 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 .then(function (result) {
                     var warning = !result.updated;
 
-                    window.noty({
-                        text: warning ? 'Ни одной фотографии не отправлено на конвертацию' :
-                            result.updated + ' фотографий отправлено на повторную конвертацию',
+                    noties.alert({
+                        message: warning ? 'Ни одной фотографии не отправлено на конвертацию' :
+                        result.updated + ' фотографий отправлено на повторную конвертацию',
                         type: warning ? 'warning' : 'success',
-                        layout: 'center',
-                        timeout: 3000,
-                        force: true
+                        layout: 'topRight',
+                        timeout: 4000
                     });
                 })
                 .catch(_.noop)
@@ -230,13 +234,12 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         .then(function (result) {
                             var warning = !result.updated;
 
-                            window.noty({
-                                text: warning ? 'Не найдено ни одной фотографии с индивидуальными настройками подписи' :
+                            noties.alert({
+                                message: warning ? 'Не найдено ни одной фотографии с индивидуальными настройками подписи' :
                                 'У ' + result.updated + ' фотографий сброшены индивидуальные настройки подписи и они отправлены на повторную конвертацию',
                                 type: warning ? 'warning' : 'success',
-                                layout: 'center',
-                                timeout: 3000,
-                                force: true
+                                layout: 'topRight',
+                                timeout: 4000
                             });
                         })
                         .catch(_.noop)
@@ -271,17 +274,16 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 okText: 'Да, сбросить',
                 cancelText: 'Отменить',
                 onOk: function (confirmer) {
-                    socket.run('photo.resetIndividualDownloadOrigin', { login: self.u.login(), r: region}, true)
+                    socket.run('photo.resetIndividualDownloadOrigin', { login: self.u.login(), r: region }, true)
                         .then(function (result) {
                             var warning = !result.updated;
 
-                            window.noty({
-                                text: warning ? 'Не найдено ни одной фотографии с индивидуальными настройками скачивания' :
-                                    'У ' + result.updated + ' фотографий сброшены индивидуальные настройки скачивания',
+                            noties.alert({
+                                message: warning ? 'Не найдено ни одной фотографии с индивидуальными настройками скачивания' :
+                                'У ' + result.updated + ' фотографий сброшены индивидуальные настройки скачивания',
                                 type: warning ? 'warning' : 'success',
-                                layout: 'center',
-                                timeout: 3000,
-                                force: true
+                                layout: 'topRight',
+                                timeout: 4000
                             });
                         })
                         .catch(_.noop)
@@ -371,13 +373,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     if (pass) {
                         this.auth.passInputSet({ error: error });
                     } else {
-                        window.noty({
-                            text: error.message || 'Error occurred',
-                            type: 'error',
-                            layout: 'center',
-                            timeout: 3000,
-                            force: true
-                        });
+                        noties.error(error);
                     }
                 }.bind(this));
         },
@@ -405,8 +401,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 this.u.regions.remove(function (item) {
                     return item.cid() === cid;
                 });
-                var regions = ko_mapping.toJS(this.u.regions);
-                this.saveFilterRegions(_.map(regions, 'cid'), function (err) {
+                var regions = koMapping.toJS(this.u.regions);
+                this.saveFilterRegions(_.map(regions, 'cid'), function (/*err*/) {
                     this.originUser.regions = regions;
                     ga('send', 'event', 'region', 'update', 'photo update success', regions.length);
                 }, this);
@@ -414,7 +410,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
         regionHomeSelect: function () {
             if (!this.regHomeselectVM) {
-                this.regionSelect([ko_mapping.toJS(this.u.regionHome)], 1, 1, 'Выбор домашнего региона',
+                this.regionSelect([koMapping.toJS(this.u.regionHome)], 1, 1, 'Выбор домашнего региона',
                     function (vm) {
                         this.regHomeselectVM = vm;
                     },
@@ -422,14 +418,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         var regions = this.regHomeselectVM.getSelectedRegions(['cid', 'title_local']);
 
                         if (regions.length !== 1) {
-                            window.noty({
-                                text: 'Необходимо выбрать один регион',
-                                type: 'error',
-                                layout: 'center',
-                                timeout: 2000,
-                                force: true
+                            return noties.alert({
+                                message: 'Необходимо выбрать один регион',
+                                type: 'warning',
+                                timeout: 4000,
+                                okClass: 'btn-warning',
+                                ok: true
                             });
-                            return;
                         }
 
                         this.saveHomeRegion(regions[0].cid, function (data) {
@@ -450,7 +445,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
         regionFilterSelect: function () {
             if (!this.regselectVM) {
-                this.regionSelect(ko_mapping.toJS(this.u.regions), 0, 5, 'Изменение списка регионов для фильтрации по умолчанию',
+                this.regionSelect(koMapping.toJS(this.u.regions), 0, 5, 'Изменение списка регионов для фильтрации по умолчанию',
                     function (vm) {
                         this.regselectVM = vm;
                     },
@@ -458,14 +453,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']);
 
                         if (regions.length > 5) {
-                            window.noty({
-                                text: 'Допускается выбирать до 5 регионов',
-                                type: 'error',
-                                layout: 'center',
-                                timeout: 3000,
-                                force: true
+                            return noties.alert({
+                                message: 'Допускается выбирать до 5 регионов',
+                                type: 'warning',
+                                timeout: 4000,
+                                okClass: 'btn-warning',
+                                ok: true
                             });
-                            return;
                         }
 
                         this.saveFilterRegions(_.map(regions, 'cid'), function () {
