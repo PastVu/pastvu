@@ -352,7 +352,7 @@ define([
 
             this.statFast();
             globalVM.func.showContainer(self.$container, function () {
-                socket.run('converter.conveyorStat', true)
+                socket.run('converter.conveyorStat', undefined, true)
                     .then(function (result) {
                         var data = result.data;
 

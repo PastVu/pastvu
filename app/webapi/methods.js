@@ -1,25 +1,13 @@
-import auth from '../../controllers/auth';
-import index from '../../controllers/index';
-import photo from '../../controllers/photo';
-import reason from '../../controllers/reason';
-import region from '../../controllers/region';
-import subscr from '../../controllers/subscr';
-import profile from '../../controllers/profile';
-import comment from '../../controllers/comment';
-import cluster from '../../controllers/cluster';
-import session from '../../controllers/_session';
-import settings from '../../controllers/settings';
-
-export default {
-    auth,
-    index,
-    photo,
-    reason,
-    region,
-    subscr,
-    profile,
-    comment,
-    cluster,
-    session,
-    settings
-};
+export {default as auth} from '../../controllers/auth';
+export {default as admin} from '../../controllers/admin';
+export {default as index} from '../../controllers/index';
+export {default as photo} from '../../controllers/photo';
+export {default as reason} from '../../controllers/reason';
+export {default as region} from '../../controllers/region';
+export {default as subscr} from '../../controllers/subscr';
+export {default as profile} from '../../controllers/profile';
+export {default as comment} from '../../controllers/comment';
+export {default as cluster} from '../../controllers/cluster';
+export {default as session} from '../../controllers/_session';
+export {default as settings} from '../../controllers/settings';
+export {default as converter} from '../../controllers/converter';

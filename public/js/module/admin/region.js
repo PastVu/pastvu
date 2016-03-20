@@ -473,12 +473,12 @@ define([
                 .then(function (data) {
                     // Выборке региона подставляем дефолтные значения
                     _.defaults(data.region, regionDef);
-                    error = !this.fillData(data, true);
+                    const error = !this.fillData(data, true);
 
                     if (Utils.isType('function', cb)) {
-                        cb.call(ctx, data);
+                        cb.call(ctx, data, error);
                     }
-                }, this);
+                }.bind(this));
         },
         save: function () {
             if (this.exe()) {

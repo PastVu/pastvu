@@ -31,7 +31,7 @@ define([
 			this.showing = false;
 		},
 		getRegions: function (cb, ctx) {
-			socket.run('region.giveListFull', undefined, true)
+			socket.run('region.giveListFull', {}, true)
                 .then(function (data) {
                     this.stat = data.stat;
                     this.regions(this.treeBuild(data.regions));

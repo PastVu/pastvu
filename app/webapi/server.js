@@ -1,8 +1,8 @@
 import _ from 'lodash';
 import util from 'util';
 import log4js from 'log4js';
-import methods from './methods';
 import config from '../../config';
+import * as methods from './methods';
 import Utils from '../../commons/Utils';
 import NotFoundError from '../errors/NotFound';
 import ApplicationError from '../errors/Application';
