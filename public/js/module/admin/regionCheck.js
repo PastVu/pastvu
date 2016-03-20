@@ -1,33 +1,33 @@
 /*global define:true*/
 
 /**
- * Модель создания/редактирования новости
+ * Модель проверки региона по координате
  */
 define([
     'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
-    'leaflet', 'lib/doT',
+    'noties', 'leaflet', 'lib/doT',
     'text!tpl/admin/regionCheck.jade', 'css!style/admin/regionCheck', 'css!style/leaflet/leaflet'
-], function (_, $, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, L, doT, jade) {
+], function (_, $, Utils, socket, P, ko, koMapping, Cliche, globalVM, noties, L, doT, jade) {
     'use strict';
 
-    var $requestGoogle,
-        popupLoadingTpl = doT.template(
-            "<table style='text-align: center', border='0', cellspacing='5', cellpadding='0'><tbody>" +
-            "<tr><td style='width: 200px;'>{{=it.geo}}<hr style='margin: 2px 0 5px;'></td></tr>" +
-            "<tr><td><img src='/img/misc/load.gif' style='width: 67px; height: 10px'/></td></tr>" +
-            "</tbody></table>"
-        ),
-        popupTpl = doT.template(
-            "<table style='text-align: center;', border='0', cellspacing='5', cellpadding='0'><tbody>" +
-            "<tr><td colspan='2'>{{=it.geo}}<hr style='margin: 2px 0 5px;'></td></tr>" +
-            "<tr style='font-weight: bold;'><td style='min-width:150px;'>PastVu</td><td style='min-width:150px;'>Google</td></tr>" +
-            "<tr><td style='vertical-align: top;'>" +
-            "{{~it.parr :value:index}}<a target='_blank' href='/admin/region/{{=value.cid}}'>{{=value.title_local}}</a><br>{{~}}" +
-            "</td><td style='vertical-align: top;'>" +
-            "{{~it.garr :value:index}}{{=value}}<br>{{~}}" +
-            "</td></tr>" +
-            "</tbody></table>"
-        );
+    var $requestGoogle;
+    var popupLoadingTpl = doT.template(
+        '<table style="text-align: center" border="0" cellspacing="5" cellpadding="0"><tbody>' +
+        '<tr><td style="width: 200px;">{{=it.geo}}<hr style="margin: 2px 0 5px;"></td></tr>' +
+        '<tr><td><img src="/img/misc/load.gif" style="width: 67px; height: 10px"/></td></tr>' +
+        '</tbody></table>'
+    );
+    var popupTpl = doT.template(
+        '<table style="text-align: center;" border="0" cellspacing="5" cellpadding="0"><tbody>' +
+        '<tr><td colspan="2">{{=it.geo}}<hr style="margin: 2px 0 5px;"></td></tr>' +
+        '<tr style="font-weight: bold;"><td style="min-width:150px;">PastVu</td><td style="min-width:150px;">Google</td></tr>' +
+        '<tr><td style="vertical-align: top;">' +
+        '{{~it.parr :value:index}}<a target="_blank" href="/admin/region/{{=value.cid}}">{{=value.title_local}}</a><br>{{~}}' +
+        '</td><td style="vertical-align: top;">' +
+        '{{~it.garr :value:index}}{{=value}}<br>{{~}}' +
+        '</td></tr>' +
+        '</tbody></table>'
+    );
 
     function to6Precision(number) {
         return ~~(number * 1e+6) / 1e+6;
@@ -47,8 +47,8 @@ define([
             this.show();
         },
         show: function () {
-            var passedGeo = globalVM.router.params().g,
-                passedZoom;
+            var passedGeo = globalVM.router.params().g;
+            var passedZoom;
 
             if (passedGeo) {
                 passedGeo = passedGeo.split(',').map(function (element) {
@@ -66,7 +66,7 @@ define([
             this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
             this.sizesCalc();
 
-            this.map = new L.map(this.$dom.find('.map')[0], {
+            this.map = new L.Map(this.$dom.find('.map')[0], {
                 center: passedGeo || [55.751667, 37.617778],
                 zoom: passedZoom || 7,
                 minZoom: 3,
@@ -82,7 +82,7 @@ define([
             this.map.whenReady(function () {
                 this.map
                     .addLayer(this.pointLayer)
-                    .on('zoomend', function (e) {
+                    .on('zoomend', function (/*e*/) {
                         if (this.geo && this.link()) {
                             this.link('?g=' + this.geo[0] + ',' + this.geo[1] + '&z=' + this.map.getZoom());
                         }
@@ -118,17 +118,20 @@ define([
             }
             return true;
         },
-        inputGeo: function (data, event) {
-            var val = this.$dom.find('input.inputGeo').val(),
-                geo = val.split(',').map(function (element) {
-                    return parseFloat(element);
-                });
+        inputGeo: function (/*data, event*/) {
+            var val = this.$dom.find('input.inputGeo').val();
+            var geo = val.split(',').map(function (element) {
+                return parseFloat(element);
+            });
 
             if (Utils.geo.checkLatLng(geo)) {
                 this.map.panTo(geo);
                 this.goToGeo(geo);
             } else {
-                window.noty({ text: 'Неверный формат', type: 'error', layout: 'center', timeout: 1000, force: true });
+                noties.alert({
+                    message: 'Неверный формат',
+                    type: 'warning'
+                });
             }
         },
         goToGeo: function (geo) {
@@ -141,7 +144,8 @@ define([
             this.updateRegion(geo);
         },
         markerCreate: function (geo) {
-            this.marker = L.marker(geo, {
+            this.marker = L.marker(geo,
+                {
                     draggable: true,
                     title: 'Точка для проверки региона',
                     icon: L.icon({
@@ -245,12 +249,12 @@ define([
                     console.warn(textStatus, errorThrown);
                     tplObj.garr.push(textStatus);
                 })
-                .done(function (result, textStatus, jqXHR) {
+                .done(function (result/*, textStatus, jqXHR*/) {
                     if (result && Array.isArray(result.results)) {
-                        var level2 = {},
-                            level1 = {},
-                            country = {},
-                            i = result.results.length;
+                        var level2 = {};
+                        var level1 = {};
+                        var country = {};
+                        var i = result.results.length;
 
                         if (result.status === 'OK') {
                             while (i--) {
@@ -272,6 +276,7 @@ define([
                             if (level1.long_name) {
                                 tplObj.garr.push(level1.long_name);
                             }
+                            console.log(level2);
                         } else {
                             tplObj.garr.push(result.status);
                         }
