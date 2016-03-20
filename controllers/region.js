@@ -670,8 +670,7 @@ async function save(data) {
             data.geo = data.geo.geometries[0];
         }
 
-        if (Object.keys(data.geo).length !== 2 || !Array.isArray(data.geo.coordinates) ||
-            !data.geo.coordinates.length || !data.geo.type ||
+        if (Object.keys(data.geo).length !== 2 || !Array.isArray(data.geo.coordinates) || !data.geo.coordinates.length || !data.geo.type ||
             data.geo.type !== 'Polygon' && data.geo.type !== 'MultiPolygon') {
             throw new BadParamsError(constantsError.REGION_GEOJSON_GEOMETRY);
         }
@@ -940,7 +939,7 @@ async function remove(data) {
         // Remove child regions
         Region.remove({ parents: regionToRemove.cid }).exec(),
         // Remove this regions
-        regionToRemove.remove().exec()
+        regionToRemove.remove()
     ]);
 
     await fillCache(); // Refresh regions cache
@@ -950,7 +949,15 @@ async function remove(data) {
         _session.regetUsers('all', true);
     }
 
-    return { removed: true, homeAffectedUsers, affectedUsers, affectedPhotos, affectedComments, ...modsResult };
+    return {
+        removed: true,
+        affectedUsers,
+        affectedPhotos,
+        affectedComments,
+        homeAffectedUsers,
+        homeReplacedWith: parentRegion,
+        ...modsResult
+    };
 }
 
 async function removeRegionsFromMods(usersQuery, regionsIds) {

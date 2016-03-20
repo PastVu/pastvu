@@ -89,6 +89,8 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
                             },
                             replaceTexts: function (message, okText, cancelText) {
                                 $noty.$message.children().html(message);
+                                $noty.$bar.css('height', $('.noty_bar' ,$noty.$bar).innerHeight())
+
                                 if (okText) {
                                     $('.btn-danger', $buttons).text(okText);
                                 }
@@ -149,8 +151,9 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
     }
 
     function notyAlert(params) {
+        var type = params.type || 'confirm';
         var okText = params.text || 'Ok';
-        var okClass = 'btn ' + (params.okClass || 'btn-primary');
+        var okClass = 'btn ';
         var countdown = params.countdown > 0 ? params.countdown : null;
         var timeout = null;
         var buttons = null;
@@ -158,26 +161,33 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
         if (!countdown) {
             if (params.timeout !== undefined) {
                 timeout = params.timeout;
-            } else {
+            } else if (!params.ok) {
                 timeout = 2500;
             }
         }
 
         if (params.ok) {
-            buttons = [
-                {
-                    addClass: okClass, text: okText,
-                    onClick: function ($noty) {
-                        // this = button element
-                        // $noty = $noty element
+            if (params.okClass) {
+                okClass += params.okClass;
+            } else if (type === 'error') {
+                okClass += 'btn-danger';
+            } else if (type === 'warning') {
+                okClass += 'btn-warning';
+            } else {
+                okClass += 'btn-primary';
+            }
 
-                        $noty.close();
-                        if (params.onOk) {
-                            params.onOk.call(params.ctx);
-                        }
+            buttons = [{
+                addClass: okClass, text: okText,
+                onClick: function ($noty) {
+                    // this = button element, $noty = $noty element
+
+                    $noty.close();
+                    if (params.onOk) {
+                        params.onOk.call(params.ctx);
                     }
                 }
-            ];
+            }];
         } else if (params.buttons) {
             buttons = params.buttons;
         }
@@ -219,7 +229,7 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
         notyAlert({
             message: getErrorMessage(error),
             type: 'error', timeout: params.timeout || 120000,
-            ok: true, okClass: 'btn-danger', text: 'Закрыть'
+            ok: true, text: 'Закрыть'
         });
     }
 

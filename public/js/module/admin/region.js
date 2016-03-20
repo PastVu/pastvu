@@ -7,7 +7,7 @@ define([
     'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
     'leaflet', 'noties', 'model/storage',
     'text!tpl/admin/region.jade', 'css!style/admin/region', 'css!style/leaflet/leaflet'
-], function (_, $, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, L, noties, storage, jade) {
+], function (_, $, Utils, socket, P, ko, koMapping, Cliche, globalVM, L, noties, storage, jade) {
     'use strict';
 
     var regionDef = {
@@ -40,6 +40,7 @@ define([
                             try {
                                 geo = JSON.parse(geo);
                             } catch (err) {
+                                console.log(err);
                             }
 
                             if (Utils.geo.checkLatLng(geo)) {
@@ -82,6 +83,7 @@ define([
                             try {
                                 bbox = JSON.parse(bbox);
                             } catch (err) {
+                                console.log(err);
                             }
 
                             if (Utils.geo.checkbboxLatLng(bbox)) {
@@ -120,7 +122,7 @@ define([
 
             this.showGeo = ko.observable(false);
 
-            this.region = ko_mapping.fromJS(regionDef);
+            this.region = koMapping.fromJS(regionDef);
             this.haveParent = ko.observable('0');
             this.parentCid = ko.observable(0);
             this.parentCidOrigin = 0;
@@ -151,7 +153,7 @@ define([
             this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandler, this);
             this.routeHandler();
         },
-        show: function (cb, ctx) {
+        show: function () {
             globalVM.func.showContainer(this.$container);
             this.showing = true;
             this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
@@ -215,7 +217,7 @@ define([
             this.bboxhomeLBound = null;
 
             this.regionOrigin = regionDef;
-            ko_mapping.fromJS(regionDef, this.region);
+            koMapping.fromJS(regionDef, this.region);
 
             this.haveParent('0');
             this.parentCid(0);
@@ -237,7 +239,7 @@ define([
             var region = data.region;
 
             this.regionOrigin = region;
-            ko_mapping.fromJS(region, this.region);
+            koMapping.fromJS(region, this.region);
 
             if (region.bbox) {
                 this.bboxLBound = [
@@ -263,13 +265,8 @@ define([
                 try {
                     this.geoObj = JSON.parse(region.geo);
                 } catch (err) {
-                    window.noty({
-                        text: 'GeoJSON client parse error!',
-                        type: 'error',
-                        layout: 'center',
-                        timeout: 3000,
-                        force: true
-                    });
+                    console.log(err);
+                    noties.error({ message: 'GeoJSON client parse error!\n' + err.message });
                     this.geoStringOrigin = null;
                     this.geoObj = null;
                     return false;
@@ -291,13 +288,13 @@ define([
                 var addLayers = function () {
                     if (this.bboxLBound) {
                         this.layerBBOX = L.rectangle(this.bboxLBound,
-                            { color: "#F70", weight: 1, opacity: 0.9, fillOpacity: 0.1, clickable: false }
+                            { color: '#F70', weight: 1, opacity: 0.9, fillOpacity: 0.1, clickable: false }
                         ).addTo(this.map);
                     }
 
                     if (this.geoObj) {
                         this.layerGeo = L.geoJson(this.geoObj, {
-                            style: { color: "#F00", weight: 2, opacity: 0.8, clickable: false }
+                            style: { color: '#F00', weight: 2, opacity: 0.8, clickable: false }
                         }).addTo(this.map);
                     }
                     if (this.region.bboxhome()) {
@@ -323,7 +320,7 @@ define([
                 return;
             }
 
-            this.map = new L.map(this.$dom.find('.map')[0], {
+            this.map = new L.Map(this.$dom.find('.map')[0], {
                 center: [36, -25],
                 zoom: 3,
                 minZoom: 2,
@@ -348,7 +345,8 @@ define([
         //Создание маркера центра региона
         centerMarkerCreate: function () {
             var _this = this;
-            this.centerMarker = L.marker(this.region.center(), {
+            this.centerMarker = L.marker(this.region.center(),
+                {
                     draggable: true,
                     title: 'Центр региона',
                     icon: L.icon({
@@ -410,7 +408,7 @@ define([
         bboxhomeLayerCreate: function () {
             this.layerBBOXHome = L.rectangle(this.bboxhomeLBound,
                 {
-                    color: "#070",
+                    color: '#070',
                     weight: 1,
                     dashArray: [5, 3],
                     opacity: 1,
@@ -452,7 +450,7 @@ define([
                 this.bboxhomeLayerCreate();
             }
         },
-        bboxhomeUnSet: function (bbox) {
+        bboxhomeUnSet: function () {
             this.bboxhomeLayerDestroy();
             this.region.bboxhome(undefined);
             this.bboxhomeLBound = null;
@@ -485,17 +483,15 @@ define([
                 return false;
             }
 
-            var saveData = ko_mapping.toJS(this.region),
-                needRedraw,
-                parentIsChanged;
+            var saveData = koMapping.toJS(this.region);
+            var needRedraw;
+            var parentIsChanged;
 
             if (!saveData.geo) {
-                window.noty({
-                    text: 'GeoJSON обязателен!',
-                    type: 'error',
-                    layout: 'center',
-                    timeout: 2000,
-                    force: true
+                noties.alert({
+                    message: 'GeoJSON обязателен!',
+                    type: 'warning',
+                    timeout: 2000
                 });
                 return false;
             }
@@ -504,12 +500,10 @@ define([
             }
 
             if (!saveData.title_en) {
-                window.noty({
-                    text: 'Нужно заполнить английское название',
-                    type: 'error',
-                    layout: 'center',
-                    timeout: 2000,
-                    force: true
+                noties.alert({
+                    message: 'Нужно заполнить английское название',
+                    type: 'warning',
+                    timeout: 2000
                 });
                 return false;
             }
@@ -524,12 +518,11 @@ define([
             if (this.haveParent() === '1') {
                 saveData.parent = Number(this.parentCid());
                 if (!saveData.parent) {
-                    window.noty({
-                        text: 'Если уровень региона ниже Страны, необходимо указать номер родительского региона!',
-                        type: 'error',
-                        layout: 'center',
+                    noties.alert({
+                        message: 'Если уровень региона ниже Страны, необходимо указать номер родительского региона!',
+                        type: 'warning',
                         timeout: 5000,
-                        force: true
+                        ok: true
                     });
                     return false;
                 }
@@ -539,23 +532,27 @@ define([
 
             if (!this.createMode() && saveData.parent !== this.parentCidOrigin) {
                 parentIsChanged = true;
-                this.changeParentWarn(function (confirm) {
-                    if (confirm) {
-                        processSave(this);
+                this.changeParentWarn(function (confirmer) {
+                    if (confirmer) {
+                        processSave.call(this, confirmer);
                     }
                 }, this);
             } else {
-                processSave(this);
+                processSave.call(this);
             }
 
-            function processSave(ctx) {
-                ctx.exe(true);
-                ctx.sendSave(saveData, needRedraw, function (data, error) {
+            function processSave(confirmer) {
+                this.exe(true);
+                this.sendSave(saveData, needRedraw, function (data, error) {
                     var resultStat = data && data.resultStat;
 
+                    if (confirmer) {
+                        confirmer.close();
+                    }
+
                     if (!error) {
-                        var msg = 'Регион <b>' + this.region.title_local() + '</b> успешно ' + (parentIsChanged ? 'перенесён и ' : '') + 'сохранен<br>',
-                            geoChangePhotosCount;
+                        var msg = 'Регион <b>' + this.region.title_local() + '</b> успешно ' + (parentIsChanged ? 'перенесён и ' : '') + 'сохранен<br>';
+                        var geoChangePhotosCount;
 
                         if (resultStat && Object.keys(resultStat).length) {
                             if (typeof resultStat.photosCountBeforeGeo === 'number' && typeof resultStat.photosCountAfterGeo === 'number') {
@@ -585,19 +582,14 @@ define([
                                 msg += '<br>У <b>' + resultStat.affectedMods + '</b> модераторов были сокрашены модерируемые регионы.';
                             }
                         }
-                        window.noty({
-                            text: msg, type: 'alert', layout: 'center', force: true,
-                            buttons: [
-                                {
-                                    addClass: 'btn btn-primary', text: 'Ok', onClick: function ($noty) {
-                                    $noty.close();
-                                }
-                                }
-                            ]
+                        noties.alert({
+                            message: msg,
+                            type: 'alert',
+                            ok: true
                         });
                     }
                     this.exe(false);
-                }, ctx);
+                }, this);
             }
 
             return false;
@@ -614,15 +606,14 @@ define([
                         this.fillData(data, needRedraw);
                     }
 
-                    if (Utils.isType('function', cb)) {
-                        cb.call(ctx, data);
-                    }
+                    cb.call(ctx, data);
                 }.bind(this))
                 .catch(function (error) {
                     if (error.code === 'REGION_GEOJSON_PARSE') {
-                        error.message += '\n' + error.why;
+                        error.message += '<br/>' + _.get(error, 'details.why');
                     }
                     noties.error(error);
+                    cb.call(ctx, null, error);
                 });
         },
         remove: function () {
@@ -631,15 +622,16 @@ define([
             }
             this.exe(true);
 
-            var cid = this.region.cid(),
-                title = this.region.title_local(),
-                regionParent,
-                that = this,
-                childLenArr = this.childLenArr(),
-                msg = 'Регион <b>' + title + '</b> будет удален<br>';
+            var cid = this.region.cid();
+            var title = this.region.title_local();
+            var regionParent;
+            var that = this;
+            var childLenArr = this.childLenArr();
+            var msg = 'Регион <b>' + title + '</b> будет удален<br>';
 
             if (childLenArr.length) {
-                msg += '<br>Также будут удалено <b>' + childLenArr.reduce(function (previousValue, currentValue) {
+                msg += '<br>Также будут удалено <b>' +
+                    childLenArr.reduce(function (previousValue, currentValue) {
                         return previousValue + currentValue;
                     }) + '</b> дочерних регионов<br>';
             }
@@ -650,142 +642,113 @@ define([
                 regionParent = _.last(this.region.parents());
                 msg += 'остануться в вышестоящем регионе <b>' + regionParent.title_local() + '</b><br>';
             }
-            msg += '<br>Это может занять несколько минут. Подтверждаете?<br><small><i>Операция продолжит выполняться даже при закрытии браузера</i></small>';
+            msg += '<br>Это может занять несколько минут. Подтверждаете?<br>' +
+                '<small><i>Операция продолжит выполняться даже при закрытии браузера</i></small>';
 
-            window.noty(
-                {
-                    text: msg,
-                    type: 'confirm',
-                    layout: 'center',
-                    modal: true,
-                    force: true,
-                    animation: {
-                        open: { height: 'toggle' },
-                        close: {},
-                        easing: 'swing',
-                        speed: 500
-                    },
-                    buttons: [
-                        {
-                            addClass: 'btn btn-danger', text: 'Да', onClick: function ($noty) {
-                            $noty.close();
+            noties.confirm({
+                message: msg,
+                okText: 'Да',
+                onOk: function (confirmer) {
+                    confirmer.close();
 
-                            window.noty(
-                                {
-                                    text: 'Изменения будут необратимы.<br>Вы действительно хотите удалить регион <b>' + title + '</b>?',
-                                    type: 'confirm',
-                                    layout: 'center',
-                                    modal: true,
-                                    force: true,
-                                    buttons: [
-                                        {
-                                            addClass: 'btn btn-danger', text: 'Да', onClick: function ($noty) {
-                                            // this = button element
-                                            // $noty = $noty element
-                                            var okButton = $noty.$buttons.find('button').attr('disabled', true);
+                    noties.confirm({
+                        message: 'Изменения будут необратимы.<br>' +
+                        'Вы действительно хотите удалить регион <b>' + title + '</b>?',
+                        okText: 'Да',
+                        onOk: function (confirmer) {
+                            confirmer.disable();
 
-                                            socket.run('region.remove', { cid: cid })
-                                                .then(function (data) {
-                                                    $noty.$buttons.find('.btn-danger').remove();
-                                                    okButton.attr('disabled', false).off('click');
-
-                                                    msg = 'Регион <b>' + title + '</b> успешно удалён<br>';
-                                                    if (data.affectedPhotos) {
-                                                        msg += '<b>' + data.affectedPhotos + '</b> фотографий сменили региональную принадлежность.<br>';
-                                                    }
-                                                    if (data.affectedComments) {
-                                                        msg += '<b>' + data.affectedComments + '</b> комментариев сменили региональную принадлежность вслед за своими фотографиями.<br>';
-                                                    }
-                                                    if (data.homeAffectedUsers) {
-                                                        msg += 'У <b>' + data.homeAffectedUsers + '</b> пользователей домашние регионы были заменены на ' + data.homeReplacedWith.title_en + ' (номер ' + data.homeReplacedWith.cid + ').<br>';
-                                                    }
-                                                    if (data.affectedUsers) {
-                                                        msg += 'У <b>' + data.affectedUsers + '</b> пользователей были сокрашены "Мои регионы".<br>';
-                                                    }
-                                                    if (data.affectedMods) {
-                                                        msg += 'У <b>' + data.affectedMods + '</b> модераторов были сокрашены модерируемые регионы.';
-                                                        if (data.affectedModsLose) {
-                                                            msg += 'Из них <b>' + data.affectedModsLose + '</b> пользователей лишились роли модератора.';
-                                                        }
-                                                        msg += '<br>';
-                                                    }
-                                                    $noty.$message.children().html(msg);
-
-                                                    okButton.text('Ok').on('click', function () {
-                                                        var href = '/admin/region';
-                                                        if (regionParent) {
-                                                            href += '?hl=' + regionParent.cid();
-                                                        }
-                                                        document.location.href = href;
-                                                    });
-                                                })
-                                                .catch(function (error) {
-                                                    $noty.$message.children().html(error.message || 'Error occurred');
-                                                    okButton.text('Close').on('click', function () {
-                                                        $noty.close();
-                                                        that.exe(false);
-                                                    });
-                                                });
-
+                            socket.run('region.remove', { cid: cid })
+                                .then(function (data) {
+                                    msg = 'Регион <b>' + title + '</b> успешно удалён<br>';
+                                    if (data.affectedPhotos) {
+                                        msg += '<b>' + data.affectedPhotos + '</b> ' +
+                                            'фотографий сменили региональную принадлежность.<br>';
+                                    }
+                                    if (data.affectedComments) {
+                                        msg += '<b>' + data.affectedComments + '</b> ' +
+                                            'комментариев сменили региональную принадлежность вслед за своими фотографиями.<br>';
+                                    }
+                                    if (data.homeAffectedUsers) {
+                                        msg += 'У <b>' + data.homeAffectedUsers + '</b> ' +
+                                            'пользователей домашние регионы были заменены на ' +
+                                            data.homeReplacedWith.title_en + ' (номер ' + data.homeReplacedWith.cid + ').<br>';
+                                    }
+                                    if (data.affectedUsers) {
+                                        msg += 'У <b>' + data.affectedUsers + '</b> ' +
+                                            'пользователей были сокрашены "Мои регионы".<br>';
+                                    }
+                                    if (data.affectedMods) {
+                                        msg += 'У <b>' + data.affectedMods + '</b> ' +
+                                            'модераторов были сокрашены модерируемые регионы.';
+                                        if (data.affectedModsLose) {
+                                            msg += 'Из них <b>' + data.affectedModsLose + '</b> ' +
+                                                'пользователей лишились роли модератора.';
                                         }
-                                        },
-                                        {
-                                            addClass: 'btn btn-success', text: 'Нет', onClick: function ($noty) {
-                                            $noty.close();
-                                            that.exe(false);
+                                        msg += '<br>';
+                                    }
+
+                                    confirmer.success(msg, 'Ok', null, function () {
+                                        var href = '/admin/region';
+                                        if (regionParent) {
+                                            href += '?hl=' + regionParent.cid();
                                         }
-                                        }
-                                    ]
-                                }
-                            );
-                        }
+                                        document.location.href = href;
+                                    });
+                                })
+                                .catch(function (error) {
+                                    console.error(error);
+                                    confirmer.error(error, 'Закрыть', null, function () {
+                                        that.exe(false);
+                                    });
+                                });
+
                         },
-                        {
-                            addClass: 'btn btn-primary', text: 'Отмена', onClick: function ($noty) {
-                            $noty.close();
+                        cancelText: 'Нет',
+                        canceClass: 'btn-success',
+                        onCancel: function () {
                             that.exe(false);
                         }
-                        }
-                    ]
+                    });
+                },
+                cancelText: 'Отмена',
+                onCancel: function () {
+                    that.exe(false);
                 }
-            );
+            });
+
             return false;
         },
         changeParentWarn: function (cb, ctx) {
-            var msg = 'Вы хотите поменять положение региона в иерархии.',
-                childLenArr = this.childLenArr();
+            var msg = 'Вы хотите поменять положение региона в иерархии.';
+            var childLenArr = this.childLenArr();
 
             if (childLenArr.length) {
-                msg += '<br>При этом также будут перенесены <b>' + childLenArr.reduce(function (previousValue, currentValue) {
+                msg += '<br>При этом также будут перенесены <b>' +
+                    childLenArr.reduce(function (previousValue, currentValue) {
                         return previousValue + currentValue;
                     }) + '</b> дочерних регионов<br>';
             }
-            msg += '<br>У пользователей, одновременно подписанных на переносимые регионы и их новые родительские, подписка на переносимые будет удалена, т.к. подписка родительских включает и дочерние регионы. То же касается региональных модераторских прав.';
-            msg += '<br>Это может занять несколько минут. Подтверждаете?<br><small><i>Операция продолжит выполняться даже при закрытии браузера</i></small>';
+            msg += '<br>У пользователей, одновременно подписанных на переносимые регионы и их новые родительские, ' +
+                'подписка на переносимые будет удалена, т.к. подписка родительских включает и дочерние регионы. ' +
+                'То же касается региональных модераторских прав.';
+            msg += '<br>Это может занять несколько минут. Подтверждаете?<br>' +
+                '<small><i>Операция продолжит выполняться даже при закрытии браузера</i></small>';
 
-            window.noty(
-                {
-                    text: msg,
-                    type: 'confirm',
-                    layout: 'center',
-                    modal: true,
-                    force: true,
-                    buttons: [
-                        {
-                            addClass: 'btn btn-warning', text: 'Да', onClick: function ($noty) {
-                            cb.call(ctx, true);
-                            $noty.close();
-                        }
-                        },
-                        {
-                            addClass: 'btn btn-success', text: 'Нет', onClick: function ($noty) {
-                            cb.call(ctx, false);
-                            $noty.close();
-                        }
-                        }
-                    ]
+            noties.confirm({
+                message: msg,
+                okText: 'Да',
+                okClass: 'btn-warning',
+                onOk: function (confirmer) {
+                    confirmer.disable();
+                    cb.call(ctx, confirmer);
+                },
+                cancelText: 'Нет',
+                cancelClass: 'btn-success',
+                onCancel: function () {
+                    cb.call(ctx, false);
                 }
-            );
+            });
         }
     });
 });
