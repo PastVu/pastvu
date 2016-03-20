@@ -3,14 +3,14 @@ import http from 'http';
 import util from 'util';
 import log4js from 'log4js';
 import config from '../config';
+import webApiCall from './webapi';
 import Utils from '../commons/Utils';
 import sioRouter from 'socket.io-events';
-import webApiCall from './webapi';
-import { send500 } from '../controllers/routes';
 import constants from './errors/constants';
+import { ApplicationError } from './errors';
+import { send500 } from '../controllers/routes';
 import constantsError from './errors/constants';
 import * as sessionController from '../controllers/_session';
-import { ApplicationError } from './errors';
 
 const logger = log4js.getLogger('request');
 const loggerLong = log4js.getLogger('requestLong');

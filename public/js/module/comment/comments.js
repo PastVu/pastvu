@@ -1,38 +1,38 @@
 /**
  * Модель комментариев к объекту
  */
-define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'lib/doT', 'text!tpl/comment/comments.jade', 'text!tpl/comment/cdot.jade', 'text!tpl/comment/cdotanonym.jade', 'text!tpl/comment/cdotauth.jade', 'text!tpl/comment/cdotdel.jade', 'text!tpl/comment/cdotadd.jade', 'css!style/comment/comments'], function (_, _s, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, doT, html, doTComments, doTCommentAnonym, doTCommentAuth, dotCommentDel, dotCommentAdd) {
+define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'noties', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'lib/doT', 'text!tpl/comment/comments.jade', 'text!tpl/comment/cdot.jade', 'text!tpl/comment/cdotanonym.jade', 'text!tpl/comment/cdotauth.jade', 'text!tpl/comment/cdotdel.jade', 'text!tpl/comment/cdotadd.jade', 'css!style/comment/comments'], function (_, _s, Browser, Utils, socket, P, ko, koMapping, noties, Cliche, globalVM, renderer, moment, doT, html, doTComments, doTCommentAnonym, doTCommentAuth, dotCommentDel, dotCommentAdd) {
     'use strict';
 
-    var $window = $(window),
-        commentNestingMax = 9,
+    var $window = $(window);
+    var commentNestingMax = 9;
 
-        tplComments, //Шаблон списка комментариев (для анонимных или авторизованных пользователей)
-        tplCommentsDel, //Шаблон списка удалённых комментариев (при раскрытии ветки удаленных)
-        tplCommentAuth, //Шаблон комментария для авторизованного пользователя. Нужен для вставка результата при добавлении/редактировании комментария
-        tplCommentDel, //Шаблон свёрнутого удалённого комментария
-        tplCommentAdd, //Шаблон ответа/редактирования. Поле ввода
+    var tplComments; // Шаблон списка комментариев (для анонимных или авторизованных пользователей)
+    var tplCommentsDel; // Шаблон списка удалённых комментариев (при раскрытии ветки удаленных)
+    var tplCommentAuth; // Шаблон комментария для авторизованного пользователя. Нужен для вставка результата при добавлении/редактировании комментария
+    var tplCommentDel; // Шаблон свёрнутого удалённого комментария
+    var tplCommentAdd; // Шаблон ответа/редактирования. Поле ввода
 
-        formatDateRelative = Utils.format.date.relative,
-        formatDateRelativeIn = Utils.format.date.relativeIn,
+    var formatDateRelative = Utils.format.date.relative;
+    var formatDateRelativeIn = Utils.format.date.relativeIn;
 
     //Берем элементы, дочерние текущему комментарию
     //Сначала используем nextUntil для последовательной выборки элементов до достижения уровня текущего,
     //затем выбранные тестируем, что они уровнем ниже с помощью regexp (/l[n-9]/g),
     //так как nextUntil может вернуть комментарии уровнем выше текущего, если они встретятся сразу без равного текущему уровню
-        getChildComments = function (comment, $c) {
-            var regexString = comment.level < commentNestingMax ? ('l[' + (comment.level + 1) + '-' + commentNestingMax + ']') : ('l' + commentNestingMax);
-            return $c.nextUntil('.l' + comment.level).filter(function () {
-                return new RegExp(regexString, 'g').test(this.className);
-            });
-        },
+    var getChildComments = function (comment, $c) {
+        var regexString = comment.level < commentNestingMax ? ('l[' + (comment.level + 1) + '-' + commentNestingMax + ']') : ('l' + commentNestingMax);
+        return $c.nextUntil('.l' + comment.level).filter(function () {
+            return new RegExp(regexString, 'g').test(this.className);
+        });
+    };
 
-        getCid = function (element) {
-            var cid = $(element).closest('.c').attr('id');
-            if (cid) {
-                return Number(cid.substr(1));
-            }
-        };
+    var getCid = function (element) {
+        var cid = $(element).closest('.c').attr('id');
+        if (cid) {
+            return Number(cid.substr(1));
+        }
+    };
 
     return Cliche.extend({
         jade: html,
@@ -205,22 +205,22 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                         }
                     })
                     .on('click', '.edit', function () {
-                        var $c = $(this).closest('.c'),
-                            cid = getCid($c);
+                        var $c = $(this).closest('.c');
+                        var cid = getCid($c);
                         if (cid) {
                             that.edit(cid, $c);
                         }
                     })
                     .on('click', '.remove', function () {
-                        var $c = $(this).closest('.c'),
-                            cid = getCid($c);
+                        var $c = $(this).closest('.c');
+                        var cid = getCid($c);
                         if (cid) {
                             that.remove(cid, $c);
                         }
                     })
                     .on('click', '.delico', function () {
-                        var $c = $(this).closest('.c'),
-                            cid = getCid($c);
+                        var $c = $(this).closest('.c');
+                        var cid = getCid($c);
                         if (cid) {
                             that.delShow(cid, $c);
                         }
@@ -247,8 +247,8 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
         inViewportCheck: function (cb, ctx, force) {
             window.clearTimeout(this.viewportCheckTimeout);
             if (!this.inViewport) {
-                var cTop = this.$container.offset().top,
-                    wFold = P.window.h() + (window.pageYOffset || $window.scrollTop());
+                var cTop = this.$container.offset().top;
+                var wFold = P.window.h() + (window.pageYOffset || $window.scrollTop());
 
                 if (force || cTop < wFold) {
                     this.inViewport = true;
@@ -293,9 +293,8 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
             delete this.subscriptions.loggedIn;
         },
         addMeToCommentsUsers: function () {
-            var u, rankObj;
             if (this.users[this.auth.iAm.login()] === undefined) {
-                u = {
+                var u = {
                     login: this.auth.iAm.login(),
                     avatar: this.auth.iAm.avatarth(),
                     disp: this.auth.iAm.disp(),
@@ -304,7 +303,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                 };
                 if (u.ranks) {
                     //Если есть звания у пользователя - обрабатываем их
-                    rankObj = {};
+                    var rankObj = {};
                     rankObj[this.auth.iAm.login()] = u;
                     this.usersRanks(rankObj);
                 }
@@ -331,8 +330,8 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                 if (data.cid !== this.cid) {
                     console.info('Comments received for another ' + this.type + ' ' + data.cid);
                 } else {
-                    var canModerate = !!data.canModerate,
-                        canReply = !!data.canReply;
+                    var canModerate = !!data.canModerate;
+                    var canReply = !!data.canReply;
 
                     this.usersRanks(data.users);
                     this.users = _.assign(data.users, this.users);
@@ -369,9 +368,9 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
             }.bind(this));
         },
         renderComments: function (tree, tpl, changeHash) {
-            var usersHash = this.users,
-                commentsPlain = [],
-                commentsHash;
+            var usersHash = this.users;
+            var commentsPlain = [];
+            var commentsHash;
 
             if (changeHash) {
                 commentsHash = this.commentsHash = {};
@@ -380,11 +379,9 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
             }
 
             (function treeRecursive(tree) {
-                var i = 0,
-                    len = tree.length,
-                    comment;
+                var comment;
 
-                for (; i < len; i++) {
+                for (var i = 0, len = tree.length; i < len; i++) {
                     comment = tree[i];
                     comment.user = usersHash[comment.user];
                     commentsHash[comment.cid] = comment;
@@ -404,12 +401,11 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
             });
         },
         usersRanks: function (users) {
-            var user,
-                rank,
-                i,
-                r;
+            var user;
+            var rank;
+            var r;
 
-            for (i in users) {
+            for (var i in users) {
                 user = users[i];
                 if (user !== undefined && user.ranks && user.ranks.length) {
                     user.rnks = '';
@@ -623,9 +619,9 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
             return true; //Нужно чтобы значение поменялось
         },
         inputBlur: function (evt) {
-            var $input = $(evt.target),
-                $cadd = $input.closest('.cadd'),
-                content = $.trim($input.val());
+            var $input = $(evt.target);
+            var $cadd = $input.closest('.cadd');
+            var content = $.trim($input.val());
 
             $input.off('keyup blur');
 
@@ -646,8 +642,8 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
             if (!content) {
                 $input.height('auto');
             } else {
-                var height = $input.height(),
-                    heightScroll = ($input[0].scrollHeight - 8) || height;
+                var height = $input.height();
+                var heightScroll = ($input[0].scrollHeight - 8) || height;
 
                 if (heightScroll > height) {
                     $input.height(heightScroll);
@@ -659,8 +655,8 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
         },
         // Проверяет что поле ввода нижней границей входит в экран, если нет - скроллит до нижней границе
         inputCheckInViewport: function ($cadd, scrollDuration, cb) {
-            var wFold = P.window.h() + (window.pageYOffset || $window.scrollTop()),
-                caddBottom = $cadd.offset().top + $cadd.outerHeight();
+            var wFold = P.window.h() + (window.pageYOffset || $window.scrollTop());
+            var caddBottom = $cadd.offset().top + $cadd.outerHeight();
 
             if (wFold < caddBottom) {
                 // Adding 28px to make action buttons visible
@@ -680,12 +676,10 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
             var $withContent = $('.cadd.hasContent', this.$cmts);
 
             if ($withContent.length) {
-                window.noty({
-                    text: 'У вас есть незавершенный комментарий. Отправьте или отмените его и переходите к новому',
+                noties.alert({
+                    message: 'У вас есть незавершенный комментарий. Отправьте или отмените его и переходите к новому',
                     type: 'warning',
-                    layout: 'center',
-                    timeout: 3000,
-                    force: true
+                    timeout: 4000
                 });
                 return cb.call(ctx, true);
             } else {
@@ -703,11 +697,10 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
         },
         // Комментарий на комментарий
         reply: function (cid) {
-            var commentToReply = this.commentsHash[cid],
-                $cadd;
+            var commentToReply = this.commentsHash[cid];
 
             if (commentToReply) {
-                $cadd = $('.cadd[data-cid="' + cid + '"]');
+                var $cadd = $('.cadd[data-cid="' + cid + '"]');
                 if ($cadd.length) {
                     //Если мы уже отвечаем на этот комментарий, просто переходим к этому полю ввода
                     this.inputActivate($cadd, 400, true, true);
@@ -730,8 +723,8 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                 if (err) {
                     return;
                 }
-                var commentToEdit = this.commentsHash[cid],
-                    frag;
+                var commentToEdit = this.commentsHash[cid];
+                var frag;
 
                 if (!commentToEdit) {
                     return;
@@ -757,12 +750,12 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
             }, this);
         },
         remove: function (cid, $c) {
-            var that = this,
-                comment = this.commentsHash[cid],
-                parent = comment.parent && this.commentsHash[comment.parent],
-                action = 'comment.remove';
+            var that = this;
+            var comment = that.commentsHash[cid];
+            var parent = comment.parent && that.commentsHash[comment.parent];
+            var action = 'comment.remove';
 
-            if (!comment || !this.canModerate() && (!this.canReply() || !comment.can.del)) {
+            if (!comment || !that.canModerate() && (!that.canReply() || !comment.can.del)) {
                 return;
             }
 
@@ -771,7 +764,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
             // Когда пользователь удаляет свой последний комментарий, независимо от прав,
             // он должен объяснить это просто текстом. Для этого есть отдельный action
-            if (_.isEmpty(comment.comments) && comment.user.login === this.auth.iAm.login()) {
+            if (_.isEmpty(comment.comments) && comment.user.login === that.auth.iAm.login()) {
                 action += '.own';
             }
 
@@ -782,11 +775,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                 }
                 socket.run('comment.remove', { type: this.type, cid: cid, reason: reason }, true)
                     .then(function (result) {
-                        var i,
-                            count,
-                            $cdel;
-
-                        count = Number(result.countComments);
+                        var count = Number(result.countComments);
                         if (!count) {
                             return;
                         }
@@ -812,7 +801,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                         // но убрать их из дерева тоже надо)
                         getChildComments(comment, $c).remove();
                         // Заменяем корневой удаляемый комментарий на удалённый(схлопнутый)
-                        $cdel = $(tplCommentDel(comment, {
+                        var $cdel = $(tplCommentDel(comment, {
                             fDate: formatDateRelative,
                             fDateIn: formatDateRelativeIn
                         }));
@@ -823,7 +812,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                         // то проставляем у родителя кнопку удалить
                         if (!this.canModerate() && parent && parent.user.login === this.auth.iAm.login() && parent.can.edit) {
                             parent.can.del = true;
-                            for (i = 0; i < parent.comments.length; i++) {
+                            for (var i = 0; i < parent.comments.length; i++) {
                                 if (parent.comments[i].del === undefined) {
                                     parent.can.del = false;
                                     break;
@@ -842,9 +831,11 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
                         ga('send', 'event', 'comment', 'delete', 'comment delete success', count);
 
-                        window.noty({
-                            text: 'Удалено комментариев: ' + count + ',<br>от ' + result.countUsers + ' пользователя(ей)',
-                            type: 'info', layout: 'center', timeout: 2200, force: true
+                        noties.alert({
+                            message: 'Удалено комментариев: ' + count + ', от ' + result.countUsers + ' пользователя(ей)',
+                            type: 'information',
+                            layout: 'topRight',
+                            timeout: 5000
                         });
                     }.bind(this))
                     .catch(function () {
@@ -854,9 +845,8 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
             }, this);
         },
         restore: function (cid, $c) {
-            var that = this,
-                restoring,
-                comment = that.commentsHash[cid];
+            var that = this;
+            var comment = that.commentsHash[cid];
 
             if (!comment || !that.canModerate()) {
                 return;
@@ -864,29 +854,16 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
             $('[data-origin="' + cid + '"]', that.$cmts).add($c).addClass('hlRestore');
 
-            window.noty({
-                text: 'Восстановить комментарий и его потомков, которые были удалены вместе с ним<br>(подсвечены зеленым)?',
-                type: 'confirm',
-                layout: 'center',
-                modal: true,
-                force: true,
-                animation: {
-                    open: { height: 'toggle' },
-                    close: {},
-                    easing: 'swing',
-                    speed: 500
-                },
-                buttons: [
-                    {
-                        addClass: 'btn btn-success', text: 'Да', onClick: function ($noty) {
-                        if (restoring) {
-                            return;
-                        }
-                        restoring = true;
-                        socket.run('comment.restore', { type: that.type, cid: cid }, true).then(function (result) {
-                            var count, i, c, tplIt;
+            noties.confirm({
+                message: 'Восстановить комментарий и его потомков, которые были удалены вместе с ним<br>(подсвечены зеленым)?',
+                okText: 'Да',
+                okClass: 'btn-success',
+                onOk: function (confirmer) {
+                    confirmer.disable();
 
-                            count = Number(result.countComments);
+                    socket.run('comment.restore', { type: that.type, cid: cid }, true)
+                        .then(function (result) {
+                            var count = Number(result.countComments);
                             if (!count) {
                                 return;
                             }
@@ -899,7 +876,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                                 that.parentModule.fragReplace(result.frags);
                             }
 
-                            tplIt = {
+                            var tplIt = {
                                 reply: true,
                                 mod: true,
                                 fDate: formatDateRelative,
@@ -912,7 +889,8 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
                             if (count > 1) {
                                 //Заменяем комментарии потомки, которые были удалены вместе с корневым
-                                for (i in that.commentsHash) {
+                                var c;
+                                for (var i in that.commentsHash) {
                                     c = that.commentsHash[i];
                                     if (c !== undefined && c.del !== undefined && c.del.origin === cid) {
                                         delete c.del;
@@ -920,26 +898,26 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                                     }
                                 }
                             }
-                            $noty.close();
+                            confirmer.close();
+                        })
+                        .catch(function () {
+                            confirmer.close();
                         });
-                    }
-                    },
-                    {
-                        addClass: 'btn btn-warning', text: 'Отмена', onClick: function ($noty) {
-                        $('.hlRestore', that.$cmts).removeClass('hlRestore');
-                        $noty.close();
-                    }
-                    }
-                ]
+                },
+                cancelText: 'Нет',
+                cancelClass: 'btn-warning',
+                onCancel: function () {
+                    $('.hlRestore', that.$cmts).removeClass('hlRestore');
+                }
             });
         },
         delShow: function (cid, $c) {
             if (this.loadingDel) {
                 return;
             }
-            var that = this,
-                comment = that.commentsHash[cid],
-                objCid = that.cid;
+            var that = this;
+            var comment = that.commentsHash[cid];
+            var objCid = that.cid;
 
             that.loadingDel = true;
             $('.delico', $c).addClass('loading').html('');
@@ -963,15 +941,15 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                         if (!that.delopenevents) {
                             that.$cmts
                                 .on('click', '.hidedel', function () {
-                                    var $c = $(this).closest('.c'),
-                                        cid = getCid($c);
+                                    var $c = $(this).closest('.c');
+                                    var cid = getCid($c);
                                     if (cid) {
                                         that.delHide(cid, $c);
                                     }
                                 })
                                 .on('click', '.restore', function () {
-                                    var $c = $(this).closest('.c'),
-                                        cid = getCid($c);
+                                    var $c = $(this).closest('.c');
+                                    var cid = getCid($c);
                                     if (cid) {
                                         that.restore(cid, $c);
                                     }
@@ -1029,19 +1007,21 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                         },
                         btns: [
                             {
-                                css: 'btn-warning', text: 'Выполнить', glyphicon: 'glyphicon-ok', click: function () {
-                                var reason = this.reasonVM.getReason();
-                                if (reason) {
-                                    cb.call(ctx, null, reason);
-                                    this.reasonDestroy();
-                                }
-                            }, ctx: this
+                                css: 'btn-warning', text: 'Выполнить', glyphicon: 'glyphicon-ok',
+                                click: function () {
+                                    var reason = this.reasonVM.getReason();
+                                    if (reason) {
+                                        cb.call(ctx, null, reason);
+                                        this.reasonDestroy();
+                                    }
+                                }, ctx: this
                             },
                             {
-                                css: 'btn-success', text: 'Отмена', click: function () {
-                                cb.call(ctx, true);
-                                this.reasonDestroy();
-                            }, ctx: this
+                                css: 'btn-success', text: 'Отмена',
+                                click: function () {
+                                    cb.call(ctx, true);
+                                    this.reasonDestroy();
+                                }, ctx: this
                             }
                         ]
                     },
@@ -1063,9 +1043,9 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
             }
         },
         cancel: function (vm, event) {
-            var $cadd = $(event.target).closest('.cadd'),
-                cid = $cadd.data('cid'),
-                type = $cadd.data('type');
+            var $cadd = $(event.target).closest('.cadd');
+            var cid = $cadd.data('cid');
+            var type = $cadd.data('type');
 
             if (!cid) {
                 //Если data-cid не проставлен, значит это комментарий первого уровня и его надо просто очистить, а не удалять
@@ -1082,13 +1062,13 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
             if (!vm.canReply()) {
                 return;
             }
-            var $cadd = $(event.target).closest('.cadd'),
-                $input = $('.cinput', $cadd),
-                create = $cadd.data('type') === 'reply',
-                cid = Number($cadd.data('cid')),
-                content = $input.val(), //Операции с текстом сделает сервер
-                dataInput,
-                dataToSend;
+            var $cadd = $(event.target).closest('.cadd');
+            var $input = $('.cinput', $cadd);
+            var create = $cadd.data('type') === 'reply';
+            var cid = Number($cadd.data('cid'));
+            var content = $input.val(); //Операции с текстом сделает сервер
+            var dataInput;
+            var dataToSend;
 
             if (_s.isBlank(content)) {
                 $input.val('');
@@ -1125,28 +1105,26 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
             }, $cadd);
         },
         sendCreate: function (parent, dataSend, cb, $cadd) {
+            var self = this;
+
             if (parent) {
                 // Значит создается дочерний комментарий
                 dataSend.parent = parent.cid;
                 dataSend.level = ~~parent.level + 1;
             }
 
-            socket.run('comment.createComment', dataSend, true).then(function (result) {
-                var comment,
-                    $c,
-                    $cparent;
-
+            socket.run('comment.create', dataSend, true).then(function (result) {
                 if (!result.comment) {
                     return;
                 }
 
-                comment = result.comment;
+                var comment = result.comment;
                 comment.user = self.users[comment.user];
                 comment.can.edit = true;
                 comment.can.del = true;
 
                 self.commentsHash[comment.cid] = comment;
-                $c = $(tplCommentAuth(comment, {
+                var $c = $(tplCommentAuth(comment, {
                     reply: self.canReply(),
                     mod: self.canModerate(),
                     fDate: formatDateRelative,
@@ -1169,7 +1147,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                     // то отменяем у родителя возможность удалить
                     if (!self.canModerate() && parent.can.del) {
                         parent.can.del = false;
-                        $cparent = $('#c' + parent.cid, self.$cmts);
+                        var $cparent = $('#c' + parent.cid, self.$cmts);
                         $('.remove', $cparent).prev('.dotDelimeter').remove();
                         $('.remove', $cparent).remove();
                     }
@@ -1204,7 +1182,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
             }
 
             var self = this;
-            socket.run('comment.updateComment', dataSend, true).then(function (result) {
+            socket.run('comment.update', dataSend, true).then(function (result) {
                 if (!result.comment) {
                     return;
                 }
@@ -1368,7 +1346,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                 });
             }
         },
-        showTreeHandler: function (val) {
+        showTreeHandler: function (/* val */) {
             this.navCounterHandler();
         },
         navCounterHandler: function () {
@@ -1406,16 +1384,16 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                 return;
             }
 
-            var up = $navigator.find('.up')[0],
-                down = $navigator.find('.down')[0],
-                waterlineOffset = $navigator.offset().top + $navigator.height() / 2 >> 0,
-                upCount = 0,
-                downCount = 0,
+            var up = $navigator.find('.up')[0];
+            var down = $navigator.find('.down')[0];
+            var waterlineOffset = $navigator.offset().top + $navigator.height() / 2 >> 0;
+            var upCount = 0;
+            var downCount = 0;
 
-                newComments = this.$cmts[0].querySelectorAll('.isnew'),
-                $element,
-                offset,
-                i = newComments.length;
+            var newComments = this.$cmts[0].querySelectorAll('.isnew');
+            var $element;
+            var offset;
+            var i = newComments.length;
 
             while (i--) {
                 $element = $(newComments[i]);

@@ -473,7 +473,7 @@ define([
                 .then(function (data) {
                     // Выборке региона подставляем дефолтные значения
                     _.defaults(data.region, regionDef);
-                    const error = !this.fillData(data, true);
+                    var error = !this.fillData(data, true);
 
                     if (Utils.isType('function', cb)) {
                         cb.call(ctx, data, error);

@@ -54,7 +54,7 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
             animation: { open: 'animated fadeIn' },
             buttons: [
                 {
-                    addClass: 'btn btn-danger', text: params.okText || 'Ok',
+                    addClass: 'btn ' + (params.okClass || 'btn-danger'), text: params.okText || 'Ok',
                     onClick: function ($noty) {
                         // this = button element
                         // $noty = $noty element
@@ -138,7 +138,7 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
                     }
                 },
                 {
-                    addClass: 'btn btn-primary', text: params.cancelText || 'Отмена',
+                    addClass: 'btn ' + (params.cancelClass || 'btn-primary'), text: params.cancelText || 'Отмена',
                     onClick: function ($noty) {
                         $noty.close();
                         params.onCancel && params.onCancel.call(params.ctx);
