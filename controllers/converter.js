@@ -212,7 +212,7 @@ async function conveyerClear({ value }) {
     if (value === true) {
         conveyerEnabled = value;
 
-        [removedCount] = await PhotoConveyer.remove({ converting: { $exists: false } }).exec();
+        ({ result: { n: removedCount = 0 } } = await PhotoConveyer.remove({ converting: { $exists: false } }).exec());
     }
 
     conveyerLength = await PhotoConveyer.count({}).exec();
@@ -523,8 +523,8 @@ export async function addPhotosAll(params) {
  * @param data Массив cid
  */
 export async function removePhotos(data) {
-    const docs = await PhotoConveyer.remove({ cid: { $in: data } }).exec();
-    conveyerLength -= docs.length;
+    const { result: { n: removedCount = 0 } } = await PhotoConveyer.remove({ cid: { $in: data } }).exec();
+    conveyerLength -= removedCount;
 }
 
 (async function converterStarter() {
@@ -571,7 +571,8 @@ async function conveyorStat() {
         throw new AuthorizationError();
     }
 
-    const docs = await STPhotoConveyer.find({}, { _id: 0, __v: 0 }, { sort: 'stamp', lean: true }).exec();
+    const halfYear = Date.now() - ms('0.5y');
+    const docs = await STPhotoConveyer.find({stamp: {$gt: halfYear}}, { _id: 0, __v: 0 }, { sort: 'stamp', lean: true }).exec();
 
     docs.forEach(doc => doc.stamp = doc.stamp.getTime());
 

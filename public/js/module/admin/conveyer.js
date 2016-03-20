@@ -1,18 +1,20 @@
 /**
- * Модель карты
+ * Администрирование конвейера
  */
 define([
-    'underscore', 'jquery', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer',
-    'model/User', 'model/storage',
-    'highstock/highstock.src',
-    'text!tpl/admin/conveyer.jade', 'css!style/admin/conveyer', 'bs/ext/multiselect'
-], function (_, $, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, User, storage, Highcharts, jade) {
+    'underscore', 'jquery', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping',
+    'm/_moduleCliche', 'globalVM', 'renderer', 'model/User', 'model/storage', 'noties',
+    'highstock/highstock.src', 'text!tpl/admin/conveyer.jade', 'css!style/admin/conveyer', 'bs/ext/multiselect'
+], function (_, $, Browser, Utils, socket, P, ko, koMapping, Cliche,
+             globalVM, renderer, User, storage, noties, Highcharts, jade) {
     'use strict';
 
     Highcharts = Highcharts || window.Highcharts;
     Highcharts.theme = {
-        colors: ["#DDDF0D", "#7798BF", "#55BF3B", "#DF5353", "#aaeeee", "#ff0066", "#eeaaee",
-            "#55BF3B", "#DF5353", "#7798BF", "#aaeeee"],
+        colors: [
+            '#DDDF0D', '#7798BF', '#55BF3B', '#DF5353', '#aaeeee', '#ff0066', '#eeaaee',
+            '#55BF3B', '#DF5353', '#7798BF', '#aaeeee'
+        ],
         chart: {
             backgroundColor: {
                 linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
@@ -269,7 +271,6 @@ define([
             deferredWhenReady: null // Deffered wich will be resolved when map ready
         },
         create: function () {
-            var _this = this;
             this.destroy = _.wrap(this.destroy, this.localDestroy);
             this.auth = globalVM.repository['m/common/auth'];
 
@@ -356,9 +357,10 @@ define([
                     .then(function (result) {
                         var data = result.data;
 
-                        var i = 0,
-                            timeZoneOffset = -((new Date()).getTimezoneOffset()) * 60000,
-                            stampLocal;
+                        var timeZoneOffset = -((new Date()).getTimezoneOffset()) * 60000;
+                        var stampLocal;
+                        var i = 0;
+
                         while (++i < data.length) {
                             stampLocal = data[i].stamp + timeZoneOffset;
                             self.conveyerLengthData.push(
@@ -413,69 +415,38 @@ define([
 
         startstop: function () {
             this.exe(true);
-            socket.run('converter.conveyorStartStop', !this.conveyerEnabled(), true)
-                .then(function (data) {
-                    if (data && Utils.isType('boolean', data.conveyerEnabled)) {
-                        this.conveyerEnabled(data.conveyerEnabled);
+            socket.run('converter.conveyorStartStop', { value: !this.conveyerEnabled() }, true)
+                .then(function (result) {
+                    if (result && _.isBoolean(result.conveyerEnabled)) {
+                        this.conveyerEnabled(result.conveyerEnabled);
                     }
                     this.exe(false);
                 }.bind(this));
         },
         clearConveyer: function () {
-            var _this = this;
+            var self = this;
             this.exe(true);
 
-            window.noty(
-                {
-                    text: 'Конвейер будет очищен.<br>Подтвердить операцию?',
-                    type: 'confirm',
-                    layout: 'center',
-                    modal: true,
-                    force: true,
-                    animation: {
-                        open: { height: 'toggle' },
-                        close: {},
-                        easing: 'swing',
-                        speed: 500
-                    },
-                    buttons: [
-                        {
-                            addClass: 'btn btn-danger', text: 'Да',
-                            onClick: function ($noty) {
-                                // this = button element
-                                // $noty = $noty element
-                                if ($noty.$buttons && $noty.$buttons.find) {
-                                    $noty.$buttons.find('button').attr('disabled', true).addClass('disabled');
-                                }
+            noties.confirm({
+                message: 'Конвейер будет очищен. Подтвердить операцию?',
+                onOk: function (confirmer) {
+                    confirmer.disable();
 
-                                socket.run('conveyerClear', { value: true }, true)
-                                    .then(function (data) {
-                                        $noty.$buttons.find('.btn-danger').remove();
-                                        var okButton = $noty.$buttons.find('button')
-                                            .attr('disabled', false)
-                                            .removeClass('disabled')
-                                            .off('click');
-
-                                        $noty.$message.children().html((data && data.message) || '');
-
-                                        okButton.text('Закрыть').on('click', function () {
-                                            $noty.close();
-                                            this.exe(false);
-                                            this.statFast();
-                                        }.bind(this));
-                                    }.bind(_this));
-                            }
-                        },
-                        {
-                            addClass: 'btn btn-primary', text: 'Отмена',
-                            onClick: function ($noty) {
-                                $noty.close();
-                                _this.exe(false);
-                            }
-                        }
-                    ]
+                    socket.run('converter.conveyerClear', { value: true }, true)
+                        .then(function (data) {
+                            confirmer.success(data.message, 'Закрыть', null, function () {
+                                self.exe(false);
+                                self.statFast();
+                            });
+                        })
+                        .catch(function () {
+                            self.exe(false);
+                        });
+                },
+                onCancel: function () {
+                    self.exe(false);
                 }
-            );
+            });
         },
 
         toConvert: function () {
@@ -487,16 +458,11 @@ define([
                     max: Number(self.reconvertCidMax()),
                     r: Number(self.reconvertRegion())
                 }, true)
-                .then(function (result) {
+                .then(function () {
                     self.exe(false);
-
-                    window.noty({
-                        text: _.get(result, 'message') || 'Error occurred',
-                        type: 'error',
-                        layout: 'center',
-                        timeout: 2000,
-                        force: true
-                    });
+                })
+                .catch(function () {
+                    self.exe(false);
                 });
         },
 
