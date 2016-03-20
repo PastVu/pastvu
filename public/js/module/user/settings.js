@@ -422,7 +422,6 @@ define([
                                 message: 'Необходимо выбрать один регион',
                                 type: 'warning',
                                 timeout: 4000,
-                                okClass: 'btn-warning',
                                 ok: true
                             });
                         }
@@ -457,7 +456,6 @@ define([
                                 message: 'Допускается выбирать до 5 регионов',
                                 type: 'warning',
                                 timeout: 4000,
-                                okClass: 'btn-warning',
                                 ok: true
                             });
                         }

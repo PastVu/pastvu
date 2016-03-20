@@ -2,7 +2,10 @@
 /**
  * Модель статистики пользователя
  */
-define(['underscore', 'Params', 'knockout', 'socket!', 'm/_moduleCliche', 'globalVM', 'model/storage', 'model/User', 'text!tpl/user/brief.jade', 'css!style/user/brief'], function (_, P, ko, socket, Cliche, globalVM, storage, User, jade) {
+define([
+    'underscore', 'Params', 'knockout', 'socket!', 'm/_moduleCliche', 'globalVM', 'model/storage', 'model/User',
+    'noties', 'text!tpl/user/brief.jade', 'css!style/user/brief'
+], function (_, P, ko, socket, Cliche, globalVM, storage, User, noties, jade) {
     'use strict';
 
     var mess = {
@@ -155,12 +158,8 @@ define(['underscore', 'Params', 'knockout', 'socket!', 'm/_moduleCliche', 'globa
 
             if (receivedFile && receivedFile.file) {
                 if (receivedFile.error) {
-                    window.noty({
-                        text: mess[receivedFile.error] || mess.finvalid || 'Ошибка загрузки аватары',
-                        type: 'error',
-                        layout: 'center',
-                        timeout: 4000,
-                        force: true
+                    noties.error({
+                        message: mess[receivedFile.error] || mess.finvalid || 'Ошибка загрузки аватары'
                     });
                     this.avaexe(false);
                     ga('send', 'event', 'avatar', 'upload', 'avatar upload error');
@@ -191,12 +190,8 @@ define(['underscore', 'Params', 'knockout', 'socket!', 'm/_moduleCliche', 'globa
             }
         },
         avaFail: function (e, data) {
-            window.noty({
-                text: data && data.message || 'Ошибка загрузки аватары',
-                type: 'error',
-                layout: 'center',
-                timeout: 4000,
-                force: true
+            noties.error({
+                message: data && data.message || 'Ошибка загрузки аватары'
             });
             this.avaexe(false);
         },

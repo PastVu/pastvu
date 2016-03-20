@@ -250,7 +250,6 @@ define([
                     message: 'Нельзя одновременно выбирать родительский и дочерний регионы',
                     type: 'warning',
                     timeout: 4000,
-                    okClass: 'btn-warning',
                     ok: true
                 });
                 return false;
