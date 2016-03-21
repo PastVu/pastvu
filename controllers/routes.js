@@ -1,251 +1,270 @@
 import _ from 'lodash';
+import http from 'http';
+import log4js from 'log4js';
 import config from '../config';
-import * as errors from './errors';
 import Utils from '../commons/Utils';
 import * as session from './_session';
-import { clientParams } from './settings';
+import { clientParams, ready as settingsReady } from './settings';
+import NotFoundError from '../app/errors/NotFound';
 import { getRegionsArrFromCache } from './region';
-import { givePhotoForPage, givePhotoPrevNextCids, parseFilter } from './photo';
+import { handleHTTPRequest, registerHTTPAPIHandler } from '../app/request';
+import { parseFilter } from './photo';
 
-export function loadController(app) {
-    const origin = config.client.origin;
-    const clientParamsJSON = JSON.stringify(clientParams);
+const logger404 = log4js.getLogger('404.js');
+const loggerError = log4js.getLogger('error.js');
 
-    function genInitDataString(req) {
-        const usObj = req.handshake.usObj;
-        let resultString = `var init={settings:${clientParamsJSON},` +
-            `user:${JSON.stringify(session.getPlainUser(usObj.user))}`;
+const origin = config.client.origin;
 
-        if (usObj.registered) {
-            resultString += ',registered:true';
+let clientParamsJSON = JSON.stringify(clientParams);
+settingsReady.then(() => clientParamsJSON = JSON.stringify(clientParams));
+
+function genInitDataString(req) {
+    const usObj = req.handshake.usObj;
+    let resultString = `var init={settings:${clientParamsJSON},` +
+        `user:${JSON.stringify(session.getPlainUser(usObj.user))}`;
+
+    if (usObj.registered) {
+        resultString += ',registered:true';
+    }
+
+    if (req.photoData) {
+        resultString += ',photo:' + JSON.stringify(req.photoData);
+    }
+
+    resultString += '};';
+
+    return resultString;
+};
+
+// Check for disabled js in client's browser. In this case client send query parameter '_nojs=1'
+function checkNoJS(req) {
+    const nojsShow = req.query._nojs === '1';
+    let nojsUrl;
+
+    // If client came without '_nojs' param, insert it into 'noscript' for possible redirect
+    if (!nojsShow) {
+        const { pathname, query } = req._parsedUrl;
+        nojsUrl = `${pathname}?${query ? query + '&' : ''}_nojs=1`;
+    }
+
+    return { nojsUrl, nojsShow };
+}
+
+// For paths, which don't need session, parse browser directly
+function getReqBrowser(req, res, next) {
+    const ua = req.headers['user-agent'];
+    if (ua) {
+        req.browser = session.checkUserAgent(ua);
+    }
+    next();
+};
+
+// Fill some headers for fully generated pages
+const setStaticHeaders = (function () {
+    const cacheControl = 'no-cache';
+    const xFramePolicy = 'SAMEORIGIN';
+    const xPoweredBy = 'Paul Klimashkin | klimashkin@gmail.com';
+    const xUA = 'IE=edge';
+
+    return (req, res, next) => {
+        // Directive to indicate the browser response caching rules
+        // no-cahce - browsers and proxies can cache, with mandatory request for check actuality
+        // In case of etag existens in first response,
+        // in next request client will send that etag in 'If-None-Match' header for actuality check
+        res.setHeader('Cache-Control', cacheControl);
+
+        // The page can only be displayed in a frame on the same origin as the page itself
+        // https://developer.mozilla.org/en-US/docs/Web/HTTP/X-Frame-Options
+        res.setHeader('X-Frame-Options', xFramePolicy);
+
+        if (req.browser && req.browser.agent.family === 'IE') {
+            // X-UA-Compatible header has greater precedence than Compatibility View
+            // http://msdn.microsoft.com/en-us/library/ff955275(v=vs.85).aspx
+            res.setHeader('X-UA-Compatible', xUA);
         }
 
-        if (req.photoData) {
-            resultString += ',photo:' + JSON.stringify(req.photoData);
+        res.setHeader('X-Powered-By', xPoweredBy);
+
+        if (typeof next === 'function') {
+            next();
         }
-
-        resultString += '};';
-
-        return resultString;
     };
+}());
 
-    // Check for disabled js in client's browser. In this case client send query parameter '_nojs=1'
-    const checkNoJS = req => {
-        const nojsShow = req.query._nojs === '1';
-        let nojsUrl;
+function meta(req) {
+    let title;
+    let desc;
+    const og = {};
+    const rels = [];
+    const twitter = {};
+    const {
+        pageTitle,
+        photoRel = {},
+        photoData: { photo } = {}
+    } = req;
 
-        // If page doesn't fo nojs clients yet, insert into 'noscript' reference for redirect
-        if (!nojsShow) {
-            const url = req._parsedUrl;
-            nojsUrl = url.pathname + '?' + (url.query ? url.query + '&' : '') + '_nojs=1';
+    if (photoRel.prev) {
+        rels.push({ rel: 'prev', href: `${origin}/p/${photoRel.prev}` });
+    }
+    if (photoRel.next) {
+        rels.push({ rel: 'next', href: `${origin}/p/${photoRel.next}` });
+    }
+
+    if (pageTitle) {
+        title = og.title = twitter.title = pageTitle;
+    }
+
+    if (photo) {
+        og.url = `${origin}/p/${photo.cid}`;
+
+        if (photo.desc) {
+            desc = og.desc = twitter.desc = Utils.txtHtmlToPlain(photo.desc, true);
+        } else if (!_.isEmpty(photo.regions)) {
+            // If there in no description, create it as regions names
+            desc = og.desc = twitter.desc = photo.regions.reduceRight(
+                (result, region, index) => result + region.title_local + (index ? ', ' : ''), ''
+            );
+        } else {
+            desc = '';
         }
 
-        return { nojsUrl, nojsShow };
-    };
+        title = og.title = twitter.title = photo.title;
 
-    // For paths, which don't need session, parse browser directly
-    const getReqBrowser = (req, res, next) => {
-        const ua = req.headers['user-agent'];
-        if (ua) {
-            req.browser = session.checkUserAgent(ua);
+        // Include years in OpenGraph title, if they are not in title already
+        if (!photo.title.includes(photo.year) && (!photo.year2 || !photo.title.includes(photo.year2)) &&
+            !desc.includes(photo.year) && (!photo.year2 || !desc.includes(photo.year2))) {
+            og.title = twitter.title = photo.y + ' ' + title;
         }
-        next();
-    };
 
-    // Fill some headers for fully generated pages
-    const setStaticHeaders = (function () {
-        const cacheControl = 'no-cache';
-        const xFramePolicy = 'SAMEORIGIN';
-        const xPoweredBy = 'Paul Klimashkin | klimashkin@gmail.com';
-        const xUA = 'IE=edge';
-
-        return (req, res, next) => {
-            // Directive to indicate the browser response caching rules
-            // no-cahce - browsers and proxies can cache, with mandatory request for check actuality
-            // In case of etag existens in first response,
-            // in next request client will send that etag in 'If-None-Match' header for actuality check
-            res.setHeader('Cache-Control', cacheControl);
-
-            // The page can only be displayed in a frame on the same origin as the page itself
-            // https://developer.mozilla.org/en-US/docs/Web/HTTP/X-Frame-Options
-            res.setHeader('X-Frame-Options', xFramePolicy);
-
-            if (req.browser && req.browser.agent.family === 'IE') {
-                // X-UA-Compatible header has greater precedence than Compatibility View
-                // http://msdn.microsoft.com/en-us/library/ff955275(v=vs.85).aspx
-                res.setHeader('X-UA-Compatible', xUA);
-            }
-
-            res.setHeader('X-Powered-By', xPoweredBy);
-
-            if (typeof next === 'function') {
-                next();
-            }
+        og.img = {
+            url: `${origin}/_p/a/${photo.file}`,
+            w: photo.w,
+            h: photo.h
         };
-    }());
+        twitter.img = {
+            url: `${origin}/_p/d/${photo.file}` // Twitter image must be less than 1MB in size, so use standard
+        };
+    }
+    if (!og.url) {
+        og.url = origin + req.url; // req.path if decide without params
+    }
+    if (!title) {
+        title = og.title = twitter.title = `Retro photos of mankind's habitat.`;
+    }
+    if (!desc) {
+        desc = og.desc = twitter.desc = `Archive of historical photos, generated by users`;
+    }
+    if (twitter.desc.length > 200) {
+        twitter.desc = `${twitter.desc.substr(0, 197)}...`;
+    }
+    if (!og.img) {
+        og.img = twitter.img = {
+            url: `${origin}/img/loading/Loading1.jpg`,
+            w: 758,
+            h: 304
+        };
+    }
 
+    return { title, desc, og, twitter, rels };
+}
+
+function appMainHandler(req, res) {
+    const { nojsUrl, nojsShow } = checkNoJS(req);
+    const { browser = {} } = req;
+
+    res.statusCode = 200;
+    res.render('app', {
+        nojsUrl,
+        nojsShow,
+        appName: 'Main',
+        meta: meta(req),
+        agent: browser.agent,
+        polyfills: browser.polyfills,
+        initData: genInitDataString(req)
+    });
+}
+
+function appAdminHandler(req, res) {
+    const { nojsUrl, nojsShow } = checkNoJS(req);
+    const { browser = {} } = req;
+
+    res.statusCode = 200;
+    res.render('app', {
+        nojsUrl,
+        nojsShow,
+        meta: {},
+        appName: 'Admin',
+        agent: browser.agent,
+        polyfills: browser.polyfills,
+        initData: genInitDataString(req)
+    });
+}
+
+async function getPhotoForPage(req, res, next) {
+    try {
+        const cid = Number(req.params[0]);
+        const { handshake: { context } } = req;
+
+        req.photoData = await context.call('photo.giveForPage', {cid});
+        req.photoRel = await context.call('photo.givePrevNextCids', {cid});
+
+        next();
+    } catch (error) {
+        next(error);
+    }
+}
+
+function getRegionForGallery(req, res, next) {
+    const filter = req.query.f;
+
+    if (filter) {
+        try {
+            const regions = getRegionsArrFromCache(parseFilter(filter).r);
+
+            if (!_.isEmpty(regions)) {
+                let hasRussianRegions = false;
+                let title = regions.map(({ title_en: en, title_local: local, parents }) => {
+                    if (parents[0] === 1) {
+                        hasRussianRegions = true;
+                        return local;
+                    }
+                    return en;
+                }).join(', ');
+
+                title = (hasRussianRegions ? 'Старые фотографии ' : 'Retro photos of ') + title;
+
+                req.pageTitle = title;
+            }
+        } catch (err) {
+            return next(err);
+        }
+    }
+
+    next();
+}
+
+export function bindRoutes(app) {
     [
         '/', // Root
         /^\/(?:photoUpload|ps\/feed|rules|about)\/?$/, // Strict paths (/example with or without trailing slash)
         /^\/(?:u|news)(?:\/.*)?$/, // Path with possible continuation (/example/*)
         /^\/(?:confirm)\/.+$/ // Path with mandatory continuation (/example/*)
     ]
-        .forEach(function (route) {
-            app.get(route, session.handleHTTPRequest, setStaticHeaders, appMainHandler);
+        .forEach(route => {
+            app.get(route, handleHTTPRequest, setStaticHeaders, appMainHandler);
         });
 
-    app.get(/^\/p\/(\d{1,7})$/, session.handleHTTPRequest, setStaticHeaders, getPhotoForPage, appMainHandler);
-    app.get(/^\/ps(?:\/(\d{1,6}))?\/?$/, session.handleHTTPRequest, setStaticHeaders, getRegionForGallery, appMainHandler);
+    // Photo page
+    app.get(/^\/p\/(\d{1,7})$/, handleHTTPRequest, setStaticHeaders, getPhotoForPage, appMainHandler);
+    // Gallery page
+    app.get(/^\/ps(?:\/(\d{1,6}))?\/?$/, handleHTTPRequest, setStaticHeaders, getRegionForGallery, appMainHandler);
 
-    function appMainHandler(req, res) {
-        const nojs = checkNoJS(req);
-        const photo = req.photoData && req.photoData.photo;
-
-        const meta = { og: {}, twitter: {}, rels: [] };
-
-        if (req.photoRel) {
-            if (req.photoRel.prev) {
-                meta.rels.push({ rel: 'prev', href: `${origin}/p/${req.photoRel.prev}` });
-            }
-            if (req.photoRel.next) {
-                meta.rels.push({ rel: 'next', href: `${origin}/p/${req.photoRel.next}` });
-            }
-        }
-
-        if (req.pageTitle) {
-            meta.title = meta.og.title = meta.twitter.title = req.pageTitle;
-        }
-
-        if (photo) {
-            meta.og.url = `${origin}/p/${photo.cid}`;
-
-            if (photo.desc) {
-                meta.desc = meta.og.desc = meta.twitter.desc = Utils.txtHtmlToPlain(photo.desc, true);
-            } else if (!_.isEmpty(photo.regions)) {
-                // If there in no description, create it as regions names
-                meta.desc = meta.og.desc = meta.twitter.desc = photo.regions.reduceRight(
-                    (result, region, index) => result + region.title_en + (index ? ', ' : ''), ''
-                );
-            } else {
-                meta.desc = '';
-            }
-
-            meta.title = meta.og.title = meta.twitter.title = photo.title;
-
-            // Include years in OpenGraph title, if they are not in title already
-            if (!photo.title.includes(photo.year) && (!photo.year2 || !photo.title.includes(photo.year2)) &&
-                !meta.desc.includes(photo.year) && (!photo.year2 || !meta.desc.includes(photo.year2))) {
-                meta.og.title = meta.twitter.title = photo.y + ' ' + meta.title;
-            }
-
-            meta.og.img = {
-                url: `${origin}/_p/a/${photo.file}`,
-                w: photo.w,
-                h: photo.h
-            };
-            meta.twitter.img = {
-                url: `${origin}/_p/d/${photo.file}` // Twitter image must be less than 1MB in size, so use standard
-            };
-        }
-        if (!meta.og.url) {
-            meta.og.url = origin + req.url; // req.path if decide without params
-        }
-        if (!meta.title) {
-            meta.title = meta.og.title = meta.twitter.title = `Retro photos of mankind's habitat.`;
-        }
-        if (!meta.desc) {
-            meta.desc = meta.og.desc = meta.twitter.desc = `Archive of historical photos, generated by users`;
-        }
-        if (meta.twitter.desc.length > 200) {
-            meta.twitter.desc = meta.twitter.desc.substr(0, 197) + '...';
-        }
-        if (!meta.og.img) {
-            meta.og.img = meta.twitter.img = {
-                url: `${origin}/img/loading/Loading1.jpg`,
-                w: 758,
-                h: 304
-            };
-        }
-
-        res.statusCode = 200;
-        res.render('app', {
-            meta,
-            appName: 'Main',
-            initData: genInitDataString(req),
-            nojsUrl: nojs.nojsUrl,
-            nojsShow: nojs.nojsShow,
-            agent: req.browser && req.browser.agent
-        });
+    if (config.serveHTTPApi) {
+        app.use('/api2', require('body-parser').json({ limit: '4mb' }), handleHTTPRequest, registerHTTPAPIHandler);
     }
 
-    async function getPhotoForPage(req, res, next) {
-        const cid = Number(req.params[0]);
-
-        try {
-            const photo = await givePhotoForPage(req.handshake.usObj, { cid });
-
-            if (!photo) {
-                throw { noPhoto: true };
-            }
-
-            req.photoData = photo;
-            req.photoRel = await givePhotoPrevNextCids(cid);
-
-            next();
-        } catch (err) {
-            if (err.noPhoto) {
-                next(new errors.neoError.e404('Photo ' + cid + ' does not exist'));
-            } else {
-                next(err);
-            }
-        }
-    }
-
-    function getRegionForGallery(req, res, next) {
-        const filter = req.query.f;
-
-        if (filter) {
-            try {
-                const regions = getRegionsArrFromCache(parseFilter(filter).r);
-
-                if (!_.isEmpty(regions)) {
-                    let hasRussianRegions = false;
-                    let title = regions.map(({ title_en: en, title_local: local, parents }) => {
-                        if (parents[0] === 1) {
-                            hasRussianRegions = true;
-                            return local;
-                        }
-                        return en;
-                    }).join(', ');
-
-                    title = (hasRussianRegions ? 'Старые фотографии ' : 'Retro photos of ') + title;
-
-                    req.pageTitle = title;
-                }
-            } catch (err) {
-                return next(err);
-            }
-        }
-
-        next();
-    }
-
-    [/^\/(?:admin)(?:\/.*)?$/].forEach(route => {
-        app.get(route, session.handleHTTPRequest, setStaticHeaders, appAdminHandler);
-    });
-    function appAdminHandler(req, res) {
-        const nojs = checkNoJS(req);
-
-        res.statusCode = 200;
-        res.render('app', {
-            appName: 'Admin',
-            initData: genInitDataString(req),
-            meta: {},
-            nojsUrl: nojs.nojsUrl,
-            nojsShow: nojs.nojsShow,
-            agent: req.browser && req.browser.agent
-        });
-    }
+    // Admin section
+    app.get(/^\/(?:admin)(?:\/.*)?$/, handleHTTPRequest, setStaticHeaders, appAdminHandler);
 
     // Obsolete browser
     app.get('/badbrowser', getReqBrowser, setStaticHeaders, (req, res) => {
@@ -258,17 +277,105 @@ export function loadController(app) {
 
     // My user-agent
     app.get('/myua', getReqBrowser, (req, res) => {
-        res.setHeader('Cache-Control', 'no-cache,no-store,max-age=0,must-revalidate');
+        const { browser: { accept, agent, agent: { source: title } = {} } = {} } = req;
+
         res.statusCode = 200;
-        res.render('status/myua', {
-            agent: req.browser && req.browser.agent,
-            accept: req.browser && req.browser.accept,
-            title: req.browser && req.browser.agent && req.browser.agent.source
-        });
+        res.setHeader('Cache-Control', 'no-cache,no-store,max-age=0,must-revalidate');
+        res.render('status/myua', { agent, accept, title });
     });
 
-    // ping-pong to verify the server is working
+    // Ping-pong to verify the server is working
     app.all('/ping', (req, res) => {
         res.status(200).send('pong');
     });
+
+    // Last handler. If request reaches it, means that there is no handler for this request
+    app.all('*', (req, res, next) => {
+        const { url, method, headers: { 'user-agent': ua, referer } = {} } = req;
+
+        next(new NotFoundError({ url, method, ua, referer }));
+    });
 };
+
+export const send404 = (function () {
+    const status404 = http.STATUS_CODES[404];
+    const json404 = JSON.stringify({ error: status404 });
+    let html404;
+
+    return function (req, res, error) {
+        res.statusCode = 404;
+
+        if (req.xhr) {
+            return res.end(error.toJSON ? error.toJSON() : json404);
+        }
+        if (html404) {
+            return res.end(html404);
+        }
+
+        res.render('status/404', function (err, html) {
+            if (err) {
+                loggerError.error('Cannot render 404 page', err);
+                html404 = status404;
+            } else {
+                html404 = html;
+            }
+            res.end(html404);
+        });
+    };
+}());
+
+export const send500 = (function () {
+    const status500 = http.STATUS_CODES[500];
+    const json500 = JSON.stringify({ error: status500 });
+
+    return function (req, res, error) {
+        res.statusCode = 500;
+
+        if (req.xhr) {
+            return res.end(error.toJSON ? error.toJSON() : json500);
+        }
+
+        res.render('status/500', { error }, function (err, html) {
+            if (err) {
+                loggerError.error('Cannot render 500 page', err);
+            }
+            res.end(html || '');
+        });
+    };
+}());
+
+export function bindErrorHandler(app) {
+    // Error handler, must be after other middlewares and routes (next argument is mandatory)
+    app.use((error, req, res, next) => {
+        const { handshake: { context } = {}, url, method, headers = {} } = req;
+        const is404 = error instanceof NotFoundError || error.code === 'ENOENT' || error.code === 'ENOTDIR';
+
+        if (!error.logged && !is404) {
+            if (context) {
+                loggerError.error(context.ridMark, error);
+            } else {
+                loggerError.error(error);
+            }
+        }
+
+        // If headers have already been sent to the client (we have started writing the response),
+        // express default error handler closes the connection and fails the request
+        if (res.headersSent) {
+            return next(error);
+        }
+
+        if (is404) {
+            let log404 = JSON.stringify({ url, method, ua: headers['user-agent'], referer: headers.referer });
+
+            if (context) {
+                log404 = `${context.ridMark} ${log404}`;
+            }
+
+            logger404.error(log404);
+
+            return send404(req, res, error);
+        }
+
+        send500(req, res, error);
+    });
+}

@@ -2,7 +2,8 @@
 define(['jquery', 'Utils', 'leaflet', 'Params'], function ($, Utils, L, P) {
     'use strict';
 
-    var deltaH, deltaV;
+    var deltaH;
+    var deltaV;
 
     function calcDelta() {
         deltaH = Math.floor(P.window.w() / 4);
@@ -10,9 +11,9 @@ define(['jquery', 'Utils', 'leaflet', 'Params'], function ($, Utils, L, P) {
     }
 
     calcDelta();
-	P.window.square.subscribe(calcDelta);
+    P.window.square.subscribe(calcDelta);
 
-    L.neoMap = L.Map.extend({
+    L.NeoMap = L.Map.extend({
         zoomBy: function (diff) {
             this.setZoom(this.getZoom() + diff);
         },

@@ -57,36 +57,11 @@ async function fillUserRanks() {
     }
 }
 
-export function loadController(io) {
-    io.sockets.on('connection', function (socket) {
-        socket.on('giveClientParams', function () {
-            getClientParams()
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeClientParams', resultData);
-                });
-        });
-
-        socket.on('giveUserSettingsVars', function () {
-            getUserSettingsVars()
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeUserSettingsVars', resultData);
-                });
-        });
-
-        socket.on('giveUserAllRanks', function () {
-            getUserRanks()
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeUserAllRanks', resultData);
-                });
-        });
-    });
-}
+getClientParams.isPublic = true;
+getUserSettingsVars.isPublic = true;
+getUserRanks.isPublic = true;
+export default {
+    getClientParams,
+    getUserSettingsVars,
+    getUserRanks
+};

@@ -6,6 +6,9 @@ module.exports = {
         '@(app|downloader|uploader|sitemap).js',
         'controllers/!(systemjs|api|apilog).js',
         'commons/time.js',
-        'models/*.js'
+        'models/*.js',
+        'app/*.js',
+        'app/webapi/*.js',
+        'app/errors/*.js'
     ]
 };

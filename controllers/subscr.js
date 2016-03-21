@@ -9,8 +9,10 @@ import config from '../config';
 import { waitDb } from './connection';
 import { send as sendMail } from './mail';
 import { userSettingsDef } from './settings';
-import { findPhoto, buildPhotosQuery } from './photo';
+import { buildPhotosQuery } from './photo';
 import * as userObjectRelController from './userobjectrel';
+import constantsError from '../app/errors/constants';
+import { AuthorizationError, BadParamsError, NotFoundError } from '../app/errors';
 
 import { News } from '../models/News';
 import { User } from '../models/User';
@@ -19,12 +21,6 @@ import { Session } from '../models/Sessions';
 import { UserNoty, UserObjectRel } from '../models/UserStates';
 
 const logger = log4js.getLogger('subscr.js');
-const msg = {
-    badParams: 'Invalid query parameters',
-    deny: 'You do not have permission for this action',
-    noObject: 'Commented object does not exist or moderators changed it status, which is not available to you',
-    nouser: 'Requested user does not exist'
-};
 
 let noticeTpl;
 const noticeTplPath = path.normalize('./views/mail/notice.jade');
@@ -32,31 +28,31 @@ const sendFreq = 1500; // Conveyor step frequency in ms
 const sendPerStep = 10; // Amount of sending emails in conveyor step
 const subscrPerPage = 24;
 const sortNotice = (a, b) => a.brief.newest < b.brief.newest ? 1 : (a.brief.newest > b.brief.newest ? -1 : 0);
-const sortSubscr = ({ ccount_new: aCount = 0, sbscr_create: aDate}, { ccount_new: bCount = 0, sbscr_create: bDate}) =>
-    aCount < bCount ? 1 : aCount > bCount ? - 1 : aDate < bDate ? 1 : aDate > bDate ? -1 : 0;
+const sortSubscr = ({ ccount_new: aCount = 0, sbscr_create: aDate }, { ccount_new: bCount = 0, sbscr_create: bDate }) =>
+    aCount < bCount ? 1 : aCount > bCount ? -1 : aDate < bDate ? 1 : aDate > bDate ? -1 : 0;
 const declension = {
     comment: [' new comment', ' new comments'],
     commentUnread: [' unread']
 };
 
-/**
- * Subscribe to/unsubscribe from object (external, for current user by object cid)
- * @param iAm
- */
-async function subscribeUser(iAm, { cid, type = 'photo', subscribe } = {}) {
+// Subscribe to/unsubscribe from object (external, for current user by object cid)
+async function subscribeUser({ cid, type = 'photo', subscribe }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!iAm.registered) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
     cid = Number(cid);
 
     if (!cid || cid < 1) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
-    const obj = await (type === 'news' ? News.findOne({ cid }, { _id: 1 }).exec() : findPhoto(iAm, { cid }));
+    const obj = await (type === 'news' ?
+        News.findOne({ cid }, { _id: 1 }).exec() : this.call('photo.find', { query: { cid } }));
 
     if (_.isEmpty(obj)) {
-        throw { message: msg.noObject };
+        throw new NotFoundError(constantsError.COMMENT_NO_OBJECT);
     }
 
     if (subscribe) {
@@ -83,7 +79,7 @@ async function subscribeUser(iAm, { cid, type = 'photo', subscribe } = {}) {
  * @param setCommentView
  * @param {string} [type=photo]
  */
-export async function subscribeUserByIds(user, objId, setCommentView, type = 'photo') {
+export async function subscribeUserByIds({user, objId, setCommentView, type = 'photo'}) {
     const userId = user._id || user;
     const stamp = new Date();
     const $update = { $set: { sbscr_create: stamp } };
@@ -100,7 +96,7 @@ export async function subscribeUserByIds(user, objId, setCommentView, type = 'ph
  * @param objId
  * @param [userId] Without it remove subscription to object from all users
  */
-export async function unSubscribeObj(objId, userId) {
+async function unSubscribeObj({ objId, userId }) {
     const query = { obj: objId };
 
     if (userId) {
@@ -198,8 +194,8 @@ export async function userThrottleChange(userId, newThrottle) {
 
     const nearestNoticeTimeStamp = Date.now() + 10000;
     const newNextNoty = userNoty.lastnoty && userNoty.lastnoty.getTime ?
-            Math.max(userNoty.lastnoty.getTime() + newThrottle, nearestNoticeTimeStamp) :
-            nearestNoticeTimeStamp;
+        Math.max(userNoty.lastnoty.getTime() + newThrottle, nearestNoticeTimeStamp) :
+        nearestNoticeTimeStamp;
 
     await UserNoty.update({ user: userId }, { $set: { nextnoty: new Date(newNextNoty) } }).exec();
 }
@@ -209,13 +205,13 @@ export async function userThrottleChange(userId, newThrottle) {
  * @param users Array of users _id
  */
 async function scheduleUserNotice(users) {
-    const [usersThrottle, usersNoty] = await* [
+    const [usersThrottle, usersNoty] = await Promise.all([
         // Find for every user 'throttle' value
         User.find({ _id: { $in: users } }, { _id: 1, 'settings.subscr_throttle': 1 }, { lean: true }).exec(),
         // Find noty of users, even scheduled
         // (if we won't, we can't understand which is planed already, and wich is planning for the first time)
         UserNoty.find({ user: { $in: users } }, { _id: 0 }, { lean: true }).exec()
-    ];
+    ]);
 
     const usersNotyHash = {};
     const usersTrottleHash = {};
@@ -294,10 +290,10 @@ const notifierConveyor = (function () {
             const userIds = [];
             const nowDate = new Date();
 
-            await* usersNoty.map(({ user }) => {
+            await Promise.all(usersNoty.map(({ user }) => {
                 userIds.push(user);
                 return sendUserNotice(user).catch(err => logger.error('sendUserNotice', err));
-            });
+            }));
 
             await UserNoty.update(
                 { user: { $in: userIds } },
@@ -321,12 +317,12 @@ const notifierConveyor = (function () {
  * @param userId
  */
 async function sendUserNotice(userId) {
-    const userObj = session.getOnline(null, userId);
-    const user = await (userObj ? Promise.resolve(userObj.user) :
-        User.findOne({ _id: userId }, { _id: 1, login: 1, disp: 1, email: 1 }, { lean: true }).exec());
+    const userObj = session.getOnline({ userId });
+    const user = userObj ? userObj.user :
+        await User.findOne({ _id: userId }, { _id: 1, login: 1, disp: 1, email: 1 }, { lean: true }).exec();
 
     if (!user) {
-        throw { message: msg.nouser };
+        throw new NotFoundError(constantsError.NO_SUCH_USER);
     }
 
     // Find all subscriptions of users, which ready for notyfication (sbscr_noty: true)
@@ -368,7 +364,7 @@ async function sendUserNotice(userId) {
     }
 
     // Select each object and amount of unread and new comments for it
-    const [news = [], photos = []] = await* [
+    const [news = [], photos = []] = await Promise.all([
         objsIdNews.length ? News.find(
             { _id: { $in: objsIdNews }, ccount: { $gt: 0 } },
             { _id: 1, cid: 1, title: 1, ccount: 1 }, { lean: true }
@@ -378,7 +374,7 @@ async function sendUserNotice(userId) {
             { _id: { $in: objsIdPhotos }, ccount: { $gt: 0 } },
             { _id: 1, cid: 1, title: 1, ccount: 1 }, { lean: true }
         ).exec().then(photos => userObjectRelController.getNewCommentsBrief(photos, relHash, userId)) : undefined
-    ];
+    ]);
 
     if (_.isEmpty(news) && _.isEmpty(photos)) {
         return await resetRelsNoty();
@@ -409,6 +405,7 @@ async function sendUserNotice(userId) {
 
         return obj;
     }
+
     news.forEach(_.partial(objProcess, newsResult));
     photos.forEach(_.partial(objProcess, photosResult));
 
@@ -439,25 +436,27 @@ async function sendUserNotice(userId) {
 }
 
 // Return paged list of user's subscriptions
-async function getUserSubscr(iAm, data) {
-    if (!_.isObject(data)) {
-        throw { message: msg.badParams };
+async function giveUserSubscriptions({ login, page = 1, type = 'photo' }) {
+    const { handshake: { usObj: iAm } } = this;
+
+    if (!login) {
+        throw new BadParamsError();
     }
-    if (!iAm.registered || iAm.user.login !== data.login && !iAm.isAdmin) {
-        throw { message: msg.deny };
+    if (!iAm.registered || iAm.user.login !== login && !iAm.isAdmin) {
+        throw new AuthorizationError();
     }
 
-    const userId = await User.getUserID(data.login);
+    const userId = await User.getUserID(login);
 
     if (!userId) {
-        throw { message: msg.nouser };
+        throw new NotFoundError(constantsError.NO_SUCH_USER);
     }
 
-    const page = (Math.abs(Number(data.page)) || 1) - 1;
+    page = (Math.abs(Number(page)) || 1) - 1;
     const skip = page * subscrPerPage;
 
     const rels = await UserObjectRel.find(
-        { user: userId, type: data.type, sbscr_create: { $exists: true } },
+        { user: userId, type, sbscr_create: { $exists: true } },
         { _id: 0, user: 0, type: 0, sbscr_noty_change: 0 },
         { lean: true, skip, limit: subscrPerPage, sort: { ccount_new: -1, sbscr_create: -1 } }
     ).exec();
@@ -472,7 +471,7 @@ async function getUserSubscr(iAm, data) {
             objIds.push(rel.obj);
         }
 
-        objs = await (data.type === 'news' ?
+        objs = await (type === 'news' ?
             News.find(
                 { _id: { $in: objIds } }, { _id: 1, cid: 1, title: 1, ccount: 1 }, { lean: true }
             ).exec() :
@@ -482,7 +481,7 @@ async function getUserSubscr(iAm, data) {
             ).exec());
     }
 
-    const [countPhoto = 0, countNews = 0, { nextnoty: nextNoty } = {}] = await* [
+    const [countPhoto = 0, countNews = 0, { nextnoty: nextNoty } = {}] = await Promise.all([
         // Count total number of photos in subscriptions
         UserObjectRel.count({ user: userId, type: 'photo', sbscr_create: { $exists: true } }).exec(),
 
@@ -495,7 +494,7 @@ async function getUserSubscr(iAm, data) {
         ).exec() || undefined
         // ( await xxx || undefined ) needed for 'null' to be replaced with default value '{}' in desctruction
         // https://github.com/Automattic/mongoose/issues/3457
-    ];
+    ]);
 
     for (const obj of objs) {
         const rel = relHash[obj._id];
@@ -516,17 +515,17 @@ async function getUserSubscr(iAm, data) {
     objs.sort(sortSubscr); // $in doesn't guarantee sorting, so do manual sort
 
     return {
+        type,
+        nextNoty,
         countNews,
         countPhoto,
         subscr: objs,
         page: page + 1,
-        type: data.type,
-        perPage: subscrPerPage,
-        nextNoty
+        perPage: subscrPerPage
     };
 };
 
-export const ready = new Promise(async function(resolve, reject) {
+export const ready = new Promise(async function (resolve, reject) {
     try {
         const data = await fs.readFileAsync(noticeTplPath, 'utf-8');
 
@@ -543,28 +542,12 @@ export const ready = new Promise(async function(resolve, reject) {
     }
 });
 
-export function loadController(io) {
-    io.sockets.on('connection', function (socket) {
-        const hs = socket.handshake;
+subscribeUser.isPublic = true;
+giveUserSubscriptions.isPublic = true;
+export default {
+    subscribeUser,
+    giveUserSubscriptions,
 
-        socket.on('subscr', function (data) {
-            subscribeUser(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('subscrResult', resultData);
-                });
-        });
-        socket.on('giveUserSubscr', function (data) {
-            getUserSubscr(hs.usObj, data)
-                .catch(function (err) {
-                    console.error(err);
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeUserSubscr', resultData);
-                });
-        });
-    });
+    subscribeUserByIds,
+    unSubscribeObj
 };

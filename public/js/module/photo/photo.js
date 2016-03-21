@@ -1,7 +1,7 @@
 /**
  * Модель страницы фотографии
  */
-define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'noties', 'model/Photo', 'model/Region', 'model/storage', 'm/photo/fields', 'm/photo/status', 'text!tpl/photo/photo.jade', 'css!style/photo/photo', 'bs/ext/multiselect', 'jquery-plugins/imgareaselect'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, noties, Photo, Region, storage, fields, statuses, jade) {
+define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'noties', 'model/Photo', 'model/Region', 'model/storage', 'm/photo/fields', 'm/photo/status', 'text!tpl/photo/photo.jade', 'css!style/photo/photo', 'bs/ext/multiselect', 'jquery-plugins/imgareaselect'], function (_, Utils, socket, P, ko, koMapping, Cliche, globalVM, renderer, moment, noties, Photo, Region, storage, fields, statuses, jade) {
     var $window = $(window);
     var imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
     var statusKeys = statuses.keys;
@@ -37,7 +37,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.exe = ko.observable(false); // Указывает, что сейчас идет обработка запроса на действие к серверу
             this.exeregion = ko.observable(false); // Указывает, что сейчас идет запрос региона по координате
 
-            this.can = ko_mapping.fromJS(Photo.canDef);
+            this.can = koMapping.fromJS(Photo.canDef);
 
             this.IOwner = this.co.IOwner = ko.computed(function () {
                 return this.auth.iAm.login() === this.p.user.login();
@@ -340,7 +340,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }
 
             this.p = Photo.vm(photo, this.p);
-            this.can = ko_mapping.fromJS(_.defaults({}, can, Photo.canDef), this.can);
+            this.can = koMapping.fromJS(_.defaults({}, can, Photo.canDef), this.can);
 
             this.watersignOptionTrigger(_.random(9e9));
         },
@@ -370,55 +370,53 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 self.photoLoading(true);
                 self.commentsVM.deactivate();
 
-                this.receivePhoto(cid, false, function (err, data) {
-                    if (!err && data) {
-                        var editModeCurr = self.edit();
-                        var editModeNew = !!data.forEdit;
+                this.receivePhoto(cid, false, function (data) {
+                    var editModeCurr = self.edit();
+                    var editModeNew = !!data.forEdit;
 
-                        self.rechargeData(data.photo, data.can);
+                    self.rechargeData(data.photo, data.can);
 
-                        Utils.title.setTitle({ title: self.p.title() });
+                    Utils.title.setTitle({ title: self.p.title() });
 
-                        if (self.photoLoadContainer) {
-                            self.photoLoadContainer.off('load').off('error');
-                        }
-                        self.photoLoadContainer = $(new Image())
-                            .on('load', self.onPhotoLoad.bind(self))
-                            .on('error', self.onPhotoError.bind(self))
-                            .attr('src', self.p.sfile());
-
-                        self.processRanks(self.p.user.ranks());
-                        self.getUserRibbon(3, 4, self.applyUserRibbon, self);
-                        self.getNearestRibbon(12, self.applyNearestRibbon, self);
-
-                        // В первый раз точку передаем сразу в модуль карты, в следующие устанавливам методами
-                        if (self.binded) {
-                            $.when(self.mapModulePromise).done(self.setMapPoint.bind(self));
-                        }
-
-                        if (editModeCurr !== editModeNew) {
-                            self.edit(editModeNew);
-                        } else {
-                            self.editHandler(editModeCurr);
-                        }
-
-                        if (!self.binded) {
-                            self.makeBinding();
-                        }
-
-                        if (self.share !== false && !self.edit()) {
-                            self.showShare();
-                        } else {
-                            self.destroyShare();
-                        }
-
-                        if (self.history !== false && !self.edit()) {
-                            self.showHistory();
-                        } else {
-                            self.destroyHistory();
-                        }
-                        ga('send', 'pageview', '/p');
+                    if (self.photoLoadContainer) {
+                        self.photoLoadContainer.off('load').off('error');
                     }
+                    self.photoLoadContainer = $(new Image())
+                        .on('load', self.onPhotoLoad.bind(self))
+                        .on('error', self.onPhotoError.bind(self))
+                        .attr('src', self.p.sfile());
+
+                    self.processRanks(self.p.user.ranks());
+                    self.getUserRibbon(3, 4, self.applyUserRibbon, self);
+                    self.getNearestRibbon(12, self.applyNearestRibbon, self);
+
+                    // В первый раз точку передаем сразу в модуль карты, в следующие устанавливам методами
+                    if (self.binded) {
+                        $.when(self.mapModulePromise).done(self.setMapPoint.bind(self));
+                    }
+
+                    if (editModeCurr !== editModeNew) {
+                        self.edit(editModeNew);
+                    } else {
+                        self.editHandler(editModeCurr);
+                    }
+
+                    if (!self.binded) {
+                        self.makeBinding();
+                    }
+
+                    if (self.share !== false && !self.edit()) {
+                        self.showShare();
+                    } else {
+                        self.destroyShare();
+                    }
+
+                    if (self.history !== false && !self.edit()) {
+                        self.showHistory();
+                    } else {
+                        self.destroyHistory();
+                    }
+                    ga('send', 'pageview', '/p');
                 }, this);
             } else {
                 if (self.toFrag || self.toComment) {
@@ -439,13 +437,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
         receivePhoto: function (cid, edit, cb, ctx) {
             var finish = function (data) {
-                var error = !data || data.error;
+                Photo.factory(data.photo, 'full', 'd', 'middle', 'middle');
 
-                if (!error) {
-                    Photo.factory(data.photo, 'full', 'd', 'middle', 'middle');
-                }
-
-                cb.call(ctx, error, data);
+                cb.call(ctx, data);
             };
 
             if (_.get(init, 'photo.photo.cid') === cid) {
@@ -454,8 +448,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 return;
             }
 
-            socket.once('takePhoto', finish);
-            socket.emit('givePhoto', { cid: cid, forEdit: edit });
+            socket.run('photo.giveForPage', { cid: cid, forEdit: edit }, true).then(finish);
         },
 
         loggedInHandler: function () {
@@ -464,7 +457,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             // Запрашиваем разрешенные действия для фото
             storage.photoCan(this.p.cid(), function (data) {
                 if (!data.error) {
-                    this.can = ko_mapping.fromJS(_.defaults({}, data.can, Photo.canDef), this.can);
+                    this.can = koMapping.fromJS(_.defaults({}, data.can, Photo.canDef), this.can);
                     this.sizesCalc();
                 }
             }, this);
@@ -731,40 +724,24 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }
         },
 
-        getRegionsByGeo: function (geo, cb, ctx) {
+        getRegionsByGeo: function (geo) {
             this.exeregion(true);
-            // Отменяем возможно существующий прошлый обработчик, так как в нем замкнут неактуальный cb
-            socket.off('takeRegionsByGeo');
-            //Устанавливаем on, а не once, чтобы он срабатывал всегда, в том числе и на последнем обработчике, который нам и нужен
-            socket.on('takeRegionsByGeo', function (data) {
-                //Если вернулись данные для другой(прошлой) точки или мы уже не в режиме редактирования, то выходим
-                if (this.edit() && data && !_.isEqual(data.geo, this.p.geo())) {
-                    return;
-                }
 
-                var error = !data || !!data.error || !data.regions;
-                if (error) {
-                    window.noty({
-                        text: data && data.message || 'Error occurred',
-                        type: 'error',
-                        layout: 'center',
-                        timeout: 4000,
-                        force: true
-                    });
-                } else {
-                    Photo.vm({ regions: data.regions }, this.p, true); //Обновляем регионы
-                }
+            socket.run('region.giveRegionsByGeo', { geo: geo }, true)
+                .then(function (data) {
+                    // Если вернулись данные для другой(прошлой) точки или мы уже не в режиме редактирования, то выходим
+                    if (this.edit() && data && !_.isEqual(data.geo, this.p.geo())) {
+                        return;
+                    }
 
-                if (_.isFunction(cb)) {
-                    cb.call(ctx, error, data);
-                }
-                this.exeregion(false);
-            }, this);
-            socket.emit('giveRegionsByGeo', { geo: geo });
+                    Photo.vm({ regions: data.regions }, this.p, true); // Обновляем регионы
+
+                    this.exeregion(false);
+                }.bind(this));
         },
         regionSelect: function () {
             if (!this.regselectVM) {
-                var selected = _.last(ko_mapping.toJS(this.p.regions()));
+                var selected = _.last(koMapping.toJS(this.p.regions()));
                 if (selected) {
                     selected = [selected];
                 } else {
@@ -796,12 +773,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                                             var regions = this.regselectVM.getSelectedRegionsFull(['cid', 'title_en']);
 
                                             if (regions.length > 1) {
-                                                window.noty({
-                                                    text: 'Allowed to choose one region',
+                                                noties.alert({
+                                                    message: 'It\'s allowed to choose only one region',
                                                     type: 'error',
-                                                    layout: 'center',
-                                                    timeout: 3000,
-                                                    force: true
+                                                    timeout: 2500
                                                 });
                                                 return;
                                             }
@@ -859,87 +834,58 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
 
         notifyReady: function () {
-            window.noty(
-                {
-                    text: 'Moderators must be notified to publish photo<br>You can do this at any time by pressing the "Publish"',
-                    type: 'information',
-                    layout: 'topRight',
-                    force: true,
-                    timeout: 6000,
-                    closeWith: ['click'],
-                    animation: {
-                        open: { height: 'toggle' },
-                        close: { height: 'toggle' },
-                        easing: 'swing',
-                        speed: 500
-                    }
-                }
-            );
+            noties.alert({
+                message: 'Moderators must be notified to publish photo<br>You can do this at any time by pressing the "Publish"',
+                type: 'information',
+                layout: 'topRight',
+                timeout: 6000
+            });
         },
         notifyReconvert: function () {
-            window.noty(
-                {
-                    text: 'You changed watermark text on photo. <br> Image will change within a few minutes, refresh the page later',
-                    type: 'information',
-                    layout: 'topRight',
-                    force: true,
-                    timeout: 5000,
-                    closeWith: ['click'],
-                    animation: {
-                        open: { height: 'toggle' },
-                        close: { height: 'toggle' },
-                        easing: 'swing',
-                        speed: 500
-                    }
-                }
-            );
+            noties.alert({
+                message: 'You changed watermark text on photo. <br> Image will change within a few minutes, refresh the page later',
+                type: 'information',
+                layout: 'topRight',
+                timeout: 5000
+            });
         },
         askForGeo: function (cb, ctx) {
-            window.noty(
-                {
-                    text: 'You have not specified shooting point coordinates on the map and the region to which it may belong.<br><br>' +
+            noties.alert({
+                message: 'You have not specified shooting point coordinates on the map and the region to which it may belong.<br><br>' +
                     'Point can be specified in the edit mode by clicking on the map and moving the marker.<br><br>' +
                     'Whithout point photo will be published at "Where is it?" secion. ' +
                     'In this case you need to specify region, so community may help further coordinates searching.<br><br>',
-                    type: 'confirm',
-                    layout: 'center',
-                    modal: true,
-                    force: true,
-                    animation: {
-                        open: { height: 'toggle' },
-                        close: {},
-                        easing: 'swing',
-                        speed: 500
+                type: 'confirm',
+                animation: { open: 'animated fadeIn' },
+                buttons: [
+                    {
+                        addClass: 'btn btn-success margBott',
+                        text: 'Указать координаты',
+                        onClick: function ($noty) {
+                            this.edit(true);
+                            $noty.close();
+                        }.bind(this)
                     },
-                    buttons: [
-                        {
-                            addClass: 'btn btn-success margBott',
-                            text: 'Specify coordinates',
-                            onClick: function ($noty) {
-                                this.edit(true);
-                                $noty.close();
-                            }.bind(this)
-                        },
-                        {
-                            addClass: 'btn btn-warning margBott',
-                            text: 'Select region manually',
-                            onClick: function ($noty) {
-                                this.edit(true);
-                                $noty.close();
-                                this.regionSelect();
-                            }.bind(this)
-                        },
-                        {
-                            addClass: 'btn btn-danger margBott', text: 'Cancel', onClick: function ($noty) {
+                    {
+                        addClass: 'btn btn-warning margBott',
+                        text: 'Выбрать регион вручную',
+                        onClick: function ($noty) {
+                            this.edit(true);
+                            $noty.close();
+                            this.regionSelect();
+                        }.bind(this)
+                    },
+                    {
+                        addClass: 'btn btn-danger margBott', text: 'Отмена',
+                        onClick: function ($noty) {
                             if (cb) {
                                 cb.call(ctx);
                             }
                             $noty.close();
                         }
-                        }
-                    ]
-                }
-            );
+                    }
+                ]
+            });
         },
 
         reasonSelect: function (action, topic, cb, ctx) {
@@ -965,19 +911,21 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         },
                         btns: [
                             {
-                                css: 'btn-warning', text: 'Execute', glyphicon: 'glyphicon-ok', click: function () {
-                                var reason = this.reasonVM.getReason();
-                                if (reason) {
-                                    cb.call(ctx, null, reason);
-                                    this.reasonDestroy();
-                                }
-                            }, ctx: this
+                                css: 'btn-warning', text: 'Execute', glyphicon: 'glyphicon-ok',
+                                click: function () {
+                                    var reason = this.reasonVM.getReason();
+                                    if (reason) {
+                                        cb.call(ctx, null, reason);
+                                        this.reasonDestroy();
+                                    }
+                                }, ctx: this
                             },
                             {
-                                css: 'btn-success', text: 'Cancel', click: function () {
-                                cb.call(ctx, true);
-                                this.reasonDestroy();
-                            }, ctx: this
+                                css: 'btn-success', text: 'Cancel',
+                                click: function () {
+                                    cb.call(ctx, true);
+                                    this.reasonDestroy();
+                                }, ctx: this
                             }
                         ]
                     },
@@ -1072,7 +1020,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     }, '');
                 }
 
-                renderer([{
+                renderer(
+                    [{
                         module: 'm/common/share',
                         options: {
                             title: title,
@@ -1116,9 +1065,12 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             var downloadPath = '//' + P.settings.server.hostname() + P.settings.server.dport() + '/download/';
             var getDownloadKey = function (cid) {
                 waitingForKey = true;
-                socket.once('getDownloadKeyResult', function (data) {
-                    if (data && !data.error && data.key) {
-                        ga('send', 'event', 'download', data.origin ? 'origin' : 'water', 'download ' + (data.origin ? 'origin' : 'water'));
+                socket.run('photo.getDownloadKey', { cid: cid })
+                    .then(function (data) {
+                        ga(
+                            'send', 'event', 'download',
+                            data.origin ? 'origin' : 'water', 'download ' + (data.origin ? 'origin' : 'water')
+                        );
 
                         var a = document.createElement('a');
                         a.setAttribute('href', downloadPath + data.key);
@@ -1133,14 +1085,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         Utils.clickElement(a);
 
                         document.body.removeChild(a);
-                    } else {
-                        ga('send', 'event', 'download', 'error', 'download error');
-                        console.warn(data);
-                    }
 
-                    waitingForKey = false;
-                });
-                socket.emit('getDownloadKey', { cid: cid });
+                        waitingForKey = false;
+                    })
+                    .catch(function (error) {
+                        ga('send', 'event', 'download', 'error', 'download error');
+                        console.warn(error);
+                    });
             };
 
             return function (data, event) {
@@ -1185,6 +1136,78 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             };
         }()),
 
+        tryOperation: function (options) {
+            var self = this;
+            var callback = options.callback;
+            var confirmer = options.confirmer;
+            var proceedText = options.proceedText;
+            var ignoreChange = options.ignoreChange;
+            var requestCreater = options.requestCreater;
+            var customChangedMessage = options.customChangedMessage;
+
+            self.exe(true);
+            return requestCreater(ignoreChange)
+                .catch(function (error) {
+                    if (error.code === 'PHOTO_CHANGED' || error.code === 'PHOTO_ANOTHER_STATUS') {
+                        if (confirmer) {
+                            confirmer.close();
+                            confirmer = null;
+                        }
+
+                        var message = error.message + (customChangedMessage ||
+                            '<br><a target="_blank" href="/p/' + self.p.cid() + '">View the latest version</a>');
+                        var okText = proceedText || 'Proceed operation';
+                        var cancelText = 'Cancel operation';
+
+                        if (error.code === 'PHOTO_ANOTHER_STATUS') {
+                            noties.alert({
+                                message: error.message,
+                                onOk: function () {
+                                    self.exe(false);
+                                }
+                            });
+                        } else {
+                            noties.confirm({
+                                message: message,
+                                okText: okText,
+                                cancelText: cancelText,
+                                onOk: function (notiesConfirmer) {
+                                    confirmer = notiesConfirmer;
+                                    self.tryOperation(_.assign({}, options, {
+                                        confirmer: confirmer, ignoreChange: true
+                                    }));
+                                },
+                                onCancel: function () {
+                                    self.exe(false);
+                                }
+                            });
+                        }
+
+                        throw error;
+                    }
+
+                    if (confirmer) {
+                        confirmer.error(error, 'Close', 4000, function () {
+                            self.exe(false);
+                        });
+                    } else {
+                        noties.error(error);
+                    }
+
+                    return error;
+                })
+                .then(function (error) {
+                    if (confirmer) {
+                        confirmer.close();
+                    }
+
+                    if (callback) {
+                        callback({ done: true, error: error });
+                    }
+                })
+                .catch(_.noop);
+        },
+
         editSave: function () {
             var self = this;
 
@@ -1209,8 +1232,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         editPhoto: function () {
             var self = this;
 
-            this.receivePhoto(self.p.cid(), true, function (err, data) {
-                if (!err && data && data.forEdit) {
+            this.receivePhoto(self.p.cid(), true, function (data) {
+                if (data.forEdit) {
                     // Если включаем редактирование, обнуляем количество новых комментариев,
                     // так как после возврата комментарии будут запрошены заново и соответственно иметь статус прочитанных
                     data.photo.ccount_new = 0;
@@ -1221,14 +1244,18 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }, this);
 
         },
+
         savePhoto: function () {
             var self = this;
             var p = self.p;
             var origin = self.originData;
             var cid = p.cid();
 
-            var changes = _.chain(ko_mapping.toJS(p))
-                .pick('geo', 'dir', 'title', 'year', 'year2', 'address', 'nowaterchange', 'watersignIndividual', 'disallowDownloadOriginIndividual')
+            var changes = _.chain(koMapping.toJS(p))
+                .pick(
+                    'geo', 'dir', 'title', 'year', 'year2', 'address',
+                    'nowaterchange', 'watersignIndividual', 'disallowDownloadOriginIndividual'
+                )
                 .transform(function (result, value, key) {
                     var valueOrigin = origin[key];
 
@@ -1249,7 +1276,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
             if (_.isEmpty(p.geo())) {
                 if (p.regions().length) {
-                    changes.region = _.last(ko_mapping.toJS(p.regions)).cid;
+                    changes.region = _.last(koMapping.toJS(p.regions)).cid;
                 } else {
                     changes.region = null;
                 }
@@ -1288,40 +1315,23 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 }
             }
 
-            if (!_.isEmpty(changes)) {
-                self.exe(true);
+            if (_.isEmpty(changes)) {
+                return self.edit(false);
+            }
 
-                (function request(confirmer) {
-                    socket.once('savePhotoResult', function (data) {
-                        if (data && data.changed) {
-                            noties.confirm({
-                                message: data.message +
-                                '<br>If you continue to save, your changes will overwrite the earlier' +
-                                '<br><a data-replace="true" href="?history=1">Show history of changes</a>' +
-                                '<br><a target="_blank" href="/p/' + cid + '">Open last version</a>',
-                                okText: 'Continue saving',
-                                cancelText: 'Cancel',
-                                onOk: function (confirmer) {
-                                    request(confirmer);
-                                },
-                                onCancel: function () {
-                                    self.exe(false);
-                                }
-                            });
-                        } else if (data && data.emptySave) {
-                            self.exe(false);
-                            self.edit(false);
-                        } else {
-                            var error = !data || data.error;
+            var params = { cid: cid, cdate: p.cdate(), s: p.s(), changes: changes };
+            var changedMessage = '<br>If you continue to save, your changes will overwrite the earlier' +
+                '<br><a data-replace="true" href="?history=1">Show history of changes</a>' +
+                '<br><a target="_blank" href="/p/' + cid + '">Open last version</a>';
 
-                            if (error) {
-                                noties.error(data && data.message);
-                            } else {
+            self.tryOperation({
+                proceedText: 'Proceed saving', customChangedMessage: changedMessage,
+                requestCreater: function (ignoreChange) {
+                    return socket.run('photo.save', _.assign({ ignoreChange: ignoreChange }, params))
+                        .then(function (data) {
+                            if (!data.emptySave) {
                                 self.rechargeData(data.photo, data.can);
 
-                                if (confirmer) {
-                                    confirmer.close();
-                                }
                                 if (p.s() === statusKeys.NEW) {
                                     self.notifyReady();
                                 }
@@ -1331,75 +1341,49 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
                                 // Заново запрашиваем ближайшие фотографии
                                 self.getNearestRibbon(12, self.applyNearestRibbon, self);
-                                self.edit(false);
                             }
-                            self.exe(false);
-                            ga('send', 'event', 'photo', 'edit', 'photo edit ' + (error ? 'error' : 'success'));
-                        }
-                    });
-                    socket.emit('savePhoto', {
-                        cid: cid,
-                        cdate: p.cdate(),
-                        s: p.s(),
-                        changes: changes,
-                        ignoreChange: !!confirmer
-                    });
-                }());
-            } else {
-                self.edit(false);
-            }
+                        });
+                },
+                callback: function (result) {
+                    if (_.get(result, 'done', false)) {
+                        self.exe(false);
+                        self.edit(false);
+                        ga('send', 'event', 'photo', 'edit', 'photo edit ' + (result.error ? 'error' : 'success'));
+                    }
+                }
+            });
         },
 
         revoke: function () {
             var self = this;
-            var confimingChanges;
-            var cid = self.p.cid();
 
             if (!self.can.revoke()) {
                 return false;
             }
-
-            var request = function (cb, ctx) {
-                socket.once('revokePhotoCallback', function (data) {
-                    cb.call(ctx, data);
-                });
-                socket.emit('revokePhoto', {
-                    cid: cid,
-                    cdate: self.p.cdate(),
-                    s: self.p.s(),
-                    ignoreChange: confimingChanges
-                });
-            };
 
             self.exe(true);
             noties.confirm({
                 message: 'The photo will be moved to the Trash, and misses the turn to the publication<br>Confirm the operation?',
                 okText: 'Yes',
                 cancelText: 'No',
-                onOk: function (confirmer) {
-                    confirmer.disable();
+                onOk: function (initConfirmer) {
+                    initConfirmer.disable();
 
-                    request(function (data) {
-                        if (data && data.changed) {
-                            confimingChanges = true;
-
-                            confirmer.replaceTexts(
-                                data.message + '<br><a target="_blank" href="/p/' + cid + '">Show last version</a>',
-                                'Continue',
-                                'Cancel'
-                            );
-                            confirmer.enable();
-                        } else if (data && !data.error) {
-                            self.rechargeData(data.photo, data.can);
-
-                            confirmer.close();
-                            ga('send', 'event', 'photo', 'revoke', 'photo revoke success');
-                            globalVM.router.navigate('/u/' + self.p.user.login() + '/photo');
-                        } else {
-                            confirmer.error(data.message, 'Close', function () {
-                                self.exe(false);
+                    var p = self.p;
+                    var params = { cid: p.cid(), cdate: p.cdate(), s: p.s() };
+                    self.tryOperation({
+                        proceedText: 'Proceed ', confirmer: initConfirmer,
+                        requestCreater: function (ignoreChange) {
+                            return socket.run('photo.revoke', _.assign({ ignoreChange: ignoreChange }, params)).then(function (data) {
+                                self.rechargeData(data.photo, data.can);
                             });
-                            ga('send', 'event', 'photo', 'revoke', 'photo revoke error');
+                        },
+                        callback: function (result) {
+                            if (_.get(result, 'done', false)) {
+                                self.exe(false);
+                                ga('send', 'event', 'photo', 'revoke', 'photo revoke ' + (result.error ? 'error' : 'success'));
+                                globalVM.router.navigate('/u/' + p.user.login() + '/photo');
+                            }
                         }
                     });
                 },
@@ -1412,7 +1396,6 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         ready: function () {
             var self = this;
             var p = self.p;
-            var cid = p.cid();
 
             if (!self.can.ready()) {
                 return false;
@@ -1421,38 +1404,21 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 return self.askForGeo();
             }
 
-            self.exe(true);
-            (function request(confirmer) {
-                socket.once('readyPhotoResult', function (data) {
-                    if (data && data.changed) {
-                        noties.confirm({
-                            message: data.message + '<br><a target="_blank" href="/p/' + cid + '">Show last version</a>',
-                            okText: 'Continue',
-                            cancelText: 'Cancel',
-                            onOk: function (confirmer) {
-                                request(confirmer);
-                            },
-                            onCancel: function () {
-                                self.exe(false);
-                            }
-                        });
-                    } else {
-                        if (data && !data.error) {
-                            self.rechargeData(data.photo, data.can);
-
-                            if (confirmer) {
-                                confirmer.close();
-                            }
-                            ga('send', 'event', 'photo', 'ready', 'photo ready success');
-                        } else {
-                            noties.error(data.message);
-                            ga('send', 'event', 'photo', 'ready', 'photo ready error');
-                        }
+            var params = { cid: p.cid(), cdate: p.cdate(), s: p.s() };
+            self.tryOperation({
+                proceedText: 'Proceed sending',
+                requestCreater: function (ignoreChange) {
+                    return socket.run('photo.ready', _.assign({ ignoreChange: ignoreChange }, params)).then(function (data) {
+                        self.rechargeData(data.photo, data.can);
+                    });
+                },
+                callback: function (result) {
+                    if (_.get(result, 'done', false)) {
                         self.exe(false);
+                        ga('send', 'event', 'photo', 'ready', 'photo ready ' + (result.error ? 'error' : 'success'));
                     }
-                });
-                socket.emit('readyPhoto', { cid: cid, cdate: p.cdate(), s: p.s(), ignoreChange: !!confirmer });
-            }());
+                }
+            });
         },
 
         toRevision: function () {
@@ -1462,219 +1428,124 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 return false;
             }
 
-            var p = self.p;
-            var cid = p.cid();
-
             self.exe(true);
-
             self.reasonSelect('photo.revision', 'Reason for reviosion', function (cancel, reason) {
                 if (cancel) {
                     self.exe(false);
                     return;
                 }
 
-                (function request(confirmer) {
-                    socket.once('revisionPhotoResult', function (data) {
-                        if (data && data.changed) {
-                            noties.confirm({
-                                message: data.message + '<br><a target="_blank" href="/p/' + cid + '">Show last version</a>',
-                                okText: 'Continue',
-                                cancelText: 'Cancel',
-                                onOk: function (confirmer) {
-                                    request(confirmer);
-                                },
-                                onCancel: function () {
-                                    self.exe(false);
-                                }
-                            });
-                        } else {
-                            if (data && !data.error) {
-                                self.rechargeData(data.photo, data.can);
-
-                                if (confirmer) {
-                                    confirmer.close();
-                                }
-                                ga('send', 'event', 'photo', 'revision', 'photo revision success');
-                            } else {
-                                noties.error(data.message);
-                                ga('send', 'event', 'photo', 'revision', 'photo revision error');
-                            }
+                var p = self.p;
+                var params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), reason: reason };
+                self.tryOperation({
+                    proceedText: 'Continue',
+                    requestCreater: function (ignoreChange) {
+                        return socket.run('photo.toRevision', _.assign({ ignoreChange: ignoreChange }, params)).then(function (data) {
+                            self.rechargeData(data.photo, data.can);
+                        });
+                    },
+                    callback: function (result) {
+                        if (_.get(result, 'done', false)) {
                             self.exe(false);
+                            ga('send', 'event', 'photo', 'revision', 'photo revision ' + (result.error ? 'error' : 'success'));
                         }
-                    });
-                    socket.emit('revisionPhoto', {
-                        cid: cid,
-                        cdate: p.cdate(),
-                        s: p.s(),
-                        reason: reason,
-                        ignoreChange: !!confirmer
-                    });
-                }());
+                    }
+                });
             });
         },
 
         reject: function () {
             var self = this;
-            var p = self.p;
-            var cid = p.cid();
 
             if (!self.can.reject()) {
                 return false;
             }
 
             self.exe(true);
-
             self.reasonSelect('photo.reject', 'Reason of rejection', function (cancel, reason) {
                 if (cancel) {
-                    self.exe(false);
-                    return;
+                    return self.exe(false);
                 }
 
-                (function request(confirmer) {
-                    socket.once('rejectPhotoResult', function (data) {
-                        if (data && data.changed) {
-                            noties.confirm({
-                                message: data.message + '<br><a target="_blank" href="/p/' + cid + '">Show last version</a>',
-                                okText: 'Continue',
-                                cancelText: 'Cancel',
-                                onOk: function (confirmer) {
-                                    request(confirmer);
-                                },
-                                onCancel: function () {
-                                    self.exe(false);
-                                }
-                            });
-                        } else {
-                            var error = !data || data.error;
-                            if (error) {
-                                noties.error(data && data.message);
-                            } else {
-                                self.rechargeData(data.photo, data.can);
-
-                                if (confirmer) {
-                                    confirmer.close();
-                                }
-                            }
-                            ga('send', 'event', 'photo', 'reject', 'photo reject ' + (error ? 'error' : 'success'));
+                var p = self.p;
+                var params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), reason: reason };
+                self.tryOperation({
+                    proceedText: 'Proceed rejection',
+                    requestCreater: function (ignoreChange) {
+                        return socket.run('photo.rereject', _.assign({ ignoreChange: ignoreChange }, params)).then(function (data) {
+                            self.rechargeData(data.photo, data.can);
+                        });
+                    },
+                    callback: function (result) {
+                        if (_.get(result, 'done', false)) {
                             self.exe(false);
+                            ga('send', 'event', 'photo', 'reject', 'photo reject ' + (result.error ? 'error' : 'success'));
                         }
-                    });
-                    socket.emit('rejectPhoto', {
-                        cid: cid,
-                        cdate: p.cdate(),
-                        s: p.s(),
-                        reason: reason,
-                        ignoreChange: !!confirmer
-                    });
-                }());
+                    }
+                });
             });
         },
 
         rereject: function () {
             var self = this;
-            var p = self.p;
-            var cid = p.cid();
 
             if (!self.can.rereject()) {
                 return false;
             }
 
             self.exe(true);
-
-            self.reasonSelect('photo.rereject', 'Причина восстановления', function (cancel, reason) {
+            self.reasonSelect('photo.rereject', 'Reason of restoring', function (cancel, reason) {
                 if (cancel) {
-                    self.exe(false);
-                    return;
+                    return self.exe(false);
                 }
 
-                (function request(confirmer) {
-                    socket.once('rerejectPhotoResult', function (data) {
-                        if (data && data.changed) {
-                            noties.confirm({
-                                message: data.message + '<br><a target="_blank" href="/p/' + cid + '">Посмотреть последнюю версию</a>',
-                                okText: 'Продолжить восстановление',
-                                cancelText: 'Отменить',
-                                onOk: function (confirmer) {
-                                    request(confirmer);
-                                },
-                                onCancel: function () {
-                                    self.exe(false);
-                                }
-                            });
-                        } else {
-                            var error = !data || data.error;
-                            if (error) {
-                                noties.error(data && data.message);
-                            } else {
-                                self.rechargeData(data.photo, data.can);
-
-                                if (confirmer) {
-                                    confirmer.close();
-                                }
-                            }
+                var p = self.p;
+                var params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), reason: reason };
+                self.tryOperation({
+                    proceedText: 'Proceed restoring',
+                    requestCreater: function (ignoreChange) {
+                        return socket.run('photo.rereject', _.assign({ ignoreChange: ignoreChange }, params)).then(function (data) {
+                            self.rechargeData(data.photo, data.can);
+                        });
+                    },
+                    callback: function (result) {
+                        if (_.get(result, 'done', false)) {
                             self.exe(false);
-                            ga('send', 'event', 'photo', 'rereject', 'photo rereject ' + (error ? 'error' : 'success'));
+                            ga('send', 'event', 'photo', 'rereject', 'photo rereject ' + (result.error ? 'error' : 'success'));
                         }
-                    });
-                    socket.emit('rerejectPhoto', {
-                        cid: cid,
-                        cdate: p.cdate(),
-                        s: p.s(),
-                        reason: reason,
-                        ignoreChange: !!confirmer
-                    });
-                }());
+                    }
+                });
             });
         },
 
         approve: function () {
             var self = this;
-            var p = self.p;
-            var cid = p.cid();
 
             if (!self.can.approve()) {
                 return false;
             }
 
-            self.exe(true);
-            (function request(confirmer) {
-                socket.once('approvePhotoResult', function (data) {
-                    if (data && data.changed) {
-                        noties.confirm({
-                            message: data.message + '<br><a target="_blank" href="/p/' + cid + '">Show last version</a>',
-                            okText: 'Continue publishing',
-                            cancelText: 'Cancel',
-                            onOk: function (confirmer) {
-                                request(confirmer);
-                            },
-                            onCancel: function () {
-                                self.exe(false);
-                            }
-                        });
-                    } else {
-                        if (data && !data.error) {
-                            self.rechargeData(data.photo, data.can);
-                            self.commentsActivate({ checkTimeout: 100 });
-
-                            if (confirmer) {
-                                confirmer.close();
-                            }
-                            ga('send', 'event', 'photo', 'approve', 'photo approve success');
-                        } else {
-                            noties.error(data.message);
-                            ga('send', 'event', 'photo', 'approve', 'photo approve error');
-                        }
+            var p = self.p;
+            var params = { cid: p.cid(), cdate: p.cdate(), s: p.s() };
+            self.tryOperation({
+                proceedText: 'Proceed publishing',
+                requestCreater: function (ignoreChange) {
+                    return socket.run('photo.approve', _.assign({ ignoreChange: ignoreChange }, params)).then(function (data) {
+                        self.rechargeData(data.photo, data.can);
+                        self.commentsActivate({ checkTimeout: 100 });
+                    });
+                },
+                callback: function (result) {
+                    if (_.get(result, 'done', false)) {
                         self.exe(false);
+                        ga('send', 'event', 'photo', 'approve', 'photo approve ' + (result.error ? 'error' : 'success'));
                     }
-                });
-                socket.emit('approvePhoto', { cid: cid, cdate: p.cdate(), s: p.s(), ignoreChange: !!confirmer });
-            }());
+                }
+            });
         },
 
         toggleDisable: function () {
             var self = this;
-            var p = self.p;
-            var cid = p.cid();
             var disable = self.can.deactivate();
 
             if (!disable && !self.can.activate()) {
@@ -1695,199 +1566,122 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 request();
             }
 
-            function request(reason, confirmer) {
-                socket.once('disablePhotoResult', function (data) {
-                    if (data && data.changed) {
-                        noties.confirm({
-                            message: data.message + '<br><a target="_blank" href="/p/' + cid + '">Show last version</a>',
-                            okText: 'Continue',
-                            cancelText: 'Cancel',
-                            onOk: function (confirmer) {
-                                request(reason, confirmer);
-                            },
-                            onCancel: function () {
-                                self.exe(false);
-                            }
-                        });
-                    } else {
-                        var error = !data || data.error;
-                        if (error) {
-                            noties.error(data && data.message);
-                        } else {
-                            self.rechargeData(data.photo, data.can);
-
-                            if (confirmer) {
-                                confirmer.close();
-                            }
+            function request(reason) {
+                var p = self.p;
+                var params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), disable: disable, reason: reason };
+                self.tryOperation({
+                    requestCreater: function (ignoreChange) {
+                        return socket.run('photo.activateDeactivate', _.assign({ ignoreChange: ignoreChange }, params))
+                            .then(function (data) {
+                                self.rechargeData(data.photo, data.can);
+                            });
+                    },
+                    callback: function (result) {
+                        if (_.get(result, 'done', false)) {
+                            self.exe(false);
+                            var operation = p.s() === statusKeys.DEACTIVATE ? 'enabled' : 'disabled';
+                            ga(
+                                'send', 'event', 'photo', operation, 'photo ' + operation + (result.error ? 'error' : 'success')
+                            );
                         }
-                        ga('send', 'event', 'photo', 'reject', 'photo ' + (p.s() === statusKeys.DEACTIVATE ? 'enabled ' : 'disabled ') + (error ? 'error' : 'success'));
-                        self.exe(false);
                     }
-                });
-                socket.emit('disablePhoto', {
-                    cid: cid,
-                    cdate: p.cdate(),
-                    s: p.s(),
-                    disable: disable,
-                    reason: reason,
-                    ignoreChange: !!confirmer
                 });
             }
         },
 
         remove: function () {
             var self = this;
-            var p = self.p;
-            var cid = p.cid();
 
             if (!self.can.remove()) {
                 return false;
             }
 
             self.exe(true);
-
             self.reasonSelect('photo.remove', 'Reason of removing', function (cancel, reason) {
                 if (cancel) {
-                    self.exe(false);
-                    return;
+                    return self.exe(false);
                 }
 
-                (function request(confirmer) {
-                    socket.once('removePhotoResult', function (data) {
-                        if (data && data.changed) {
-                            noties.confirm({
-                                message: data.message + '<br><a target="_blank" href="/p/' + cid + '">Show last version</a>',
-                                okText: 'Continue',
-                                cancelText: 'Cancel',
-                                onOk: function (confirmer) {
-                                    request(confirmer);
-                                },
-                                onCancel: function () {
-                                    self.exe(false);
+                var p = self.p;
+                var params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), reason: reason };
+                self.tryOperation({
+                    proceedText: 'Proceed removing',
+                    requestCreater: function (ignoreChange) {
+                        return socket.run('photo.remove', _.assign({ ignoreChange: ignoreChange }, params)).then(function (data) {
+                            self.rechargeData(data.photo, data.can);
+                        });
+                    },
+                    callback: function (result) {
+                        if (_.get(result, 'done', false)) {
+                            ga('send', 'event', 'photo', 'delete', 'photo delete ' + (result.error ? 'error' : 'success'));
+
+                            noties.alert({
+                                message: 'Photo has been removed',
+                                ok: true,
+                                text: 'Finish',
+                                countdown: 5,
+                                onOk: function () {
+                                    globalVM.router.navigate('/u/' + p.user.login() + '/photo');
                                 }
                             });
-                        } else {
-                            var error = !data || data.error;
-                            if (error) {
-                                self.exe(false);
-                                noties.error(data && data.message);
-                            } else {
-                                self.rechargeData(data.photo, data.can);
-
-                                if (confirmer) {
-                                    confirmer.close();
-                                }
-
-                                noties.alert({
-                                    message: 'Photo has been removes',
-                                    text: 'Finish',
-                                    countdown: 5,
-                                    onOk: function () {
-                                        self.exe(false);
-                                        globalVM.router.navigate('/u/' + p.user.login() + '/photo');
-                                    }
-                                });
-                            }
-                            ga('send', 'event', 'photo', 'reject', 'photo delete ' + (error ? 'error' : 'success'));
                         }
-                    });
-                    socket.emit('removePhoto', {
-                        cid: cid,
-                        cdate: p.cdate(),
-                        s: p.s(),
-                        reason: reason,
-                        ignoreChange: !!confirmer
-                    });
-                }());
+                    }
+                });
             });
         },
 
         restore: function () {
             var self = this;
-            var p = self.p;
-            var cid = p.cid();
 
             if (!self.can.restore()) {
                 return false;
             }
 
             self.exe(true);
-
             self.reasonSelect('photo.restore', 'Reason of restoration', function (cancel, reason) {
                 if (cancel) {
-                    self.exe(false);
-                    return;
+                    return self.exe(false);
                 }
 
-                (function request(confirmer) {
-                    socket.once('restorePhotoResult', function (data) {
-                        if (data && data.changed) {
-                            noties.confirm({
-                                message: data.message + '<br><a target="_blank" href="/p/' + cid + '">Show last version</a>',
-                                okText: 'Continue restoration',
-                                cancelText: 'Cancel',
-                                onOk: function (confirmer) {
-                                    request(confirmer);
-                                },
-                                onCancel: function () {
-                                    self.exe(false);
-                                }
-                            });
-                        } else {
-                            var error = !data || data.error;
-                            if (error) {
-                                noties.error(data && data.message);
-                            } else {
-                                self.rechargeData(data.photo, data.can);
-
-                                if (confirmer) {
-                                    confirmer.close();
-                                }
-                            }
+                var p = self.p;
+                var params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), reason: reason };
+                self.tryOperation({
+                    proceedText: 'Proceed restoration',
+                    requestCreater: function (ignoreChange) {
+                        return socket.run('photo.restore', _.assign({ ignoreChange: ignoreChange }, params)).then(function (data) {
+                            self.rechargeData(data.photo, data.can);
+                        });
+                    },
+                    callback: function (result) {
+                        if (_.get(result, 'done', false)) {
                             self.exe(false);
-                            ga('send', 'event', 'photo', 'restore', 'photo restore ' + (error ? 'error' : 'success'));
+                            ga('send', 'event', 'photo', 'restore', 'photo restore ' + (result.error ? 'error' : 'success'));
                         }
-                    });
-                    socket.emit('restorePhoto', {
-                        cid: cid,
-                        cdate: p.cdate(),
-                        s: p.s(),
-                        reason: reason,
-                        ignoreChange: !!confirmer
-                    });
-                }());
+                    }
+                });
             });
         },
 
         toConvert: function () {
-            if (!this.can.convert()) {
+            var self = this;
+            if (!self.can.convert()) {
                 return false;
             }
 
-            this.exe(true);
-            socket.once('convertPhotosResult', function (data) {
-                if (data && !data.error) {
-                    window.noty({
-                        text: data.message || 'OK',
-                        type: 'success',
-                        layout: 'center',
-                        timeout: 1000,
-                        force: true
+            self.exe(true);
+
+            socket.run('photo.convert', { cids: [this.p.cid()] }, true)
+                .then(function (result) {
+                    self.exe(false);
+
+                    noties.alert({
+                        message: _.get(result, 'message') || 'Отправлено',
+                        layout: 'topRight'
                     });
-                } else {
-                    window.noty({
-                        text: (data && data.message) || 'Error occurred',
-                        type: 'error',
-                        layout: 'center',
-                        timeout: 2000,
-                        force: true
-                    });
-                }
-                this.exe(false);
-            }, this);
-            socket.emit('convertPhotos', [
-                { cid: this.p.cid() }
-            ]);
+                })
+                .catch(function () {
+                    self.exe(false);
+                });
         },
 
         // Стандартная обработка поступающего массива лент фотографий,
@@ -1908,18 +1702,16 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
         // Берем ленту ближайших фотографий к текущей в галерее пользователя
         getUserRibbon: function (left, right, cb, ctx) {
-            socket.once('takeUserPhotosAround', function (data) {
-                if (!data || data.error) {
-                    console.error('While loading user ribbon: ' + (data && data.message || 'Error occurred'));
-                } else {
+            socket.run('photo.giveUserPhotosAround', { cid: this.p.cid(), limitL: left, limitR: right })
+                .then(function (data) {
                     this.ribbonUserLeft = this.processRibbonItem(data.left.reverse(), this.ribbonUserLeft);
                     this.ribbonUserRight = this.processRibbonItem(data.right, this.ribbonUserRight);
-                }
-                if (Utils.isType('function', cb)) {
+
                     cb.call(ctx, data);
-                }
-            }, this);
-            socket.emit('giveUserPhotosAround', { cid: this.p.cid(), limitL: left, limitR: right });
+                }.bind(this))
+                .catch(function (error) {
+                    console.error('While loading user ribbon:', error);
+                });
         },
         applyUserRibbon: function () {
             var n = this.thumbNUser();
@@ -1964,17 +1756,16 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.receiveNearestRibbon(Utils.geo.latlngToArr(this.mapVM.map.getCenter()), limit, undefined, cb, ctx);
         },
         receiveNearestRibbon: function (geo, limit, except, cb, ctx) {
-            socket.once('takeNearestPhotos', function (data) {
-                if (!data || data.error) {
-                    console.error('While loading nearest ribbon: ' + (data && data.message || 'Error occurred'));
-                } else {
+            socket.run('photo.giveNearestPhotos', { geo: geo, limit: limit, except: except })
+                .then(function (data) {
                     this.nearestRibbonOrigin = this.processRibbonItem(data.photos || [], this.nearestRibbonOrigin);
-                }
-                if (Utils.isType('function', cb)) {
-                    cb.call(ctx, data);
-                }
-            }, this);
-            socket.emit('giveNearestPhotos', { geo: geo, limit: limit, except: except });
+                    if (Utils.isType('function', cb)) {
+                        cb.call(ctx, data);
+                    }
+                }.bind(this))
+                .catch(function (error) {
+                    console.error('While loading nearest ribbon:', error);
+                });
         },
         applyNearestRibbon: function () {
             this.nearestRibbon(this.nearestRibbonOrigin);
@@ -2096,7 +1887,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     if ($comment.length === 1) {
                         $wrap
                             .addClass('fragHover')
-                            .find('.photoImg').imgAreaSelect({
+                            .find('.photoImg')
+                            .imgAreaSelect({
                                 classPrefix: 'photoFragAreaShow imgareaselect',
                                 x1: fragPosition.left,
                                 y1: fragPosition.top,
@@ -2188,7 +1980,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             return result;
         },
         fragAdd: function (frag) {
-            this.p.frags.push(ko_mapping.fromJS(frag));
+            this.p.frags.push(koMapping.fromJS(frag));
         },
         fragEdit: function (ccid, options) {
             var frag = this.fragGetByCid(ccid);
@@ -2206,7 +1998,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.p.frags.remove(this.fragGetByCid(ccid));
         },
         fragReplace: function (frags) {
-            this.p.frags(ko_mapping.fromJS({ arr: frags }).arr());
+            this.p.frags(koMapping.fromJS({ arr: frags }).arr());
         },
         fragGetByCid: function (ccid) {
             return _.find(this.p.frags(), function (frag) {

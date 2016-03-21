@@ -1,6 +1,6 @@
-import _ from 'lodash';
 import ms from 'ms';
 import gm from 'gm';
+import _ from 'lodash';
 import path from 'path';
 import log4js from 'log4js';
 import mkdirp from 'mkdirp';
@@ -11,10 +11,12 @@ import Utils from '../commons/Utils';
 import { exec } from 'child_process';
 import { waitDb, dbEval } from './connection';
 import { Photo, PhotoConveyer, PhotoConveyerError, STPhotoConveyer } from '../models/Photo';
+import constantsError from '../app/errors/constants';
+import { ApplicationError, AuthorizationError } from '../app/errors';
 
 const execAsync = Bluebird.promisify(exec);
 const mkdirpAsync = Bluebird.promisify(mkdirp);
-const logger = log4js.getLogger('photoConverter.js');
+const logger = log4js.getLogger('converter.js');
 const sleep = time => new Promise(resolve => setTimeout(resolve, time));
 
 let conveyerEnabled = true;
@@ -203,18 +205,19 @@ function CollectConveyerStat() {
     setTimeout(CollectConveyerStat, ms('10m'));
 }
 
-/**
- * Очищает конвейер, кроме тех фотографий, которые сейчас конвертируются
- */
-async function conveyerClear() {
-    try {
-        const removed = (await PhotoConveyer.remove({ converting: { $exists: false } }).exec())[0];
+// Clear conveyor except photos, which are converting now
+async function conveyerClear({ value }) {
+    let removedCount = 0;
 
-        conveyerLength = await PhotoConveyer.count({}).exec();
-        return { message: `Cleared ok! Removed ${removed}, left ${conveyerLength}` };
-    } catch (err) {
-        return { message: err || 'Error occurred', error: true };
+    if (value === true) {
+        conveyerEnabled = value;
+
+        ({ result: { n: removedCount = 0 } } = await PhotoConveyer.remove({ converting: { $exists: false } }).exec());
     }
+
+    conveyerLength = await PhotoConveyer.count({}).exec();
+
+    return { message: `Cleared ok! Removed ${removedCount}, left ${conveyerLength}` };
 }
 
 /**
@@ -253,7 +256,7 @@ async function conveyerControl() {
 
         photo.conv = true;
         photoConv.converting = true;
-        await* [photo.save(), photoConv.save()];
+        await Promise.all([photo.save(), photoConv.save()]);
 
         try {
             await conveyerStep(photo, photoConv);
@@ -267,7 +270,7 @@ async function conveyerControl() {
 
         photo.conv = undefined; // Присваиваем undefined, чтобы удалить свойства
         photo.convqueue = undefined;
-        await* [photo.save(), photoConv.remove()];
+        await Promise.all([photo.save(), photoConv.remove()]);
 
         working -= 1;
         if (conveyerLength) {
@@ -460,7 +463,8 @@ async function tryPromise(attemps, promiseGenerator, data, attemp) {
             `After ${attemps} attemps promise execution considered failed. ${data || ''}
             ${err}`
         );
-        throw err;
+
+        throw new ApplicationError({ code: constantsError.CONVERT_PROMISE_GENERATOR, stack: false });
     }
 }
 
@@ -490,7 +494,10 @@ export async function addPhotos(data, priority) {
         conveyerControl();
     }
 
-    return { message: toConvertObjs.length + ' photos added to convert conveyer' };
+    return {
+        message: (toConvertObjs.length === 1 ? 'Фотография отправлена' : `${toConvertObjs.length} фотографии отправлено`)
+        + ' на конвертацию'
+    };
 }
 
 /**
@@ -501,7 +508,7 @@ export async function addPhotosAll(params) {
     const result = await dbEval('convertPhotosAll', [params], { nolock: true });
 
     if (result && result.error) {
-        throw { message: result.message || '' };
+        throw new ApplicationError({ code: constantsError.CONVERT_PHOTOS_ALL, result });
     }
 
     conveyerLength += result.conveyorAdded;
@@ -516,8 +523,8 @@ export async function addPhotosAll(params) {
  * @param data Массив cid
  */
 export async function removePhotos(data) {
-    const docs = await PhotoConveyer.remove({ cid: { $in: data } }).exec();
-    conveyerLength -= docs.length;
+    const { result: { n: removedCount = 0 } } = await PhotoConveyer.remove({ cid: { $in: data } }).exec();
+    conveyerLength -= removedCount;
 }
 
 (async function converterStarter() {
@@ -546,64 +553,50 @@ export async function removePhotos(data) {
     setTimeout(CollectConveyerStat, hourStart + ms('10m') * Math.ceil((Date.now() - hourStart) / ms('10m')) - Date.now() + 10);
 }());
 
-export function loadController(io) {
-    io.sockets.on('connection', function (socket) {
-        const hs = socket.handshake;
+function conveyorStartStop({ value }) {
+    if (_.isBoolean(value)) {
+        conveyerEnabled = value;
+        if (value) {
+            conveyerControl();
+        }
+    }
 
-        (function () {
-            socket.on('conveyorStartStop', function (value) {
-                if (_.isBoolean(value)) {
-                    conveyerEnabled = value;
-                    if (value) {
-                        conveyerControl();
-                    }
-                }
-                socket.emit('conveyorStartStopResult', { conveyerEnabled });
-            });
-        }());
-
-        (function () {
-            socket.on('conveyerClear', async function (value) {
-                if (value === true) {
-                    conveyerEnabled = value;
-                    socket.emit('conveyerClearResult', await conveyerClear());
-                }
-            });
-        }());
-
-        (function () {
-            function result(data) {
-                socket.emit('getStatConveyer', data);
-            }
-
-            socket.on('statConveyer', async function () {
-                if (!hs.usObj.registered) {
-                    return result({ message: 'Not authorized for statConveyer', error: true });
-                }
-
-                const docs = await STPhotoConveyer.find({}, { _id: 0, __v: 0 }, { sort: 'stamp', lean: true }).exec();
-
-                for (const doc of docs) {
-                    doc.stamp = doc.stamp.getTime();
-                }
-
-                result({ data: docs });
-            });
-        }());
-
-        (function statFast() {
-            socket.on('giveStatFastConveyer', function () {
-                socket.emit('takeStatFastConveyer', {
-                    conveyerEnabled,
-                    clength: conveyerLength,
-                    cmaxlength: conveyerMaxLength,
-                    converted: conveyerConverted
-                });
-            });
-        }());
-
-    });
+    return { conveyerEnabled };
 }
+
+async function conveyorStat() {
+    const { handshake: { usObj: iAm } } = this;
+
+    if (!iAm.registered) {
+        throw new AuthorizationError();
+    }
+
+    const halfYear = Date.now() - ms('0.5y');
+    const docs = await STPhotoConveyer.find({stamp: {$gt: halfYear}}, { _id: 0, __v: 0 }, { sort: 'stamp', lean: true }).exec();
+
+    docs.forEach(doc => doc.stamp = doc.stamp.getTime());
+
+    return { data: docs };
+}
+
+const conveyorStatFast = () => ({
+    conveyerEnabled,
+    conveyerLength,
+    conveyerMaxLength,
+    conveyerConverted
+});
+
+conveyorStartStop.isPublic = true;
+conveyerClear.isPublic = true;
+conveyorStat.isPublic = true;
+conveyorStatFast.isPublic = true;
+
+export default {
+    conveyorStartStop,
+    conveyerClear,
+    conveyorStat,
+    conveyorStatFast
+};
 
 /**
  a - origin

@@ -150,65 +150,56 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             var self = this;
             self.loadingComments(true);
 
-            socket.once('takeCommentsUser', function (data) {
-                var objs;
-                var comments;
+            socket.run('comment.giveForUser', { login: self.u.login(), type: type, page: page }, true)
+                .then(function (data) {
+                    var objs;
+                    var comments;
 
-                if (!data || data.error || !Array.isArray(data.comments)) {
-                    window.noty({
-                        text: data && data.message || 'Error occurred',
-                        type: 'error',
-                        layout: 'center',
-                        timeout: 3000,
-                        force: true
-                    });
-                } else if (data.page === page && data.type === type) {
+                    if (data.page === page && data.type === type) {
+                        objs = data.objs;
+                        comments = data.comments;
 
-                    objs = data.objs;
-                    comments = data.comments;
+                        self.type(type);
+                        self.pageSize(data.perPage || 24);
+                        self.types.photo_persist(data.countPhoto || 0);
+                        self.types.news_persist(data.countNews || 0);
+                        self.types.photo(data.countPhoto || 0);
+                        self.types.news(data.countNews || 0);
 
-                    self.type(type);
-                    self.pageSize(data.perPage || 24);
-                    self.types.photo_persist(data.countPhoto || 0);
-                    self.types.news_persist(data.countNews || 0);
-                    self.types.photo(data.countPhoto || 0);
-                    self.types.news(data.countNews || 0);
+                        if (_.isEmpty(comments) && page > 1) {
+                            return setTimeout(function () {
+                                globalVM.router.navigate(
+                                    self.pageUrl() + (self.paginationShow() ? '/' + self.pageLast() : '') +
+                                    (type !== 'photo' ? '?type=' + type : ''),
+                                    { replace: true }
+                                );
+                            }, 100);
+                        }
 
-                    if (_.isEmpty(comments) && page > 1) {
-                        return setTimeout(function () {
-                            globalVM.router.navigate(
-                                self.pageUrl() + (self.paginationShow() ? '/' + self.pageLast() : '') +
-                                (type !== 'photo' ? '?type=' + type : ''),
-                                { replace: true }
-                            );
-                        }, 100);
+                        _.forOwn(objs, function (obj) {
+                            if (type === 'photo') {
+                                obj.link = '/p/' + obj.cid;
+                                obj.sfile = P.preaddr + Photo.picFormats.q + obj.file;
+                                obj.title += ' <span class="photoYear">' + obj.y + '</span>';
+                            } else if (type === 'news') {
+                                obj.link = '/news/' + obj.cid;
+                            }
+                        });
+
+                        comments.forEach(function (comment) {
+                            comment.obj = objs[comment.obj];
+                            comment.link = comment.obj.link + '?hl=comment-' + comment.cid;
+                        });
+
+                        this.commentsObjs = objs;
+                        this.comments(comments);
                     }
 
-                    _.forOwn(objs, function (obj) {
-                        if (type === 'photo') {
-                            obj.link = '/p/' + obj.cid;
-                            obj.sfile = P.preaddr + Photo.picFormats.q + obj.file;
-                            obj.title += ' <span class="photoYear">' + obj.y + '</span>';
-                        } else if (type === 'news') {
-                            obj.link = '/news/' + obj.cid;
-                        }
-                    });
-
-                    comments.forEach(function (comment) {
-                        comment.obj = objs[comment.obj];
-                        comment.link = comment.obj.link + '?hl=comment-' + comment.cid;
-                    });
-
-                    this.commentsObjs = objs;
-                    this.comments(comments);
-                }
-
-                this.loadingComments(false);
-                if (_.isFunction(cb)) {
-                    cb.call(ctx || this, data);
-                }
-            }, this);
-            socket.emit('giveCommentsUser', { login: self.u.login(), type: type, page: page });
+                    this.loadingComments(false);
+                    if (_.isFunction(cb)) {
+                        cb.call(ctx || this, data);
+                    }
+                }.bind(this));
         },
         showHistory: function (cid) {
             if (!this.histVM) {

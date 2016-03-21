@@ -11,7 +11,9 @@ import * as session from './_session';
 import constants from './constants.js';
 import * as photoController from './photo';
 import { userThrottleChange } from './subscr';
+import constantsError from '../app/errors/constants';
 import { userSettingsDef, userSettingsVars, userRanksHash } from './settings';
+import { AuthenticationError, AuthorizationError, BadParamsError, InputError, NotFoundError } from '../app/errors';
 
 import { User } from '../models/User';
 
@@ -20,32 +22,28 @@ const privateDir = path.join(config.storePath, 'private/avatars/');
 const publicDir = path.join(config.storePath, 'public/avatars/');
 const mkdirpAsync = Bluebird.promisify(mkdirp);
 const execAsync = Bluebird.promisify(exec);
-const msg = {
-    badParams: 'Bad params',
-    deny: 'You do not have permission for this action',
-
-    nouser: 'Requested user does not exist',
-    nosetting: 'Such setting does not exists'
-};
+const emailRegexp = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 
 const getUserByLogin = async function (login) {
-    const usObjOnline = session.getOnline(login);
+    const usObjOnline = session.getOnline({ login });
     const user = usObjOnline ? usObjOnline.user : await User.findOne({ login }).exec();
 
     if (!user) {
-        throw { message: msg.nouser };
+        throw new NotFoundError(constantsError.NO_SUCH_USER);
     }
 
     return { usObjOnline, user };
 };
 
 // Serve user
-async function giveUser(iAm, { login } = {}) {
+async function giveUser({ login }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!login) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
-    const userObj = session.getOnline(login);
+    const userObj = session.getOnline({ login });
     const itsMe = iAm.registered && iAm.user.login === login;
 
     const user = userObj ? session.getPlainUser(userObj.user) : await User.findOne(
@@ -61,7 +59,7 @@ async function giveUser(iAm, { login } = {}) {
     ]).exec();
 
     if (!user) {
-        throw { message: msg.nouser };
+        throw new NotFoundError(constantsError.NO_SUCH_USER);
     }
 
     if (itsMe || iAm.isAdmin) {
@@ -74,12 +72,14 @@ async function giveUser(iAm, { login } = {}) {
 }
 
 // Save changes in user profile
-async function saveUser(iAm, { login, ...data } = {}) {
+async function saveUser({ login, ...data }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!login) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
     if (!iAm.registered || iAm.user.login !== login && !iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     const { usObjOnline, user } = await getUserByLogin(login);
@@ -103,19 +103,21 @@ async function saveUser(iAm, { login, ...data } = {}) {
     await user.save();
 
     if (usObjOnline) {
-        session.emitUser(usObjOnline);
+        session.emitUser({ usObj: usObjOnline });
     }
 
+    // TODO: return user through 'giveUser'
     return { saved: 1 };
 }
 
 // Changes value of specified user setting
-async function changeSetting(socket, { login, key, val } = {}) {
+async function changeSetting({ login, key, val }) {
+    const { socket, handshake: { usObj: iAm } } = this;
+
     if (!login || !key) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
-    const iAm = socket.handshake.usObj;
     const itsMe = iAm.registered && iAm.user.login === login;
     let forbidden = !itsMe && !iAm.isAdmin;
 
@@ -126,7 +128,7 @@ async function changeSetting(socket, { login, key, val } = {}) {
     }
 
     if (forbidden) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     const { usObjOnline, user } = await getUserByLogin(login);
@@ -136,7 +138,7 @@ async function changeSetting(socket, { login, key, val } = {}) {
 
     // If this setting does not exist or its value is not allowed - throw error
     if (defSetting === undefined || vars === undefined || vars.indexOf(val) < 0) {
-        throw { message: msg.nosetting };
+        throw new BadParamsError(constantsError.SETTING_DOESNT_EXISTS);
     }
 
     if (!user.settings) {
@@ -160,22 +162,24 @@ async function changeSetting(socket, { login, key, val } = {}) {
     await user.save();
 
     if (usObjOnline) {
-        session.emitUser(usObjOnline, null, socket);
+        session.emitUser({ usObj: usObjOnline, excludeSocket: socket });
     }
 
     return { key, val };
 };
 
 // Change displayed name
-async function changeDispName(iAm, { login, showName } = {}) {
+async function changeDispName({ login, showName }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!login) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const itsMe = iAm.registered && iAm.user.login === login;
 
     if (!itsMe && !iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     const { usObjOnline, user } = await getUserByLogin(login);
@@ -191,22 +195,23 @@ async function changeDispName(iAm, { login, showName } = {}) {
     await user.save();
 
     if (usObjOnline) {
-        session.emitUser(usObjOnline);
+        session.emitUser({ usObj: usObjOnline });
     }
 
     return { saved: 1, disp: user.disp };
 }
 
 // Set watermark custom sign
-async function setWatersignCustom(socket, { login, watersign }) {
-    const iAm = socket.handshake.usObj;
+async function setWatersignCustom({ login, watersign }) {
+    const { socket, handshake: { usObj: iAm } } = this;
+
     const itsMe = iAm.registered && iAm.user.login === login;
 
     if (itsMe && iAm.user.nowaterchange || !itsMe && !iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
     if (!login) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const { usObjOnline, user } = await getUserByLogin(login);
@@ -240,7 +245,7 @@ async function setWatersignCustom(socket, { login, watersign }) {
         await user.save();
 
         if (usObjOnline) {
-            session.emitUser(usObjOnline, null, socket);
+            session.emitUser({ usObj: usObjOnline, excludeSocket: socket });
         }
     }
 
@@ -251,20 +256,22 @@ async function setWatersignCustom(socket, { login, watersign }) {
 };
 
 // Change user's email
-async function changeEmail(iAm, { login, email, pass } = {}) {
+async function changeEmail({ login, email, pass }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!login || !_.isString(email) || !email) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const itsMe = iAm.registered && iAm.user.login === login;
 
     if (!itsMe && !iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     email = email.toLowerCase();
-    if (!email.match(/^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/)) {
-        throw { message: 'Wrong email, check it one more time' };
+    if (!email.match(emailRegexp)) {
+        throw new InputError(constantsError.MAIL_WRONG);
     }
 
     const { usObjOnline, user } = await getUserByLogin(login);
@@ -274,7 +281,7 @@ async function changeEmail(iAm, { login, email, pass } = {}) {
         if (existsEmailUser.login === login) {
             return { email };
         }
-        throw { message: 'This email already in use by another user' };
+        throw new InputError(constantsError.MAIL_IN_USE);
     }
 
     if (!pass) {
@@ -284,28 +291,30 @@ async function changeEmail(iAm, { login, email, pass } = {}) {
     const isMatch = await iAm.user.checkPass(pass);
 
     if (!isMatch) {
-        throw { message: 'Wrong password' };
+        throw AuthenticationError(constantsError.AUTHENTICATION_PASS_WRONG);
     }
 
     user.email = email;
     await user.save();
 
     if (usObjOnline) {
-        session.emitUser(usObjOnline);
+        session.emitUser({ usObj: usObjOnline });
     }
 
     return { email: user.email };
 }
 
-async function changeAvatar(iAm, { login, file, type } = {}) {
+async function changeAvatar({ login, file, type }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!login || !file || !new RegExp('^[a-z0-9]{10}\\.(jpe?g|png)$', '').test(file)) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const itsMe = iAm.registered && iAm.user.login === login;
 
     if (!itsMe && !iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     const { usObjOnline, user } = await getUserByLogin(login);
@@ -315,15 +324,15 @@ async function changeAvatar(iAm, { login, file, type } = {}) {
     const dirPrefix = fullfile.substr(0, 4);
     const lossless = type === 'image/png';
 
-    await* [
+    await Promise.all([
         // Transfer file from incoming to private
         fs.renameAsync(incomeDir + file, path.normalize(originPath)),
         // Create folders inside public
         mkdirpAsync(path.join(publicDir, 'd/', dirPrefix)),
         mkdirpAsync(path.join(publicDir, 'h/', dirPrefix))
-    ];
+    ]);
 
-    await* [
+    await Promise.all([
         // Copy 100px from private to public/d/
         Utils.copyFile(originPath, publicDir + 'd/' + fullfile),
 
@@ -346,7 +355,7 @@ async function changeAvatar(iAm, { login, file, type } = {}) {
             `cwebp -preset photo -m 5 -resize 50 50 ${lossless ? '-lossless ' : ''}${originPath} ` +
             `-o ${publicDir}h/${fullfile}.webp`
         )
-    ];
+    ]);
 
     const currentAvatar = user.avatar;
 
@@ -364,22 +373,24 @@ async function changeAvatar(iAm, { login, file, type } = {}) {
     }
 
     if (usObjOnline) {
-        session.emitUser(usObjOnline);
+        session.emitUser({ usObj: usObjOnline });
     }
 
     return { avatar: user.avatar };
 }
 
 // Remove avatar
-async function delAvatar(iAm, { login } = {}) {
+async function delAvatar({ login }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!login) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const itsMe = iAm.registered && iAm.user.login === login;
 
     if (!itsMe && !iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     const { usObjOnline, user } = await getUserByLogin(login);
@@ -397,7 +408,7 @@ async function delAvatar(iAm, { login } = {}) {
         await user.save();
 
         if (usObjOnline) {
-            session.emitUser(usObjOnline);
+            session.emitUser({ usObj: usObjOnline });
         }
     }
 
@@ -405,14 +416,14 @@ async function delAvatar(iAm, { login } = {}) {
 }
 
 // Change (by administrator) user ability to change his watersign setting
-async function setUserWatermarkChange(socket, { login, nowaterchange } = {}) {
-    const iAm = socket.handshake.usObj;
+async function setUserWatermarkChange({ login, nowaterchange }) {
+    const { socket, handshake: { usObj: iAm } } = this;
 
     if (!iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
     if (!login) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const { usObjOnline, user } = await getUserByLogin(login);
@@ -431,7 +442,7 @@ async function setUserWatermarkChange(socket, { login, nowaterchange } = {}) {
         await user.save();
 
         if (usObjOnline) {
-            session.emitUser(usObjOnline, null, socket);
+            session.emitUser({ usObj: usObjOnline, excludeSocket: socket });
         }
     }
 
@@ -439,19 +450,21 @@ async function setUserWatermarkChange(socket, { login, nowaterchange } = {}) {
 };
 
 // Save user ranks
-async function saveUserRanks(iAm, { login, ranks } = {}) {
+async function saveUserRanks({ login, ranks }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!login || !Array.isArray(ranks)) {
-        throw { message: msg.badParams};
+        throw new BadParamsError();
     }
 
     if (!iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     // Check that all values are allowed
     for (const rank of ranks) {
         if (!userRanksHash[rank]) {
-            throw { message: msg.badParams };
+            throw new BadParamsError();
         }
     }
 
@@ -462,33 +475,37 @@ async function saveUserRanks(iAm, { login, ranks } = {}) {
     await user.save();
 
     if (usObjOnline) {
-        session.emitUser(usObjOnline);
+        session.emitUser({ usObj: usObjOnline });
     }
 
     return { saved: true, ranks: user.ranks || [] };
 }
 
-async function giveUserRules(iAm, { login } = {}) {
+async function giveUserRules({ login }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!login) {
-        throw { message: msg.badParams};
+        throw new BadParamsError();
     }
 
     if (!iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     const { user } = await getUserByLogin(login);
 
-    return { rules: user.rules || {}, info: { canPhotoNew: photoController.core.getNewPhotosLimit(user) } };
+    return { rules: user.rules || {}, info: { canPhotoNew: photoController.getNewPhotosLimit(user) } };
 }
 
-async function saveUserRules(iAm, { login, rules } = {}) {
+async function saveUserRules({ login, rules }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!login || !rules) {
-        throw { message: msg.badParams};
+        throw new BadParamsError();
     }
 
     if (!iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     const { usObjOnline, user } = await getUserByLogin(login);
@@ -500,7 +517,7 @@ async function saveUserRules(iAm, { login, rules } = {}) {
     if (rules.photoNewLimit !== undefined) {
         if (_.isNumber(rules.photoNewLimit)) {
             user.rules.photoNewLimit = Math.min(
-                Math.max(0, rules.photoNewLimit), photoController.core.maxNewPhotosLimit
+                Math.max(0, rules.photoNewLimit), photoController.maxNewPhotosLimit
             );
         } else {
             delete user.rules.photoNewLimit;
@@ -517,134 +534,39 @@ async function saveUserRules(iAm, { login, rules } = {}) {
     await user.save();
 
     if (usObjOnline) {
-        session.emitUser(usObjOnline);
+        session.emitUser({ usObj: usObjOnline });
     }
 
     return {
         saved: true,
         rules: user.rules,
-        info: { canPhotoNew: photoController.core.getNewPhotosLimit(user) }
+        info: { canPhotoNew: photoController.getNewPhotosLimit(user) }
     };
 }
 
-export function loadController(io) {
-    io.sockets.on('connection', function (socket) {
-        const hs = socket.handshake;
-
-        socket.on('giveUser', function (data) {
-            giveUser(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeUser', resultData);
-                });
-        });
-
-        socket.on('saveUser', function (data) {
-            saveUser(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('saveUserResult', resultData);
-                });
-        });
-
-        socket.on('changeDispName', function (data) {
-            changeDispName(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('changeDispNameResult', resultData);
-                });
-        });
-
-        socket.on('changeUserSetting', function (data) {
-            changeSetting(socket, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('changeUserSettingResult', resultData);
-                });
-        });
-        socket.on('setWatersignCustom', function (data) {
-            setWatersignCustom(socket, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('setWatersignCustomResult', resultData);
-                });
-        });
-        socket.on('setUserWatermarkChange', function (data) {
-            setUserWatermarkChange(socket, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('setUserWatermarkChangeResult', resultData);
-                });
-        });
-        socket.on('changeEmail', function (data) {
-            changeEmail(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('changeEmailResult', resultData);
-                });
-        });
-
-        socket.on('changeAvatar', function (data) {
-            changeAvatar(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('changeAvatarResult', resultData);
-                });
-        });
-        socket.on('delAvatar', function (data) {
-            delAvatar(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('delAvatarResult', resultData);
-                });
-        });
-
-        socket.on('saveUserRanks', function (data) {
-            saveUserRanks(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('saveUserRanksResult', resultData);
-                });
-        });
-
-        socket.on('giveUserRules', function (data) {
-            giveUserRules(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeUserRules', resultData);
-                });
-        });
-
-        socket.on('saveUserRules', function (data) {
-            saveUserRules(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('saveUserRulesResult', resultData);
-                });
-        });
-    });
+giveUser.isPublic = true;
+saveUser.isPublic = true;
+changeDispName.isPublic = true;
+changeSetting.isPublic = true;
+setWatersignCustom.isPublic = true;
+setUserWatermarkChange.isPublic = true;
+changeEmail.isPublic = true;
+changeAvatar.isPublic = true;
+delAvatar.isPublic = true;
+saveUserRanks.isPublic = true;
+giveUserRules.isPublic = true;
+saveUserRules.isPublic = true;
+export default {
+    giveUser,
+    saveUser,
+    changeDispName,
+    changeSetting,
+    setWatersignCustom,
+    setUserWatermarkChange,
+    changeEmail,
+    changeAvatar,
+    delAvatar,
+    saveUserRanks,
+    giveUserRules,
+    saveUserRules
 };

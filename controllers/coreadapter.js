@@ -1,7 +1,6 @@
 import net from 'net';
 import _ from 'lodash';
 import log4js from 'log4js';
-import Bluebird from 'bluebird';
 import { core as photoCore } from './photo';
 import { core as commentCore } from './comment';
 
@@ -11,72 +10,65 @@ const core = {
     photo: photoCore,
     comment: commentCore
 };
-const coreCaller = Bluebird.method(function (msg) {
-    var cat = core[msg.category];
-    var method;
+
+function coreCaller(msg) {
+    const cat = core[msg.category];
 
     if (cat !== undefined) {
-        method = cat[msg.method];
-    }
+        const method = cat[msg.method];
 
-    if (typeof method === 'function') {
-        return method.apply(null, msg.args);
-    }
-
-    throw { message: 'Unsupported method [' + msg.category + ':' + msg.method + ']' };
-});
-
-var clientSockets = [];
-var ClientSocket = function (server, socket) {
-    this.server = server;
-    this.socket = socket;
-
-    this.buffer = '';
-
-    var that = this;
-
-    socket.setEncoding('utf8');
-    socket.setNoDelay(true);
-
-    socket.on('data', function (data) {
-        var messages = that._tokenizer(data);
-
-        for (var i = 0, len = messages.length; i < len; i++) {
-            that.handleMessage(messages[i]);
+        if (typeof method === 'function') {
+            return method(...msg.args);
         }
-    });
+    }
+
+    throw { message: `Unsupported method [${msg.category}:${msg.method}]` };
 };
 
-ClientSocket.prototype.handleMessage = function (msg) {
-    try {
-        msg = JSON.parse(msg);
-    } catch (e) {
-        logger.error('Core: error parsing incoming message: ' + e + '. Message: ' + msg);
-        return;
+class ClientSocket {
+    constructor(server, socket) {
+        this.server = server;
+        this.socket = socket;
+        this.buffer = '';
+
+        socket.setEncoding('utf8');
+        socket.setNoDelay(true);
+        socket.on('data', data => this._tokenizer(data).forEach(message => this.handleMessage(message)));
     }
 
-    if (msg) {
-        var coreCallerPromise = coreCaller(msg);
+    handleMessage(msg) {
+        try {
+            msg = JSON.parse(msg);
+        } catch (e) {
+            return logger.error(`Core: error parsing incoming message: ${e}. Message: ${msg}`);
+        }
+
+        if (!msg) {
+            return;
+        }
+
+        const coreCallerPromise = coreCaller(msg);
 
         if (msg.descriptor) {
-            var result = { descriptor: msg.descriptor };
+            const result = { descriptor: msg.descriptor };
 
             coreCallerPromise
-                .bind(this)
-                .then(function (methodResult) {
-                    var spread = msg.spread;
-                    var stringifyResultArgs = msg.stringifyResultArgs;
+                .then(methodResult => {
+                    const spread = msg.spread;
+                    let stringifyResultArgs = msg.stringifyResultArgs;
 
                     // Если передано что аргументы надо передавать как строка, стрингуем их
+                    // If you specified that the arguments should be passed as a string, stringify them
                     if (stringifyResultArgs) {
-                        // Если указан параметр spread, значит в methodResult массив с несколькими аргументами
+                        // If 'spread' parameter specified, means methodResult contains array of arguments
                         if (spread) {
-                            // Если передано не число аргументов, а флаг, значит надо стригифаить каждый аргумент
+                            // If specified not number of arguments, but flag,
+                            // means every argument need to be stringified
                             if (stringifyResultArgs === true) {
                                 stringifyResultArgs = methodResult.length;
                             }
 
-                            for (var i = 0; i < stringifyResultArgs; i++) {
+                            for (let i = 0; i < stringifyResultArgs; i++) {
                                 methodResult[i] = JSON.stringify(methodResult[i]);
                             }
                         } else {
@@ -86,64 +78,71 @@ ClientSocket.prototype.handleMessage = function (msg) {
 
                     result.result = methodResult;
                 })
-                .catch(function (err) {
+                .catch(err => {
                     result.error = err;
                 })
-                .finally(function () {
+                .finally(() => {
                     this.socket.write(JSON.stringify(result) + '\0');
                 });
         }
     }
-};
 
-ClientSocket.prototype._tokenizer = function (data) {
-    this.buffer += data;
+    _tokenizer(data) {
+        this.buffer += data;
 
-    var result = this.buffer.split('\0');
-    if (result.length === 1) {
-        return [];
-    }
-
-    this.buffer = result.pop();
-    return result;
-};
-
-export const Server = function () {
-    var args = _.toArray(arguments);
-    var server = net.createServer(function (socket) {
-        var clientSocket = new ClientSocket(server, socket);
-        var ondestroy = function () {
-            socket.destroy();
-            _.remove(clientSockets, clientSocket);
-            logger.info('Core client disconnected. Total clients: %d', clientSockets.length);
-        };
-
-        clientSockets.push(clientSocket);
-
-        socket.on('error', function (err) {
-            logger.warn('Core client connection error: ' + (err.code || err));
-        });
-        socket.on('close', function () {
-            ondestroy();
-        });
-        socket.on('end', function () {
-            logger.info('Core client connection end');
-            ondestroy();
-        });
-        logger.info('Core client connected. Total clients: %d', clientSockets.length);
-    });
-
-    server.on('error', function (e) {
-        if (e.code === 'EADDRINUSE') {
-            logger.error('Address in use, retrying...');
-            setTimeout(function () {
-                server.close();
-                server.listen.apply(server, args);
-            }, 1000);
-        } else {
-            logger.error('Error occured: ', e);
+        const result = this.buffer.split('\0');
+        if (result.length === 1) {
+            return [];
         }
-    });
 
-    server.listen.apply(server, args);
-};
+        this.buffer = result.pop();
+        return result;
+    }
+}
+
+export class Server {
+    constructor() {
+        this.listenargs = _.toArray(arguments);
+        this.clientSockets = [];
+
+        this.server = net.createServer(socket => {
+            const clientSocket = new ClientSocket(this.server, socket);
+            const ondestroy = () => {
+                socket.destroy();
+                _.remove(this.clientSockets, clientSocket);
+
+                logger.info(`Core client disconnected. Total clients: ${this.clientSockets.length}`);
+            };
+
+            this.clientSockets.push(clientSocket);
+
+            socket.on('error', err => {
+                logger.warn('Core client connection error: ', err);
+            });
+            socket.on('close', ondestroy);
+            socket.on('end', () => {
+                logger.info('Core client connection end');
+                ondestroy();
+            });
+
+            logger.info(`Core client connected. Total clients: ${this.clientSockets.length}`);
+        });
+
+        this.server.on('error', err => {
+            if (err.code === 'EADDRINUSE') {
+                logger.error('Address in use, retrying...');
+                setTimeout(function () {
+                    this.server.close();
+                    this.listen();
+                }, 1000);
+            } else {
+                logger.error('Error occured: ', err);
+            }
+        });
+
+        this.listen();
+    }
+    listen() {
+        this.server.listen(...this.listenargs);
+    }
+}

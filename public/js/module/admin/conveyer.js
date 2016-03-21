@@ -1,18 +1,20 @@
 /**
- * Модель карты
+ * Администрирование конвейера
  */
 define([
-    'underscore', 'jquery', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer',
-    'model/User', 'model/storage',
-    'highstock/highstock.src',
-    'text!tpl/admin/conveyer.jade', 'css!style/admin/conveyer', 'bs/ext/multiselect'
-], function (_, $, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, User, storage, Highcharts, jade) {
+    'underscore', 'jquery', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping',
+    'm/_moduleCliche', 'globalVM', 'renderer', 'model/User', 'model/storage', 'noties',
+    'highstock/highstock.src', 'text!tpl/admin/conveyer.jade', 'css!style/admin/conveyer', 'bs/ext/multiselect'
+], function (_, $, Browser, Utils, socket, P, ko, koMapping, Cliche,
+             globalVM, renderer, User, storage, noties, Highcharts, jade) {
     'use strict';
 
     Highcharts = Highcharts || window.Highcharts;
     Highcharts.theme = {
-        colors: ["#DDDF0D", "#7798BF", "#55BF3B", "#DF5353", "#aaeeee", "#ff0066", "#eeaaee",
-            "#55BF3B", "#DF5353", "#7798BF", "#aaeeee"],
+        colors: [
+            '#DDDF0D', '#7798BF', '#55BF3B', '#DF5353', '#aaeeee', '#ff0066', '#eeaaee',
+            '#55BF3B', '#DF5353', '#7798BF', '#aaeeee'
+        ],
         chart: {
             backgroundColor: {
                 linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
@@ -269,7 +271,6 @@ define([
             deferredWhenReady: null // Deffered wich will be resolved when map ready
         },
         create: function () {
-            var _this = this;
             this.destroy = _.wrap(this.destroy, this.localDestroy);
             this.auth = globalVM.repository['m/common/auth'];
 
@@ -348,62 +349,56 @@ define([
             this.show();
         },
         show: function () {
+            var self = this;
+
             this.statFast();
-            globalVM.func.showContainer(this.$container, function () {
-                socket.once('getStatConveyer', function (data) {
-                    if (!data || data.error) {
-                        window.noty({
-                            text: data.message || 'Error occurred',
-                            type: 'error',
-                            layout: 'center',
-                            timeout: 3000,
-                            force: true
-                        });
-                    } else {
-                        data = data.data;
-                        var i = 0,
-                            timeZoneOffset = -((new Date()).getTimezoneOffset()) * 60000,
-                            stampLocal;
+            globalVM.func.showContainer(self.$container, function () {
+                socket.run('converter.conveyorStat', undefined, true)
+                    .then(function (result) {
+                        var data = result.data;
+
+                        var timeZoneOffset = -((new Date()).getTimezoneOffset()) * 60000;
+                        var stampLocal;
+                        var i = 0;
+
                         while (++i < data.length) {
                             stampLocal = data[i].stamp + timeZoneOffset;
-                            this.conveyerLengthData.push(
+                            self.conveyerLengthData.push(
                                 [stampLocal, data[i].clength]
                             );
-                            this.conveyerConvertData.push(
+                            self.conveyerConvertData.push(
                                 [stampLocal, data[i].converted]
                             );
                         }
-                        this.conveyerLengthChart = new Highcharts.StockChart(_.assign({
+                        self.conveyerLengthChart = new Highcharts.StockChart(_.assign({
                             chart: {
                                 renderTo: 'conveyerLengthGraph'
                             },
                             series: [
                                 {
                                     name: 'Photos in the queue',
-                                    data: this.conveyerLengthData,
+                                    data: self.conveyerLengthData,
                                     tooltip: {
                                         valueDecimals: 0
                                     }
                                 }
                             ]
-                        }, this.chartsOptions));
-                        this.conveyerConvertChart = new Highcharts.StockChart(_.assign({
+                        }, self.chartsOptions));
+                        self.conveyerConvertChart = new Highcharts.StockChart(_.assign({
                             chart: {
                                 renderTo: 'conveyerConvertGraph'
                             },
                             series: [
                                 {
                                     name: 'Converted photos',
-                                    data: this.conveyerConvertData,
+                                    data: self.conveyerConvertData,
                                     tooltip: {
                                         valueDecimals: 0
                                     }
                                 }
                             ]
-                        }, this.chartsOptions));
-                    }
-                }, this);
-                socket.emit('statConveyer', {});
+                        }, self.chartsOptions));
+                    });
             }, this);
 
             this.showing = true;
@@ -420,112 +415,69 @@ define([
 
         startstop: function () {
             this.exe(true);
-            socket.once('conveyorStartStopResult', function (data) {
-                if (data && Utils.isType('boolean', data.conveyerEnabled)) {
-                    this.conveyerEnabled(data.conveyerEnabled);
-                }
-                this.exe(false);
-            }, this);
-            socket.emit('conveyorStartStop', !this.conveyerEnabled());
+            socket.run('converter.conveyorStartStop', { value: !this.conveyerEnabled() }, true)
+                .then(function (result) {
+                    if (result && _.isBoolean(result.conveyerEnabled)) {
+                        this.conveyerEnabled(result.conveyerEnabled);
+                    }
+                    this.exe(false);
+                }.bind(this));
         },
         clearConveyer: function () {
-            var _this = this;
+            var self = this;
             this.exe(true);
 
-            window.noty(
-                {
-                    text: 'The conveyor will be cleared.<br>Confirm the operation?',
-                    type: 'confirm',
-                    layout: 'center',
-                    modal: true,
-                    force: true,
-                    animation: {
-                        open: { height: 'toggle' },
-                        close: {},
-                        easing: 'swing',
-                        speed: 500
-                    },
-                    buttons: [
-                        {
-                            addClass: 'btn btn-danger', text: 'Yes',
-                            onClick: function ($noty) {
-                                // this = button element
-                                // $noty = $noty element
-                                if ($noty.$buttons && $noty.$buttons.find) {
-                                    $noty.$buttons.find('button').attr('disabled', true).addClass('disabled');
-                                }
+            noties.confirm({
+                message: 'The conveyor will be cleared.<br>Confirm the operation?',
+                onOk: function (confirmer) {
+                    confirmer.disable();
 
-                                socket.once('conveyerClearResult', function (data) {
-                                    $noty.$buttons.find('.btn-danger').remove();
-                                    var okButton = $noty.$buttons.find('button')
-                                        .attr('disabled', false)
-                                        .removeClass('disabled')
-                                        .off('click');
-
-                                    $noty.$message.children().html((data && data.message) || '');
-
-                                    okButton.text('Close').on('click', function () {
-                                        $noty.close();
-                                        this.exe(false);
-                                        this.statFast();
-                                    }.bind(this));
-                                }, _this);
-                                socket.emit('conveyerClear', true);
-                            }
-                        },
-                        {
-                            addClass: 'btn btn-primary', text: 'Cancel',
-                            onClick: function ($noty) {
-                                $noty.close();
-                                _this.exe(false);
-                            }
-                        }
-                    ]
+                    socket.run('converter.conveyerClear', { value: true }, true)
+                        .then(function (data) {
+                            confirmer.success(data.message, 'Закрыть', null, function () {
+                                self.exe(false);
+                                self.statFast();
+                            });
+                        })
+                        .catch(function () {
+                            self.exe(false);
+                        });
+                },
+                onCancel: function () {
+                    self.exe(false);
                 }
-            );
+            });
         },
 
         toConvert: function () {
-            this.exe(true);
-            socket.once('convertPhotosAllResult', function (data) {
-                if (data && !data.error) {
-                    window.noty({
-                        text: 'Added ' + data.conveyorAdded + ' photos to conveyer in ' + data.time + 's',
-                        type: 'success',
-                        layout: 'center',
-                        timeout: 2000,
-                        force: true
-                    });
-                } else {
-                    window.noty({
-                        text: (data && data.message) || 'Error occurred',
-                        type: 'error',
-                        layout: 'center',
-                        timeout: 2000,
-                        force: true
-                    });
-                }
-                this.exe(false);
-            }, this);
-            socket.emit('convertPhotosAll', {
-                min: Number(this.reconvertCidMin()),
-                max: Number(this.reconvertCidMax()),
-                r: Number(this.reconvertRegion())
-            });
+            var self = this;
+            self.exe(true);
+            socket
+                .run('photo.convertAll', {
+                    min: Number(self.reconvertCidMin()),
+                    max: Number(self.reconvertCidMax()),
+                    r: Number(self.reconvertRegion())
+                }, true)
+                .then(function () {
+                    self.exe(false);
+                })
+                .catch(function () {
+                    self.exe(false);
+                });
         },
 
         statFast: function () {
             window.clearTimeout(this.timeoutUpdate);
-            socket.once('takeStatFastConveyer', function (data) {
-                if (data) {
-                    this.conveyerEnabled(data.conveyerEnabled);
-                    this.clength(data.clength);
-                    this.cmaxlength(data.cmaxlength);
-                    this.converted(data.converted);
-                }
-                this.timeoutUpdate = window.setTimeout(this.statFast.bind(this), 2000);
-            }, this);
-            socket.emit('giveStatFastConveyer', {});
+            socket.run('converter.conveyorStatFast')
+                .then(function (data) {
+                    if (data) {
+                        this.conveyerEnabled(data.conveyerEnabled);
+                        this.clength(data.conveyerLength);
+                        this.cmaxlength(data.conveyerMaxLength);
+                        this.converted(data.conveyerConverted);
+                    }
+                    this.timeoutUpdate = window.setTimeout(this.statFast.bind(this), 2000);
+                }.bind(this));
         }
     });
 });

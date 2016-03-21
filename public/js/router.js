@@ -101,7 +101,7 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'globalVM', 'renderer'], fu
                 if (item.route.test(pathname)) {
                     handler = router.handlers[item.handler];
                     if (_.isFunction(handler)) {
-                        matchedArgs = _.chain(pathname.match(item.route)).toArray().rest().value();
+                        matchedArgs = _.chain(pathname.match(item.route)).toArray().tail().value();
                         matchedArgs.push(qparams);
                         handler.apply(item.ctx, matchedArgs);
                         triggered = true;

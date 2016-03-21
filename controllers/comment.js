@@ -2,15 +2,23 @@ import ms from 'ms';
 import _ from 'lodash';
 import log4js from 'log4js';
 import Utils from '../commons/Utils';
-import constants from './constants.js';
+import constants from './constants';
+import constantsError from '../app/errors/constants';
 import * as session from './_session';
+import { giveReasonTitle } from './reason';
+import * as photoController from './photo';
 import * as subscrController from './subscr';
 import * as regionController from './region.js';
 import * as actionLogController from './actionlog.js';
 import * as userObjectRelController from './userobjectrel';
-import { giveReasonTitle } from './reason';
-
-const photoController = require('./photo');
+import {
+    ApplicationError,
+    AuthorizationError,
+    BadParamsError,
+    InputError,
+    NotFoundError,
+    NoticeError
+} from '../app/errors';
 
 import { News } from '../models/News';
 import { User } from '../models/User';
@@ -23,16 +31,6 @@ const commentMaxLength = 12e3;
 const logger = log4js.getLogger('comment.js');
 const maxRegionLevel = constants.region.maxLevel;
 const commentsUserPerPage = 20;
-
-const msg = {
-    deny: 'You do not have permission for this action',
-    noUser: 'Requested user is not exists',
-    noObject: 'Commented object does not exist or moderators changed it status, which is not available to you',
-    noComments: 'Operations with comments on this page are prohibited',
-    noCommentExists: 'Comment does not exists',
-    badParams: 'Invalid request parameters',
-    maxLength: 'Comments longer than max value (' + commentMaxLength + ')'
-};
 
 const permissions = {
     canModerate(type, obj, usObj) {
@@ -63,7 +61,7 @@ function commentsTreeBuildAnonym(comments, usersHash) {
                 `User for comment undefined. Comment userId: ${String(comment.user)}`,
                 `Comment: ${JSON.stringify(comment)}`
             );
-            throw { message: 'Unknow user in comments' };
+            throw new ApplicationError({ code: constantsError.COMMENT_UNKNOWN_USER, userId: comment.user });
         }
 
         comment.user = user.login;
@@ -154,8 +152,7 @@ async function commentsTreeBuildAuth(myId, comments, previousViewStamp, canReply
                 }
             }
             if (commentParent.comments === undefined) {
-                if (canReply && commentParent.del === undefined &&
-                    !commentIsDeleted && commentParent.can.del === true) {
+                if (canReply && commentParent.del === undefined && !commentIsDeleted && commentParent.can.del === true) {
                     // If under not removed parent comment we find first child not removed comment,
                     // and user can remove parent (i.e it's his own comment), cancel remove ability,
                     // because user can't remove his own comments with replies
@@ -347,7 +344,7 @@ async function commentsTreeBuildDel(comment, childs, checkMyId) {
     // If user who request is not moderator, and not whose comments are inside branch,
     // means that he can't see branch, return 'not exists'
     if (!canSee) {
-        throw { message: msg.noCommentExists };
+        throw NotFoundError(constantsError.COMMENT_DOESNT_EXISTS);
     }
 
     const { usersById, usersByLogin } = await getUsersHashForComments(usersArr);
@@ -382,163 +379,127 @@ async function getUsersHashForComments(usersArr) {
     return { usersById, usersByLogin };
 }
 
-export const core = {
-    // Simplified comments distribution for anonymous users
-    async getCommentsObjAnonym(iAm, data) {
-        let obj;
-        let commentModel;
+// Simplified comments distribution for anonymous users
+async function getCommentsObjAnonym({ cid, type = 'photo' }) {
+    let commentModel;
+    let obj;
 
-        if (data.type === 'news') {
-            commentModel = CommentN;
-            obj = await News.findOne({ cid: data.cid }, { _id: 1 }).exec();
-        } else {
-            commentModel = Comment;
-            obj = await photoController.findPhoto(iAm, { cid: data.cid });
-        }
-
-        if (!obj) {
-            throw { message: msg.noObject };
-        }
-
-        const comments = await commentModel.find(
-            { obj: obj._id, del: null },
-            { _id: 0, obj: 0, hist: 0, del: 0, geo: 0, r0: 0, r1: 0, r2: 0, r3: 0, r4: 0, r5: 0, __v: 0 },
-            { lean: true, sort: { stamp: 1 } }
-        ).exec();
-
-        const usersArr = [];
-
-        if (comments.length) {
-            const usersHash = {};
-
-            for (const comment of comments) {
-                const userId = String(comment.user);
-
-                if (usersHash[userId] === undefined) {
-                    usersHash[userId] = true;
-                    usersArr.push(userId);
-                }
-            }
-        }
-
-        let tree;
-        let usersById;
-        let usersByLogin;
-
-        if (usersArr.length) {
-            ({ usersById, usersByLogin } = await getUsersHashForComments(usersArr));
-            tree = commentsTreeBuildAnonym(comments, usersById);
-        }
-
-        return { comments: tree || [], countTotal: comments.length, users: usersByLogin };
-    },
-    async getCommentsObjAuth(iAm, { cid, type = 'photo' }) {
-        let obj;
-        let commentModel;
-
-        if (type === 'news') {
-            commentModel = CommentN;
-            obj = await News.findOne({ cid }, { _id: 1, nocomments: 1 }).exec();
-        } else {
-            commentModel = Comment;
-            obj = await photoController.findPhoto(iAm, { cid });
-        }
-
-        if (!obj) {
-            throw { message: msg.noObject };
-        }
-
-        const [comments, relBeforeUpdate] = await* [
-            // Take all object comments
-            commentModel.find(
-                { obj: obj._id },
-                { _id: 0, obj: 0, hist: 0, 'del.reason': 0, geo: 0, r0: 0, r1: 0, r2: 0, r3: 0, r4: 0, r5: 0, __v: 0 },
-                { lean: true, sort: { stamp: 1 } }
-            ).exec(),
-            // Get last user's view time of comments and object and replace it with current time
-            // with notification reset if it scheduled
-            userObjectRelController.setCommentView(obj._id, iAm.user._id, type)
-        ];
-
-        let previousViewStamp;
-
-        if (relBeforeUpdate) {
-            if (relBeforeUpdate.comments) {
-                previousViewStamp = relBeforeUpdate.comments.getTime();
-            }
-            if (relBeforeUpdate.sbscr_noty) {
-                // Если было заготовлено уведомление,
-                // просим менеджер подписок проверить есть ли уведомления по другим объектам
-                subscrController.commentViewed(obj._id, iAm.user);
-            }
-        }
-
-        const canModerate = permissions.canModerate(type, obj, iAm);
-        const canReply = canModerate || permissions.canReply(type, obj, iAm);
-
-        if (!comments.length) {
-            return { comments: [], users: {}, countTotal: 0, countNew: 0, canModerate, canReply };
-        }
-
-        const { tree, users, countTotal, countNew } = await (canModerate ?
-            // Если это модератор данной фотографии или администратор новости
-            commentsTreeBuildCanModerate(String(iAm.user._id), comments, previousViewStamp) :
-            // Если это зарегистрированный пользователь
-            commentsTreeBuildAuth(String(iAm.user._id), comments, previousViewStamp, !obj.nocomments)
-        );
-
-        return ({ comments: tree, users, countTotal, countNew, canModerate, canReply });
-    },
-    async getDelTree(iAm, data) {
-        const commentModel = data.type === 'news' ? CommentN : Comment;
-
-        const { obj: objId, ...comment } = await commentModel.findOne(
-            { cid: data.cid, del: { $exists: true } },
-            { _id: 0, hist: 0, 'del.reason': 0, geo: 0, r0: 0, r1: 0, r2: 0, r3: 0, r4: 0, r5: 0, __v: 0 },
-            { lean: true }
-        ).exec() || {};
-
-        if (!objId) {
-            throw { message: msg.noCommentExists };
-        }
-
-        const [obj, childs] = await* [
-            // Find the object that owns a comment
-            data.type === 'news' ? News.findOne({ _id: objId }, { _id: 1, nocomments: 1 }).exec() :
-                photoController.findPhoto(iAm, { _id: objId }),
-            // Take all removed comments, created after requested and below it
-            commentModel.find(
-                {
-                    obj: objId, del: { $exists: true },
-                    stamp: { $gte: comment.stamp }, level: { $gt: comment.level || 0 }
-                },
-                { _id: 0, obj: 0, hist: 0, 'del.reason': 0, geo: 0, r0: 0, r1: 0, r2: 0, r3: 0, r4: 0, r5: 0, __v: 0 },
-                { lean: true, sort: { stamp: 1 } }
-            ).exec()
-        ];
-
-        if (!obj) {
-            throw { message: msg.noObject };
-        }
-
-        const canModerate = permissions.canModerate(data.type, obj, iAm);
-        const commentsTree = await commentsTreeBuildDel(
-            comment, childs, canModerate ? undefined : String(iAm.user._id)
-        );
-
-        return { comments: commentsTree.tree, users: commentsTree.users };
+    if (type === 'news') {
+        commentModel = CommentN;
+        obj = await News.findOne({ cid }, { _id: 1 }).exec();
+    } else {
+        commentModel = Comment;
+        obj = await this.call('photo.find', { query: { cid } });
     }
-};
+
+    if (!obj) {
+        throw new NotFoundError(constantsError.COMMENT_NO_OBJECT);
+    }
+
+    const comments = await commentModel.find(
+        { obj: obj._id, del: null },
+        { _id: 0, obj: 0, hist: 0, del: 0, geo: 0, r0: 0, r1: 0, r2: 0, r3: 0, r4: 0, r5: 0, __v: 0 },
+        { lean: true, sort: { stamp: 1 } }
+    ).exec();
+
+    const usersArr = [];
+
+    if (comments.length) {
+        const usersHash = {};
+
+        for (const comment of comments) {
+            const userId = String(comment.user);
+
+            if (usersHash[userId] === undefined) {
+                usersHash[userId] = true;
+                usersArr.push(userId);
+            }
+        }
+    }
+
+    let tree;
+    let usersById;
+    let usersByLogin;
+
+    if (usersArr.length) {
+        ({ usersById, usersByLogin } = await getUsersHashForComments(usersArr));
+        tree = commentsTreeBuildAnonym(comments, usersById);
+    }
+
+    return { comments: tree || [], countTotal: comments.length, users: usersByLogin };
+}
+
+async function getCommentsObjAuth({ cid, type = 'photo' }) {
+    const { handshake: { usObj: iAm } } = this;
+
+    let obj;
+    let commentModel;
+
+    if (type === 'news') {
+        commentModel = CommentN;
+        obj = await News.findOne({ cid }, { _id: 1, nocomments: 1 }).exec();
+    } else {
+        commentModel = Comment;
+        obj = await this.call('photo.find', { query: { cid } });
+    }
+
+    if (!obj) {
+        throw new NotFoundError(constantsError.COMMENT_NO_OBJECT);
+    }
+
+    const [comments, relBeforeUpdate] = await Promise.all([
+        // Take all object comments
+        commentModel.find(
+            { obj: obj._id },
+            { _id: 0, obj: 0, hist: 0, 'del.reason': 0, geo: 0, r0: 0, r1: 0, r2: 0, r3: 0, r4: 0, r5: 0, __v: 0 },
+            { lean: true, sort: { stamp: 1 } }
+        ).exec(),
+        // Get last user's view time of comments and object and replace it with current time
+        // with notification reset if it scheduled
+        userObjectRelController.setCommentView(obj._id, iAm.user._id, type)
+    ]);
+
+    let previousViewStamp;
+
+    if (relBeforeUpdate) {
+        if (relBeforeUpdate.comments) {
+            previousViewStamp = relBeforeUpdate.comments.getTime();
+        }
+        if (relBeforeUpdate.sbscr_noty) {
+            // Если было заготовлено уведомление,
+            // просим менеджер подписок проверить есть ли уведомления по другим объектам
+            subscrController.commentViewed(obj._id, iAm.user);
+        }
+    }
+
+    const canModerate = permissions.canModerate(type, obj, iAm);
+    const canReply = canModerate || permissions.canReply(type, obj, iAm);
+
+    if (!comments.length) {
+        return { comments: [], users: {}, countTotal: 0, countNew: 0, canModerate, canReply };
+    }
+
+    const { tree, users, countTotal, countNew } = await (canModerate ?
+        // Если это модератор данной фотографии или администратор новости
+        commentsTreeBuildCanModerate(String(iAm.user._id), comments, previousViewStamp) :
+        // Если это зарегистрированный пользователь
+        commentsTreeBuildAuth(String(iAm.user._id), comments, previousViewStamp, !obj.nocomments)
+    );
+
+    return ({ comments: tree, users, countTotal, countNew, canModerate, canReply });
+}
 
 // Select comments for object
-async function getCommentsObj(iAm, data) {
-    if (!_.isObject(data) || !Number(data.cid)) {
-        throw { message: msg.badParams };
-    }
+async function giveForObj(data) {
+    const { handshake: { usObj: iAm } } = this;
 
     data.cid = Number(data.cid);
 
-    const result = await (iAm.registered ? core.getCommentsObjAuth(iAm, data) : core.getCommentsObjAnonym(iAm, data));
+    if (!data.cid) {
+        throw new BadParamsError();
+    }
+
+    const result = await (iAm.registered ? getCommentsObjAuth.call(this, data) : getCommentsObjAnonym.call(this, data));
 
     result.cid = data.cid;
 
@@ -546,44 +507,78 @@ async function getCommentsObj(iAm, data) {
 };
 
 // Select branch of removed comments starting from requested
-async function getDelTree(iAm, data) {
-    if (!_.isObject(data) || !Number(data.cid)) {
-        throw { message: msg.badParams };
+async function giveDelTree({ cid, type = 'photo' }) {
+    const { handshake: { usObj: iAm } } = this;
+
+    cid = Number(cid);
+
+    if (!cid || cid < 1) {
+        throw new BadParamsError();
     }
 
-    data.cid = Number(data.cid);
+    const commentModel = type === 'news' ? CommentN : Comment;
 
-    const result = await core.getDelTree(iAm, data);
-    result.cid = data.cid;
+    const { obj: objId, ...comment } = await commentModel.findOne(
+        { cid, del: { $exists: true } },
+        { _id: 0, hist: 0, 'del.reason': 0, geo: 0, r0: 0, r1: 0, r2: 0, r3: 0, r4: 0, r5: 0, __v: 0 },
+        { lean: true }
+    ).exec() || {};
 
-    return result;
+    if (!objId) {
+        throw NotFoundError(constantsError.COMMENT_DOESNT_EXISTS);
+    }
+
+    const [obj, childs] = await Promise.all([
+        // Find the object that owns a comment
+        type === 'news' ? News.findOne({ _id: objId }, { _id: 1, nocomments: 1 }).exec() :
+            this.call('photo.find', { query: { _id: objId } }),
+        // Take all removed comments, created after requested and below it
+        commentModel.find(
+            { obj: objId, del: { $exists: true }, stamp: { $gte: comment.stamp }, level: { $gt: comment.level || 0 } },
+            { _id: 0, obj: 0, hist: 0, 'del.reason': 0, geo: 0, r0: 0, r1: 0, r2: 0, r3: 0, r4: 0, r5: 0, __v: 0 },
+            { lean: true, sort: { stamp: 1 } }
+        ).exec()
+    ]);
+
+    if (!obj) {
+        throw new NotFoundError(constantsError.COMMENT_NO_OBJECT);
+    }
+
+    const canModerate = permissions.canModerate(type, obj, iAm);
+    const commentsTree = await commentsTreeBuildDel(
+        comment, childs, canModerate ? undefined : String(iAm.user._id)
+    );
+
+    return { comments: commentsTree.tree, users: commentsTree.users, cid };
 };
 
 // Select comment of user
-async function getCommentsUser(iAm, { login, page = 1, type = 'photo' } = {}) {
+async function giveForUser({ login, page = 1, type = 'photo' }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!login) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const userid = await User.getUserID(login);
 
     if (!userid) {
-        throw { message: msg.noUser };
+        throw new NotFoundError(constantsError.NO_SUCH_USER);
     }
 
     page = (Math.abs(Number(page)) || 1) - 1;
 
     const commentModel = type === 'news' ? CommentN : Comment;
-    const queryNews = { user: userid, del: null};
+    const queryNews = { user: userid, del: null };
     const queryPhotos = Object.assign({}, queryNews, photoController.buildPhotosQuery({ r: 0 }, null, iAm).query);
     const fields = { _id: 0, lastChanged: 1, cid: 1, obj: 1, stamp: 1, txt: 1 };
     const options = { lean: true, sort: { stamp: -1 }, skip: page * commentsUserPerPage, limit: commentsUserPerPage };
 
-    const [comments, countNews, countPhoto] = await* [
+    const [comments, countNews, countPhoto] = await Promise.all([
         commentModel.find(type === 'news' ? queryNews : queryPhotos, fields, options).exec(),
         CommentN.count(queryNews).exec(),
         Comment.count(queryPhotos).exec()
-    ];
+    ]);
 
     if (_.isEmpty(comments)) {
         return { type, page: page + 1, countNews, countPhoto, perPage: commentsUserPerPage, comments: [], objs: {} };
@@ -600,7 +595,7 @@ async function getCommentsUser(iAm, { login, page = 1, type = 'photo' } = {}) {
         ).exec());
 
     if (_.isEmpty(objs)) {
-        throw { message: msg.noObject };
+        throw new NotFoundError(constantsError.COMMENT_NO_OBJECT);
     }
 
     const objFormattedHashCid = {};
@@ -666,7 +661,7 @@ const getComments = (function () {
             }
         }
 
-        const [photos, users] = await* [
+        const [photos, users] = await Promise.all([
             Photo.find(
                 { _id: { $in: photosArr } },
                 iAm && iAm.rshortsel ?
@@ -675,7 +670,7 @@ const getComments = (function () {
                 { lean: true }
             ).exec(),
             User.find({ _id: { $in: usersArr } }, { _id: 1, login: 1, disp: 1 }, { lean: true }).exec()
-        ];
+        ]);
 
         const shortRegionsHash = regionController.genObjsShortRegionsArr(photos, iAm && iAm.rshortlvls || undefined);
         const photoFormattedHash = {};
@@ -700,13 +695,15 @@ const getComments = (function () {
 }());
 
 // Take last comments of public photos
-const getCommentsFeed = (function () {
+const giveForFeed = (function () {
     const globalOptions = { limit: 30 };
     const globalFeed = Utils.memoizePromise(
         () => getComments(undefined, { del: null, hidden: null }, globalOptions), ms('10s')
     );
 
-    return iAm => {
+    return function () {
+        const { handshake: { usObj: iAm } } = this;
+
         if (_.isEmpty(iAm.rquery)) {
             // User withot region filter will get memozed result for global selection
             return globalFeed();
@@ -716,23 +713,19 @@ const getCommentsFeed = (function () {
     };
 }());
 
-/**
- * Создает комментарий
- * @param socket Сокет пользователя
- * @param data Объект
- */
-async function createComment(socket, data) {
-    const iAm = socket.handshake.usObj;
+// Create comment
+async function create(data) {
+    const { socket, handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     if (!_.isObject(data) || !Number(data.obj) || !data.txt || data.level > 9) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
     if (data.txt.length > commentMaxLength) {
-        throw { message: msg.maxLength };
+        throw new InputError(constantsError.COMMENT_TOO_LONG);
     }
 
     const fragAdded = data.type === 'photo' && !data.frag && _.isObject(data.fragObj);
@@ -740,26 +733,26 @@ async function createComment(socket, data) {
     const objCid = Number(data.obj);
     const stamp = new Date();
 
-    const [obj, parent] = await* [
+    const [obj, parent] = await Promise.all([
         data.type === 'news' ? News.findOne({ cid: objCid }, { _id: 1, ccount: 1, nocomments: 1 }).exec() :
-            photoController.findPhoto(iAm, { cid: objCid }),
+            this.call('photo.find', { query: { cid: objCid } }),
         data.parent ? CommentModel.findOne({ cid: data.parent }, { _id: 0, level: 1, del: 1 }, { lean: true }).exec() :
             null
-    ];
+    ]);
 
     if (!obj) {
-        throw { message: msg.noObject };
+        throw new NotFoundError(constantsError.COMMENT_NO_OBJECT);
     }
     if (!permissions.canReply(data.type, obj, iAm) && !permissions.canModerate(data.type, obj, iAm)) {
-        throw { message: obj.nocomments ? msg.noComments : msg.deny };
+        throw obj.nocomments ? new NoticeError(constantsError.COMMENT_NOT_ALLOWED) : new AuthorizationError();
     }
     if (data.parent && (!parent || parent.del || parent.level >= 9 || data.level !== (parent.level || 0) + 1)) {
-        throw { message: 'Something wrong with parent comment. Maybe it was removed. Please, refresh the page' };
+        throw new NoticeError(constantsError.COMMENT_WRONG_PARENT);
     }
 
     const { next: cid } = await Counter.increment('comment');
     if (!cid) {
-        throw { message: 'Increment comment counter error' };
+        throw new ApplicationError(constantsError.COUNTER_ERROR);
     }
 
     const comment = { cid, obj, user: iAm.user, stamp, txt: Utils.inputIncomingParse(data.txt).result, del: undefined };
@@ -810,7 +803,7 @@ async function createComment(socket, data) {
         promises.push(userObjectRelController.onCommentAdd(obj._id, iAm.user._id, data.type));
     }
 
-    await* promises;
+    await Promise.all(promises);
 
     comment.user = iAm.user.login;
     comment.obj = objCid;
@@ -820,7 +813,7 @@ async function createComment(socket, data) {
         comment.level = 0;
     }
 
-    session.emitUser(iAm, null, socket);
+    session.emitUser({ usObj: iAm, excludeSocket: socket });
     subscrController.commentAdded(obj._id, iAm.user, stamp);
 
     return { comment, frag };
@@ -828,17 +821,16 @@ async function createComment(socket, data) {
 
 /**
  * Remove comment and its children
- * @param socket User's socket
  * @param data
  */
-async function removeComment(socket, data) {
-    const iAm = socket.handshake.usObj;
+async function remove(data) {
+    const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered) {
-        throw { message: msg.deny };
+        new AuthorizationError();
     }
     if (!_.isObject(data) || !Number(data.cid) || !data.reason || (!Number(data.reason.cid) && !data.reason.desc)) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const cid = Number(data.cid);
@@ -849,16 +841,16 @@ async function removeComment(socket, data) {
     ).exec();
 
     if (!comment) {
-        throw { message: msg.noCommentExists };
+        throw NotFoundError(constantsError.COMMENT_DOESNT_EXISTS);
     }
 
     const obj = await (data.type === 'news' ?
         News.findOne({ _id: comment.obj }, { _id: 1, ccount: 1, nocomments: 1 }).exec() :
-        photoController.findPhoto(iAm, { _id: comment.obj })
+        this.call('photo.find', { query: { _id: comment.obj } })
     );
 
     if (!obj) {
-        throw { message: msg.noObject };
+        throw new NotFoundError(constantsError.COMMENT_NO_OBJECT);
     }
 
     // Count amout of unremoved children
@@ -873,7 +865,7 @@ async function removeComment(socket, data) {
         canModerate = permissions.canModerate(data.type, obj, iAm);
 
         if (!canModerate) {
-            throw { message: obj.nocomments ? msg.noComments : msg.deny };
+            throw obj.nocomments ? new NoticeError(constantsError.COMMENT_NOT_ALLOWED) : new AuthorizationError();
         }
     }
 
@@ -960,11 +952,11 @@ async function removeComment(socket, data) {
     const promises = [obj.save()];
 
     for (const [userId, count] of usersCountMap) {
-        const userObj = session.getOnline(null, userId);
+        const userObj = session.getOnline({ userId });
 
         if (userObj !== undefined) {
             userObj.user.ccount = userObj.user.ccount - count;
-            promises.push(session.saveEmitUser(userObj));
+            promises.push(session.saveEmitUser({ usObj: userObj }));
         } else {
             promises.push(User.update({ _id: userId }, { $inc: { ccount: -count } }).exec());
         }
@@ -974,7 +966,7 @@ async function removeComment(socket, data) {
         promises.push(userObjectRelController.onCommentsRemove(obj._id, commentsForRelArr, data.type));
     }
 
-    await* promises;
+    await Promise.all(promises);
 
     // Pass to client only fragments of unremoved comments, for replacement on client
     if (obj.frags) {
@@ -1012,17 +1004,17 @@ async function removeComment(socket, data) {
 };
 
 // Restore comment and its descendants
-async function restoreComment(socket, { cid, type } = {}) {
-    const iAm = socket.handshake.usObj;
+async function restore({ cid, type }) {
+    const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     cid = Number(cid);
 
     if (!cid) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const commentModel = type === 'news' ? CommentN : Comment;
@@ -1031,21 +1023,21 @@ async function restoreComment(socket, { cid, type } = {}) {
     ).exec();
 
     if (!comment) {
-        throw { message: msg.noCommentExists };
+        throw NotFoundError(constantsError.COMMENT_DOESNT_EXISTS);
     }
 
     const obj = await (type === 'news' ?
         News.findOne({ _id: comment.obj }, { _id: 1, ccount: 1, nocomments: 1 }).exec() :
-        photoController.findPhoto(iAm, { _id: comment.obj })
+        this.call('photo.find', { query: { _id: comment.obj } })
     );
 
     if (!obj) {
-        throw { message: msg.noObject };
+        throw new NotFoundError(constantsError.COMMENT_NO_OBJECT);
     }
 
     const canModerate = permissions.canModerate(type, obj, iAm);
     if (!canModerate) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     // Find all comments directly descendants to restoring, which were deleted with it,
@@ -1090,7 +1082,7 @@ async function restoreComment(socket, { cid, type } = {}) {
     }
 
     await commentModel.update(
-        { cid }, { $set: { lastChanged: stamp }, $unset: { del: 1 }, $push: { hist: { $each: hist } }}
+        { cid }, { $set: { lastChanged: stamp }, $unset: { del: 1 }, $push: { hist: { $each: hist } } }
     ).exec();
 
     if (childsCids.length) {
@@ -1126,10 +1118,11 @@ async function restoreComment(socket, { cid, type } = {}) {
     const promises = [obj.save()];
 
     for (const [userId, ccount] of usersCountMap) {
-        const userObj = session.getOnline(null, userId);
+        const userObj = session.getOnline({ userId });
+
         if (userObj !== undefined) {
             userObj.user.ccount = userObj.user.ccount + ccount;
-            promises.push(session.saveEmitUser(userObj));
+            promises.push(session.saveEmitUser({ usObj: userObj }));
         } else {
             promises.push(User.update({ _id: userId }, { $inc: { ccount } }).exec());
         }
@@ -1139,7 +1132,7 @@ async function restoreComment(socket, { cid, type } = {}) {
         promises.push(userObjectRelController.onCommentsRestore(obj._id, commentsForRelArr, type));
     }
 
-    await* promises;
+    await Promise.all(promises);
 
     // Pass to client only fragments of unremoved comments, for replacement on client
     if (obj.frags) {
@@ -1176,33 +1169,33 @@ async function restoreComment(socket, { cid, type } = {}) {
 };
 
 // Edit comment
-async function updateComment(socket, data = {}) {
-    const iAm = socket.handshake.usObj;
+async function update(data) {
+    const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     const cid = Number(data.cid);
 
     if (!data.obj || !cid || !data.txt) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     if (data.txt.length > commentMaxLength) {
-        throw { message: msg.maxLength };
+        throw new InputError(constantsError.COMMENT_TOO_LONG);
     }
 
-    const [obj, comment] = await* (data.type === 'news' ? [
+    const [obj, comment] = await Promise.all(data.type === 'news' ? [
         News.findOne({ cid: data.obj }, { cid: 1, frags: 1, nocomments: 1 }).exec(),
         CommentN.findOne({ cid }).exec()
     ] : [
-        photoController.findPhoto(iAm, { cid: data.obj }),
+        this.call('photo.find', { query: { cid: data.obj } }),
         Comment.findOne({ cid }).exec()
     ]);
 
     if (!comment || !obj || data.obj !== obj.cid) {
-        throw { message: msg.noCommentExists };
+        throw NotFoundError(constantsError.COMMENT_DOESNT_EXISTS);
     }
 
     const hist = { user: iAm.user };
@@ -1214,7 +1207,7 @@ async function updateComment(socket, data = {}) {
         // В противном случае нужны права модератора/администратора
         canModerate = permissions.canModerate(data.type, obj, iAm);
         if (!canModerate) {
-            throw { message: obj.nocomments ? msg.noComments : msg.deny };
+            throw obj.nocomments ? new NoticeError(constantsError.COMMENT_NOT_ALLOWED) : new AuthorizationError();
         }
     }
 
@@ -1280,7 +1273,7 @@ async function updateComment(socket, data = {}) {
         comment.lastChanged = new Date();
         comment.txt = content;
 
-        await* [comment.save(), fragChangedType ? obj.save() : null];
+        await Promise.all([comment.save(), fragChangedType ? obj.save() : null]);
     }
 
     return { comment: comment.toObject({ transform: commentDeleteHist }), frag: fragRecieved };
@@ -1303,11 +1296,11 @@ function commentDeleteHist(doc, ret/* , options */) {
  * In other words event really will be shoed,
  * if it contains a fragment's change or text modification in another event in the future
  */
-async function giveCommentHist({ cid, type = 'photo' } = {}) {
+async function giveHist({ cid, type = 'photo' }) {
     cid = Number(cid);
 
     if (!cid) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
     const commentModel = type === 'news' ? CommentN : Comment;
@@ -1317,7 +1310,7 @@ async function giveCommentHist({ cid, type = 'photo' } = {}) {
     ).populate({ path: 'user hist.user del.user', select: { _id: 0, login: 1, avatar: 1, disp: 1 } }).exec();
 
     if (!comment) {
-        throw { message: msg.noCommentExists };
+        throw NotFoundError(constantsError.COMMENT_DOESNT_EXISTS);
     }
 
     const result = [];
@@ -1397,27 +1390,29 @@ async function giveCommentHist({ cid, type = 'photo' } = {}) {
 };
 
 // Toggle ability to write comments for object (except administrators)
-async function setNoComments(iAm, { cid, type = 'photo', val: nocomments } = {}) {
+async function setNoComments({ cid, type = 'photo', val: nocomments }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!iAm.registered || !iAm.user.role) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     cid = Number(cid);
 
     if (!cid) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
-    const obj = await (type === 'news' ? News.findOne({ cid }).exec() : photoController.findPhoto(iAm, { cid }));
+    const obj = await (type === 'news' ? News.findOne({ cid }).exec() : this.call('photo.find', { query: { cid } }));
 
     if (!obj) {
-        throw { message: msg.noObject };
+        throw new NotFoundError(constantsError.COMMENT_NO_OBJECT);
     }
 
     const canModerate = permissions.canModerate(type, obj, iAm);
 
     if (!canModerate) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     let oldPhotoObj;
@@ -1432,7 +1427,7 @@ async function setNoComments(iAm, { cid, type = 'photo', val: nocomments } = {})
     if (type === 'photo') {
         // Save previous value of 'nocomments' in history
         obj.nocomments = !!obj.nocomments; // To set false in history instead of undefined
-        photoController.savePhotoHistory(iAm, oldPhotoObj, obj, canModerate);
+        await this.call('photo.saveHistory', { oldPhotoObj, obj, canModerate });
     }
 
     return { nocomments: obj.nocomments };
@@ -1442,25 +1437,24 @@ async function setNoComments(iAm, { cid, type = 'photo', val: nocomments } = {})
  * Hide/show object comments (so doing them unpublic/public)
  * @param obj
  * @param {boolean} hide
- * @param iAm Count how many comments of user are affected
  */
-export async function changeObjComments(obj, hide, iAm) {
-    const command = { $set: { s: obj.s } };
-    const oid = obj._id;
+export async function changeObjCommentsVisibility({ obj: { _id: objId, s }, hide }) {
+    const { handshake: { usObj: iAm } } = this; // iAm for count how many comments of user are affected
+    const command = { $set: { s } };
 
-    if (obj.s === constants.photo.status.PUBLIC) {
+    if (s === constants.photo.status.PUBLIC) {
         command.$unset = { hidden: 1 };
     } else {
         command.$set.hidden = true;
     }
 
-    const { n: count } = await Comment.update({ obj: oid }, command, { multi: true }).exec();
+    const { n: count = 0 } = await Comment.update({ obj: objId }, command, { multi: true }).exec();
 
     if (count === 0) {
         return { myCount: 0 };
     }
 
-    const comments = await Comment.find({ obj: oid }, {}, { lean: true }).exec();
+    const comments = await Comment.find({ obj: objId }, {}, { lean: true }).exec();
 
     const usersCountMap = _.transform(comments, (result, comment) => {
         if (comment.del === undefined) {
@@ -1471,112 +1465,41 @@ export async function changeObjComments(obj, hide, iAm) {
 
     for (const [userId, ccount] of usersCountMap) {
         const cdelta = hide ? -ccount : ccount;
-        const userObj = session.getOnline(null, userId);
+        const userObj = session.getOnline({ userId });
 
         if (userObj !== undefined) {
             userObj.user.ccount = userObj.user.ccount + cdelta;
-            session.saveEmitUser(userObj);
+            session.saveEmitUser({ usObj: userObj });
         } else {
             User.update({ _id: userId }, { $inc: { ccount: cdelta } }).exec();
         }
-    };
+    }
 
     return { myCount: usersCountMap.get(String(iAm.user._id)) || 0 };
 }
 
-export const loadController = io => {
-    io.sockets.on('connection', function (socket) {
-        const hs = socket.handshake;
+create.isPublic = true;
+update.isPublic = true;
+remove.isPublic = true;
+restore.isPublic = true;
+giveHist.isPublic = true;
+giveForObj.isPublic = true;
+giveForFeed.isPublic = true;
+giveForUser.isPublic = true;
+giveDelTree.isPublic = true;
+setNoComments.isPublic = true;
 
-        socket.on('createComment', function (data) {
-            createComment(socket, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('createCommentResult', resultData);
-                });
-        });
-        socket.on('updateComment', function (data) {
-            updateComment(socket, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('updateCommentResult', resultData);
-                });
-        });
-        socket.on('giveCommentHist', function (data) {
-            giveCommentHist(data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeCommentHist', resultData);
-                });
-        });
-        socket.on('removeComment', function (data) {
-            removeComment(socket, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('removeCommentResult', resultData);
-                });
-        });
-        socket.on('restoreComment', function (data) {
-            restoreComment(socket, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('restoreCommentResult', resultData);
-                });
-        });
-        socket.on('setNoComments', function (data) {
-            setNoComments(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('setNoCommentsResult', resultData);
-                });
-        });
-        socket.on('giveCommentsObj', function (data) {
-            getCommentsObj(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeCommentsObj', resultData);
-                });
-        });
-        socket.on('giveCommentsDel', function (data) {
-            getDelTree(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeCommentsDel', resultData);
-                });
-        });
-        socket.on('giveCommentsUser', function (data) {
-            getCommentsUser(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeCommentsUser', resultData);
-                });
-        });
-        socket.on('giveCommentsFeed', function () {
-            getCommentsFeed(hs.usObj)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeCommentsFeed', resultData);
-                });
-        });
-    });
+export default {
+    create,
+    update,
+    remove,
+    restore,
+    giveHist,
+    giveForObj,
+    giveForFeed,
+    giveForUser,
+    giveDelTree,
+    setNoComments,
+
+    changeObjCommentsVisibility
 };

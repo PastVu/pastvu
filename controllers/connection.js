@@ -1,12 +1,8 @@
-import Bluebird from 'bluebird';
 import mongoose from 'mongoose';
 import log4js from 'log4js';
 
 // Set native Promise as mongoose promise provider
 mongoose.Promise = Promise;
-
-// Made methods works as promise. This methods'll be with Async postfix, e.g., model.saveAsync().then(..)
-Bluebird.promisifyAll(mongoose);
 
 const modelPromises = [];
 let connectionPromise;
@@ -57,7 +53,7 @@ export default function (uri, poolSize = 1, logger = log4js.getLogger('app')) {
             async function openHandler() {
                 const adminDb = db.db.admin(); // Use the admin database for some operation
 
-                const [buildInfo, serverStatus] = await* [adminDb.buildInfo(), adminDb.serverStatus()];
+                const [buildInfo, serverStatus] = await Promise.all([adminDb.buildInfo(), adminDb.serverStatus()]);
 
                 logger.info(
                     `MongoDB[${buildInfo.version}, ${serverStatus.storageEngine.name}, x${buildInfo.bits},`,
@@ -93,7 +89,7 @@ export default function (uri, poolSize = 1, logger = log4js.getLogger('app')) {
                     options
                 );
 
-                await* modelPromises.map(modelPromise => modelPromise(db));
+                await Promise.all(modelPromises.map(modelPromise => modelPromise(db)));
                 modelPromises.splice(0, modelPromises.length); // Clear promises array
 
                 getDBResolve(db);

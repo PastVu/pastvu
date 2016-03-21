@@ -50,18 +50,8 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'globalVM', 'knock
             this.showing = false;
         },
         fetchReasons: function (cb, ctx) {
-            socket.once('takeActionReasons', function (data) {
-                var error = !data || !!data.error || !data.reasons;
-
-                if (error) {
-                    window.noty({
-                        text: data && data.message || 'Error occurred',
-                        type: 'error',
-                        layout: 'center',
-                        timeout: 4000,
-                        force: true
-                    });
-                } else {
+            socket.run('reason.giveActionReasons', { action: this.options.action }, true)
+                .then(function (data) {
                     data.reasons.forEach(function (reason) {
                         if (!_.isObject(reason.desc)) {
                             reason.desc = {};
@@ -73,13 +63,11 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'globalVM', 'knock
                     if (data.reasons.length) {
                         this.selectedCid(data.reasons[0].cid);
                     }
-                }
 
-                if (_.isFunction(cb)) {
-                    cb.call(ctx, data, error);
-                }
-            }, this);
-            socket.emit('giveActionReasons', { action: this.options.action });
+                    if (_.isFunction(cb)) {
+                        cb.call(ctx, data);
+                    }
+                }.bind(this));
         },
         getReason: function () {
             var selected = this.selected(),

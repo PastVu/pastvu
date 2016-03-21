@@ -143,19 +143,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             var self = this;
             self.loading(true);
 
-            socket.once('takeUserSubscr', function (data) {
-                var obj;
-                var i;
-
-                if (!data || data.error || !Array.isArray(data.subscr)) {
-                    window.noty({
-                        text: data && data.message || 'Error occurred',
-                        type: 'error',
-                        layout: 'center',
-                        timeout: 3000,
-                        force: true
-                    });
-                } else if (data.page === page && data.type === type) {
+            socket.run('subscr.giveUserSubscriptions', { login: self.u.login(), type: type, page: page }, true)
+                .then(function (data) {
+                    var obj;
+                    var i = data.subscr.length;
 
                     self.type(type);
                     self.pageSize(data.perPage || 24);
@@ -163,8 +154,6 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     self.types.news_persist(data.countNews || 0);
                     self.types.photo(data.countPhoto || 0);
                     self.types.news(data.countNews || 0);
-
-                    i = data.subscr.length;
 
                     if (!i && page > 1) {
                         return setTimeout(function () {
@@ -192,15 +181,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
                     self.objects(data.subscr);
                     self.nextNoty(data.nextNoty && moment(data.nextNoty) || null);
-                }
 
-                self.loading(false);
+                    self.loading(false);
 
-                if (_.isFunction(cb)) {
-                    cb.call(ctx, data);
-                }
-            });
-            socket.emit('giveUserSubscr', { login: self.u.login(), type: type, page: page });
+                    if (_.isFunction(cb)) {
+                        cb.call(ctx, data);
+                    }
+                });
         },
 
         unSubsc: function (pass) {

@@ -3,7 +3,7 @@
  */
 module.exports = {
     optional: [
-        'asyncToGenerator', // Use babel helper asyncToGenerator because we have not blubird on client
+        'asyncToGenerator', // Use babel helper asyncToGenerator because we have not bluebird on client
         // 'bluebirdCoroutines', // Use it for async/await on server-side instead of babel helper asyncToGenerator
         'es6.spec.modules',
         'es7.asyncFunctions',

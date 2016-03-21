@@ -7,7 +7,7 @@
         .row.rowoffset
             .col-xs-12.col-sm-7.col-lg-4.topcol(data-bind="css: {invisible: !loadedFirst()}")
                 .filter(data-bind="css: {opened: filter.open(), inactive: !filter.active()}")
-                    .ftitle(data-bind="attr: {title: 'Фильтр. ' + (filter.active() ? 'Switch off' : 'Switch on')}, click: function () {filter.active(!filter.active())}")
+                    .ftitle(data-bind="attr: {title: 'Filter. ' + (filter.active() ? 'Switch off' : 'Switch on')}, click: function () {filter.active(!filter.active())}")
                         span.glyphicon.glyphicon-filter
                     .fopen(data-bind="attr: {title: filter.open() ? 'Collapse' : 'Expand'}, click: function () {filter.open(!filter.open())}")
                         span.glyphicon.glyphicon-list-alt
@@ -21,8 +21,8 @@
                                     |  Whole world
                                 // /ko
                                 //ko foreach: filter.disp.r
-                                span.region.candis(data-bind="css: {dis: $parent._.contains($parent.filter.disp.rdis(), $data.cid)}")
-                                    span(data-bind="text: $data.title_en")
+                                span.region.candis(data-bind="css: {dis: $parent._.includes($parent.filter.disp.rdis(), $data.cid)}")
+                                    span(data-bind="text: $data.title_local")
                                     .rtgl.only(title="Leave active only this region", data-bind="click: function() {$parent.fronly($data.cid);}")
                                         span.glyphicon.glyphicon-ok
                                     .rtgl.dis(title="Toggle activity of this region", data-bind="click: function() {$parent.frdis($data.cid);}")

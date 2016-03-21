@@ -1,7 +1,10 @@
 /**
  * Модель управления пользователем
  */
-define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/User', 'model/storage', 'text!tpl/user/manage.jade', 'css!style/user/manage', 'bs/collapse'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, User, storage, jade) {
+define([
+    'underscore', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'noties',
+    'renderer', 'model/User', 'model/storage', 'text!tpl/user/manage.jade', 'css!style/user/manage', 'bs/collapse'
+], function (_, Utils, socket, P, ko, Cliche, globalVM, noties, renderer, User, storage, jade) {
     function isYes(evt) {
         return !!evt.target.classList.contains('yes');
     }
@@ -114,26 +117,24 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
         getAllRanks: function () {
             var dfd = $.Deferred();
-            socket.once('takeUserAllRanks', function (result) {
-                if (result && !result.error) {
+            socket.run('settings.getUserRanks')
+                .then(function (result) {
                     for (var i = 0; i < result.length; i++) {
                         this.ranks.push({ key: result[i], desc: ranksLang[result[i]] || i });
                     }
-                }
-                dfd.resolve(result);
-            }, this);
-            socket.emit('giveUserAllRanks');
+                    dfd.resolve(result);
+                }.bind(this));
             return dfd.promise();
         },
         getRules: function () {
             var dfd = $.Deferred();
-            socket.once('takeUserRules', function (result) {
-                if (result && !result.error) {
+
+            socket.run('profile.giveUserRules', { login: this.u.login() }, true)
+                .then(function (result) {
                     this.setRules(result.rules || {}, result.info || {});
-                }
-                dfd.resolve(result);
-            }, this);
-            socket.emit('giveUserRules', { login: this.u.login() });
+                    dfd.resolve(result);
+                }.bind(this));
+
             return dfd.promise();
         },
         setRules: function (rules, info) {
@@ -151,21 +152,12 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             var regionsCids;
             var role = Number(this.role());
             if (role === 5 && !_.isEqual(this.u_origin.mod_regions, this.regions())) {
-                regionsCids = _.pluck(this.regions(), 'cid');
+                regionsCids = _.map(this.regions(), 'cid');
             }
 
             this.exe(true);
-            socket.once('saveUserCredentialsResult', function (data) {
-                var error = !data || data.error;
-                if (error) {
-                    window.noty({
-                        text: _.get(data, 'message', 'Error occurred'),
-                        type: 'error',
-                        layout: 'center',
-                        timeout: 3000,
-                        force: true
-                    });
-                } else {
+            socket.run('admin.saveUserCredentials', { login: this.u.login(), role: role, regions: regionsCids }, true)
+                .then(function (/*data*/) {
                     var regions = regionsCids ? this.regions() : [];
                     var updatedProps = { role: role, mod_regions: regions };
 
@@ -173,10 +165,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     User.vm(updatedProps, this.u, true);
 
                     this.regions(regions); //Переприсваиваем, чтобы сработал computed
-                }
-                this.exe(false);
-            }, this);
-            socket.emit('saveUserCredentials', { login: this.u.login(), role: role, regions: regionsCids });
+                    this.exe(false);
+                }.bind(this));
         },
         cancelCredentials: function () {
             this.role(String(this.u_origin.role));
@@ -216,14 +206,11 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                                         var regions = this.regselectVM.getSelectedRegions(['cid', 'title_en']);
 
                                         if (regions.length > 20) {
-                                            window.noty({
-                                                text: 'Allowed to select up to 20 regions',
-                                                type: 'error',
-                                                layout: 'center',
-                                                timeout: 3000,
-                                                force: true
+                                            return noties.alert({
+                                                message: 'Allowed to select up to 20 regions',
+                                                type: 'warning',
+                                                timeout: 3000
                                             });
-                                            return;
                                         }
                                         this.regions(regions);
                                         this.closeRegionSelect();
@@ -253,21 +240,11 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
 
         changewaterchange: function (data, evt) {
-            socket.once('setUserWatermarkChangeResult', function (result) {
-                if (!result || result.error) {
-                    window.noty({
-                        text: result && result.message || 'Error',
-                        type: 'error',
-                        layout: 'center',
-                        timeout: 4000,
-                        force: true
-                    });
-                } else {
+            socket.run('profile.setUserWatermarkChange', { login: this.u.login(), nowaterchange: !isYes(evt) }, true)
+                .then(function (result) {
                     this.u.nowaterchange(result.nowaterchange);
                     this.u_origin.nowaterchange = result.nowaterchange;
-                }
-            }, this);
-            socket.emit('setUserWatermarkChange', { login: this.u.login(), nowaterchange: !isYes(evt) });
+                }.bind(this));
         },
 
         ranksSelectedHandler: function (val) {
@@ -282,23 +259,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }
         },
         saveUserRanks: function (cb, ctx) {
-            socket.once('saveUserRanksResult', function (result) {
-                if (!result || result.error || !result.saved) {
-                    window.noty({
-                        text: result && result.message || 'Failed to save rank',
-                        type: 'error',
-                        layout: 'center',
-                        timeout: 4000,
-                        force: true
-                    });
-                } else {
+            socket.run('profile.saveUserRanks', { login: this.u.login(), ranks: this.u.ranks() }, true)
+                .then(function (result) {
                     this.u_origin.ranks = result.ranks;
-                }
-                if (Utils.isType('function', cb)) {
-                    cb.call(ctx, result);
-                }
-            }, this);
-            socket.emit('saveUserRanks', { login: this.u.login(), ranks: this.u.ranks() });
+                    if (Utils.isType('function', cb)) {
+                        cb.call(ctx, result);
+                    }
+                }.bind(this));
         },
 
         photoLimitHandler: function (val) {
@@ -310,20 +277,11 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             } else {
                 val = null;
             }
-            socket.once('saveUserRulesResult', function (result) {
-                if (!result || result.error || !result.saved) {
-                    window.noty({
-                        text: result && result.message || 'Failed to save rank',
-                        type: 'error',
-                        layout: 'center',
-                        timeout: 4000,
-                        force: true
-                    });
-                } else {
+
+            socket.run('profile.saveUserRules', { login: this.u.login(), rules: { photoNewLimit: val } }, true)
+                .then(function (result) {
                     this.setRules(result.rules || {}, result.info || {});
-                }
-            }, this);
-            socket.emit('saveUserRules', { login: this.u.login(), rules: { photoNewLimit: val } });
+                }.bind(this));
         }
     });
 });

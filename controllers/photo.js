@@ -5,18 +5,17 @@ import path from 'path';
 import log4js from 'log4js';
 import moment from 'moment';
 import config from '../config';
-import Bluebird from 'bluebird';
 import Utils from '../commons/Utils';
-import constants from './constants.js';
+import { waitDb } from './connection';
+import constants from './constants';
+import constantsError from '../app/errors/constants';
 import * as session from './_session';
 import * as regionController from './region';
-import * as photoCluster from './photoCluster';
-import * as photoConverter from './photoConverter';
+import * as converter from './converter';
 import * as userObjectRelController from './userobjectrel';
-import { changeObjComments } from './comment';
 import { getReasonHashFromCache } from './reason';
-import { unSubscribeObj, subscribeUserByIds } from './subscr';
 import { userSettingsDef, userSettingsVars } from './settings';
+import { ApplicationError, AuthorizationError, BadParamsError, InputError, NotFoundError, NoticeError } from '../app/errors';
 
 import { User } from '../models/User';
 import { Counter } from '../models/Counter';
@@ -24,94 +23,91 @@ import { Comment } from '../models/Comment';
 import { Download } from '../models/Download';
 import { Photo, PhotoMap, PhotoHistory } from '../models/Photo';
 
+const shift10y = ms('10y');
 const logger = log4js.getLogger('photo.js');
-const maxRegionLevel = constants.region.maxLevel;
 const incomeDir = path.join(config.storePath, 'incoming');
 const privateDir = path.join(config.storePath, 'private/photos');
 
-const status = constants.photo.status;
-const parsingFieldsSet = new Set(constants.photo.parsingFields);
-const msg = {
-    deny: 'You do not have permission for this action',
-    noUser: 'The requested user does not exist',
-    noPhoto: 'Requested photo does not exist or it is not available to you',
-    noRegion: 'Such region does not exist',
-    badParams: 'Invalid request parameters',
-    needReason: 'Reason for the operation is not specified',
-    // Две кнопки: "Посмотреть", "Продолжить <сохранение|изменение статуса>"
-    changed: 'From the moment you had got the page, the information on it has been altered by someone',
-    anotherStatus: 'Photo is already in other status, refresh the page',
-    mustCoord: 'The photo must have coordinates or be tied to the region manually'
+export const maxNewPhotosLimit = 1e4;
+
+const {
+    photo: {
+        status,
+        parsingFields,
+        historyFields,
+        historyFieldsDiff,
+        watersignLength,
+        watersignPattern
+    },
+    region: {
+        maxLevel: maxRegionLevel
+    }
+} = constants;
+
+const parsingFieldsSet = new Set(parsingFields);
+const historyFieldsDiffHash = historyFieldsDiff.reduce(function (result, field) {
+    result[field] = field;
+    return result;
+}, {});
+
+const compactFields = {
+    _id: 0,
+    cid: 1,
+    file: 1,
+    s: 1,
+    title: 1,
+    year: 1,
+    ccount: 1,
+    conv: 1,
+    convqueue: 1,
+    ready: 1
 };
-
-var historyFields = constants.photo.historyFields,
-    historyFieldsDiff = constants.photo.historyFieldsDiff,
-    historyFieldsDiffHash = historyFieldsDiff.reduce(function (result, field) {
-        result[field] = field;
-        return result;
-    }, {}),
-
-    shift10y = ms('10y'),
-    compactFields = {
-        _id: 0,
-        cid: 1,
-        file: 1,
-        s: 1,
-        title: 1,
-        year: 1,
-        ccount: 1,
-        conv: 1,
-        convqueue: 1,
-        ready: 1
-    },
-    compactFieldsForReg = {
-        _id: 1,
-        cid: 1,
-        file: 1,
-        s: 1,
-        ucdate: 1,
-        title: 1,
-        year: 1,
-        ccount: 1,
-        conv: 1,
-        convqueue: 1,
-        ready: 1
-    },
-    compactFieldsWithRegions = _.assign({ geo: 1 }, compactFields, regionController.regionsAllSelectHash),
-    compactFieldsForRegWithRegions = _.assign({ geo: 1 }, compactFieldsForReg, regionController.regionsAllSelectHash);
+const compactFieldsForReg = {
+    _id: 1,
+    cid: 1,
+    file: 1,
+    s: 1,
+    ucdate: 1,
+    title: 1,
+    year: 1,
+    ccount: 1,
+    conv: 1,
+    convqueue: 1,
+    ready: 1
+};
+const compactFieldsWithRegions = { geo: 1, ...compactFields, ...regionController.regionsAllSelectHash };
+const compactFieldsForRegWithRegions = { geo: 1, ...compactFieldsForReg, ...regionController.regionsAllSelectHash };
 
 export const permissions = {
-    // Определяет может ли модерировать фотографию пользователь
-    // Если да, то в случае регионального модератора вернёт номер региона,
-    // в случае, глобального модератора и админа - true
-    canModerate: function (photo, usObj) {
-        var photoRegion;
-        var rhash;
-        var i;
-
+    // Determines whether the user can moderate the photo
+    // If yes, then in case of region's moderator returns region's number,
+    // in case of global moderator and admin returns 'true'
+    canModerate(photo, usObj) {
         if (usObj.isModerator) {
-            // Если у пользователя роль модератора регионов, смотрим его регионы
+            // If user has region's moderator role, watch on his regions
             if (!usObj.user.mod_regions || !usObj.user.mod_regions.length) {
-                return true; // Глобальные модераторы могут модерировать всё
+                return true; // Global moderators can moderate everything
             }
 
-            // Если фотография принадлежит одному из модерируемых регионов, значит пользователь может её модерировать
-            // В этом случае возвращаем номер этого региона
-            rhash = usObj.mod_rhash;
-            for (i = 0; i <= maxRegionLevel; i++) {
-                photoRegion = photo['r' + i];
+            // If photo belongs one of the moderated regions, means user can moderate it
+            // In this case return region's number
+            const rhash = usObj.mod_rhash;
+            for (let i = 0; i <= maxRegionLevel; i++) {
+                const photoRegion = photo['r' + i];
+
                 if (photoRegion && rhash[photoRegion] !== undefined) {
                     return photoRegion;
                 }
             }
         } else if (usObj.isAdmin) {
-            // Если пользователь админ - то может
+            // If user is admin - he can
             return true;
         }
+
         return false;
     },
-    getCan: function (photo, usObj, ownPhoto, canModerate) {
-        var can = {
+    getCan(photo, usObj, ownPhoto, canModerate) {
+        const can = {
             // edit: [true, false]
             // ready: [true, false]
             // revision: [true, false]
@@ -129,7 +125,7 @@ export const permissions = {
             // nowatersign: [true, false]
             // download: [true, byrole, withwater, login]
         };
-        var s = photo.s;
+        const s = photo.s;
 
         if (usObj.registered) {
             if (typeof ownPhoto !== 'boolean') {
@@ -142,7 +138,7 @@ export const permissions = {
                 canModerate = !!permissions.canModerate(photo, usObj);
             }
 
-            var userSettings = photo.user.settings || userSettingsDef;
+            const userSettings = photo.user.settings || userSettingsDef;
 
             if (// If setted individual that photo has now watersing
             photo.watersignIndividual && photo.watersignOption === false ||
@@ -202,20 +198,24 @@ export const permissions = {
         } else {
             can.download = 'login';
         }
+
         return can;
     },
-    canSee: function (photo, usObj) {
+    canSee(photo, usObj) {
         if (photo.s === status.PUBLIC) {
             return true;
-        } else if (usObj.registered && photo.user) {
-            // Владелец всегда может видеть свою фотографию
+        }
+
+        if (usObj.registered && photo.user) {
+            // Owner always can see his photos
             if (User.isEqual(photo.user, usObj.user)) {
                 return true;
             }
-            // Удаленную может видеть админ
+            // Admin can see removed photos
             if (photo.s === status.REMOVE) {
                 return usObj.isAdmin;
             }
+
             return permissions.canModerate(photo, usObj);
         }
 
@@ -224,16 +224,17 @@ export const permissions = {
 };
 
 /**
- * Находим фотографию с учетом прав пользователя
- * @param usObj Объект пользователя
+ * Find photo considering user rights
  * @param query
- * @param fieldSelect Выбор полей (обязательно должны присутствовать user, s, r0-rmaxRegionLevel)
+ * @param fieldSelect Field select (mandatory are: user, s, r0-rmaxRegionLevel)
  * @param options For example, { lean: true }
  * @param populateUser Flag, that user object needed
  */
-export async function findPhoto(usObj, query, fieldSelect, options, populateUser) {
-    if (!usObj.registered) {
-        query.s = status.PUBLIC; // Анонимам ищем только публичные
+export async function find({ query, fieldSelect, options, populateUser }) {
+    const { handshake: { usObj: iAm } } = this;
+
+    if (!iAm.registered) {
+        query.s = status.PUBLIC; // Anonyms can see only public
     }
 
     let photo = Photo.findOne(query, fieldSelect || {}, options || {});
@@ -244,8 +245,8 @@ export async function findPhoto(usObj, query, fieldSelect, options, populateUser
 
     photo = await photo.exec();
 
-    if (!photo || !photo.user || !permissions.canSee(photo, usObj)) {
-        throw { message: msg.noPhoto };
+    if (!photo || !photo.user || !permissions.canSee(photo, iAm)) {
+        throw new NotFoundError(constantsError.NO_SUCH_PHOTO);
     }
 
     if (populateUser) {
@@ -255,287 +256,215 @@ export async function findPhoto(usObj, query, fieldSelect, options, populateUser
     return photo;
 }
 
-export const core = {
-    maxNewPhotosLimit: 1e4,
-    getNewPhotosLimit: (function () {
-        return function (user) {
-            var canCreate = 0;
-            var pfcount = user.pfcount;
+export function getNewPhotosLimit(user) {
+    let canCreate = 0;
+    const pfcount = user.pfcount;
 
-            if (user.rules && _.isNumber(user.rules.photoNewLimit)) {
-                canCreate = Math.max(0, Math.min(user.rules.photoNewLimit, core.maxNewPhotosLimit) - pfcount);
-            } else if (user.ranks && (user.ranks.includes('mec_silv') || user.ranks.includes('mec_gold'))) {
-                canCreate = core.maxNewPhotosLimit - pfcount; //Серебряный и золотой меценаты имеют максимально возможный лимит
-            } else if (user.ranks && user.ranks.includes('mec')) {
-                canCreate = Math.max(0, 100 - pfcount); //Меценат имеет лимит 100
-            } else if (user.pcount < 25) {
-                canCreate = Math.max(0, 3 - pfcount);
-            } else if (user.pcount < 50) {
-                canCreate = Math.max(0, 5 - pfcount);
-            } else if (user.pcount < 200) {
-                canCreate = Math.max(0, 10 - pfcount);
-            } else if (user.pcount < 1000) {
-                canCreate = Math.max(0, 50 - pfcount);
-            } else if (user.pcount >= 1000) {
-                canCreate = Math.max(0, 100 - pfcount);
-            }
-
-            return canCreate;
-        };
-    }()),
-    givePhoto: function (iAm, params) {
-        var cid = params.cid;
-        var defaultNoSelect = { sign: 0, sdate: 0 };
-        var fieldNoSelect = {};
-
-        if (params.noselect !== undefined) {
-            _.assign(fieldNoSelect, params.noselect);
-        }
-        _.defaults(fieldNoSelect, defaultNoSelect);
-        if (fieldNoSelect.frags === undefined) {
-            fieldNoSelect['frags._id'] = 0;
-        }
-
-        return Photo.findOneAsync({ cid: cid }, fieldNoSelect)
-            .bind({})
-            .then(function (photo) {
-                if (!photo || !permissions.canSee(photo, iAm)) {
-                    throw { message: msg.noPhoto, noPhoto: true };
-                }
-
-                var isMine = User.isEqual(iAm.user, photo.user);
-                var userObj = isMine ? iAm : session.getOnline(null, photo.user);
-                var promiseProps = {};
-                var regionFields;
-
-                if (userObj) {
-                    this.isMine = isMine;
-                    this.online = true;
-                    promiseProps.owner = userObj.user;
-                } else {
-                    promiseProps.owner = User.findOneAsync({ _id: photo.user })
-                        .then(function (user) {
-                            if (!user) {
-                                throw { message: msg.noUser, noPhoto: true };
-                            }
-                            return user;
-                        });
-                }
-
-                if (photo.geo) {
-                    regionFields = ['cid', 'title_en'];
-                } else {
-                    // Если у фото нет координаты, дополнительно берем домашнее положение региона и выбираем их из базы
-                    regionFields = { _id: 0, cid: 1, title_en: 1, center: 1, bbox: 1, bboxhome: 1 };
-                }
-                promiseProps.regions = regionController.getObjRegionList(photo, regionFields, !photo.geo);
-
-                this.photo = photo;
-
-                return Bluebird.props(promiseProps);
-            })
-            .then(function (result) {
-                var regions = result.regions;
-                var photo = this.photo.toObject();
-                var owner = result.owner.toObject();
-                var frags;
-                var frag;
-                var i;
-
-                // Присваиваем владельца после приведения фотографии к объекту, иначе там останется просто объект _id
-                photo.user = owner;
-
-                this.can = permissions.getCan(photo, iAm, this.isMine);
-
-                var shouldBeEdit = iAm.registered && this.can.edit &&
-                    (params.forEdit || params.fullView && photo.s === status.NEW && this.isMine);
-
-                photo.user = {
-                    login: owner.login,
-                    avatar: owner.avatar,
-                    disp: owner.disp,
-                    ranks: owner.ranks || [],
-                    sex: owner.sex
-                };
-
-                if (shouldBeEdit) {
-                    // Serve user settings, only when photo is for editing
-                    photo.user.settings = this.online ? owner.settings :
-                        _.defaults(owner.settings || {}, userSettingsDef);
-                    photo.user.watersignCustom = owner.watersignCustom;
-
-                    if (this.can.nowaterchange) {
-                        photo.user.nowaterchange = owner.nowaterchange;
-                    }
-                }
-
-                if (this.online) {
-                    photo.user.online = true;
-                }
-
-                // Не отдаем фрагменты удаленных комментариев
-                if (photo.frags) {
-                    frags = [];
-                    for (i = 0; i < photo.frags.length; i++) {
-                        frag = photo.frags[i];
-                        if (!frag.del) {
-                            frags.push(frag);
-                        }
-                    }
-                    photo.frags = frags;
-                }
-
-                for (i = 0; i <= maxRegionLevel; i++) {
-                    delete photo['r' + i];
-                }
-                if (regions.length) {
-                    photo.regions = regions;
-                }
-                if (photo.geo) {
-                    photo.geo = photo.geo.reverse();
-                }
-
-                if (iAm.registered) {
-                    return userObjectRelController.fillObjectByRels(photo, iAm.user._id, 'photo', params.rel);
-                }
-
-                return photo;
-            })
-            .then(function (photo) {
-
-                if (params.countView === true) {
-
-                    // Инкрементируем кол-во просмотров только у публичных фото
-                    if (photo.s === status.PUBLIC) {
-                        photo.vdcount = (photo.vdcount || 0) + 1;
-                        photo.vwcount = (photo.vwcount || 0) + 1;
-                        photo.vcount = (photo.vcount || 0) + 1;
-
-                        // В базе через инкремент, чтобы избежать race conditions
-                        Photo.update({ cid: cid }, { $inc: { vdcount: 1, vwcount: 1, vcount: 1 } }).exec();
-                    }
-
-                    // Обновляем время просмотра объекта пользователем
-                    if (iAm.registered) {
-                        userObjectRelController.setObjectView(photo._id, iAm.user._id);
-                    }
-                }
-
-                delete photo._id;
-
-                return [photo, this.can];
-            });
-    },
-    getBounds: function (data) {
-        var yearCriteria;
-        var year = false;
-        var criteria;
-        var promises;
-        var promise;
-
-        // Определяем, нужна ли выборка по границам лет
-        if (_.isNumber(data.year) && _.isNumber(data.year2) && data.year >= 1826 && data.year <= 2000 && data.year2 >= data.year && data.year2 <= 2000) {
-            year = true;
-        }
-
-        if (data.z < 17) {
-            promise = year ? photoCluster.getBoundsByYear(data) : photoCluster.getBounds(data);
-        } else {
-            promises = [];
-
-            if (year) {
-                if (data.year === data.year2) {
-                    yearCriteria = data.year;
-                } else {
-                    yearCriteria = { $gte: data.year, $lte: data.year2 };
-                }
-            }
-
-            for (var i = data.bounds.length; i--;) {
-                criteria = { geo: { $geoWithin: { $box: data.bounds[i] } } };
-                if (year) {
-                    criteria.year = yearCriteria;
-                }
-                promises.push(PhotoMap.findAsync(criteria, { _id: 0 }, { lean: true }));
-            }
-
-            promise = Bluebird.all(promises)
-                .then(function (photos) {
-                    return [photos.length > 1 ? _.flatten(photos) : photos[0]];
-                });
-        }
-
-        return promise
-            .tap(function (result) {
-                var photos = result[0];
-
-                // Реверсируем geo
-                for (var i = photos.length; i--;) {
-                    photos[i].geo.reverse();
-                }
-            });
-    },
-
-    giveNearestPhotos: function (data) {
-        var query = { geo: { $near: data.geo }, s: status.PUBLIC };
-        var options = { lean: true };
-
-        if (typeof data.except === 'number' && data.except > 0) {
-            query.cid = { $ne: data.except };
-        }
-
-        if (typeof data.distance === 'number' && data.distance > 0 && data.distance < 100000) {
-            query.geo.$maxDistance = data.distance;
-        } else {
-            query.geo.$maxDistance = 2000;
-        }
-
-        if (typeof data.limit === 'number' && data.limit > 0 && data.limit < 30) {
-            options.limit = data.limit;
-        } else {
-            options.limit = 30;
-        }
-
-        if (typeof data.skip === 'number' && data.skip > 0 && data.skip < 1000) {
-            options.skip = data.skip;
-        }
-
-        return Photo.findAsync(query, compactFields, options);
+    if (user.rules && _.isNumber(user.rules.photoNewLimit)) {
+        canCreate = Math.max(0, Math.min(user.rules.photoNewLimit, maxNewPhotosLimit) - pfcount);
+    } else if (user.ranks && (user.ranks.includes('mec_silv') || user.ranks.includes('mec_gold'))) {
+        // Silver and Gold metsenats have the maximum possible limit
+        canCreate = maxNewPhotosLimit - pfcount;
+    } else if (user.ranks && user.ranks.includes('mec')) {
+        // Metsenat has a limit of 100
+        canCreate = Math.max(0, 100 - pfcount);
+    } else if (user.pcount < 25) {
+        canCreate = Math.max(0, 3 - pfcount);
+    } else if (user.pcount < 50) {
+        canCreate = Math.max(0, 5 - pfcount);
+    } else if (user.pcount < 200) {
+        canCreate = Math.max(0, 10 - pfcount);
+    } else if (user.pcount < 1000) {
+        canCreate = Math.max(0, 50 - pfcount);
+    } else if (user.pcount >= 1000) {
+        canCreate = Math.max(0, 100 - pfcount);
     }
-};
 
-var giveNewPhotosLimit = Bluebird.method(function (iAm, data) {
-    if (!iAm.registered || iAm.user.login !== data.login && !iAm.isAdmin) {
-        throw { message: msg.deny };
+    return canCreate;
+}
+
+async function getBounds(data) {
+    const { bounds, z, year, year2 } = data;
+
+    // Determine whether fetch by years needed
+    const years = _.isNumber(year) && _.isNumber(year2) && year >= 1826 && year <= 2000 && year2 >= year && year2 <= 2000;
+    let clusters;
+    let photos;
+
+    if (z < 17) {
+        ({ photos, clusters } = await this.call(`cluster.${years ? 'getBoundsByYear' : 'getBounds'}`, data));
+    } else {
+        const yearCriteria = years ? year === year2 ? year : { $gte: year, $lte: year2 } : false;
+
+        photos = await Promise.all(bounds.map(bound => {
+            const criteria = { geo: { $geoWithin: { $box: bound } } };
+
+            if (yearCriteria) {
+                criteria.year = yearCriteria;
+            }
+
+            return PhotoMap.find(criteria, { _id: 0 }, { lean: true }).exec();
+        }));
+
+        photos = photos.length > 1 ? _.flatten(photos) : photos[0];
     }
-    var userObj = session.getOnline(data.login);
-    var promise;
+
+    // Reverse geo
+    photos.forEach(photo => photo.geo.reverse());
+
+    return { photos, clusters };
+}
+
+async function give(params) {
+    const { handshake: { usObj: iAm } } = this;
+    const { cid, noselect } = params;
+    const fieldNoSelect = {};
+
+    if (!_.isEmpty(noselect)) {
+        Object.assign(fieldNoSelect, noselect);
+    }
+    _.defaults(fieldNoSelect, { sign: 0, sdate: 0 });
+    if (fieldNoSelect.frags === undefined) {
+        fieldNoSelect['frags._id'] = 0;
+    }
+
+    let photo = await Photo.findOne({ cid }, fieldNoSelect).exec();
+
+    if (!photo || !permissions.canSee(photo, iAm)) {
+        throw new NotFoundError(constantsError.NO_SUCH_PHOTO);
+    }
+
+    let owner;
+    let online;
+    const isMine = User.isEqual(iAm.user, photo.user);
+    const userObj = isMine ? iAm : session.getOnline({ userId: photo.user });
 
     if (userObj) {
-        promise = Bluebird.resolve(userObj.user);
+        online = true;
+        owner = userObj.user;
     } else {
-        promise = User.findOneAsync({ login: data.login });
+        owner = await User.findOne({ _id: photo.user }).exec();
+
+        if (!owner) {
+            throw new NotFoundError(constantsError.NO_SUCH_PHOTO);
+        }
     }
 
-    return promise.then(function (user) {
-        if (!user) {
-            throw { message: msg.noUser };
+    const regionFields = photo.geo ? ['cid', 'title_local'] :
+        // If photo has no coordinates, additionally take home position of regions
+        { _id: 0, cid: 1, title_local: 1, center: 1, bbox: 1, bboxhome: 1 };
+
+    const regions = await this.call('region.getObjRegionList', { obj: photo, fields: regionFields, fromDb: !photo.geo });
+
+    photo = photo.toObject();
+    owner = owner.toObject();
+
+    // Assign owner after 'toObject', otherwise there would be just owner's _id
+    photo.user = owner;
+
+    const can = permissions.getCan(photo, iAm, isMine);
+    const shouldBeEdit = iAm.registered && can.edit &&
+        (params.forEdit || params.fullView && photo.s === status.NEW && isMine);
+
+    photo.user = {
+        login: owner.login,
+        avatar: owner.avatar,
+        disp: owner.disp,
+        ranks: owner.ranks || [],
+        sex: owner.sex
+    };
+
+    if (shouldBeEdit) {
+        // Serve user settings, only when photo is for editing
+        photo.user.settings = online ? owner.settings : _.defaults(owner.settings || {}, userSettingsDef);
+        photo.user.watersignCustom = owner.watersignCustom;
+
+        if (can.nowaterchange) {
+            photo.user.nowaterchange = owner.nowaterchange;
+        }
+    }
+
+    if (online) {
+        photo.user.online = true;
+    }
+
+    // Don't serve fragments of removed comments
+    if (photo.frags) {
+        const frags = [];
+
+        for (const frag of photo.frags) {
+            if (!frag.del) {
+                frags.push(frag);
+            }
         }
 
-        return core.getNewPhotosLimit(user);
-    });
-});
+        photo.frags = frags;
+    }
+
+    for (let i = 0; i <= maxRegionLevel; i++) {
+        delete photo['r' + i];
+    }
+
+    if (regions.length) {
+        photo.regions = regions;
+    }
+    if (photo.geo) {
+        photo.geo = photo.geo.reverse();
+    }
+
+    if (iAm.registered) {
+        await userObjectRelController.fillObjectByRels(photo, iAm.user._id, 'photo', params.rel);
+    }
+
+    if (params.countView === true) {
+        // Increment amount of views only for public photos
+        if (photo.s === status.PUBLIC) {
+            photo.vdcount = (photo.vdcount || 0) + 1;
+            photo.vwcount = (photo.vwcount || 0) + 1;
+            photo.vcount = (photo.vcount || 0) + 1;
+
+            // Through increment in db, to avoid race conditions
+            Photo.update({ cid }, { $inc: { vdcount: 1, vwcount: 1, vcount: 1 } }).exec();
+        }
+
+        // Update view stamp of object by user
+        if (iAm.registered) {
+            userObjectRelController.setObjectView(photo._id, iAm.user._id);
+        }
+    }
+
+    delete photo._id;
+
+    return { photo, can };
+}
+
+async function giveNewLimit({ login }) {
+    const { handshake: { usObj: iAm } } = this;
+
+    if (!iAm.registered || iAm.user.login !== login && !iAm.isAdmin) {
+        throw new AuthorizationError();
+    }
+
+    const userObj = session.getOnline({ login });
+    const user = userObj ? userObj.user : await User.findOne({ login }).exec();
+
+    if (!user) {
+        throw new NotFoundError(constantsError.NO_SUCH_USER);
+    }
+
+    return { limit: getNewPhotosLimit(user) };
+};
 
 function getUserWaterSign(user, photo) {
-    var result;
-    var option;
-    var validOptionValues = userSettingsVars.photo_watermark_add_sign;
+    const validOptionValues = userSettingsVars.photo_watermark_add_sign;
+    let option;
+    let result;
 
     if (photo && _.get(photo, 'watersignIndividual')) {
         option = _.get(photo, 'watersignOption');
 
         if (validOptionValues.includes(option)) {
-            result = option === 'custom' && photo.watersignCustom ? photo.watersignCustom : !!option;
+            result = option === 'custom' && photo.watersignCustom ? photo.watersignCustom : Boolean(option);
         }
     }
 
@@ -547,7 +476,7 @@ function getUserWaterSign(user, photo) {
             option = userSettingsDef.photo_watermark_add_sign;
         }
 
-        result = option === 'custom' && user.watersignCustom ? user.watersignCustom : !!option;
+        result = option === 'custom' && user.watersignCustom ? user.watersignCustom : Boolean(option);
     }
 
     if (result === true) {
@@ -559,88 +488,82 @@ function getUserWaterSign(user, photo) {
     return result;
 }
 
-/**
- * Создает фотографии в базе данных
- * @param socket Сессия пользователя
- * @param data Объект или массив фотографий
- */
-//var dirs = ['w', 'nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'aero'];
-const createPhotos = Bluebird.method(function (socket, data) {
-    var iAm = socket.handshake.usObj;
+// Create photos
+// const dirs = ['w', 'nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'aero'];
+async function create({ files }) {
+    const { socket, handshake: { usObj: iAm } } = this;
+
     if (!iAm.registered) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
-    if (!Array.isArray(data) && !_.isObject(data)) {
-        throw { message: msg.badParams };
-    }
-
-    if (!Array.isArray(data)) {
-        data = [data];
+    if (!Array.isArray(files) && !_.isObject(files)) {
+        throw new BadParamsError();
     }
 
-    var cids = [];
-    var user = iAm.user;
-    var canCreate = core.getNewPhotosLimit(user);
+    if (!Array.isArray(files)) {
+        files = [files];
+    }
 
-    if (!canCreate || !data.length) {
+    const cids = [];
+    const user = iAm.user;
+    const canCreate = getNewPhotosLimit(user);
+
+    if (!canCreate || !files.length) {
         return { message: 'Nothing to save', cids };
     }
-    if (data.length > canCreate) {
-        data = data.slice(0, canCreate);
+    if (files.length > canCreate) {
+        files = files.slice(0, canCreate);
     }
 
-    return Bluebird.all(data.map(function (item) {
-            item.fullfile = item.file.replace(/((.)(.)(.))/, '$2/$3/$4/$1');
-            return fs.renameAsync(path.join(incomeDir, item.file), path.join(privateDir, item.fullfile));
-        }))
-        .then(function () {
-            return Counter.incrementBy('photo', data.length);
-        })
-        .then(function savePhotos(count) {
-            if (!count) {
-                throw { message: 'Increment photo counter error' };
-            }
-            var now = Date.now();
-            var next = count.next - data.length + 1;
+    await Promise.all(files.map(function (item) {
+        item.fullfile = item.file.replace(/((.)(.)(.))/, '$2/$3/$4/$1');
+        return fs.renameAsync(path.join(incomeDir, item.file), path.join(privateDir, item.fullfile));
+    }));
 
-            return Bluebird.all(data.map(function (item, i) {
-                var photo = new Photo({
-                    cid: next + i,
-                    user: user,
-                    file: item.fullfile,
-                    ldate: new Date(now + i * 10), //Время загрузки каждого файла инкрементим на 10мс для правильной сортировки
-                    sdate: new Date(now + i * 10 + shift10y), //Новые фотографии должны быть всегда сверху
-                    type: item.type,
-                    size: item.size,
-                    geo: undefined,
-                    s: 0,
-                    title: item.name ? item.name.replace(/(.*)\.[^.]+$/, '$1') : undefined, //Отрезаем у файла расширение
-                    frags: undefined,
-                    watersignText: getUserWaterSign(user),
-                    convqueue: true
-                    //geo: [_.random(36546649, 38456140) / 1000000, _.random(55465922, 56103812) / 1000000],
-                    //dir: dirs[_.random(0, dirs.length - 1)],
-                });
-                item.photoObj = photo;
+    const count = await Counter.incrementBy('photo', files.length);
 
-                cids.push({ cid: photo.cid });
-                return photo.saveAsync();
-            }));
-        })
-        .then(function () {
-            photoConverter.addPhotos(cids, 1);
+    if (!count) {
+        throw new ApplicationError(constantsError.COUNTER_ERROR);
+    }
 
-            user.pfcount = user.pfcount + data.length;
-            return session.saveEmitUser(iAm, socket);
-        })
-        .then(function () {
-            return { message: data.length + ' photo successfully saved', cids: cids };
+    const now = Date.now();
+    const next = count.next - files.length + 1;
+
+    await Promise.all(files.map((item, i) => {
+        const photo = new Photo({
+            user,
+            s: 0,
+            cid: next + i,
+            file: item.fullfile,
+            ldate: new Date(now + i * 10), // Increase loading time of each file  by 10 ms for proper sorting
+            sdate: new Date(now + i * 10 + shift10y), // New photos must be always on top
+            type: item.type,
+            size: item.size,
+            geo: undefined,
+            title: item.name ? item.name.replace(/(.*)\.[^.]+$/, '$1') : undefined, // Cut off file extension
+            frags: undefined,
+            watersignText: getUserWaterSign(user),
+            convqueue: true
+            // geo: [_.random(36546649, 38456140) / 1000000, _.random(55465922, 56103812) / 1000000],
+            // dir: dirs[_.random(0, dirs.length - 1)],
         });
-});
 
-// Добавляет фото на карту
-function photoToMap(photo, geoPhotoOld, yearPhotoOld) {
-    var $update = {
+        cids.push({ cid: photo.cid });
+        return photo.save();
+    }));
+
+    converter.addPhotos(cids, 1);
+
+    user.pfcount = user.pfcount + files.length;
+
+    await session.saveEmitUser({ usObj: iAm, wait: true, excludeSocket: socket });
+
+    return { message: `${files.length} photo successfully saved`, cids };
+}
+
+// Add photo onto map
+async function photoToMap({ photo, geoPhotoOld, yearPhotoOld }) {
+    const $update = {
         $setOnInsert: { cid: photo.cid },
         $set: {
             geo: photo.geo,
@@ -657,42 +580,43 @@ function photoToMap(photo, geoPhotoOld, yearPhotoOld) {
         $update.$unset = { dir: 1 };
     }
 
-    return Bluebird.join(
-        PhotoMap.updateAsync({ cid: photo.cid }, $update, { upsert: true }),
-        // Отправляем на кластеризацию
-        photoCluster.clusterPhoto(photo, geoPhotoOld, yearPhotoOld)
-    );
+    await Promise.all([
+        PhotoMap.update({ cid: photo.cid }, $update, { upsert: true }).exec(),
+        this.call('cluster.clusterPhoto', { photo, geoPhotoOld, yearPhotoOld }) // Send to clusterization
+    ]);
 }
 
 // Remove photo from map
-function photoFromMap(photo) {
-    return Bluebird.all([
-        photoCluster.declusterPhoto(photo),
-        PhotoMap.removeAsync({ cid: photo.cid })
+function photoFromMap({ photo }) {
+    return Promise.all([
+        this.call('cluster.declusterPhoto', { photo }),
+        PhotoMap.remove({ cid: photo.cid }).exec()
     ]);
 }
 
 function getPhotoChangedFields(oldPhoto, newPhoto, parsedFileds) {
-    var region;
-    var diff = {};
-    var fields = [];
-    var oldValues = {};
-    var newValues = {};
-    var result = {};
+    const diff = {};
+    const fields = [];
+    const oldValues = {};
+    const newValues = {};
 
-    // Если хотя бы один регион изменился, записываем весь массив текущих регионов
-    for (var i = 0; i <= maxRegionLevel; i++) {
+    // If at least one region has been changed, writes the entire array of current regions
+    for (let i = 0; i <= maxRegionLevel; i++) {
         if (oldPhoto['r' + i] !== newPhoto['r' + i]) {
             oldValues.regions = [];
             newValues.regions = [];
+
             fields.push('regions');
 
-            for (i = 0; i <= maxRegionLevel; i++) {
-                region = oldPhoto['r' + i];
+            for (let j = 0; j <= maxRegionLevel; j++) {
+                let region = oldPhoto['r' + j];
+
                 if (region) {
                     oldValues.regions.push(region);
                 }
-                region = newPhoto['r' + i];
+
+                region = newPhoto['r' + j];
+
                 if (region) {
                     newValues.regions.push(region);
                 }
@@ -701,12 +625,12 @@ function getPhotoChangedFields(oldPhoto, newPhoto, parsedFileds) {
         }
     }
 
-    historyFields.forEach(function (field) {
-        var oldValue = oldPhoto[field];
-        var newValue = newPhoto[field];
+    for (const field of historyFields) {
+        let oldValue = oldPhoto[field];
+        let newValue = newPhoto[field];
 
         if (!_.isEqual(oldValue, newValue)) {
-            // Если это строка и она "", обнуляем её
+            // If it is a string and equals "", nullify it
             if (!oldValue && _.isString(oldValue)) {
                 oldValue = undefined;
             }
@@ -714,14 +638,15 @@ function getPhotoChangedFields(oldPhoto, newPhoto, parsedFileds) {
                 newValue = undefined;
             }
 
-            // Получаем форматированную разницу старого и нового текста (неформатированных)
-            // для полей, для которых нужно вычислять разницу, и только если они не пустые
+            // Get formatted difference of the old and new text (unformatted)
+            // for the fields for which need to calculate difference, and only if they are not empty
             if (historyFieldsDiffHash[field] && oldValue && newValue) {
                 diff[field] = Utils.txtdiff(
                     Utils.txtHtmlToPlain(oldValue),
-                    // Некоторые поля (описание, автор и др.) парсятся на предмет разметки и т.п.,
-                    // разницу с последней версии при этом надо брать с plain
-                    parsingFieldsSet.has(field) ? parsedFileds[field] ? parsedFileds[field].plain : Utils.txtHtmlToPlain(newValue) : newValue
+                    // Some fields (descripton, author etc) are parsed for markup,
+                    // difference with last version must be calculated with 'plain'
+                    parsingFieldsSet.has(field) ? parsedFileds[field] ? parsedFileds[field].plain :
+                        Utils.txtHtmlToPlain(newValue) : newValue
                 );
             }
 
@@ -731,206 +656,203 @@ function getPhotoChangedFields(oldPhoto, newPhoto, parsedFileds) {
             if (newValue !== undefined) {
                 newValues[field] = newValue;
             }
+
             fields.push(field);
         }
-    });
+    }
 
-    result.fields = fields;
-    result.oldValues = oldValues;
-    result.newValues = newValues;
-    result.diff = diff;
-
-    return result;
+    return { fields, oldValues, newValues, diff };
 }
 
-export const savePhotoHistory = Bluebird.method(function (iAm, oldPhotoObj, photo, canModerate, reason, parsedFileds) {
-    var changes = getPhotoChangedFields(oldPhotoObj, photo.toObject ? photo.toObject() : photo, parsedFileds);
+async function saveHistory({ oldPhotoObj, photo, canModerate, reason, parsedFileds }) {
+    const { handshake: { usObj: iAm } } = this;
+    const changes = getPhotoChangedFields(oldPhotoObj, photo.toObject ? photo.toObject() : photo, parsedFileds);
 
     if (_.isEmpty(changes.fields)) {
         return null;
     }
 
-    return PhotoHistory.findAsync({ cid: oldPhotoObj.cid }, { _id: 1, values: 1 }, { lean: true, sort: { stamp: 1 } })
-        .then(function (histories) {
-            var add = [];
-            var del = [];
-            var reasonCid;
-            var firstTime;
-            var values = {};
-            var promises = [];
-            var firstEntryChanged;
-            var newEntry = { cid: photo.cid, user: iAm.user._id, stamp: photo.cdate || new Date() };
+    const add = [];
+    const del = [];
+    const values = {};
+    const promises = [];
+    const newEntry = { cid: photo.cid, user: iAm.user._id, stamp: photo.cdate || new Date() };
 
-            // Если это первое изменение объекта, создаем первую запись (по времени создания),
-            // чтобы писать туда первоначальные значения полей, и сразу сохраняем её (массивый undefined, чтобы не сохранялись пустыми)
-            if (_.isEmpty(histories)) {
-                firstTime = true;
-                histories = [{
-                    cid: photo.cid,
-                    user: photo.user,
-                    stamp: photo.ldate.getTime(),
-                    values: {},
-                    add: undefined,
-                    del: undefined
-                }];
+    let reasonCid;
+    let firstTime;
+    let firstEntryChanged;
+
+    let histories = await PhotoHistory.find(
+        { cid: oldPhotoObj.cid }, { _id: 1, values: 1 }, { lean: true, sort: { stamp: 1 } }
+    ).exec();
+
+    // If it the first time when object changes, create first entry (by creation time),
+    // to write in it initial values of fields, and save it (arrays is undefined, to prevent them from saving like [])
+    if (_.isEmpty(histories)) {
+        firstTime = true;
+        histories = [{
+            cid: photo.cid,
+            user: photo.user,
+            stamp: photo.ldate.getTime(),
+            values: {},
+            add: undefined,
+            del: undefined
+        }];
+    }
+
+    const lastFieldsIndexes = histories.reduce((result, historyEntry, historyIndex) => {
+        const del = historyEntry.del;
+        const values = historyEntry.values;
+
+        _.forEach(changes.fields, field => {
+            if (!historyIndex || values && values[field] || del && del.includes(field)) {
+                result[field] = historyIndex;
             }
-
-            var lastFieldsIndexes = histories.reduce(function (result, historyEntry, historyIndex) {
-                var del = historyEntry.del;
-                var values = historyEntry.values;
-
-                _.forEach(changes.fields, function (field) {
-                    if (!historyIndex || values && values[field] || del && del.includes(field)) {
-                        result[field] = historyIndex;
-                    }
-                });
-                return result;
-            }, {});
-
-            _.forOwn(changes.newValues, function (value, field) {
-                values[field] = value;
-                // Если не было значения и новое значение не флаг, говорим что оно добавлено
-                if (!_.isBoolean(value) && changes.oldValues[field] === undefined) {
-                    add.push(field);
-                    delete changes.oldValues[field];
-                }
-            });
-
-            _.forOwn(changes.oldValues, function (value, field) {
-                if (!lastFieldsIndexes[field]) {
-                    firstEntryChanged = true;
-
-                    // There maybe no 'values' if photo was uploaded before introducing history functionality,
-                    // but after that some photo attribute was added (not edited)
-                    if (!histories[0].values) {
-                        histories[0].values = {};
-                    }
-                    histories[0].values[field] = value;
-                }
-                // Если нет нового значения и старое значение не флаг, говорим что оно удалено
-                if (!_.isBoolean(value) && changes.newValues[field] === undefined) {
-                    del.push(field);
-                }
-            });
-
-            if (!_.isEmpty(values)) {
-                newEntry.values = values;
-            }
-            if (!_.isEmpty(changes.diff)) {
-                newEntry.diff = changes.diff;
-            }
-            newEntry.add = add.length ? add : undefined;
-            newEntry.del = del.length ? del : undefined;
-
-            if (reason) {
-                newEntry.reason = {};
-                reasonCid = Number(reason.cid);
-
-                if (reasonCid >= 0) {
-                    newEntry.reason.cid = reasonCid;
-                }
-                if (_.isString(reason.desc) && reason.desc.length) {
-                    newEntry.reason.desc = Utils.inputIncomingParse(reason.desc).result;
-                }
-            }
-
-            if (canModerate === undefined || canModerate === null) {
-                // При проверке стоит смотреть на oldPhotoObj, так как права проверяются перед сохраннением
-                canModerate = permissions.canModerate(oldPhotoObj, iAm);
-            }
-
-            if (canModerate && iAm.user.role) {
-                // Если для изменения потребовалась роль модератора/адиминитратора, записываем её на момент удаления
-                newEntry.role = iAm.user.role;
-
-                // В случае с модератором региона, permissions.canModerate возвращает cid роли
-                if (iAm.isModerator && _.isNumber(canModerate)) {
-                    newEntry.roleregion = canModerate;
-                }
-            }
-
-            promises.push(new PhotoHistory(newEntry).saveAsync());
-
-            if (firstTime) {
-                promises.push(new PhotoHistory(histories[0]).saveAsync());
-            } else if (firstEntryChanged) {
-                promises.push(PhotoHistory.updateAsync({ _id: histories[0]._id }, { $set: { values: histories[0].values } }));
-            }
-
-            return Bluebird.all(promises);
         });
-});
+
+        return result;
+    }, {});
+
+    _.forOwn(changes.newValues, (value, field) => {
+        values[field] = value;
+
+        // If no current value and the new value is not the flag, saying it added
+        if (!_.isBoolean(value) && changes.oldValues[field] === undefined) {
+            add.push(field);
+            delete changes.oldValues[field];
+        }
+    });
+
+    _.forOwn(changes.oldValues, (value, field) => {
+        if (!lastFieldsIndexes[field]) {
+            firstEntryChanged = true;
+
+            // There maybe no 'values' if photo was uploaded before introducing history functionality,
+            // but after that some photo attribute was added (not edited)
+            if (!histories[0].values) {
+                histories[0].values = {};
+            }
+            histories[0].values[field] = value;
+        }
+
+        // If no new value and the old value is not the flag, say that it is removed
+        if (!_.isBoolean(value) && changes.newValues[field] === undefined) {
+            del.push(field);
+        }
+    });
+
+    if (!_.isEmpty(values)) {
+        newEntry.values = values;
+    }
+    if (!_.isEmpty(changes.diff)) {
+        newEntry.diff = changes.diff;
+    }
+    newEntry.add = add.length ? add : undefined;
+    newEntry.del = del.length ? del : undefined;
+
+    if (reason) {
+        newEntry.reason = {};
+        reasonCid = Number(reason.cid);
+
+        if (reasonCid >= 0) {
+            newEntry.reason.cid = reasonCid;
+        }
+        if (_.isString(reason.desc) && reason.desc.length) {
+            newEntry.reason.desc = Utils.inputIncomingParse(reason.desc).result;
+        }
+    }
+
+    if (canModerate === undefined || canModerate === null) {
+        // We should check permissions in object before changes
+        canModerate = permissions.canModerate(oldPhotoObj, iAm);
+    }
+
+    if (canModerate && iAm.user.role) {
+        // If changes required moderator/administrator role, write it at the time of removal
+        newEntry.role = iAm.user.role;
+
+        // In case of region moderator 'permissions.canModerate' returns region's cid
+        if (iAm.isModerator && _.isNumber(canModerate)) {
+            newEntry.roleregion = canModerate;
+        }
+    }
+
+    promises.push(new PhotoHistory(newEntry).save());
+
+    if (firstTime) {
+        promises.push(new PhotoHistory(histories[0]).save());
+    } else if (firstEntryChanged) {
+        promises.push(PhotoHistory.update({ _id: histories[0]._id }, { $set: { values: histories[0].values } }).exec());
+    }
+
+    return await Promise.all(promises);
+}
 
 /**
- * Выборка объекта фотографии для редактирования с проверкой прав на указанный can
- * Проверяет не редактировался ли объект после указанного времени cdate. Если да - бросит { changed: true }
- * Возвращает объект и свойство canModerate
- * @param iAm
- * @param data
- * @param can
+ * Fetching photo object for editing with access rights validation
+ * Check if object was edited after specified time in 'cdate'. If yes - throws 'PHOTO_CHANGED'
+ * Returns photo object and 'canModerate' flag
  */
-var photoEditPrefetch = Bluebird.method(function (iAm, data, can) {
-    if (!_.isObject(data)) {
-        throw { message: msg.badParams };
-    }
+async function prefetchForEdit({ data: { cid, s, cdate, ignoreChange }, can }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!iAm.registered) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
-    var cid = Number(data.cid);
+    cid = Number(cid);
 
     if (isNaN(cid) || cid < 1) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
-    return findPhoto(iAm, { cid }, null, null, true)
-        .then(function (photo) {
-            if (_.isNumber(data.s) && data.s !== photo.s) {
-                throw { message: msg.anotherStatus };
-            }
+    const photo = await this.call('photo.find', { query: { cid }, populateUser: true });
 
-            var canModerate = permissions.canModerate(photo, iAm);
+    if (_.isNumber(s) && s !== photo.s) {
+        // Две кнопки: "Посмотреть", "Продолжить <сохранение|изменение статуса>"
+        throw new NoticeError(constantsError.PHOTO_ANOTHER_STATUS);
+    }
 
-            if (can && permissions.getCan(photo, iAm, null, canModerate)[can] !== true) {
-                throw { message: msg.deny };
-            }
+    const canModerate = permissions.canModerate(photo, iAm);
 
-            // Если фотография изменилась после отображения и не стоит флаг игнорирования изменения,
-            // то возвращаем статус, что изменено
-            if (data.ignoreChange !== true && _.isDate(photo.cdate) && (!data.cdate || !_.isEqual(new Date(data.cdate), photo.cdate))) {
-                throw { changed: true };
-            }
+    if (can && permissions.getCan(photo, iAm, null, canModerate)[can] !== true) {
+        throw new AuthorizationError();
+    }
 
-            return [photo, canModerate];
-        });
-});
+    // If photo has changed after last fetching and flag to ignore changes is not specified,
+    // then throw changed error
+    if (ignoreChange !== true && _.isDate(photo.cdate) && (!cdate || !_.isEqual(new Date(cdate), photo.cdate))) {
+        throw new NoticeError(constantsError.PHOTO_CHANGED);
+    }
+
+    return { photo, canModerate };
+}
 
 /**
  * Сохраняем объект фотографии с подъемом времени просмотра пользователем объекта
- * @param iAm
- * @param photo
  * @param [stamp] Принудительно устанавливает время просмотра
  */
-var photoUpdate = function (iAm, photo, stamp) {
-    return Bluebird.join(
-        photo.saveAsync(),
-        userObjectRelController.setObjectView(photo._id, iAm.user._id, 'photo', stamp),
-        function (savedResult, rel) {
-            return [savedResult[0], rel];
-        }
-    );
-};
+async function update({ photo, stamp }) {
+    const { handshake: { usObj: iAm } } = this;
 
-// Обновляем счетчики количества у пользователя
-var userPCountUpdate = function (user, newDelta, publicDelta, inactiveDelta) {
-    var userId = user._id || user;
-    var ownerObj = session.getOnline(null, userId);
+    const [, rel] = await Promise.all([
+        photo.save(),
+        userObjectRelController.setObjectView(photo._id, iAm.user._id, 'photo', stamp)
+    ]);
+
+    return { photo, rel };
+}
+
+// Change amount of photos of user
+function userPCountUpdate(user, newDelta = 0, publicDelta = 0, inactiveDelta = 0) {
+    const userId = user._id || user;
+    const ownerObj = session.getOnline({ userId });
 
     if (ownerObj) {
-        ownerObj.user.pfcount = ownerObj.user.pfcount + (newDelta || 0);
-        ownerObj.user.pcount = ownerObj.user.pcount + (publicDelta || 0);
-        ownerObj.user.pdcount = ownerObj.user.pdcount + (inactiveDelta || 0);
-        return session.saveEmitUser(ownerObj);
+        ownerObj.user.pfcount = ownerObj.user.pfcount + newDelta;
+        ownerObj.user.pcount = ownerObj.user.pcount + publicDelta;
+        ownerObj.user.pdcount = ownerObj.user.pdcount + inactiveDelta;
+        return session.saveEmitUser({ usObj: ownerObj, wait: true });
     } else {
         return User.update({ _id: userId }, {
             $inc: {
@@ -940,464 +862,316 @@ var userPCountUpdate = function (user, newDelta, publicDelta, inactiveDelta) {
             }
         }).exec();
     }
-};
+}
 
-const changePublicPhotoExternality = async function (photo, iAm, makePublic) {
-    await* [
-        // Скрываем или показываем комментарии и пересчитываем их публичное кол-во у пользователей
-        changeObjComments(photo, !makePublic, iAm),
-        // Пересчитываем кол-во фото у владельца
+const changePublicExternality = async function ({ photo, makePublic }) {
+    return await Promise.all([
+        // Show or hide comments and recalculate it amount of users
+        this.call('comment.changeObjCommentsVisibility', { obj: photo, hide: !makePublic }),
+        // Recalculate number of photos of owner
         userPCountUpdate(photo.user, 0, makePublic ? 1 : -1, makePublic ? -1 : 1),
-        // Если у фото есть координаты, значит надо провести действие с картой
-        Utils.geo.check(photo.geo) ? (makePublic ? photoToMap(photo) : photoFromMap(photo)) : null
-    ];
+        // If photo has coordinates, means that need to do something with map
+        Utils.geo.check(photo.geo) ? this.call(makePublic ? 'photo.photoToMap' : 'photo.photoFromMap', { photo }) : null
+    ]);
 };
 
-/**
- * Отзыв собственной фотографии
- * @param {Object} socket Сокет пользователя
- * @param {Object} data
- */
-var revokePhoto = function (socket, data) {
-    var iAm = socket.handshake.usObj;
+// Revoke own photo
+async function revoke(data) {
+    const { photo } = await this.call('photo.prefetchForEdit', { data, can: 'revoke' });
+    const oldPhotoObj = photo.toObject();
 
-    return photoEditPrefetch(iAm, data, 'revoke')
-        .bind({})
-        .spread(function (photo) {
-            this.oldPhotoObj = photo.toObject();
+    photo.s = status.REVOKE;
+    photo.sdate = photo.stdate = photo.cdate = new Date();
 
-            photo.s = status.REVOKE;
-            photo.sdate = photo.stdate = photo.cdate = new Date();
+    const { rel } = await this.call('photo.update', { photo });
 
-            return photoUpdate(iAm, photo);
-        })
-        .spread(function (photoSaved, rel) {
-            // Пересчитываем кол-во фото у владельца
-            userPCountUpdate(photoSaved.user, -1, 0, 1);
+    // Compute amount of photos of user
+    userPCountUpdate(photo.user, -1, 0, 1);
 
-            // Сохраняем в истории предыдущий статус
-            savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, false);
+    // Save previous status to history
+    await this.call('photo.saveHistory', { oldPhotoObj, photo, canModerate: false });
 
-            // Заново выбираем данные для отображения
-            return core.givePhoto(iAm, { cid: photoSaved.cid, rel: rel });
-        })
-        .spread(function (photo, can) {
-            return { photo: photo, can: can };
-        })
-        .catch(function (err) {
-            if (err.changed === true) {
-                return { message: msg.changed, changed: true };
-            }
-            throw err;
-        });
-};
+    // Reselect the data to display
+    return this.call('photo.give', { cid: photo.cid, rel });
+}
 
-/**
- * Говорим, что фото готово к премодерации и публикации
- * @param {Object} socket Сокет пользователя
- * @param {Object} data
- */
-var readyPhoto = function (socket, data) {
-    var iAm = socket.handshake.usObj;
+// Say that photo is ready for premoderation
+async function ready(data) {
+    const { handshake: { usObj: iAm } } = this;
+    const { photo, canModerate } = await this.call('photo.prefetchForEdit', { data, can: 'ready' });
+    const oldPhotoObj = photo.toObject();
 
-    return photoEditPrefetch(iAm, data, 'ready')
-        .bind({})
-        .spread(function (photo, canModerate) {
-            photoCheckPublickRequired(photo);
+    photoCheckPublickRequired(photo);
 
-            this.oldPhotoObj = photo.toObject();
-            this.canModerate = canModerate;
+    photo.s = status.READY;
+    photo.stdate = photo.cdate = new Date();
 
-            photo.s = status.READY;
-            photo.stdate = photo.cdate = new Date();
+    const { rel } = await this.call('photo.update', { photo });
 
-            return photoUpdate(iAm, photo);
-        })
-        .spread(function (photoSaved, rel) {
-            // Сохраняем в истории предыдущий статус
-            savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, User.isEqual(this.oldPhotoObj.user, iAm.user) ? false : this.canModerate);
+    // Save previous status to history
+    await this.call('photo.saveHistory', {
+        oldPhotoObj, photo, canModerate: User.isEqual(oldPhotoObj.user, iAm.user) ? false : canModerate
+    });
 
-            // Заново выбираем данные для отображения
-            return core.givePhoto(iAm, { cid: photoSaved.cid, rel: rel });
-        })
-        .spread(function (photo, can) {
-            return { photo: photo, can: can };
-        })
-        .catch(function (err) {
-            if (err.changed === true) {
-                return { message: msg.changed, changed: true };
-            }
-            throw err;
-        });
-};
+    // Reselect the data to display
+    return this.call('photo.give', { cid: photo.cid, rel });
+}
 
-/**
- * Отправить фотографию, ожидающую публикацию на доработку автору
- * @param {Object} socket Сокет пользователя
- * @param {Object} data
- */
-var toRevision = Bluebird.method(function (socket, data) {
-    var iAm = socket.handshake.usObj;
+// Send a photo, awaiting publication, to the author for revision
+async function toRevision(data) {
+    const { reason } = data;
 
-    if (_.isEmpty(data.reason)) {
-        throw { message: msg.needReason };
+    if (_.isEmpty(reason)) {
+        throw new BadParamsError(constantsError.PHOTO_NEED_REASON);
     }
 
-    return photoEditPrefetch(iAm, data, 'revision')
-        .bind({})
-        .spread(function (photo, canModerate) {
-            this.oldPhotoObj = photo.toObject();
-            this.canModerate = canModerate;
+    const { photo, canModerate } = await this.call('photo.prefetchForEdit', { data, can: 'revision' });
+    const oldPhotoObj = photo.toObject();
 
-            photo.s = status.REVISION;
-            photo.stdate = photo.cdate = new Date();
+    photo.s = status.REVISION;
+    photo.stdate = photo.cdate = new Date();
 
-            return photoUpdate(iAm, photo);
-        })
-        .spread(function (photoSaved, rel) {
-            // Сохраняем в истории предыдущий статус
-            savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, this.canModerate, data.reason);
+    const { rel } = await this.call('photo.update', { photo });
 
-            // Заново выбираем данные для отображения
-            return core.givePhoto(iAm, { cid: photoSaved.cid, rel: rel });
-        })
-        .spread(function (photo, can) {
-            return { photo: photo, can: can };
-        })
-        .catch(function (err) {
-            if (err.changed === true) {
-                return { message: msg.changed, changed: true };
-            }
-            throw err;
-        });
-});
+    // Save previous status to history
+    await this.call('photo.saveHistory', { oldPhotoObj, photo, canModerate, reason });
+
+    // Reselect the data to display
+    return this.call('photo.give', { cid: photo.cid, rel });
+}
 
 // Reject waiting photo by moderator/administrator
-async function rejectPhoto(iAm, data) {
-    if (_.isEmpty(data.reason)) {
-        throw { message: msg.needReason };
+async function reject(data) {
+    const { reason } = data;
+
+    if (_.isEmpty(reason)) {
+        throw new BadParamsError(constantsError.PHOTO_NEED_REASON);
     }
 
-    try {
-        let can;
-        let photo;
-        let canModerate;
+    const { photo, canModerate } = await this.call('photo.prefetchForEdit', { data, can: 'reject' });
+    const oldPhotoObj = photo.toObject();
 
-        [photo, canModerate] = await photoEditPrefetch(iAm, data, 'reject');
+    photo.s = status.REJECT;
+    photo.sdate = photo.stdate = photo.cdate = new Date(); // TODO: При возврате на доработку возвращать sdate +shift10y
 
-        const oldPhotoObj = photo.toObject();
+    const { rel } = await this.call('photo.update', { photo });
 
-        photo.s = status.REJECT;
-        // TODO: При возврате на доработку возвращать sdate +shift10y
-        photo.sdate = photo.stdate = photo.cdate = new Date();
+    // Compute amount of photos of user
+    userPCountUpdate(photo.user, -1, 0, 1);
 
-        const [photoSaved, rel] = await photoUpdate(iAm, photo);
+    // Save previous status to history
+    await this.call('photo.saveHistory', { oldPhotoObj, photo, canModerate, reason });
 
-        // Compute amount of photos of user
-        userPCountUpdate(photoSaved.user, -1, 0, 1);
-
-        // Save previous status to history
-        savePhotoHistory(iAm, oldPhotoObj, photoSaved, canModerate, data.reason);
-
-        // Reget photo for view
-        [photo, can] = await core.givePhoto(iAm, { cid: photoSaved.cid, rel });
-
-        return { photo, can };
-
-    } catch (err) {
-        if (err.changed === true) {
-            return { message: msg.changed, changed: true };
-        }
-        throw err;
-    }
+    // Reselect the data to display
+    return this.call('photo.give', { cid: photo.cid, rel });
 }
 
 // Restore rejected photo to ready status (waitnig for moderation)
-async function rerejectPhoto(iAm, data) {
-    if (_.isEmpty(data.reason)) {
-        throw { message: msg.needReason };
+async function rereject(data) {
+    const { reason } = data;
+
+    if (_.isEmpty(reason)) {
+        throw new BadParamsError(constantsError.PHOTO_NEED_REASON);
     }
 
-    try {
-        let can;
-        let photo;
-        let canModerate;
+    const { photo, canModerate } = await this.call('photo.prefetchForEdit', { data, can: 'rereject' });
 
-        [photo, canModerate] = await photoEditPrefetch(iAm, data, 'rereject');
+    const oldPhotoObj = photo.toObject();
 
-        const oldPhotoObj = photo.toObject();
+    photo.s = status.READY;
+    photo.sdate = photo.stdate = photo.cdate = new Date();
 
-        photo.s = status.READY;
-        photo.sdate = photo.stdate = photo.cdate = new Date();
+    const { rel } = await this.call('photo.update', { photo });
 
-        const [photoSaved, rel] = await photoUpdate(iAm, photo);
+    // Recalculate the number of photos of the owner
+    userPCountUpdate(photo.user, 1, 0, -1);
 
-        // Compute amount of photos of user
-        userPCountUpdate(photoSaved.user, 1, 0, -1);
+    // Save previous status to history
+    await this.call('photo.saveHistory', { oldPhotoObj, photo, canModerate, reason });
 
-        // Save previous status to history
-        savePhotoHistory(iAm, oldPhotoObj, photoSaved, canModerate, data.reason);
+    // Reselect the data to display
+    return this.call('photo.give', { cid: photo.cid, rel });
+}
 
-        // Reget photo for view
-        [photo, can] = await core.givePhoto(iAm, { cid: photoSaved.cid, rel });
+// Publication (confirmation) of a new photo
+async function approve(data) {
+    const { photo, canModerate } = await this.call('photo.prefetchForEdit', { data, can: 'approve' });
 
-        return { photo, can };
+    photoCheckPublickRequired(photo);
 
-    } catch (err) {
-        if (err.changed === true) {
-            return { message: msg.changed, changed: true };
-        }
-        throw err;
-    }
-};
+    const oldPhotoObj = photo.toObject();
 
-/**
- * Публикация (подтверждение) новой фотографии
- * @param {Object} socket Сокет пользователя
- * @param {Object} data
- */
-var approvePhoto = function (socket, data) {
-    var iAm = socket.handshake.usObj;
+    photo.s = status.PUBLIC;
+    photo.stdate = photo.cdate = photo.adate = photo.sdate = new Date();
 
-    return photoEditPrefetch(iAm, data, 'approve')
-        .bind({})
-        .spread(function (photo, canModerate) {
-            photoCheckPublickRequired(photo);
+    const { rel } = await this.call('photo.update', { photo });
 
-            this.oldPhotoObj = photo.toObject();
-            this.canModerate = canModerate;
+    await Promise.all([
+        // Recalculate the number of photos of the owner
+        userPCountUpdate(photo.user, -1, 1, 0),
+        // Subscribe photo's owner to it and set to him stamp of comments view,
+        // to correctly count the number of new comments until he'll enter the page next time
+        this.call(
+            'subscr.subscribeUserByIds',
+            { user: photo.user, objId: photo._id, setCommentView: true, type: 'photo' }
+        )
+    ]);
 
-            photo.s = status.PUBLIC;
-            photo.stdate = photo.cdate = photo.adate = photo.sdate = new Date();
-
-            return photoUpdate(iAm, photo);
-        })
-        .spread(function (photoSaved, rel) {
-            // Пересчитываем кол-во фото у владельца
-            userPCountUpdate(photoSaved.user, -1, 1, 0);
-
-            // Подписываем владельца фотографии на неё и устанавливаем ему время просмотра комментариев,
-            // чтобы для него корректо считались кол-во новых пока сам не зайдет
-            subscribeUserByIds(photoSaved.user, photoSaved._id, true, 'photo');
-
-            // Добавляем фото на карту
-            if (Utils.geo.check(photoSaved.geo)) {
-                photoToMap(photoSaved);
-            }
-
-            // Сохраняем в истории предыдущий статус
-            savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, this.canModerate);
-
-            // Заново выбираем данные для отображения
-            return core.givePhoto(iAm, { cid: photoSaved.cid, rel: rel });
-        })
-        .spread(function (photo, can) {
-            return { photo: photo, can: can };
-        })
-        .catch(function (err) {
-            if (err.changed === true) {
-                return { message: msg.changed, changed: true };
-            }
-            throw err;
-        });
-};
-
-/**
- * Активация/деактивация фото
- * @param {Object} socket Сокет пользователя
- * @param {Object} data
- */
-var activateDeactivate = function (socket, data) {
-    var iAm = socket.handshake.usObj;
-    var disable = !!data.disable;
-
-    if (disable && _.isEmpty(data.reason)) {
-        throw { message: msg.needReason };
+    // Add photo to map
+    if (Utils.geo.check(photo.geo)) {
+        await this.call('photo.photoToMap', { photo });
     }
 
-    return photoEditPrefetch(iAm, data, disable ? 'deactivate' : 'activate')
-        .bind({})
-        .spread(function (photo, canModerate) {
-            if (!disable) {
-                photoCheckPublickRequired(photo);
-            }
+    // Save previous status to history
+    await this.call('photo.saveHistory', { oldPhotoObj, photo, canModerate });
 
-            this.oldPhotoObj = photo.toObject();
-            this.canModerate = canModerate;
+    // Reselect the data to display
+    return this.call('photo.give', { cid: photo.cid, rel });
+}
 
-            photo.s = status[disable ? 'DEACTIVATE' : 'PUBLIC'];
-            photo.stdate = photo.cdate = new Date();
+// Activation/deactivation of photo
+async function activateDeactivate(data) {
+    const { reason, disable } = data;
 
-            return photoUpdate(iAm, photo);
-        })
-        .spread(function (photoSaved, rel) {
-            changePublicPhotoExternality(photoSaved, iAm, !disable);
+    if (disable && _.isEmpty(reason)) {
+        throw new BadParamsError(constantsError.PHOTO_NEED_REASON);
+    }
 
-            // Сохраняем в истории предыдущий статус
-            savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, this.canModerate, disable && data.reason);
+    const { photo, canModerate } = await this.call(
+        'photo.prefetchForEdit', { data, can: disable ? 'deactivate' : 'activate' }
+    );
 
-            // Заново выбираем данные для отображения
-            return core.givePhoto(iAm, { cid: photoSaved.cid, rel });
-        })
-        .spread(function (photo, can) {
-            return { photo, can };
-        })
-        .catch(function (err) {
-            if (err.changed === true) {
-                return { message: msg.changed, changed: true };
-            }
-            throw err;
-        });
-};
+    if (!disable) {
+        photoCheckPublickRequired(photo);
+    }
 
-/**
- * Удаляет из Incoming загруженное, но еще не созданное фото
- * @param {Object} iAm Объект пользователя
- * @param {Object} data
- */
-var removePhotoIncoming = Bluebird.method(function (iAm, data) {
+    const oldPhotoObj = photo.toObject();
+
+    photo.s = status[disable ? 'DEACTIVATE' : 'PUBLIC'];
+    photo.stdate = photo.cdate = new Date();
+
+    const { rel } = await this.call('photo.update', { photo });
+
+    await this.call('photo.changePublicExternality', { photo, makePublic: !disable });
+
+    // Save previous status to history
+    await this.call('photo.saveHistory', { oldPhotoObj, photo, canModerate, reason: disable && reason });
+
+    // Reselect the data to display
+    return this.call('photo.give', { cid: photo.cid, rel });
+}
+
+// Remove from 'incoming' directory uploaded but not created photo
+function removeIncoming({ file }) {
+    const { handshake: { usObj: iAm } } = this;
+
+    if (!file) {
+        throw new BadParamsError();
+    }
     if (!iAm.registered) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
-    return fs.unlinkAsync(path.join(incomeDir, data.file));
-});
+    return fs.unlinkAsync(path.join(incomeDir, file));
+};
 
-/**
- * Удаление фотографии
- * @param {Object} socket Сокет пользователя
- * @param {Object} data
- */
-var removePhoto = Bluebird.method(function (socket, data) {
-    var iAm = socket.handshake.usObj;
+// Photo removal
+async function remove(data) {
+    const { reason } = data;
 
-    if (_.isEmpty(data.reason)) {
-        throw { message: msg.needReason };
+    if (_.isEmpty(reason)) {
+        throw new BadParamsError(constantsError.PHOTO_NEED_REASON);
     }
 
-    return photoEditPrefetch(iAm, data, 'remove')
-        .bind({})
-        .spread(function (photo, canModerate) {
-            this.oldPhotoObj = photo.toObject();
-            this.canModerate = canModerate;
+    const { photo, canModerate } = await this.call('photo.prefetchForEdit', { data, can: 'remove' });
+    const oldPhotoObj = photo.toObject();
 
-            photo.s = status.REMOVE;
-            photo.stdate = photo.cdate = new Date();
+    photo.s = status.REMOVE;
+    photo.stdate = photo.cdate = new Date();
 
-            return photoUpdate(iAm, photo);
-        })
-        .spread(function (photoSaved, rel) {
-            // Сохраняем в истории предыдущий статус
-            savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, this.canModerate, data.reason);
+    const { rel } = await this.call('photo.update', { photo });
 
-            // Отписываем всех пользователей
-            unSubscribeObj(photoSaved._id);
+    // Save previous status to history
+    await this.call('photo.saveHistory', { oldPhotoObj, photo, canModerate, reason });
 
-            if (this.oldPhotoObj.s === status.PUBLIC) {
-                changePublicPhotoExternality(photoSaved, iAm);
-            }
+    // Unsubscribe all users from this photo
+    await this.call('subscr.unSubscribeObj', { objId: photo._id });
 
-            // Заново выбираем данные для отображения
-            return core.givePhoto(iAm, { cid: photoSaved.cid, rel });
-        })
-        .spread(function (photo, can) {
-            return { photo, can };
-        })
-        .catch(function (err) {
-            if (err.changed === true) {
-                return { message: msg.changed, changed: true };
-            }
-            throw err;
-        });
-});
-
-/**
- * Восстановление фотографии
- * @param {Object} socket Сокет пользователя
- * @param {Object} data
- */
-var restorePhoto = Bluebird.method(function (socket, data) {
-    var iAm = socket.handshake.usObj;
-
-    if (_.isEmpty(data.reason)) {
-        throw { message: msg.needReason };
+    if (oldPhotoObj.s === status.PUBLIC) {
+        await this.call('photo.changePublicExternality', { photo, makePublic: false });
     }
 
-    return photoEditPrefetch(iAm, data, 'restore')
-        .bind({})
-        .spread(function (photo, canModerate) {
-            photoCheckPublickRequired(photo);
+    // Reselect the data to display
+    return this.call('photo.give', { cid: photo.cid, rel });
+}
 
-            this.oldPhotoObj = photo.toObject();
-            this.canModerate = canModerate;
+// Restore removed photo
+async function restore(data) {
+    const { reason } = data;
 
-            photo.s = status.PUBLIC;
-            photo.stdate = photo.cdate = new Date();
-
-            return photoUpdate(iAm, photo);
-        })
-        .spread(function (photoSaved, rel) {
-            // Сохраняем в истории предыдущий статус
-            savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, this.canModerate, data.reason);
-
-            changePublicPhotoExternality(photoSaved, iAm, true);
-
-            // Заново выбираем данные для отображения
-            return core.givePhoto(iAm, { cid: photoSaved.cid, rel: rel });
-        })
-        .spread(function (photo, can) {
-            return { photo: photo, can: can };
-        })
-        .catch(function (err) {
-            if (err.changed === true) {
-                return { message: msg.changed, changed: true };
-            }
-            throw err;
-        });
-});
-
-/**
- * Отдаем фотографию для её страницы
- * @param {Object} iAm Объект пользователя
- * @param {Object} data
- */
-export const givePhotoForPage = Bluebird.method(function (iAm, data) {
-    if (!_.isObject(data)) {
-        throw ({ message: msg.badParams });
+    if (_.isEmpty(reason)) {
+        throw new BadParamsError(constantsError.PHOTO_NEED_REASON);
     }
-    var cid = Number(data.cid);
+
+    const { photo, canModerate } = await this.call('photo.prefetchForEdit', { data, can: 'restore' });
+
+    photoCheckPublickRequired(photo);
+
+    const oldPhotoObj = photo.toObject();
+
+    photo.s = status.PUBLIC;
+    photo.stdate = photo.cdate = new Date();
+
+    const { rel } = await this.call('photo.update', { photo });
+
+    // Save previous status to history
+    await this.call('photo.saveHistory', { oldPhotoObj, photo, canModerate, reason });
+
+    await this.call('photo.changePublicExternality', { photo, makePublic: true });
+
+    // Reselect the data to display
+    return this.call('photo.give', { cid: photo.cid, rel });
+}
+
+// Give photo for its page
+export async function giveForPage({ cid, forEdit }) {
+    cid = Number(cid);
+
     if (!cid || cid < 1) {
-        throw ({ message: msg.badParams });
+        throw new BadParamsError();
     }
 
-    return core.givePhoto(iAm, { cid, fullView: true, countView: !data.forEdit, forEdit: data.forEdit })
-        .spread(function (photo, can) {
-            return { photo, can, forEdit: !!photo.user.settings };
-        });
-});
+    const { photo, can } = await this.call('photo.give', { cid, fullView: true, countView: !forEdit, forEdit });
 
-export const givePhotoPrevNextCids = async function (cid) {
-    const [prev, next] = await* [
+    return { photo, can, forEdit: !!photo.user.settings };
+}
+
+async function givePrevNextCids({ cid }) {
+    const [prev, next] = await Promise.all([
         Photo.findOne({ cid: { $lt: cid }, s: 5 }, { _id: 0, cid: 1 }, { lean: true }).sort({ cid: -1 }).exec(),
         Photo.findOne({ cid: { $gt: cid }, s: 5 }, { _id: 0, cid: 1 }, { lean: true }).sort({ cid: 1 }).exec()
-    ];
+    ]);
 
     return { prev: prev && prev.cid, next: next && next.cid };
-};
+}
 
 /**
- * Отдаем полную галерею с учетом прав и фильтров в компактном виде
- * @param iAm Объект пользователя
- * @param filter Объект фильтра (распарсенный)
- * @param data Объект параметров, включая стринг фильтра
- * @param user_id _id пользователя, если хотим галерею только для него получить
+ * Return full gallery based of user's rights and filters in compact view
+ * @param filter Filter object (parsed)
+ * @param userId _id of user, if we need gallery by user
  */
-var givePhotos = Bluebird.method(function (iAm, filter, data, user_id) {
-    var skip = Math.abs(Number(data.skip)) || 0;
-    var limit = Math.min(data.limit || 40, 100);
-    var buildQueryResult = buildPhotosQuery(filter, user_id, iAm);
-    var query = buildQueryResult.query;
-    var fieldsSelect;
+async function givePhotos({ filter, options: { skip = 0, limit = 40 }, userId }) {
+    const { handshake: { usObj: iAm } } = this;
+
+    skip = Math.abs(Number(skip)) || 0;
+    limit = Math.min(Math.abs(Number(limit)), 100) || 40;
+
+    const buildQueryResult = buildPhotosQuery(filter, userId, iAm);
+    const { query } = buildQueryResult;
+
+    let shortRegionsHash;
+    let photos = [];
+    let count = 0;
 
     if (query) {
         if (filter.geo) {
@@ -1408,170 +1182,141 @@ var givePhotos = Bluebird.method(function (iAm, filter, data, user_id) {
                 query.geo = { $size: 2 };
             }
         }
-        if (user_id) {
-            query.user = user_id;
+        if (userId) {
+            query.user = userId;
         }
 
-        // Для подсчета новых комментариев нужны _id, а для проверки на изменение - ucdate
-        fieldsSelect = iAm.registered ? compactFieldsForRegWithRegions : compactFieldsWithRegions;
+        // To calculate new comments we need '_id', for checking of changes - 'ucdate'
+        const fieldsSelect = iAm.registered ? compactFieldsForRegWithRegions : compactFieldsWithRegions;
 
-        return Bluebird.join(
-                Photo.findAsync(query, fieldsSelect, { lean: true, skip: skip, limit: limit, sort: { sdate: -1 } }),
-                Photo.countAsync(query)
-            )
-            .bind({})
-            .spread(function (photos, count) {
-                this.count = count;
+        [photos, count] = await Promise.all([
+            Photo.find(query, fieldsSelect, { lean: true, skip, limit, sort: { sdate: -1 } }).exec(),
+            Photo.count(query).exec()
+        ]);
 
-                if (!iAm.registered || !photos.length) {
-                    // Если аноним или фотографий нет, сразу возвращаем
-                    return photos;
-                } else {
-                    // Если пользователь залогинен, заполняем кол-во новых комментариев для каждого объекта
-                    return userObjectRelController.fillObjectByRels(photos, iAm.user._id, 'photo');
+        // If user is logged, fill amount of new comments for each object
+        if (iAm.registered && photos.length) {
+            await userObjectRelController.fillObjectByRels(photos, iAm.user._id, 'photo');
+        }
+
+        if (photos.length) {
+            if (iAm.registered) {
+                for (const photo of photos) {
+                    delete photo._id;
+                    delete photo.vdate;
+                    delete photo.ucdate;
                 }
-            })
-            .then(function (photos) {
-                var photo;
-                var shortRegionsHash;
-                var shortRegionsParams;
-                var i = photos.length;
-
-                if (i) {
-                    if (iAm.registered) {
-                        while (i--) {
-                            photo = photos[i];
-                            delete photo._id;
-                            delete photo.vdate;
-                            delete photo.ucdate;
-                        }
-                    }
-
-                    // Заполняем для каждой фотографии краткие регионы и хэш этих регионов
-                    shortRegionsParams = regionController.getShortRegionsParams(buildQueryResult.rhash);
-                    shortRegionsHash = regionController.genObjsShortRegionsArr(photos, shortRegionsParams.lvls, true);
-                }
-
-                return {
-                    photos: photos,
-                    filter: { r: buildQueryResult.rarr, rp: filter.rp, s: buildQueryResult.s, geo: filter.geo },
-                    rhash: shortRegionsHash,
-                    count: this.count,
-                    skip: skip
-                };
-            });
-    }
-    return Bluebird.resolve({
-        photos: [],
-        filter: { r: buildQueryResult.rarr, rp: filter.rp, s: buildQueryResult.s, geo: filter.geo },
-        count: 0,
-        skip: skip
-    });
-});
-
-// Отдаем последние публичные фотографии на главной
-var givePhotosPublicIndex = (function () {
-    var options = { skip: 0, limit: 30 };
-    var filter = { s: [status.PUBLIC] };
-
-    return function (iAm) {
-        // Всегда выбираем заново, т.к. могут быть региональные фильтры
-        return givePhotos(iAm, filter, options);
-    };
-}());
-
-// Отдаем последние публичные "Где это?" фотографии для главной
-var givePhotosPublicNoGeoIndex = (function () {
-    var options = { skip: 0, limit: 30 };
-    var filter = { geo: ['0'], s: [status.PUBLIC] };
-
-    return function (iAm) {
-        // Выбираем заново, т.к. могут быть региональные фильтры
-        return givePhotos(iAm, filter, options);
-    };
-}());
-
-var filterProps = { geo: [], r: [], rp: [], s: [] };
-var delimeterParam = '_';
-var delimeterVal = '!';
-export function parseFilter(filterString) {
-    var filterParams = filterString && filterString.split(delimeterParam);
-    var filterParam;
-    var filterVal;
-    var filterValItem;
-    var dividerIndex;
-    var result = {};
-    var i;
-    var j;
-
-    if (filterParams) {
-        for (i = filterParams.length; i--;) {
-            filterParam = filterParams[i];
-            dividerIndex = filterParam.indexOf(delimeterVal);
-
-            if (dividerIndex > 0) {
-                filterVal = filterParam.substr(dividerIndex + 1);
-                filterParam = filterParam.substring(0, dividerIndex);
             }
 
-            if (filterProps[filterParam] !== undefined) {
-                if (typeof filterProps[filterParam] === 'boolean') {
-                    result[filterParam] = true;
-                } else if (filterParam === 'r') {
-                    if (filterVal === '0') {
-                        result.r = 0;
-                    } else {
-                        filterVal = filterVal.split(delimeterVal).map(Number);
-                        if (Array.isArray(filterVal) && filterVal.length) {
-                            result.r = [];
-                            for (j = filterVal.length; j--;) {
-                                filterValItem = filterVal[j];
-                                if (filterValItem) {
-                                    result.r.unshift(filterValItem);
-                                }
-                            }
-                            if (!result.r.length) {
-                                delete result.r;
-                            }
-                        }
-                    }
-                } else if (filterParam === 'rp') {
-                    //Regions phantom. Неактивные регионы фильтра
+            // For each photo fill short regions and hash of this regions
+            const shortRegionsParams = regionController.getShortRegionsParams(buildQueryResult.rhash);
+            shortRegionsHash = regionController.genObjsShortRegionsArr(photos, shortRegionsParams.lvls, true);
+        }
+    }
+
+    return {
+        skip, count, photos, rhash: shortRegionsHash,
+        filter: { r: buildQueryResult.rarr, rp: filter.rp, s: buildQueryResult.s, geo: filter.geo }
+    };
+}
+
+// Returns public photos for index page
+const givePublicIndex = (function () {
+    const options = { skip: 0, limit: 30 };
+    const filter = { s: [status.PUBLIC] };
+
+    return function () {
+        // Always select again, because could be region filters
+        return this.call('photo.givePhotos', { filter, options });
+    };
+}());
+
+// Returns last public "Where is it?" photos for index page
+const givePublicNoGeoIndex = (function () {
+    const options = { skip: 0, limit: 30 };
+    const filter = { geo: ['0'], s: [status.PUBLIC] };
+
+    return function () {
+        // Always select again, because could be region filters
+        return this.call('photo.givePhotos', { filter, options });
+    };
+}());
+
+const filterProps = { geo: [], r: [], rp: [], s: [] };
+const delimeterParam = '_';
+const delimeterVal = '!';
+export function parseFilter(filterString) {
+    const filterParams = filterString && filterString.split(delimeterParam);
+    const result = {};
+    let filterVal;
+    let filterValItem;
+
+    if (!filterParams) {
+        return result;
+    }
+
+    for (let filterParam of filterParams) {
+        const dividerIndex = filterParam.indexOf(delimeterVal);
+
+        if (dividerIndex > 0) {
+            filterVal = filterParam.substr(dividerIndex + 1);
+            filterParam = filterParam.substring(0, dividerIndex);
+        }
+
+        if (filterProps[filterParam] !== undefined) {
+            if (typeof filterProps[filterParam] === 'boolean') {
+                result[filterParam] = true;
+            } else if (filterParam === 'r') {
+                if (filterVal === '0') {
+                    result.r = 0;
+                } else {
                     filterVal = filterVal.split(delimeterVal).map(Number);
                     if (Array.isArray(filterVal) && filterVal.length) {
-                        result.rp = [];
-                        for (j = filterVal.length; j--;) {
-                            filterValItem = filterVal[j];
+                        result.r = [];
+                        for (filterValItem of filterVal) {
                             if (filterValItem) {
-                                result.rp.unshift(filterValItem);
+                                result.r.push(filterValItem);
                             }
                         }
-                        if (!result.rp.length) {
-                            delete result.rp;
+                        if (!result.r.length) {
+                            delete result.r;
                         }
                     }
-                } else if (filterParam === 's') {
-                    filterVal = filterVal.split(delimeterVal);
-                    if (Array.isArray(filterVal) && filterVal.length) {
-                        result.s = [];
-                        for (j = filterVal.length; j--;) {
-                            filterValItem = filterVal[j];
-                            if (filterValItem) {
-                                filterValItem = Number(filterValItem);
-                                if (!isNaN(filterValItem)) { //0 должен входить, поэтому проверка на NaN
-                                    result.s.unshift(filterValItem);
-                                }
+                }
+            } else if (filterParam === 'rp') {
+                // Regions phantom. Inactive filter regions
+                filterVal = filterVal.split(delimeterVal).map(Number);
+                if (Array.isArray(filterVal) && filterVal.length) {
+                    result.rp = [];
+                    for (filterValItem of filterVal) {
+                        if (filterValItem) {
+                            result.rp.push(filterValItem);
+                        }
+                    }
+                    if (!result.rp.length) {
+                        delete result.rp;
+                    }
+                }
+            } else if (filterParam === 's') {
+                filterVal = filterVal.split(delimeterVal);
+                if (Array.isArray(filterVal) && filterVal.length) {
+                    result.s = [];
+                    for (filterValItem of filterVal) {
+                        if (filterValItem) {
+                            filterValItem = Number(filterValItem);
+                            if (!isNaN(filterValItem)) { // 0 must be included, that is why check for NaN
+                                result.s.push(filterValItem);
                             }
                         }
-                        if (!result.s.length) {
-                            delete result.s;
-                        }
                     }
-                } else if (filterParam === 'geo') {
-                    filterVal = filterVal.split(delimeterVal);
-                    if (Array.isArray(filterVal) && filterVal.length === 1) {
-                        result.geo = filterVal;
+                    if (!result.s.length) {
+                        delete result.s;
                     }
+                }
+            } else if (filterParam === 'geo') {
+                filterVal = filterVal.split(delimeterVal);
+                if (Array.isArray(filterVal) && filterVal.length === 1) {
+                    result.geo = filterVal;
                 }
             }
         }
@@ -1580,242 +1325,249 @@ export function parseFilter(filterString) {
     return result;
 }
 
-// Отдаем общую галерею
-var givePhotosPS = Bluebird.method(function (iAm, data) {
-    if (!_.isObject(data)) {
-        throw { message: msg.badParams };
-    }
+// Return general gallery
+function givePS(options) {
+    const filter = options.filter ? parseFilter(options.filter) : {};
 
-    var filter = data.filter ? parseFilter(data.filter) : {};
     if (!filter.s) {
         filter.s = [status.PUBLIC];
     }
 
-    return givePhotos(iAm, filter, data);
-});
+    return this.call('photo.givePhotos', { filter, options });
+};
 
-// Отдаем галерею пользователя
-var giveUserPhotos = Bluebird.method(function (iAm, data) {
-    if (!_.isObject(data) || !data.login) {
-        throw { message: msg.badParams };
+// Returns user's gallery
+async function giveUserGallery({ login, filter, skip, limit }) {
+    if (!login) {
+        throw new BadParamsError();
     }
 
-    return User.getUserID(data.login)
-        .then(function (user_id) {
-            if (!user_id) {
-                throw { message: msg.noUser };
-            }
-            var filter = data.filter ? parseFilter(data.filter) : {};
+    const { handshake: { usObj: iAm } } = this;
+    const userId = await User.getUserID(login);
 
-            // Если фильтр по регионам не установлен, это чужая галерея, есть свои регионы
-            // и стоит настройка не фильтровать по ним галереи пользователя, то задаем весь мир
-            if (filter.r === undefined && iAm.registered && iAm.user.login !== data.login && iAm.user.regions && iAm.user.regions.length && iAm.user.settings && !iAm.user.settings.r_f_user_gal) {
-                filter.r = 0;
-            }
+    if (!userId) {
+        throw new NotFoundError(constantsError.NO_SUCH_USER);
+    }
 
-            return givePhotos(iAm, filter, data, user_id);
-        });
-});
+    filter = filter ? parseFilter(filter) : {};
 
-// Отдаем последние фотографии, ожидающие подтверждения
-var givePhotosForApprove = Bluebird.method(function (iAm, data) {
-    var query = { s: status.READY };
+    // If regions filter is not set, this is another's gallery, current user has own regions and
+    // exists setting not filter gallery by own regions, then set whole world
+    if (filter.r === undefined && iAm.registered && iAm.user.login !== login &&
+        iAm.user.regions && iAm.user.regions.length && iAm.user.settings && !iAm.user.settings.r_f_user_gal) {
+        filter.r = 0;
+    }
+
+    return this.call('photo.givePhotos', { filter, options: { skip, limit }, userId });
+}
+
+// Returns last photos for approve
+async function giveForApprove(data) {
+    const { handshake: { usObj: iAm } } = this;
+    const query = { s: status.READY };
 
     if (!iAm.registered || iAm.user.role < 5) {
-        throw { message: msg.deny };
-    }
-    if (!_.isObject(data)) {
-        throw { message: msg.badParams };
+        throw new AuthorizationError();
     }
     if (iAm.isModerator) {
         _.assign(query, iAm.mod_rquery);
     }
 
-    return Photo.findAsync(query, compactFieldsWithRegions, {
-            lean: true,
-            sort: { sdate: -1 },
-            skip: data.skip || 0,
-            limit: Math.min(data.limit || 20, 100)
-        })
-        .then(function (photos) {
-            if (!photos) {
-                throw { message: msg.noPhoto };
-            }
-            var shortRegionsHash = regionController.genObjsShortRegionsArr(photos, iAm.mod_rshortlvls, true);
+    const photos = await Photo.find(query, compactFieldsWithRegions, {
+        lean: true,
+        sort: { sdate: -1 },
+        skip: data.skip || 0,
+        limit: Math.min(data.limit || 20, 100)
+    }).exec();
 
-            return { photos: photos, rhash: shortRegionsHash };
-        });
-});
+    const shortRegionsHash = regionController.genObjsShortRegionsArr(photos, iAm.mod_rshortlvls, true);
 
-/**
- * Берем массив до и после указанной фотографии пользователя указанной длины
- * @param {Object} iAm Объект пользователя
- * @param {Object} data
- */
-var giveUserPhotosAround = Bluebird.method(function (iAm, data) {
-    var cid = Number(data && data.cid);
-    var limitL = Math.min(Number(data.limitL), 100);
-    var limitR = Math.min(Number(data.limitR), 100);
+    return { photos, rhash: shortRegionsHash };
+};
+
+// Returns array before and after specified photo (with specified length)
+async function giveUserPhotosAround({ cid, limitL, limitR }) {
+    const { handshake: { usObj: iAm } } = this;
+
+    cid = Number(cid);
+    limitL = Math.min(Math.abs(Number(limitL)), 100);
+    limitR = Math.min(Math.abs(Number(limitR)), 100);
 
     if (!cid || (!limitL && !limitR)) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
-    return findPhoto(iAm, { cid })
-        .then(function (photo) {
-            var filter = iAm.registered && iAm.user.settings && !iAm.user.settings.r_f_photo_user_gal ? { r: 0 } : {};
-            var query = buildPhotosQuery(filter, photo.user, iAm).query;
-            var promises = [];
+    const photo = await this.call('photo.find', { query: { cid } });
 
-            query.user = photo.user;
+    const filter = iAm.registered && iAm.user.settings && !iAm.user.settings.r_f_photo_user_gal ? { r: 0 } : {};
+    const query = buildPhotosQuery(filter, photo.user, iAm).query;
+    const promises = new Array(2);
 
-            if (limitL) {
-                query.sdate = { $gt: photo.sdate };
-                promises.push(Photo.findAsync(query, compactFields, { lean: true, sort: { sdate: 1 }, limit: limitL }));
-            }
+    query.user = photo.user;
 
-            if (limitR) {
-                query.sdate = { $lt: photo.sdate };
-                promises.push(Photo.findAsync(query, compactFields, {
-                    lean: true,
-                    sort: { sdate: -1 },
-                    limit: limitR
-                }));
-            }
-
-            return Bluebird.all(promises);
-        })
-        .spread(function (photosL, photosR) {
-            return { left: photosL || [], right: photosR || [] };
-        });
-});
-
-// Берем массив ближайших фотографий
-var giveNearestPhotos = Bluebird.method(function (data) {
-    if (!data || !Utils.geo.checkLatLng(data.geo)) {
-        throw { message: msg.badParams };
-    }
-    data.limit = Number(data.limit);
-    data.geo.reverse();
-
-    return core.giveNearestPhotos(data)
-        .then(function (photos) {
-            return { photos: photos || [] };
-        });
-});
-
-// Отдаем непубличные фотографии пользователя
-var giveUserPhotosPrivate = Bluebird.method(function (iAm, data) {
-    if (!iAm.registered || (iAm.user.role < 5 && iAm.user.login !== data.login)) {
-        throw { message: msg.deny };
+    if (limitL) {
+        query.sdate = { $gt: photo.sdate };
+        promises[0] = Photo.find(query, compactFields, { lean: true, sort: { sdate: 1 }, limit: limitL }).exec();
     }
 
-    return User.getUserID(data.login)
-        .then(function (userid) {
-            var query = { user: userid, s: { $nin: [status.PUBLIC] } };
+    if (limitR) {
+        query.sdate = { $lt: photo.sdate };
+        promises[1] = Photo.find(query, compactFields, { lean: true, sort: { sdate: -1 }, limit: limitR }).exec();
+    }
 
-            if (iAm.isModerator) {
-                query.s.$nin.push(status.REMOVE);
-                _.assign(query, iAm.mod_rquery);
-            }
+    const [left = [], right = []] = await Promise.all(promises);
 
-            if (data.startTime || data.endTime) {
-                query.sdate = {};
-                if (data.startTime) {
-                    query.sdate.$gte = new Date(data.startTime);
-                }
-                if (data.endTime) {
-                    query.sdate.$lte = new Date(data.endTime);
-                }
-            }
+    return { left, right };
+}
 
-            return Photo.find(query, compactFields, { lean: true, sort: { sdate: -1 } });
-        })
-        .then(function (photos) {
-            return { photos: photos };
-        });
-});
+// Returns array of nearest photos
+async function giveNearestPhotos({ geo, except, distance, limit, skip }) {
+    if (!Utils.geo.checkLatLng(geo)) {
+        throw new BadParamsError();
+    }
 
-// Отдаем новые фотографии
-var givePhotosFresh = Bluebird.method(function (iAm, data) {
+    geo.reverse();
+
+    const query = { geo: { $near: geo }, s: status.PUBLIC };
+    const options = { lean: true };
+
+    if (_.isNumber(except) && except > 0) {
+        query.cid = { $ne: except };
+    }
+
+    if (_.isNumber(distance) && distance > 0 && distance < 100000) {
+        query.geo.$maxDistance = distance;
+    } else {
+        query.geo.$maxDistance = 2000;
+    }
+
+    if (_.isNumber(limit) && limit > 0 && limit < 30) {
+        options.limit = limit;
+    } else {
+        options.limit = 30;
+    }
+
+    if (_.isNumber(skip) && skip > 0 && skip < 1000) {
+        options.skip = skip;
+    }
+
+    const photos = await Photo.find(query, compactFields, options).exec();
+
+    return { photos };
+}
+
+// Returns not public photos of user
+async function giveUserPhotosPrivate({ login, startTime, endTime }) {
+    const { handshake: { usObj: iAm } } = this;
+
+    if (!iAm.registered || (iAm.user.role < 5 && iAm.user.login !== login)) {
+        throw new AuthorizationError();
+    }
+
+    const userId = await User.getUserID(login);
+
+    if (!userId) {
+        throw new NotFoundError(constantsError.NO_SUCH_USER);
+    }
+
+    const query = { user: userId, s: { $nin: [status.PUBLIC] } };
+
+    if (iAm.isModerator) {
+        query.s.$nin.push(status.REMOVE);
+        Object.assign(query, iAm.mod_rquery);
+    }
+
+    if (startTime || endTime) {
+        query.sdate = {};
+
+        if (_.isNumber(startTime) && startTime > 0) {
+            query.sdate.$gte = new Date(startTime);
+        }
+        if (_.isNumber(endTime) && endTime > 0) {
+            query.sdate.$lte = new Date(endTime);
+        }
+    }
+
+    const photos = await Photo.find(query, compactFields, { lean: true, sort: { sdate: -1 } }).exec();
+
+    return { photos };
+}
+
+// Returns new photos
+async function giveFresh({ login, after, skip, limit }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!iAm.registered ||
-        (!data.login && iAm.user.role < 5) ||
-        (data.login && iAm.user.role < 5 && iAm.user.login !== data.login)) {
-        throw { message: msg.deny };
-    }
-    if (!_.isObject(data)) {
-        throw { message: msg.badParams };
+        (!login && iAm.user.role < 5) ||
+        (login && iAm.user.role < 5 && iAm.user.login !== login)) {
+        throw new AuthorizationError();
     }
 
-    return (data.login ? User.getUserID(data.login) : Bluebird.resolve)
-        .bind({})
-        .then(function (userid) {
-            var query = { s: status.NEW };
-            this.asModerator = iAm.user.login !== data.login && iAm.isModerator;
+    const userId = login ? await User.getUserID(login) : null;
 
-            if (this.asModerator) {
-                _.assign(query, iAm.mod_rquery);
-            }
-            if (userid) {
-                query.user = userid;
-            }
-            if (data.after) {
-                query.ldate = { $gt: new Date(data.after) };
-            }
+    const query = { s: status.NEW };
+    const asModerator = iAm.user.login !== login && iAm.isModerator;
 
-            return Photo.findAsync(
-                query,
-                compactFields,
-                { lean: true, skip: data.skip || 0, limit: Math.min(data.limit || 100, 100) }
-            );
-        })
-        .then(function (photos) {
-            var shortRegionsHash = regionController.genObjsShortRegionsArr(
-                photos || [],
-                this.asModerator ? iAm.mod_rshortlvls : iAm.rshortlvls,
-                true
-            );
-            return { photos: photos || [], rhash: shortRegionsHash };
-        });
-});
+    if (asModerator) {
+        _.assign(query, iAm.mod_rquery);
+    }
+    if (userId) {
+        query.user = userId;
+    }
+    if (after) {
+        query.ldate = { $gt: new Date(after) };
+    }
 
-// Отдаем разрешенные can для фото
-var giveCanPhoto = Bluebird.method(function (iAm, data) {
-    var cid = Number(data.cid);
+    const photos = await Photo.find(
+        query,
+        compactFields,
+        { lean: true, skip: Math.abs(skip || 0), limit: Math.min(Math.abs(limit || 100), 100) }
+    ).exec();
+
+    const shortRegionsHash = regionController.genObjsShortRegionsArr(
+        photos || [],
+        asModerator ? iAm.mod_rshortlvls : iAm.rshortlvls,
+        true
+    );
+
+    return { photos, rhash: shortRegionsHash };
+}
+
+// Return 'can' object for photo
+async function giveCan({ cid }) {
+    const { handshake: { usObj: iAm } } = this;
+
+    cid = Number(cid);
 
     if (!cid) {
-        throw { message: msg.noPhoto };
+        throw new NotFoundError(constantsError.NO_SUCH_PHOTO);
     }
 
     // Need to get can for anonymous too, but there is nothing to check with owner in this case, so do not populate him
-    return findPhoto(iAm, { cid }, null, null, iAm.registered ? true : false)
-        .then(function (photo) {
-            return { can: permissions.getCan(photo, iAm) };
-        });
-});
+    const photo = await this.call('photo.find', { query: { cid }, populateUser: iAm.registered ? true : false });
+
+    return { can: permissions.getCan(photo, iAm) };
+}
 
 function photoCheckPublickRequired(photo) {
     if (!photo.r0) {
-        throw { message: msg.mustCoord };
+        throw new NoticeError(constantsError.PHOTO_NEED_COORD);
     }
 
     if (_.isEmpty(photo.title)) {
-        throw { message: 'You must fill in the title of the photo' };
+        throw new InputError(constantsError.PHOTO_NEED_TITLE);
     }
 
     if (!_.isNumber(photo.year) || !_.isNumber(photo.year2) ||
-        photo.year < 1826 || photo.year > 2000 ||
-        photo.year2 < photo.year && photo.year2 > 2000) {
-        throw {
-            message: 'Published photos must be in the range of 1826-2000 years'
-        };
+        photo.year < 1826 || photo.year > 2000 || photo.year2 < photo.year && photo.year2 > 2000) {
+        throw new NoticeError(constantsError.PHOTO_YEARS_CONSTRAINT);
     }
 
     return true;
 }
 
-var photoValidate = function (newValues, oldValues, can) {
-    var result = {};
+function photoValidate(newValues, oldValues, can) {
+    const result = {};
 
     if (!newValues) {
         return result;
@@ -1901,8 +1653,8 @@ var photoValidate = function (newValues, oldValues, can) {
 
             if (_.isString(newValues.watersignCustom)) {
                 newValues.watersignCustom = newValues.watersignCustom
-                    .match(constants.photo.watersignPattern).join('')
-                    .trim().replace(/ {2,}/g, ' ').substr(0, constants.photo.watersignLength);
+                    .match(watersignPattern).join('')
+                    .trim().replace(/ {2,}/g, ' ').substr(0, watersignLength);
             }
             if (newValues.watersignCustom === null ||
                 _.isString(newValues.watersignCustom) && newValues.watersignCustom.length) {
@@ -1946,723 +1698,654 @@ var photoValidate = function (newValues, oldValues, can) {
             }
         }
     }
+
     return result;
-};
+}
 
-/**
- * Сохраняем информацию о фотографии
- * @param {Object} iAm Объект пользователя
- * @param {Object} data
- */
-var savePhoto = function (iAm, data) {
-    var oldGeo;
-    var newGeo;
-    var geoToNull;
-    var newValues;
-    var newRegions;
+// Save photo's changes
+async function save(data) {
+    const { handshake: { usObj: iAm } } = this;
 
-    return photoEditPrefetch(iAm, data, 'edit')
-        .bind({})
-        .spread(function (photo, canModerate) {
-            this.photo = photo;
-            this.oldPhotoObj = photo.toObject();
-            this.isMine = User.isEqual(this.oldPhotoObj.user, iAm.user);
-            this.canModerate = canModerate;
+    const { photo, canModerate } = await this.call('photo.prefetchForEdit', { data, can: 'edit' });
 
-            var can = permissions.getCan(this.oldPhotoObj, iAm, this.isMine, canModerate);
-            var changes = photoValidate(data.changes, this.oldPhotoObj, can);
+    const oldPhotoObj = photo.toObject();
+    const isMine = User.isEqual(oldPhotoObj.user, iAm.user);
+    const can = permissions.getCan(oldPhotoObj, iAm, isMine, canModerate);
+    const changes = photoValidate(data.changes, oldPhotoObj, can);
 
-            if (_.isEmpty(changes)) {
-                throw { emptySave: true };
-            }
+    if (_.isEmpty(changes)) {
+        return { emptySave: true };
+    }
 
-            this.parsedFileds = {};
+    const parsedFileds = {};
 
-            // Сразу парсим нужные поля, чтобы далее сравнить их с существующим распарсеным значением
-            for (const field of parsingFieldsSet) {
-                if (changes[field]) {
-                    this.parsedFileds = Utils.inputIncomingParse(changes[field]);
-                    changes[field] = this.parsedFileds.result;
-                }
-            };
+    // Immediately parse some fields, to compare them furter with existing unparsed values
+    for (const field of parsingFieldsSet) {
+        if (changes[field]) {
+            parsedFileds[field] = Utils.inputIncomingParse(changes[field]);
+            changes[field] = parsedFileds[field].result;
+        }
+    }
 
-            // Новые значения действительно изменяемых свойств
-            newValues = Utils.diff(
-                _.pick(
-                    changes,
-                    'geo', 'year', 'year2', 'dir', 'title', 'address', 'desc', 'source', 'author',
-                    'nowaterchange',
-                    'watersignIndividual', 'watersignOption', 'watersignCustom',
-                    'disallowDownloadOriginIndividual', 'disallowDownloadOrigin'
-                ),
-                this.oldPhotoObj
+    // The new values of actually modifying properties
+    const newValues = Utils.diff(
+        _.pick(
+            changes,
+            'geo', 'year', 'year2', 'dir', 'title', 'address', 'desc', 'source', 'author',
+            'nowaterchange',
+            'watersignIndividual', 'watersignOption', 'watersignCustom',
+            'disallowDownloadOriginIndividual', 'disallowDownloadOrigin'
+        ),
+        oldPhotoObj
+    );
+
+    if (_.isEmpty(newValues) && !changes.hasOwnProperty('region')) {
+        return { emptySave: true };
+    }
+
+    Object.assign(photo, newValues);
+
+    const geoToNull = newValues.hasOwnProperty('geo') && newValues.geo === undefined; // Flag of coordinates nullify
+    const oldGeo = oldPhotoObj.geo;
+    const newGeo = newValues.geo;
+    let newRegions;
+
+    // If coorditates were nullyfied or don't exist, region must be assign
+    if (geoToNull || _.isEmpty(oldGeo) && !newGeo) {
+        if (changes.region) {
+            // If region assign manually, find its ancestry and assing to object
+            newRegions = regionController.setObjRegionsByRegionCid(
+                photo,
+                changes.region,
+                ['cid', 'parents', 'title_en', 'title_local']
             );
-
-            if (_.isEmpty(newValues) && !changes.hasOwnProperty('region')) {
-                throw { emptySave: true };
+            // If false was returned, means such region doesn't exists
+            if (!newRegions) {
+                throw new NotFoundError(constantsError.NO_SUCH_REGION);
             }
+        } else {
+            // Clear region assignment
+            regionController.clearObjRegions(photo);
+            newRegions = [];
+        }
+    }
 
-            _.assign(this.photo, newValues);
+    // If coordinates have been added/changed, request regions by them
+    if (newGeo) {
+        newRegions = await this.call('region.setObjRegionsByGeo',
+            { obj: photo, geo: newGeo, returnArrFields: { _id: 0, cid: 1, parents: 1, title_en: 1, title_local: 1 } }
+        );
+    }
 
-            if (newValues.hasOwnProperty('geo') && newValues.geo === undefined) {
-                geoToNull = true; // Флаг обнуления координат
+    // If photo is public, check that all required fields is filled
+    if (photo.s === status.READY || photo.s === status.PUBLIC) {
+        photoCheckPublickRequired(photo);
+    }
+
+    // If photo watersign setting has been changed, send it to reconvert
+    let reconvert = false;
+    if (newValues.hasOwnProperty('watersignIndividual') ||
+        newValues.hasOwnProperty('watersignOption') && newValues.watersignOption !== oldPhotoObj.watersignOption ||
+        newValues.hasOwnProperty('watersignCustom') && newValues.watersignCustom !== oldPhotoObj.watersignCustom) {
+
+        reconvert = true;
+        photo.convqueue = true;
+
+        photo.watersignText = getUserWaterSign(photo.user, photo);
+        photo.watersignTextApplied = undefined; // Delete applied time of previous watersign appliance
+
+        if (newValues.hasOwnProperty('watersignOption') && newValues.watersignOption !== oldPhotoObj.watersignOption) {
+            photo.markModified('watersignOption');
+        }
+    }
+
+    let saveHistory = false;
+    if (photo.s !== status.NEW) {
+        photo.cdate = new Date();
+
+        const propsThatCountForUCDate = _.omit(
+            newValues,
+            'nowaterchange', // Do not notify when admin change permission to change watersign/download
+            'watersignIndividual', 'watersignOption', 'watersignCustom', // Do not notify when watersign changed
+            'disallowDownloadOriginIndividual', 'disallowDownloadOrigin' // Do not notify when download changed
+        );
+
+        if (!_.isEmpty(propsThatCountForUCDate)) {
+            photo.ucdate = photo.cdate;
+        }
+
+        saveHistory = true;
+    }
+
+    const { rel } = await this.call('photo.update', { photo });
+
+    if (photo.s === status.PUBLIC) {
+        if (geoToNull) {
+            // If coordinates has been nullified and photo is public, means it was on map, and we should remove it from map.
+            // We must do it before coordinates removal, because clusterization looks on it
+            await this.call('photo.photoFromMap', { photo: oldPhotoObj });
+
+        } else if (!_.isEmpty(photo.geo)) {
+            // Old values of changing properties
+            const oldValues = _.transform(newValues, (result, val, key) => {
+                result[key] = oldPhotoObj[key];
+            }, {});
+
+            if (newGeo || !_.isEmpty(_.pick(oldValues, 'dir', 'title', 'year', 'year2'))) {
+                // If coordinates have been added/changed or cluster's poster might be changed, then recalculate map.
+                // Coordinates must be get exactly from 'photo.geo', not from 'newGeo',
+                // because 'newGeo' can be 'undefined' and this case could mean, that coordinates haven't been changed,
+                // but data for poster might have been changed
+                await this.call('photo.photoToMap', { photo, geoPhotoOld: oldGeo, yearPhotoOld: oldPhotoObj.year });
             }
+        }
+    }
 
-            oldGeo = this.oldPhotoObj.geo;
-            newGeo = newValues.geo;
+    // If this photo was published (not neccessary currently public) and regions have been changed,
+    // set them to photo's comments
+    if (photo.s >= status.PUBLIC && newRegions) {
+        const commentAdditionUpdate = {};
 
-            // Если координата обнулилась или её нет, то должны присвоить регион
-            if (geoToNull || _.isEmpty(oldGeo) && !newGeo) {
-                if (changes.region) {
-                    // Если регион присвоен вручную, определяем его родитлей и проставляем объекту
-                    newRegions = regionController.setObjRegionsByRegionCid(
-                        photo,
-                        changes.region,
-                        ['cid', 'parents', 'title_en', 'title_local']
-                    );
-                    // Если вернулся false, значит переданного региона не существует
-                    if (!newRegions) {
-                        throw { message: msg.noRegion };
-                    }
-                } else {
-                    // Очищаем привязку к регионам
-                    regionController.clearObjRegions(photo);
-                    newRegions = [];
-                }
-            }
+        if (geoToNull) {
+            commentAdditionUpdate.$unset = { geo: 1 };
+        } else if (newGeo) {
+            commentAdditionUpdate.$set = { geo: newGeo };
+        }
 
-            // Если координата добавилась/изменилась, запрашиваем по ней новые регионы фотографии
-            if (newGeo) {
-                return regionController.setObjRegionsByGeo(
-                        photo, newGeo,
-                        { _id: 0, cid: 1, parents: 1, title_en: 1, title_local: 1 }
-                    )
-                    .then(function (regionsArr) {
-                        newRegions = regionsArr;
-                        return null;
-                    });
-            }
-        })
-        .then(function () {
-            // Проверяем, что заполненны обязательные поля для опубликованных
-            if (this.photo.s === status.READY || this.photo.s === status.PUBLIC) {
-                photoCheckPublickRequired(this.photo);
-            }
-
-            // If photo watersign setting changed, send it to reconvert
-            if (newValues.hasOwnProperty('watersignIndividual') ||
-                newValues.hasOwnProperty('watersignOption') && newValues.watersignOption !== this.oldPhotoObj.watersignOption ||
-                newValues.hasOwnProperty('watersignCustom') && newValues.watersignCustom !== this.oldPhotoObj.watersignCustom) {
-
-                this.reconvert = true;
-                this.photo.convqueue = true;
-
-                this.photo.watersignText = getUserWaterSign(this.photo.user, this.photo);
-                this.photo.watersignTextApplied = undefined; // Delete applied time of previous watersign appliance
-
-                if (newValues.hasOwnProperty('watersignOption') && newValues.watersignOption !== this.oldPhotoObj.watersignOption) {
-                    this.photo.markModified('watersignOption');
-                }
-            }
-
-            if (this.photo.s !== status.NEW) {
-                this.photo.cdate = new Date();
-
-                var propsThatCountForUCDate = _.omit(
-                    newValues,
-                    'nowaterchange', // Do not notify when admin change permission to change watersign/download
-                    'watersignIndividual', 'watersignOption', 'watersignCustom', // Do not notify when watersign changed
-                    'disallowDownloadOriginIndividual', 'disallowDownloadOrigin' // Do not notify when download changed
-                );
-
-                if (!_.isEmpty(propsThatCountForUCDate)) {
-                    this.photo.ucdate = this.photo.cdate;
-                }
-
-                this.saveHistory = true;
-            }
-
-            var promise = photoUpdate(iAm, this.photo).bind(this);
-
-            if (geoToNull && this.photo.s === status.PUBLIC) {
-                // При обнулении координаты, если фото публичное, значит оно было на карте. Удаляем с карты.
-                // Мы должны удалить с карты до удаления координаты, так как декластеризация смотрит на неё
-                promise = promise.tap(function () {
-                    photoFromMap(this.oldPhotoObj);
-                });
-            }
-
-            return promise;
-        })
-        .spread(function (photoSaved, rel) {
-            this.photo = photoSaved;
-            this.rel = rel;
-
-            var newKeys = Object.keys(newValues);
-            var oldValues = {}; // Старые значения изменяемых свойств
-
-            for (var i = newKeys.length; i--;) {
-                oldValues[newKeys[i]] = this.oldPhotoObj[newKeys[i]];
-            }
-
-            if (
-                photoSaved.s === status.PUBLIC && !_.isEmpty(photoSaved.geo) &&
-                (newGeo || !_.isEmpty(_.pick(oldValues, 'dir', 'title', 'year', 'year2')))
-            ) {
-                // Если фото публичное, добавилась/изменилась координата или есть чем обновить постер кластера, то пересчитываем на карте
-                // Здесь координата должна проверятся именно photoSaved.geo, а не newGeo,
-                // так как случай newGeo undefined может означать, что координата не изменилась, но для постера данные могли измениться
-                return photoToMap(photoSaved, oldGeo, this.oldPhotoObj.year);
-            }
-        })
-        .then(function () {
-            // Если это опубликованная фотография (не обязательно публичная) и изменились регионы,
-            // устанавливаем их возможным комментариям
-            if (this.photo.s >= status.PUBLIC && newRegions) {
-                var commentAdditionUpdate = {};
-                if (geoToNull) {
-                    commentAdditionUpdate.$unset = { geo: 1 };
-                } else if (newGeo) {
-                    commentAdditionUpdate.$set = { geo: newGeo };
-                }
-                regionController.updateObjsRegions(Comment, { obj: this.photo._id }, newRegions, commentAdditionUpdate);
-            }
-
-            // Сохраняем в истории предыдущий статус
-            if (this.saveHistory) {
-                savePhotoHistory(iAm, this.oldPhotoObj, this.photo, this.isMine ? false : this.canModerate, null, this.parsedFileds);
-            }
-
-            if (this.reconvert) {
-                photoConverter.addPhotos([{ cid: this.photo.cid }], 2);
-            }
-
-            // Заново выбираем данные для отображения
-            return core.givePhoto(iAm, { cid: this.photo.cid, rel: this.rel });
-        })
-        .spread(function (photo, can) {
-            return { photo, can, reconvert: this.reconvert };
-        })
-        .catch(function (err) {
-            if (err.changed === true) {
-                return { message: msg.changed, changed: true };
-            } else if (err.emptySave === true) {
-                return { emptySave: true };
-            }
-            throw err;
+        await this.call('region.updateObjsRegions', {
+            model: Comment, criteria: { obj: photo._id }, regions: newRegions, additionalUpdate: commentAdditionUpdate
         });
-};
+    }
+
+    if (saveHistory) {
+        await this.call(
+            'photo.saveHistory', { oldPhotoObj, photo, canModerate: isMine ? false : canModerate, parsedFileds }
+        );
+    }
+
+    if (reconvert) {
+        converter.addPhotos([{ cid: photo.cid }], 2);
+    }
+
+    // Reselect the data to display
+    return this.call('photo.give', { cid: photo.cid, rel }).then(result => ({ reconvert, ...result }));
+}
 
 // Фотографии и кластеры по границам
 // {z: Масштаб, bounds: [[]]}
-var getBounds = Bluebird.method(function (data) {
-    if (!_.isObject(data) || !Array.isArray(data.bounds) || !data.z) {
-        throw { message: msg.badParams };
-    }
-    // Реверсируем geo границы баунда
-    for (var i = data.bounds.length; i--;) {
-        data.bounds[i][0].reverse();
-        data.bounds[i][1].reverse();
+function getByBounds(data) {
+    const { bounds, z, startAt } = data;
+
+    if (!Array.isArray(bounds) || !_.isNumber(z) || z < 1) {
+        throw new BadParamsError();
     }
 
-    return core.getBounds(data)
-        .spread(function (photos, clusters) {
-            return { photos: photos, clusters: clusters, startAt: data.startAt, z: data.z };
-        });
-});
+    // Reverse bound's borders
+    for (const bound of bounds) {
+        bound[0].reverse();
+        bound[1].reverse();
+    }
+
+    return this.call('photo.getBounds', data).then(result => ({ startAt, z, ...result}));
+}
 
 // Sends selected photos for convert (By admin, whom pressed reconvert button on photo page)
-var convertPhotos = Bluebird.method(function (iAm, data) {
+async function convert({ cids = []}) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
-    if (!Array.isArray(data) || !data.length) {
-        throw { message: msg.badParams };
+    if (!Array.isArray(cids)) {
+        throw new BadParamsError();
     }
 
-    var cids = [];
+    cids = cids.filter(cid => _.isNumber(cid) && cid > 0);
 
-    for (var i = 0; i < data.length; i++) {
-        data[i].cid = Number(data[i].cid);
-        if (data[i].cid > 0) {
-            cids.push(data[i].cid);
-        }
-    }
     if (!cids.length) {
-        throw { message: msg.badParams };
+        throw new BadParamsError();
     }
 
-    return Photo
+    const photos = await Photo
         .find({ cid: { $in: cids } }, { cid: 1, user: 1, watersignOption: 1, watersignCustom: 1 }, { lean: true })
-        .populate({ path: 'user', select: { _id: 0, login: 1, watersignCustom: 1, settings: 1 } })
-        .execAsync()
-        .then(function (photos) {
-            var converterData = photos.map(function (photo) {
-                return { cid: photo.cid, watersign: getUserWaterSign(photo.user, photo) };
-            });
+        .populate({ path: 'user', select: { _id: 0, login: 1, watersignCustom: 1, settings: 1 } }).exec();
 
-            if (converterData.length) {
-                Photo.updateAsync({ cid: { $in: cids } }, { $set: { convqueue: true } }, { multi: true });
-            }
+    const converterData = photos.map(photo => ({ cid: photo.cid, watersign: getUserWaterSign(photo.user, photo) }));
 
-            return photoConverter.addPhotos(converterData, 3);
-        });
-});
+    if (converterData.length) {
+        await Photo.update({ cid: { $in: cids } }, { $set: { convqueue: true } }, { multi: true }).exec();
+    }
+
+    return converter.addPhotos(converterData, 3);
+}
 
 // Sends all photo for convert
-var convertPhotosAll = Bluebird.method(function (iAm, data) {
+function convertAll({ min, max, r }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!iAm.isAdmin) {
-        throw { message: msg.deny };
-    }
-    if (!_.isObject(data)) {
-        throw { message: msg.badParams };
+        throw new AuthorizationError();
     }
 
-    var params = { priority: 4 };
-    var region;
+    const params = { priority: 4 };
 
-    if (_.isNumber(data.min) && data.min > 0) {
-        params.min = data.min;
+    if (_.isNumber(min) && min > 0) {
+        params.min = min;
     }
-    if (_.isNumber(data.max) && data.max > 0 && (!params.min || data.max >= params.min)) {
-        params.max = data.max;
+    if (_.isNumber(max) && max > 0 && (!params.min || max >= params.min)) {
+        params.max = max;
     }
-    if (_.isNumber(data.r) && data.r > 0) {
-        region = regionController.getRegionFromCache(data.r);
+    if (_.isNumber(r) && r > 0) {
+        const region = regionController.getRegionFromCache(r);
+
         if (region) {
             params.region = { level: _.size(region.parents), cid: region.cid };
         }
     }
 
-    return photoConverter.addPhotosAll(params);
-});
+    return converter.addPhotosAll(params);
+}
 
 // Sends user's photo for convert
-var usersWhoConvertingNonIndividualPhotos = {};
-var convertUserPhotos = Bluebird.method(function (iAm, data) {
-    if (!_.isObject(data) || !data.login) {
-        throw { message: msg.badParams };
+const usersWhoConvertingNonIndividualPhotos = new Set();
+async function convertByUser({ login, resetIndividual, r }) {
+    const { handshake: { usObj: iAm } } = this;
+
+    if (!login) {
+        throw new BadParamsError();
     }
-    if (!iAm.registered || iAm.user.login !== data.login && !iAm.isAdmin) {
-        throw { message: msg.deny };
+    if (!iAm.registered || iAm.user.login !== login && !iAm.isAdmin) {
+        throw new AuthorizationError();
     }
-    if (usersWhoConvertingNonIndividualPhotos[data.login]) {
-        throw { message: 'You have already sent a request and it is still running. Try again later' };
+    if (usersWhoConvertingNonIndividualPhotos.has(login)) {
+        throw new NoticeError(constantsError.PHOTO_CONVERT_PROCEEDING);
     }
 
-    var stampStart = new Date();
-    var region;
-    if (_.isNumber(data.r) && data.r > 0) {
-        region = regionController.getRegionFromCache(data.r);
+    const stampStart = new Date();
+    let region;
+    if (_.isNumber(r) && r > 0) {
+        region = regionController.getRegionFromCache(r);
 
         if (region) {
             region = { level: _.size(region.parents), cid: region.cid };
         }
     }
 
-    var historyCalls = [];
+    const historyCalls = [];
 
-    return User.findOneAsync({ login: data.login }, { login: 1, watersignCustom: 1, settings: 1 }, { lean: true })
-        .bind({})
-        .then(function (user) {
-            if (!user) {
-                throw { message: msg.noUser };
+    const user = await User.findOne({ login }, { login: 1, watersignCustom: 1, settings: 1 }, { lean: true }).exec();
+    if (!user) {
+        throw new NotFoundError(constantsError.NO_SUCH_USER);
+    }
+
+    usersWhoConvertingNonIndividualPhotos.add(login);
+    logger.info(
+        `Starting sending to convert ${resetIndividual ? '' : 'non-'}individual photos`,
+        `of user ${user.login} ${region ? `in region ${region.cid}` : ''}. Invoked by  ${iAm.user.login}`
+    );
+
+    const query = { user: user._id };
+
+    if (region) {
+        query[`r${region.level}`] = region.cid;
+    }
+
+    if (resetIndividual) {
+        query.watersignIndividual = true;
+    } else {
+        query.$or = [{ watersignIndividual: null }, { watersignIndividual: false }];
+    }
+
+    const photos = await Photo.find(
+        query,
+        { _id: 0, cid: 1, s: 1, user: 1, ldate: 1, cdate: 1, ucdate: 1, watersignText: 1 },
+        { lean: true, sort: { sdate: -1 } }
+    ).exec();
+
+    if (_.isEmpty(photos)) {
+        return { added: 0, time: 0 };
+    }
+
+    const stamp = new Date();
+    const count = photos.length;
+    const itsMe = user.login === iAm.user.login;
+    const watersignText = getUserWaterSign(user);
+
+    try {
+        for (const photoOld of photos) {
+
+            if (photoOld.s === status.NEW || watersignText === photoOld.watersignText) {
+                // New photo has no history yet, so don't need to write history row about watersign
+                // If watersignText did not really changed, do not save history, only reconvert
+                continue;
             }
 
-            usersWhoConvertingNonIndividualPhotos[data.login] = true;
-            logger.info('Starting sending to convert ' + (data.resetIndividual ? '' : 'non ') + 'individual photos of user %s %s %s', user.login, region ? 'in region ' + region.cid : '', 'Invoked by ' + iAm.user.login);
+            const photo = _.clone(photoOld);
+            photo.cdate = stamp;
+            photo.watersignText = watersignText;
 
-            this.query = { user: user._id };
-
-            if (region) {
-                this.query['r' + region.level] = region.cid;
+            if (resetIndividual) {
+                photo.watersignIndividual = undefined;
             }
 
-            if (data.resetIndividual) {
-                this.query.watersignIndividual = true;
-            } else {
-                this.query.$or = [{ watersignIndividual: null }, { watersignIndividual: false }];
+            const canModerate = itsMe ? null : permissions.canModerate(photoOld, iAm);
+
+            if (!itsMe && !canModerate) {
+                // If at least for one photo user have no rights, deny whole operation
+                throw new AuthorizationError();
             }
 
-            this.user = user;
+            historyCalls.push({ iAm, oldPhotoObj: photoOld, photo, canModerate: itsMe ? false : canModerate });
+        }
 
-            return Photo.findAsync(this.query, {
-                _id: 0,
-                cid: 1,
-                s: 1,
-                user: 1,
-                ldate: 1,
-                cdate: 1,
-                ucdate: 1,
-                watersignText: 1
-            }, { lean: true, sort: { sdate: -1 } });
-        })
-        .then(function (photos) {
+        const update = { $set: {}, $unset: { watersignTextApplied: 1 } };
 
-            if (_.isEmpty(photos)) {
-                return { added: 0, time: 0 };
-            }
+        if (resetIndividual) {
+            update.$unset.watersignIndividual = 1;
+        }
 
-            var photo;
-            var photoOld;
-            var canModerate;
-            var stamp = new Date();
-            var count = photos.length;
-            var itsMe = this.user.login === iAm.user.login;
-            var watersignText = getUserWaterSign(this.user);
+        // New photos don't have to update cdate and ucdate
+        const updateNew = _.cloneDeep(update);
+        const queryNew = _.clone(query);
+        queryNew.s = status.NEW;
 
-            this.count = count;
+        query.s = { $ne: status.NEW };
+        update.$set.cdate = stamp;
 
-            for (var i = 0; i < photos.length; i++) {
-                photoOld = photos[i];
+        if (watersignText) {
+            update.$set.watersignText = updateNew.$set.watersignText = watersignText;
+        } else {
+            update.$unset.watersignText = updateNew.$unset.watersignText = 1;
+        }
 
-                if (photoOld.s === status.NEW || watersignText === photoOld.watersignText) {
-                    // New photo has no history yet, so don't need to write history row about watersign
-                    // If watersignText did not really changed, do not save history, only reconvert
-                    continue;
-                }
+        if (_.isEmpty(updateNew.$set)) {
+            delete updateNew.$set;
+        }
 
-                photo = _.clone(photoOld);
-                photo.cdate = stamp;
-                photo.watersignText = watersignText;
+        await Promise.all([
+            Photo.update(query, update, { multi: true }).exec(),
+            Photo.update(queryNew, updateNew, { multi: true }).exec(),
+            Promise.all(historyCalls.map(hist => this.call('photo.saveHistory', hist)))
+        ]);
 
-                if (data.resetIndividual) {
-                    photo.watersignIndividual = undefined;
-                }
-
-                canModerate = itsMe ? null : permissions.canModerate(photoOld, iAm);
-
-                if (!itsMe && !canModerate) {
-                    // If at least for one photo user have no rights, deny whole operation
-                    photos = null;
-                    throw { message: msg.deny };
-                }
-
-                historyCalls.push([iAm, photoOld, photo, itsMe ? false : canModerate]);
-            }
-
-            var update = { $set: {}, $unset: { watersignTextApplied: 1 } };
-
-            if (data.resetIndividual) {
-                update.$unset.watersignIndividual = 1;
-            }
-
-            // New photos don't have to update cdate and ucdate
-            var updateNew = _.cloneDeep(update);
-            var queryNew = _.clone(this.query);
-            queryNew.s = status.NEW;
-
-            this.query.s = { $ne: status.NEW };
-            update.$set.cdate = stamp;
-
-            if (watersignText) {
-                update.$set.watersignText = updateNew.$set.watersignText = watersignText;
-            } else {
-                update.$unset.watersignText = updateNew.$unset.watersignText = 1;
-            }
-
-            if (_.isEmpty(updateNew.$set)) {
-                delete updateNew.$set;
-            }
-
-            photos = null;
-
-            return Bluebird.join(
-                    Photo.updateAsync(this.query, update, { multi: true }),
-                    Photo.updateAsync(queryNew, updateNew, { multi: true }),
-                    Bluebird.all(historyCalls.map(function (hist) {
-                        return savePhotoHistory.apply(undefined, hist);
-                    }))
-                )
-                .then(function () {
-                    return photoConverter.addPhotosAll({
-                        login: data.login,
-                        priority: 2,
-                        region: region,
-                        onlyWithoutTextApplied: true
-                    });
-                })
-                .then(function (conveyorResult) {
-                    return {
-                        updated: count,
-                        conveyorAdded: conveyorResult.conveyorAdded,
-                        time: Date.now() - stampStart
-                    };
-                });
-        })
-        .finally(function () {
-            delete usersWhoConvertingNonIndividualPhotos[data.login];
-            historyCalls = null;
-            logger.info('Finish in %ds sending to convert %d ' + (data.resetIndividual ? '' : 'non ') + 'individual photos of user %s %s. %s', (Date.now() - stampStart) / 1000, this.count, data.login, region ? 'in region ' + region.cid : '', 'Invoked by ' + iAm.user.login);
+        const conveyorResult = await converter.addPhotosAll({
+            login,
+            priority: 2,
+            region,
+            onlyWithoutTextApplied: true
         });
-});
 
-var resetIndividualDownloadOrigin = Bluebird.method(function (iAm, data) {
-    if (!_.isObject(data) || !data.login) {
-        throw { message: msg.badParams };
+        return { updated: count, conveyorAdded: conveyorResult.conveyorAdded, time: Date.now() - stampStart };
+    } finally {
+        usersWhoConvertingNonIndividualPhotos.delete(login);
+        logger.info(
+            `Finish in ${(Date.now() - stampStart) / 1000}s sending to convert ${count}`,
+            `${resetIndividual ? '' : 'non-'}individual photos`,
+            `of user ${login} ${region ? `in region ${region.cid}` : ''}. Invoked by ${iAm.user.login}`
+        );
     }
-    if (!iAm.registered || iAm.user.login !== data.login && !iAm.isAdmin) {
-        throw { message: msg.deny };
+}
+
+async function resetIndividualDownloadOrigin({ login, r }) {
+    const { handshake: { usObj: iAm } } = this;
+
+    if (!login) {
+        throw new BadParamsError();
+    }
+    if (!iAm.registered || iAm.user.login !== login && !iAm.isAdmin) {
+        throw new AuthorizationError();
     }
 
-    var stampStart = new Date();
-    var region;
-    if (_.isNumber(data.r) && data.r > 0) {
-        region = regionController.getRegionFromCache(data.r);
+    const stampStart = new Date();
+    let region;
+
+    if (_.isNumber(r) && r > 0) {
+        region = regionController.getRegionFromCache(r);
 
         if (region) {
             region = { level: _.size(region.parents), cid: region.cid };
         }
     }
 
-    return User.findOneAsync({ login: data.login }, { login: 1, settings: 1 }, { lean: true })
-        .bind({})
-        .then(function (user) {
-            if (!user) {
-                throw { message: msg.noUser };
-            }
+    const user = await User.findOne({ login }, { login: 1, settings: 1 }, { lean: true }).exec();
+    if (!user) {
+        throw new NotFoundError(constantsError.NO_SUCH_USER);
+    }
 
-            var query = { user: user._id, disallowDownloadOriginIndividual: true };
+    const query = { user: user._id, disallowDownloadOriginIndividual: true };
 
-            if (region) {
-                query['r' + region.level] = region.cid;
-            }
+    if (region) {
+        query[`r${region.level}`] = region.cid;
+    }
 
-            return Photo.updateAsync(query, { $unset: { disallowDownloadOriginIndividual: 1 } }, { multi: true });
-        })
-        .spread(function (updated) {
-            var spent = Date.now() - stampStart;
+    const { n: updated = 0 } = await Photo.update(
+        query, { $unset: { disallowDownloadOriginIndividual: 1 } }, { multi: true }
+    ).exec();
 
-            logger.info(
-                'Resetting individual download setting in %d photos has finished in %ds of user %s %s. %s', updated,
-                spent / 1000, data.login, region ? 'in region ' + region.cid : '', 'Invoked by ' + iAm.user.login
-            );
+    const time = Date.now() - stampStart;
 
-            return { updated: updated, time: spent };
-        });
-});
+    logger.info(
+        `Resetting individual download setting in ${updated} photos has finished in ${time / 1000}s`,
+        `of user ${login} ${region ? `in region ${region.cid}` : ''}. Invoked by ${iAm.user.login}`
+    );
+
+    return { updated, time };
+}
 
 /**
- * Строим параметры запроса (query) для запроса фотографий с фильтром с учетом прав на статусы и регионы
+ * Build request parameters (query) for requesting photo with filter considering rights on statuses and regions
  * @param filter
  * @param forUserId
- * @param iAm Объект пользователя сессии
+ * @param iAm Session object of user
  */
 export function buildPhotosQuery(filter, forUserId, iAm) {
-    var query, //Результирующий запрос
-        query_pub, //Запрос в рамках публичных регионов
-        query_mod, //Запрос в рамках модерируемых регионов
-        rquery_pub,
-        rquery_mod,
+    let query; // Result query
+    let queryPub; // Request within the public regions
+    let queryMod; // Request within the moderated regions
+    let rqueryPub;
+    let rqueryMod;
 
-        regions_cids = [],
-        regions_arr = [],
-        regions_arr_all = [],//Массив объектов регионов, включая неактивные (phantom в фильтре)
-        regions_hash = {},
+    let regionsArr = [];
+    let regionsCids = [];
+    let regionsHash = {};
+    let regionsArrAll = []; // Array of regions objects, including inactive (phantom in filters)
 
-        squery_public_have = !filter.s || !filter.s.length || filter.s.includes(5),
-        squery_public_only = !iAm.registered || filter.s && filter.s.length === 1 && filter.s[0] === status.PUBLIC,
+    const squeryPublicHave = !filter.s || !filter.s.length || filter.s.includes(5);
+    const squeryPublicOnly = !iAm.registered || filter.s && filter.s.length === 1 && filter.s[0] === status.PUBLIC;
 
-        region,
-        contained,
-        result = { query: null, s: [], rcids: [], rarr: [] },
+    const result = { query: null, s: [], rcids: [], rarr: [] };
 
-        someVar,
-        i,
-        j;
-
-    if (!squery_public_only && filter.s && filter.s.length) {
-        //Если есть публичный, убираем, так как непубличный squery будет использован только в rquery_mod
+    if (!squeryPublicOnly && filter.s && filter.s.length) {
+        // If public exists, remove, because non-public squery is used only in rqueryMod
         filter.s = _.without(filter.s, status.PUBLIC, !iAm.isAdmin ? status.REMOVE : undefined);
     }
 
     if (Array.isArray(filter.r) && filter.r.length) {
-        regions_arr_all = regionController.getRegionsArrFromCache(filter.r);
+        regionsArrAll = regionController.getRegionsArrFromCache(filter.r);
 
         if (Array.isArray(filter.rp) && filter.rp.length) {
-            //Если есть массив неактивных (phantom) регионов фильтра, берем разницу
-            regions_cids = _.difference(filter.r, filter.rp);
-            regions_arr = regionController.getRegionsArrFromCache(regions_cids);
+            // If exists array of inactive (phantom) regions of filter, take the difference
+            regionsCids = _.difference(filter.r, filter.rp);
+            regionsArr = regionController.getRegionsArrFromCache(regionsCids);
         } else {
-            regions_cids = filter.r;
-            regions_arr = regions_arr_all;
+            regionsCids = filter.r;
+            regionsArr = regionsArrAll;
         }
 
-        someVar = regionController.buildQuery(regions_arr);
-        rquery_pub = rquery_mod = someVar.rquery;
-        regions_hash = someVar.rhash;
+        const regionQuery = regionController.buildQuery(regionsArr);
+        rqueryPub = rqueryMod = regionQuery.rquery;
+        regionsHash = regionQuery.rhash;
     } else if (filter.r === undefined && iAm.registered && iAm.user.regions.length && (!forUserId || !forUserId.equals(iAm.user._id))) {
-        regions_hash = iAm.rhash;
-        regions_cids = _.pluck(iAm.user.regions, 'cid');
-        regions_arr = regions_arr_all = regionController.getRegionsArrFromHash(regions_hash, regions_cids);
+        regionsHash = iAm.rhash;
+        regionsCids = _.map(iAm.user.regions, 'cid');
+        regionsArr = regionsArrAll = regionController.getRegionsArrFromHash(regionsHash, regionsCids);
     }
-    if (regions_cids.length) {
-        regions_cids = regions_cids.map(Number);
+    if (regionsCids.length) {
+        regionsCids = regionsCids.map(Number);
     }
 
-    if (squery_public_only) {
-        query_pub = {};  //Анонимам или при фильтрации для публичных отдаем только публичные
+    if (squeryPublicOnly) {
+        queryPub = {};  // Give only public photos to anonymous or when filter for public is active
 
         if (filter.r === undefined && iAm.registered && iAm.user.regions.length) {
-            rquery_pub = iAm.rquery; //Если фильтр не указан - отдаем по собственным регионам
+            rqueryPub = iAm.rquery; // If filter is not specified - give by own regions
         }
     } else if (forUserId && forUserId.equals(iAm.user._id)) {
-        //Собственную галерею отдаем без удаленных(не админам) и без регионов в настройках, только по filter.r
-        query_mod = {};
+        // Own gallery give without removed regions(for non-admins) and without regions in settings, only by filter.r
+        queryMod = {};
     } else {
         if (filter.r === undefined && iAm.user.regions.length) {
-            rquery_pub = rquery_mod = iAm.rquery; //Если фильтр не указан - отдаем по собственным регионам
+            rqueryPub = rqueryMod = iAm.rquery; // If filter not specified - give by own regions
         }
 
         if (iAm.isAdmin) {
-            //Админам отдаем все статусы
-            query_mod = {};
+            // Give all statises to the admins
+            queryMod = {};
         } else if (!iAm.user.role || iAm.user.role < 5) {
-            //Ниже чем модераторам региона отдаем только публичные
-            query_pub = {};
+            // Give only public to users, who role is below regions moderators
+            queryPub = {};
         } else if (iAm.isModerator) {
-            //Региональным модераторам отдаем в своих регионах без удаленных, в остальных - только публичные
+            // To regions moderators give within theirs regions without removed regions,
+            // within other regions - only public regions
 
             if (!iAm.user.mod_regions.length || iAm.mod_regions_equals) {
-                //Глобальным модераторам и региональным, у которых совпадают регионы модерирования с собственными,
-                //(т.е. область модерирования включает в себя пользовательскую)
-                //отдаем пользовательскую область как модерируемую
-                query_mod = {};
+                // Give area as moderated for global moderators or regional moderators,
+                // whose moderators regions match with own, i.e. moderation area includes users area
+                queryMod = {};
             } else if (filter.r === 0 || !iAm.user.regions.length) {
-                //Если запрашиваются все пользовательские регионы (т.е. весь мир),
-                //то делаем глобальный запрос по публичным, а со статусами по модерируемым
-                query_pub = {};
-                query_mod = {};
-                rquery_mod = iAm.mod_rquery;
+                // If all users regions requested (i.e. whole world)
+                // do global request for public, and with statuses for moderated
+                queryPub = {};
+                queryMod = {};
+                rqueryMod = iAm.mod_rquery;
             } else {
-                //В случае, когда массив пользовательских и модерируемых регионов различается,
-                //"вычитаем" публичные из модерируемых, получая два новых чистых массива
+                // If arrays of users and moderated regions are different,
+                // "subtract" public from moderated, obtaining two new clean arrays
 
-                var regions_pub = [], //Чистый массив публичных регионов
-                    regions_mod = []; //Чистый массив модерируемых регионов
+                const regionsPub = []; // Pure array of public regions
+                const regionsMod = []; // Pure array of moderated regions
 
-                //Если сам пользовательский регион или один из его родителей является модерируемым,
-                //то включаем его в массив модерируемых
-                for (i = regions_arr.length; i--;) {
-                    region = regions_arr[i];
-                    contained = false;
+                // If user region or one of its parent is moderated,
+                // then include it into array of moderation regions
+                for (const region of regionsArr) {
+                    let contained = false;
 
                     if (iAm.mod_rhash[region.cid]) {
                         contained = true;
                     } else if (region.parents) {
-                        for (j = region.parents.length; j--;) {
-                            if (iAm.mod_rhash[region.parents[j]]) {
+                        for (const parentCid of region.parents) {
+                            if (iAm.mod_rhash[parentCid]) {
                                 contained = true;
                                 break;
                             }
                         }
                     }
                     if (contained) {
-                        regions_mod.push(region);
+                        regionsMod.push(region);
                     } else {
-                        regions_pub.push(region);
+                        regionsPub.push(region);
                     }
                 }
 
-                //Если один из модерируемых регионов является дочерним какому-либо пользовательскому региону,
-                //то включаем такой модерируемый регион в массив модерируемых,
-                //несмотря на то, что родительский лежит в массиве публичных
-                for (i = iAm.user.mod_regions.length; i--;) {
-                    region = iAm.mod_rhash[iAm.user.mod_regions[i].cid];
+                // If one of moderated regions is a child to one of users regions,
+                // then include that moderated region in array of moderated,
+                // despite the fact that the parent is an array of public
+                for (let region of iAm.user.mod_regions) {
+                    region = iAm.mod_rhash[region.cid];
                     if (region.parents) {
-                        for (j = region.parents.length; j--;) {
-                            if (regions_hash[region.parents[j]]) {
-                                regions_mod.push(region);
+                        for (const parentCid of region.parents) {
+                            if (regionsHash[parentCid]) {
+                                regionsMod.push(region);
                             }
                         }
                     }
                 }
 
-                if (regions_pub.length) {
-                    query_pub = {};
-                    someVar = regionController.buildQuery(regions_pub);
-                    rquery_pub = someVar.rquery;
+                if (regionsPub.length) {
+                    const regionQuery = regionController.buildQuery(regionsPub);
+                    rqueryPub = regionQuery.rquery;
+                    queryPub = {};
                 }
-                if (regions_mod.length) {
-                    query_mod = {};
-                    someVar = regionController.buildQuery(regions_mod);
-                    rquery_mod = someVar.rquery;
+                if (regionsMod.length) {
+                    const regionQuery = regionController.buildQuery(regionsMod);
+                    rqueryMod = regionQuery.rquery;
+                    queryMod = {};
                 }
             }
         }
     }
 
-    if (query_pub && squery_public_have) {
-        query_pub.s = status.PUBLIC;
-        if (rquery_pub) {
-            _.assign(query_pub, rquery_pub);
+    if (queryPub && squeryPublicHave) {
+        queryPub.s = status.PUBLIC;
+        if (rqueryPub) {
+            _.assign(queryPub, rqueryPub);
         }
         result.s.push(status.PUBLIC);
     }
-    if (!squery_public_have) {
-        //Если указан фильтр и в нем нет публичных, удаляем запрос по ним
-        query_pub = undefined;
+    if (!squeryPublicHave) {
+        // If filter specified and doesn't contain public, delete query for public
+        queryPub = undefined;
     }
-    if (query_mod) {
+    if (queryMod) {
         if (filter.s && filter.s.length) {
-            if (!query_pub && squery_public_have) {
-                //Если запроса по публичным нет, но должен, то добавляем публичные в модерируемые
-                //Это произойдет с админами и глобальными модераторами, так как у них один query_mod
+            if (!queryPub && squeryPublicHave) {
+                // If query for public doesn't exists, but it has to, add public to moderated
+                // It happens to the admins and global moderators, because they have one queryMod
                 filter.s.push(status.PUBLIC);
             }
             if (filter.s.length === 1) {
-                query_mod.s = filter.s[0];
+                queryMod.s = filter.s[0];
             } else {
-                query_mod.s = { $in: filter.s };
+                queryMod.s = { $in: filter.s };
             }
             Array.prototype.push.apply(result.s, filter.s);
         } else if (!iAm.isAdmin) {
-            query_mod.s = { $ne: status.REMOVE };
+            queryMod.s = { $ne: status.REMOVE };
         }
 
-        if (rquery_mod) {
-            _.assign(query_mod, rquery_mod);
+        if (rqueryMod) {
+            _.assign(queryMod, rqueryMod);
         }
     }
 
-    if (query_pub && query_mod) {
-        query = {
-            $or: [
-                query_pub,
-                query_mod
-            ]
-        };
+    if (queryPub && queryMod) {
+        query = { $or: [queryPub, queryMod] };
     } else {
-        query = query_pub || query_mod;
+        query = queryPub || queryMod;
     }
 
     if (query) {
         result.query = query;
-        result.rcids = regions_cids;
-        result.rhash = regions_hash;
-        result.rarr = regions_arr_all;
+        result.rcids = regionsCids;
+        result.rhash = regionsHash;
+        result.rarr = regionsArrAll;
     }
 
-    //console.log(JSON.stringify(query));
+    // console.log(JSON.stringify(result));
     return result;
 }
 
-//Обнуляет статистику просмотров за день и неделю
-var planResetDisplayStat = (function () {
-    function resetStat() {
-        var setQuery = { vdcount: 0 },
-            needWeek = moment.utc().day() === 1; //Начало недели - понедельник
+// Resets the view statistics for the day and week
+const planResetDisplayStat = (function () {
+    async function resetStat() {
+        const setQuery = { vdcount: 0 };
+        const needWeek = moment.utc().day() === 1; // Week start - monday
 
         if (needWeek) {
             setQuery.vwcount = 0;
         }
-        Photo.update({ s: { $in: [status.PUBLIC, status.DEACTIVATE, status.REMOVE] } }, { $set: setQuery }, { multi: true }, function (err, count) {
-            planResetDisplayStat();
-            if (err) {
-                return logger.error(err);
-            }
-            logger.info('Reset day' + (needWeek ? ' and week ' : ' ') + 'display statistics for %s photos', count.n);
-        });
+
+        try {
+            const { n: count = 0 } = await Photo.update(
+                { s: { $in: [status.PUBLIC, status.DEACTIVATE, status.REMOVE] } }, { $set: setQuery }, { multi: true }
+            ).exec();
+
+            logger.info(`Reset day ${needWeek ? 'and week ' : ''}display statistics for ${count} photos`);
+        } catch (err) {
+            return logger.error(err);
+        }
+
+        planResetDisplayStat();
     }
 
     return function () {
@@ -2670,494 +2353,226 @@ var planResetDisplayStat = (function () {
     };
 }());
 
-/**
- * Возвращает историю редактирования объекта (фотографии)
- * @param iAm Объект пользователя сессии
- * @param data Объект
- */
-var giveObjHist = Bluebird.method(function (iAm, data) {
-    if (!_.isObject(data) || !Number(data.cid) || !Number(data.fetchId)) {
-        throw { message: msg.badParams };
+// Return history of photo edit
+async function giveObjHist({ cid, fetchId, showDiff }) {
+    if (!Number(cid) || cid < 1 || !Number(fetchId)) {
+        throw new BadParamsError();
     }
 
-    var cid = Number(data.cid);
-    var showDiff = !!data.showDiff;
+    const photo = await this.call('photo.find', { query: { cid }, fieldSelect: { _id: 0 } });
 
-    return findPhoto(iAm, { cid }, { _id: 0 })
-        .bind({})
-        .then(function (photo) {
-            var historySelect = { _id: 0, cid: 0 };
+    if (!photo) {
+        throw new NotFoundError(constantsError.NO_SUCH_PHOTO);
+    }
 
-            if (!showDiff) {
-                historySelect.diff = 0;
+    const historySelect = { _id: 0, cid: 0 };
+
+    if (!showDiff) {
+        historySelect.diff = 0;
+    }
+
+    const histories = await PhotoHistory
+        .find({ cid }, historySelect, { lean: true, sort: { stamp: 1 } })
+        .populate({ path: 'user', select: { _id: 0, login: 1, avatar: 1, disp: 1 } }).exec();
+
+    if (_.isEmpty(histories)) {
+        throw new NoticeError(constantsError.HISTORY_DOESNT_EXISTS);
+    }
+
+    const reasons = new Set();
+    const regions = {};
+    let result = [];
+    let haveDiff;
+    let j;
+
+    for (let i = 0; i < histories.length; i++) {
+        const history = histories[i];
+
+        if (!history.user || !history.stamp) {
+            logger.warn('Object %d has corrupted %dth history entry', cid, i);
+            continue;
+        }
+
+        const { values } = history;
+
+        // If it first entry with empty value, skip it
+        if (i === 0 && _.isEmpty(values)) {
+            continue;
+        }
+
+        if (values) {
+            // If selected diff-view and diff exists for this entry, assign diff value
+            if (history.diff) {
+                haveDiff = true;
+                for (j in history.diff) {
+                    values[j] = history.diff[j];
+                }
+                delete history.diff;
             }
 
-            return Bluebird.join(
-                User.findOneAsync({ _id: photo.user }, { _id: 0, login: 1, avatar: 1, disp: 1 }, { lean: true }),
-                PhotoHistory
-                    .find({ cid }, historySelect, { lean: true, sort: { stamp: 1 } })
-                    .populate({ path: 'user', select: { _id: 0, login: 1, avatar: 1, disp: 1 } })
-                    .execAsync()
-            );
-        })
-        .spread(function (photoUser, histories) {
-            if (_.isEmpty(histories)) {
-                throw { message: 'The object has no history' };
-            }
-            var haveDiff;
-
-            var regions = {};
-            var reasons = {};
-            var result = [];
-            var history;
-            var values;
-            var del;
-            var i;
-            var j;
-
-            for (i = 0; i < histories.length; i++) {
-                history = histories[i];
-
-                if (!history.user || !history.stamp) {
-                    logger.warn('Object %d has corrupted %dth history entry', cid, i);
-                    continue;
-                }
-
-                values = history.values;
-
-                // Если это первая запись с пустыми значениям - пропускаем
-                if (i === 0 && _.isEmpty(values)) {
-                    continue;
-                }
-
-                if (values) {
-                    // Если выбран режим показа разницы и в этой записи она есть, присваиваем значения из разницы
-                    if (history.diff) {
-                        haveDiff = true;
-                        for (j in history.diff) {
-                            values[j] = history.diff[j];
-                        }
-                        delete history.diff;
-                    }
-
-                    if (values.geo) {
-                        values.geo.reverse();
-                    }
-
-                    // Если в этой записи измененись регионы, добавляем каждый из них в хэш для последующей выборки
-                    if (values.regions) {
-                        for (j = values.regions.length; j--;) {
-                            regions[values.regions[j]] = 1;
-                        }
-                    }
-                }
-
-                // Убираем из удаленных поля year, т.к. будет выведено поле y
-                if (!_.isEmpty(history.del)) {
-                    del = history.del;
-                    history.del = [];
-                    for (j = 0; j < del.length; j++) {
-                        if (del[j] !== 'year' && del[j] !== 'year2') {
-                            history.del.push(del[j]);
-                        }
-                    }
-                    if (!history.del.length) {
-                        delete history.del;
-                    }
-                }
-
-                if (history.roleregion) {
-                    regions[history.roleregion] = 1;
-                }
-
-                // Если в этой записи есть причина (не нулевая/свободная), добавляем её в хэш для последующей выборки
-                if (!_.isEmpty(history.reason) && history.reason.cid) {
-                    reasons[history.reason.cid] = 1;
-                }
-
-                history.stamp = history.stamp.getTime();
-
-                result.push(history);
+            if (values.geo) {
+                values.geo.reverse();
             }
 
-            result = { hists: result, fetchId: data.fetchId, haveDiff: haveDiff };
-
-            // Если есть регионы, запрашиваем их объекты
-            if (Object.keys(regions).length) {
-                result.regions = regionController.fillRegionsHash(regions, ['cid', 'title_en']);
+            // If regions changed in this entry, add each of them into hash for further selection
+            if (values.regions) {
+                for (const region of values.regions) {
+                    regions[region] = 1;
+                }
             }
+        }
 
-            // Если есть причины, запрашиваем их заголовки
-            reasons = Object.keys(reasons);
-            if (reasons.length) {
-                result.reasons = getReasonHashFromCache(reasons);
+        // Remove years fields from removed, because 'y' field will be used
+        if (!_.isEmpty(history.del)) {
+            const del = history.del.filter(d => d !== 'year' && d !== 'year2');
+
+            if (del) {
+                history.del = del;
+            } else {
+                delete history.del;
             }
+        }
 
-            return result;
-        });
-});
+        if (history.roleregion) {
+            regions[history.roleregion] = 1;
+        }
 
-var getDownloadKey = Bluebird.method(function (iAm, data) {
-    var cid = Number(_.get(data, 'cid'));
+        // If this entry contains reason (not null/manual), add it to hash for further selection
+        if (!_.isEmpty(history.reason) && history.reason.cid) {
+            reasons.add(history.reason.cid);
+        }
+
+        history.stamp = history.stamp.getTime();
+
+        result.push(history);
+    }
+
+    result = { hists: result, fetchId, haveDiff };
+
+    // If regions exists, get theirs objects
+    if (Object.keys(regions).length) {
+        result.regions = regionController.fillRegionsHash(regions, ['cid', 'title_local']);
+    }
+
+    // If reasons exists, get theirs headers
+    if (reasons.size) {
+        result.reasons = getReasonHashFromCache([...reasons]);
+    }
+
+    return result;
+}
+
+async function getDownloadKey({ cid }) {
+    const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
+
+    cid = Number(cid);
 
     if (!cid) {
-        throw { message: msg.noPhoto };
+        throw new NotFoundError(constantsError.NO_SUCH_PHOTO);
     }
 
-    return findPhoto(iAm, { cid }, null, { lean: true }, true)
-        .bind({})
-        .then(function (photo) {
-            var canDownload = permissions.getCan(photo, iAm).download;
+    const photo = await this.call('photo.find', { query: { cid }, options: { lean: true }, populateUser: true });
+    const canDownload = permissions.getCan(photo, iAm).download;
 
-            if (canDownload === 'login') {
-                throw { message: msg.deny };
-            }
+    if (canDownload === 'login') {
+        throw new AuthorizationError();
+    }
 
-            this.origin = canDownload === true || canDownload === 'byrole';
+    const origin = canDownload === true || canDownload === 'byrole';
 
-            var key = Utils.randomString(32);
-            var path = (this.origin ? 'private/photos/' : 'public/photos/a/') + photo.file;
-            var fileName = photo.cid + ' ' + (photo.title || '').replace(/[\/|]/g, '-') + '.jpg';
-            // We keep only size of origin file, size with watermark must be calculated by downloader.js
-            var size = this.origin ? photo.size : null;
+    const key = Utils.randomString(32);
+    const path = (origin ? 'private/photos/' : 'public/photos/a/') + photo.file;
+    const fileName = `photo.cid ${(photo.title || '').replace(/[\/|]/g, '-')}.jpg`;
+    // We keep only size of origin file, size with watermark must be calculated by downloader.js
+    const size = origin ? photo.size : null;
 
-            return new Download({
-                key,
-                data: {
-                    fileName, path, size, type: 'image/jpeg',
-                    login: iAm.user.login, cid: photo.cid, origin: this.origin
-                }
-            }).saveAsync();
-        })
-        .spread(function (download) {
-            return { key: download.key, origin: this.origin || undefined };
-        });
+    await (new Download({
+        key, data: { fileName, path, size, type: 'image/jpeg', login: iAm.user.login, cid, origin }
+    }).save());
 
-    return {};
-});
+    return { key, origin };
+}
 
-export function loadController(io) {
-    photoCluster.loadController(io);
-    photoConverter.loadController(io);
+save.isPublic = true;
+create.isPublic = true;
+revoke.isPublic = true;
+ready.isPublic = true;
+toRevision.isPublic = true;
+reject.isPublic = true;
+rereject.isPublic = true;
+approve.isPublic = true;
+activateDeactivate.isPublic = true;
+remove.isPublic = true;
+removeIncoming.isPublic = true;
+restore.isPublic = true;
+giveForPage.isPublic = true;
+givePublicIndex.isPublic = true;
+givePublicNoGeoIndex.isPublic = true;
+givePS.isPublic = true;
+giveUserGallery.isPublic = true;
+giveForApprove.isPublic = true;
+giveUserPhotosAround.isPublic = true;
+giveUserPhotosPrivate.isPublic = true;
+giveFresh.isPublic = true;
+giveNearestPhotos.isPublic = true;
+giveCan.isPublic = true;
+giveObjHist.isPublic = true;
+getByBounds.isPublic = true;
+convert.isPublic = true;
+convertAll.isPublic = true;
+convertByUser.isPublic = true;
+resetIndividualDownloadOrigin.isPublic = true;
+giveNewLimit.isPublic = true;
+getDownloadKey.isPublic = true;
 
-    planResetDisplayStat(); // Планируем очистку статистики
+export default {
+    save,
+    create,
+    revoke,
+    ready,
+    toRevision,
+    reject,
+    rereject,
+    approve,
+    activateDeactivate,
+    remove,
+    removeIncoming,
+    restore,
+    giveForPage,
+    givePublicIndex,
+    givePublicNoGeoIndex,
+    givePS,
+    giveUserGallery,
+    giveForApprove,
+    giveUserPhotosAround,
+    giveUserPhotosPrivate,
+    giveFresh,
+    giveNearestPhotos,
+    giveCan,
+    giveObjHist,
+    getByBounds,
+    convert,
+    convertAll,
+    convertByUser,
+    resetIndividualDownloadOrigin,
+    giveNewLimit,
+    getDownloadKey,
 
-    io.sockets.on('connection', function (socket) {
-        const hs = socket.handshake;
-
-        socket.on('createPhoto', function (data) {
-            createPhotos(socket, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('createPhotoCallback', resultData);
-                });
-        });
-
-        socket.on('revokePhoto', function (data) {
-            revokePhoto(socket, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('revokePhotoCallback', resultData);
-                });
-        });
-
-        socket.on('readyPhoto', function (data) {
-            readyPhoto(socket, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('readyPhotoResult', resultData);
-                });
-        });
-
-        socket.on('revisionPhoto', function (data) {
-            toRevision(socket, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('revisionPhotoResult', resultData);
-                });
-        });
-
-        socket.on('rejectPhoto', function (data) {
-            rejectPhoto(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('rejectPhotoResult', resultData);
-                });
-        });
-        socket.on('rerejectPhoto', function (data) {
-            rerejectPhoto(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('rerejectPhotoResult', resultData);
-                });
-        });
-
-        socket.on('approvePhoto', function (data) {
-            approvePhoto(socket, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('approvePhotoResult', resultData);
-                });
-        });
-
-        socket.on('disablePhoto', function (data) {
-            activateDeactivate(socket, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('disablePhotoResult', resultData);
-                });
-        });
-
-        socket.on('removePhoto', function (data) {
-            removePhoto(socket, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('removePhotoResult', resultData);
-                });
-        });
-
-        socket.on('removePhotoInc', function (data) {
-            removePhotoIncoming(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('removePhotoIncCallback', resultData);
-                });
-        });
-
-        socket.on('restorePhoto', function (data) {
-            restorePhoto(socket, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('restorePhotoResult', resultData);
-                });
-        });
-
-        socket.on('givePhoto', function (data) {
-            givePhotoForPage(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takePhoto', resultData);
-                });
-        });
-
-        socket.on('givePhotosPublicIndex', function () {
-            givePhotosPublicIndex(hs.usObj)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takePhotosPublicIndex', resultData);
-                });
-        });
-
-        socket.on('givePhotosPublicNoGeoIndex', function () {
-            givePhotosPublicNoGeoIndex(hs.usObj)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takePhotosPublicNoGeoIndex', resultData);
-                });
-        });
-
-        socket.on('givePhotos', function (data) {
-            givePhotosPS(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takePhotos', resultData);
-                });
-        });
-
-        socket.on('giveUserPhotos', function (data) {
-            giveUserPhotos(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeUserPhotos', resultData);
-                });
-        });
-
-        socket.on('givePhotosForApprove', function (data) {
-            givePhotosForApprove(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takePhotosForApprove', resultData);
-                });
-        });
-
-        socket.on('giveUserPhotosAround', function (data) {
-            giveUserPhotosAround(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeUserPhotosAround', resultData);
-                });
-        });
-
-        socket.on('giveUserPhotosPrivate', function (data) {
-            giveUserPhotosPrivate(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeUserPhotosPrivate', resultData);
-                });
-        });
-
-        socket.on('givePhotosFresh', function (data) {
-            givePhotosFresh(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takePhotosFresh', resultData);
-                });
-        });
-
-        socket.on('giveNearestPhotos', function (data) {
-            giveNearestPhotos(data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeNearestPhotos', resultData);
-                });
-        });
-
-        socket.on('giveCanPhoto', function (data) {
-            giveCanPhoto(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeCanPhoto', resultData);
-                });
-        });
-
-        socket.on('savePhoto', function (data) {
-            savePhoto(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('savePhotoResult', resultData);
-                });
-        });
-
-        socket.on('giveObjHist', function (data) {
-            giveObjHist(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true, fetchId: data && data.fetchId };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeObjHist', resultData);
-                });
-        });
-
-        socket.on('getBounds', function (data) {
-            getBounds(data)
-                .catch(function (err) {
-                    return { message: err.message, error: true, startAt: data.startAt };
-                })
-                .then(function (resultData) {
-                    socket.emit('getBoundsResult', resultData);
-                });
-        });
-
-        socket.on('convertPhotos', function (data) {
-            convertPhotos(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('convertPhotosResult', resultData);
-                });
-        });
-
-        socket.on('convertPhotosAll', function (data) {
-            convertPhotosAll(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('convertPhotosAllResult', resultData);
-                });
-        });
-        socket.on('convertUserPhotos', function (data) {
-            convertUserPhotos(hs.usObj, data)
-                .catch(function (err) {
-                    logger.error('convertUserPhotos ERROR with data', hs.usObj.user && hs.usObj.user.login, data);
-                    logger.trace(err);
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('convertUserPhotosResult', resultData);
-                });
-        });
-        socket.on('resetIndividualDownloadOrigin', function (data) {
-            resetIndividualDownloadOrigin(hs.usObj, data)
-                .catch(function (err) {
-                    logger.error('resetIndividualDownloadOrigin ERROR with data', hs.usObj.user && hs.usObj.user.login, data);
-                    logger.trace(err);
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('resetIndividualDownloadOriginResult', resultData);
-                });
-        });
-
-        socket.on('giveNewPhotosLimit', function (data) {
-            giveNewPhotosLimit(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('takeNewPhotosLimit', resultData);
-                });
-        });
-
-        socket.on('getDownloadKey', function (data) {
-            getDownloadKey(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('getDownloadKeyResult', resultData);
-                });
-        });
-    });
+    find,
+    give,
+    givePhotos,
+    update,
+    getBounds,
+    photoToMap,
+    saveHistory,
+    photoFromMap,
+    prefetchForEdit,
+    givePrevNextCids,
+    changePublicExternality
 };
+
+waitDb.then(planResetDisplayStat); // Plan statistic clean up

@@ -9,21 +9,14 @@ import config from './config';
 import express from 'express';
 import socketIO from 'socket.io';
 import Utils from './commons/Utils';
+import { handleSocketConnection, registerSocketRequestHendler } from './app/request';
 
-import * as session from './controllers/_session';
-import * as admin from './controllers/admin';
-import * as auth from './controllers/auth';
-import * as comment from './controllers/comment';
-import * as errors from './controllers/errors';
-import * as index from './controllers/index';
-import * as mail from './controllers/mail';
-import * as photo from './controllers/photo';
-import * as profile from './controllers/profile';
-import * as reason from './controllers/reason';
-import * as region from './controllers/region';
+import { ready as mailReady } from './controllers/mail';
+import { ready as authReady } from './controllers/auth';
+import { ready as regionReady } from './controllers/region';
+import { ready as subscrReady } from './controllers/subscr';
+import { ready as settingsReady } from './controllers/settings';
 import * as routes from './controllers/routes';
-import * as settings from './controllers/settings';
-import * as subscr from './controllers/subscr';
 import * as ourMiddlewares from './controllers/middleware';
 
 import connectDb from './controllers/connection';
@@ -60,7 +53,7 @@ export async function configure(startStamp) {
 
     const status404Text = http.STATUS_CODES[404];
     const static404 = ({ url, method, headers: { useragent, referer } = {} }, res) => {
-        logger404.error(JSON.stringify({ url, method, useragent, referer }));
+        //logger404.error(JSON.stringify({ url, method, useragent, referer }));
 
         res.statusCode = 404;
         res.end(status404Text); // Finish with 'end' instead of 'send', that there is no additional operations (etag)
@@ -157,6 +150,8 @@ export async function configure(startStamp) {
         app.get(/^\/(?:_a|_p)(?:\/.*)$/, static404);
     }
 
+    await Promise.all([authReady, settingsReady, regionReady, subscrReady, mailReady]);
+
     const httpServer = http.createServer(app);
     const io = socketIO(httpServer, {
         transports: ['websocket', 'polling'],
@@ -170,27 +165,15 @@ export async function configure(startStamp) {
     io.sockets.setMaxListeners(0);
     process.setMaxListeners(0);
 
-    io.use(session.handleSocket);
-
-    await* [settings.ready, region.ready, auth.ready, subscr.ready, mail.ready];
-
-    session.loadController(io);
-    admin.loadController(io);
-    auth.loadController(io);
-    comment.loadController(io);
-    index.loadController(io);
-    photo.loadController(io);
-    profile.loadController(io);
-    reason.loadController(io);
-    region.loadController(io);
-    settings.loadController(io);
-    subscr.loadController(io);
+    io.use(handleSocketConnection); // Handler for esteblishing websocket connection
+    registerSocketRequestHendler(io); // Register router for socket.io events
 
     if (env === 'development') {
         require('./controllers/tpl').loadController(app);
     }
 
-    routes.loadController(app);
+    // Handle appliaction routes
+    routes.bindRoutes(app);
 
     if (config.serveLog) {
         app.use(
@@ -201,14 +184,15 @@ export async function configure(startStamp) {
         );
     }
 
-    errors.registerErrorHandling(app);
+    // Handle route (express) errors
+    routes.bindErrorHandler(app);
 
     const CoreServer = require('./controllers/coreadapter').Server;
 
     const manualGC = manualGarbageCollect && global.gc;
 
     if (manualGC) {
-        // Самостоятельно вызываем garbage collector через определеное время
+        // Call the garbage collector after a certain time
         logger.info(`Manual garbage collection every ${manualGarbageCollect / 1000}s`);
     }
 

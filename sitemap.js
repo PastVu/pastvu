@@ -204,7 +204,7 @@ async function generateRegionsSitemap(fileName) {
 function getRegionsString(regions) {
     // For Russia regions take local name
     const regionField = regions.r0 === 1 ? 'title_local' : 'title_en';
-    const titles = _.pluck(getObjRegionList(regions, ['title_en', 'title_local']), regionField);
+    const titles = _.map(getObjRegionList(regions, ['title_en', 'title_local']), regionField);
 
     if (!titles.length) {
         return '';
