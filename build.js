@@ -27,7 +27,7 @@ var start = Date.now(),
         baseUrl: 'js',
         dir: 'public-build',
         keepBuildDir: false,
-        optimize: 'uglify',
+        optimize: 'uglify2',
         uglify: {
             toplevel: false,
             ascii_only: false,
