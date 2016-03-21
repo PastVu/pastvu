@@ -25,6 +25,7 @@
         "start": "node app.js"
     },
     "dependencies": {
+        "babel-register": "6.7.2",
         "express": "4.13.4",
         "compression": "1.6.1",
         "serve-index": "1.7.3",
@@ -65,7 +66,6 @@
         "babel-plugin-transform-runtime": "6.6.0",
         "babel-preset-es2015-node5": "1.2.0",
         "babel-preset-stage-1": "6.5.0",
-        "babel-register": "6.7.2",
         "grunt-babel": "6.0.0",
 
         "gulp-util": "3.0.7",

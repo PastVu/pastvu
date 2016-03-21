@@ -93,8 +93,8 @@ module.exports = function (grunt) {
                     {
                         expand: true,
                         src: [
-                            'bin/**', 'basepatch/**', 'commons/**', 'misc/watermark/**',
-                            'controllers/systemjs.js',
+                            'app/**', 'bin/**', 'basepatch/**', 'commons/**', 'misc/watermark/**',
+                            'controllers/systemjs.js', 'npm-shrinkwrap.json',
                             'config/@(client|server|browsers.config|default.config).js', 'config/package.json'
                         ],
                         dest: targetDir
