@@ -4,7 +4,7 @@
 		{
 			"type": "file",
 			"filename": "all.log",
-			"maxLogSize": 10485760,
+			"maxLogSize": 15728640,
 			"backups": 3
 		},
 		{
