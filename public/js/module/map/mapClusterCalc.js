@@ -2,11 +2,11 @@
  * Модель карты
  */
 define([
-    'underscore', 'jquery', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer',
-    'model/User', 'model/storage',
-    'leaflet', 'lib/leaflet/extends/L.neoMap',
-    'text!tpl/map/mapClusterCalc.jade', 'css!style/map/mapClusterCalc', 'jquery-ui/draggable', 'jquery-ui/resizable', 'jquery-ui/effect-highlight', 'css!style/jquery/ui/core', 'css!style/jquery/ui/resizable', 'css!style/jquery/ui/theme'
-], function (_, $, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, User, storage, L, Map, jade) {
+    'underscore', 'jquery', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM',
+    'renderer', 'model/User', 'model/storage', 'leaflet', 'lib/leaflet/extends/L.neoMap', 'noties',
+    'text!tpl/map/mapClusterCalc.jade', 'css!style/map/mapClusterCalc', 'jquery-ui/draggable', 'jquery-ui/resizable',
+    'jquery-ui/effect-highlight', 'css!style/jquery/ui/core', 'css!style/jquery/ui/resizable', 'css!style/jquery/ui/theme'
+], function (_, $, Browser, Utils, socket, P, ko, Cliche, globalVM, renderer, User, storage, L, Map, noties, jade) {
     'use strict';
 
     return Cliche.extend({
@@ -139,16 +139,13 @@ define([
 
             ko.applyBindings(globalVM, this.$dom[0]);
 
-
-            // Subscriptions
-
             this.show();
         },
         show: function () {
             var _this = this;
             globalVM.func.showContainer(this.$container, function () {
 
-                this.map = new L.neoMap(this.$dom.find('.map')[0], {
+                this.map = new L.NeoMap(this.$dom.find('.map')[0], {
                     center: [55.753395, 37.621994],
                     zoom: 13,
                     minZoom: 3,
@@ -157,8 +154,8 @@ define([
                     trackResize: false
                 });
 
-                //Самостоятельно обновлем размеры карты
-                this.subscriptions.sizes = P.window.square.subscribe(function (newVal) {
+                // Самостоятельно обновлем размеры карты
+                this.subscriptions.sizes = P.window.square.subscribe(function () {
                     this.map._onResize();
                 }.bind(this));
 
@@ -168,9 +165,9 @@ define([
                         this.options.deferredWhenReady.resolve();
                     }
                     this.$dom.find('.clusterRect').draggable({
-                        containment: this.$dom.find(".mapContainer"),
+                        containment: this.$dom.find('.mapContainer'),
                         scroll: false,
-                        cursor: "move"
+                        cursor: 'move'
                     }).resizable({
                         minHeight: 40,
                         minWidth: 40,
@@ -199,54 +196,53 @@ define([
         },
 
         save: function () {
-            var _this = this,
+            var _this = this;
 
+            var $clusterRect = this.$dom.find('.clusterRect');
+            var w = this.wNew();
+            var h = this.hNew();
+            var pos = $clusterRect.position();
 
-                $clusterRect = this.$dom.find('.clusterRect'),
-                w = this.wNew(),
-                h = this.hNew(),
-                pos = $clusterRect.position(),
+            var centerGeo = this.map.containerPointToLatLng(new L.Point(pos.left + w / 2, pos.top + h / 2));
 
-                centerGeo = this.map.containerPointToLatLng(new L.Point(pos.left + w / 2, pos.top + h / 2)),
+            var wMap = this.$dom.find('.mapContainer').width();
+            var hMap = this.$dom.find('.mapContainer').height();
 
-                wMap = this.$dom.find('.mapContainer').width(),
-                hMap = this.$dom.find('.mapContainer').height(),
+            var zooms = _.range(3, 16 + 1); // Уровни 3 - 16
+            var result = [];
 
-                zooms = _.range(3, 16 + 1), // Уровни 3 - 16
-                result = [],
+            var setZoom = function (z) {
+                if (_this.exe()) {
+                    _this.map.setView(centerGeo, z);
+                }
+            };
+            var calcOnZoom = function (z) {
+                var rectCenter = _this.map.latLngToContainerPoint(_this.map.getCenter());
+                var rectTopLeft = _this.map.containerPointToLatLng(new L.Point(rectCenter.x - w / 2, rectCenter.y - h / 2));
+                var rectBottomRight = _this.map.containerPointToLatLng(new L.Point(rectCenter.x + w / 2, rectCenter.y + h / 2));
 
-                setZoom = function (z) {
-                    if (_this.exe()) {
-                        _this.map.setView(centerGeo, z);
-                    }
-                },
-                calcOnZoom = function (z) {
-                    var rectCenter = _this.map.latLngToContainerPoint(_this.map.getCenter()),
-                        rectTopLeft = _this.map.containerPointToLatLng(new L.Point(rectCenter.x - w / 2, rectCenter.y - h / 2)),
-                        rectBottomRight = _this.map.containerPointToLatLng(new L.Point(rectCenter.x + w / 2, rectCenter.y + h / 2));
+                return {
+                    z: z,
+                    w: Utils.math.toPrecision(Math.abs(rectTopLeft.lng - rectBottomRight.lng)),
+                    h: Utils.math.toPrecision(Math.abs(rectTopLeft.lat - rectBottomRight.lat))
+                };
+            };
+            var changeZoomRecursive = _.debounce(function () {
+                var z = _this.map.getZoom();
 
-                    return {
-                        z: z,
-                        w: Utils.math.toPrecision(Math.abs(rectTopLeft.lng - rectBottomRight.lng)),
-                        h: Utils.math.toPrecision(Math.abs(rectTopLeft.lat - rectBottomRight.lat))
-                    };
-                },
-                changeZoomRecursive = _.debounce(function () {
-                    var z = _this.map.getZoom();
+                result.push(calcOnZoom(z));
+                this.exePercent(Math.ceil(100 * (zooms.indexOf(z) + 1) / zooms.length)); // Обновляем прогресс-бар подсчета
 
-                    result.push(calcOnZoom(z));
-                    this.exePercent(Math.ceil(100 * (zooms.indexOf(z) + 1) / zooms.length)); // Обновляем прогресс-бар подсчета
-
-                    if (z === _.last(zooms)) {
-                        _this.map.off('moveend', changeZoomRecursive, this);
-                        _this.calcDeffered.resolve(result);
-                        delete _this.calcDeffered;
-                        delete _this.setZoomTimeout;
-                    } else {
-                        $clusterRect.effect('highlight', { color: '#ffffff' }, 500); // Эффект вспышки
-                        _this.setZoomTimeout = _.delay(setZoom, 550, z + 1);
-                    }
-                }, 900);
+                if (z === _.last(zooms)) {
+                    _this.map.off('moveend', changeZoomRecursive, this);
+                    _this.calcDeffered.resolve(result);
+                    delete _this.calcDeffered;
+                    delete _this.setZoomTimeout;
+                } else {
+                    $clusterRect.effect('highlight', { color: '#ffffff' }, 400); // Эффект вспышки
+                    _this.setZoomTimeout = _.delay(setZoom, 430, z + 1);
+                }
+            }, 800);
 
             this.saveParams = {
                 sgeo: Utils.geo.geoToPrecision([centerGeo.lng, centerGeo.lat]),
@@ -269,65 +265,43 @@ define([
         },
         send: function (arr) {
             var _this = this;
-            window.noty(
-                {
-                    text: 'Новые параметры кластера посчитаны для всех ' + arr.length + ' уровней зума. <br> Отправить данные на сервер для формирования новой кластерной сетки всех фотографий? <br> Это может занять несколько минут',
-                    type: 'confirm',
-                    layout: 'center',
-                    modal: true,
-                    force: true,
-                    animation: {
-                        open: { height: 'toggle' },
-                        close: {},
-                        easing: 'swing',
-                        speed: 500
-                    },
-                    buttons: [
-                        {
-                            addClass: 'btn btn-warning', text: 'Да', onClick: function ($noty) {
-                            // this = button element
-                            // $noty = $noty element
 
-                            socket.run('cluster.recalcAll', { params: arr, conditions: _this.saveParams }, true)
-                                .then(function (data) {
-                                    var okButton = $noty.$buttons.find('button')
-                                        .attr('disabled', false)
-                                        .removeClass('disabled')
-                                        .off('click');
+            noties.confirm({
+                message: 'Новые параметры кластера посчитаны для всех ' + arr.length + ' уровней зума. <br>' +
+                'Отправить данные на сервер для формирования новой кластерной сетки всех фотографий?<br>' +
+                'Это может занять несколько минут',
+                okText: 'Да',
+                okClass: 'btn-warning',
+                onOk: function (confirmer) {
+                    confirmer.disable();
 
-                                    $noty.$message.children().html('Новая кластерная сетка сформированна');
-
-                                    okButton.text('Ok').removeClass('btn-primary').addClass('btn-success').on('click', function () {
-                                        $noty.close();
-                                        _this.finish();
-                                    });
-                                }, _this)
-                                .catch(function (error) {
-                                    $noty.$message.children().html(error.message || 'Error occurred');
-                                    okButton.text('Close').on('click', function () {
-                                        $noty.close();
-                                        _this.cancel();
-                                    });
+                    socket.run('cluster.recalcAll', { params: arr, conditions: _this.saveParams }, true)
+                        .then(function () {
+                            if (confirmer) {
+                                confirmer.success('Новая кластерная сетка сформированна', 'Ok', null, function () {
+                                    _this.finish();
                                 });
-
-                            $noty.$message.children().html('Данные отправлены на сервер для пересчета.<br>Вы можете закрыть это окно - данные расчитываются на сервере.<br>Этот диалог "отлипнет" при получении результата расчета с сервера');
-                            if ($noty.$buttons && $noty.$buttons.find) {
-                                $noty.$buttons.find('.btn-warning').remove();
-                                $noty.$buttons.find('button')
-                                    .attr('disabled', true)
-                                    .addClass('disabled');
                             }
-                        }
-                        },
-                        {
-                            addClass: 'btn btn-primary', text: 'Отмена', onClick: function ($noty) {
-                            $noty.close();
+                        })
+                        .catch(function () {
+                            if (confirmer) {
+                                confirmer.close();
+                            }
                             _this.cancel();
-                        }
-                        }
-                    ]
+                        });
+
+                    confirmer.success(
+                        'Данные отправлены на сервер для пересчета.<br>' +
+                        'Вы можете закрыть этот диалог - данные расчитываются на сервере.<br>' +
+                        'Диалог обновится при получении результата расчета с сервера', 'Закрыть', null, function () {
+                            confirmer = null;
+                            _this.finish();
+                        });
+                },
+                onCancel: function () {
+                    _this.cancel();
                 }
-            );
+            });
         },
         cancel: function () {
             if (this.exe()) {
@@ -355,26 +329,26 @@ define([
             delete this.saveParams;
         },
 
-        toggleLayers: function (vm, event) {
+        toggleLayers: function (/*vm, event*/) {
             this.layersOpen(!this.layersOpen());
         },
-        selectLayer: function (sys_id, type_id) {
-            var layers = this.layers(),
-                layerActive = this.layerActive(),
-                system,
-                type;
+        selectLayer: function (sysId, typeId) {
+            var layers = this.layers();
+            var layerActive = this.layerActive();
+            var system;
+            var type;
 
-            if (layerActive.sys && layerActive.sys.id === sys_id && layerActive.type.id === type_id) {
+            if (layerActive.sys && layerActive.sys.id === sysId && layerActive.type.id === typeId) {
                 return;
             }
 
             system = _.find(layers, function (item) {
-                return item.id === sys_id;
+                return item.id === sysId;
             });
 
             if (system) {
                 type = _.find(system.types(), function (item) {
-                    return item.id === type_id;
+                    return item.id === typeId;
                 });
 
                 if (type) {

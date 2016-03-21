@@ -45,6 +45,11 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
     }
 
     function notyConfirm(params) {
+        var okClass = 'btn ' + (params.okClass || 'btn-danger');
+        var okClassSelector = '.' + okClass.trim().split(' ').join('.');
+        var cancelClass = 'btn ' + (params.cancelClass || 'btn-primary');
+        var cancelClassSelector = '.' + cancelClass.trim().split(' ').join('.');
+
         return window.noty({
             text: params.message,
             type: 'confirm',
@@ -54,7 +59,7 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
             animation: { open: 'animated fadeIn' },
             buttons: [
                 {
-                    addClass: 'btn ' + (params.okClass || 'btn-danger'), text: params.okText || 'Ok',
+                    addClass: okClass, text: params.okText || 'Ok',
                     onClick: function ($noty) {
                         // this = button element
                         // $noty = $noty element
@@ -66,8 +71,8 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
 
                         var $buttons = $noty.$buttons;
                         var finish = function (onFinish, ctx) {
-                            $buttons.find('.btn-danger').remove();
-                            return $buttons.find('.btn-primary')
+                            $buttons.find(okClassSelector).remove();
+                            return $buttons.find(cancelClassSelector)
                                 .off('click')
                                 .attr('disabled', false)
                                 .on('click', function () {
@@ -89,13 +94,13 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
                             },
                             replaceTexts: function (message, okText, cancelText) {
                                 $noty.$message.children().html(message);
-                                $noty.$bar.css('height', $('.noty_bar' ,$noty.$bar).innerHeight())
+                                $noty.$bar.css('height', $('.noty_bar', $noty.$bar).innerHeight());
 
                                 if (okText) {
-                                    $('.btn-danger', $buttons).text(okText);
+                                    $(okClassSelector, $buttons).text(okText);
                                 }
                                 if (cancelText) {
-                                    $('.btn-primary', $buttons).text(cancelText);
+                                    $(cancelClassSelector, $buttons).text(cancelText);
                                 }
                             },
                             success: function (message, buttonText, countdown, onFinish, ctx) {
@@ -140,7 +145,7 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
                     }
                 },
                 {
-                    addClass: 'btn ' + (params.cancelClass || 'btn-primary'), text: params.cancelText || 'Отмена',
+                    addClass: cancelClass, text: params.cancelText || 'Отмена',
                     onClick: function ($noty) {
                         $noty.close();
                         params.onCancel && params.onCancel.call(params.ctx);
