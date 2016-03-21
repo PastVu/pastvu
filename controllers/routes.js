@@ -122,7 +122,8 @@ function meta(req) {
         } else if (!_.isEmpty(photo.regions)) {
             // If there in no description, create it as regions names
             desc = og.desc = twitter.desc = photo.regions.reduceRight(
-                (result, region, index) => result + region.title_local + (index ? ', ' : ''), ''
+
+                (result, region, index) => result + region.title_en + (index ? ', ' : ''), ''
             );
         } else {
             desc = '';

@@ -27,8 +27,8 @@ define([
             this.selectedInitTkns = [];
             if (this.selectedInit && this.selectedInit.length) {
                 this.selectedInit.forEach(function (region) {
-                    this.selectedInitHash[region.title_local] = region;
-                    this.selectedInitTkns.push({ value: region.title_local, label: region.title_local });
+                    this.selectedInitHash[region.title_en] = region;
+                    this.selectedInitTkns.push({ value: region.title_en, label: region.title_en });
                 }, this);
             }
 
@@ -233,7 +233,7 @@ define([
         //Ручное удаление токена, работает полной заменой токенов, кроме удаляемого.
         //Поэтому для удаляемого токена событие onRemoveToken не сработает, но сработает onCreateToken для каждого неудаляемого
         removeToken: function (region) {
-            var title = region.title_local;
+            var title = region.title_en;
             var tkn = this.$dom.find('.regionstkn');
             var tokensExists;
 
@@ -324,7 +324,7 @@ define([
 
             //Сортируем массив по уровням и названиям в пределах одного уровня
             arr.sort(function (a, b) {
-                return a.parents.length < b.parents.length || a.parents.length === b.parents.length && a.title_local < b.title_local ? -1 : 1;
+                return a.parents.length < b.parents.length || a.parents.length === b.parents.length && a.title_en < b.title_en ? -1 : 1;
             });
 
             function incrementParentsChildLen(region, deepestLevel) {
@@ -350,7 +350,7 @@ define([
                 region.childLenAll = 0; //Количество всех потомков
                 region.childLenArr = [0]; //Массив количеств потомков
 
-                selected = this.selectedInitHash[region.title_local] !== undefined;
+                selected = this.selectedInitHash[region.title_en] !== undefined;
                 region.selectable = ko.observable(true);
                 region.selected = ko.observable(selected);
                 region.opened = ko.observable(selected);
@@ -372,8 +372,8 @@ define([
                 }
 
                 hash[region.cid] = region;
-                this.regionsTypehead.push({ title: region.title_local, tokens: [region.title_local, region.title_en] });
-                this.regionsHashByTitle[region.title_local] = region;
+                this.regionsTypehead.push({ title: region.title_en, tokens: [region.title_en, region.title_local] });
+                this.regionsHashByTitle[region.title_en] = region;
             }
 
             //У изначально выбранных регионов делаем невыбираемыми другие регионы этой ветки

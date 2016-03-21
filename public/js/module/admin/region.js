@@ -551,7 +551,7 @@ define([
                     }
 
                     if (!error) {
-                        var msg = 'Регион <b>' + this.region.title_local() + '</b> успешно ' + (parentIsChanged ? 'перенесён и ' : '') + 'сохранен<br>';
+                        var msg = 'Region <b>' + this.region.title_en() + '</b> has been successfully ' + (parentIsChanged ? 'transferred and ' : '') + 'saved<br>';
                         var geoChangePhotosCount;
 
                         if (resultStat && Object.keys(resultStat).length) {
@@ -623,7 +623,7 @@ define([
             this.exe(true);
 
             var cid = this.region.cid();
-            var title = this.region.title_local();
+            var title = this.region.title_en();
             var regionParent;
             var that = this;
             var childLenArr = this.childLenArr();

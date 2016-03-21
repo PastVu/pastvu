@@ -718,7 +718,7 @@ define([
                                         text: 'Apply',
                                         glyphicon: 'glyphicon-ok',
                                         click: function () {
-                                            var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']);
+                                            var regions = this.regselectVM.getSelectedRegions(['cid', 'title_en']);
 
                                             if (regions.length > 5) {
                                                 return noties.alert({
