@@ -1,7 +1,10 @@
 /**
  * Модель управления пользователем
  */
-define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/User', 'model/storage', 'text!tpl/user/manage.jade', 'css!style/user/manage', 'bs/collapse'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, User, storage, jade) {
+define([
+    'underscore', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'noties',
+    'renderer', 'model/User', 'model/storage', 'text!tpl/user/manage.jade', 'css!style/user/manage', 'bs/collapse'
+], function (_, Utils, socket, P, ko, Cliche, globalVM, noties, renderer, User, storage, jade) {
     function isYes(evt) {
         return !!evt.target.classList.contains('yes');
     }
@@ -154,7 +157,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
             this.exe(true);
             socket.run('admin.saveUserCredentials', { login: this.u.login(), role: role, regions: regionsCids }, true)
-                .then(function (data) {
+                .then(function (/*data*/) {
                     var regions = regionsCids ? this.regions() : [];
                     var updatedProps = { role: role, mod_regions: regions };
 
@@ -203,14 +206,11 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                                         var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']);
 
                                         if (regions.length > 20) {
-                                            window.noty({
-                                                text: 'Допускается выбирать до 20 регионов',
-                                                type: 'error',
-                                                layout: 'center',
-                                                timeout: 3000,
-                                                force: true
+                                            return noties.alert({
+                                                message: 'Допускается выбирать до 20 регионов',
+                                                type: 'warning',
+                                                timeout: 3000
                                             });
-                                            return;
                                         }
                                         this.regions(regions);
                                         this.closeRegionSelect();
