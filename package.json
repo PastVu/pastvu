@@ -40,7 +40,7 @@
         "lodash": "4.6.1",
         "bluebird": "3.3.4",
         "underscore.string": "3.3.4",
-        "yargs": "4.3.1",
+        "yargs": "4.3.2",
         "ms": "0.7.1",
         "moment": "2.12.0",
         "useragent": "2.1.8",
@@ -70,7 +70,7 @@
 
         "gulp-util": "3.0.7",
 
-        "requirejs": "2.1.22",
+        "requirejs": "2.2.0",
         "less-middleware": "1.0.3",
         "less": "1.7.3",
         "grunt": "0.4.5",
