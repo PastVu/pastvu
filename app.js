@@ -53,7 +53,7 @@ export async function configure(startStamp) {
 
     const status404Text = http.STATUS_CODES[404];
     const static404 = ({ url, method, headers: { useragent, referer } = {} }, res) => {
-        //logger404.error(JSON.stringify({ url, method, useragent, referer }));
+        logger404.error(JSON.stringify({ url, method, useragent, referer }));
 
         res.statusCode = 404;
         res.end(status404Text); // Finish with 'end' instead of 'send', that there is no additional operations (etag)
@@ -172,9 +172,6 @@ export async function configure(startStamp) {
         require('./controllers/tpl').loadController(app);
     }
 
-    // Handle appliaction routes
-    routes.bindRoutes(app);
-
     if (config.serveLog) {
         app.use(
             '/nodelog',
@@ -183,6 +180,9 @@ export async function configure(startStamp) {
             express.static(logPath, { maxAge: 0, etag: false })
         );
     }
+
+    // Handle appliaction routes
+    routes.bindRoutes(app);
 
     // Handle route (express) errors
     routes.bindErrorHandler(app);
