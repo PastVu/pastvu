@@ -2,6 +2,8 @@ import _ from 'lodash';
 import log4js from 'log4js';
 import config from '../config';
 import nodemailer from 'nodemailer';
+import constantsError from '../app/errors/constants';
+import { ApplicationError } from '../app/errors';
 
 const { env, mail: mailConf } = config;
 
@@ -47,26 +49,18 @@ export async function send(options) {
         });
     }
 
-    return await new Promise((resolve, reject) => {
-        transport.sendMail(smtpobject, function (err, info = {}) {
-            if (err) {
-                logger.error(err, info);
-                reject(err);
-            } else {
-                const { accepted, rejected } = info;
+    try {
+        const { accepted, rejected } = await transport.sendMail(smtpobject);
 
-                if (accepted) {
-                    logger.info('Message sent to: ' + _.get(accepted, '[0]'));
-                } else {
-                    logger.info('Message rejected from: ' + _.get(rejected, '[0]'));
-                }
-                resolve();
-            }
-
-            // if you don't want to use this transport object anymore, uncomment following line
-            // transport.close(); // close the connection pool
-        });
-    });
+        if (accepted) {
+            logger.info('Message sent to: ' + _.get(accepted, '[0]'));
+        } else {
+            logger.info('Message rejected from: ' + _.get(rejected, '[0]'));
+        }
+    } catch (err) {
+        logger.error(err);
+        throw new ApplicationError(constantsError.MAIL_SEND);
+    }
 };
 
 export const ready = new Promise((resolve, reject) => {
@@ -74,6 +68,7 @@ export const ready = new Promise((resolve, reject) => {
 
     if (mailConf.type === 'SMTP') {
         options.rateLimit = 10;
+        options.pool = true;
 
         if (mailConf.service) {
             options.service = mailConf.service;
@@ -88,8 +83,7 @@ export const ready = new Promise((resolve, reject) => {
             options.auth = mailConf.auth;
         }
 
-        // With simple option uses 'nodemailer-smtp-transport'
-        transport = nodemailer.createTransport(require('nodemailer-smtp-pool')(options));
+        transport = nodemailer.createTransport(options);
     } else if (mailConf.type === 'SES') {
         options.accessKeyId = mailConf.AWSAccessKeyID;
         options.secretAccessKey = mailConf.AWSSecretKey;

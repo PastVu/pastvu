@@ -4,6 +4,8 @@ import moment from 'moment';
 import Utils from '../commons/Utils';
 import * as session from './_session';
 import * as userObjectRelController from './userobjectrel';
+import constantsError from '../app/errors/constants';
+import { BadParamsError, NotFoundError } from '../app/errors';
 
 import { News } from '../models/News';
 import { User } from '../models/User';
@@ -86,7 +88,7 @@ const giveRatings = (function () {
     });
 
     return Utils.memoizePromise(async function () {
-        const [pday, pweek, pall, pcday, pcweek, pcall, ucday, ucweek, ucall, upday, upweek, upall] = await * [
+        const [pday, pweek, pall, pcday, pcweek, pcall, ucday, ucweek, ucall, upday, upweek, upall] = await Promise.all([
             // Photo by views count
             Photo.find(
                 { s: 5, vdcount: { $gt: 0 } },
@@ -127,7 +129,7 @@ const giveRatings = (function () {
                 { pcount: { $gt: 0 } }, { _id: 0, login: 1, avatar: 1, disp: 1, pcount: 1 },
                 { lean: true, limit, sort: { pcount: -1 } }
             ).exec().then(users => _.forEach(users, user => user.online = session.usLogin[user.login] !== undefined))
-        ];
+        ]);
 
         return { pday, pweek, pall, pcday, pcweek, pcall, ucday, ucweek, ucall, upday, upweek, upall };
 
@@ -164,7 +166,7 @@ const giveStats = (function () {
             [photoYear],
             pallCount, userCount, pdayCount, pweekCount, callCount,
             cnallCount, cdayCount, cndayCount, cweekCount, cnweekCount
-        ] = await* [
+        ] = await Promise.all([
             Photo.aggregate(aggregateParams).exec(),
 
             Photo.count({ s: 5 }).exec(),
@@ -179,7 +181,7 @@ const giveStats = (function () {
             CommentN.count({ stamp: { $gt: dayStart }, del: null, hidden: null }).exec(),
             Comment.count({ stamp: { $gt: weekStart }, del: null, hidden: null }).exec(),
             CommentN.count({ stamp: { $gt: weekStart }, del: null, hidden: null }).exec()
-        ];
+        ]);
 
         return {
             all: {
@@ -210,7 +212,7 @@ const giveOnlineStats = (function () {
 }());
 
 async function giveIndexStats() {
-    const [stat, statFast] = await* [giveStats(), giveOnlineStats()];
+    const [stat, statFast] = await Promise.all([giveStats(), giveOnlineStats()]);
 
     stat.common = statFast;
 
@@ -259,7 +261,8 @@ const giveIndexNews = (function () {
         };
     }());
 
-    return async function(iAm) {
+    return async function() {
+        const { handshake: { usObj: iAm } } = this;
         const news = await (iAm.registered ? forRegistered(iAm) : forAnonym());
 
         return { news };
@@ -267,7 +270,8 @@ const giveIndexNews = (function () {
 }());
 
 // News archive
-async function giveAllNews(iAm) {
+async function giveAllNews() {
+    const { handshake: { usObj: iAm } } = this;
     const news = await News.find(
         { pdate: { $lte: new Date() } },
         { cdate: 0, tdate: 0, nocomments: 0 },
@@ -284,9 +288,9 @@ async function giveAllNews(iAm) {
 };
 
 // Full news object for administration (create/edit)
-async function giveNewsFull({ cid } = {}) {
+async function giveNewsFull({ cid }) {
     if (!_.isNumber(cid) || cid < 1) {
-        throw { message: 'Bad params' };
+        throw new BadParamsError();
     }
 
     const news = await News.findOne({ cid }, { _id: 0 }).exec();
@@ -295,20 +299,21 @@ async function giveNewsFull({ cid } = {}) {
 }
 
 // Return news for its public page
-async function giveNewsPublic(iAm, { cid } = {}) {
+async function giveNewsPublic({ cid } = {}) {
     if (!_.isNumber(cid) || cid < 1) {
-        throw { message: 'Bad params' };
+        throw new BadParamsError();
     }
 
+    const { handshake: { usObj: iAm } } = this;
     const news = await News.findOne(
         { cid }, { _id: 1, cid: 1, user: 1, pdate: 1, title: 1, txt: 1, ccount: 1, nocomments: 1 }, { lean: true }
     ).exec();
 
     if (!news) {
-        throw { message: 'No such news' };
+        throw new NotFoundError(constantsError.NO_SUCH_NEWS);
     }
 
-    const userObj = session.getOnline(null, news.user);
+    const userObj = session.getOnline({ userId: news.user });
 
     if (userObj) {
         news.user = Object.assign(_.pick(userObj.user, 'login', 'avatar', 'disp'), { online: true });
@@ -341,73 +346,20 @@ const giveAbout = (function () {
     }, ms('1m'));
 }());
 
-export function loadController(io) {
-    io.sockets.on('connection', function (socket) {
-        const hs = socket.handshake;
+giveIndexNews.isPublic = true;
+giveAllNews.isPublic = true;
+giveNewsFull.isPublic = true;
+giveNewsPublic.isPublic = true;
+giveRatings.isPublic = true;
+giveIndexStats.isPublic = true;
+giveAbout.isPublic = true;
 
-        socket.on('giveIndexNews', function () {
-            giveIndexNews(hs.usObj)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (result) {
-                    socket.emit('takeIndexNews', result);
-                });
-        });
-
-        socket.on('giveAllNews', function () {
-            giveAllNews(hs.usObj)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (result) {
-                    socket.emit('takeAllNews', result);
-                });
-        });
-        socket.on('giveNews', function (data) {
-            giveNewsFull(data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (result) {
-                    socket.emit('takeNews', result);
-                });
-        });
-        socket.on('giveNewsPublic', function (data) {
-            giveNewsPublic(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (result) {
-                    socket.emit('takeNewsPublic', result);
-                });
-        });
-        socket.on('giveRatings', function (data) {
-            giveRatings(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (result) {
-                    socket.emit('takeRatings', result);
-                });
-        });
-        socket.on('giveStats', function () {
-            giveIndexStats()
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (result) {
-                    socket.emit('takeStats', result);
-                });
-        });
-        socket.on('giveAbout', function () {
-            giveAbout()
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (result) {
-                    socket.emit('takeAbout', result);
-                });
-        });
-    });
+export default {
+    giveIndexNews,
+    giveAllNews,
+    giveNewsFull,
+    giveNewsPublic,
+    giveRatings,
+    giveIndexStats,
+    giveAbout
 };

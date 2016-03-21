@@ -1,7 +1,9 @@
 import ms from 'ms';
 import bcrypt from 'bcrypt';
-import Bluebird from 'bluebird';
 import { Schema } from 'mongoose';
+import constants from '../app/errors/constants';
+import NotFoundError from '../app/errors/NotFound';
+import AuthenticationError from '../app/errors/Authentication';
 import { registerModel } from '../controllers/connection';
 
 const SALT_SEED = 20;
@@ -149,13 +151,6 @@ registerModel(db => {
         return this.update(updates).exec();
     };
 
-    // Failed Login Reasons
-    const reasons = UserScheme.statics.failedLogin = {
-        NOT_FOUND: 0,
-        PASSWORD_INCORRECT: 1,
-        MAX_ATTEMPTS: 2
-    };
-
     UserScheme.statics.getAuthenticated = async function (login, password) {
         const user = await this.findOne({
             $or: [
@@ -166,14 +161,14 @@ registerModel(db => {
 
         // Make sure the user exists
         if (!user) {
-            throw { code: reasons.NOT_FOUND, message: 'User not found' };
+            throw new NotFoundError(constants.NOT_FOUND_USER);
         }
 
         // Check if the account is currently locked
         if (user.isLocked) {
             // just increment login attempts if account is already locked
             await user.incLoginAttempts();
-            throw { code: reasons.MAX_ATTEMPTS, message: 'Maximum number of login attempts exceeded' };
+            throw new AuthenticationError(constants.AUTHENTICATION_MAX_ATTEMPTS);
         }
 
         // Test for a matching password
@@ -195,7 +190,7 @@ registerModel(db => {
 
         // Password is incorrect, so increment login attempts before responding
         await user.incLoginAttempts();
-        throw { code: reasons.PASSWORD_INCORRECT, message: 'Password is incorrect' };
+        throw new AuthenticationError(constants.AUTHENTICATION_PASS_WRONG);
     };
 
     UserScheme.path('sex').validate(function (sex) {
@@ -250,12 +245,10 @@ registerModel(db => {
         }).exec(cb);
     };
 
-    UserScheme.statics.getUserID = function (login, cb) {
-        return this.collection.findOneAsync({ login }, { _id: 1 })
-            .then(function (user) {
-                return user && user._id;
-            })
-            .nodeify(cb);
+    UserScheme.statics.getUserID = async function (login) {
+        const user = await this.findOne({ login }, { _id: 1 }).exec();
+
+        return user && user._id;
     };
 
     UserScheme.statics.isEqual = (function () {

@@ -125,7 +125,7 @@ define(['underscore', 'Params', 'socket!', 'jquery', 'knockout', 'm/_moduleClich
 
                 this.lang(lang);
                 this.langAlt(this.lang());
-                socket.emit('langChange', { lang: lang });
+                socket.emit('session.langChange', { lang: lang });
             };
         }())
     });

@@ -74,7 +74,7 @@ define([
 
     function render(modules, options) {
         var replacedContainers = {},
-            promises = _.pluck(modules, 'module'), // Массив промисов для возврата модулей в callback функцию
+            promises = _.map(modules, 'module'), // Массив промисов для возврата модулей в callback функцию
             promisesWhenNew = {}; //Хеш имен модулей, которые рендерятся первый раз. Передается последним параметром в коллбэк рендера
 
         options = _.defaults(options || {}, defaultOptions);

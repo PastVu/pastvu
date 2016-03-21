@@ -199,7 +199,7 @@ export async function onCommentsRemove(objId, comments, type = 'photo') {
     }, []);
 
     if (updates.length) {
-        return (await* updates).reduce((result, { n: count = 0 }) => result + count, 0);
+        return (await Promise.all(updates)).reduce((result, { n: count = 0 }) => result + count, 0);
     }
 
     return 0;
@@ -255,7 +255,7 @@ export async function onCommentsRestore(objId, comments, type = 'photo') {
     }, []);
 
     if (updates.length) {
-        return (await* updates).reduce((result, { n: count = 0 }) => result + count, 0);
+        return (await Promise.all(updates)).reduce((result, { n: count = 0 }) => result + count, 0);
     }
 
     return 0;
@@ -297,7 +297,7 @@ export async function getNewCommentsBrief(objs, relHash, userId, type = 'photo')
         );
     }
 
-    const objComments = await* promises;
+    const objComments = await Promise.all(promises);
 
     const briefsHash = objComments.reduce((result, comments, index) => {
         const objId = objsCommentsIds[index];

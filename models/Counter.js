@@ -9,20 +9,20 @@ registerModel(db => {
         next: { type: Number, 'default': 1 }
     });
 
-    CounterSchema.statics.increment = function (counter, callback) {
-        return this.findByIdAndUpdateAsync(counter, { $inc: { next: 1 } }, {
+    CounterSchema.statics.increment = function (counter) {
+        return this.findByIdAndUpdate(counter, { $inc: { next: 1 } }, {
             new: true,
             upsert: true,
             select: { next: 1 }
-        }).nodeify(callback);
+        }).exec();
     };
 
-    CounterSchema.statics.incrementBy = function (counter, num, callback) {
-        return this.findByIdAndUpdateAsync(counter, { $inc: { next: num } }, {
+    CounterSchema.statics.incrementBy = function (counter, num) {
+        return this.findByIdAndUpdate(counter, { $inc: { next: num } }, {
             new: true,
             upsert: true,
             select: { next: 1 }
-        }).nodeify(callback);
+        }).exec();
     };
 
     Counter = db.model('Counter', CounterSchema);

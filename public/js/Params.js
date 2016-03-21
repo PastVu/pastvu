@@ -72,10 +72,6 @@ define(['jquery', 'underscore', 'socket!', 'Utils', 'knockout', 'knockout.mappin
 
     // Подписываемся на получение новых первоначальных данных (пользователь, куки, настройки)
     socket.on('takeInitData', function (data) {
-        if (!data || data.error) {
-            console.log('takeInitData receive error!', data.error);
-            return;
-        }
         updateSettings(data.p); // Обновляем настройки
     });
 

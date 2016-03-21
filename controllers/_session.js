@@ -1,44 +1,55 @@
 import ms from 'ms';
 import _ from 'lodash';
 import log4js from 'log4js';
+import locale from 'locale';
 import config from '../config';
-import Bluebird from 'bluebird';
 import Utils from '../commons/Utils';
 import { waitDb, dbEval } from './connection';
 import * as regionController from './region';
-import cookie from 'express/node_modules/cookie';
+import { parse as parseCookie } from 'cookie';
 import { userSettingsDef, clientParams } from './settings';
 import { Session, SessionArchive } from '../models/Sessions';
 import { User } from '../models/User';
+import constantsError from '../app/errors/constants';
+import { ApplicationError, BadParamsError, NotFoundError, TimeoutError } from '../app/errors';
 
 const logger = log4js.getLogger('session');
-const errtypes = {
-    NO_HEADERS: 'Bad request - no header or user agent',
-    BAD_BROWSER: 'Bad browser, we do not support it',
-    CANT_CREATE_SESSION: 'Can not create session',
-    CANT_UPDATE_SESSION: 'Can not update session',
-    CANT_GET_SESSION: 'Can not get session',
-    CANT_POPUSER_SESSION: 'Can not populate user session',
-    ANOTHER: 'Some error occured'
-};
+const SESSION_COOKIE_KEY = 'past.sid'; // Session key in client cookies
+const SESSION_SHELF_LIFE = ms('21d'); // Period of session validity since last activity
 
-export const checkUserAgent = Utils.checkUserAgent({
-    'IE': '>=9.0.0',
-    'Firefox': '>=6.0.0', // 6-я версия - это G+
-    'Opera': '>=12.10.0',
-    'Chrome': '>=11.0.0', // 11 версия - это Android 4 default browser в desktop-режиме
-    'Android': '>=4.0.0',
-    'Safari': '>=5.1.4', // 5.1.4 это Function.prototype.bind
-    'Mobile Safari': '>=5.1.4'
-});
+// Locales Map for checking their presence after header parsing
+const localesMap = new Map(config.locales.map(locale => [locale, locale]));
+// Default locale is the first one from config
+const localeDefault = config.locales[0];
+// Method for parsing and checking user-gent
+export const checkUserAgent = Utils.checkUserAgent(config.browsers);
+
+// Create cookie session object
+export const createSidCookieObj = (function () {
+    const key = SESSION_COOKIE_KEY;
+    const domain = config.client.hostname;
+    const cookieMaxAge = SESSION_SHELF_LIFE / 1000;
+
+    return session => ({ key, domain, path: '/', value: session.key, 'max-age': cookieMaxAge });
+}());
+
+// Create cookie lang object (temporary)
+const createLangCookieObj = (function () {
+    const key = 'past.lang';
+    const domain = config.client.hostname;
+    const cookieMaxAge = SESSION_SHELF_LIFE / 1000;
+
+    return lang => ({ key, domain, path: '/', value: lang, 'max-age': cookieMaxAge });
+}());
 
 const getBrowserAgent = function (browser) {
-    var agent = {
-            n: browser.agent.family, //Agent name e.g. 'Chrome'
-            v: browser.agent.toVersion() //Agent version string e.g. '15.0.874'
-        },
-        device = browser.agent.device.toString(), //Device e.g 'Asus A100'
-        os = browser.agent.os.toString(); //Operation system e.g. 'Mac OSX 10.8.1'
+    const agent = {
+        n: browser.agent.family, // Agent name e.g. 'Chrome'
+        v: browser.agent.toVersion() // Agent version string e.g. '15.0.874'
+    };
+
+    const device = browser.agent.device.toString(); // Device e.g 'Asus A100'
+    const os = browser.agent.os.toString(); // Operation system e.g. 'Mac OSX 10.10.1'
 
     if (os) {
         agent.os = os;
@@ -46,14 +57,31 @@ const getBrowserAgent = function (browser) {
     if (device && device !== 'Other') {
         agent.d = device;
     }
+
     return agent;
 };
 
+// Determine user locale that we support based on 'accept-language' header
+export const identifyUserLocale = (function () {
+    // Locales for comparison
+    const localesSuported = new locale.Locales(config.locales);
+
+    return function (acceptLanguage) {
+        if (_.isEmpty(acceptLanguage)) {
+            return localeDefault; // If parameter is not specified, return default locale
+        }
+
+        // Find the most suitable locale for agent
+        const suggestedLocale = (new locale.Locales(acceptLanguage)).best(localesSuported);
+
+        return localesMap.get(suggestedLocale.normalized) || localesMap.get(suggestedLocale.language) || localeDefault;
+    };
+}());
+
 export const getPlainUser = (function () {
-    var userToPublicObject = function (doc, ret/* , options */) {
-        // Этот метод вызовется и в дочерних популированных объектах.
+    const userToPublicObject = function (doc, ret/* , options */) {
         // Transforms are applied to the document and each of its sub-documents.
-        // Проверяем, что именно пользователь
+        // Check that it's exactly user
         if (doc.login !== undefined) {
             delete ret.cid;
             delete ret.pass;
@@ -64,112 +92,168 @@ export const getPlainUser = (function () {
         }
         delete ret._id;
     };
-    return function (user) {
-        return user && user.toObject ? user.toObject({ transform: userToPublicObject }) : null;
-    };
+
+    return user => user && user.toObject ? user.toObject({ transform: userToPublicObject }) : null;
 }());
 
-const SESSION_SHELF_LIFE = ms('21d'); // Срок годности сессии с последней активности
+// usObjs by session key. Hash of users object by session keys
+// Several sessions can have one user object, if client loggedin through several devices
+export const usSid = Object.create(null);
+// usObjs loggedin by user login. Hash of users object by registered users logins
+export const usLogin = Object.create(null);
+// usObjs loggedin by user _id. Hash of users object by registered users _ids
+export const usId = Object.create(null);
 
-const createSidCookieObj = (function () {
-    // Создает объект с кукой ключа сессии
-    var key = 'past.sid',
-        domain = config.client.hostname,
-        cookieMaxAge = SESSION_SHELF_LIFE / 1000;
+export const sessConnected = Object.create(null); // Hash of all active sessions with established websocket connection
+export const sessWaitingConnect = Object.create(null); // Hash of sessions, which waiting for websocket connection
+export const sessWaitingSelect = Object.create(null); // Hash of sessions, which waiting for selection from db
 
-    return function (session) {
-        return {
-            key,
-            domain,
-            path: '/',
-            value: session.key,
-            'max-age': cookieMaxAge
-        };
-    };
-}());
-const createLangCookieObj = (function () {
-    // Создает объект с кукой языка
-    const key = 'past.lang';
-    const domain = config.client.hostname;
-    const cookieMaxAge = SESSION_SHELF_LIFE / 1000;
+class UsObj {
+    constructor(user, registered = false) {
+        this.user = user;
+        this.registered = registered;
 
-    return function (lang) {
-        return {
-            key,
-            domain,
-            path: '/',
-            value: lang,
-            'max-age': cookieMaxAge
-        };
-    };
-}());
+        this.sessions = Object.create(null);
+        this.rquery = Object.create(null);
+        this.rshortsel = Object.create(null);
+        this.rshortlvls = [];
+    }
 
-export const usSid = Object.create(null); // usObjs by session key. Хэш всех пользовательских обектов по ключам сессий. Может быть один объект у нескольких сессий, если клиент залогинен ы нескольких браузерах
-export const usLogin = Object.create(null); // usObjs loggedin by user login.  Хэш пользовательских обектов по login зарегистрированного пользователя
-export const usId = Object.create(null); // usObjs loggedin by user _id. Хэш пользовательских обектов по _id зарегистрированного пользователя
+    get isOwner() {
+        return this.registered && this.user.role > 10;
+    }
 
-export const sessConnected = Object.create(null); // Sessions. Хэш всех активных сессий, с установленными соединениями
-export const sessWaitingConnect = Object.create(null); // Хэш сессий, которые ожидают первого соединения
-export const sessWaitingSelect = Object.create(null); // Хэш сессий, ожидающих выборки по ключу из базы
+    get isAdmin() {
+        return this.registered && this.user.role > 9;
+    }
 
-const usObjIsOwner = function () {
-    return this.registered && this.user.role > 10;
-};
-const usObjIsAdmin = function () {
-    return this.registered && this.user.role > 9;
-};
-const usObjIsModerator = function () {
-    return this.registered && this.user.role === 5;
-};
+    get isModerator() {
+        return this.registered && this.user.role === 5;
+    }
+}
 
-// Создаем запись в хэше пользователей (если нет) и добавляем в неё сессию
-async function userObjectAddSession(session) {
-    var registered = !!session.user,
-        user = registered ? session.user : session.anonym,
-        usObj = registered ? usLogin[user.login] : usSid[session.key], //Для зарегистрированных надо брать именно через хэш пользователей, чтобы взялся существующий usObj, если пользователь логинится в другом браузере
-        firstAdding = false;
+// Emit data to specified socket
+function emitSocket({ socket, data, waitResponse = false, timeout = 1000 }) {
+    if (!Array.isArray(data)) {
+        data = [data];
+    }
+
+    if (waitResponse) {
+        return new Promise((resolve, reject) => {
+            let overdue = false;
+
+            if (timeout) {
+                setTimeout(() => {
+                    overdue = true;
+                    reject(new TimeoutError({ timeout, data }));
+                }, timeout);
+            }
+
+            socket.emit(...data, result => {
+                if (overdue) {
+                    return;
+                }
+
+                if (_.get(result, 'error')) {
+                    reject(result.error);
+                } else {
+                    resolve(result);
+                }
+            });
+        });
+    } else {
+        socket.emit(...data);
+    }
+}
+
+// Send command to all session's sockets
+const emitSessionSockets = (session, data, waitResponse, excludeSocket) => _.chain(session.sockets)
+    .filter(socket => socket && socket !== excludeSocket && _.isFunction(socket.emit))
+    .map(socket => emitSocket({ socket, data, waitResponse })).value();
+
+const emitSidCookie = (socket, waitResponse) => emitSocket({
+    socket,
+    data: ['command', [{ name: 'updateCookie', data: createSidCookieObj(socket.handshake.session) }]],
+    waitResponse
+});
+
+const emitLangCookie = (socket, lang, waitResponse) => emitSocket({
+    socket,
+    data: ['command', [{ name: 'updateCookie', data: createLangCookieObj(lang) }]],
+    waitResponse
+});
+
+const sendReload = (session, waitResponse, excludeSocket) =>
+    emitSessionSockets(session, ['command', [{ name: 'location' }]], waitResponse, excludeSocket);
+
+// Send user to all his sockets
+export async function emitUser({ usObj, login, userId, sessId, wait, excludeSocket }) {
+    if (!usObj) {
+        usObj = usLogin[login] || usId[userId] || usSid[sessId];
+    }
+
+    if (!usObj) {
+        return Promise.resolve(0);
+    }
+
+    const params = ['youAre', { user: getPlainUser(usObj.user), registered: usObj.registered }];
+    const emits = _.transform(usObj.sessions,
+        (result, session) => result.concat(emitSessionSockets(session, params, wait, excludeSocket)), []
+    );
+
+    if (wait) {
+        await emits;
+    }
+
+    return _.size(emits);
+}
+
+// Save and send user to his sockets
+export async function saveEmitUser({ usObj, login, userId, sessId, wait, excludeSocket }) {
+    if (!usObj) {
+        usObj = usLogin[login] || usId[userId] || usSid[sessId];
+    }
+
+    if (!usObj || !usObj.user) {
+        return Promise.resolve(0);
+    }
+
+    await usObj.user.save();
+
+    return emitUser({ usObj, wait, excludeSocket });
+}
+
+// Create usObj in hashes (if doesn't exists) and add session to it
+async function addSessionToUserObject(session) {
+    const registered = Boolean(session.user);
+    let user = registered ? session.user : session.anonym;
+
+    // For registered users we must get user through logins hash, so existing usObj will be selected,
+    // if user has already loggedin through another device
+    let usObj = registered ? usLogin[user.login] : usSid[session.key];
+    let firstAdding = false;
 
     if (usObj === undefined) {
         firstAdding = true;
-        usObj = usSid[session.key] = {
-            user,
-            sessions: Object.create(null),
-            rquery: Object.create(null),
-            rshortlvls: [],
-            rshortsel: Object.create(null)
-        };
-        Object.defineProperties(usObj, {
-            isOwner: {
-                get: usObjIsOwner,
-                enumerable: true
-            },
-            isAdmin: {
-                get: usObjIsAdmin,
-                enumerable: true
-            },
-            isModerator: {
-                get: usObjIsModerator,
-                enumerable: true
-            }
-        });
-        if (registered) {
-            usObj.registered = true;
-            usLogin[user.login] = usId[user._id] = usObj;
-            logger.info('Create us hash:', user.login);
-        } //else {logger.info('Create anonym hash:', session.key);}
-    } else {
-        if (registered) {
-            //Если пользователь уже был в хеше пользователей, т.е. залогинен в другом браузере,
-            //вставляем в usSid по ключу текущей сессии существующий usObj и присваиваем текущей сессии существующего пользователя
-            usSid[session.key] = usObj;
-            user = session.user = usObj.user;
-            logger.info('Add new session to us hash:', user.login);
-        } else {
-            logger.warn('Anonym trying to add new session?! Key: ' + session.key);
-        }
-    }
 
-    usObj.sessions[session.key] = session; // Добавляем сессию в хеш сессий объекта пользователя
+        usObj = usSid[session.key] = new UsObj(user, registered);
+
+        if (registered) {
+            usLogin[user.login] = usId[user._id] = usObj;
+            logger.info(`${this.ridMark} Create us hash: ${user.login}`);
+        }
+    } else if (registered) {
+        // If user is already in hashes, he is logged in through another device
+        // Insert into usSid by kye of current session existing usObj and assign existing user to current session
+        usSid[session.key] = usObj;
+        user = session.user = usObj.user;
+        logger.info(`${this.ridMark} Add new session to us hash: ${user.login}`);
+    } else {
+        logger.warn(`${this.ridMark} Anonym trying to add new session?! Key: ${session.key}`);
+    }
+    this.addUserIdToRidMark(usObj, session);
+
+    usObj.sessions[session.key] = session; // Add session to sessions hash of usObj
 
     if (firstAdding) {
         await userObjectTreatUser(usObj);
@@ -178,9 +262,18 @@ async function userObjectAddSession(session) {
     return usObj;
 }
 
-//Создаёт сессию и сохраняет её в базу. Не ждёт результата сохранения
-function sessionCreate(ip, headers, browser) {
-    var session = new Session({
+function userObjectTreatUser(usObj) {
+    const user = usObj.user;
+
+    // Assign to user default settings
+    user.settings = _.defaults(user.settings || {}, userSettingsDef);
+
+    return popUserRegions(usObj);
+}
+
+// Create and save session to db
+async function createSession(ip, headers, browser) {
+    const session = new Session({
         key: Utils.randomString(12),
         stamp: new Date(),
         data: {
@@ -195,23 +288,23 @@ function sessionCreate(ip, headers, browser) {
         }
     });
 
-    session.save();
-    return session;
+    return await session.save();
 }
-//Обновляет сессию в базе, если при входе она была выбрана из базы
-function sessionUpdate(session, ip, headers, browser, cb) {
-    var stamp = new Date();
-    var data = session.data;
 
-    //Обновляем время сессии
+// Update session in db, if it was select from db at entrance
+async function updateSession(session, ip, headers, browser) {
+    const stamp = new Date();
+    const data = session.data;
+
+    // Update session stamp
     session.stamp = stamp;
 
-    //Если пользователь зарегистрирован, обнуляем поле anonym, т.к. при выборке из базы mongoose его автоматически заполняет {}
+    // If user is registered, zeroize 'anonym' field, because mongoose when select session from db, set 'anonym' to {}
     if (session.user) {
         session.anonym = undefined;
     }
 
-    //Если ip пользователя изменился, записываем в историю старый с временем изменения
+    // If user ip is changed, write old one to history with change time
     if (ip !== data.ip) {
         if (!data.ip_hist) {
             data.ip_hist = [];
@@ -222,7 +315,7 @@ function sessionUpdate(session, ip, headers, browser, cb) {
 
     data.lang = config.lang;
 
-    //Если user-agent заголовка изменился, заново парсим агента и записываем предыдущего в историю с временем изменения
+    // If user-agent is changed, parse it and write previous one to history with change time
     if (headers['user-agent'] !== data.headers['user-agent']) {
         if (data.agent) {
             if (!data.agent_hist) {
@@ -235,39 +328,35 @@ function sessionUpdate(session, ip, headers, browser, cb) {
     data.headers = headers;
     session.markModified('data');
 
-    session.save(cb);
+    return await session.save();
 }
 
-//Создаёт сессию путем копирования изначальных данных из переданной сессии (ip, header, agent)
-function sessionCopy(sessionSource) {
-    var session = new Session({
+// Create session as copy from transfered session (ip, header, agent)
+function copySession(sessionSource) {
+    const session = new Session({
         key: Utils.randomString(12),
         stamp: new Date(),
-        data: {}
+        data: _.pick(sessionSource.data, 'ip', 'headers', 'agent')
     });
 
-    session.data.ip = sessionSource.data.ip;
-    session.data.headers = sessionSource.data.headers;
-    session.data.agent = sessionSource.data.agent;
     return session;
 }
 
-//Добавляет созданную или вновь выбранную из базы сессию в память (список ожидания коннектов, хэш пользователей)
-function sessionToHashes(session, cb) {
+// Add newly created or newly selected session in hashes
+async function addSessionToHashes(session) {
     sessWaitingConnect[session.key] = session;
-    userObjectAddSession(session).then(function (usObj) {
-        cb(null, usObj, session);
-    }).catch(function (err) {
-        cb(err);
-    });
+    const usObj = await addSessionToUserObject.call(this, session);
+
+    return usObj;
 }
 
-//Убирает сессию из памяти (хешей) с проверкой объекта пользователя и убирает его тоже, если сессий у него не осталось
-function sessionFromHashes(usObj, session, logPrefix) {
-    var sessionKey = session.key,
-        userKey = usObj.registered ? usObj.user.login : session.key,
-        someCountPrev,
-        someCountNew;
+// Remove session from hashes, and remove usObj if it doesn't contains sessiona anymore
+export function removeSessionFromHashes({ session: { key: sessionKey }, usObj, logPrefix = '' }) {
+    const userKey = usObj.registered ? usObj.user.login : sessionKey;
+    let someCountPrev;
+    let someCountNew;
+
+    logPrefix = _.get(this, 'ridMark', '') + ' ' + logPrefix;
 
     delete sessWaitingConnect[sessionKey];
     delete sessConnected[sessionKey];
@@ -275,50 +364,42 @@ function sessionFromHashes(usObj, session, logPrefix) {
     someCountPrev = Object.keys(usSid).length;
     delete usSid[sessionKey];
     someCountNew = Object.keys(usSid).length;
-    //logger.info('Delete session from usSid', someCountNew);
+    // logger.info('Delete session from usSid', someCountNew);
     if (someCountNew !== someCountPrev - 1) {
-        logger.warn(logPrefix, 'Session from usSid not removed (' + sessionKey + ')', userKey);
+        logger.warn(`${logPrefix} Session from usSid not removed (${sessionKey}) ${userKey}`);
     }
 
     someCountPrev = Object.keys(usObj.sessions).length;
     delete usObj.sessions[sessionKey];
     someCountNew = Object.keys(usObj.sessions).length;
-    //logger.info('Delete session from usObj.sessions', someCountNew);
+    // logger.info('Delete session from usObj.sessions', someCountNew);
     if (someCountNew !== someCountPrev - 1) {
-        logger.warn(logPrefix, 'WARN-Session from usObj not removed (' + sessionKey + ')', userKey);
+        logger.warn(`${logPrefix} WARN-Session from usObj not removed (${sessionKey}) ${userKey}`);
     }
 
     if (!someCountNew && usObj.registered) {
-        //logger.info('Delete user from hashes', usObj.user.login);
-        //Если сессий у зарегистрированного пользователя не осталось, убираем usObj из хеша пользователей (из usSid уже должно было убраться)
+        // logger.info('Delete user from hashes', usObj.user.login);
+        // If there is no more sessions in usObj of registered object, remove usObj of users hashes
+        // (from usSid is already removed)
         delete usLogin[usObj.user.login];
         delete usId[usObj.user._id];
     }
 }
 
 // Send session to archive
-async function sessionToArchive(session) {
+async function archiveSession(session) {
     // Take plain object of session, with _id instead of populated objects
     const sessionPlain = session.toObject({ minimize: true, depopulate: true, versionKey: false });
-    const archiveSession = new SessionArchive(sessionPlain);
+    const archivingSession = new SessionArchive(sessionPlain);
 
     if (sessionPlain.user) {
-        archiveSession.anonym = undefined;
+        archivingSession.anonym = undefined;
     }
 
     await session.remove(); // Remove session from collections of active sessions
-    await archiveSession.save(); // Save archive session to collection of archive sessions
+    await archivingSession.save(); // Save archive session to collection of archive sessions
 
-    return archiveSession;
-}
-
-function userObjectTreatUser(usObj) {
-    const user = usObj.user;
-
-    // Assign to user default settings
-    user.settings = _.defaults(user.settings || {}, userSettingsDef);
-
-    return popUserRegions(usObj);
+    return archivingSession;
 }
 
 // Pupulate user regions and build queries for them
@@ -370,15 +451,15 @@ async function popUserRegions(usObj) {
 }
 
 // Reget user from db and populate all his dependencies
-export async function regetUser(usObj, emitHim, emitExcludeSocket) {
+export async function regetUser(usObj, emitHim, excludeSocket) {
     if (!usObj.registered) {
-        throw { message: 'Can reget only registered user' };
+        throw new ApplicationError(constantsError.SESSION_CAN_REGET_REGISTERED_ONLY);
     }
 
     const user = await User.findOne({ login: usObj.user.login }).exec();
 
     if (!user) {
-        throw { message: 'No such user for reget' };
+        throw new NotFoundError(constantsError.NO_SUCH_USER);
     }
 
     // Assign new user object to usObj and to all its sessions
@@ -390,7 +471,7 @@ export async function regetUser(usObj, emitHim, emitExcludeSocket) {
     await userObjectTreatUser(usObj);
 
     if (emitHim) {
-        emitUser(usObj, null, emitExcludeSocket);
+        emitUser({ usObj, excludeSocket });
     }
 
     return user;
@@ -413,11 +494,9 @@ export function regetUsers(filterFn, emitThem) {
 }
 
 // Session treatment when user logging in, invokes from auth-controller
-export async function loginUser(socket, user) {
-    const handshake = socket.handshake;
-    const usObjOld = handshake.usObj;
-    const sessionOld = handshake.session;
-    const sessionNew = sessionCopy(sessionOld);
+export async function loginUser({ user }) {
+    const { socket, handshake: { session: sessionOld, usObj: usObjOld } } = this;
+    const sessionNew = copySession(sessionOld);
     const sessHash = sessWaitingConnect[sessionOld.key] ? sessWaitingConnect : sessConnected;
 
     // Assign user to session
@@ -434,39 +513,39 @@ export async function loginUser(socket, user) {
     // Add session to existing usObj or will create new usObj
     // usObj already exists if user already logged in on some other device (other session), in this case
     // user must be taken from usObj instaed of incoming
-    const usObj = await userObjectAddSession(sessionNew);
+    const usObj = await addSessionToUserObject.call(this, sessionNew);
     user = usObj.user;
 
     // For all socket of currect (old) session assign new session and usObj
-    if (_.isObject(sessionOld.sockets)) {
-        _.forOwn(sessionOld.sockets, function (sock) {
-            sock.handshake.usObj = usObj;
-            sock.handshake.session = sessionNew;
+    if (_.isEmpty(sessionOld.sockets)) {
+        logger.warn(`${this.radMark} SessionOld have no sockets while login ${user.login}`);
+    } else {
+        _.forOwn(sessionOld.sockets, ({ handshake }) => {
+            handshake.usObj = usObj;
+            handshake.session = sessionNew;
         });
 
         // Transfer all sockets from old session to new
         sessionNew.sockets = sessionOld.sockets;
-    } else {
-        logger.warn('SessionOld have no sockets while login', user.login);
     }
     delete sessionOld.sockets;
 
     // Remove old session from sessions map
-    sessionFromHashes(usObjOld, sessionOld, 'loginUser');
+    this.call('session.removeSessionFromHashes', { usObj: usObjOld, session: sessionOld, logPrefix: 'loginUser' });
 
     // Put new session into sessions map
     sessHash[sessionNew.key] = sessionNew;
 
     // Send old session to archive
-    sessionToArchive(sessionOld);
+    await archiveSession(sessionOld);
 
     // Update cookie in current socket, all browser tabs will see it
     emitSidCookie(socket);
 
     const userPlain = getPlainUser(user);
 
-    // Send user to all sockets of session, except current socket (auth-controller send user there)
-    _.forOwn(sessionNew.sockets, function (sock) {
+    // Send user to all sockets of session, except current socket (auth-controller will send user there)
+    _.forOwn(sessionNew.sockets, sock => {
         if (sock !== socket && _.isFunction(sock.emit)) {
             sock.emit('youAre', { user: userPlain, registered: true });
         }
@@ -476,11 +555,9 @@ export async function loginUser(socket, user) {
 }
 
 // Session treatment when user exit, invokes from auth-controller
-export async function logoutUser(socket) {
-    const handshake = socket.handshake;
-    const usObjOld = handshake.usObj;
-    const sessionOld = handshake.session;
-    const sessionNew = sessionCopy(sessionOld);
+export async function logoutUser() {
+    const { socket, handshake: { usObj: usObjOld, session: sessionOld } } = this;
+    const sessionNew = copySession(sessionOld);
     const sessHash = sessWaitingConnect[sessionOld.key] ? sessWaitingConnect : sessConnected;
 
     const user = usObjOld.user;
@@ -497,363 +574,120 @@ export async function logoutUser(socket) {
     await sessionNew.save();
 
     // Create new usObj and new session into it
-    const usObj = await userObjectAddSession(sessionNew);
+    const usObj = await addSessionToUserObject.call(this, sessionNew);
 
     // For all socket of currect (old) session assign new session and usObj
-    if (_.isObject(sessionOld.sockets)) {
-        _.forOwn(sessionOld.sockets, function (sock) {
-            sock.handshake.usObj = usObj;
-            sock.handshake.session = sessionNew;
+    if (_.isEmpty(sessionOld.sockets)) {
+        logger.warn(`${this.radMark} SessionOld have no sockets while logout ${user.login}`);
+    } else {
+        _.forOwn(sessionOld.sockets, ({ handshake }) => {
+            handshake.usObj = usObj;
+            handshake.session = sessionNew;
         });
 
         // Transfer all sockets from old session to new
         sessionNew.sockets = sessionOld.sockets;
-    } else {
-        logger.warn('SessionOld have no sockets while logout', user.login);
     }
     delete sessionOld.sockets;
 
     // Remove old session from sessions map
-    sessionFromHashes(usObjOld, sessionOld, 'logoutUser');
+    this.call('session.removeSessionFromHashes', { usObj: usObjOld, session: sessionOld, logPrefix: 'logoutUser' });
 
     // Put new session in sessions map
     sessHash[sessionNew.key] = sessionNew;
 
     // Send old session to archive
-    sessionToArchive(sessionOld);
+    await archiveSession(sessionOld);
 
-    await new Promise(resolve => {
-        socket.once('commandResult', function () {
-            sendReload(sessionNew);
-            resolve();
-        });
+    // Send client new cookie of anonym session
+    await emitSidCookie(socket, true);
 
-        // Send client new cookie of anonym session
-        emitSidCookie(socket);
-    });
+    sendReload(sessionNew);
 }
 
-// Send command to reload to all session's sockets
-function sendReload(session, excludeSocket) {
-    _.forOwn(session.sockets, function (socket) {
-        if (socket && socket !== excludeSocket && _.isFunction(socket.emit)) {
-            socket.emit('command', [{ name: 'location' }]);
-        }
-    });
-}
-
-// Отправка текущего пользователя всем его подключеным клиентам
-export function emitUser(usObj, loginOrIdOrSessKey, excludeSocket) {
-    var userPlain,
-        sessions,
-        sockets,
-        count = 0,
-        i,
-        j;
-
-    if (!usObj) {
-        usObj = usLogin[loginOrIdOrSessKey] || usId[loginOrIdOrSessKey] || usSid[loginOrIdOrSessKey];
-    }
-
-    if (usObj) {
-        userPlain = getPlainUser(usObj.user);
-        sessions = usObj.sessions;
-
-        for (i in sessions) {
-            if (sessions[i] !== undefined) {
-                sockets = sessions[i].sockets;
-                for (j in sockets) {
-                    if (sockets[j] !== undefined && sockets[j] !== excludeSocket && sockets[j].emit !== undefined) {
-                        count++;
-                        sockets[j].emit('youAre', { user: userPlain, registered: usObj.registered });
-                    }
-                }
-            }
-        }
-    }
-
-    return Bluebird.resolve(count);
-}
-
-// Сохранение и последующая отправка
-export function saveEmitUser(usObj, excludeSocket) {
-    if (usObj && usObj.user !== undefined) {
-        return usObj.user.saveAsync()
-            .spread(function () {
-                return emitUser(usObj, null, excludeSocket);
-            });
-    }
-    return Bluebird.resolve();
-}
-
-function emitSidCookie(socket) {
-    socket.emit('command', [
-        { name: 'updateCookie', data: createSidCookieObj(socket.handshake.session) }
-    ]);
-}
-
-function emitLangCookie(socket, lang) {
-    socket.emit('command', [
-        { name: 'updateCookie', data: createLangCookieObj(lang) }
-    ]);
-}
-
-//Проверяем если пользователь онлайн
-export function isOnline(login, _id) {
+// Check user is online
+export function isOnline({ login, userId } = {}) {
     if (login) {
         return usLogin[login] !== undefined;
-    } else if (_id) {
-        return usId[_id] !== undefined;
+    } else if (userId) {
+        return usId[userId] !== undefined;
     }
+
+    return false;
 }
 
-//Берем онлайн-пользователя
-export function getOnline(login, _id) {
-    var usObj;
+// Get online user
+export function getOnline({ login, userId } = {}) {
     if (login) {
-        usObj = usLogin[login];
-    } else if (_id) {
-        usObj = usId[_id];
-    }
-    if (usObj) {
-        return usObj;
+        return usLogin[login];
+    } else if (userId) {
+        return usId[userId];
     }
 }
 
-//Обработчик при первом заходе или установки соединения сокетом для создания сессии и проверки браузера клиента
-function authConnection(ip, headers, finishCb) {
-    if (!headers || !headers['user-agent']) {
-        return finishCb({ type: errtypes.NO_HEADERS }); //Если нет хедера или юзер-агента - отказываем
-    }
-
-    var browser = checkUserAgent(headers['user-agent']);
-    if (!browser.accept) {
-        return finishCb({ type: errtypes.BAD_BROWSER, agent: browser.agent });
-    }
-
-    var cookieObj = cookie.parse(headers.cookie || ''),
-        existsSid = cookieObj['past.sid'],
-        session,
-        authConnectionFinish = function (err, usObj, session) {
-            finishCb(err, usObj, session, browser);
-        };
-
-    if (existsSid === undefined) {
-        //Если ключа нет, переходим к созданию сессии
-        sessionToHashes(sessionCreate(ip, headers, browser), authConnectionFinish);
-    } else {
-        session = sessConnected[existsSid] || sessWaitingConnect[existsSid];
-        if (session !== undefined) {
-            //Если ключ есть и он уже есть в хеше, то берем эту уже выбранную сессию
-            authConnectionFinish(null, usSid[session.key], session);
-        } else {
-            //Если ключ есть, но его еще нет в хеше сессий, то выбираем сессию из базы по этому ключу
-            if (sessWaitingSelect[existsSid] !== undefined) {
-                //Если запрос сессии с таким ключем в базу уже происходит, просто добавляем обработчик на результат
-                sessWaitingSelect[existsSid].push({ cb: authConnectionFinish });
-            } else {
-                //Если запроса к базе еще нет, создаем его
-                sessWaitingSelect[existsSid] = [
-                    { cb: authConnectionFinish }
-                ];
-
-                Session.findOne({ key: existsSid }, function (err, session) {
-                    if (err) {
-                        return finishCb({ type: errtypes.CANT_GET_SESSION });
-                    }
-                    //Если сессия есть, обновляем в базе хедеры и stamp
-                    if (session) {
-                        sessionUpdate(session, ip, headers, browser, function (err, session) {
-                            if (err) {
-                                return finishCb({ type: errtypes.CANT_UPDATE_SESSION });
-                            }
-                            session.populate('user', function (err, session) {
-                                if (err) {
-                                    return finishCb({ type: errtypes.CANT_POPUSER_SESSION });
-                                }
-                                further(session);
-                            });
-                        });
-                    } else {
-                        further(sessionCreate(ip, headers, browser));
-                    }
-                    function further(session) {
-                        sessionToHashes(session, function (err, usObj, session) {
-                            if (Array.isArray(sessWaitingSelect[existsSid])) {
-                                sessWaitingSelect[existsSid].forEach(function (item) {
-                                    item.cb.call(null, err, usObj, session);
-                                });
-                                delete sessWaitingSelect[existsSid];
-                            }
-                        });
-                    }
-                });
-            }
-        }
-    }
-}
-
-// Обработка входящего http-соединения
-module.exports.handleHTTPRequest = function (req, res, next) {
-    authConnection(req.ip, req.headers, function (err, usObj, session, browser) {
-        if (err) {
-            if (err.type === errtypes.BAD_BROWSER) {
-                res.statusCode = 200;
-                res.render('status/badbrowser', {
-                    agent: err.agent,
-                    title: 'Вы используете устаревшую версию браузера'
-                });
-            } else if (err.type === errtypes.NO_HEADERS) {
-                res.statusCode = 400;
-                res.end(err.type);
-            } else {
-                res.statusCode = 500;
-                res.end(err.type);
-            }
-            return;
-        }
-
-        req.handshake = { session, usObj };
-
-        //Добавляем в заголовок Set-cookie с идентификатором сессии (создает куку или продлевает её действие на клиенте)
-        var cookieObj = createSidCookieObj(session),
-            cookieResOptions = { path: cookieObj.path, domain: cookieObj.domain };
-
-        if (cookieObj['max-age'] !== undefined) {
-            cookieResOptions.maxAge = cookieObj['max-age'] * 1000;
-        }
-        res.cookie(cookieObj.key, cookieObj.value, cookieResOptions);
-
-        //Передаем browser дальше, на случай дальнейшего использования, например, в установке заголовка 'X-UA-Compatible'
-        req.browser = browser;
-        next();
-    });
-};
-//Обработка входящего socket-соединения
-module.exports.handleSocket = (function () {
-    //При разрыве сокет-соединения проверяет на необходимость оставлять в хэшах сессию и объект пользователя
-    var onSocketDisconnection = function (/*reason*/) {
-        var socket = this,
-            session = socket.handshake.session,
-            usObj = socket.handshake.usObj,
-            someCountPrev = Object.keys(session.sockets).length,
-            someCountNew,
-            user = usObj.user;
-
-        //logger.info('DISconnection');
-        delete session.sockets[socket.id]; //Удаляем сокет из сесии
-
-        someCountNew = Object.keys(session.sockets).length;
-        if (someCountNew !== someCountPrev - 1) {
-            logger.warn('Socket not removed (' + socket.id + ')', user && user.login);
-        }
-
-        if (!someCountNew) {
-            //logger.info('Delete Sess');
-            //Если для этой сессии не осталось соединений, убираем сессию из хеша сессий
-            sessionFromHashes(usObj, session, 'onSocketDisconnection');
-        }
-    };
-
-    return function (socket, next) {
-        var handshake = socket.handshake;
-        var headers = handshake.headers;
-        var ip = headers['x-real-ip'] || (handshake.address && handshake.address.address);
-
-        authConnection(ip, headers, function (err, usObj, session) {
-            if (err) {
-                return next(new Error(err.type));
-            }
-            handshake.usObj = usObj;
-            handshake.session = session;
-
-            // Если это первый коннект для сессии, перекладываем её в хеш активных сессий
-            if (sessConnected[session.key] === undefined && sessWaitingConnect[session.key] !== undefined) {
-                sessConnected[session.key] = session;
-                delete sessWaitingConnect[session.key];
-            }
-
-            if (!session.sockets) {
-                session.sockets = {};
-            }
-            session.sockets[socket.id] = socket; //Кладем сокет в сессию
-
-            socket.on('disconnect', onSocketDisconnection);//Вешаем обработчик на disconnect
-
-            next();
-        });
-    };
-}());
-
-// Периодически убирает из памяти ожидающие подключения сессии, если они не подключились по сокету в течении 30 секунд
-var checkSessWaitingConnect = (function () {
-    var checkInterval = ms('10s'),
-        sessWaitingPeriod = ms('30s');
+// Periodic process for dropping waiting connection sessions, if they don't establish connection in given time
+const checkSessWaitingConnect = (function () {
+    const SESSION_WAIT_CHECK_INTERVAL = ms('10s');
+    const SESSION_WAIT_TIMEOUT = ms('1m');
 
     function procedure() {
-        var expiredFrontier = Date.now() - sessWaitingPeriod,
-            keys = Object.keys(sessWaitingConnect),
-            session,
-            i = keys.length;
+        const expiredFrontier = Date.now() - SESSION_WAIT_TIMEOUT;
 
-        while (i--) {
-            session = sessWaitingConnect[keys[i]];
+        _.forOwn(sessWaitingConnect, (session, sessionId) => {
+            const stamp = new Date(session.stamp || 0).getTime();
 
-            if (session && session.stamp <= expiredFrontier) {
-                sessionFromHashes(usSid[session.key], session, 'checkSessWaitingConnect');
+            if (!stamp || stamp <= expiredFrontier) {
+                removeSessionFromHashes({ usObj: usSid[sessionId], session, logPrefix: 'checkSessWaitingConnect' });
             }
-        }
+        });
 
         checkSessWaitingConnect();
     }
 
     return function () {
-        setTimeout(procedure, checkInterval);
+        setTimeout(procedure, SESSION_WAIT_CHECK_INTERVAL).unref();
     };
 }());
 
 // Periodically sends expired session to archive
 const checkExpiredSessions = (function () {
-    const checkInterval = ms('1d'); // Check interval
+    const checkInterval = ms('1h'); // Check interval
 
     async function procedure() {
         try {
             const result = await dbEval('archiveExpiredSessions', [new Date() - SESSION_SHELF_LIFE], { nolock: true });
 
             if (!result) {
-                throw { message: 'undefined result from dbEval' };
+                throw new ApplicationError(constantsError.SESSION_EXPIRED_ARCHIVE_NO_RESULT);
             }
 
             logger.info(`${result.count} sessions moved to archive`);
 
-            if (Array.isArray(result.keys)) {
-                // Check if some of archived sessions is still in memory (in hashes), remove it frome memory
-                for (const key of result.keys) {
-                    const session = sessConnected[key];
-                    const usObj = usSid[key];
+            // Check if some of archived sessions is still in memory (in hashes), remove it frome memory
+            _.forEach(result.keys, key => {
+                const session = sessConnected[key];
+                const usObj = usSid[key];
 
-                    if (session) {
-                        if (usObj !== undefined) {
-                            sessionFromHashes(usObj, session, 'checkExpiredSessions');
-                        }
-
-                        // If session contains sockets, break connection
-                        _.forEach(session.sockets, function (socket) {
-                            if (socket.disconnet) {
-                                socket.disconnet();
-                            }
-                        });
-
-                        delete session.sockets;
+                if (session) {
+                    if (usObj !== undefined) {
+                        removeSessionFromHashes({ usObj, session, logPrefix: 'checkExpiredSessions' });
                     }
+
+                    // If session contains sockets, break connection
+                    _.forEach(session.sockets, function (socket) {
+                        if (socket.disconnet) {
+                            socket.disconnet();
+                        }
+                    });
+
+                    delete session.sockets;
                 }
-            }
+            });
         } catch (err) {
             logger.error('archiveExpiredSessions error: ', err);
         }
 
-        // Schedule next launch
-        checkExpiredSessions();
+        checkExpiredSessions(); // Schedule next launch
     }
 
     return function () {
@@ -861,44 +695,158 @@ const checkExpiredSessions = (function () {
     };
 }());
 
-function langChange(socket, data) {
-    if (!['ru', 'en'].includes(data.lang)) {
+// Handler of http-request or websocket-connection for session and usObj create/select
+export async function handleConnection(ip, headers, overHTTP, req) {
+    if (!headers || !headers['user-agent']) {
+        // If session doesn't contain header or user-agent - deny
+        throw new BadParamsError(constantsError.SESSION_NO_HEADERS, this.rid);
+    }
+
+    if (overHTTP) {
+        // Ability to set most priority locale by header 'X-Facebook-Locale' or by 'fb_locale'/'locale' uri parameters
+        // http://developers.facebook.com/docs/opengraph/guides/internationalization
+        const localeOverride = headers['x-facebook-locale'] || req.query.fb_locale || req.query.locale;
+
+        if (localeOverride) {
+            if (req.headers['accept-language']) {
+                req.headers['accept-language'] = localeOverride + ',' + req.headers['accept-language'];
+            } else {
+                req.headers['accept-language'] = localeOverride;
+            }
+        }
+    }
+
+    // Parse user-agent information
+    const browser = checkUserAgent(headers['user-agent']);
+    if (browser.badbrowser) {
+        throw new BadParamsError({ code: constantsError.BAD_BROWSER, agent: browser.agent, trace: false }, this.rid);
+    }
+
+    const cookieObj = parseCookie(headers.cookie || ''); // Parse cookie
+    const sid = cookieObj[SESSION_COOKIE_KEY]; // Get session key from cookie
+    let session;
+    let track;
+    let usObj;
+
+    if (!sid) {
+        track = 'No incoming sid, creating new session';
+
+        session = await createSession.call(this, ip, headers, browser);
+        usObj = await addSessionToHashes.call(this, session);
+    } else if ((sessConnected[sid] || sessWaitingConnect[sid]) && usSid[sid]) {
+        // If key exists and such session already in hash, then just get this session
+        // logger.info(this.ridMark, 'handleConnection', 'Get session from hash');
+
+        track = `Session found among ${sessConnected[sid] ? 'connected' : 'waiting connect'} sessions`;
+        session = sessConnected[sid] || sessWaitingConnect[sid];
+        usObj = usSid[sid];
+        this.addUserIdToRidMark(usObj, session);
+
+        if (overHTTP) {
+            // If client made http request again (open new browser tab), update session data, to set current stamp,
+            // to postpone for this session checkSessWaitingConnect
+            // And check if locale changed
+            await updateSession.call(this, session, ip, headers, browser);
+        }
+    } else {
+        // If session key is exists, but session not in hashes,
+        // then select session from db, but if it's already selecting just wait promise
+
+        if (!sessWaitingSelect[sid]) {
+            sessWaitingSelect[sid] = new Promise(async function (resolve, reject) {
+                try {
+                    let session = await Session.findOne({ key: sid }).populate('user').exec();
+
+                    // If session is found, update data in db and populate user
+                    if (session) {
+                        await updateSession.call(this, session, ip, headers, browser);
+                    } else {
+                        // If session with such key doesn't exist, create new one
+                        track = `Session haven't been found in db by incoming sid, creating new one`;
+                        session = await createSession.call(this, ip, headers, browser);
+                    }
+
+                    const usObj = await addSessionToHashes.call(this, session);
+
+                    resolve({ session, usObj });
+                } catch (err) {
+                    reject(err);
+                } finally {
+                    // Remove promise from hash of waiting connect by session key, anyway - success or error
+                    delete sessWaitingSelect[sid];
+                }
+            }.bind(this)); // We can't use arrow function as async yet, so make bind
+        } else {
+            track = 'Session searching have been already started, waiting for that promise';
+        }
+
+        ({ session, usObj } = await sessWaitingSelect[sid]);
+    }
+
+    if (!usObj || !session) {
+        logger.error(
+            `${this.ridMark} Handling incoming ${overHTTP ? 'http' : 'websocket'} connection`,
+            `finished with empty ${!usObj ? 'usObj' : 'session'}, incoming sid: ${sid}, track: ${track}`
+        );
+
+        throw new ApplicationError({ code: constantsError.SESSION_NOT_FOUND, agent: browser.agent, trace: false }, this.rid);
+    }
+
+    if (!overHTTP) {
+        // Mark session as active (connected by websocket)
+        sessConnected[session.sessionId] = session;
+        // Delete from hash of waiting connection sessions
+        delete sessWaitingConnect[session.sessionId];
+    }
+
+    return { usObj, session, browser, cookie: cookieObj };
+
+};
+
+async function langChange(data) {
+    const { socket, handshake: { session } } = this;
+
+    if (!config.locales.includes(data.lang)) {
         return;
     }
 
-    socket.once('commandResult', function () {
-        sendReload(socket.handshake.session);
-    });
+    // Send client new language cookie
+    await emitLangCookie(socket, data.lang, true);
 
-    // Отправляем клиенту новые куки языка
-    emitLangCookie(socket, data.lang);
+    sendReload(session);
 }
+
+function giveInitData() {
+    const { socket, handshake: { session, usObj: iAm } } = this;
+
+    // Several client modules can have subscribtion for 'takeInitData',
+    // that's why use emit data instead of acknowledgment callback
+    emitSocket({
+        socket,
+        data: ['takeInitData', {
+            p: clientParams,
+            u: getPlainUser(iAm.user),
+            registered: iAm.registered,
+            cook: createSidCookieObj(session)
+        }]
+    });
+}
+
+giveInitData.isPublic = true;
+langChange.isPublic = true;
+
+export default {
+    loginUser,
+    logoutUser,
+    giveInitData,
+    langChange,
+
+    removeSessionFromHashes,
+    emitSocket,
+    regetUsers
+};
 
 waitDb.then(() => {
     checkSessWaitingConnect();
     checkExpiredSessions();
 });
-
-export function loadController(io) {
-    io.sockets.on('connection', function (socket) {
-        const hs = socket.handshake;
-
-        socket.setMaxListeners(0); // TODO: Make only one listener with custom router
-
-        socket.on('giveInitData', function () {
-            const usObj = hs.usObj;
-            const session = hs.session;
-
-            socket.emit('takeInitData', {
-                p: clientParams,
-                cook: createSidCookieObj(session),
-                u: getPlainUser(usObj.user),
-                registered: usObj.registered
-            });
-        });
-
-        socket.on('langChange', function (data) {
-            langChange(socket, data);
-        });
-    });
-};

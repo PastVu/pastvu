@@ -11,6 +11,8 @@ import * as session from './_session';
 import { send as sendMail } from './mail';
 import { userSettingsDef } from './settings';
 import { getRegionsArrFromCache } from './region';
+import constants from '../app/errors/constants';
+import { AuthenticationError, AuthorizationError, BadParamsError, InputError } from '../app/errors';
 
 import { User, UserConfirm } from '../models/User';
 import { Counter } from '../models/Counter';
@@ -20,22 +22,16 @@ moment.locale(config.lang);
 const ms2d = ms('2d');
 const human2d = moment.duration(ms2d).humanize();
 const logger = log4js.getLogger('auth.js');
-const msg = {
-    deny: 'You do not have permission for this action',
-    regError: 'Ошибка регистрации',
-    recError: 'Ошибка восстановления пароля',
-    passChangeError: 'Ошибка смены пароля'
-};
 
 let recallTpl;
 let regTpl;
 
-export const ready = new Promise(async function(resolve, reject) {
+export const ready = new Promise(async function (resolve, reject) {
     try {
-        const [regData, recallData] = await* [
+        const [regData, recallData] = await Promise.all([
             fs.readFileAsync(path.normalize('./views/mail/registration.jade'), 'utf-8'),
             fs.readFileAsync(path.normalize('./views/mail/recall.jade'), 'utf-8')
-        ];
+        ]);
 
         regTpl = jade.compile(regData, { filename: path.normalize('./views/mail/registration.jade'), pretty: false });
         recallTpl = jade.compile(recallData, { filename: path.normalize('./views/mail/recall.jade'), pretty: false });
@@ -47,84 +43,79 @@ export const ready = new Promise(async function(resolve, reject) {
 });
 
 // Users login
-async function login(socket, { login, pass } = {}) {
+async function login({ login, pass }) {
+    const { socket } = this;
+
     if (!login) {
-        throw { message: 'Fill in the login field' };
+        throw new InputError(constants.INPUT_LOGIN_REQUIRED);
     }
     if (!pass) {
-        throw { message: 'Fill in the password field' };
+        throw new InputError(constants.INPUT_PASS_REQUIRED);
     }
 
     try {
         const user = await User.getAuthenticated(login, pass);
 
         // Transfer user to session
-        const { userPlain } = await session.loginUser(socket, user);
+        const { userPlain } = await this.call('session.loginUser', { socket, user });
 
         return { message: 'Success login', youAre: userPlain };
-    } catch (err) {
-        switch (err.code) {
-            case User.failedLogin.NOT_FOUND:
-            case User.failedLogin.PASSWORD_INCORRECT:
-                // note: these cases are usually treated the same - don't tell the user *why* the login failed, only that it did
-                throw { message: 'Неправильная пара логин-пароль' };
-            case User.failedLogin.MAX_ATTEMPTS:
+    } catch (error) {
+        switch (error.code) {
+            case constants.NOT_FOUND_USER:
+            case constants.AUTHENTICATION_PASS_WRONG:
+                // These cases are usually treated the same, don't tell the user why the login failed, only that it did
+                throw new AuthenticationError(constants.AUTHENTICATION_DOESNT_MATCH);
+            case constants.AUTHENTICATION_MAX_ATTEMPTS:
                 // send email or otherwise notify user that account is temporarily locked
-                throw {
-                    message: 'Your account has been temporarily locked due to exceeding the number of wrong login attempts'
-                };
+                throw error;
             default:
-                logger.error('Auth login session.loginUser: ', err);
-                throw { message: 'Ошибка авторизации' };
+                throw error;
         }
     }
 }
 
-// Users logout
-async function logout(socket) {
-    await session.logoutUser(socket);
+// User logout
+async function logout() {
+    await this.call('session.logoutUser');
 
     return {};
 }
 
 // Registration
-async function register(iAm, { login, email, pass, pass2 } = {}) {
+async function register({ login, email, pass, pass2 }) {
     if (!login) {
-        throw { message: 'Заполните имя пользователя' };
+        throw new InputError(constants.INPUT_LOGIN_REQUIRED);
     }
 
-    if (login !== 'anonymous' &&
-        !login.match(/^[\.\w-]{3,15}$/i) || !login.match(/^[A-za-z].*$/i) || !login.match(/^.*\w$/i)) {
-        throw {
-            message: 'Имя пользователя должно содержать от 3 до 15 латинских символов и начинаться с буквы. ' +
-            'В состав слова могут входить цифры, точка, подчеркивание и тире'
-        };
+    if (login !== 'anonymous' && !login.match(/^[\.\w-]{3,15}$/i) || !login.match(/^[A-za-z].+$/i)) {
+        throw new AuthenticationError(constants.INPUT_LOGIN_CONSTRAINT);
     }
 
     if (!email) {
-        throw { message: 'Fill in the e-mail field' };
+        throw new InputError(constants.INPUT_EMAIL_REQUIRED);
     }
 
     email = email.toLowerCase();
 
     if (!pass) {
-        throw { message: 'Fill in the password field' };
+        throw new InputError(constants.INPUT_PASS_REQUIRED);
     }
     if (pass !== pass2) {
-        throw { message: 'Пароли не совпадают' };
+        throw new AuthenticationError(constants.AUTHENTICATION_PASSWORDS_DONT_MATCH);
     }
 
     let user = await User.findOne({ $or: [{ login: new RegExp('^' + login + '$', 'i') }, { email }] }).exec();
 
     if (user) {
         if (user.login.toLowerCase() === login.toLowerCase()) {
-            throw { message: 'Пользователь с таким именем уже зарегистрирован' };
+            throw new AuthenticationError(constants.AUTHENTICATION_USER_EXISTS);
         }
         if (user.email === email) {
-            throw { message: 'Пользователь с таким email уже зарегистрирован' };
+            throw new AuthenticationError(constants.AUTHENTICATION_EMAIL_EXISTS);
         }
 
-        throw { message: 'Пользователь уже зарегистрирован' };
+        throw new AuthenticationError(constants.AUTHENTICATION_USER_EXISTS);
     }
 
     const count = await Counter.increment('user');
@@ -176,7 +167,7 @@ async function register(iAm, { login, email, pass, pass2 } = {}) {
         await User.remove({ login }).exec();
 
         logger.error('Auth register after save: ', err);
-        throw { message: msg.regError };
+        throw new AuthenticationError(constants.AUTHENTICATION_REGISTRATION);
     }
 
     return {
@@ -186,9 +177,11 @@ async function register(iAm, { login, email, pass, pass2 } = {}) {
 }
 
 // Send to email request for password recovery
-async function recall(iAm, { login } = {}) {
+async function recall({ login }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!login || !_.isString(login)) {
-        throw { message: 'Bad params' };
+        throw new InputError(constants.INPUT_LOGIN_REQUIRED);
     }
 
     const user = await User.findOne({
@@ -196,12 +189,12 @@ async function recall(iAm, { login } = {}) {
     }, null, { lean: true }).exec();
 
     if (!user) {
-        throw { message: 'Пользователя с таким логином или e-mail не существует' };
+        throw new AuthenticationError(constants.AUTHENTICATION_REGISTRATION);
     }
 
-    // If user logged in and trying t restore not own accaunt, it mast be admin
+    // If user logged in and trying to restore not own account, he must be admin
     if (iAm.registered && iAm.user.login !== login && !iAm.isAdmin) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
 
     const confirmKey = Utils.randomString(8);
@@ -229,21 +222,23 @@ async function recall(iAm, { login } = {}) {
 }
 
 // Password hange by recall request from email
-async function passChangeRecall(iAm, { key, pass, pass2 } = {}) {
+async function passChangeRecall({ key, pass, pass2 }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!_.isString(key) || key.length !== 8) {
-        throw { message: 'Bad params' };
+        throw new BadParamsError();
     }
     if (!_.isString(pass) || !pass) {
-        throw { message: 'Fill in the password field' };
+        throw new InputError(constants.INPUT_PASS_REQUIRED);
     }
     if (pass !== pass2) {
-        throw { message: 'Пароли не совпадают' };
+        throw new AuthenticationError(constants.AUTHENTICATION_PASSWORDS_DONT_MATCH);
     }
 
     const confirm = await UserConfirm.findOne({ key }).populate('user').exec();
 
     if (!confirm || !confirm.user) {
-        throw { message: msg.passChangeError };
+        throw new AuthenticationError(constants.AUTHENTICATION_PASSCHANGE);
     }
 
     // If registered user has requested password restoration, pass must be changed in user's model in session
@@ -258,27 +253,29 @@ async function passChangeRecall(iAm, { key, pass, pass2 } = {}) {
         user.activatedate = new Date();
     }
 
-    await* [user.save(), confirm.remove()];
+    await Promise.all([user.save(), confirm.remove()]);
 
     return { message: 'Новый пароль сохранен успешно' };
 }
 
 // Password changing in user's settings page with entering current password
-async function passChange(iAm, { login, pass, passNew, passNew2 } = {}) {
+async function passChange({ login, pass, passNew, passNew2 }) {
+    const { handshake: { usObj: iAm } } = this;
+
     if (!iAm.registered || iAm.user.login !== login) {
-        throw { message: msg.deny };
+        throw new AuthorizationError();
     }
     if (!pass || !passNew || !passNew2) {
-        throw { message: 'Заполните все поля' };
+        throw new InputError(constants.INPUT_PASS_REQUIRED);
     }
     if (passNew !== passNew2) {
-        throw { message: 'Пароли не совпадают' };
+        throw new AuthenticationError(constants.AUTHENTICATION_PASSWORDS_DONT_MATCH);
     }
 
     const isMatch = await iAm.user.checkPass(pass);
 
     if (!isMatch) {
-        throw { message: 'Текущий пароль не верен' };
+        throw new AuthenticationError(constants.AUTHENTICATION_CURRPASS_WRONG);
     }
 
     iAm.user.pass = passNew;
@@ -288,15 +285,15 @@ async function passChange(iAm, { login, pass, passNew, passNew2 } = {}) {
 }
 
 // Check confirm key
-async function checkConfirm({ key } = {}) {
+async function checkConfirm({ key }) {
     if (!_.isString(key) || key.length < 7 || key.length > 8) {
-        throw { message: 'Bad params' };
+        throw new BadParamsError();
     }
 
     const confirm = await UserConfirm.findOne({ key }).populate('user').exec();
 
     if (!confirm || !confirm.user) {
-        throw { message: 'Переданного вами ключа не существует' };
+        throw new BadParamsError(constants.AUTHENTICATION_KEY_DOESNT_EXISTS);
     }
 
     const user = confirm.user;
@@ -304,7 +301,7 @@ async function checkConfirm({ key } = {}) {
     if (key.length === 7) { // Confirm registration
         user.active = true;
         user.activatedate = new Date();
-        await* [user.save(), confirm.remove()];
+        await Promise.all([user.save(), confirm.remove()]);
 
         return {
             message: 'Спасибо, регистрация подтверждена! Теперь вы можете войти в систему, используя ваш логин и пароль',
@@ -317,92 +314,31 @@ async function checkConfirm({ key } = {}) {
     }
 }
 
-const whoAmI = iAm => Promise.resolve({
-    user: iAm.user && iAm.user.toObject ? iAm.user.toObject() : null,
-    registered: iAm.registered
-});
+function whoAmI() {
+    const { socket, handshake: { usObj: iAm } } = this;
+    const result = {
+        user: session.getPlainUser(iAm.user),
+        registered: iAm.registered
+    };
 
-export function loadController(io) {
-    io.sockets.on('connection', function (socket) {
-        const hs = socket.handshake;
+    this.call('session.emitSocket', { socket, data: ['youAre', result] });
+}
 
-        socket.on('loginRequest', function (data) {
-            login(socket, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('loginResult', resultData);
-                });
-        });
-
-        socket.on('logoutRequest', function () {
-            logout(socket)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('logouResult', resultData);
-                });
-        });
-
-        socket.on('registerRequest', function (data) {
-            register(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('registerResult', resultData);
-                });
-        });
-
-        socket.on('recallRequest', function (data) {
-            recall(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('recallResult', resultData);
-                });
-        });
-
-        socket.on('passChangeRecall', function (data) {
-            passChangeRecall(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('passChangeRecallResult', resultData);
-                });
-        });
-        socket.on('passChangeRequest', function (data) {
-            passChange(hs.usObj, data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('passChangeResult', resultData);
-                });
-        });
-
-        socket.on('checkConfirm', function (data) {
-            checkConfirm(data)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('checkConfirmResult', resultData);
-                });
-        });
-
-        socket.on('whoAmI', function () {
-            whoAmI(hs.usObj)
-                .catch(function (err) {
-                    return { message: err.message, error: true };
-                })
-                .then(function (resultData) {
-                    socket.emit('youAre', resultData);
-                });
-        });
-    });
+login.isPublic = true;
+logout.isPublic = true;
+register.isPublic = true;
+recall.isPublic = true;
+passChangeRecall.isPublic = true;
+passChange.isPublic = true;
+checkConfirm.isPublic = true;
+whoAmI.isPublic = true;
+export default {
+    login,
+    logout,
+    register,
+    recall,
+    passChangeRecall,
+    passChange,
+    checkConfirm,
+    whoAmI
 };
