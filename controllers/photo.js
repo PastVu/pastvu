@@ -350,9 +350,9 @@ async function give(params) {
         }
     }
 
-    const regionFields = photo.geo ? ['cid', 'title_local'] :
+    const regionFields = photo.geo ? ['cid', 'title_en'] :
         // If photo has no coordinates, additionally take home position of regions
-        { _id: 0, cid: 1, title_local: 1, center: 1, bbox: 1, bboxhome: 1 };
+        { _id: 0, cid: 1, title_en: 1, center: 1, bbox: 1, bboxhome: 1 };
 
     const regions = await this.call('region.getObjRegionList', { obj: photo, fields: regionFields, fromDb: !photo.geo });
 
@@ -2451,7 +2451,7 @@ async function giveObjHist({ cid, fetchId, showDiff }) {
 
     // If regions exists, get theirs objects
     if (Object.keys(regions).length) {
-        result.regions = regionController.fillRegionsHash(regions, ['cid', 'title_local']);
+        result.regions = regionController.fillRegionsHash(regions, ['cid', 'title_en']);
     }
 
     // If reasons exists, get theirs headers
