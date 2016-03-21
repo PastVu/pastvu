@@ -181,8 +181,8 @@ define(['module'], function (/* module */) {
                             }
                             reject(new TimeoutError({
                                 type: 'SOCKET_CONNECTION',
-                                name,
-                                data
+                                name: name,
+                                data: data
                             }, timeToWaitIfNoConnection));
                         }, timeToWaitIfNoConnection);
                     }
@@ -193,7 +193,7 @@ define(['module'], function (/* module */) {
                         queueName.push(queueData);
                     }
                 } else {
-                    reject(new TimeoutError({ type: 'SOCKET_CONNECTION', name, data }, timeToWaitIfNoConnection));
+                    reject(new TimeoutError({ type: 'SOCKET_CONNECTION', name: name, data: data }, timeToWaitIfNoConnection));
                 }
             });
         };
