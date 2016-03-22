@@ -2486,7 +2486,7 @@ async function getDownloadKey({ cid }) {
 
     const key = Utils.randomString(32);
     const path = (origin ? 'private/photos/' : 'public/photos/a/') + photo.file;
-    const fileName = `photo.cid ${(photo.title || '').replace(/[\/|]/g, '-')}.jpg`;
+    const fileName = `${photo.cid} ${(photo.title || '').replace(/[\/|]/g, '-')}.jpg`;
     // We keep only size of origin file, size with watermark must be calculated by downloader.js
     const size = origin ? photo.size : null;
 

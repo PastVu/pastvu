@@ -108,7 +108,7 @@ export async function configure(startStamp) {
                 return responseCode(403, res);
             }
 
-            const keyEntry = await Download.findOneAndRemoveAsync({ key }, { _id: 0, data: 1 });
+            const keyEntry = await Download.findOneAndRemove({ key }, { _id: 0, data: 1 }).exec();
             const keyData = _.get(keyEntry, 'data');
             let filePath = _.get(keyData, 'path');
 
