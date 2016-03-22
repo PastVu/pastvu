@@ -92,7 +92,8 @@ var start = Date.now(),
                     'm/photo/photo', 'm/photo/gallery',
                     'm/diff/newsList', 'm/diff/news',
                     'm/comment/comments',
-                    'm/user/brief', 'm/user/profile', 'm/user/userPage'
+                    'm/user/brief', 'm/user/profile', 'm/user/userPage',
+                    'errors/Application', 'errors/Timeout'
                 ],
                 exclude: ['lib/require/plugins/require-css/normalize'] // normalize надо исключать, т.к. он почему-то попадает в сборку https://github.com/guybedford/require-css#basic-usage
             },
