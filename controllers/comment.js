@@ -701,14 +701,14 @@ const giveForFeed = (function () {
         () => getComments(undefined, { del: null, hidden: null }, globalOptions), ms('10s')
     );
 
-    return function () {
+    return function (params) {
         const { handshake: { usObj: iAm } } = this;
 
-        if (_.isEmpty(iAm.rquery)) {
+        if (_.isEmpty(iAm.rquery) && (!params.limit || params.limit === globalOptions.limit)) {
             // User withot region filter will get memozed result for global selection
             return globalFeed();
         } else {
-            return getComments(iAm, Object.assign({ del: null, hidden: null }, iAm.rquery), globalOptions);
+            return getComments(iAm, Object.assign({ del: null, hidden: null }, iAm.rquery), params);
         }
     };
 }());
