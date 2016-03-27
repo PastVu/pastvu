@@ -1475,7 +1475,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 self.tryOperation({
                     proceedText: 'Продолжить отклонение',
                     requestCreater: function (ignoreChange) {
-                        return socket.run('photo.rereject', _.assign({ ignoreChange: ignoreChange }, params)).then(function (data) {
+                        return socket.run('photo.reject', _.assign({ ignoreChange: ignoreChange }, params)).then(function (data) {
                             self.rechargeData(data.photo, data.can);
                         });
                     },
