@@ -35,7 +35,7 @@
         "locale": "0.0.21",
         "cookie": "0.2.3",
         "jade": "1.11.0",
-        "mongoose": "4.4.9",
+        "mongoose": "4.4.10",
         "posix": "4.0.1",
         "mkdirp": "0.5.1",
         "lodash": "4.6.1",
