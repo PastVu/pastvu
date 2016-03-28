@@ -356,7 +356,7 @@ export function removeSessionFromHashes({ session: { key: sessionKey }, usObj, l
     let someCountPrev;
     let someCountNew;
 
-    logPrefix = _.get(this, 'ridMark', '') + ' ' + logPrefix;
+    logPrefix = `${_.get(this, 'ridMark', '')} ${logPrefix}`;
 
     delete sessWaitingConnect[sessionKey];
     delete sessConnected[sessionKey];
@@ -632,14 +632,20 @@ const checkSessWaitingConnect = (function () {
 
     function procedure() {
         const expiredFrontier = Date.now() - SESSION_WAIT_TIMEOUT;
+        let removedCount = 0;
 
-        _.forOwn(sessWaitingConnect, (session, sessionId) => {
+        _.forOwn(sessWaitingConnect, (session, key) => {
             const stamp = new Date(session.stamp || 0).getTime();
 
             if (!stamp || stamp <= expiredFrontier) {
-                removeSessionFromHashes({ usObj: usSid[sessionId], session, logPrefix: 'checkSessWaitingConnect' });
+                removedCount++;
+                removeSessionFromHashes({ usObj: usSid[key], session, logPrefix: 'checkSessWaitingConnect' });
             }
         });
+
+        if (removedCount) {
+            logger.info(`${removedCount} waiting sessions were removed from hashes`);
+        }
 
         checkSessWaitingConnect();
     }
@@ -794,9 +800,9 @@ export async function handleConnection(ip, headers, overHTTP, req) {
 
     if (!overHTTP) {
         // Mark session as active (connected by websocket)
-        sessConnected[session.sessionId] = session;
+        sessConnected[session.key] = session;
         // Delete from hash of waiting connection sessions
-        delete sessWaitingConnect[session.sessionId];
+        delete sessWaitingConnect[session.key];
     }
 
     return { usObj, session, browser, cookie: cookieObj };
