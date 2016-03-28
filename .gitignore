@@ -43,6 +43,7 @@ babel/output*.js
 
 # Except #
 ######################
+!.npmrc
 !.gitignore
 !.eslintrc
 !.eslintignore
