@@ -52,7 +52,7 @@ function addUserIdToRidMark(usObj, session) {
     this.ridMark = getUserIdForRidMark(this.rid, usObj, session);
 }
 function getUserIdForRidMark(rid, usObj, session) {
-    return `[RID-${rid} ${usObj.registered ? `U-${usObj.user.login}` : `S-${session.key}`}]`;
+    return `[RID-${rid} S-${session.key}${usObj.registered ? ` U-${usObj.user.login}` : ``}]`;
 }
 
 const logTrace = function (context, elapsedTotal, methodName) {
