@@ -22,7 +22,7 @@ const privateDir = path.join(config.storePath, 'private/avatars/');
 const publicDir = path.join(config.storePath, 'public/avatars/');
 const mkdirpAsync = Bluebird.promisify(mkdirp);
 const execAsync = Bluebird.promisify(exec);
-const emailRegexp = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+const emailRegexp = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@(([[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 
 const getUserByLogin = async function (login) {
     const usObjOnline = session.getOnline({ login });

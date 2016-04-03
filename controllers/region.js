@@ -471,12 +471,10 @@ async function changeRegionParentExternality(region, oldParentsArray, childLenAr
     // Sequentially move photos down by level difference
     // Start renaming from last level fields
     async function pushPhotosRegionsDown() {
-        let queryObj;
-        let setObj;
+        const queryObj = { ['r' + levelWas]: region.cid };
 
-        queryObj = { ['r' + levelWas]: region.cid };
         for (let i = levelWas + childLen; i >= levelWas; i--) {
-            setObj = { $rename: { ['r' + i]: 'r' + (i + levelDiff) } };
+            const setObj = { $rename: { [`r${i}`]: `r${i + levelDiff}` } };
             await updateObjects(queryObj, setObj);
         }
     }

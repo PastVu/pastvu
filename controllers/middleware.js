@@ -58,9 +58,9 @@ export function responseHeaderHook() {
             next = Utils.dummyFn;
         }
 
-        res.writeHead = function () {
+        res.writeHead = function (...args) {
             res.setHeader('X-Response-Time', `${Date.now() - start}ms`);
-            writeHeadOriginal.apply(res, arguments);
+            writeHeadOriginal.apply(res, args);
         };
         next();
     };

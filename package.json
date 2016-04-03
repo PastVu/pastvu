@@ -38,7 +38,7 @@
         "mongoose": "4.4.10",
         "posix": "4.0.1",
         "mkdirp": "0.5.1",
-        "lodash": "4.6.1",
+        "lodash": "4.7.0",
         "bluebird": "3.3.4",
         "underscore.string": "3.3.4",
         "yargs": "4.3.2",
@@ -62,7 +62,7 @@
     },
     "devDependencies": {
         "babel-core": "6.7.4",
-        "babel-eslint": "5.0.0",
+        "babel-eslint": "6.0.2",
         "babel-plugin-transform-runtime": "6.6.0",
         "babel-preset-es2015-node5": "1.2.0",
         "babel-preset-stage-1": "6.5.0",
@@ -79,7 +79,7 @@
         "grunt-contrib-clean": "1.0.0",
         "grunt-string-replace": "1.2.1",
         "grunt-contrib-concat": "1.0.0",
-        "grunt-contrib-compress": "1.1.1",
+        "grunt-contrib-compress": "1.2.0",
         "grunt-contrib-requirejs": "1.0.0",
         "grunt-mkdir": "1.0.0",
         "grunt-rename": "0.1.4",
@@ -88,11 +88,9 @@
         "xmldom": "0.1.22",
         "osm-and-geojson": "0.1.2",
 
-        "eslint": "1.10.3",
-        "eslint-plugin-react": "3.16.1",
-        "eslint-plugin-babel": "3.1.0"
+        "eslint": "2.6.0"
     },
     "engines": {
-        "node": "~5.3.0"
+        "node": "^5.9.0"
     }
 }
