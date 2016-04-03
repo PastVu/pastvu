@@ -1,14 +1,13 @@
 import net from 'net';
-import _ from 'lodash';
 import EventEmitter from 'events';
 
 export class Client extends EventEmitter {
-    constructor(logger) {
+    constructor(logger, ...args) {
         super();
 
         this.logger = logger || console;
         this.socketClosed = true;
-        this.connectargs = _.toArray(arguments);
+        this.connectargs = args;
         this.promiseDescriptors = new Map();
     }
 

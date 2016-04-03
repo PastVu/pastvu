@@ -8,7 +8,7 @@
  *
  * You can override any specific parameter through console, for example, --no-gzip
  */
-'use strict';
+'use strict'; // eslint-disable-line strict
 
 const os = require('os');
 const fs = require('fs');

@@ -10,7 +10,7 @@ Model.saveUpsert = function (findQuery, properties, cb) {
         if (!doc) {
             doc = new this(findQuery);
         }
-        for (var p in properties) {
+        for (const p in properties) {
             if (properties.hasOwnProperty(p)) {
                 doc[p] = properties[p];
             }

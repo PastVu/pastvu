@@ -1,7 +1,5 @@
 // Default server configuration
-'use strict';
-
-var ms = require('ms');
+const ms = require('ms');
 
 module.exports = {
     env: 'development', // Enviroment: development, testing, production

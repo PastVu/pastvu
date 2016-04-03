@@ -747,7 +747,7 @@ async function saveHistory({ oldPhotoObj, photo, canModerate, reason, parsedFile
     if (!_.isEmpty(changes.diff)) {
         newEntry.diff = changes.diff;
     }
-    newEntry.add = add.length ? add : undefined;
+    newEntry.add = add.length ? add : undefined; // undefined temporary doesn't work, https://github.com/Automattic/mongoose/issues/4037
     newEntry.del = del.length ? del : undefined;
 
     if (reason) {
@@ -2431,6 +2431,12 @@ async function giveObjHist({ cid, fetchId, showDiff }) {
             } else {
                 delete history.del;
             }
+        } else if (history.del) {
+            delete history.del;
+        }
+
+        if (history.hasOwnProperty('add') && _.isEmpty(history.add)) {
+            delete history.add;
         }
 
         if (history.roleregion) {
