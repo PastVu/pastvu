@@ -1285,7 +1285,7 @@ define([
         },
 
         setNoComments: function () {
-            socket.run('setNoComments', { cid: this.cid, type: this.type, val: !this.nocomments() }, true)
+            socket.run('comment.setNoComments', { cid: this.cid, type: this.type, val: !this.nocomments() }, true)
                 .then(function (data) {
                     this.parentModule.setNoComments(!!data.nocomments);
                     this.nocomments(!!data.nocomments);

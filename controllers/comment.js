@@ -1427,7 +1427,7 @@ async function setNoComments({ cid, type = 'photo', val: nocomments }) {
     if (type === 'photo') {
         // Save previous value of 'nocomments' in history
         obj.nocomments = !!obj.nocomments; // To set false in history instead of undefined
-        await this.call('photo.saveHistory', { oldPhotoObj, obj, canModerate });
+        await this.call('photo.saveHistory', { oldPhotoObj, photo: obj, canModerate });
     }
 
     return { nocomments: obj.nocomments };
