@@ -266,18 +266,20 @@ export function getNewPhotosLimit(user) {
         // Silver and Gold metsenats have the maximum possible limit
         canCreate = maxNewPhotosLimit - pfcount;
     } else if (user.ranks && user.ranks.includes('mec')) {
-        // Metsenat has a limit of 100
-        canCreate = Math.max(0, 100 - pfcount);
-    } else if (user.pcount < 25) {
-        canCreate = Math.max(0, 3 - pfcount);
-    } else if (user.pcount < 50) {
-        canCreate = Math.max(0, 5 - pfcount);
-    } else if (user.pcount < 200) {
+        // Metsenat has a limit of 150
+        canCreate = Math.max(0, 150 - pfcount);
+    } else if (user.pcount < 15) {
         canCreate = Math.max(0, 10 - pfcount);
-    } else if (user.pcount < 1000) {
+    } else if (user.pcount < 25) {
+        canCreate = Math.max(0, 15 - pfcount);
+    } else if (user.pcount < 50) {
+        canCreate = Math.max(0, 20 - pfcount);
+    } else if (user.pcount < 200) {
         canCreate = Math.max(0, 50 - pfcount);
+    } else if (user.pcount < 1000) {
+        canCreate = Math.max(0, 75 - pfcount);
     } else if (user.pcount >= 1000) {
-        canCreate = Math.max(0, 100 - pfcount);
+        canCreate = Math.max(0, 150 - pfcount);
     }
 
     return canCreate;
