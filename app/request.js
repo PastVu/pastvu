@@ -6,7 +6,6 @@ import config from '../config';
 import webApiCall from './webapi';
 import Utils from '../commons/Utils';
 import sioRouter from 'socket.io-events';
-import constants from './errors/constants';
 import { ApplicationError } from './errors';
 import { send500 } from '../controllers/routes';
 import constantsError from './errors/constants';
@@ -119,14 +118,14 @@ export const handleHTTPRequest = async function (req, res, next) {
     };
 
     // Hook when response sending, executes after all route's handlers
-    res.writeHead = function () {
+    res.writeHead = function (...args) {
         const elapsed = Date.now() - start;
 
         logger.info(`${context.ridMark} <- HTTP request finished with status ${res.statusCode} in ${elapsed}ms`);
         logTrace(context, elapsed);
 
         res.setHeader('X-Response-Time', elapsed + 'ms');
-        writeHeadOriginal.apply(res, arguments);
+        writeHeadOriginal.apply(res, args);
     };
 
     try {
@@ -241,7 +240,7 @@ export const registerHTTPAPIHandler = (function () {
         const result = await callWebApi.call(context, methodName, params);
 
         if (result.error) {
-            if (result.error.code === constants.NO_SUCH_METHOD) {
+            if (result.error.code === constantsError.NO_SUCH_METHOD) {
                 finishRequest.call(context, 400, req, res, start, result.error.message);
             } else {
                 finishRequest.call(context, 200, req, res, start, result.error);
