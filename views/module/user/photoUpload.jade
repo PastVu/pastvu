@@ -22,8 +22,8 @@
                 span Drag photo here
                 #dropzone
 
-    //-Отображаем возможное кол-во к загрузке, если менее 50 разрешено
-    //ko if: canCount() < 50
+    //-Отображаем возможное кол-во к загрузке, если менее 25 разрешено
+    //ko if: canCount() < 25
     .canCount(data-bind="text: 'You can add another ' + canCount() + ' photos'")
     // /ko
 
