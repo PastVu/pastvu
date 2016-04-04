@@ -96,20 +96,14 @@ async function commentsTreeBuildAuth(myId, comments, previousViewStamp, canReply
     const dayAgo = Date.now() - dayMS;
     const commentsArr = [];
     const commentsHash = {};
-    const usersHash = {};
-    const usersArr = [];
+    const usersSet = new Set();
 
     let countTotal = 0;
     let countNew = 0;
 
     for (const comment of comments) {
         comment.user = String(comment.user);
-
-        if (usersHash[comment.user] === undefined) {
-            usersHash[comment.user] = true;
-            usersArr.push(comment.user);
-        }
-
+        usersSet.add(comment.user);
         comment.stamp = comment.stamp.getTime(); // Serve time in ms
 
         const commentIsMine = comment.user === myId; // It's my comment
@@ -183,7 +177,7 @@ async function commentsTreeBuildAuth(myId, comments, previousViewStamp, canReply
         commentsArr.push(comment);
     }
 
-    const { usersById, usersByLogin } = await getUsersHashForComments(usersArr);
+    const { usersById, usersByLogin } = await getUsersHashForComments(usersSet);
 
     const commentsTree = [];
 
@@ -219,11 +213,9 @@ async function commentsTreeBuildAuth(myId, comments, previousViewStamp, canReply
 };
 
 async function commentsTreeBuildCanModerate(myId, comments, previousViewStamp) {
-    const commentsHash = {};
-    const commentsPlain = [];
+    const commentsMap = new Map();
     const commentsTree = [];
-    const usersHash = {};
-    const usersArr = [];
+    const usersSet = new Set();
 
     let countTotal = 0;
     let countNew = 0;
@@ -233,7 +225,7 @@ async function commentsTreeBuildCanModerate(myId, comments, previousViewStamp) {
             comment.level = 0;
         }
         if (comment.level > 0) {
-            const commentParent = commentsHash[comment.parent];
+            const commentParent = commentsMap.get(comment.parent);
             if (commentParent === undefined || commentParent.del !== undefined) {
                 // If parent removed or doesn't exists (eg parent of parent is removed), drop comment
                 continue;
@@ -246,14 +238,9 @@ async function commentsTreeBuildCanModerate(myId, comments, previousViewStamp) {
             commentsTree.push(comment);
         }
 
-        commentsHash[comment.cid] = comment;
-        commentsPlain.push(comment);
-
         comment.user = String(comment.user);
-        if (usersHash[comment.user] === undefined) {
-            usersHash[comment.user] = true;
-            usersArr.push(comment.user);
-        }
+        usersSet.add(comment.user);
+        commentsMap.set(comment.cid, comment);
 
         comment.stamp = comment.stamp.getTime(); // Serve time in ms
         if (comment.lastChanged !== undefined) {
@@ -275,9 +262,9 @@ async function commentsTreeBuildCanModerate(myId, comments, previousViewStamp) {
         countTotal++;
     }
 
-    const { usersById, usersByLogin } = await getUsersHashForComments(usersArr);
+    const { usersById, usersByLogin } = await getUsersHashForComments(usersSet);
 
-    for (const comment of commentsPlain) {
+    for (const comment of commentsMap.values()) {
         comment.user = usersById[comment.user].login;
     }
 
@@ -285,9 +272,8 @@ async function commentsTreeBuildCanModerate(myId, comments, previousViewStamp) {
 };
 
 async function commentsTreeBuildDel(comment, childs, checkMyId) {
-    const commentsHash = {};
-    const usersHash = {};
-    const usersArr = [];
+    const commentsMap = new Map();
+    const usersSet = new Set();
 
     // Determine if user is able to see comment branch.
     // If checkMyId is not passed - can,
@@ -296,9 +282,8 @@ async function commentsTreeBuildDel(comment, childs, checkMyId) {
 
     // Firstly process removed parent, which was requested
     comment.user = String(comment.user);
-    usersHash[comment.user] = true;
-    usersArr.push(comment.user);
-    commentsHash[comment.cid] = comment;
+    usersSet.add(comment.user);
+    commentsMap.set(comment.cid, comment);
 
     comment.del = { origin: comment.del.origin || undefined };
     comment.stamp = comment.stamp.getTime();
@@ -315,7 +300,7 @@ async function commentsTreeBuildDel(comment, childs, checkMyId) {
 
     // Loop by children of removed parent
     for (const child of childs) {
-        const commentParent = commentsHash[child.parent];
+        const commentParent = commentsMap.get(child.parent);
 
         // If current comment not in hash, means hi is not child of removed parent
         if (commentParent === undefined) {
@@ -323,10 +308,7 @@ async function commentsTreeBuildDel(comment, childs, checkMyId) {
         }
 
         child.user = String(child.user);
-        if (usersHash[child.user] === undefined) {
-            usersHash[child.user] = true;
-            usersArr.push(child.user);
-        }
+        usersSet.add(child.user);
         if (checkMyId && child.user === checkMyId) {
             canSee = true;
         }
@@ -338,7 +320,7 @@ async function commentsTreeBuildDel(comment, childs, checkMyId) {
             commentParent.comments = [];
         }
         commentParent.comments.push(child);
-        commentsHash[child.cid] = child;
+        commentsMap.set(child.cid, child);
     }
 
     // If user who request is not moderator, and not whose comments are inside branch,
@@ -347,19 +329,19 @@ async function commentsTreeBuildDel(comment, childs, checkMyId) {
         throw NotFoundError(constantsError.COMMENT_DOESNT_EXISTS);
     }
 
-    const { usersById, usersByLogin } = await getUsersHashForComments(usersArr);
+    const { usersById, usersByLogin } = await getUsersHashForComments(usersSet);
 
-    _.forOwn(commentsHash, comment => {
+    for (const comment of commentsMap.values()) {
         comment.user = usersById[comment.user].login;
-    });
+    }
 
     return { tree: [comment], users: usersByLogin };
 };
 
 // Prepare users hash for comments
-async function getUsersHashForComments(usersArr) {
+async function getUsersHashForComments(usersSet) {
     const users = await User.find(
-        { _id: { $in: usersArr } }, { _id: 1, login: 1, avatar: 1, disp: 1, ranks: 1 }, { lean: true }
+        { _id: { $in: [...usersSet] } }, { _id: 1, login: 1, avatar: 1, disp: 1, ranks: 1 }, { lean: true }
     ).exec();
 
     const usersById = {};
@@ -402,27 +384,19 @@ async function getCommentsObjAnonym({ cid, type = 'photo' }) {
         { lean: true, sort: { stamp: 1 } }
     ).exec();
 
-    const usersArr = [];
+    const usersSet = new Set();
 
-    if (comments.length) {
-        const usersHash = {};
-
-        for (const comment of comments) {
-            const userId = String(comment.user);
-
-            if (usersHash[userId] === undefined) {
-                usersHash[userId] = true;
-                usersArr.push(userId);
-            }
-        }
+    for (const comment of comments) {
+        const userId = String(comment.user);
+        usersSet.add(userId);
     }
 
     let tree;
     let usersById;
     let usersByLogin;
 
-    if (usersArr.length) {
-        ({ usersById, usersByLogin } = await getUsersHashForComments(usersArr));
+    if (usersSet.size) {
+        ({ usersById, usersByLogin } = await getUsersHashForComments(usersSet));
         tree = commentsTreeBuildAnonym(comments, usersById);
     }
 
