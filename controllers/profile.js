@@ -97,7 +97,7 @@ async function saveUser({ login, ...data }) {
     Object.assign(user, newValues);
 
     if (user.disp && user.disp !== user.login) {
-        user.disp = [user.firstName, user.lastName].join(' ').trim() || undefined;
+        user.disp = [user.firstName, user.lastName].join(' ').trim() || user.login;
     }
 
     await user.save();
