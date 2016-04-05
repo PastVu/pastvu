@@ -22,11 +22,11 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
         ],
         imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>'),
         declension = {
-            user: [' user'],
-            reg: [' registerd'],
-            photo: [' photo'],
-            comment: [' comment'],
-            view: [' view']
+            user: [' user', ' users', ' users'],
+            reg: [' registerd', ' registerd', ' registerd'],
+            photo: [' photo', ' photos', ' photos'],
+            comment: [' comment', ' comments', ' comments'],
+            view: [' view', ' views', ' views']
         };
 
     return Cliche.extend({
@@ -165,7 +165,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                 this.catLoading('');
             }
         },
-        catSetLoading: function (success, scroll) {
+        catSetLoading: function (/*success, scroll*/) {
             this.catActive(this.catLoading());
             this.catLoading('');
         },
