@@ -103,7 +103,7 @@ export function configure(startStamp) {
                 const w = Number(size.width);
                 const h = Number(size.height);
 
-                if (!w || !h || w < 400 || h < 400 || (w < 800 && h < 800)) {
+                if (!w || !h || w < 350 || h < 350 || w < 700 && h < 700) {
                     fileInfo.error = 'fpx';
                 }
                 resolve();

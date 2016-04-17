@@ -6,13 +6,13 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
     'use strict';
 
     var mess = {
-        fsuccess: 'Photo is successfully uploaded',
+        fsuccess: 'Photo has been successfully uploaded',
         fcount: 'Allowed count of files exceeded',
 
         ftype: 'File type does not correspond to the Rules',
         fmax: 'File is bigger then allowed',
         fmin: 'File is too small',
-        fpx: 'According the rules, image size must be at least 400px on the smaller side and 800 on the larger side',
+        fpx: 'According the rules, image size must be at least 350px on the smaller side and 700 on the larger side',
         finvalid: 'The file has not passed validation' //Сообщение по умолчанию для валидации
     };
 
