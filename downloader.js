@@ -127,7 +127,7 @@ export async function configure(startStamp) {
             const fileName = contentDisposition(keyData.fileName);
 
             res.setHeader('Content-Disposition', fileName);
-            res.setHeader('Content-Type', keyData.type || 'text/html');
+            res.setHeader('Content-Type', keyData.mime || 'text/html');
 
             if (size) {
                 res.setHeader('Content-Length', size);

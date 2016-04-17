@@ -55,8 +55,8 @@ const PhotoSchema = new Schema({
     // File name with path, for example, 'i/n/o/ino6k6k6yz.jpg'
     file: { type: String, required: true },
 
-    type: { type: String }, // like 'image/jpeg'
-    format: { type: String }, // like 'JPEG'
+    mime: { type: String }, // like 'image/jpeg'
+    format: { type: String }, // like 'JPEG', 'Zip'(png)
     sign: { type: String }, // Signature of original image
     signs: { type: String }, // Signature of converted standart size image
     size: { type: Number },

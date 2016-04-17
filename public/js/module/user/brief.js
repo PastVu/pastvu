@@ -169,7 +169,7 @@ define([
                         {
                             login: this.user.login(),
                             file: receivedFile.file,
-                            type: receivedFile.type,
+                            mime: receivedFile.type,
                             size: receivedFile.size
                         },
                         true

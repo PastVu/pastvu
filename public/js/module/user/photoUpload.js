@@ -269,7 +269,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 
                         if (!receivedFileInfo.error) {
                             file.ext.file = receivedFileInfo.file;
-                            this.fileUploaded[receivedFileInfo.file] = _.pick(receivedFileInfo, 'file', 'name', 'type', 'size');
+                            this.fileUploaded[receivedFileInfo.file] = _.pick(receivedFileInfo, 'file', 'name', 'mime', 'size');
                             window.setTimeout(function () {
                                 file.ext.uploading(false);
                                 file.ext.uploaded(true);

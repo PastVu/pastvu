@@ -38,7 +38,7 @@ define(
 
                 dir: undefined,
 
-                type: 'image/jpeg',
+                mime: 'image/jpeg',
                 format: 'JPEG',
                 size: 0,
                 w: 1050,

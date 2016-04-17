@@ -249,7 +249,7 @@ async function conveyerControl() {
         const photo = await Photo
             .findOne(
                 { cid: photoConv.cid },
-                { cid: 1, file: 1, type: 1, user: 1, w: 1, h: 1, ws: 1, hs: 1, conv: 1, convqueue: 1, watersignText: 1 }
+                { cid: 1, file: 1, mime: 1, user: 1, w: 1, h: 1, ws: 1, hs: 1, conv: 1, convqueue: 1, watersignText: 1 }
             )
             .populate({ path: 'user', select: { _id: 0, login: 1 } })
             .exec();
@@ -311,7 +311,7 @@ function getWatertext(photo) {
 async function conveyerStep(photo, { webpOnly = false }) {
     const cid = photo.cid;
     const waterTxt = getWatertext(photo);
-    const lossless = photo.type === 'image/png';
+    const lossless = photo.mime === 'image/png';
     const originSrcPath = path.normalize(sourceDir + photo.file);
     const saveStandardSize = function (result) {
         photo.ws = parseInt(result.w, 10) || undefined;
