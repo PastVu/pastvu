@@ -40,7 +40,7 @@ export function configure(startStamp) {
         constructor(file, targetDir, nameLen, dirDepth) {
             this.name = file.name;
             this.size = file.size;
-            this.type = file.type;
+            this.mime = file.type;
 
             this.createFileName(targetDir, nameLen, dirDepth);
         }

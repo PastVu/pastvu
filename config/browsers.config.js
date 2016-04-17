@@ -1,20 +1,20 @@
 module.exports = function (config/* , appRequire */) {
     config.browsers = {
 
-        // List of browser and theirs versions (in semver format), for which will be displayed badbrowser page
+        // List of browsers and theirs versions (in semver format), for which will be displayed badbrowser page
         badbrowserList: {
             'IE': '<10.0.0',
             'Firefox': '<6.0.0', // 6th version it's G+
             'Opera': '<12.10.0',
-            'Chrome': '<11.0.0', // 11th version it's an Android 4 default browser in desctop mode
+            'Chrome': '<11.0.0', // 11th version it's an Android 4 default browser in desktop mode
             'Android': '<4.2.0',
             'Safari': '<6.0.0',
             'Mobile Safari': '<6.0.0'
         },
 
-        // List of polyfills and browser for which they will NOT be embedded
-        // Strating from specified version (in semver format) polyfills will not be embedded
-        // Browser, which are not presented in the list, or which versions are below specified, will receive polyfill
+        // List of polyfills and browsers for which they will NOT be embedded
+        // Starting from specified version (in semver format) polyfills will not be embedded
+        // Browser, which is not presented in the list, or which version is below specified, will receive polyfill
         polyfillFreelist: {
             // http://caniuse.com/#search=intl
             'intl': {

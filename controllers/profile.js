@@ -304,7 +304,7 @@ async function changeEmail({ login, email, pass }) {
     return { email: user.email };
 }
 
-async function changeAvatar({ login, file, type }) {
+async function changeAvatar({ login, file, mime }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!login || !file || !new RegExp('^[a-z0-9]{10}\\.(jpe?g|png)$', '').test(file)) {
@@ -322,7 +322,7 @@ async function changeAvatar({ login, file, type }) {
     const fullfile = file.replace(/((.)(.))/, '$2/$3/$1');
     const originPath = path.join(privateDir, fullfile);
     const dirPrefix = fullfile.substr(0, 4);
-    const lossless = type === 'image/png';
+    const lossless = mime === 'image/png';
 
     await Promise.all([
         // Transfer file from incoming to private

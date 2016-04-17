@@ -539,7 +539,7 @@ async function create({ files }) {
             file: item.fullfile,
             ldate: new Date(now + i * 10), // Increase loading time of each file  by 10 ms for proper sorting
             sdate: new Date(now + i * 10 + shift10y), // New photos must be always on top
-            type: item.type,
+            mime: item.mime,
             size: item.size,
             geo: undefined,
             title: item.name ? item.name.replace(/(.*)\.[^.]+$/, '$1') : undefined, // Cut off file extension
@@ -2493,13 +2493,15 @@ async function getDownloadKey({ cid }) {
     const origin = canDownload === true || canDownload === 'byrole';
 
     const key = Utils.randomString(32);
+    const lossless = photo.mime === 'image/png';
+    const title = `${photo.cid} ${(photo.title || '').replace(/[\/|]/g, '-')}`.substr(0, 120);
+    const fileName = `${title}.${lossless ? 'png' : 'jpg'}`;
     const path = (origin ? 'private/photos/' : 'public/photos/a/') + photo.file;
-    const fileName = `${photo.cid} ${(photo.title || '').replace(/[\/|]/g, '-')}.jpg`;
     // We keep only size of origin file, size with watermark must be calculated by downloader.js
     const size = origin ? photo.size : null;
 
     await (new Download({
-        key, data: { fileName, path, size, type: 'image/jpeg', login: iAm.user.login, cid, origin }
+        key, data: { fileName, path, size, mime: photo.mime || 'image/jpeg', login: iAm.user.login, cid, origin }
     }).save());
 
     return { key, origin };
