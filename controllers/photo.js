@@ -296,6 +296,7 @@ async function getBounds(data) {
     if (z < 17) {
         ({ photos, clusters } = await this.call(`cluster.${years ? 'getBoundsByYear' : 'getBounds'}`, data));
     } else {
+        const MapModel = data.isPainting ? PaintingMap : PhotoMap;
         const yearCriteria = years ? year === year2 ? year : { $gte: year, $lte: year2 } : false;
 
         photos = await Promise.all(bounds.map(bound => {
@@ -305,7 +306,7 @@ async function getBounds(data) {
                 criteria.year = yearCriteria;
             }
 
-            return PhotoMap.find(criteria, { _id: 0 }, { lean: true }).exec();
+            return MapModel.find(criteria, { _id: 0 }, { lean: true }).exec();
         }));
 
         photos = photos.length > 1 ? _.flatten(photos) : photos[0];
@@ -1862,8 +1863,11 @@ async function save(data) {
                 // because 'newGeo' can be 'undefined' and this case could mean, that coordinates haven't been changed,
                 // but data for poster might have been changed
                 await this.call('photo.photoToMap', {
-                    photo, geoPhotoOld: oldGeo, yearPhotoOld: oldPhotoObj.year,
-                    paintingMap: photo.type === constants.photo.type.PAINTING
+                    photo,
+                    paintingMap: photo.type === constants.photo.type.PAINTING,
+                    // If type was changed, no need to recalc old coordinates or year
+                    geoPhotoOld: oldValues.type ? undefined : oldGeo,
+                    yearPhotoOld: oldValues.type ? undefined : oldPhotoObj.year
                 });
             }
         }

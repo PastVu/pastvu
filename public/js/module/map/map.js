@@ -31,6 +31,7 @@ define([
             this.embedded = this.options.embedded;
             this.editing = ko.observable(this.options.editing);
             this.openNewTab = ko.observable(!!Utils.getLocalStorage(this.embedded ? 'map.embedded.opennew' : 'map.opennew'));
+            this.isPainting = ko.observable(!!Utils.getLocalStorage(this.embedded ? 'map.embedded.isPainting' : 'map.isPainting'));
             this.linkShow = ko.observable(false); //Показывать ссылку на карту
             this.link = ko.observable(''); //Ссылка на карту
 
@@ -243,6 +244,12 @@ define([
                 }
                 Utils.setLocalStorage(this.embedded ? 'map.embedded.opennew' : 'map.opennew', val);
             }, this);
+            this.subscriptions.isPainting = this.isPainting.subscribe(function (val) {
+                if (this.markerManager) {
+                    this.markerManager.changePainting(val);
+                }
+                Utils.setLocalStorage(this.embedded ? 'map.embedded.isPainting' : 'map.isPainting', val);
+            }, this);
 
             this.show();
         },
@@ -310,6 +317,7 @@ define([
             this.markerManager = new MarkerManager(this.map, {
                 enabled: false,
                 openNewTab: this.openNewTab(),
+                isPainting: this.isPainting(),
                 embedded: this.embedded
             });
             this.selectLayer(system, type);

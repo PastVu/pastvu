@@ -12,7 +12,7 @@
 			.avaAction
 				input.avaInput(type="file", name="files[]")
 				button.btn.btn-primary.avaSelect(data-bind="click: avaSelect, css: {disabled: avaexe()}, attr: {disabled: avaexe()}", title="Загрузить новое изображение")
-					span.glyphicon.glyphicon-picture
+					span.glyphicon.glyphicon-cloud-upload
 					|  Сменить
 				//ko if: avaExists()
 				button.btn.btn-primary.avaDel(data-bind="click: avaDel, css: {disabled: avaexe()}, attr: {disabled: avaexe()}", title="Удалить загруженное изображение")

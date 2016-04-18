@@ -34,6 +34,10 @@
             .yearOuter.R
         .mapNavigation.mContainer.mHidden
         .trtools
+            .trtool.trtoolbutt.openModePanel.fringe(data-bind="css: {no: isPainting()}, click: function () {isPainting(false)}, attr: {title: 'Показывать на карте фотографии'}")
+                span.glyphicon.glyphicon-camera
+            .trtool.trtoolbutt.openModePanel.fringe(data-bind="css: {no: !isPainting()}, click: function () {isPainting(true)}, attr: {title: 'Показывать на карте картины/рисунки'}")
+                span.glyphicon.glyphicon-picture
             .trtool.trtoolbutt.openModePanel.fringe(data-bind="css: {no: !openNewTab()}, click: function () {openNewTab(!openNewTab())}, attr: {title: (openNewTab() ? 'Выключить' : 'Включить') + ' открытие фотографий в новом окне'}")
                 span.glyphicon.glyphicon-share
             //ko if: !embedded

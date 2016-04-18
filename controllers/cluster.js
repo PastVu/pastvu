@@ -124,7 +124,10 @@ async function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, isPainting
     }
 
     const photo = await Photo.findOne(
-        { s: constants.photo.status.PUBLIC, geo: { $near: geoCluster } },
+        {
+            s: constants.photo.status.PUBLIC, geo: { $near: geoCluster },
+            type: isPainting ? constants.photo.type.PAINTING : constants.photo.type.PHOTO
+        },
         { _id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1 },
         { lean: true }
     ).exec();
@@ -294,7 +297,7 @@ export async function getBoundsByYear({ bounds, z, year, year2, isPainting }) {
                 clustersAll.push(cluster);
 
                 if (cluster.p.year < year || cluster.p.year > year2) {
-                    posterPromises.push(getClusterPoster(cluster, yearCriteria));
+                    posterPromises.push(getClusterPoster(cluster, yearCriteria, isPainting));
                 }
             }
         }
@@ -319,9 +322,12 @@ export async function getBoundsByYear({ bounds, z, year, year2, isPainting }) {
     return { photos, clusters };
 };
 
-async function getClusterPoster(cluster, yearCriteria) {
+async function getClusterPoster(cluster, yearCriteria, isPainting) {
     cluster.p = await Photo.findOne(
-        { s: constants.photo.status.PUBLIC, geo: { $near: cluster.geo }, year: yearCriteria },
+        {
+            s: constants.photo.status.PUBLIC, geo: { $near: cluster.geo }, year: yearCriteria,
+            type: isPainting ? constants.photo.type.PAINTING : constants.photo.type.PHOTO
+        },
         { _id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1 },
         { lean: true }
     ).exec();
