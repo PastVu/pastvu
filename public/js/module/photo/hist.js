@@ -11,7 +11,7 @@ define(
         var tplRegionsDiff;
         var maxRegionLevel = 5;
         var statusNums = statuses.nums;
-        var txtFields = ['title', 'geo', 'regions', 'y', 'desc', 'source', 'author', 'address', 'dir', 'watersignText'];
+        var txtFields = ['title', 'geo', 'type', 'regions', 'y', 'desc', 'source', 'author', 'address', 'dir', 'watersignText'];
 
         return Cliche.extend({
             jade: jade,
@@ -226,6 +226,10 @@ define(
                             regionsPrev = regionsArr;
                         }
 
+                        if (hist.values.type) {
+                            hist.values.type = fields.typeVals[hist.values.type];
+                        }
+
                         if (hist.values.dir) {
                             hist.values.dir = fields.dirVals[hist.values.dir];
                         }
@@ -286,7 +290,7 @@ define(
                         cb.call(ctx, null, result);
                     })
                     .catch(function (err) {
-                        cb.call(ctx, err)
+                        cb.call(ctx, err);
                     });
             }
         });

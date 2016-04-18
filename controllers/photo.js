@@ -21,7 +21,7 @@ import { User } from '../models/User';
 import { Counter } from '../models/Counter';
 import { Comment } from '../models/Comment';
 import { Download } from '../models/Download';
-import { Photo, PhotoMap, PhotoHistory } from '../models/Photo';
+import { Photo, PhotoMap, PaintingMap, PhotoHistory } from '../models/Photo';
 
 const shift10y = ms('10y');
 const logger = log4js.getLogger('photo.js');
@@ -564,7 +564,8 @@ async function create({ files }) {
 }
 
 // Add photo onto map
-async function photoToMap({ photo, geoPhotoOld, yearPhotoOld }) {
+async function photoToMap({ photo, geoPhotoOld, yearPhotoOld, paintingMap }) {
+    const MapModel = paintingMap ? PaintingMap : PhotoMap;
     const $update = {
         $setOnInsert: { cid: photo.cid },
         $set: {
@@ -583,16 +584,17 @@ async function photoToMap({ photo, geoPhotoOld, yearPhotoOld }) {
     }
 
     await Promise.all([
-        PhotoMap.update({ cid: photo.cid }, $update, { upsert: true }).exec(),
-        this.call('cluster.clusterPhoto', { photo, geoPhotoOld, yearPhotoOld }) // Send to clusterization
+        MapModel.update({ cid: photo.cid }, $update, { upsert: true }).exec(),
+        this.call('cluster.clusterPhoto', { photo, geoPhotoOld, yearPhotoOld, isPainting: paintingMap }) // Send to clusterization
     ]);
 }
 
 // Remove photo from map
-function photoFromMap({ photo }) {
+function photoFromMap({ photo, paintingMap }) {
+    const MapModel = paintingMap ? PaintingMap : PhotoMap;
     return Promise.all([
-        this.call('cluster.declusterPhoto', { photo }),
-        PhotoMap.remove({ cid: photo.cid }).exec()
+        this.call('cluster.declusterPhoto', { photo, isPainting: paintingMap }),
+        MapModel.remove({ cid: photo.cid }).exec()
     ]);
 }
 
@@ -873,7 +875,9 @@ const changePublicExternality = async function ({ photo, makePublic }) {
         // Recalculate number of photos of owner
         userPCountUpdate(photo.user, 0, makePublic ? 1 : -1, makePublic ? -1 : 1),
         // If photo has coordinates, means that need to do something with map
-        Utils.geo.check(photo.geo) ? this.call(makePublic ? 'photo.photoToMap' : 'photo.photoFromMap', { photo }) : null
+        Utils.geo.check(photo.geo) ? this.call(makePublic ? 'photo.photoToMap' : 'photo.photoFromMap', {
+            photo, paintingMap: photo.type === constants.photo.type.PAINTING
+        }) : null
     ]);
 };
 
@@ -1021,7 +1025,7 @@ async function approve(data) {
 
     // Add photo to map
     if (Utils.geo.check(photo.geo)) {
-        await this.call('photo.photoToMap', { photo });
+        await this.call('photo.photoToMap', { photo, paintingMap: photo.type === constants.photo.type.PAINTING });
     }
 
     // Save previous status to history
@@ -1559,11 +1563,12 @@ function photoCheckPublickRequired(photo) {
     if (_.isEmpty(photo.title)) {
         throw new InputError(constantsError.PHOTO_NEED_TITLE);
     }
-    const minYear = photo.type === constants.photo.type.PAINTING ? -100 : 1826;
+    const isPainting = photo.type === constants.photo.type.PAINTING;
+    const minYear = isPainting ? -100 : 1826;
 
     if (!_.isNumber(photo.year) || !_.isNumber(photo.year2) ||
         photo.year < minYear || photo.year > 2000 || photo.year2 < photo.year && photo.year2 > 2000) {
-        throw new NoticeError(constantsError.PHOTO_YEARS_CONSTRAINT);
+        throw new NoticeError(isPainting ? constantsError.PAINTING_YEARS_CONSTRAINT : constantsError.PHOTO_YEARS_CONSTRAINT);
     }
 
     return true;
@@ -1835,7 +1840,9 @@ async function save(data) {
         if (geoToNull) {
             // If coordinates has been nullified and photo is public, means it was on map, and we should remove it from map.
             // We must do it before coordinates removal, because clusterization looks on it
-            await this.call('photo.photoFromMap', { photo: oldPhotoObj });
+            await this.call('photo.photoFromMap', {
+                photo: oldPhotoObj, paintingMap: oldPhotoObj.type === constants.photo.type.PAINTING
+            });
 
         } else if (!_.isEmpty(photo.geo)) {
             // Old values of changing properties
@@ -1843,12 +1850,21 @@ async function save(data) {
                 result[key] = oldPhotoObj[key];
             }, {});
 
-            if (newGeo || !_.isEmpty(_.pick(oldValues, 'dir', 'title', 'year', 'year2'))) {
+            if (newGeo || !_.isEmpty(_.pick(oldValues, 'type', 'dir', 'title', 'year', 'year2'))) {
+                if (oldValues.type) {
+                    // If type has been changed, delete object from previous type map
+                    await this.call('photo.photoFromMap', {
+                        photo: oldPhotoObj, paintingMap: oldPhotoObj.type === constants.photo.type.PAINTING
+                    });
+                }
                 // If coordinates have been added/changed or cluster's poster might be changed, then recalculate map.
                 // Coordinates must be get exactly from 'photo.geo', not from 'newGeo',
                 // because 'newGeo' can be 'undefined' and this case could mean, that coordinates haven't been changed,
                 // but data for poster might have been changed
-                await this.call('photo.photoToMap', { photo, geoPhotoOld: oldGeo, yearPhotoOld: oldPhotoObj.year });
+                await this.call('photo.photoToMap', {
+                    photo, geoPhotoOld: oldGeo, yearPhotoOld: oldPhotoObj.year,
+                    paintingMap: photo.type === constants.photo.type.PAINTING
+                });
             }
         }
     }

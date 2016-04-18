@@ -53,6 +53,7 @@ export default Utils.reflectKeys({
     PHOTO_NEED_TITLE: null,
     PHOTO_ANOTHER_STATUS: null,
     PHOTO_YEARS_CONSTRAINT: null,
+    PAINTING_YEARS_CONSTRAINT: null,
     PHOTO_CONVERT_PROCEEDING: null,
 
     REGION_ASSIGN_OBJECTS: null,

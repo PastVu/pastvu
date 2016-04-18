@@ -6,6 +6,7 @@ define(['m/photo/status'], function (statuses) {
         s: 'Статус',
         y: 'Год',
         geo: 'Координаты',
+        type: 'Тип',
         regions: 'Регион',
         title: 'Название фотографии',
         desc: 'Описание',

@@ -5,6 +5,7 @@ import { registerModel } from '../controllers/connection';
 
 export let Photo = null;
 export let PhotoMap = null;
+export let PaintingMap = null;
 export let PhotoHistory = null;
 export let PhotoConveyer = null;
 export let PhotoConveyerError = null;
@@ -146,6 +147,18 @@ const PhotoMapSchema = new Schema(
     },
     { collection: 'photos_map', strict: true }
 );
+const PaintingMapSchema = new Schema(
+    {
+        cid: { type: Number, index: { unique: true } },
+        geo: { type: [Number], index: '2d' },
+        file: { type: String, required: true },
+        dir: { type: String },
+        title: { type: String, 'default': '' },
+        year: { type: Number, 'default': 2000 },
+        year2: { type: Number, 'default': 2000 }
+    },
+    { collection: 'paintings_map', strict: true }
+);
 
 const PhotoConveyerSchema = new Schema(
     {
@@ -213,6 +226,7 @@ PhotoSchema.pre('save', function (next) {
 registerModel(db => {
     Photo = db.model('Photo', PhotoSchema);
     PhotoMap = db.model('PhotoMap', PhotoMapSchema);
+    PaintingMap = db.model('PaintingMap', PaintingMapSchema);
     PhotoHistory = db.model('PhotoHistory', PhotoHistSchema);
 
     PhotoConveyer = db.model('PhotoConveyer', PhotoConveyerSchema);
