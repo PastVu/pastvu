@@ -200,21 +200,24 @@ PhotoSchema.pre('save', function (next) {
     if (this.isModified('year') || this.isModified('year2')) {
         // Fill aggregated year field. '—' here is em (long) dash '&mdash;' (not hyphen or minus)
         if (_.isNumber(this.year) && _.isNumber(this.year2) && this.year && this.year2) {
-            let year = String(Math.abs(this.year));
+            let y = String(Math.abs(this.year));
             if (this.year < 0) {
-                year += ' BC ';
+                y += ' BC';
             } else if (this.year < 1000) {
-                year += ' AD ';
+                y += ' AD';
             }
 
-            let year2 = String(Math.abs(this.year2));
-            if (this.year2 < 0) {
-                year2 += ' BC ';
-            } else if (this.year2 < 1000) {
-                year2 += ' AD ';
+            if (this.year2 !== this.year) {
+                y += `${this.year < 1000 ? ' ' : ''}—${Math.abs(this.year2)}`;
+
+                if (this.year2 < 0) {
+                    y += ' BC';
+                } else if (this.year2 < 1000) {
+                    y += ' AD';
+                }
             }
 
-            this.y = year === year2 ? year : year + '—' + year2;
+            this.y = y;
         } else {
             this.y = undefined;
         }

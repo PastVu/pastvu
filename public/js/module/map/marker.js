@@ -747,6 +747,7 @@ define([
     };
 
     MarkerManager.prototype.drawClustersLocal = function (clusters, boundChanged, add) {
+        var isPainting = this.isPainting;
         var i,
             size,
             measure,
@@ -772,7 +773,7 @@ define([
                         measure = '';
                     }
                     divIcon = L.divIcon({
-                        className: 'clusterIconLocal ' + 'y' + cluster.year + ' ' + measure,
+                        className: 'clusterIconLocal ' + (isPainting ? 'painting' : 'y' + cluster.year) + ' ' + measure,
                         iconSize: size,
                         html: cluster.c
                     });
@@ -1052,7 +1053,24 @@ define([
 
 
     MarkerManager.prototype.makeTextYear = function (photo) {
-        return photo.year + (photo.year2 && photo.year2 > photo.year ? '—' + photo.year2 : '');
+        var year = String(Math.abs(photo.year));
+        if (photo.year < 0) {
+            year += ' BC';
+        } else if (photo.year < 1000) {
+            year += ' AD';
+        }
+
+        if (photo.year2 && photo.year2 !== photo.year) {
+            year += ' —' + Math.abs(photo.year2);
+
+            if (photo.year2 < 0) {
+                year += ' BC';
+            } else if (photo.year2 < 1000) {
+                year += ' AD';
+            }
+        }
+
+        return year;
     };
     MarkerManager.prototype.popupPhotoOpen = function () {
         var popup,
