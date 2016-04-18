@@ -6,7 +6,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
     'use strict';
 
     var mess = {
-        fsuccess: 'Фотография успешно загружена',
+        fsuccess: 'Файл успешно загружен',
         fcount: 'Превышено разрешенное количество файлов',
 
         ftype: 'Тип файла не соответствует Правилам',
@@ -54,7 +54,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                             if (!this.canCount()) {
                                 this.toptext('У вас нет свободных лимитов для загрузки файлов, так как вы имеете ' + this.u.pfcount() + ' неподтвержденных модератором фотографий. Это максимально разрешенное количество, установленное для вашего профиля.');
                             } else {
-                                this.toptext('Выберите фотографии, нажав на кнопку добавления' + (this.filereader() ? ' или перетащив их в пунктирную область' : ''));
+                                this.toptext('Выберите файлы, нажав на кнопку добавления' + (this.filereader() ? ' или перетащив их в пунктирную область' : ''));
                                 this.canLoad(true);
 
                                 this.fileOptions = {

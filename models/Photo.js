@@ -1,4 +1,6 @@
+import _ from 'lodash';
 import { Schema } from 'mongoose';
+import constants from '../controllers/constants';
 import { registerModel } from '../controllers/connection';
 
 export let Photo = null;
@@ -22,6 +24,8 @@ const FragmentSchema = new Schema({
 const PhotoSchema = new Schema({
     cid: { type: Number, index: { unique: true } },
     user: { type: Schema.Types.ObjectId, ref: 'User', index: true },
+
+    type: { type: Number, 'default': constants.photo.type.PHOTO, index: true }, // 1 - Photo, 2 - Painting
 
     s: { type: Number, index: true }, // Photo's status (listed in constants)
     stdate: { type: Date }, // Time of setting current photo status
@@ -182,8 +186,22 @@ const STPhotoConveyerSchema = new Schema(
 PhotoSchema.pre('save', function (next) {
     if (this.isModified('year') || this.isModified('year2')) {
         // Fill aggregated year field. '—' here is em (long) dash '&mdash;' (not hyphen or minus)
-        if (this.year && this.year2) {
-            this.y = this.year === this.year2 ? String(this.year) : this.year + '—' + this.year2;
+        if (_.isNumber(this.year) && _.isNumber(this.year2) && this.year && this.year2) {
+            let year = String(Math.abs(this.year));
+            if (this.year < 0) {
+                year += ' BC ';
+            } else if (this.year < 1000) {
+                year += ' AD ';
+            }
+
+            let year2 = String(Math.abs(this.year2));
+            if (this.year2 < 0) {
+                year2 += ' BC ';
+            } else if (this.year2 < 1000) {
+                year2 += ' AD ';
+            }
+
+            this.y = year === year2 ? year : year + '—' + year2;
         } else {
             this.y = undefined;
         }

@@ -4,6 +4,11 @@ export default {
     },
 
     photo: {
+        type: {
+            PHOTO: 1,
+            PAINTING: 2
+        },
+
         status: {
             NEW: 0, // Newphoto
             REVISION: 1, // Being adjusted by user

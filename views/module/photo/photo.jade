@@ -60,11 +60,11 @@
                             span.glyphicon.glyphicon-share-alt
                         // /ko
                         //ko if: !edit()
-                        a.btn.btn-xxs(data-bind="click:download,css: downloadCSSClass(), attr: {href:'/_p/a/'+p.file(), download:p.cid()+' '+(p.title()||'').replace(/[\/|]/g, '-')+'.jpg', title:'Скачать '+(downLoadOrigin()?'оригинал ':'в полном размере ')+p.w() + '×' + p.h()}")
+                        a.btn.btn-xxs(data-bind="click:download, css: downloadCSSClass(), attr: {href:'/_p/a/'+p.file(), download:p.cid()+' '+(p.title()||'').replace(/[\/|]/g, '-')+'.jpg', title:'Скачать '+(downLoadOrigin()?'оригинал ':'в полном размере ')+p.w() + '×' + p.h()}")
                             span.glyphicon.glyphicon-save
                         // /ko
 
-            //ko template: {name: edit() ? 'photoEdit' : 'photoView', afterRender: tplAfterRender}
+            //ko template: {name: edit() ? p.type() === '2' ? 'paintingEdit' : 'photoEdit' : 'photoView', afterRender: tplAfterRender}
             // /ko
         .col-xs-12.col-sm-4.col-lg-4.rightPanel
             table.rightrow.tableUser(cellpadding="0"): tbody: tr
@@ -163,6 +163,8 @@
     button.btn.btn-danger(type="button", data-bind="click: editCancel, attr: {disabled: exe()}")
         span.glyphicon.glyphicon-remove
         |  Отмена редактирования
+    .typeSelect
+        select.form-control(name="pDir", data-bind="css: {empty: !p.type()}, options: fields.types, value: p.type, optionsText: function(item) {return fields.typeVals[item]}, optionsCaption: 'Тип изображения...'")
     | </script>
 
     //-DATA VIEW MODE
@@ -174,7 +176,7 @@
 
         div
             //ko if: p.y()
-            span.years(data-bind="html: p.y()")
+            span.years(data-bind="html: p.y()", style="word-spacing:-0.2em;")
             // /ko
             //ko if: p.y() && p.regions().length
             =', '
@@ -230,13 +232,13 @@
         img.helpimg(src="/img/misc/fund2/bnline.jpg", title="Помогите PastVu")
     | </script>
 
-    //-EDIT MODE
+    //-EDIT MODE PHOTO
     | <script id="photoEdit" type="text/html">
     .fieldWrap.mandatory(data-bind="css: {hasContent: p.title().length}")
         label(for="pName", data-bind="html: fields.title")
         input.form-control.title(name="pName", type="text", maxlength="120", placeholder="Введите название фотографии", data-bind="value: p.title, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
     .fieldWrap.asrow
-        .yearsEdit.mandatory(data-bind="css: {hasContent: !!p.year()}")
+        .yearsEdit.mandatory(data-bind="css: {hasContent: typeof p.year() === 'number'}")
             span.infoName(data-bind="html: fields.y+':'")
             input.form-control.year(type="text", data-bind="value: p.year, valueUpdate: 'keyup', event: {blur: yearCheck}", maxlength="4")
             | —
@@ -286,7 +288,7 @@
     //ko if: !can.watersign()
     .text-danger(style="margin:8px 0 -8px;")
         span.glyphicon.glyphicon-warning-sign
-        |  Администратор запретил вам менять настройки подписи на этой фотографии
+        |  Администратор запретил вам менять настройки подписи на этом изображении
     // /ko
     .watersingcontrol(data-bind="css: {deny: !can.watersign()}")
         .fieldWrap.asrow: span.panel-block(style="padding-bottom:3px")
@@ -317,12 +319,13 @@
                 // /ko
             p.text-muted(style="margin:3px 0;padding-left:8px;line-height:1.1;font-size:11px;")
                 sup(style="margin-left:-8px;") 1
-                |  Указанная настройка по умолчанию применяется ко всем вашим фотографиям, на которых не указана индивидуальная.
-                span(style="display:inline-block;")  Изменить её можно на странине&nbsp;
+                |  Указанная настройка по умолчанию применяется ко всем вашим изображениям, на которых не указана индивидуальная.
+                = " "
+                span(style="display:inline-block;") Изменить её можно на странице&nbsp;
                     a(target="_blank", data-bind="attr: {href: '/u/' + p.user.login() + '/settings'}") настроек
             p.text-muted(style="margin-bottom:0;padding-left:8px;line-height:1.1;font-size:11px;")
                 sup(style="margin-left:-8px;") *
-                |  При изменении настройки подписи, фотография будет отправлена в очередь на обработку, что может занять некоторое время
+                |  При изменении настройки подписи, изображение будет отправлена в очередь на обработку, что может занять некоторое время
 
         .fieldWrap.asrow: span.panel-block(style="padding-bottom:3px")
             span.infoName(data-bind="html: fields.downloadOrigin.title+':'")
@@ -341,11 +344,132 @@
                     button.btn.btn-primary.no(type="button", data-bind="attr: {disabled: !p.disallowDownloadOriginIndividual()|| watersignOption()===false}, css: {active: disallowDownloadOrigin()}, click: downloadOriginChange") Нет
             p.text-muted(style="margin-bottom:0;padding-left:8px;line-height:1.1;font-size:11px;")
                 sup(style="margin-left:-8px;") *
-                |  Запретить скачивать оригинал можно только в случае наличия подписи на вотермарке фотографии
+                |  Запретить скачивать оригинал можно только в случае наличия подписи на вотермарке изображения
             p.text-muted(style="margin:3px 0;padding-left:8px;line-height:1.1;font-size:11px;")
                 sup(style="margin-left:-8px;") 1
-                |  Указанная настройка по умолчанию применяется ко всем вашим фотографиям, на которых не указана индивидуальная.
-                span(style="display:inline-block;")  Изменить её можно на странине&nbsp;
+                |  Указанная настройка по умолчанию применяется ко всем вашим изображениям, на которых не указана индивидуальная.
+                = " "
+                span(style="display:inline-block;") Изменить её можно на странице&nbsp;
+                    a(target="_blank", data-bind="attr: {href: '/u/' + p.user.login() + '/settings'}") настроек
+    .spanner
+    | </script>
+
+
+    //-EDIT MODE PAINTING
+    | <script id="paintingEdit" type="text/html">
+    .fieldWrap.mandatory(data-bind="css: {hasContent: p.title().length}")
+        label(for="pName", data-bind="html: fields.painting.title")
+        input.form-control.title(name="pName", type="text", maxlength="120", placeholder="Введите название", data-bind="value: p.title, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
+    .fieldWrap.asrow
+        .yearsEdit.mandatory(data-bind="css: {hasContent: typeof p.year() === 'number'}")
+            span.infoName(data-bind="html: fields.y+':'")
+            input.form-control.year(type="text", data-bind="value: p.year, valueUpdate: 'keyup', event: {blur: yearCheck}", maxlength="4")
+            | —
+            input.form-control.year(type="text", data-bind="value: p.year2, valueUpdate: 'keyup', event: {blur: year2Check}", maxlength="4")
+        .regions(data-bind="css: {loading: exeregion()}")
+            span.infoName.mandatory(data-bind="html: fields.regions+':'")
+            //ko if: p.regions().length
+            span(data-bind="foreach: p.regions")
+                .region
+                    a(target="_blank", data-bind="text: ' ' + $data.title_local(), attr: {href: '/ps?f=r!' + $data.cid()}")
+                //ko if: $index() < $parent.p.regions().length - 1
+                | ,&#32;
+                // /ko
+            // /ko
+            //ko if: !p.regions().length
+            .region.err Не привязан
+            // /ko
+            //ko if: !p.geo()
+            span.regionEdit(data-bind="click: regionSelect")
+                | [Выбрать]
+            // /ko
+    .fieldWrap(data-bind="css: {hasContent: p.desc().length}")
+        label(for="pDesc", data-bind="html: fields.desc")
+        textarea.form-control.descInput(name="pDesc", wrap="soft", maxlength="4000", placeholder="Опишите произведение", data-bind="value: p.desc, valueUpdate: 'afterkeydown', event: {focus: descFocus, blur: descBlur}")
+    .fieldWrap(data-bind="css: {hasContent: p.author().length}")
+        label(for="pAuthor", data-bind="html: fields.author")
+        input.form-control(name="pAuthor", type="text", maxlength="250", placeholder="Автор", data-bind="value: p.author, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
+    .fieldWrap(data-bind="css: {hasContent: p.source().length}")
+        label(for="pSource", data-bind="html: fields.source")
+        input.form-control(name="pSource", type="text", maxlength="250", placeholder="Если вам известен источник (ссылка, книга и т.д.), обязательно укажите его здесь", data-bind="value: p.source, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
+    .fieldWrap(data-bind="css: {hasContent: !!p.dir()}")
+        label(for="pDir", data-bind="html: fields.dir")
+        select.form-control(name="pDir", data-bind="css: {empty: !p.dir()}, options: fields.dirValsArr, value: p.dir, optionsText: function(item) {return fields.dirVals[item]}, optionsCaption: 'Выберите направление вида...'")
+    //ko if: can.nowaterchange()
+    div(style="display:table;margin:8px 0 -6px;")
+        div(style="display:table-cell;padding-right:5px;")
+            = "Разрешить пользователю на этом изображении управлять подписью на вотермарке и скачиванием оригинала (текущая глобальная настройка настройка для пользователя - "
+            strong(data-bind="text: p.user.nowaterchange()?'Нет':'Да'")
+            | )
+        .btn-group.btn-group-sm(style="display:table-cell;width:65px;vertical-align:top;")
+            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !p.nowaterchange()}, click: nowaterchangeChange") Да
+            button.btn.btn-primary.no(type="button", data-bind="css: {active: !!p.nowaterchange()}, click: nowaterchangeChange") Нет
+    // /ko
+    //ko if: !can.watersign()
+    .text-danger(style="margin:8px 0 -8px;")
+        span.glyphicon.glyphicon-warning-sign
+        |  Администратор запретил вам менять настройки подписи на этом изображении
+    // /ko
+    .watersingcontrol(data-bind="css: {deny: !can.watersign()}")
+        .fieldWrap.asrow: span.panel-block(style="padding-bottom:3px")
+            span.infoName(data-bind="html: fields.watersign.title+':'")
+            label.radio-inline
+                input(type="radio", name="watersignIndividual", value="false", data-bind="checked: watersignIndividual")
+                span(data-bind="html: fields.watersign.profile")
+                sup 1
+            label.radio-inline
+                input(type="radio", name="watersignIndividual", value="true", data-bind="checked: watersignIndividual")
+                span(data-bind="html: fields.watersign.individual")
+            br
+            div(style="margin-top:7px;")
+                span(data-bind="html: fields.watersign.option + ': '")
+                .btn-group.btn-group-sm.disabled
+                    button.btn.btn-primary.yes(type="button", data-bind="attr: {disabled: !p.watersignIndividual()}, css: {active: watersignOption()!==false}, click: watersignOptionChange") Да
+                    button.btn.btn-primary.no(type="button", data-bind="attr: {disabled: !p.watersignIndividual()}, css: {active: watersignOption()===false}, click: watersignOptionChange") Нет
+                // ko if: !!watersignOption()
+                .radio(style="margin-top:8px"): label
+                    input(type="radio", name="watersign", value="true", data-bind="attr: {disabled: !p.watersignIndividual()}, checked: watersignOption")
+                    span(data-bind="html: fields.watersign.default+' ('")
+                    span(style="color:#777", data-bind="text: 'uploaded by ' + p.user.login()")
+                    | )
+                .radio(style="margin-top:0"): .input-group(style="")
+                    input(type="radio", name="watersign", value="custom", data-bind="attr: {disabled: !p.watersignIndividual()}, checked: watersignOption")
+                    span(style="display: table-cell; padding: 2px 9px 2px 0;", data-bind="html: fields.watersign.text")
+                    input.form-control(type="text", style="width:422px;max-width:100%", data-bind="attr: {disabled: !p.watersignIndividual() || watersignOption()!=='custom'}, value: watersignCustom, symbols: {pattern:fields.watersignPattern,watch:p.watersignCustom,noMultiplySpace:true,maxLength:fields.watersignLength}, valueUpdate: 'input'")
+                // /ko
+            p.text-muted(style="margin:3px 0;padding-left:8px;line-height:1.1;font-size:11px;")
+                sup(style="margin-left:-8px;") 1
+                |  Указанная настройка по умолчанию применяется ко всем вашим изображениям, на которых не указана индивидуальная.
+                = " "
+                span(style="display:inline-block;") Изменить её можно на странице&nbsp;
+                    a(target="_blank", data-bind="attr: {href: '/u/' + p.user.login() + '/settings'}") настроек
+            p.text-muted(style="margin-bottom:0;padding-left:8px;line-height:1.1;font-size:11px;")
+                sup(style="margin-left:-8px;") *
+                |  При изменении настройки подписи, изображение будет отправлено в очередь на обработку, что может занять некоторое время
+
+        .fieldWrap.asrow: span.panel-block(style="padding-bottom:3px")
+            span.infoName(data-bind="html: fields.downloadOrigin.title+':'")
+            label.radio-inline
+                input(type="radio", name="disallowDownloadOriginIndividual", value="false", data-bind="checked: disallowDownloadOriginIndividual")
+                span(data-bind="html: fields.downloadOrigin.profile")
+                sup 1
+            label.radio-inline
+                input(type="radio", name="disallowDownloadOriginIndividual", value="true", data-bind="checked: disallowDownloadOriginIndividual")
+                span(data-bind="html: fields.downloadOrigin.individual")
+            br
+            div(style="margin-top:7px;")
+                span(data-bind="html: fields.downloadOrigin.option + ': '")
+                .btn-group.btn-group-sm.disabled
+                    button.btn.btn-primary.yes(type="button", data-bind="attr: {disabled: !p.disallowDownloadOriginIndividual() || watersignOption()===false}, css: {active: !disallowDownloadOrigin()}, click: downloadOriginChange") Да
+                    button.btn.btn-primary.no(type="button", data-bind="attr: {disabled: !p.disallowDownloadOriginIndividual()|| watersignOption()===false}, css: {active: disallowDownloadOrigin()}, click: downloadOriginChange") Нет
+            p.text-muted(style="margin-bottom:0;padding-left:8px;line-height:1.1;font-size:11px;")
+                sup(style="margin-left:-8px;") *
+                |  Запретить скачивать оригинал можно только в случае наличия подписи на вотермарке
+            p.text-muted(style="margin:3px 0;padding-left:8px;line-height:1.1;font-size:11px;")
+                sup(style="margin-left:-8px;") 1
+                |  Указанная настройка по умолчанию применяется ко всем вашим изображениям, на которых не указана индивидуальная.
+                = " "
+                span(style="display:inline-block;") Изменить её можно на странице&nbsp;
                     a(target="_blank", data-bind="attr: {href: '/u/' + p.user.login() + '/settings'}") настроек
     .spanner
     | </script>

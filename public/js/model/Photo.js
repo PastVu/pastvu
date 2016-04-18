@@ -8,6 +8,8 @@ define(
                 cid: '',
                 s: statuses.keys.PUBLIC,
 
+                type: statuses.type.PHOTO,
+
                 file: '',
                 title: '',
 
