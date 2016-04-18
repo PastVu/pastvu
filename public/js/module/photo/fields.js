@@ -1,11 +1,12 @@
 /**
  * Модель статусов фотографии
  */
-define(['underscore'], function () {
+define(['m/photo/status'], function (statuses) {
     return {
         s: 'Status',
         y: 'Year',
         geo: 'Coordinates',
+        type: 'Type',
         regions: 'Region',
         title: 'Photo title',
         desc: 'Description',
@@ -13,6 +14,11 @@ define(['underscore'], function () {
         author: 'Author',
         address: 'Adress of shooting point',
         dir: 'Shooting direction',
+        typeVals: {
+            1: 'Photograph',
+            2: 'Painting'
+        },
+        types: ['1', '2'],
         dirVals: {
             n: 'North',
             ne: 'Northeast',
@@ -26,10 +32,10 @@ define(['underscore'], function () {
         },
         dirValsArr: ['w', 'nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'aero'],
         watersign: {
-            'title': 'Text on photo\'s watermark',
+            'title': 'Text on picture\'s watermark',
             'profile': 'As specified in profile',
             'individual': 'Individually',
-            'option': 'Add text to photo\'s watermark',
+            'option': 'Add text to picture\'s watermark',
             'default': 'System setting',
             'text': 'Text'
         },
@@ -41,6 +47,10 @@ define(['underscore'], function () {
             profile: 'As specified in profile',
             individual: 'Individually',
             option: 'Allow other users to download original'
+        },
+
+        painting: {
+            title: 'Title'
         }
     };
 });

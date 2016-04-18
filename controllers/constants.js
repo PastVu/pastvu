@@ -4,6 +4,11 @@ export default {
     },
 
     photo: {
+        type: {
+            PHOTO: 1,
+            PAINTING: 2
+        },
+
         status: {
             NEW: 0, // Newphoto
             REVISION: 1, // Being adjusted by user
@@ -16,7 +21,7 @@ export default {
         },
 
         historyFields: [
-            's', 'geo',
+            's', 'geo', 'type',
             'file', 'type', 'format', 'sign', 'size', 'w', 'h', 'ws', 'hs',
             'title', 'desc', 'source', 'author', 'address', 'year', 'year2', 'y', 'dir',
             'watersignText',

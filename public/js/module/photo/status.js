@@ -102,6 +102,10 @@ define(['underscore'], function (_) {
 
     statuses.keys = keys;
     statuses.nums = nums;
+    statuses.type = {
+        PHOTO: 1,
+        PAINTING: 2
+    };
 
     return statuses;
 });

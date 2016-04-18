@@ -256,6 +256,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.routeHandlerDebounced = _.debounce(this.routeHandler, 700, { leading: true, trailing: true });
 
             // Subscriptions
+            this.subscriptions.type = this.p.type.subscribe(this.yearCheck, this);
             this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandlerDebounced, this);
             this.subscriptions.edit = this.edit.subscribe(this.editHandler, this);
             if (!this.auth.loggedIn()) {
@@ -686,42 +687,70 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             var p = this.p;
             var year = Number(p.year());
             var year2 = Number(p.year2());
+            var isPainting = Number(this.p.type()) === 2;
+            var min = isPainting ? -100 : 1826;
 
-            if (!year) {
-                // Если значение нулевое или не парсится, ставим дефолтное
+            if (!p.year() || isNaN(year)) {
+                // If value is empty or wrong number, put default one
                 year = Photo.def.full.year;
             } else {
-                // Убеждаемся, что оно в допустимом интервале
-                year = Math.min(Math.max(year, 1826), 2000);
+                // There is no zero year, people often muddle it up with 1 A.D.
+                // https://en.wikipedia.org/wiki/0_(year)
+                if (year === 0) {
+                    year = 1;
+                }
+                // Убеждаемся, что год в допустимом интервале
+                year = Math.min(Math.max(year, min), 2000);
             }
 
             p.year(year);
 
             // Если год начала пустой, то и конца обнуляем
             // Если не пустой, а год конца не заполнен или меньше начала, ставим год конца равным началу
-            if (!year || year && (!year2 || year > year2)) {
+            if (year === Photo.def.full.year || year2 === Photo.def.full.year2 || year > year2) {
                 p.year2(year);
+            } else if (year !== year2) {
+                var maxYearsDelta = isPainting ? 200 : 50;
+                // If both years have the same sign (they're in one era), subtract one year from delta
+                if (year * year2 > 0) {
+                    maxYearsDelta -= 1;
+                }
+                if (year2 > year + maxYearsDelta) {
+                    p.year2((year + maxYearsDelta) || year / Math.abs(year));
+                }
             }
         },
         year2Check: function () {
             var p = this.p;
             var year = Number(p.year());
             var year2 = Number(p.year2());
+            var isPainting = Number(this.p.type()) === 2;
+            var min = isPainting ? -100 : 1826;
+            var maxYearsDelta = isPainting ? 200 : 50;
 
-            if (!year2) {
-                // Если значение нулевое или не парсится, ставим год начала или дефолтное
+            if (!p.year2() || isNaN(year2)) {
+                // If value is empty or wrong number, put first year or default one
                 year2 = year || Photo.def.full.year2;
             } else {
-                // Убеждаемся, что оно в допустимом интервале и не мене year
-                year2 = Math.min(Math.max(year2, year || 1826), 2000);
+                // Убеждаемся, что оно в допустимом интервале и не менее year
+                year2 = Math.min(Math.max(year2, year || min), 2000);
+
+                if (year === Photo.def.full.year) {
+                    // Если год конца заполнен, а начала - нет, заполняем
+                    p.year(year2);
+                } else if (year !== year2) {
+                    var maxYearsDelta = isPainting ? 200 : 50;
+                    // If both years have the same sign (they're in one era), subtract one year from delta
+                    if (year * year2 > 0) {
+                        maxYearsDelta -= 1;
+                    }
+                    if (year2 > year + maxYearsDelta) {
+                        p.year((year2 - maxYearsDelta) || year2 / Math.abs(year2));
+                    }
+                }
             }
 
             p.year2(year2);
-
-            // Если год конца заполнен, а начала - нет, заполняем
-            if (year2 && !year) {
-                p.year(year2);
-            }
         },
 
         getRegionsByGeo: function (geo) {
@@ -1268,6 +1297,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     }
                 }, {})
                 .value();
+
+            if (Number(p.type()) !== origin.type) {
+                changes.type = Number(p.type());
+            }
 
             if (changes.year || changes.year2) {
                 changes.year = p.year() || null;

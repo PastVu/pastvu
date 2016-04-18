@@ -6,7 +6,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
     'use strict';
 
     var mess = {
-        fsuccess: 'Photo has been successfully uploaded',
+        fsuccess: 'File has been successfully uploaded',
         fcount: 'Allowed count of files exceeded',
 
         ftype: 'File type does not correspond to the Rules',
@@ -52,9 +52,9 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                             this.canCount(this.canCountTotal);
 
                             if (!this.canCount()) {
-                                this.toptext('You are out of limits for uploading photos, because you have ' + this.u.pfcount() + ' unconfirmed photos by moderator. It is maximum value for your profile type.');
+                                this.toptext('You are out of limits for uploading files, because you have ' + this.u.pfcount() + ' unconfirmed images by moderator. It is maximum value for your profile type.');
                             } else {
-                                this.toptext('Select photos by pushing add button' + (this.filereader() ? ' or draging them inside dashed area' : ''));
+                                this.toptext('Select files by pushing add button' + (this.filereader() ? ' or draging them inside dashed area' : ''));
                                 this.canLoad(true);
 
                                 this.fileOptions = {

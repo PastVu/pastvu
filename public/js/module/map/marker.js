@@ -13,6 +13,7 @@ define([
 
         this.openNewTab = options.openNewTab;
         this.embedded = options.embedded;
+        this.isPainting = options.isPainting;
 
         this.photosAll = [];
         this.mapObjects = { photos: {}, clusters: {} };
@@ -189,6 +190,19 @@ define([
         }
         return this;
     };
+    MarkerManager.prototype.changePainting = function (val) {
+        this.isPainting = val;
+        if (this.enabled) {
+            // Закрываем попапы и очищаем слои
+            this.popupClose();
+            this.clearClusters();
+            this.clearPhotos();
+
+            // Запрашиваем данные
+            this.refreshDataByZoom(true);
+        }
+        return this;
+    };
     MarkerManager.prototype.destroy = function () {
         this.disable();
         delete window[this.popupClusterClickFN];
@@ -362,7 +376,8 @@ define([
                     bounds: bounds,
                     startAt: this.startPendingAt,
                     year: this.year,
-                    year2: this.year2
+                    year2: this.year2,
+                    isPainting: this.isPainting
                 }
             ).then(function (data) {
                 var localWork, // Находимся ли мы на уровне локальной работы
@@ -393,6 +408,7 @@ define([
      * Обрабатывает входящие данные по зуму
      */
     MarkerManager.prototype.processIncomingDataZoom = function (data, boundChanged, localWork, localCluster) {
+        var isPainting = this.isPainting;
         var photos = {}, //новый хэш фотографий
             divIcon,
             curr,
@@ -432,7 +448,7 @@ define([
                 if (!boundChanged || this.calcBound.contains(curr.geo)) {
                     curr.sfile = P.preaddr + Photo.picFormats.m + curr.file;
                     divIcon = L.divIcon({
-                        className: 'photoIcon ' + 'y' + curr.year + ' ' + curr.dir,
+                        className: 'photoIcon ' + (isPainting ? 'painting' : 'y' + curr.year) + ' ' + curr.dir,
                         iconSize: this.sizePoint
                     });
                     curr.marker =
@@ -468,7 +484,7 @@ define([
      * Обновление данных маркеров.
      * @param {?boolean=} reposExisting Пересчитывать позиции существующих маркеров. Например, при изменении масштаба надо пересчитывать.
      */
-    MarkerManager.prototype.refreshDataByMove = function (reposExisting) {
+    MarkerManager.prototype.refreshDataByMove = function (/*reposExisting*/) {
         var self = this;
         var zoom = this.currZoom,
             bound = L.latLngBounds(this.calcBound.getSouthWest(), this.calcBound.getNorthEast()),
@@ -496,7 +512,10 @@ define([
         }
 
         socket
-            .run('photo.getByBounds', { z: zoom, bounds: bounds, year: this.year, year2: this.year2 })
+            .run('photo.getByBounds', {
+                z: zoom, bounds: bounds, year: this.year, year2: this.year2,
+                isPainting: this.isPainting
+            })
             .then(function (data) {
                 var localWork, // Находимся ли мы на уровне локальной работы
                     localCluster, // Смотрим нужно ли использовать клиентскую кластеризацию
@@ -525,6 +544,7 @@ define([
      * Обрабатывает входящие данные
      */
     MarkerManager.prototype.processIncomingDataMove = function (data, boundChanged, localWork, localCluster) {
+        var isPainting = this.isPainting;
         var photos = {},
             divIcon,
             curr,
@@ -551,7 +571,7 @@ define([
                         curr.sfile = P.preaddr + Photo.picFormats.m + curr.file;
                         divIcon = L.divIcon(
                             {
-                                className: 'photoIcon ' + 'y' + curr.year + ' ' + curr.dir,
+                                className: 'photoIcon ' + (isPainting ? 'painting' : 'y' + curr.year) + ' ' + curr.dir,
                                 iconSize: this.sizePoint
                             }
                         );
@@ -727,6 +747,7 @@ define([
     };
 
     MarkerManager.prototype.drawClustersLocal = function (clusters, boundChanged, add) {
+        var isPainting = this.isPainting;
         var i,
             size,
             measure,
@@ -752,7 +773,7 @@ define([
                         measure = '';
                     }
                     divIcon = L.divIcon({
-                        className: 'clusterIconLocal ' + 'y' + cluster.year + ' ' + measure,
+                        className: 'clusterIconLocal ' + (isPainting ? 'painting' : 'y' + cluster.year) + ' ' + measure,
                         iconSize: size,
                         html: cluster.c
                     });
@@ -1032,7 +1053,24 @@ define([
 
 
     MarkerManager.prototype.makeTextYear = function (photo) {
-        return photo.year + (photo.year2 && photo.year2 > photo.year ? '—' + photo.year2 : '');
+        var year = String(Math.abs(photo.year));
+        if (photo.year < 0) {
+            year += ' BC';
+        } else if (photo.year < 1000) {
+            year += ' AD';
+        }
+
+        if (photo.year2 && photo.year2 !== photo.year) {
+            year += ' —' + Math.abs(photo.year2);
+
+            if (photo.year2 < 0) {
+                year += ' BC';
+            } else if (photo.year2 < 1000) {
+                year += ' AD';
+            }
+        }
+
+        return year;
     };
     MarkerManager.prototype.popupPhotoOpen = function () {
         var popup,

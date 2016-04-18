@@ -1,8 +1,11 @@
+import _ from 'lodash';
 import { Schema } from 'mongoose';
+import constants from '../controllers/constants';
 import { registerModel } from '../controllers/connection';
 
 export let Photo = null;
 export let PhotoMap = null;
+export let PaintingMap = null;
 export let PhotoHistory = null;
 export let PhotoConveyer = null;
 export let PhotoConveyerError = null;
@@ -22,6 +25,8 @@ const FragmentSchema = new Schema({
 const PhotoSchema = new Schema({
     cid: { type: Number, index: { unique: true } },
     user: { type: Schema.Types.ObjectId, ref: 'User', index: true },
+
+    type: { type: Number, 'default': constants.photo.type.PHOTO, index: true }, // 1 - Photo, 2 - Painting
 
     s: { type: Number, index: true }, // Photo's status (listed in constants)
     stdate: { type: Date }, // Time of setting current photo status
@@ -142,6 +147,18 @@ const PhotoMapSchema = new Schema(
     },
     { collection: 'photos_map', strict: true }
 );
+const PaintingMapSchema = new Schema(
+    {
+        cid: { type: Number, index: { unique: true } },
+        geo: { type: [Number], index: '2d' },
+        file: { type: String, required: true },
+        dir: { type: String },
+        title: { type: String, 'default': '' },
+        year: { type: Number, 'default': 2000 },
+        year2: { type: Number, 'default': 2000 }
+    },
+    { collection: 'paintings_map', strict: true }
+);
 
 const PhotoConveyerSchema = new Schema(
     {
@@ -182,8 +199,25 @@ const STPhotoConveyerSchema = new Schema(
 PhotoSchema.pre('save', function (next) {
     if (this.isModified('year') || this.isModified('year2')) {
         // Fill aggregated year field. '—' here is em (long) dash '&mdash;' (not hyphen or minus)
-        if (this.year && this.year2) {
-            this.y = this.year === this.year2 ? String(this.year) : this.year + '—' + this.year2;
+        if (_.isNumber(this.year) && _.isNumber(this.year2) && this.year && this.year2) {
+            let y = String(Math.abs(this.year));
+            if (this.year < 0) {
+                y += ' BC';
+            } else if (this.year < 1000) {
+                y += ' AD';
+            }
+
+            if (this.year2 !== this.year) {
+                y += `${this.year < 1000 ? ' ' : ''}—${Math.abs(this.year2)}`;
+
+                if (this.year2 < 0) {
+                    y += ' BC';
+                } else if (this.year2 < 1000) {
+                    y += ' AD';
+                }
+            }
+
+            this.y = y;
         } else {
             this.y = undefined;
         }
@@ -195,6 +229,7 @@ PhotoSchema.pre('save', function (next) {
 registerModel(db => {
     Photo = db.model('Photo', PhotoSchema);
     PhotoMap = db.model('PhotoMap', PhotoMapSchema);
+    PaintingMap = db.model('PaintingMap', PaintingMapSchema);
     PhotoHistory = db.model('PhotoHistory', PhotoHistSchema);
 
     PhotoConveyer = db.model('PhotoConveyer', PhotoConveyerSchema);

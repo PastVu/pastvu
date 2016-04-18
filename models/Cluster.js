@@ -2,6 +2,7 @@ import { Schema } from 'mongoose';
 import { registerModel } from '../controllers/connection';
 
 export let Cluster = null;
+export let ClusterPaint = null;
 export let ClusterParams = null;
 
 const ClusterPoster = {
@@ -27,7 +28,21 @@ const ClusterSchema = new Schema(
     { strict: true }
 );
 
+const ClusterPaintSchema = new Schema(
+    {
+        g: { type: [Number] }, // Cluster left top corner coordinates (indexed)
+        z: { type: Number }, // Cluster zoom (indexed)
+
+        geo: { type: [Number] }, // Cluster center of gravity coordinates
+        c: { type: Number }, // Number of photos inside cluster
+        y: { type: Schema.Types.Mixed }, // Hash (object kye:value) of years within cluster
+        p: ClusterPoster // Cluster poster
+    },
+    { strict: true, collection: 'clusterspaint'  }
+);
+
 ClusterSchema.index({ g: '2d', z: 1 });
+ClusterPaintSchema.index({ g: '2d', z: 1 });
 
 const ClusterParamsSchema = new Schema(
     {
@@ -48,5 +63,6 @@ const ClusterParamsSchema = new Schema(
 
 registerModel(db => {
     Cluster = db.model('Cluster', ClusterSchema);
+    ClusterPaint = db.model('ClusterPaint', ClusterPaintSchema);
     ClusterParams = db.model('ClusterParams', ClusterParamsSchema);
 });
