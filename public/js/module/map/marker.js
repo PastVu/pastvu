@@ -204,8 +204,11 @@ define([
         }
         return this;
     };
-    MarkerManager.prototype.changePainting = function (val) {
+    MarkerManager.prototype.changePainting = function (val, year, year2) {
         this.isPainting = val;
+        this.year = year || undefined;
+        this.year2 = year2 || undefined;
+
         if (this.enabled) {
             // Закрываем попапы и очищаем слои
             this.popupClose();

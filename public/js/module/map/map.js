@@ -249,8 +249,9 @@ define([
                 Utils.setLocalStorage(this.embedded ? 'map.embedded.opennew' : 'map.opennew', val);
             }, this);
             this.subscriptions.isPainting = this.isPainting.subscribe(function (val) {
+                this.yearSliderRefresh();
                 if (this.markerManager) {
-                    this.markerManager.changePainting(val);
+                    this.markerManager.changePainting(val, this.yearLow, this.yearHigh);
                 }
                 Utils.setLocalStorage(this.embedded ? 'map.embedded.isPainting' : 'map.isPainting', val);
             }, this);
@@ -682,6 +683,23 @@ define([
             }
         },
 
+        yearSliderRefresh: function () {
+            var $slider = this.$dom.find('.yearSlider');
+            $slider.slider('destroy');
+
+            //P.window.square.unsubscribe();
+            window.clearTimeout(this.yearRefreshMarkersTimeout);
+            this.yearLow = this.isPainting() ? -100 : 1826;
+            this.yearHigh = 2000;
+
+            $('.mapYearSelector').replaceWith(
+                '<div class="mapYearSelector">' +
+                '<div class="yearSlider"><div class="ui-slider-handle L"></div><div class="ui-slider-handle R"></div></div>' +
+                '<div class="yearOuter L"></div><div class="yearOuter R"></div>' +
+                '</div>'
+            );
+            this.yearSliderCreate();
+        },
         yearSliderCreate: function () {
             var _this = this;
             var yearLowOrigin = this.yearLow;
