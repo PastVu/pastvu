@@ -6,6 +6,20 @@ define([
 ], function (_, Utils, socket, P, ko, ko_mapping, globalVM, L, Photo) {
     'use strict';
 
+    var paintingDivisionYear = Math.floor(1688 / 5) * 5;
+    function getYearClass(year, isPainting) {
+        if (isPainting) {
+            if (year < paintingDivisionYear) {
+                year = Math.floor(year / 25) * 25;
+            } else {
+                year = Math.floor(year / 5) * 5;
+            }
+            year = 'p' + year;
+        }
+
+        return 'y' + year;
+    }
+
     function MarkerManager(map, options) {
         var _this = this;
 
@@ -448,7 +462,7 @@ define([
                 if (!boundChanged || this.calcBound.contains(curr.geo)) {
                     curr.sfile = P.preaddr + Photo.picFormats.m + curr.file;
                     divIcon = L.divIcon({
-                        className: 'photoIcon ' + (isPainting ? 'painting' : 'y' + curr.year) + ' ' + curr.dir,
+                        className: 'photoIcon ' + getYearClass(curr.year, isPainting) + ' ' + curr.dir,
                         iconSize: this.sizePoint
                     });
                     curr.marker =
@@ -571,7 +585,7 @@ define([
                         curr.sfile = P.preaddr + Photo.picFormats.m + curr.file;
                         divIcon = L.divIcon(
                             {
-                                className: 'photoIcon ' + (isPainting ? 'painting' : 'y' + curr.year) + ' ' + curr.dir,
+                                className: 'photoIcon ' + getYearClass(curr.year, isPainting) + ' ' + curr.dir,
                                 iconSize: this.sizePoint
                             }
                         );
@@ -773,7 +787,7 @@ define([
                         measure = '';
                     }
                     divIcon = L.divIcon({
-                        className: 'clusterIconLocal ' + (isPainting ? 'painting' : 'y' + cluster.year) + ' ' + measure,
+                        className: 'clusterIconLocal ' + getYearClass(curr.year, isPainting) + ' ' + measure,
                         iconSize: size,
                         html: cluster.c
                     });

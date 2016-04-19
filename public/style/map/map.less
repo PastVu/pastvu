@@ -6,19 +6,15 @@
 @spinVal: 242 / 121;
 @yearBase: hsv(240, 100%, 67%);
 .yearLooping(@index) when (@index < 2001) {
-	.y@{index} { // your resulting css
+	.y@{index} {
 		@vall: (@index - 1880) * @spinVal;
 		background-color: spin(@yearBase, @vall);
 	}
 	.yearLooping(@index + 1); // next iteration
 }
 
-.yearLooping(2001) {
-}
-
-//Для фотографий от 1826 до 1879 повышаем значение яркости с 40 до 66.5
+// For photos 1826 - 1879 raise the brightness value from 40 to 66.5
 @lightenVal: (67 - 40) / 54;
-@yearBaseOld: hsv(240, 100%, 40%);
 .yearLoopingOld(@index) when (@index > 1825) {
 	.y@{index} {
 		@vall: (40% + (@index - 1826) * @lightenVal);
@@ -27,7 +23,31 @@
 	.yearLoopingOld(@index - 1); // next iteration
 }
 
-.yearLoopingOld(1825) {
+@paintingHightYear: 2000;
+@paintingUpStep: 5;
+@paintingDivisionYear: floor(1688 / @paintingUpStep) * @paintingUpStep; // Consider "Glorious Revolution" as begining of Age of Enlightenment
+@paintingSpinVal: 0.8;
+@paintingBase: hsv(240, 100%, 67%);
+.yearLoopingPaint(@index) when (@index <= @paintingHightYear) {
+	.yp@{index} {
+		@vall: (@index - @paintingDivisionYear) * @paintingSpinVal;
+		background-color: spin(@paintingBase, @vall);
+	}
+	.yearLoopingPaint(@index + @paintingUpStep); // next iteration
+}
+
+
+// For paintings 100BC - 1680 raise the brightness value from 40 to 66.5
+@paintingLowYear: -100;
+@paintingDownStep: 25;
+@paintingDownEnd: floor(@paintingDivisionYear / @paintingDownStep) * @paintingDownStep;
+@paintingDownVal: 66 / (@paintingDownEnd - @paintingLowYear) * @paintingDownStep;
+.yearLoopingOldPaint(@index) when (@index >= @paintingLowYear) {
+	.yp@{index} {
+		@vall: 66% - round(((@paintingDownEnd - @index) / @paintingDownStep) * @paintingDownVal);
+		background-color: hsv(240, 100%, @vall);
+	}
+	.yearLoopingOldPaint(@index - @paintingDownStep); // next iteration
 }
 
 @-webkit-keyframes photoIconHighlight {
@@ -320,6 +340,9 @@
 
 	.yearLoopingOld (1879);
 	.yearLooping (1880);
+
+    .yearLoopingOldPaint(@paintingDownEnd);
+    .yearLoopingPaint(@paintingDivisionYear);
 
 	.photoIcon {
 		overflow: visible;
