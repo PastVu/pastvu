@@ -285,18 +285,23 @@ export function getNewPhotosLimit(user) {
     return canCreate;
 }
 
+const photoRange = 2000 - 1826;
+const paintRange = 2000 - -100;
 async function getBounds(data) {
-    const { bounds, z, year, year2 } = data;
+    const { bounds, z, year, year2, isPainting } = data;
+    const minYear = isPainting ? -100 : 1826;
 
     // Determine whether fetch by years needed
-    const years = _.isNumber(year) && _.isNumber(year2) && year >= 1826 && year <= 2000 && year2 >= year && year2 <= 2000;
+    const years = _.isNumber(year) && _.isNumber(year2) &&
+        year >= minYear && year2 <= 2000 && year2 >= year &&
+        (year2 - year < (isPainting ? paintRange : photoRange));
     let clusters;
     let photos;
 
     if (z < 17) {
         ({ photos, clusters } = await this.call(`cluster.${years ? 'getBoundsByYear' : 'getBounds'}`, data));
     } else {
-        const MapModel = data.isPainting ? PaintingMap : PhotoMap;
+        const MapModel = isPainting ? PaintingMap : PhotoMap;
         const yearCriteria = years ? year === year2 ? year : { $gte: year, $lte: year2 } : false;
 
         photos = await Promise.all(bounds.map(bound => {

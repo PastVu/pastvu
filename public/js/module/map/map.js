@@ -17,6 +17,7 @@ define([
     return Cliche.extend({
         jade: jade,
         options: {
+            isPainting: undefined,
             embedded: undefined, // Режим встроенной карты
             editing: undefined, // Режим редактирования
             point: undefined,
@@ -31,7 +32,10 @@ define([
             this.embedded = this.options.embedded;
             this.editing = ko.observable(this.options.editing);
             this.openNewTab = ko.observable(!!Utils.getLocalStorage(this.embedded ? 'map.embedded.opennew' : 'map.opennew'));
-            this.isPainting = ko.observable(!!Utils.getLocalStorage(this.embedded ? 'map.embedded.isPainting' : 'map.isPainting'));
+            this.isPainting = ko.observable(this.options.isPainting !== undefined ?
+                this.options.isPainting :
+                !!Utils.getLocalStorage(this.embedded ? 'map.embedded.isPainting' : 'map.isPainting')
+            );
             this.linkShow = ko.observable(false); //Показывать ссылку на карту
             this.link = ko.observable(''); //Ссылка на карту
 
@@ -87,7 +91,7 @@ define([
                 });
             }
 
-            this.yearLow = 1826;
+            this.yearLow = this.isPainting() ? -100 : 1826;
             this.yearHigh = 2000;
             this.yearRefreshMarkersBind = this.yearRefreshMarkers.bind(this);
             this.yearRefreshMarkersTimeout = null;
@@ -680,6 +684,8 @@ define([
 
         yearSliderCreate: function () {
             var _this = this;
+            var yearLowOrigin = this.yearLow;
+            var yearHighOrigin = this.yearHigh;
             var yearsDelta = this.yearHigh - this.yearLow;
             var $slider = this.$dom.find('.yearSlider');
             var sliderStep = $slider.width() / yearsDelta;
@@ -691,12 +697,14 @@ define([
             var currMax;
             var culcSlider = function (min, max) {
                 if (currMin !== min) {
-                    slideOuterL.style.width = (sliderStep * (min - 1826) >> 0) + 'px';
-                    handleL.innerHTML = currMin = min;
+                    slideOuterL.style.width = (sliderStep * Math.abs(min - yearLowOrigin) >> 0) + 'px';
+                    currMin = min;
+                    handleL.innerHTML = min || 1;
                 }
                 if (currMax !== max) {
-                    slideOuterR.style.width = (sliderStep * (2000 - max) >> 0) + 'px';
-                    handleR.innerHTML = currMax = max;
+                    slideOuterR.style.width = (sliderStep * Math.abs(yearHighOrigin - max) >> 0) + 'px';
+                    currMax = max;
+                    handleR.innerHTML = max || 1;
                 }
             };
 
@@ -729,12 +737,12 @@ define([
                 var values = $slider.slider('values');
 
                 sliderStep = $slider.width() / yearsDelta;
-                slideOuterL.style.width = (sliderStep * (values[0] - 1826) >> 0) + 'px';
-                slideOuterR.style.width = (sliderStep * (2000 - values[1]) >> 0) + 'px';
+                slideOuterL.style.width = (sliderStep * Math.abs(values[0] - yearLowOrigin) >> 0) + 'px';
+                slideOuterR.style.width = (sliderStep * Math.abs(yearHighOrigin - values[1]) >> 0) + 'px';
             });
         },
         yearRefreshMarkers: function () {
-            this.markerManager.setYearLimits(this.yearLow, this.yearHigh);
+            this.markerManager.setYearLimits(this.yearLow || 1, this.yearHigh || 1);
         }
     });
 });

@@ -787,7 +787,7 @@ define([
                         measure = '';
                     }
                     divIcon = L.divIcon({
-                        className: 'clusterIconLocal ' + getYearClass(curr.year, isPainting) + ' ' + measure,
+                        className: 'clusterIconLocal ' + getYearClass(cluster.year, isPainting) + ' ' + measure,
                         iconSize: size,
                         html: cluster.c
                     });
