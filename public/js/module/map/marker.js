@@ -204,7 +204,7 @@ define([
         }
         return this;
     };
-    MarkerManager.prototype.changePainting = function (val, year, year2) {
+    MarkerManager.prototype.changePainting = function (val, year, year2, fetch) {
         this.isPainting = val;
         this.year = year || undefined;
         this.year2 = year2 || undefined;
@@ -216,7 +216,9 @@ define([
             this.clearPhotos();
 
             // Запрашиваем данные
-            this.refreshDataByZoom(true);
+            if (fetch) {
+                this.refreshDataByZoom(true);
+            }
         }
         return this;
     };

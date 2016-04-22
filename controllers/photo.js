@@ -44,6 +44,7 @@ const {
     }
 } = constants;
 
+const typesValue = _.values(constants.photo.type);
 const parsingFieldsSet = new Set(parsingFields);
 const historyFieldsDiffHash = historyFieldsDiff.reduce(function (result, field) {
     result[field] = field;
@@ -1433,24 +1434,42 @@ async function giveUserPhotosAround({ cid, limitL, limitR }) {
 }
 
 // Returns array of nearest photos
-async function giveNearestPhotos({ geo, except, distance, limit, skip }) {
+async function giveNearestPhotos({ geo, type, year, year2, except, distance, limit, skip }) {
     if (!Utils.geo.checkLatLng(geo)) {
         throw new BadParamsError();
     }
 
     geo.reverse();
 
-    const query = { geo: { $near: geo }, s: status.PUBLIC };
+    type = typesValue.includes(type) ? type : constants.photo.type.PHOTO;
+    const isPainting = type === constants.photo.type.PAINTING;
+
+    const query = { geo: { $near: geo }, s: status.PUBLIC, type };
     const options = { lean: true };
+
+    const minYear = isPainting ? -100 : 1826;
+
+    if (_.isNumber(year) && year > minYear && year < 2000) {
+        query.year = { $gte: year };
+    }
+    if (_.isNumber(year2) && year2 > minYear && year2 < 2000) {
+        if (year === year2) {
+            query.year = year;
+        } else if (!query.year) {
+            query.year = { $lte: year2 };
+        } else if (year2 > year) {
+            query.year.$lte = year2;
+        }
+    }
 
     if (_.isNumber(except) && except > 0) {
         query.cid = { $ne: except };
     }
 
-    if (_.isNumber(distance) && distance > 0 && distance < 100000) {
+    if (_.isNumber(distance) && distance > 0 && distance < 7) {
         query.geo.$maxDistance = distance;
     } else {
-        query.geo.$maxDistance = 2000;
+        query.geo.$maxDistance = 3;
     }
 
     if (_.isNumber(limit) && limit > 0 && limit < 30) {
@@ -1580,6 +1599,19 @@ function photoCheckPublickRequired(photo) {
     return true;
 }
 
+function yearsValidate({ isPainting, maxDelta, year, year2 }) {
+    const minYear = isPainting ? -100 : 1826;
+    const maxYearsDelta = maxDelta || (2000 - minYear);
+
+    // Both year fields must be filled
+    if (_.isNumber(year) && _.isNumber(year2) && year >= minYear && year <= 2000 &&
+        year2 >= year && year2 <= 2000 && Math.abs(year2 - year) <=  maxYearsDelta) {
+        return {year, year2};
+    }
+
+    return {};
+}
+
 function photoValidate(newValues, oldValues, can) {
     const result = {};
 
@@ -1594,7 +1626,7 @@ function photoValidate(newValues, oldValues, can) {
         result.geo = undefined;
     }
 
-    if (_.isNumber(newValues.type) && newValues.type > 0 && _.values(constants.photo.type).includes(newValues.type)) {
+    if (_.isNumber(newValues.type) && typesValue.includes(newValues.type)) {
         result.type = newValues.type;
     }
 
@@ -1605,19 +1637,16 @@ function photoValidate(newValues, oldValues, can) {
     }
 
     const isPainting = result.type === constants.photo.type.PAINTING || oldValues.type === constants.photo.type.PAINTING;
-    const minYear = isPainting ? -100 : 1826;
-    const maxYearsDelta = isPainting ? 200 : 50;
 
-    // Both year fields must be filled
-    if (_.isNumber(newValues.year) && _.isNumber(newValues.year2) &&
-        newValues.year >= minYear && newValues.year <= 2000 &&
-        newValues.year2 >= newValues.year && newValues.year2 <= 2000 &&
-        Math.abs(newValues.year2 - newValues.year) <=  maxYearsDelta) {
-        result.year = newValues.year;
-        result.year2 = newValues.year2;
-    } else if (newValues.year === null) {
+    if (newValues.year === null) {
+        // Remove years from photo if null is passed
         result.year = undefined;
         result.year2 = undefined;
+    } else {
+        Object.assign(result, yearsValidate({
+            isPainting, maxDelta: isPainting ? 200 : 50,
+            year: newValues.year, year2: newValues.year2
+        }));
     }
 
     if (_.isString(newValues.dir) && newValues.dir.length) {
