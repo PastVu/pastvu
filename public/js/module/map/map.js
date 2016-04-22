@@ -2,11 +2,11 @@
  * Модель карты
  */
 define([
-    'underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'renderer',
+    'underscore', 'Browser', 'Utils', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'renderer',
     'model/User', 'model/storage', 'Locations', 'leaflet', 'lib/leaflet/extends/L.neoMap', 'm/map/marker',
     'text!tpl/map/map.jade', 'css!style/map/map', 'jquery-ui/draggable', 'jquery-ui/slider',
     'jquery-ui/effect-highlight', 'css!style/jquery/ui/core', 'css!style/jquery/ui/theme', 'css!style/jquery/ui/slider'
-], function (_, Browser, Utils, socket, P, ko, Cliche, globalVM, renderer, User, storage, Locations, L, Map, MarkerManager, jade) {
+], function (_, Browser, Utils, P, ko, Cliche, globalVM, renderer, User, storage, Locations, L, Map, MarkerManager, jade) {
     'use strict';
 
     var defaults = {
@@ -21,12 +21,17 @@ define([
             embedded: undefined, // Режим встроенной карты
             editing: undefined, // Режим редактирования
             point: undefined,
-            center: undefined,
-            dfdWhenReady: undefined // Deffered witch will be resolved when map ready
-
+            center: undefined
         },
         create: function () {
+            var self = this;
             this.destroy = _.wrap(this.destroy, this.localDestroy);
+
+            // Promise witch will be resolved when map ready
+            this.readyPromise = new Promise(function(resolve) {
+                self.readyPromiseResolve = resolve;
+            });
+            this.changeSubscribers = [];
 
             // Modes
             this.embedded = this.options.embedded;
@@ -248,15 +253,31 @@ define([
                 }
                 Utils.setLocalStorage(this.embedded ? 'map.embedded.opennew' : 'map.opennew', val);
             }, this);
-            this.subscriptions.isPainting = this.isPainting.subscribe(function (val) {
-                this.yearSliderRefresh();
-                if (this.markerManager) {
-                    this.markerManager.changePainting(val, this.yearLow, this.yearHigh);
-                }
-                Utils.setLocalStorage(this.embedded ? 'map.embedded.isPainting' : 'map.isPainting', val);
-            }, this);
 
             this.show();
+        },
+        setPainting: function (val) {
+            this.isPainting(val);
+
+            this.yearSliderRefresh();
+            if (this.markerManager) {
+                this.markerManager.changePainting(val, this.yearLow, this.yearHigh, true);
+            }
+            this.notifySubscribers();
+            Utils.setLocalStorage(this.embedded ? 'map.embedded.isPainting' : 'map.isPainting', val);
+        },
+        notifySubscribers: function () {
+            var data = this.getStatusData();
+            this.changeSubscribers.forEach(function (item) {
+                item.callback.call(item.ctx, data);
+            }, this);
+        },
+        getStatusData: function () {
+            return {
+                isPainting: this.isPainting(),
+                year: this.yearLow, year2: this.yearHigh,
+                center: this.getCenter()
+            };
         },
 
         show: function () {
@@ -363,15 +384,16 @@ define([
                     } else {
                         this.map.on('moveend', this.saveCenterZoom, this);
                     }
+                    this.map.on('moveend', function () {
+                        this.notifySubscribers();
+                    }, this);
                     this.editHandler(this.editing());
 
                     this.yearSliderCreate();
 
                     globalVM.func.showContainer(this.$container);
 
-                    if (this.options.dfdWhenReady && Utils.isType('function', this.options.dfdWhenReady.resolve)) {
-                        window.setTimeout(this.options.dfdWhenReady.resolve.bind(this.options.dfdWhenReady), 100);
-                    }
+                    setTimeout(this.readyPromiseResolve, 100);
                 }, this);
 
             this.showing = true;
@@ -383,6 +405,7 @@ define([
         localDestroy: function (destroy) {
             this.removeShowLinkListener();
             this.pointHighlightDestroy().pointEditDestroy().markerManager.destroy();
+            this.map.off('zoomend');
             this.map.off('moveend');
             this.map.remove();
             delete this.point;
@@ -413,13 +436,20 @@ define([
             return this;
         },
 
-        setPoint: function (point) {
+        setPoint: function (point, isPainting) {
             var geo = point.geo();
             var bbox;
             var zoom;
             var region = _.last(point.regions());
 
             this.point = point;
+            if (isPainting !== this.isPainting()) {
+                this.isPainting(isPainting);
+                this.yearSliderRefresh();
+                if (this.markerManager) {
+                    this.markerManager.changePainting(isPainting, this.yearLow, this.yearHigh);
+                }
+            }
             if (this.editing()) {
                 if (this.pointMarkerEdit) {
                     if (geo) {
@@ -448,6 +478,7 @@ define([
                 }
                 this.map.setView([region.center()[1], region.center()[0]], zoom || this.map.getZoom());
             }
+
             return this;
         },
         geoInputBlur: function (vm, evt) {
@@ -682,6 +713,15 @@ define([
                 }
             }
         },
+        onChange: function (callback, ctx) {
+            this.changeSubscribers.push({callback: callback, ctx: ctx});
+        },
+        offChange: function (callback, ctx) {
+            this.changeSubscribers = _.remove(this.changeSubscribers, {callback: callback, ctx: ctx});
+        },
+        getCenter: function () {
+            return Utils.geo.latlngToArr(this.map.getCenter());
+        },
 
         yearSliderRefresh: function () {
             var $slider = this.$dom.find('.yearSlider');
@@ -761,6 +801,7 @@ define([
         },
         yearRefreshMarkers: function () {
             this.markerManager.setYearLimits(this.yearLow || 1, this.yearHigh || 1);
+            this.notifySubscribers();
         }
     });
 });

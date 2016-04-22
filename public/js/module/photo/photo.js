@@ -14,6 +14,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         jade: jade,
         create: function () {
             var self = this;
+            this.destroy = _.wrap(this.destroy, this.localDestroy);
 
             this.auth = globalVM.repository['m/common/auth'];
             this.p = Photo.vm(Photo.def.full);
@@ -52,6 +53,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.msgTitle = ko.observable('');
             this.msgLink = ko.observable('');
 
+            this.isPainting = this.co.isPainting = ko.computed(function () {
+                return Number(self.p.type()) === statuses.type.PAINTING;
+            });
             this.msgByStatus = this.co.msgByStatus = ko.computed(function () {
                 var status = statusNums[this.p.s()];
                 var link;
@@ -232,8 +236,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.fragArea = null;
 
             this.mapVM = null;
-            this.mapModuleDeffered = new $.Deferred();
-            this.mapModulePromise = this.mapModuleDeffered.promise();
+            this.mapModulePromise = new Promise(function(resolve) {
+                self.mapModulePromiseResolve = resolve;
+            });
             this.childs = [
                 {
                     module: 'm/comment/comments',
@@ -288,34 +293,39 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.showing = false;
             //globalVM.pb.publish('/top/message', ['', 'muted']);
         },
+        localDestroy: function (destroy) {
+            if (this.nearestForCenterDebounced) {
+                // Если есть обработчик на изменение карты, удаляем его
+                if (this.mapVM) {
+                    this.mapVM.offChange(this.nearestForCenterDebounced, this);
+                }
+                this.nearestForCenterDebounced = null;
+            }
+            destroy.call(this);
+        },
 
         makeBinding: function () {
-            var mapReadyDeffered;
-
             if (!this.binded) {
                 ko.applyBindings(globalVM, this.$dom[0]);
 
-                mapReadyDeffered = new $.Deferred();
                 renderer(
-                    [
-                        {
-                            module: 'm/map/map',
-                            container: '.photoMap',
-                            options: {
-                                embedded: true,
-                                editing: this.edit(),
-                                point: this.genMapPoint(),
-                                dfdWhenReady: mapReadyDeffered
-                            },
-                            ctx: this,
-                            callback: function (vm) {
-                                this.mapVM = this.childModules[vm.id] = vm;
-                                $.when(mapReadyDeffered.promise()).done(function () {
-                                    this.mapModuleDeffered.resolve();
-                                }.bind(this));
-                            }
+                    [{
+                        module: 'm/map/map',
+                        container: '.photoMap',
+                        options: {
+                            embedded: true,
+                            editing: this.edit(),
+                            point: this.genMapPoint(),
+                            isPainting: this.isPainting()
+                        },
+                        ctx: this,
+                        callback: function (vm) {
+                            this.mapVM = this.childModules[vm.id] = vm;
+                            vm.readyPromise.then(function () {
+                                this.mapModulePromiseResolve();
+                            }.bind(this));
                         }
-                    ],
+                    }],
                     {
                         parent: this,
                         level: this.level + 2 //Чтобы не удалился модуль комментариев
@@ -389,11 +399,11 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
                     self.processRanks(self.p.user.ranks());
                     self.getUserRibbon(3, 4, self.applyUserRibbon, self);
-                    self.getNearestRibbon(12, self.applyNearestRibbon, self);
+                    self.getNearestRibbon();
 
-                    // В первый раз точку передаем сразу в модуль карты, в следующие устанавливам методами
+                    // В первый раз точку передаем сразу в модуль карты, в следующие устанавливам так:
                     if (self.binded) {
-                        $.when(self.mapModulePromise).done(self.setMapPoint.bind(self));
+                        self.mapModulePromise.then(self.setMapPoint.bind(self));
                     }
 
                     if (editModeCurr !== editModeNew) {
@@ -468,10 +478,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
         editHandler: function (v) {
             if (v) {
-                $.when(this.mapModulePromise).done(this.mapEditOn.bind(this));
+                this.mapModulePromise.then(this.mapEditOn.bind(this));
                 this.commentsVM.hide();
             } else {
-                $.when(this.mapModulePromise).done(this.mapEditOff.bind(this));
+                this.mapModulePromise.then(this.mapEditOff.bind(this));
                 this.commentsActivate();
             }
         },
@@ -490,7 +500,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
         // Установить фото для точки на карте
         setMapPoint: function () {
-            this.mapVM.setPoint(this.genMapPoint());
+            this.mapVM.setPoint(this.genMapPoint(), this.isPainting());
         },
         genMapPoint: function () {
             return _.pick(this.p, 'geo', 'year', 'dir', 'title', 'regions');
@@ -687,7 +697,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             var p = this.p;
             var year = Number(p.year());
             var year2 = Number(p.year2());
-            var isPainting = Number(this.p.type()) === 2;
+            var isPainting = this.isPainting();
             var min = isPainting ? -100 : 1826;
 
             if (!p.year() || isNaN(year)) {
@@ -724,9 +734,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             var p = this.p;
             var year = Number(p.year());
             var year2 = Number(p.year2());
-            var isPainting = Number(this.p.type()) === 2;
+            var isPainting = this.isPainting();
             var min = isPainting ? -100 : 1826;
-            var maxYearsDelta = isPainting ? 200 : 50;
 
             if (!p.year2() || isNaN(year2)) {
                 // If value is empty or wrong number, put first year or default one
@@ -1373,7 +1382,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                                 }
 
                                 // Заново запрашиваем ближайшие фотографии
-                                self.getNearestRibbon(12, self.applyNearestRibbon, self);
+                                self.getNearestRibbon();
                             }
                         });
                 },
@@ -1761,47 +1770,58 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
 
         // Берем ленту ближайщих на карте либо к текущей (если у неё есть координата), либо к центру карты
-        getNearestRibbon: function (limit, cb, ctx) {
-            if (this.nearestForCenterDebounced) {
-                // Если уже есть обработчик на moveend, удаляем его
-                this.mapVM.map.off('moveend', this.nearestForCenterDebounced, this);
-                this.nearestForCenterDebounced = null;
+        getNearestRibbon: function () {
+            var self = this;
+            self.mapData = self.mapData || {};
+
+            if (self.p.geo() && (this.mapData.isPainting === undefined || this.mapData.isPainting === this.isPainting() )) {
+                // Если у фото есть координата и это первый раз или ти не меняется при переходе
+                // (потому что при смене типа карта вернет другой диапазон лет)
+                // то берем ближайшие для неё
+                self.onMapStatusData({ center: self.p.geo(), isPainting: this.isPainting() });
+            } else {
+                // Если нет - берем данные центра карты
+                self.mapModulePromise.then(function () {
+                    self.onMapStatusData(self.mapVM.getStatusData());
+                });
             }
 
-            if (this.p.geo()) {
-                // Если у фото есть координата - берем ближайшие для неё
-                this.receiveNearestRibbon(this.p.geo(), limit, this.p.cid(), cb, ctx);
-            } else {
-                // Если у фото нет координат - берем ближайшие к центру карты
-                $.when(this.mapModulePromise).done(function () {
-                    // Сразу берем, если зашли первый раз
-                    this.nearestForCenter(limit, cb, ctx);
-                    // Дебаунс для moveend карты
-                    this.nearestForCenterDebounced = _.debounce(function () {
-                        this.nearestForCenter(limit, cb, ctx);
-                    }, 1500);
-                    // Вешаем обработчик перемещения
-                    this.mapVM.map.on('moveend', this.nearestForCenterDebounced, this);
-                }.bind(this));
+            // Один раз подписываемся на изменение карты
+            if (!self.nearestForCenterDebounced) {
+                self.nearestForCenterDebounced = _.debounce(function (mapData) {
+                    self.onMapStatusData(mapData);
+                }, 800);
+                self.mapModulePromise.then(function () {
+                    self.mapVM.onChange(self.nearestForCenterDebounced, self);
+                });
             }
         },
-        nearestForCenter: function (limit, cb, ctx) {
-            this.receiveNearestRibbon(Utils.geo.latlngToArr(this.mapVM.map.getCenter()), limit, undefined, cb, ctx);
+        onMapStatusData: function (mapData) {
+            mapData = _.assign({}, this.mapData, mapData);
+            if (!_.isEqual(this.mapData, mapData)) {
+                this.mapData = mapData;
+                this.receiveNearestRibbon();
+            }
         },
-        receiveNearestRibbon: function (geo, limit, except, cb, ctx) {
-            socket.run('photo.giveNearestPhotos', { geo: geo, limit: limit, except: except })
+        receiveNearestRibbon: function () {
+            var reqId = this.receiveNearestRibbonId = Math.random();
+            var sendParams = {
+                geo: this.mapData.center,
+                type: this.mapData.isPainting ? statuses.type.PAINTING : statuses.type.PHOTO,
+                year: this.mapData.year, year2: this.mapData.year2,
+                limit: 12, except: this.p.cid()
+            };
+            socket.run('photo.giveNearestPhotos', sendParams)
                 .then(function (data) {
-                    this.nearestRibbonOrigin = this.processRibbonItem(data.photos || [], this.nearestRibbonOrigin);
-                    if (Utils.isType('function', cb)) {
-                        cb.call(ctx, data);
+                    if (reqId !== this.receiveNearestRibbonId) {
+                        return;
                     }
+                    this.nearestRibbonOrigin = this.processRibbonItem(data.photos || [], this.nearestRibbonOrigin);
+                    this.nearestRibbon(this.nearestRibbonOrigin);
                 }.bind(this))
                 .catch(function (error) {
                     console.error('While loading nearest ribbon:', error);
                 });
-        },
-        applyNearestRibbon: function () {
-            this.nearestRibbon(this.nearestRibbonOrigin);
         },
 
         processRanks: function (ranks) {

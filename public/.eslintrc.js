@@ -17,6 +17,7 @@ module.exports = {
     },
 
     'globals': {
+        'Promise': true,
         'analytics': true,
         'init': true,
         'ga': true
