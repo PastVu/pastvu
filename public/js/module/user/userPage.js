@@ -54,7 +54,7 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 					var login = this.user.login(),
 						result = [
 							{name: 'Профиль', href: "/u/" + login, section: 'profile'},
-							{name: 'Фотографии', href: "/u/" + login + "/photo", section: 'photo'},
+							{name: 'Изображения', href: "/u/" + login + "/photo", section: 'photo'},
 							{name: 'Комментарии', href: "/u/" + login + "/comments", section: 'comments'}
 						];
 

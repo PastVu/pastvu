@@ -580,7 +580,7 @@ define([
                         {
                             module: 'm/user/photoUpload',
                             modal: {
-                                topic: 'Загрузка фотографий',
+                                topic: 'Загрузка изображений',
                                 initWidth: '1000px',
                                 offIcon: {
                                     text: 'Отмена', click: function () {
