@@ -34,8 +34,9 @@
                         // /ko
                         .photoLoading
                     .toolsRht
+                        .tool.type: span.glyphicon.light(data-bind="css: {'glyphicon-camera': !isPainting(), 'glyphicon-picture': isPainting()}, attr: {title: isPainting() ? 'Painting' : 'Photo'}")
                         .tool.watched
-                            span.glyphicon.glyphicon-eye-open.light(title="Number of photo's views")
+                            span.glyphicon.glyphicon-eye-open.light(title="Number of images's views")
                             .watch(data-bind="text: toolsNumFormat(p.vdcount()), attr: {title: p.vdcount()+ ' views today'}")
                             .watch(data-bind="text: toolsNumFormat(p.vwcount()), attr: {title: p.vwcount()+ ' views this week'}")
                             .watch(data-bind="text: toolsNumFormat(p.vcount()), attr: {title: p.vcount()+ ' views total'}")
@@ -53,7 +54,7 @@
                         button.btn.btn-xxs.btn-primary(data-state="hscaleTumbler", data-bind="css: {active: hscaleTumbler()}, click: stateChange", title="Adjust by the height of the visible area")
                             span.glyphicon.glyphicon-resize-vertical
                         // /ko
-                        button.btn.btn-xxs.btn-primary(data-state="watermarkShow", data-bind="css: {active: watermarkShow()}, click: stateChange", title="Show photo's watermark")
+                        button.btn.btn-xxs.btn-primary(data-state="watermarkShow", data-bind="css: {active: watermarkShow()}, click: stateChange", title="Show images's watermark")
                             | W
                         //ko if: p.s()===statuses.keys.PUBLIC
                         a.btn.btn-xxs.btn-primary(href="?share=1", data-replace="true", title="Share")
@@ -88,7 +89,7 @@
                     // /ko
             .rightrow.photoMap.mContainer.mHidden(data-bind="allowBindings: false, style: {height: mapH()}")
             //ko if: nearestRibbon().length
-            .rightrow: .lineBehind: span Nearby photos
+            .rightrow: .lineBehind: span Nearby images
             .rightrow.nearesTiles(data-bind="foreach: nearestRibbon")
                 a.photoPreview(data-bind="attr: {href: '/p/' + cid, title: $data.title}"): .photoBox
                     img.img(data-bind="attr: {src: sfile, title: $data.title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.thumbW, height: $parent.thumbH}")

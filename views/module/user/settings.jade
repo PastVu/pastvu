@@ -99,9 +99,9 @@
                 dd
             dl.dl-horizontal.dl-tight
                 dt.helpexists
-                    abbr(title="Photos which located in users profile")
+                    abbr(title="Images which located in users profile")
                         span.glyphicon.glyphicon-info-sign
-                        |  Users photos
+                        |  User galleries
                 dd
                     .btn-group.btn-group-sm
                         button.btn.btn-primary.yes(type="button", data-bind="css: {active: u.settings.r_f_user_gal()}, click: regionUserGal") Yes
@@ -110,14 +110,14 @@
                 dt.helpexists
                     abbr(title="Strip, which located close to user avatar on photo page")
                         span.glyphicon.glyphicon-info-sign
-                        |  Strip of other user's photos
+                        |  Strip of other user's images
                 dd
                     .btn-group.btn-group-sm
                         button.btn.btn-primary.yes(type="button", data-bind="css: {active: u.settings.r_f_photo_user_gal()}, click: regionPhotoUserGal") Yes
                         button.btn.btn-primary.no(type="button", data-bind="css: {active: !u.settings.r_f_photo_user_gal()}, click: regionPhotoUserGal") No
 
     .panel.panel-pastvu
-        .panel-heading: .panel-title: a(data-toggle="collapse", href="#photo") Photos
+        .panel-heading: .panel-title: a(data-toggle="collapse", href="#photo") Images
         .panel-collapse.collapse.in#photo: .panel-body
             dl.dl-horizontal
                 dt.helpexists
@@ -132,14 +132,14 @@
             //ko if: u.nowaterchange()
             dl.dl-horizontal: .helpexists: abbr.text-danger
                 span.glyphicon.glyphicon-warning-sign
-                span(data-bind="text: ' Administrator has forbidden ' + (itsMe()?'you':'user') + ' to change watermark settings on ' + (itsMe()?'your':'his') + ' photos'")
+                span(data-bind="text: ' Administrator has forbidden ' + (itsMe()?'you':'user') + ' to change watermark settings on ' + (itsMe()?'your':'his') + ' images'")
             // /ko
             .watersingcontrol(data-bind="css: {deny: itsMe() && u.nowaterchange()}")
                 dl.dl-horizontal
                     dt.helpexists
-                        abbr(title="Behavior can be changed for each photo individually on edit page")
+                        abbr(title="Behavior can be changed for each image individually on edit page")
                             span.glyphicon.glyphicon-info-sign
-                            |  Text on watermark on my photos
+                            |  Text on watermark on my images
                     dd: span.panel-block
                         .btn-group.btn-group-sm(style="margin-bottom:8px")
                             button.btn.btn-primary.yes(type="button", data-bind="css: {active: !!u.settings.photo_watermark_add_sign()}, click: watersignAdd") Yes
@@ -162,11 +162,11 @@
                         // /ko
                         p.text-muted(style="padding-left:8px;line-height:1.1;font-size:11px;")
                             sup(style="margin-left:-6px;") *
-                            |  Setting saves automatically and will be applied to all newly uploaded photos. To apply it to existing photos, push "Apply" below
+                            |  Setting saves automatically and will be applied to all newly uploaded images. To apply it to existing images, push "Apply" below
 
                         hr(style="margin:8px 0 9px;")
-                        abbr(title="Send to reconvert own photos, which have no individual watermark setting")
-                            | Apply setting to existing photos, which have no individual watermark setting:
+                        abbr(title="Send to reconvert own images, which have no individual watermark setting")
+                            | Apply setting to existing images, which have no individual watermark setting:
                         div
                             label.radio-inline
                                 input(type="radio", name="reconvert", value="all", data-bind="checked: reconvertcheck")
@@ -193,26 +193,26 @@
                             button.btn.btn-sm.btn-primary(type="button", style="margin: 5px 0 8px;", data-bind="click: individualWatersignReset, attr: {disabled: reconvertingPhotos()}") Сбросить
                             p.text-muted(style="padding-left:8px;line-height:1.1;font-size:11px;")
                                 sup(style="margin-left:-6px;") *
-                                |  Photos will receive setting by default, which specified above. This photos will be reconverted automatically
+                                |  Images will receive setting by default, which specified above. This images will be reconverted automatically
 
                 dl.dl-horizontal
                     dt.helpexists
                         abbr(title="Another registered users will be able to download file that you uploaded")
                             span.glyphicon.glyphicon-info-sign
-                            |  Allow to download origin of my photos
+                            |  Allow to download origin of my images
                     dd: span.panel-block
                         .btn-group.btn-group-sm(style="margin-bottom:8px")
                             button.btn.btn-primary.yes(type="button", data-bind="attr: {disabled: !u.settings.photo_watermark_add_sign()}, css: {active: !u.settings.photo_watermark_add_sign() || !u.settings.photo_disallow_download_origin()}, click: disallowDownloadOrigin") Yes
                             button.btn.btn-primary.no(type="button", data-bind="attr: {disabled: !u.settings.photo_watermark_add_sign()}, css: {active: !!u.settings.photo_watermark_add_sign() && !!u.settings.photo_disallow_download_origin()}, click: disallowDownloadOrigin") No
                         p.text-muted(style="padding-left:8px;line-height:1.1;font-size:11px;")
                             sup(style="margin-left:-6px;") *
-                            |  Disallowance of downloading original can be established only for photo that has text on watermark
+                            |  Disallowance of downloading original can be established only for image that has text on watermark
                         p.text-muted(style="padding-left:8px;line-height:1.1;font-size:11px;")
                             sup(style="margin-left:-6px;") *
-                            |  For another users download button will be green, if original download is allowed. You always will be able to download original file of your photos, if other users can't do it, button will be blue with green arrow
+                            |  For another users download button will be green, if original download is allowed. You always will be able to download original file of your images, if other users can't do it, button will be blue with green arrow
 
                         hr(style="margin:8px 0 9px;")
-                        | Reset individual settings about downloading original photo
+                        | Reset individual settings about downloading original image
                         div
                             label.radio-inline
                                 input(type="radio", name="disallowDownloadOrigin", value="all", data-bind="checked: resetDisallowDownloadOrigin")
@@ -225,7 +225,7 @@
                             button.btn.btn-sm.btn-primary(type="button", style="margin: 5px 0 8px;", data-bind="click: individualDisallowDownloadOriginReset, attr: {disabled: reconvertingPhotos()}") Reset
                             p.text-muted(style="padding-left:8px;line-height:1.1;font-size:11px;")
                                 sup(style="margin-left:-6px;") *
-                                |  For each photo you can set allowance of downloading original individually. Here you can reset such individual settings and common setting, specified above, will be applied to them
+                                |  For each image you can set allowance of downloading original individually. Here you can reset such individual settings and common setting, specified above, will be applied to them
 
     .panel.panel-pastvu
         .panel-heading: .panel-title: a(data-toggle="collapse", href="#notice") Subscription and notification

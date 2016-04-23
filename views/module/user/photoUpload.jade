@@ -8,7 +8,7 @@
     .warn(style="font-size: 12px; color: #A57A30;")
         | According&nbsp;
         a(href="/rules") the Rules
-        | , these kind of photos will be allowed for publishing:
+        | , these kind of images will be allowed for publishing:
         br
         | Filmed up to 2000 year, having historical value and display the subject in a unique angle or time
     form.uploadForm(method="POST", enctype="multipart/form-data")
@@ -19,12 +19,12 @@
                 |  Add...
             .addfiles_area.centering_content(data-bind="css: {hide: !filereader()}")
                 #or.centering_content or
-                span Drag photo here
+                span Drag image here
                 #dropzone
 
     //-Отображаем возможное кол-во к загрузке, если менее 25 разрешено
     //ko if: canCount() < 25
-    .canCount(data-bind="text: 'You can add another ' + canCount() + ' photos'")
+    .canCount(data-bind="text: 'You can add another ' + canCount() + ' images'")
     // /ko
 
     div(data-bind="style: {display: fileList().length > 0 ? '' : 'none'}")
@@ -33,7 +33,7 @@
                 .progress-bar(data-bind="style: {width: fileProgressAll() + '%'}")
             .extText(data-bind="text: fileProgressAllText()")
         table.table.table-striped.table-hover.filesTable
-            caption Added photos
+            caption Added images
             tbody
                 //ko foreach: fileList
                 tr

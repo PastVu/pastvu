@@ -133,12 +133,12 @@ define([
 
                 if (count) {
                     if (this.feed()) {
-                        txt = '' + count + ' photos total';
+                        txt = '' + count + ' images total';
                     } else {
                         txt = '' + this.pageFirstItem() + '&ndash;' + this.pageLastItem() + ' of ' + count + ' are shown';
                     }
                 } else {
-                    txt = 'There is not a single photo';
+                    txt = 'There is not a single image';
                 }
 
                 return txt;
@@ -580,7 +580,7 @@ define([
                         {
                             module: 'm/user/photoUpload',
                             modal: {
-                                topic: 'Photo upload',
+                                topic: 'Image upload',
                                 initWidth: '1000px',
                                 offIcon: {
                                     text: 'Cancel', click: function () {

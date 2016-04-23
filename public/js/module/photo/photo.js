@@ -1774,11 +1774,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             var self = this;
             self.mapData = self.mapData || {};
 
-            if (self.p.geo() && (this.mapData.isPainting === undefined || this.mapData.isPainting === this.isPainting() )) {
+            if (self.p.geo()) {
                 // Если у фото есть координата и это первый раз или ти не меняется при переходе
                 // (потому что при смене типа карта вернет другой диапазон лет)
                 // то берем ближайшие для неё
-                self.onMapStatusData({ center: self.p.geo(), isPainting: this.isPainting() });
+                if (this.mapData.isPainting === undefined || this.mapData.isPainting === this.isPainting()) {
+                    self.onMapStatusData({ center: self.p.geo(), isPainting: this.isPainting() });
+                }
             } else {
                 // Если нет - берем данные центра карты
                 self.mapModulePromise.then(function () {
@@ -1798,6 +1800,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
         onMapStatusData: function (mapData) {
             mapData = _.assign({}, this.mapData, mapData);
+            console.log(1, mapData);
             if (!_.isEqual(this.mapData, mapData)) {
                 this.mapData = mapData;
                 this.receiveNearestRibbon();

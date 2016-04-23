@@ -169,9 +169,8 @@
             position: relative;
             display: inline-block;
             width: 100%;
-            margin: 0 0 1px 0;
+            margin-bottom: -4px;
             font-size: 12px;
-            line-height: 18px;
             color: #F5F5F5;
             cursor: default;
             overflow: hidden;
@@ -188,8 +187,14 @@
                 }
             }
         }
+        .type {
+            > .glyphicon {
+                padding-top: 3px;
+                font-size: 15px;
+            }
+        }
         .watched {
-            padding-top: 1px;
+            padding-top: 2px;
 
             > .watch, > .glyphicon {
                 padding: 1px 0;
