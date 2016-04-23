@@ -99,7 +99,7 @@
                 dd
             dl.dl-horizontal.dl-tight
                 dt.helpexists
-                    abbr(title="Фотографии пользователей, доступые в соответствующих профилях")
+                    abbr(title="Изображения пользователей, доступые в соответствующих профилях")
                         span.glyphicon.glyphicon-info-sign
                         |  Галереи пользователей
                 dd
@@ -108,22 +108,22 @@
                         button.btn.btn-primary.no(type="button", data-bind="css: {active: !u.settings.r_f_user_gal()}, click: regionUserGal") Нет
             dl.dl-horizontal.dl-tight
                 dt.helpexists
-                    abbr(title="Полоса фотографий, находящаяся рядом с именем пользователя, на странице просмотра загруженной им фотогафии")
+                    abbr(title="Полоса изображений, находящаяся рядом с именем пользователя, на странице просмотра загруженного им изображения")
                         span.glyphicon.glyphicon-info-sign
-                        |  Полосу других фотографий пользователя
+                        |  Полосу других изображений пользователя
                 dd
                     .btn-group.btn-group-sm
                         button.btn.btn-primary.yes(type="button", data-bind="css: {active: u.settings.r_f_photo_user_gal()}, click: regionPhotoUserGal") Да
                         button.btn.btn-primary.no(type="button", data-bind="css: {active: !u.settings.r_f_photo_user_gal()}, click: regionPhotoUserGal") Нет
 
     .panel.panel-pastvu
-        .panel-heading: .panel-title: a(data-toggle="collapse", href="#photo") Фотографии
+        .panel-heading: .panel-title: a(data-toggle="collapse", href="#photo") Изображения
         .panel-collapse.collapse.in#photo: .panel-body
             dl.dl-horizontal
                 dt.helpexists
                     abbr(title="Показывать по умолчанию вотермарк pastvu.com, встроенный в изображение")
                         span.glyphicon.glyphicon-info-sign
-                        |  Показывать вотермарк фотографии
+                        |  Показывать вотермарк изображения
                 dd
                     .btn-group.btn-group-sm
                         button.btn.btn-primary.yes(type="button", data-bind="css: {active: u.settings.photo_show_watermark()}, click: watermarkShow") Да
@@ -132,16 +132,16 @@
             //ko if: u.nowaterchange()
             dl.dl-horizontal: .helpexists: abbr.text-danger
                 span.glyphicon.glyphicon-warning-sign
-                span(data-bind="text: ' Администратор запретил ' + (itsMe()?'вам':'пользователю') + ' управлять настройками установки подписи на ' + (itsMe()?'ваших':'его') + ' фотографиях'")
+                span(data-bind="text: ' Администратор запретил ' + (itsMe()?'вам':'пользователю') + ' управлять настройками установки подписи на ' + (itsMe()?'ваших':'его') + ' изображениях'")
             // /ko
             .watersingcontrol(data-bind="css: {deny: itsMe() && u.nowaterchange()}")
                 dl.dl-horizontal
                     dt.helpexists
-                        abbr(title="Поведение можно менять для каждой отдельной фотографии на странице её редактирования")
+                        abbr(title="Поведение можно менять для каждом отдельном изображении на странице редактирования")
                             span.glyphicon.glyphicon-info-sign
                             |  Подпись на вотермарке
                             br
-                            |  загружаемых мной фотографий
+                            |  загружаемых мной изображений
                     dd: span.panel-block
                         .btn-group.btn-group-sm(style="margin-bottom:8px")
                             button.btn.btn-primary.yes(type="button", data-bind="css: {active: !!u.settings.photo_watermark_add_sign()}, click: watersignAdd") Да
@@ -164,11 +164,11 @@
                         // /ko
                         p.text-muted(style="padding-left:8px;line-height:1.1;font-size:11px;")
                             sup(style="margin-left:-6px;") *
-                            |  Настройка сохраняется автоматически и будет применена ко всем вновь загружаемым фотографиям. Чтобы применить ее к существующим фотографиям, нажмите "применить" ниже
+                            |  Настройка сохраняется автоматически и будет применена ко всем вновь загружаемым изображениям. Чтобы применить ее к существующим изображениям, нажмите "применить" ниже
 
                         hr(style="margin:8px 0 9px;")
-                        abbr(title="Отправить на переконвертацию свои фотографии, в которых подпись на вотермарке берется из текущих настроек профиля")
-                            | Применить настройку к загруженным фотографиям, в которых нет индивидульных настроек подписи:
+                        abbr(title="Отправить на переконвертацию свои изображения, в которых подпись на вотермарке берется из текущих настроек профиля")
+                            | Применить настройку к загруженным изображениям, в которых нет индивидульных настроек подписи:
                         div
                             label.radio-inline
                                 input(type="radio", name="reconvert", value="all", data-bind="checked: reconvertcheck")
@@ -181,8 +181,8 @@
                             button.btn.btn-sm.btn-primary(type="button", style="margin: 5px 0 8px;", data-bind="click: reconvertPhotos, attr: {disabled: reconvertingPhotos()}") Применить
 
                         hr(style="margin:8px 0 9px;")
-                        abbr(title="Сбросить установленные индивидульные настройки подписи в фотографиях (если такие устанавливались)")
-                            | Сбросить установленные в фотографиях индивидульные настройки подписи
+                        abbr(title="Сбросить установленные индивидульные настройки подписи в изображениям (если такие устанавливались)")
+                            | Сбросить установленные в изображениях индивидульные настройки подписи
                         div
                             label.radio-inline
                                 input(type="radio", name="resetwatersign", value="all", data-bind="checked: resetwatersigncheck")
@@ -195,28 +195,28 @@
                             button.btn.btn-sm.btn-primary(type="button", style="margin: 5px 0 8px;", data-bind="click: individualWatersignReset, attr: {disabled: reconvertingPhotos()}") Сбросить
                             p.text-muted(style="padding-left:8px;line-height:1.1;font-size:11px;")
                                 sup(style="margin-left:-6px;") *
-                                |  Фотографиям будет установлена настройка подписи по умолчанию, указанная выше. Эти фотографии будут отправлены на переконвертацию автоматически
+                                |  Изображениям будет установлена настройка подписи по умолчанию, указанная выше. Эти изображения будут отправлены на переконвертацию автоматически
 
                 dl.dl-horizontal
                     dt.helpexists
-                        abbr(title="Другие зарегистрированные пользователи смогут скачивать оригиналы ваших фотографий")
+                        abbr(title="Другие зарегистрированные пользователи смогут скачивать оригиналы ваших изображений")
                             span.glyphicon.glyphicon-info-sign
-                            |  Разрешать скачивать оригинал
+                            |  Разрешать скачивать оригиналы
                             br
-                            | моих фотографий
+                            | моих изображений
                     dd: span.panel-block
                         .btn-group.btn-group-sm(style="margin-bottom:8px")
                             button.btn.btn-primary.yes(type="button", data-bind="attr: {disabled: !u.settings.photo_watermark_add_sign()}, css: {active: !u.settings.photo_watermark_add_sign() || !u.settings.photo_disallow_download_origin()}, click: disallowDownloadOrigin") Да
                             button.btn.btn-primary.no(type="button", data-bind="attr: {disabled: !u.settings.photo_watermark_add_sign()}, css: {active: !!u.settings.photo_watermark_add_sign() && !!u.settings.photo_disallow_download_origin()}, click: disallowDownloadOrigin") Нет
                         p.text-muted(style="padding-left:8px;line-height:1.1;font-size:11px;")
                             sup(style="margin-left:-6px;") *
-                            |  Запретить скачивать оригинал можно только в случае наличия подписи на вотермарке фотографии
+                            |  Запретить скачивать оригинал можно только в случае наличия подписи на вотермарке изображения
                         p.text-muted(style="padding-left:8px;line-height:1.1;font-size:11px;")
                             sup(style="margin-left:-6px;") *
-                            |  Для других пользователей кнопка скачивания фотографии будет окрашена в зеленый цвет, если скачивание оригинала разрешено. Вы всегда сможете скачивать оригиналы своих фотографий, а если другие пользователи не могут этого делать согласно вашей настройке, то для вас кнопка скачивания будет синей с зеленой стрелкой
+                            |  Для других пользователей кнопка скачивания изображения будет окрашена в зеленый цвет, если скачивание оригинала разрешено. Вы всегда сможете скачивать оригиналы своих изображений, а если другие пользователи не могут этого делать согласно вашей настройке, то для вас кнопка скачивания будет синей с зеленой стрелкой
 
                         hr(style="margin:8px 0 9px;")
-                        | Сбросить установленные в фотографиях индивидульные настройки разрешения на скачивание
+                        | Сбросить установленные в изображениях индивидульные настройки разрешения на скачивание
                         div
                             label.radio-inline
                                 input(type="radio", name="disallowDownloadOrigin", value="all", data-bind="checked: resetDisallowDownloadOrigin")
@@ -229,7 +229,7 @@
                             button.btn.btn-sm.btn-primary(type="button", style="margin: 5px 0 8px;", data-bind="click: individualDisallowDownloadOriginReset, attr: {disabled: reconvertingPhotos()}") Сбросить
                             p.text-muted(style="padding-left:8px;line-height:1.1;font-size:11px;")
                                 sup(style="margin-left:-6px;") *
-                                |  В каждой фотографии вы можете устанавливать разрешение на скачивание индивидуально. Здесь вы можете сбросить индивидуальную настройку в этих фотографиях и к ним будет применена общая, указанная выше
+                                |  В каждом изображении вы можете устанавливать разрешение на скачивание индивидуально. Здесь вы можете сбросить индивидуальную настройку в этих изображениях и к ним будет применена общая, указанная выше
 
     .panel.panel-pastvu
         .panel-heading: .panel-title: a(data-toggle="collapse", href="#notice") Подписка и уведомления
