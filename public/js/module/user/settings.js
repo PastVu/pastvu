@@ -119,8 +119,20 @@ define([
                 this.reconvertcheck = ko.observable('all');
                 this.reconvertingPhotos = ko.observable(false);
 
+                // Make photo_filter_type as array of strings, because ko checkboxes works with strings
+                this.photoFilterType = ko.observableArray(this.u.settings.photo_filter_type().map(String));
+
                 this.getSettingsVars(function () {
-                    this.subscriptions.subscr_throttle = this.u.settings.subscr_throttle.subscribe(_.debounce(this.subscr_throttleHandler, 700), this);
+                    // Listen to photo_filter_type changing if it happens somewhere (different tab) and emitted here
+                    this.subscriptions.photo_filter_type = this.u.settings.photo_filter_type.subscribe(function (val) {
+                        this.photoFilterType(val.map(String));
+                    }, this);
+                    this.subscriptions.photoFilterType = this.photoFilterType.subscribe(
+                        _.debounce(this.photo_filter_typeHandler, 700), this
+                    );
+                    this.subscriptions.subscr_throttle = this.u.settings.subscr_throttle.subscribe(
+                        _.debounce(this.subscr_throttleHandler, 700), this
+                    );
 
                     ko.applyBindings(globalVM, this.$dom[0]);
                     this.show();
@@ -305,6 +317,12 @@ define([
         },
         regionPhotoUserGal: function (data, evt) {
             this.changeSetting('r_f_photo_user_gal', isYes(evt), true);
+        },
+        photo_filter_typeHandler: function (val) {
+            var valNumbers = _.sortBy(val.map(Number)); // Stable number sort
+            if (Array.isArray(val) && !_.isEqual(valNumbers, _.sortBy(this.u.settings.photo_filter_type()))) {
+                this.changeSetting('photo_filter_type', valNumbers);
+            }
         },
         subscr_throttleHandler: function (val) {
             //Изначальное значение число. А во время изменения radio в knockout это всегда будет строка

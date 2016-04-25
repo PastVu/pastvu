@@ -61,13 +61,29 @@
                         span(data-bind="text: $data.title_local()")
                     // /ko
             // /ko
+    .panel.panel-pastvu
+        .panel-heading: .panel-title: a(data-toggle="collapse", href="#filters") Фильтрация данных по умолчанию
+        .panel-collapse.collapse.in#filters: .panel-body
+            dl.dl-horizontal
+                dt.helpexists
+                    abbr(title="Изображения, по которым будет производится автоматическая фильтрация контента")
+                        span.glyphicon.glyphicon-info-sign
+                        | &nbsp;
+                        span.glyphicon.glyphicon-filter
+                        |  Типы изображений
+                dd: span.panel-block(style="padding-bottom:5px;")
+                    //ko foreach: vars.photo_filter_type
+                    label.checkbox-inline
+                        input(type="checkbox", data-bind="attr: {value: String($data)}, checked: $parent.photoFilterType")
+                        span(data-bind="text: $parent.fields.typeVals[$data]")
+                    // /ko
             dl.dl-horizontal
                 dt.helpexists
                     abbr(title="Регионы, по которым будет производится автоматическая фильтрация контента")
                         span.glyphicon.glyphicon-info-sign
                         | &nbsp;
                         span.glyphicon.glyphicon-filter
-                        |  Фильтрация данных по умолчанию
+                        |  Регионы
                 dd: span.panel-block
                     .radio(style="margin-top:0"): label
                         input(type="radio", name="regfilter_radios", value="all", data-bind="checked: regfiltercheck")
@@ -95,7 +111,7 @@
                         // /ko
             dl.dl-horizontal
                 dt.helpexists(style="color: #27578d;")
-                    | По умолчанию фильтровать по выбранным регионам:
+                    | По умолчанию фильтровать по выбранным опциям также:
                 dd
             dl.dl-horizontal.dl-tight
                 dt.helpexists
