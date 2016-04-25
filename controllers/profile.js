@@ -156,7 +156,9 @@ async function changeSetting({ login, key, val }) {
 
     let regetNeeded = false;
 
-    if (key === 'photo_filter_type' && _.isEmpty(val)) {
+    // If this is photo type filter and new list is empty or equals default - remove specific setting from user,
+    // use default, so if new type is added user will use it. SortBy for stable number sort
+    if (key === 'photo_filter_type' && (_.isEmpty(val) || _.isEqual(_.sortBy(val), _.sortBy(defSetting)))) {
         delete user.settings[key];
         val = defSetting;
         regetNeeded = true;

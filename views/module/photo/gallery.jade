@@ -32,6 +32,15 @@
                                     span.glyphicon.glyphicon-pencil
                                     | Изменить
                         .row.others
+                            .row.geovars
+                                .filterName Тип:
+                                .filterVars
+                                    label.checkbox-inline
+                                        input(type="checkbox", value="1", data-bind="checked: filter.disp.t, click: ftclick")
+                                        span Фотография
+                                    label.checkbox-inline
+                                        input(type="checkbox", value="2", data-bind="checked: filter.disp.t, click: ftclick")
+                                        span Картина/Рисунок
                             //ko if: filter.can.s()
                             .row.svars
                                 .filterName Статусы:
