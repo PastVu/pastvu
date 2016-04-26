@@ -32,6 +32,15 @@
                                     span.glyphicon.glyphicon-pencil
                                     | Change
                         .row.others
+                            .row.geovars
+                                .filterName Type:
+                                .filterVars
+                                    label.checkbox-inline
+                                        input(type="checkbox", value="1", data-bind="checked: filter.disp.t, click: ftclick")
+                                        span Photograph
+                                    label.checkbox-inline
+                                        input(type="checkbox", value="2", data-bind="checked: filter.disp.t, click: ftclick")
+                                        span Painting
                             //ko if: filter.can.s()
                             .row.svars
                                 .filterName Status:

@@ -136,8 +136,12 @@ async function changeSetting({ login, key, val }) {
     const defSetting = userSettingsDef[key];
     const vars = userSettingsVars[key];
 
+    const valid = defSetting !== undefined &&  Array.isArray(vars) && (
+            Array.isArray(defSetting) && Array.isArray(val) && val.every(item => vars.includes(item)) || vars.includes(val)
+        );
+
     // If this setting does not exist or its value is not allowed - throw error
-    if (defSetting === undefined || vars === undefined || vars.indexOf(val) < 0) {
+    if (!valid) {
         throw new BadParamsError(constantsError.SETTING_DOESNT_EXISTS);
     }
 
@@ -145,13 +149,24 @@ async function changeSetting({ login, key, val }) {
         user.settings = {};
     }
 
-    if (user.settings[key] === val) {
+    if (_.isEqual(user.settings[key], val)) {
         // If the specified setting have not changed, just return
         return { key, val };
     }
 
-    // Saving new setting value and marking settings object as changed, because it has Mixed type
-    user.settings[key] = val;
+    let regetNeeded = false;
+
+    // If this is photo type filter and new list is empty or equals default - remove specific setting from user,
+    // use default, so if new type is added user will use it. SortBy for stable number sort
+    if (key === 'photo_filter_type' && (_.isEmpty(val) || _.isEqual(_.sortBy(val), _.sortBy(defSetting)))) {
+        delete user.settings[key];
+        val = defSetting;
+        regetNeeded = true;
+    } else {
+        user.settings[key] = val;
+    }
+
+    // Marking settings object as changed, because it has Mixed type
     user.markModified('settings');
 
     // If throttle value has changed, trying to reschedule next notification time
@@ -162,7 +177,11 @@ async function changeSetting({ login, key, val }) {
     await user.save();
 
     if (usObjOnline) {
-        session.emitUser({ usObj: usObjOnline, excludeSocket: socket });
+        if (regetNeeded) {
+            session.regetUser(usObjOnline, true, socket);
+        } else {
+            session.emitUser({ usObj: usObjOnline, excludeSocket: socket });
+        }
     }
 
     return { key, val };

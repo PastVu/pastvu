@@ -44,7 +44,7 @@ const {
     }
 } = constants;
 
-const typesValue = _.values(constants.photo.type);
+const typesValue = new Set(_.values(constants.photo.type));
 const parsingFieldsSet = new Set(parsingFields);
 const historyFieldsDiffHash = historyFieldsDiff.reduce(function (result, field) {
     result[field] = field;
@@ -1229,7 +1229,13 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40 }, userId })
 
     return {
         skip, count, photos, rhash: shortRegionsHash,
-        filter: { r: buildQueryResult.rarr, rp: filter.rp, s: buildQueryResult.s, geo: filter.geo }
+        filter: {
+            t: buildQueryResult.types,
+            r: buildQueryResult.rarr,
+            rp: filter.rp,
+            s: buildQueryResult.s,
+            geo: filter.geo
+        }
     };
 }
 
@@ -1255,7 +1261,7 @@ const givePublicNoGeoIndex = (function () {
     };
 }());
 
-const filterProps = { geo: [], r: [], rp: [], s: [] };
+const filterProps = { geo: [], r: [], rp: [], s: [], t: [] };
 const delimeterParam = '_';
 const delimeterVal = '!';
 export function parseFilter(filterString) {
@@ -1326,6 +1332,22 @@ export function parseFilter(filterString) {
                         delete result.s;
                     }
                 }
+            } else if (filterParam === 't') {
+                filterVal = filterVal.split(delimeterVal);
+                if (Array.isArray(filterVal) && filterVal.length) {
+                    result.t = [];
+                    for (filterValItem of filterVal) {
+                        if (filterValItem) {
+                            filterValItem = Number(filterValItem);
+                            if (typesValue.has(filterValItem)) {
+                                result.t.push(filterValItem);
+                            }
+                        }
+                    }
+                    if (!result.t.length || result.t.length === typesValue.size) {
+                        delete result.t;
+                    }
+                }
             } else if (filterParam === 'geo') {
                 filterVal = filterVal.split(delimeterVal);
                 if (Array.isArray(filterVal) && filterVal.length === 1) {
@@ -1364,11 +1386,16 @@ async function giveUserGallery({ login, filter, skip, limit }) {
 
     filter = filter ? parseFilter(filter) : {};
 
-    // If regions filter is not set, this is another's gallery, current user has own regions and
-    // exists setting not filter gallery by own regions, then set whole world
-    if (filter.r === undefined && iAm.registered && iAm.user.login !== login &&
-        iAm.user.regions && iAm.user.regions.length && iAm.user.settings && !iAm.user.settings.r_f_user_gal) {
-        filter.r = 0;
+    if (iAm.registered && iAm.user.login !== login && iAm.user.settings && !iAm.user.settings.r_f_user_gal) {
+        // If regions filter is not set, this is another's gallery, current user has own regions and
+        // exists setting not filter gallery by own regions, then set whole world
+        if (filter.r === undefined && iAm.user.regions && iAm.user.regions.length && iAm.user.settings) {
+            filter.r = 0;
+        }
+        // The same with types
+        if (filter.t === undefined && iAm.user.settings.photo_filter_type.length) {
+            filter.t = null;
+        }
     }
 
     return this.call('photo.givePhotos', { filter, options: { skip, limit }, userId });
@@ -1412,7 +1439,7 @@ async function giveUserPhotosAround({ cid, limitL, limitR }) {
 
     const photo = await this.call('photo.find', { query: { cid } });
 
-    const filter = iAm.registered && iAm.user.settings && !iAm.user.settings.r_f_photo_user_gal ? { r: 0 } : {};
+    const filter = iAm.registered && iAm.user.settings && !iAm.user.settings.r_f_photo_user_gal ? { r: 0, t: null } : {};
     const query = buildPhotosQuery(filter, photo.user, iAm).query;
     const promises = new Array(2);
 
@@ -1441,7 +1468,7 @@ async function giveNearestPhotos({ geo, type, year, year2, except, distance, lim
 
     geo.reverse();
 
-    type = typesValue.includes(type) ? type : constants.photo.type.PHOTO;
+    type = typesValue.has(type) ? type : constants.photo.type.PHOTO;
     const isPainting = type === constants.photo.type.PAINTING;
 
     const query = { geo: { $near: geo }, s: status.PUBLIC, type };
@@ -1626,7 +1653,7 @@ function photoValidate(newValues, oldValues, can) {
         result.geo = undefined;
     }
 
-    if (_.isNumber(newValues.type) && typesValue.includes(newValues.type)) {
+    if (_.isNumber(newValues.type) && typesValue.has(newValues.type)) {
         result.type = newValues.type;
     }
 
@@ -2364,7 +2391,7 @@ export function buildPhotosQuery(filter, forUserId, iAm) {
             } else {
                 queryMod.s = { $in: filter.s };
             }
-            Array.prototype.push.apply(result.s, filter.s);
+            result.s.push(...filter.s);
         } else if (!iAm.isAdmin) {
             queryMod.s = { $ne: status.REMOVE };
         }
@@ -2378,6 +2405,22 @@ export function buildPhotosQuery(filter, forUserId, iAm) {
         query = { $or: [queryPub, queryMod] };
     } else {
         query = queryPub || queryMod;
+    }
+
+    if (filter.t !== null) {
+        let types;
+
+        if (filter.t && filter.t.length) {
+            types = filter.t;
+        } else if (iAm.registered && iAm.user.settings.photo_filter_type.length &&
+            !_.isEqual(iAm.user.settings.photo_filter_type, userSettingsDef.photo_filter_type)) {
+            types = iAm.user.settings.photo_filter_type;
+        }
+
+        if (types && query) {
+            query.type = types.length === 1 ? types[0] : { $in: types };
+            result.types = types;
+        }
     }
 
     if (query) {

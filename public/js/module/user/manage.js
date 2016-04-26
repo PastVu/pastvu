@@ -95,7 +95,7 @@ define([
                 }
             });
 
-            $.when(that.getAllRanks(), that.getRules()).then(function () {
+            Promise.all([that.getAllRanks(), that.getRules()]).then(function () {
                 that.subscriptions.ranks = that.u.ranks.subscribe(_.debounce(that.ranksSelectedHandler, 1e3), that);
                 that.subscriptions.photoLimit = that.photoNewLimit.subscribe(_.debounce(that.photoLimitHandler, 800), that);
 
@@ -116,26 +116,26 @@ define([
         },
 
         getAllRanks: function () {
-            var dfd = $.Deferred();
-            socket.run('settings.getUserRanks')
-                .then(function (result) {
-                    for (var i = 0; i < result.length; i++) {
-                        this.ranks.push({ key: result[i], desc: ranksLang[result[i]] || i });
-                    }
-                    dfd.resolve(result);
-                }.bind(this));
-            return dfd.promise();
+            var self = this;
+            return new Promise(function (resolve) {
+                socket.run('settings.getUserRanks')
+                    .then(function (result) {
+                        for (var i = 0; i < result.length; i++) {
+                            self.ranks.push({ key: result[i], desc: ranksLang[result[i]] || i });
+                        }
+                        resolve(result);
+                    });
+            });
         },
         getRules: function () {
-            var dfd = $.Deferred();
-
-            socket.run('profile.giveUserRules', { login: this.u.login() }, true)
-                .then(function (result) {
-                    this.setRules(result.rules || {}, result.info || {});
-                    dfd.resolve(result);
-                }.bind(this));
-
-            return dfd.promise();
+            var self = this;
+            return new Promise(function (resolve) {
+                socket.run('profile.giveUserRules', { login: self.u.login() }, true)
+                    .then(function (result) {
+                        self.setRules(result.rules || {}, result.info || {});
+                        resolve(result);
+                    });
+            });
         },
         setRules: function (rules, info) {
             if (_.isNumber(rules.photoNewLimit)) {

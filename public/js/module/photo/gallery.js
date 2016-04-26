@@ -55,6 +55,7 @@ define([
                 origin: '',
                 //Значения фильтра для отображения
                 disp: {
+                    t: ko.observableArray(),
                     s: ko.observableArray(),
                     r: ko.observableArray(),
                     rdis: ko.observableArray(), //Массив cid неактивных регионов
@@ -239,9 +240,9 @@ define([
                 this.feed(true);
                 this.scrollActivate();
                 if (this.u) {
-                    Utils.title.setTitle({ pre: preTitle + 'Photos feed - ' });
+                    Utils.title.setTitle({ pre: preTitle + 'Images feed - ' });
                 } else {
-                    Utils.title.setTitle({ title: preTitle + 'Feed of all photos' });
+                    Utils.title.setTitle({ title: preTitle + 'Feed of all images' });
                 }
                 if (this.page() === 1 && currPhotoLength && currPhotoLength <= this.limit) {
                     needRecieve = false; //Если переключаемся на ленту с первой заполненной страницы, то оставляем её данные
@@ -279,6 +280,7 @@ define([
         },
         buildFilterString: function () {
             var filterString = '';
+            var t = this.filter.disp.t();
             var r = this.filter.disp.r();
             var rp = this.filter.disp.rdis();
             var s = this.filter.disp.s();
@@ -309,6 +311,12 @@ define([
                 filterString += (filterString ? '_' : '') + 's';
                 for (i = 0; i < s.length; i++) {
                     filterString += '!' + s[i];
+                }
+            }
+            if (t.length) {
+                filterString += (filterString ? '_' : '') + 't';
+                for (i = 0; i < t.length; i++) {
+                    filterString += '!' + t[i];
                 }
             }
 
@@ -390,6 +398,22 @@ define([
                     data.filter.disp.geo(['1']);
                 } else {
                     data.filter.disp.geo(['0']);
+                }
+            }
+            this.filterChangeHandle(); //Вручную вызываем обработку фильтра
+
+            return true; //Возвращаем true, чтобы галка в браузере переключилась
+        },
+        ftclick: function (data, event) {
+            var currDispType = data.filter.disp.t();
+            var clickedType = event.target.value;
+
+            if (!currDispType.length) {
+                //Если все варианты сняты, делаем активным второй вариант
+                if (clickedType === '1') {
+                    data.filter.disp.t(['2']);
+                } else {
+                    data.filter.disp.t(['1']);
                 }
             }
             this.filterChangeHandle(); //Вручную вызываем обработку фильтра
@@ -502,10 +526,14 @@ define([
                         this.filter.disp.rdis(data.filter.rp || []);
                         this.filter.disp.s(data.filter.s ? data.filter.s.map(String) : []);
 
+                        if (!data.filter.t || !data.filter.t.length) {
+                            data.filter.t = [1, 2];
+                        }
                         if (!data.filter.geo || !data.filter.geo.length) {
                             data.filter.geo = ['0', '1'];
                         }
 
+                        this.filter.disp.t(data.filter.t.map(String));
                         this.filter.disp.geo(data.filter.geo);
                         this.filterChangeHandleBlock = false;
                     }
