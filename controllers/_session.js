@@ -117,6 +117,8 @@ class UsObj {
         this.rquery = Object.create(null);
         this.rshortsel = Object.create(null);
         this.rshortlvls = [];
+        this.photoFilterTypes = [];
+        this.photoFilterQuery = Object.create(null);
     }
 
     get isOwner() {
@@ -267,6 +269,17 @@ function userObjectTreatUser(usObj) {
 
     // Assign to user default settings
     user.settings = _.defaults(user.settings || {}, userSettingsDef);
+
+    console.log('REGET', user.settings.photo_filter_type);
+    if (usObj.registered && user.settings.photo_filter_type.length &&
+        !_.isEqual(user.settings.photo_filter_type, userSettingsDef.photo_filter_type)) {
+        const types = user.settings.photo_filter_type;
+        usObj.photoFilterTypes = types;
+        usObj.photoFilterQuery = { type: types.length === 1 ? types[0] : { $in: types } };
+    } else if (usObj.photoFilterTypes.length) {
+        usObj.photoFilterTypes = [];
+        usObj.photoFilterQuery = {};
+    }
 
     return popUserRegions(usObj);
 }

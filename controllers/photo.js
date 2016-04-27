@@ -1393,7 +1393,7 @@ async function giveUserGallery({ login, filter, skip, limit }) {
             filter.r = 0;
         }
         // The same with types
-        if (filter.t === undefined && iAm.user.settings.photo_filter_type.length) {
+        if (filter.t === undefined && iAm.photoFilterTypes.length) {
             filter.t = null;
         }
     }
@@ -1496,7 +1496,7 @@ async function giveNearestPhotos({ geo, type, year, year2, except, distance, lim
     if (_.isNumber(distance) && distance > 0 && distance < 7) {
         query.geo.$maxDistance = distance;
     } else {
-        query.geo.$maxDistance = 3;
+        query.geo.$maxDistance = 2;
     }
 
     if (_.isNumber(limit) && limit > 0 && limit < 30) {
@@ -1897,6 +1897,11 @@ async function save(data) {
     }
 
     const { rel } = await this.call('photo.update', { photo });
+
+    if (newValues.type) {
+        // If type has been changed, change it in photo's comments also
+        await this.call('comment.changePhotoCommentsType', { photo });
+    }
 
     if (photo.s === status.PUBLIC) {
         if (geoToNull) {
@@ -2407,18 +2412,18 @@ export function buildPhotosQuery(filter, forUserId, iAm) {
         query = queryPub || queryMod;
     }
 
-    if (filter.t !== null) {
+    if (filter.t !== null && query) {
         let types;
 
         if (filter.t && filter.t.length) {
             types = filter.t;
-        } else if (iAm.registered && iAm.user.settings.photo_filter_type.length &&
-            !_.isEqual(iAm.user.settings.photo_filter_type, userSettingsDef.photo_filter_type)) {
-            types = iAm.user.settings.photo_filter_type;
+            query.type = types.length === 1 ? types[0] : { $in: types };
+        } else if (iAm.photoFilterTypes.length) {
+            types = iAm.photoFilterTypes;
+            Object.assign(query, iAm.photoFilterQuery);
         }
 
-        if (types && query) {
-            query.type = types.length === 1 ? types[0] : { $in: types };
+        if (types) {
             result.types = types;
         }
     }
