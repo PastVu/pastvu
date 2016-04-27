@@ -181,6 +181,16 @@ define(
                 vmExist = vmCreate(data);
             } else {
                 koMapping.fromJS(data, vmExist);
+                // Hack, somehow koMapping stopped replace some fields
+                if (data.desc !== undefined) {
+                    vmExist.desc(data.desc);
+                }
+                if (data.author !== undefined) {
+                    vmExist.author(data.author);
+                }
+                if (data.source !== undefined) {
+                    vmExist.source(data.source);
+                }
             }
             return vmExist;
         }
