@@ -544,7 +544,7 @@ async function giveForUser({ login, page = 1, type = 'photo' }) {
 
     const commentModel = type === 'news' ? CommentN : Comment;
     const queryNews = { user: userid, del: null };
-    const queryPhotos = Object.assign({}, queryNews, photoController.buildPhotosQuery({ r: 0 }, null, iAm).query);
+    const queryPhotos = Object.assign({}, queryNews, photoController.buildPhotosQuery({ r: 0, t: null }, null, iAm).query);
     const fields = { _id: 0, lastChanged: 1, cid: 1, obj: 1, stamp: 1, txt: 1 };
     const options = { lean: true, sort: { stamp: -1 }, skip: page * commentsUserPerPage, limit: commentsUserPerPage };
 
@@ -678,11 +678,13 @@ const giveForFeed = (function () {
     return function (params) {
         const { handshake: { usObj: iAm } } = this;
 
-        if (_.isEmpty(iAm.rquery) && (!params.limit || params.limit === globalOptions.limit)) {
-            // User withot region filter will get memozed result for global selection
+        if (_.isEmpty(iAm.rquery) && !iAm.photoFilterTypes.length &&
+            (!params.limit || params.limit === globalOptions.limit)) {
+            // User without region and types filter will get memozed result for global selection
             return globalFeed();
         } else {
-            return getComments(iAm, Object.assign({ del: null, hidden: null }, iAm.rquery), params);
+            const query = Object.assign({ del: null, hidden: null }, iAm.rquery, iAm.photoFilterQuery);
+            return getComments(iAm, query, params);
         }
     };
 }());
@@ -733,6 +735,8 @@ async function create(data) {
 
     // If it comment for photo, assign photo's regions to it
     if (data.type === 'photo') {
+        comment.type = obj.type;
+
         if (obj.geo) {
             comment.geo = obj.geo;
         }
@@ -1452,6 +1456,18 @@ export async function changeObjCommentsVisibility({ obj: { _id: objId, s }, hide
     return { myCount: usersCountMap.get(String(iAm.user._id)) || 0 };
 }
 
+/**
+ * Change photo's comments type
+ * @param obj
+ */
+export async function changePhotoCommentsType({ photo: { _id: objId, type } }) {
+    const command = { $set: { type } };
+
+    const { n: count = 0 } = await Comment.update({ obj: objId }, command, { multi: true }).exec();
+
+    return { count };
+}
+
 create.isPublic = true;
 update.isPublic = true;
 remove.isPublic = true;
@@ -1475,5 +1491,6 @@ export default {
     giveDelTree,
     setNoComments,
 
-    changeObjCommentsVisibility
+    changeObjCommentsVisibility,
+    changePhotoCommentsType
 };

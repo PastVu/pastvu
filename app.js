@@ -22,7 +22,7 @@ import * as ourMiddlewares from './controllers/middleware';
 import connectDb from './controllers/connection';
 import './models/_initValues';
 import './controllers/systemjs';
-import './basepatch/v1.3.0.6';
+// import './basepatch/v1.3.0.6';
 
 export async function configure(startStamp) {
     const {

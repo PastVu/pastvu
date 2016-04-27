@@ -47,6 +47,7 @@ const CommentPSchema = new Schema(
 
         geo: { type: [Number], index: '2d' }, // Координаты [lng, lat] фотографии, которой принадлежит комментарий
 
+        type: { type: Number, 'default': constants.photo.type.PHOTO, index: true }, // 1 - Photo, 2 - Painting
         // Photo's status (listed in constants)
         s: { type: Number, index: true, 'default': constants.photo.status.PUBLIC, required: true },
 
@@ -92,8 +93,9 @@ const CommentNSchema = new Schema(
     { strict: true, collection: 'commentsn' }
 );
 
-CommentPSchema.index({ user: 1, stamp: -1 }); // Compund index for select user comments
-// CommentSchema.index({ photo: 1, stamp: 1 }); // Compund index for select photo comments (Not needed yet)
+CommentPSchema.index({ user: 1, stamp: -1 }); // Compound index for select user comments
+CommentPSchema.index({ type: 1, stamp: -1 }); // Compound index for select last comments by type
+// CommentSchema.index({ photo: 1, stamp: 1 }); // Compound index for select photo comments (Not needed yet)
 
 registerModel(db => {
     Comment = db.model('Comment', CommentPSchema);
