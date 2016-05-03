@@ -211,9 +211,9 @@ waitDb.then(function (db) {
         print('Clearing photos map collection');
         db.photos_map.remove({});
 
-        print('Start to fill conveyer for ' + db.photos.count({ s: 5, geo: { $exists: true } }) + ' photos');
+        print('Start to fill conveyer for ' + db.photos.count({ s: 5, type: 1, geo: { $exists: true } }) + ' photos');
         db.photos
-            .find({ s: 5, geo: { $exists: true } }, {
+            .find({ s: 5, type: 1, geo: { $exists: true } }, {
                 _id: 0,
                 cid: 1,
                 geo: 1,
@@ -236,7 +236,34 @@ waitDb.then(function (db) {
                 });
             });
 
-        return { message: db.photos_map.count() + ' photos to map added in ' + (Date.now() - startTime) / 1000 + 's' };
+        print('Clearing paintings map collection');
+        db.paintings_map.remove({});
+        print('Start to fill conveyer for ' + db.photos.count({ s: 5, type: 2, geo: { $exists: true } }) + ' paintings');
+        db.photos
+            .find({ s: 5, type: 2, geo: { $exists: true } }, {
+                _id: 0,
+                cid: 1,
+                geo: 1,
+                file: 1,
+                dir: 1,
+                title: 1,
+                year: 1,
+                year2: 1
+            })
+            .sort({ cid: 1 })
+            .forEach(function (photo) {
+                db.paintings_map.insert({
+                    cid: photo.cid,
+                    geo: photo.geo,
+                    file: photo.file,
+                    dir: photo.dir || '',
+                    title: photo.title || '',
+                    year: photo.year || 1980,
+                    year2: photo.year2 || photo.year || 1980
+                });
+            });
+
+        return { message: (db.photos_map.count() + db.paintings_map.count()) + ' photos to map added in ' + (Date.now() - startTime) / 1000 + 's' };
     });
 
     saveSystemJSFunc(function convertPhotosAll(params) {

@@ -45,6 +45,11 @@ const {
 } = constants;
 
 const typesValue = new Set(_.values(constants.photo.type));
+const photoYears = constants.photo.years[constants.photo.type.PHOTO];
+const paintYears = constants.photo.years[constants.photo.type.PAINTING];
+const photoRange = photoYears.max - photoYears.min;
+const paintRange = paintYears.max - paintYears.min;
+
 const parsingFieldsSet = new Set(parsingFields);
 const historyFieldsDiffHash = historyFieldsDiff.reduce(function (result, field) {
     result[field] = field;
@@ -286,24 +291,22 @@ export function getNewPhotosLimit(user) {
     return canCreate;
 }
 
-const photoRange = 2000 - 1826;
-const paintRange = 2000 - -100;
 async function getBounds(data) {
     const { bounds, z, year, year2, isPainting } = data;
-    const minYear = isPainting ? -100 : 1826;
+    const years = isPainting ? paintYears : photoYears;
 
     // Determine whether fetch by years needed
-    const years = _.isNumber(year) && _.isNumber(year2) &&
-        year >= minYear && year2 <= 2000 && year2 >= year &&
+    const hasYears = _.isNumber(year) && _.isNumber(year2) &&
+        year >= years.min && year2 <= years.max && year2 >= year &&
         (year2 - year < (isPainting ? paintRange : photoRange));
     let clusters;
     let photos;
 
     if (z < 17) {
-        ({ photos, clusters } = await this.call(`cluster.${years ? 'getBoundsByYear' : 'getBounds'}`, data));
+        ({ photos, clusters } = await this.call(`cluster.${hasYears ? 'getBoundsByYear' : 'getBounds'}`, data));
     } else {
         const MapModel = isPainting ? PaintingMap : PhotoMap;
-        const yearCriteria = years ? year === year2 ? year : { $gte: year, $lte: year2 } : false;
+        const yearCriteria = hasYears ? year === year2 ? year : { $gte: year, $lte: year2 } : false;
 
         photos = await Promise.all(bounds.map(bound => {
             const criteria = { geo: { $geoWithin: { $box: bound } } };
@@ -1474,12 +1477,12 @@ async function giveNearestPhotos({ geo, type, year, year2, except, distance, lim
     const query = { geo: { $near: geo }, s: status.PUBLIC, type };
     const options = { lean: true };
 
-    const minYear = isPainting ? -100 : 1826;
+    const years = isPainting ? paintYears : photoYears;
 
-    if (_.isNumber(year) && year > minYear && year < 2000) {
+    if (_.isNumber(year) && year > years.min && year < years.max) {
         query.year = { $gte: year };
     }
-    if (_.isNumber(year2) && year2 > minYear && year2 < 2000) {
+    if (_.isNumber(year2) && year2 > years.min && year2 < years.max) {
         if (year === year2) {
             query.year = year;
         } else if (!query.year) {
@@ -1616,10 +1619,10 @@ function photoCheckPublickRequired(photo) {
         throw new InputError(constantsError.PHOTO_NEED_TITLE);
     }
     const isPainting = photo.type === constants.photo.type.PAINTING;
-    const minYear = isPainting ? -100 : 1826;
+    const years = isPainting ? paintYears : photoYears;
 
     if (!_.isNumber(photo.year) || !_.isNumber(photo.year2) ||
-        photo.year < minYear || photo.year > 2000 || photo.year2 < photo.year && photo.year2 > 2000) {
+        photo.year < years.min || photo.year > years.max || photo.year2 < photo.year && photo.year2 > years.max) {
         throw new NoticeError(isPainting ? constantsError.PAINTING_YEARS_CONSTRAINT : constantsError.PHOTO_YEARS_CONSTRAINT);
     }
 
@@ -1627,12 +1630,12 @@ function photoCheckPublickRequired(photo) {
 }
 
 function yearsValidate({ isPainting, maxDelta, year, year2 }) {
-    const minYear = isPainting ? -100 : 1826;
-    const maxYearsDelta = maxDelta || (2000 - minYear);
+    const years = isPainting ? paintYears : photoYears;
+    const maxYearsDelta = maxDelta || (isPainting ? paintRange : photoRange);
 
     // Both year fields must be filled
-    if (_.isNumber(year) && _.isNumber(year2) && year >= minYear && year <= 2000 &&
-        year2 >= year && year2 <= 2000 && Math.abs(year2 - year) <=  maxYearsDelta) {
+    if (_.isNumber(year) && _.isNumber(year2) && year >= years.min && year <= years.max &&
+        year2 >= year && year2 <= years.max && Math.abs(year2 - year) <=  maxYearsDelta) {
         return {year, year2};
     }
 

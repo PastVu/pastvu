@@ -97,7 +97,7 @@ define([
             }
 
             this.yearLow = this.isPainting() ? -100 : 1826;
-            this.yearHigh = 2000;
+            this.yearHigh = this.isPainting() ? 1980 : 2000;
             this.yearRefreshMarkersBind = this.yearRefreshMarkers.bind(this);
             this.yearRefreshMarkersTimeout = null;
 
@@ -730,7 +730,7 @@ define([
             //P.window.square.unsubscribe();
             window.clearTimeout(this.yearRefreshMarkersTimeout);
             this.yearLow = this.isPainting() ? -100 : 1826;
-            this.yearHigh = 2000;
+            this.yearHigh = this.isPainting() ? 1980 : 2000;
 
             $('.mapYearSelector').replaceWith(
                 '<div class="mapYearSelector">' +

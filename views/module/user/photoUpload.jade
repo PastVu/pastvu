@@ -1,65 +1,67 @@
 .user_photoUpload(data-bind="with: repository[M!M]")
-	//-.text-danger(style="margin-bottom: 5px;")
-		| Внимание! Временно принимаются только фотографии в пределах России, Белоруссии и УкраиныСНГ, остальные будут отклонены. Подробности&nbsp;
-		a(target="_blank", href="/news/97") здесь
-	.toptext(data-bind="html: toptext()")
+    //-.text-danger(style="margin-bottom: 5px;")
+        | Внимание! Временно принимаются только фотографии в пределах России, Белоруссии и УкраиныСНГ, остальные будут отклонены. Подробности&nbsp;
+        a(target="_blank", href="/news/97") здесь
+    .toptext(data-bind="html: toptext()")
 
-	//ko if: canLoad()
-	.warn(style="font-size: 12px; color: #A57A30;")
-		| Согласно&nbsp;
-		a(href="/rules") Правилам
-		| , к публикации будут допущены фотографии:
-		br
-		| Снятые до 2000 года включительно, имеющие историческую ценность и отображающие объект съемки в уникальном ракурсе или времени
-	form.uploadForm(method="POST", enctype="multipart/form-data")
-		#addFiles
-			input.fileInput(type="file", name="files[]", accept="image/*", multiple)
-			button.btn.btn-primary.fileSelect(data-bind="click: selectFile")
-				span.glyphicon.glyphicon-plus
-				|  Добавить...
-			.addfiles_area.centering_content(data-bind="css: {hide: !filereader()}")
-				#or.centering_content или
-				span Перетащите изображения сюда
-				#dropzone
+    //ko if: canLoad()
+    .warn(style="font-size: 12px; color: #A57A30;")
+        | Согласно&nbsp;
+        a(href="/rules") Правилам
+        | , к публикации будут допущены:
+        br
+        | Фотографии, снятые до 2000 года, и картины, созданные до 1980 года.
+        br
+        | Имеющие историческую ценность и отображающие объект съемки в уникальном ракурсе или времени.
+    form.uploadForm(method="POST", enctype="multipart/form-data")
+        #addFiles
+            input.fileInput(type="file", name="files[]", accept="image/*", multiple)
+            button.btn.btn-primary.fileSelect(data-bind="click: selectFile")
+                span.glyphicon.glyphicon-plus
+                |  Добавить...
+            .addfiles_area.centering_content(data-bind="css: {hide: !filereader()}")
+                #or.centering_content или
+                span Перетащите изображения сюда
+                #dropzone
 
-	//-Отображаем возможное кол-во к загрузке, если менее 25 разрешено
-	//ko if: canCount() < 25
-	.canCount(data-bind="text: 'Вы можете добавить еще ' + canCount() + ' фото'")
-	// /ko
+    //-Отображаем возможное кол-во к загрузке, если менее 25 разрешено
+    //ko if: canCount() < 25
+    .canCount(data-bind="text: 'Вы можете добавить еще ' + canCount() + ' фото'")
+    // /ko
 
-	div(data-bind="style: {display: fileList().length > 0 ? '' : 'none'}")
-		.allprogress(data-bind="style: {visibility: filesUploading()? 'visible' : 'hidden'}")
-			.progress.progress-striped.active
-				.progress-bar(data-bind="style: {width: fileProgressAll() + '%'}")
-			.extText(data-bind="text: fileProgressAllText()")
-		table.table.table-striped.table-hover.filesTable
-			caption Добавленные фотографии
-			tbody
-				//ko foreach: fileList
-				tr
-					td.preview
-						div.forcanvas(data-bind="attr: {'data-fileuid': ext.uid}, css: {noValid: !ext.valid, tooBig: ext.tooBigPreview}")
-							//ko if: ext.tooBigPreview
-							.msg Слишком большая для превью
-							// /ko
-					td.desc
-						div(data-bind="text: name")
-						//ko if: ext.valid
-						div(data-bind="text: ext.humansize")
-						// /ko
-						div.fileMsg(data-bind="text: ext.msg(), css: ext.msgCss()")
-						//ko if: ext.valid
-						.progress.progress-striped.active(data-bind="style: {visibility: ext.uploading()? 'visible' : 'hidden'}")
-							.progress-bar.progress-bar-success(data-bind="style: {width: ext.progress() + '%'}")
-						// /ko
-					td.fileButtons
-						//ko if: ext.valid && !$parent.options.auto && !ext.uploaded()
-						button.btn.btn-success(data-bind="click: function () {$parent.startFile($data)}, css: {disabled: ext.uploading()}, attr: {disabled: ext.uploading()}")
-							span.glyphicon.glyphicon-upload
-							|  Загрузить
-						// /ko
-						button.btn(data-bind="click: function () {$parent.cancelFile($data)}, css: {'btn-warning': !ext.uploaded(), 'btn-danger': ext.uploaded()}")
-							span.glyphicon(data-bind="css: {'glyphicon-ban-circle': !ext.uploaded(), 'glyphicon-remove-circle': ext.uploaded()}")
-							span(data-bind="text: ext.uploaded() ? ' Удалить' : ' Отменить'")
-				// /ko
-	// /ko
+    div(data-bind="style: {display: fileList().length > 0 ? '' : 'none'}")
+        .allprogress(data-bind="style: {visibility: filesUploading()? 'visible' : 'hidden'}")
+            .progress.progress-striped.active
+                .progress-bar(data-bind="style: {width: fileProgressAll() + '%'}")
+            .extText(data-bind="text: fileProgressAllText()")
+        table.table.table-striped.table-hover.filesTable
+            caption Добавленные фотографии
+            tbody
+                //ko foreach: fileList
+                tr
+                    td.preview
+                        div.forcanvas(data-bind="attr: {'data-fileuid': ext.uid}, css: {noValid: !ext.valid, tooBig: ext.tooBigPreview}")
+                            //ko if: ext.tooBigPreview
+                            .msg Слишком большая для превью
+                            // /ko
+                    td.desc
+                        div(data-bind="text: name")
+                        //ko if: ext.valid
+                        div(data-bind="text: ext.humansize")
+                        // /ko
+                        div.fileMsg(data-bind="text: ext.msg(), css: ext.msgCss()")
+                        //ko if: ext.valid
+                        .progress.progress-striped.active(data-bind="style: {visibility: ext.uploading()? 'visible' : 'hidden'}")
+                            .progress-bar.progress-bar-success(data-bind="style: {width: ext.progress() + '%'}")
+                        // /ko
+                    td.fileButtons
+                        //ko if: ext.valid && !$parent.options.auto && !ext.uploaded()
+                        button.btn.btn-success(data-bind="click: function () {$parent.startFile($data)}, css: {disabled: ext.uploading()}, attr: {disabled: ext.uploading()}")
+                            span.glyphicon.glyphicon-upload
+                            |  Загрузить
+                        // /ko
+                        button.btn(data-bind="click: function () {$parent.cancelFile($data)}, css: {'btn-warning': !ext.uploaded(), 'btn-danger': ext.uploaded()}")
+                            span.glyphicon(data-bind="css: {'glyphicon-ban-circle': !ext.uploaded(), 'glyphicon-remove-circle': ext.uploaded()}")
+                            span(data-bind="text: ext.uploaded() ? ' Удалить' : ' Отменить'")
+                // /ko
+    // /ko

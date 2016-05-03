@@ -698,7 +698,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             var year = Number(p.year());
             var year2 = Number(p.year2());
             var isPainting = this.isPainting();
-            var min = isPainting ? -100 : 1826;
+            var years = statuses.years[isPainting ? statuses.type.PAINTING : statuses.type.PHOTO];
 
             if (!p.year() || isNaN(year)) {
                 // If value is empty or wrong number, put default one
@@ -710,7 +710,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     year = 1;
                 }
                 // Убеждаемся, что год в допустимом интервале
-                year = Math.min(Math.max(year, min), 2000);
+                year = Math.min(Math.max(year, years.min), years.max);
             }
 
             p.year(year);
@@ -727,6 +727,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 }
                 if (year2 > year + maxYearsDelta) {
                     p.year2((year + maxYearsDelta) || year / Math.abs(year));
+                } else if (year2 > years.max) {
+                    p.year2(years.max);
                 }
             }
         },
@@ -735,14 +737,14 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             var year = Number(p.year());
             var year2 = Number(p.year2());
             var isPainting = this.isPainting();
-            var min = isPainting ? -100 : 1826;
+            var years = statuses.years[isPainting ? statuses.type.PAINTING : statuses.type.PHOTO];
 
             if (!p.year2() || isNaN(year2)) {
                 // If value is empty or wrong number, put first year or default one
                 year2 = year || Photo.def.full.year2;
             } else {
                 // Убеждаемся, что оно в допустимом интервале и не менее year
-                year2 = Math.min(Math.max(year2, year || min), 2000);
+                year2 = Math.min(Math.max(year2, year || years.min), years.max);
 
                 if (year === Photo.def.full.year) {
                     // Если год конца заполнен, а начала - нет, заполняем
@@ -1803,7 +1805,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
         onMapStatusData: function (mapData) {
             mapData = _.assign({}, this.mapData, mapData);
-            console.log(1, mapData);
+
             if (!_.isEqual(this.mapData, mapData)) {
                 this.mapData = mapData;
                 this.receiveNearestRibbon();

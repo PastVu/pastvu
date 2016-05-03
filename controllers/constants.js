@@ -8,6 +8,10 @@ export default {
             PHOTO: 1,
             PAINTING: 2
         },
+        years: {
+            1: { min: 1826, max: 2000 },
+            2: { min: -100, max: 1980 }
+        },
 
         status: {
             NEW: 0, // Newphoto
