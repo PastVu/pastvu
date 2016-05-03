@@ -28,6 +28,8 @@ define([
         this.openNewTab = options.openNewTab;
         this.embedded = options.embedded;
         this.isPainting = options.isPainting;
+        this.year = options.year || undefined;
+        this.year2 = options.year2 || undefined;
 
         this.photosAll = [];
         this.mapObjects = { photos: {}, clusters: {} };

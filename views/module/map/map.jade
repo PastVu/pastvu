@@ -44,7 +44,7 @@
             .trtool.trtoolbutt.link.fringe(data-bind="click: showLink", title="Ссылка на текущую позицию карты")
                 span.glyphicon.glyphicon-link
                 //ko if: linkShow()
-                input.inputLink(type="url", readonly, data-bind="click: linkClick, value: location.host + location.pathname + link()", autocorrect="off", autocapitalize="off")
+                input.inputLink(type="url", readonly, data-bind="click: linkClick, value: link()", autocorrect="off", autocapitalize="off")
                 // /ko
             // /ko
             .trtool.layersPanel.fringe(data-bind="css: {open: layersOpen()}")

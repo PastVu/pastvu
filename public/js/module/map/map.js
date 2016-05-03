@@ -4,9 +4,9 @@
 define([
     'underscore', 'Browser', 'Utils', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'renderer',
     'model/User', 'model/storage', 'Locations', 'leaflet', 'lib/leaflet/extends/L.neoMap', 'm/map/marker',
-    'text!tpl/map/map.jade', 'css!style/map/map', 'jquery-ui/draggable', 'jquery-ui/slider',
+    'm/photo/status', 'text!tpl/map/map.jade', 'css!style/map/map', 'jquery-ui/draggable', 'jquery-ui/slider',
     'jquery-ui/effect-highlight', 'css!style/jquery/ui/core', 'css!style/jquery/ui/theme', 'css!style/jquery/ui/slider'
-], function (_, Browser, Utils, P, ko, Cliche, globalVM, renderer, User, storage, Locations, L, Map, MarkerManager, jade) {
+], function (_, Browser, Utils, P, ko, Cliche, globalVM, renderer, User, storage, Locations, L, Map, MarkerManager, statuses, jade) {
     'use strict';
 
     var defaults = {
@@ -25,6 +25,9 @@ define([
         },
         create: function () {
             var self = this;
+            var qParams = globalVM.router.params();
+            var qType = Number(qParams.type);
+
             this.destroy = _.wrap(this.destroy, this.localDestroy);
 
             // Promise witch will be resolved when map ready
@@ -41,6 +44,12 @@ define([
                 this.options.isPainting :
                 !!Utils.getLocalStorage(this.embedded ? 'map.embedded.isPainting' : 'map.isPainting')
             );
+            if (!this.embedded && qType && _.values(statuses.type).includes(qType)) {
+                this.isPainting(qType === statuses.type.PAINTING);
+            }
+            this.type = this.co.typeComputed = ko.computed(function () {
+                return self.isPainting() ? statuses.type.PAINTING : statuses.type.PHOTO;
+            });
             this.linkShow = ko.observable(false); //Показывать ссылку на карту
             this.link = ko.observable(''); //Ссылка на карту
 
@@ -96,8 +105,13 @@ define([
                 });
             }
 
-            this.yearLow = this.isPainting() ? -100 : 1826;
-            this.yearHigh = this.isPainting() ? 1980 : 2000;
+            var type = this.type();
+
+            this.setYears(
+                !this.embedded && (Number(qParams.y) || Utils.getLocalStorage('map.year.' + type)),
+                !this.embedded && (Number(qParams.y2) || Utils.getLocalStorage('map.year2.' + type))
+            );
+
             this.yearRefreshMarkersBind = this.yearRefreshMarkers.bind(this);
             this.yearRefreshMarkersTimeout = null;
 
@@ -251,10 +265,54 @@ define([
                 if (this.markerManager) {
                     this.markerManager.openNewTab = val;
                 }
-                Utils.setLocalStorage(this.embedded ? 'map.embedded.opennew' : 'map.opennew', val);
+                this.setLocalState();
             }, this);
 
             this.show();
+        },
+        setLocalState: function () {
+            var layerActive = this.layerActive();
+
+            Utils.setLocalStorage(this.embedded ? 'map.embedded.opennew' : 'map.opennew', this.openNewTab());
+            Utils.setLocalStorage(this.embedded ? 'map.embedded.sys' : 'map.sys', layerActive.sys.id);
+            Utils.setLocalStorage(this.embedded ? 'map.embedded.type' : 'map.type', layerActive.type.id);
+
+            if (!this.embedded) {
+                Utils.setLocalStorage('map.isPainting', this.isPainting());
+                Utils.setLocalStorage('map.center', Utils.geo.latlngToArr(this.map.getCenter()));
+                Utils.setLocalStorage('map.zoom', this.map.getZoom());
+
+                var type = this.type();
+                var years = statuses.years[this.type()];
+
+                if (this.yearLow > years.min) {
+                    Utils.setLocalStorage('map.year.' + type, this.yearLow);
+                } else {
+                    Utils.removeLocalStorage('map.year.' + type);
+                }
+
+                if (this.yearHigh < years.max) {
+                    Utils.setLocalStorage('map.year2.' + type, this.yearHigh);
+                } else {
+                    Utils.removeLocalStorage('map.year2.' + type);
+                }
+
+            }
+        },
+        setYears: function (y, y2) {
+            var type = this.type();
+            var years = statuses.years[type] || statuses.years[statuses.type.PHOTO];
+
+            if (_.isNumber(y) && y !== 0 && y > years.min && y <= years.max) {
+                this.yearLow = y;
+            } else {
+                this.yearLow = years.min;
+            }
+            if (_.isNumber(y2) && y2 !== 0 && y2 >= this.yearLow && y2 < years.max) {
+                this.yearHigh = y2;
+            } else {
+                this.yearHigh = years.max;
+            }
         },
         setPainting: function (val) {
             this.isPainting(val);
@@ -264,7 +322,7 @@ define([
                 this.markerManager.changePainting(val, this.yearLow, this.yearHigh, true);
             }
             this.notifySubscribers();
-            Utils.setLocalStorage(this.embedded ? 'map.embedded.isPainting' : 'map.isPainting', val);
+            this.setLocalState();
         },
         notifySubscribers: function () {
             var data = this.getStatusData();
@@ -344,7 +402,9 @@ define([
                 enabled: false,
                 openNewTab: this.openNewTab(),
                 isPainting: this.isPainting(),
-                embedded: this.embedded
+                embedded: this.embedded,
+                year: this.yearLow,
+                year2: this.yearHigh
             });
             this.selectLayer(system, type);
 
@@ -390,6 +450,7 @@ define([
                     this.editHandler(this.editing());
 
                     this.yearSliderCreate();
+                    this.setLocalState();
 
                     globalVM.func.showContainer(this.$container);
 
@@ -589,8 +650,7 @@ define([
             this.map.setView(this.mapDefCenter, Locations.current.z, false);
         },
         saveCenterZoom: function () {
-            Utils.setLocalStorage('map.center', Utils.geo.latlngToArr(this.map.getCenter()));
-            Utils.setLocalStorage('map.zoom', this.map.getZoom());
+            this.setLocalState();
         },
         zoomEndCheckLayer: function () {
             var limitZoom = this.layerActive().type.limitZoom;
@@ -631,7 +691,22 @@ define([
                     document.addEventListener('click', this.showLinkBind);
                 }.bind(this), 100);
 
-                this.link('?g=' + center[0] + ',' + center[1] + '&z=' + this.map.getZoom() + '&s=' + layerActive.sys.id + '&t=' + layerActive.type.id);
+                var years = statuses.years[this.type()];
+                var y = '';
+
+                if (this.yearLow > years.min) {
+                    y += '&y=' + this.yearLow;
+                }
+                if (this.yearHigh < years.max) {
+                    y += '&y2=' + this.yearHigh;
+                }
+
+                this.link(
+                    location.host +
+                    '?g=' + center.join(',') + '&z=' + this.map.getZoom() +
+                    '&s=' + layerActive.sys.id + '&t=' + layerActive.type.id +
+                    '&type=' + this.type() + y
+                );
                 this.map.on('zoomstart', this.hideLink, this); //Скрываем ссылку при начале зуммирования карты
                 this.linkShow(true);
             } else {
@@ -639,8 +714,10 @@ define([
             }
         },
         hideLink: function () {
-            this.linkShow(false);
-            this.removeShowLinkListener();
+            if (this.linkShow()) {
+                this.linkShow(false);
+                this.removeShowLinkListener();
+            }
         },
         removeShowLinkListener: function () {
             this.map.off('zoomstart', this.hideLink, this);
@@ -683,8 +760,7 @@ define([
                             this.map.setZoom(type.maxZoom);
                         }
 
-                        Utils.setLocalStorage(this.embedded ? 'map.embedded.sys' : 'map.sys', system.id);
-                        Utils.setLocalStorage(this.embedded ? 'map.embedded.type' : 'map.type', type.id);
+                        this.setLocalState();
                     }.bind(this);
 
                     if (layerActive.sys && layerActive.type) {
@@ -729,8 +805,13 @@ define([
 
             //P.window.square.unsubscribe();
             window.clearTimeout(this.yearRefreshMarkersTimeout);
-            this.yearLow = this.isPainting() ? -100 : 1826;
-            this.yearHigh = this.isPainting() ? 1980 : 2000;
+
+            var type = this.type();
+
+            this.setYears(
+                Utils.getLocalStorage('map.year.' + type),
+                Utils.getLocalStorage('map.year2.' + type)
+            );
 
             $('.mapYearSelector').replaceWith(
                 '<div class="mapYearSelector">' +
@@ -741,10 +822,11 @@ define([
             this.yearSliderCreate();
         },
         yearSliderCreate: function () {
-            var _this = this;
-            var yearLowOrigin = this.yearLow;
-            var yearHighOrigin = this.yearHigh;
-            var yearsDelta = this.yearHigh - this.yearLow;
+            var self = this;
+            var years = statuses.years[this.type()];
+            var yearLowOrigin = years.min;
+            var yearHighOrigin = years.max;
+            var yearsDelta = yearHighOrigin - yearLowOrigin;
             var $slider = this.$dom.find('.yearSlider');
             var sliderStep = $slider.width() / yearsDelta;
             var slideOuterL = this.$dom.find('.yearOuter.L')[0];
@@ -768,8 +850,8 @@ define([
 
             $slider.slider({
                 range: true,
-                min: this.yearLow,
-                max: this.yearHigh,
+                min: years.min,
+                max: years.max,
                 step: 1,
                 values: [this.yearLow, this.yearHigh],
                 create: function () {
@@ -777,16 +859,17 @@ define([
                     culcSlider(values[0], values[1]);
                 },
                 start: function () {
-                    window.clearTimeout(_this.yearRefreshMarkersTimeout);
+                    window.clearTimeout(self.yearRefreshMarkersTimeout);
                 },
                 slide: function (event, ui) {
                     culcSlider(ui.values[0], ui.values[1]);
                 },
                 change: function (event, ui) {
+                    self.hideLink();
                     culcSlider(ui.values[0], ui.values[1]);
-                    _this.yearLow = currMin;
-                    _this.yearHigh = currMax;
-                    _this.yearRefreshMarkersTimeout = window.setTimeout(_this.yearRefreshMarkersBind, 400);
+                    self.yearLow = currMin;
+                    self.yearHigh = currMax;
+                    self.yearRefreshMarkersTimeout = window.setTimeout(self.yearRefreshMarkersBind, 400);
                 }
             });
 
@@ -801,6 +884,7 @@ define([
         },
         yearRefreshMarkers: function () {
             this.markerManager.setYearLimits(this.yearLow || 1, this.yearHigh || 1);
+            this.setLocalState();
             this.notifySubscribers();
         }
     });

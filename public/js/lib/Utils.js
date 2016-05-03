@@ -196,8 +196,8 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
 		},
 
 		getLocalStorage: function (key) {
-			var result,
-				val = localStorage[key];
+			var result;
+			var val = localStorage[key];
 
 			if (val) {
 				try {
@@ -214,6 +214,14 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
 				//который localStorage преобразует в строку "localStorage" и затем не парсится и сохранять в localStorage undefined бессмысленно
 				localStorage[key] = JSON.stringify(val);
 			}
+		},
+		removeLocalStorage: function (key) {
+            try {
+                localStorage.removeItem(key);
+            } catch (e) {
+                console.warn('Can not remove localStorage item' + key + '. Set null');
+                Utils.setLocalStorage(key, null);
+            }
 		},
 
         // Not yet supported
