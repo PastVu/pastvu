@@ -2,7 +2,7 @@
     .fringe#panel
         a#brand(href='/', title="PastVu - ретроспектива среды обитания человечества")
             img.logo(src="/img/misc/logo.png")
-            img.name(src="/img/misc/name-2x.png", srcset="/img/misc/name.png 1x, /img/misc/name-2x.png 2x")
+            .name
         #panelTools.hide-text
             //ko if: auth.loggedIn()
             a#toUpload.labledIco.strokeAfter(href="/photoUpload")
