@@ -106,6 +106,10 @@ define(['underscore'], function (_) {
         PHOTO: 1,
         PAINTING: 2
     };
+    statuses.years = {
+        1: { min: 1826, max: 2000 },
+        2: { min: -100, max: 1980 }
+    };
 
     return statuses;
 });

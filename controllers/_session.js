@@ -270,7 +270,6 @@ function userObjectTreatUser(usObj) {
     // Assign to user default settings
     user.settings = _.defaults(user.settings || {}, userSettingsDef);
 
-    console.log('REGET', user.settings.photo_filter_type);
     if (usObj.registered && user.settings.photo_filter_type.length &&
         !_.isEqual(user.settings.photo_filter_type, userSettingsDef.photo_filter_type)) {
         const types = user.settings.photo_filter_type;

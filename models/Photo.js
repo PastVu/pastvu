@@ -142,8 +142,8 @@ const PhotoMapSchema = new Schema(
         file: { type: String, required: true },
         dir: { type: String },
         title: { type: String, 'default': '' },
-        year: { type: Number, 'default': 2000 },
-        year2: { type: Number, 'default': 2000 }
+        year: { type: Number, 'default': constants.photo.years[constants.photo.type.PHOTO].max },
+        year2: { type: Number, 'default': constants.photo.years[constants.photo.type.PHOTO].max }
     },
     { collection: 'photos_map', strict: true }
 );
@@ -154,8 +154,8 @@ const PaintingMapSchema = new Schema(
         file: { type: String, required: true },
         dir: { type: String },
         title: { type: String, 'default': '' },
-        year: { type: Number, 'default': 2000 },
-        year2: { type: Number, 'default': 2000 }
+        year: { type: Number, 'default': constants.photo.years[constants.photo.type.PAINTING].max },
+        year2: { type: Number, 'default': constants.photo.years[constants.photo.type.PAINTING].max }
     },
     { collection: 'paintings_map', strict: true }
 );

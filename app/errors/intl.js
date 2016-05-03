@@ -52,7 +52,7 @@ export default {
     PHOTO_NEED_TITLE: 'You must fill in the name of the photo',
     PHOTO_ANOTHER_STATUS: 'Photo is already in other status, refresh the page',
     PHOTO_YEARS_CONSTRAINT: 'Published photos must be in the range of 1826-2000',
-    PAINTING_YEARS_CONSTRAINT: 'Published painting must be in the range of 100 BC — 2000 AD',
+    PAINTING_YEARS_CONSTRAINT: 'Published painting must be in the range of 100 BC — 1980 AD',
     PHOTO_CONVERT_PROCEEDING: 'You have already sent a request and it is still running. try later',
 
     REGION_ASSIGN_OBJECTS: 'Ошибка пересчета принадлежности обектов регионам',

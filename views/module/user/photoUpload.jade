@@ -10,7 +10,9 @@
         a(href="/rules") the Rules
         | , these kind of images will be allowed for publishing:
         br
-        | Filmed up to 2000 year, having historical value and display the subject in a unique angle or time
+        | Photos filmed up to 2000 year, and paintings, created up to 1980 year.
+        br
+        | That have historical value and display the subject in a unique angle or time
     form.uploadForm(method="POST", enctype="multipart/form-data")
         #addFiles
             input.fileInput(type="file", name="files[]", accept="image/*", multiple)

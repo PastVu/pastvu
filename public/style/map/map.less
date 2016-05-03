@@ -3,9 +3,11 @@
 @import "../bs/mixins.less";
 @import "../leaflet/leaflet.less";
 
+@photoHightYear: 2000;
+@photoLowYear: 1826;
 @spinVal: 242 / 121;
 @yearBase: hsv(240, 100%, 67%);
-.yearLooping(@index) when (@index < 2001) {
+.yearLooping(@index) when (@index <= @photoHightYear) {
 	.y@{index} {
 		@vall: (@index - 1880) * @spinVal;
 		background-color: spin(@yearBase, @vall);
@@ -15,15 +17,16 @@
 
 // For photos 1826 - 1879 raise the brightness value from 40 to 66.5
 @lightenVal: (67 - 40) / 54;
-.yearLoopingOld(@index) when (@index > 1825) {
+.yearLoopingOld(@index) when (@index >= @photoLowYear) {
 	.y@{index} {
-		@vall: (40% + (@index - 1826) * @lightenVal);
+		@vall: (40% + (@index - @photoLowYear) * @lightenVal);
 		background-color: hsv(240, 100%, @vall);
 	}
 	.yearLoopingOld(@index - 1); // next iteration
 }
 
-@paintingHightYear: 2000;
+@paintingHightYear: 1980;
+@paintingLowYear: -100;
 @paintingUpStep: 5;
 @paintingDivisionYear: floor(1688 / @paintingUpStep) * @paintingUpStep; // Consider "Glorious Revolution" as begining of Age of Enlightenment
 @paintingSpinVal: 0.8;
@@ -38,7 +41,6 @@
 
 
 // For paintings 100BC - 1680 raise the brightness value from 40 to 66.5
-@paintingLowYear: -100;
 @paintingDownStep: 25;
 @paintingDownEnd: floor(@paintingDivisionYear / @paintingDownStep) * @paintingDownStep;
 @paintingDownVal: 66 / (@paintingDownEnd - @paintingLowYear) * @paintingDownStep;
