@@ -165,6 +165,7 @@ const PhotoConveyerSchema = new Schema(
         cid: { type: Number, index: true },
         priority: { type: Number, required: true },
         added: { type: Date, 'default': Date.now, required: true },
+        protect: { type: Boolean }, // Protect files in public folder by covering it with 'not available' caption
         webpOnly: { type: Boolean },
         converting: { type: Boolean }
     },

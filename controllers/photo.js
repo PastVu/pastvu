@@ -6,7 +6,7 @@ import log4js from 'log4js';
 import moment from 'moment';
 import config from '../config';
 import Utils from '../commons/Utils';
-import { waitDb } from './connection';
+import { waitDb, dbRedis } from './connection';
 import constants from './constants';
 import constantsError from '../app/errors/constants';
 import * as session from './_session';
@@ -130,6 +130,7 @@ export const permissions = {
             // watersign: [true, false]
             // nowatersign: [true, false]
             // download: [true, byrole, withwater, login]
+            // protected: [true, false]
         };
         const s = photo.s;
 
@@ -165,6 +166,9 @@ export const permissions = {
                 // Otherwise registered user can download full-size photo only with watermark
                 can.download = 'withwater';
             }
+
+            // Moderator and owner can see protected file of not public photo
+            can.protected = s === status.PUBLIC ? undefined : canModerate || ownPhoto;
 
             // Редактировать может модератор и владелец, если оно не удалено и не отозвано. Администратор - всегда
             can.edit = usObj.isAdmin || s !== status.REMOVE && s !== status.REVOKE && (canModerate || ownPhoto) || undefined;
@@ -878,6 +882,39 @@ function userPCountUpdate(user, newDelta = 0, publicDelta = 0, inactiveDelta = 0
     }
 }
 
+const allowGetProtectedPhotoFile = async function ({ file }) {
+    const { handshake: { session } } = this;
+    return dbRedis.setAsync(`pr:${session.key}:${file}`, file, 'EX', config.protectedFileLinkTTL);
+};
+
+
+// If photo is getting public status,
+// we must move files from protected to public folder, and overwrite files in public (if exist)
+// If photo is being changed from public status,
+// we must copy all public files to protected folder, and then cover all public files with caption
+const changeFileProtection = async function ({ photo, protect = false }) {
+    console.log('changeFileProtection', protect);
+
+    try {
+        converter.movePhotoFiles({ photo, copy: protect, toProtected: protect });
+    } catch (err) {
+        logger.warn(`${this.ridMark} Copying/moving of files in changing protection failed:`, err.message);
+
+        // If copying/moving files failed for some reason, simply add converter job to create variants in actual folder
+        await converter.addPhotos([photo], 2);
+
+        if (!protect) {
+            // And if this is moving from protected to public, try to remove all files from protected whatever happens
+            await converter.deletePhotoFiles({ photo, fromProtected: true });
+        }
+    }
+
+    if (protect) {
+        // Cover all public files with caption for protected photo
+        await converter.addPhotos([photo], 2, true);
+    }
+};
+
 const changePublicExternality = async function ({ photo, makePublic }) {
     return await Promise.all([
         // Show or hide comments and recalculate it amount of users
@@ -887,7 +924,8 @@ const changePublicExternality = async function ({ photo, makePublic }) {
         // If photo has coordinates, means that need to do something with map
         Utils.geo.check(photo.geo) ? this.call(makePublic ? 'photo.photoToMap' : 'photo.photoFromMap', {
             photo, paintingMap: photo.type === constants.photo.type.PAINTING
-        }) : null
+        }) : null,
+        changeFileProtection({ photo, protect: !makePublic })
     ]);
 };
 
@@ -1041,6 +1079,8 @@ async function approve(data) {
     // Save previous status to history
     await this.call('photo.saveHistory', { oldPhotoObj, photo, canModerate });
 
+    changeFileProtection({ photo, protect: false });
+
     // Reselect the data to display
     return this.call('photo.give', { cid: photo.cid, rel });
 }
@@ -1158,6 +1198,8 @@ export async function giveForPage({ cid, forEdit }) {
     }
 
     const { photo, can } = await this.call('photo.give', { cid, fullView: true, countView: !forEdit, forEdit });
+
+    await this.call('photo.allowGetProtectedPhotoFile', { file: photo.file });
 
     return { photo, can, forEdit: !!photo.user.settings };
 }
@@ -2697,7 +2739,8 @@ export default {
     photoFromMap,
     prefetchForEdit,
     givePrevNextCids,
-    changePublicExternality
+    changePublicExternality,
+    allowGetProtectedPhotoFile
 };
 
 waitDb.then(planResetDisplayStat); // Plan statistic clean up

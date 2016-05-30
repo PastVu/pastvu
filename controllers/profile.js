@@ -350,7 +350,7 @@ async function changeAvatar({ login, file, mime }) {
 
     await Promise.all([
         // Transfer file from incoming to private
-        fs.renameAsync(incomeDir + file, path.normalize(originPath)),
+        fs.renameAsync(path.join(incomeDir, file), path.normalize(originPath)),
         // Create folders inside public
         mkdirpAsync(path.join(publicDir, 'd/', dirPrefix)),
         mkdirpAsync(path.join(publicDir, 'h/', dirPrefix))

@@ -93,9 +93,11 @@ define(
             comment: false,
             watersign: false,
             nowaterchange: false,
-            download: 'login'
+            download: 'login',
+            protected: false
         };
         var picPrefix = '/_p';
+        var picProtectedPrefix = '/_pr';
         var picFormats = {
             a: picPrefix + '/a/',
             d: picPrefix + '/d/',
@@ -104,6 +106,15 @@ define(
             q: picPrefix + '/q/',
             s: picPrefix + '/s/',
             x: picPrefix + '/x/'
+        };
+        var picProtectedFormats = {
+            a: picProtectedPrefix + '/a/',
+            d: picProtectedPrefix + '/d/',
+            h: picProtectedPrefix + '/h/',
+            m: picProtectedPrefix + '/m/',
+            q: picProtectedPrefix + '/q/',
+            s: picProtectedPrefix + '/s/',
+            x: picProtectedPrefix + '/x/'
         };
 
         _.assign(defaults.compact, defaults.base);
@@ -152,8 +163,9 @@ define(
                 User.factory(origin.user, userDefType);
             }
 
+            var dir = (origin.s === statuses.keys.PUBLIC ? picFormats : picProtectedFormats)[picType];
             origin.status = statuses.nums[origin.s] || {};
-            origin.sfile = P.preaddr + picFormats[picType] + origin.file;
+            origin.sfile = P.preaddr + dir + origin.file;
 
             return origin;
         }
@@ -195,6 +207,6 @@ define(
             return vmExist;
         }
 
-        return { factory: factory, vm: vm, def: defaults, canDef: canDef, picFormats: picFormats };
+        return { factory: factory, vm: vm, def: defaults, canDef: canDef, picFormats: picFormats, picProtectedFormats: picProtectedFormats };
     }
 );
