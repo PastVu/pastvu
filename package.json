@@ -33,12 +33,13 @@
         "serve-favicon": "2.3.0",
         "basic-auth-connect": "1.0.0",
         "locale": "0.0.21",
-        "cookie": "0.2.4",
+        "cookie": "0.3.1",
         "jade": "1.11.0",
-        "mongoose": "4.4.17",
+        "redis": "2.6.0-2",
+        "mongoose": "4.4.19",
         "posix": "4.0.2",
         "mkdirp": "0.5.1",
-        "lodash": "4.12.0",
+        "lodash": "4.13.1",
         "bluebird": "3.4.0",
         "underscore.string": "3.3.4",
         "yargs": "4.7.1",
@@ -53,7 +54,7 @@
         "step": "",
         "socket.io": "1.4.6",
         "socket.io-events": "0.4.6",
-        "nodemailer": "2.4.1",
+        "nodemailer": "2.4.2",
         "nodemailer-ses-transport": "1.3.1",
         "log4js": "0.6.36",
         "formidable": "1.0.17",
@@ -61,7 +62,7 @@
         "gm": "1.22.0"
     },
     "devDependencies": {
-        "babel-core": "6.9.0",
+        "babel-core": "6.9.1",
         "babel-eslint": "6.0.4",
         "babel-plugin-transform-runtime": "6.9.0",
         "babel-preset-es2015-node5": "1.2.0",
@@ -88,7 +89,7 @@
         "xmldom": "0.1.22",
         "osm-and-geojson": "0.1.2",
 
-        "eslint": "2.10.2"
+        "eslint": "2.11.0"
     },
     "engines": {
         "node": "^5.9.0"

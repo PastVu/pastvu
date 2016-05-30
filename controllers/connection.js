@@ -1,3 +1,4 @@
+import redis from 'redis';
 import mongoose from 'mongoose';
 import log4js from 'log4js';
 
@@ -12,6 +13,7 @@ let getDBReject;
 export let db = null;
 export let dbEval = null;
 export let dbNative = null;
+export let dbRedis = null;
 
 export const waitDb = new Promise(function (resolve, reject) {
     getDBResolve = resolve;
@@ -26,8 +28,10 @@ export const registerModel = modelPromise => {
     return waitDb;
 };
 
-export default function (uri, poolSize = 1, logger = log4js.getLogger('app')) {
+export default function ({ mongo: { uri, poolSize = 1, logger = log4js.getLogger('app') }, redis: redisConfig = {} }) {
     if (!connectionPromise) {
+        dbRedis = redis.createClient(redisConfig);
+
         connectionPromise = new Promise(function (resolve, reject) {
             db = mongoose.createConnection() // http://mongoosejs.com/docs/api.html#connection_Connection
                 .once('open', openHandler)

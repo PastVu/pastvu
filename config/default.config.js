@@ -70,6 +70,13 @@ module.exports = {
         con: 'mongodb://localhost:27017/pastvu',
         pool: 2
     },
+    redis: {
+        host: '127.0.0.1',
+        port: '6379'
+    },
+
+    // Lifetime of link to file of protected photo for user, that has right to see this photo, in seconds
+    protectedFileLinkTTL: ms('10s') / 1000,
 
     // Connection settings for mail provider. Need to be overrided locally
     mail: {},
