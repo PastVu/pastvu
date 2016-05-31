@@ -550,7 +550,7 @@ define([
 
             while (i--) {
                 photo = arr[i];
-                Photo.factory(photo, 'compact', 'h', { title: 'Без названия' });
+                Photo.factory(photo, { type: 'compact', pic: 'h', customDefaults: { title: 'Без названия' } });
                 if (regionsHash && photo.rs !== undefined) {
                     for (j = photo.rs.length; j--;) {
                         photo.rs[j] = regionsHash[photo.rs[j]];

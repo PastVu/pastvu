@@ -123,30 +123,35 @@ define(
         /**
          * Фабрика. Из входящих данных создает полноценный объект, в котором недостающие поля заполнены дефолтными значениями
          * @param origin Входящий объект
-         * @param defType Название дефолтного объекта для сляния
-         * @param picType Тим картинки
+         * @param type Название дефолтного объекта для сляния
+         * @param pic Тим картинки
          * @param customDefaults Собственные свойства, заменяющие аналогичные в дефолтном объекте
          * @return {*}
          */
-        function factory(origin, defType, picType, customDefaults, userDefType) {
-            origin = origin || {};
-            defType = defType || 'full';
-            picType = picType || 'd';
-            userDefType = userDefType || 'middle';
+        function factory(origin, options) {
+            if (origin === undefined) {
+                origin = {};
+            }
+            if (options === undefined) {
+                options = {};
+            }
+            var type = options.type || 'full';
+            var pic = options.pic || 'd';
+            var userType = userType || 'middle';
 
-            if (customDefaults) {
-                origin = _.defaults(origin, customDefaults, defaults[defType]);
+            if (options.customDefaults) {
+                origin = _.defaults(origin, options.customDefaults, defaults[type]);
             } else {
-                origin = _.defaults(origin, defaults[defType]);
+                origin = _.defaults(origin, defaults[type]);
             }
 
             if (origin.ldate) {
                 origin.ldate = new Date(origin.ldate);
             }
 
-            if (defType === 'full') {
+            if (type === 'full') {
                 if (!Utils.geo.checkLatLng(origin.geo)) {
-                    origin.geo = defaults[defType].geo;
+                    origin.geo = defaults[type].geo;
                 }
                 if (origin.regions.length) {
                     Region.factory(_.last(origin.regions), 'home');
@@ -160,10 +165,10 @@ define(
                 if (origin.stdate) {
                     origin.stdate = new Date(origin.stdate);
                 }
-                User.factory(origin.user, userDefType);
+                User.factory(origin.user, userType);
             }
 
-            var dir = (origin.s === statuses.keys.PUBLIC ? picFormats : picProtectedFormats)[picType];
+            var dir = (origin.s === statuses.keys.PUBLIC ? picFormats : picProtectedFormats)[pic];
             origin.status = statuses.nums[origin.s] || {};
             origin.sfile = P.preaddr + dir + origin.file;
 

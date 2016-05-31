@@ -168,7 +168,7 @@ export const permissions = {
             }
 
             // Moderator and owner can see protected file of not public photo
-            can.protected = s === status.PUBLIC ? undefined : canModerate || ownPhoto;
+            can.protected = s === status.PUBLIC && (canModerate || ownPhoto) || undefined;
 
             // Редактировать может модератор и владелец, если оно не удалено и не отозвано. Администратор - всегда
             can.edit = usObj.isAdmin || s !== status.REMOVE && s !== status.REVOKE && (canModerate || ownPhoto) || undefined;

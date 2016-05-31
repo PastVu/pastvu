@@ -448,7 +448,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
         receivePhoto: function (cid, edit, cb, ctx) {
             var finish = function (data) {
-                Photo.factory(data.photo, 'full', 'd', 'middle', 'middle');
+                Photo.factory(data.photo);
 
                 cb.call(ctx, data);
             };
@@ -1742,7 +1742,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
             for (var i = 0; i < incomingArr.length; i++) {
                 item = incomingArr[i];
-                resultArr.push(_.find(targetArr, itemExistFunc) || Photo.factory(item, 'base', 'q'));
+                resultArr.push(_.find(targetArr, itemExistFunc) || Photo.factory(item, { type: 'base', pic: 'q' }));
             }
             return resultArr;
         },
