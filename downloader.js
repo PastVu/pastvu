@@ -23,7 +23,7 @@ export async function configure(startStamp) {
 
     const logger = log4js.getLogger('downloader');
 
-    await connectDb(config.mongo.connection, config.mongo.poolDownloader, logger);
+    await connectDb({ mongo: { uri: config.mongo.connection, poolSize: config.mongo.pool }, logger});
 
     const responseCode = function (code, response) {
         const textStatus = http.STATUS_CODES[code];

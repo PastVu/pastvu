@@ -168,7 +168,7 @@ export const permissions = {
             }
 
             // Moderator and owner can see protected file of not public photo
-            can.protected = s === status.PUBLIC && (canModerate || ownPhoto) || undefined;
+            can.protected = s !== status.PUBLIC && (canModerate || ownPhoto) || undefined;
 
             // Редактировать может модератор и владелец, если оно не удалено и не отозвано. Администратор - всегда
             can.edit = usObj.isAdmin || s !== status.REMOVE && s !== status.REVOKE && (canModerate || ownPhoto) || undefined;
@@ -217,13 +217,13 @@ export const permissions = {
         }
 
         if (usObj.registered && photo.user) {
+            // If photo was published once, anyone can see its page. Visiblity of image is controlled by can.protected
+            if (photo.s > status.PUBLIC) {
+                return true;
+            }
             // Owner always can see his photos
             if (User.isEqual(photo.user, usObj.user)) {
                 return true;
-            }
-            // Admin can see removed photos
-            if (photo.s === status.REMOVE) {
-                return usObj.isAdmin;
             }
 
             return permissions.canModerate(photo, usObj);
@@ -446,6 +446,15 @@ async function give(params) {
         // Update view stamp of object by user
         if (iAm.registered) {
             userObjectRelController.setObjectView(photo._id, iAm.user._id);
+        }
+    }
+
+    if (can.protected) {
+        try {
+            await this.call('photo.allowGetProtectedPhotoFile', { file: photo.file });
+        } catch (err) {
+            logger.warn(`${this.ridMark} Putting link to redis for protected ${cid} photo's file failed. Giving public`);
+            can.protected = undefined;
         }
     }
 
@@ -882,9 +891,16 @@ function userPCountUpdate(user, newDelta = 0, publicDelta = 0, inactiveDelta = 0
     }
 }
 
-const allowGetProtectedPhotoFile = async function ({ file }) {
+const allowGetProtectedPhotoFile = async function ({ file, ttl = config.protectedFileLinkTTL }) {
+    if (!dbRedis.connected) {
+        throw new ApplicationError({ code: constantsError.REDIS_NO_CONNECTION, trace: false });
+    }
+
     const { handshake: { session } } = this;
-    return dbRedis.setAsync(`pr:${session.key}:${file}`, file, 'EX', config.protectedFileLinkTTL);
+    return dbRedis.setAsync(`pr:${session.key}:${file}`, file, 'EX', ttl)
+        .catch(error => {
+            throw new ApplicationError({ code: constantsError.REDIS, trace: false, message: error.message });
+        });
 };
 
 
@@ -1198,8 +1214,6 @@ export async function giveForPage({ cid, forEdit }) {
     }
 
     const { photo, can } = await this.call('photo.give', { cid, fullView: true, countView: !forEdit, forEdit });
-
-    await this.call('photo.allowGetProtectedPhotoFile', { file: photo.file });
 
     return { photo, can, forEdit: !!photo.user.settings };
 }

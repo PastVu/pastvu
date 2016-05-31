@@ -71,11 +71,13 @@ module.exports = {
     },
     redis: {
         host: '127.0.0.1',
-        port: '6379'
+        port: '6379',
+        retry_unfulfilled_commands: false,
+        maxReconnectTime: ms('10s')
     },
 
     // Lifetime of link to file of protected photo for user, that has right to see this photo, in seconds
-    protectedFileLinkTTL: ms('10s') / 1000,
+    protectedFileLinkTTL: ms('30s') / 1000,
 
     // Connection settings for mail provider. Need to be overrided locally
     mail: {},

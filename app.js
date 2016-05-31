@@ -52,7 +52,8 @@ export async function configure(startStamp) {
 
     await connectDb({
         redis: config.redis,
-        mongo: { uri: config.mongo.connection, poolSize: config.mongo.pool, logger }
+        mongo: { uri: config.mongo.connection, poolSize: config.mongo.pool },
+        logger
     });
 
     const status404Text = http.STATUS_CODES[404];
@@ -157,7 +158,7 @@ export async function configure(startStamp) {
     if (config.serveProtected) {
         const imageServer = ourMiddlewares.serveImages(path.join(storePath, 'protected/photos/'), { maxAge: ms('1d') });
         app.use('/_pr/', function (req, res, next) {
-            imageServer
+            //imageServer
         }, ourMiddlewares.serveImages(path.join(storePath, 'protected/photos/'), { maxAge: ms('1d') }));
 
         // Seal store paths, ie request that achieve this handler will receive 404
