@@ -170,7 +170,7 @@ define(
 
             var dir = (origin.s === statuses.keys.PUBLIC ? picFormats : picProtectedFormats)[pic];
             origin.status = statuses.nums[origin.s] || {};
-            origin.sfile = P.preaddr + dir + origin.file;
+            origin.sfile = dir + origin.file;
 
             return origin;
         }

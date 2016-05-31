@@ -36,7 +36,7 @@ define(['jquery', 'underscore', 'socket!', 'Utils', 'knockout', 'knockout.mappin
 
     Params.window.square = Params.window.w * Params.window.h;
     updateSettings(init.settings, true);
-    Params = ko_mapping.fromJS(Params, { copy: ['preaddrs', 'preaddr', 'window.head', 'settings.lang'] });
+    Params = ko_mapping.fromJS(Params, { copy: ['window.head', 'settings.lang'] });
 
     // Пересчитываем размеры при ресайзе окна
     $window.on('resize', _.debounce(function () {
@@ -49,24 +49,11 @@ define(['jquery', 'underscore', 'socket!', 'Utils', 'knockout', 'knockout.mappin
 
     // Обновляем настройки и в случае наличия поддоменов формируем их массив
     function updateSettings(settings, plain) {
-        var subdomains;
 
         if (plain) {
             _.merge(Params.settings, settings);
-            subdomains = settings.server.subdomains || [];
         } else {
-            ko_mapping.fromJS({ settings: settings }, Params, { copy: ['preaddrs', 'preaddr', 'window.head'] });
-            subdomains = Params.settings.server.subdomains() || [];
-        }
-        if (subdomains && subdomains.length) {
-            subdomains(_.shuffle(subdomains));
-            Params.preaddrs = subdomains.map(function (sub) {
-                return '//' + sub + '.' + location.host;
-            });
-            Params.preaddr = Params.preaddrs[0];
-        } else {
-            Params.preaddrs = [];
-            Params.preaddr = '';
+            ko_mapping.fromJS({ settings: settings }, Params, { copy: ['window.head'] });
         }
     }
 

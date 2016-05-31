@@ -53,7 +53,7 @@ define([
 
             socket.run('index.giveAllNews', undefined, true).then(function (data) {
                 data.news.forEach(function (novel) {
-                    novel.user.avatar = novel.user.avatar ? P.preaddr + '/_a/h/' + novel.user.avatar :
+                    novel.user.avatar = novel.user.avatar ? '/_a/h/' + novel.user.avatar :
                         '/img/caps/avatarth.png';
                     novel.ccount = novel.ccount || 0;
 

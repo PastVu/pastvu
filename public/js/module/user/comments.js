@@ -179,7 +179,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         _.forOwn(objs, function (obj) {
                             if (type === 'photo') {
                                 obj.link = '/p/' + obj.cid;
-                                obj.sfile = P.preaddr + Photo.picFormats.q + obj.file;
+                                obj.sfile = Photo.picFormats.q + obj.file;
                                 obj.title += ' <span class="photoYear">' + obj.y + '</span>';
                             } else if (type === 'news') {
                                 obj.link = '/news/' + obj.cid;

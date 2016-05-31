@@ -34,7 +34,6 @@ module.exports = {
         port: ':3000', // Port for users
         uport: ':3001', // Upload files port for users
         dport: ':3002', // Download files port for users
-        subdomains: [] // Subdomains for serving store path's public folder.
     },
 
     storePath: '', // Store folder with static user content (avatars, photos, etc)

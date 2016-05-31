@@ -165,7 +165,7 @@ define(
                         hist.isnew = true;
                     }
 
-                    hist.user.avatar = hist.user.avatar ? P.preaddr + '/_a/h/' + hist.user.avatar : '/img/caps/avatarth.png';
+                    hist.user.avatar = hist.user.avatar ? '/_a/h/' + hist.user.avatar : '/img/caps/avatarth.png';
 
                     if (hist.roleregion) {
                         hist.roleregion = regionsHash[hist.roleregion];
