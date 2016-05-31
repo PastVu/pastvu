@@ -70,10 +70,10 @@ module.exports = {
         pool: 2
     },
     redis: {
-        host: '127.0.0.1',
+        host: 'localhost',
         port: '6379',
         retry_unfulfilled_commands: false,
-        maxReconnectTime: ms('10s')
+        maxReconnectTime: ms('30s')
     },
 
     // Lifetime of link to file of protected photo for user, that has right to see this photo, in seconds

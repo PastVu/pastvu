@@ -212,15 +212,12 @@ export const permissions = {
         return can;
     },
     canSee(photo, usObj) {
-        if (photo.s === status.PUBLIC) {
+        // If photo was published once, anyone can see its page. Visiblity of image is controlled by can.protected
+        if (photo.s >= status.PUBLIC) {
             return true;
         }
 
         if (usObj.registered && photo.user) {
-            // If photo was published once, anyone can see its page. Visiblity of image is controlled by can.protected
-            if (photo.s > status.PUBLIC) {
-                return true;
-            }
             // Owner always can see his photos
             if (User.isEqual(photo.user, usObj.user)) {
                 return true;
@@ -244,7 +241,7 @@ export async function find({ query, fieldSelect, options, populateUser }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered) {
-        query.s = status.PUBLIC; // Anonyms can see only public
+        query.s = { $gte: status.PUBLIC }; // Anonyms can see only photos, that were published (even if deactivated then)
     }
 
     let photo = Photo.findOne(query, fieldSelect || {}, options || {});

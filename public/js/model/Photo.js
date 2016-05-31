@@ -137,7 +137,8 @@ define(
             }
             var type = options.type || 'full';
             var pic = options.pic || 'd';
-            var userType = userType || 'middle';
+            var userType = options.userType || 'middle';
+            var can = options.can || {};
 
             if (options.customDefaults) {
                 origin = _.defaults(origin, options.customDefaults, defaults[type]);
@@ -168,9 +169,15 @@ define(
                 User.factory(origin.user, userType);
             }
 
-            var dir = (origin.s === statuses.keys.PUBLIC ? picFormats : picProtectedFormats)[pic];
             origin.status = statuses.nums[origin.s] || {};
-            origin.sfile = dir + origin.file;
+
+            if (can.protected) {
+                origin.sfile = picProtectedFormats[pic] + origin.file;
+                origin.fileroot = picProtectedPrefix;
+            } else {
+                origin.sfile = picFormats[pic] + origin.file;
+                origin.fileroot = picPrefix;
+            }
 
             return origin;
         }
@@ -190,9 +197,9 @@ define(
          * @param withoutFactory Флаг, указывающий что не надо применять к данным фабрику
          * @return {*}
          */
-        function vm(data, vmExist, withoutFactory) {
+        function vm(data, vmExist, withoutFactory, can) {
             if (!withoutFactory) {
-                factory(data, 'full', 'd');
+                factory(data, { can: can });
             }
             if (!vmExist) {
                 vmExist = vmCreate(data);

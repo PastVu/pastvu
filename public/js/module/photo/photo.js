@@ -350,7 +350,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 this.originData = photo;
             }
 
-            this.p = Photo.vm(photo, this.p);
+            this.p = Photo.vm(photo, this.p, false, can);
             this.can = koMapping.fromJS(_.defaults({}, can, Photo.canDef), this.can);
 
             this.watersignOptionTrigger(_.random(9e9));
@@ -448,7 +448,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
         receivePhoto: function (cid, edit, cb, ctx) {
             var finish = function (data) {
-                Photo.factory(data.photo);
+                Photo.factory(data.photo, { can: data.can });
 
                 cb.call(ctx, data);
             };
@@ -1048,7 +1048,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             var desc = p.desc() || '';
             var link = '/p/' + p.cid();
 
-            if (!self.shareVM) {
+            if (!self.shareVM && p.s() === statuses.keys.PUBLIC) {
                 // Include years in OpenGraph title, if they are not in title already
                 if (!title.includes(p.year()) && (!p.year2() || !title.includes(p.year2()))) {
                     title = p.y() + ' ' + title;

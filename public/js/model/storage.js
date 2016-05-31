@@ -44,7 +44,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
                 socket.run('photo.giveForPage', { cid: cid }, true)
                     .then(function (data) {
                         if (data.photo.cid === cid) {
-                            Photo.factory(data.photo);
+                            Photo.factory(data.photo, { can: data.can });
                             storage.photos[cid] = {
                                 vm: Photo.vm(data.photo, undefined, true),
                                 origin: data.photo,
