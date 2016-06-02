@@ -41,14 +41,21 @@
                                     label.checkbox-inline
                                         input(type="checkbox", value="2", data-bind="checked: filter.disp.t, click: ftclick")
                                         span Картина/Рисунок
-                            //ko if: filter.can.s()
                             .row.svars
                                 .filterName Статусы:
-                                .filterVars(data-bind="foreach: filter.available.s")
+                                .filterVars
+                                    //ko if: filter.can.s()
+                                    //ko foreach: filter.available.s
                                     label.checkbox-inline.s
                                         input(type="checkbox", data-bind="attr: {value: s}, checked: $parent.filter.disp.s")
                                         span(data-bind="text: title")
-                            // /ko
+                                    // /ko
+                                    // /ko
+                                    //ko if: !auth.loggedIn()
+                                    span(data-bind="click: function(data, evt){auth.show('login')}", style="cursor:pointer" title="Кликните, чтобы войти или зарегистрироваться")
+                                        span.glyphicon.glyphicon-log-in
+                                        |   Войдите, чтобы видеть больше
+                                    // /ko
                             .row.geovars
                                 .filterName Точка:
                                 .filterVars

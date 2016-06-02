@@ -15,6 +15,9 @@ define([
     var filterS = _.transform(statusNums, function (result, status, num) {
         result.push({ s: num, title: status.filter_title });
     }, []);
+    var filterSPublic = filterS.filter(function (filter) {
+        return filter.s >= statuses.keys.PUBLIC;
+    });
 
     return Cliche.extend({
         jade: jade,
@@ -66,7 +69,7 @@ define([
                 open: ko.observable(false),
                 can: {
                     s: this.co.filtercans = ko.computed(function () {
-                        return this.itsMine() || this.auth.iAm && this.auth.iAm.role() > 4;
+                        return this.auth.loggedIn();
                     }, this)
                 },
                 available: {
@@ -76,6 +79,8 @@ define([
                             if (this.auth.iAm.role() > 4 || this.itsMine()) {
                                 return filterS;
                             }
+                            // Зарегистрированные видят статусы однажды опубликованных
+                            return filterSPublic;
                         }
                         return [];
                     }, this)

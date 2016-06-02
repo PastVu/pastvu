@@ -44,7 +44,7 @@ const {
     }
 } = constants;
 
-const typesValue = new Set(_.values(constants.photo.type));
+const typesSet = new Set(_.values(constants.photo.type));
 const photoYears = constants.photo.years[constants.photo.type.PHOTO];
 const paintYears = constants.photo.years[constants.photo.type.PAINTING];
 const photoRange = photoYears.max - photoYears.min;
@@ -1395,12 +1395,12 @@ export function parseFilter(filterString) {
                     for (filterValItem of filterVal) {
                         if (filterValItem) {
                             filterValItem = Number(filterValItem);
-                            if (typesValue.has(filterValItem)) {
+                            if (typesSet.has(filterValItem)) {
                                 result.t.push(filterValItem);
                             }
                         }
                     }
-                    if (!result.t.length || result.t.length === typesValue.size) {
+                    if (!result.t.length) {
                         delete result.t;
                     }
                 }
@@ -1466,7 +1466,7 @@ async function giveForApprove(data) {
         throw new AuthorizationError();
     }
     if (iAm.isModerator) {
-        _.assign(query, iAm.mod_rquery);
+        Object.assign(query, iAm.mod_rquery);
     }
 
     const photos = await Photo.find(query, compactFieldsWithRegions, {
@@ -1524,7 +1524,7 @@ async function giveNearestPhotos({ geo, type, year, year2, except, distance, lim
 
     geo.reverse();
 
-    type = typesValue.has(type) ? type : constants.photo.type.PHOTO;
+    type = typesSet.has(type) ? type : constants.photo.type.PHOTO;
     const isPainting = type === constants.photo.type.PAINTING;
 
     const query = { geo: { $near: geo }, s: status.PUBLIC, type };
@@ -1623,7 +1623,7 @@ async function giveFresh({ login, after, skip, limit }) {
     const asModerator = iAm.user.login !== login && iAm.isModerator;
 
     if (asModerator) {
-        _.assign(query, iAm.mod_rquery);
+        Object.assign(query, iAm.mod_rquery);
     }
     if (userId) {
         query.user = userId;
@@ -1709,7 +1709,7 @@ function photoValidate(newValues, oldValues, can) {
         result.geo = undefined;
     }
 
-    if (_.isNumber(newValues.type) && typesValue.has(newValues.type)) {
+    if (_.isNumber(newValues.type) && typesSet.has(newValues.type)) {
         result.type = newValues.type;
     }
 
@@ -2292,6 +2292,9 @@ async function resetIndividualDownloadOrigin({ login, r }) {
  * @param forUserId
  * @param iAm Session object of user
  */
+
+const openedStatuses = [status.PUBLIC, status.DEACTIVATE, status.REMOVE];
+const openedStatusesSet = new Set(openedStatuses);
 export function buildPhotosQuery(filter, forUserId, iAm) {
     let query; // Result query
     let queryPub; // Request within the public regions
@@ -2304,15 +2307,15 @@ export function buildPhotosQuery(filter, forUserId, iAm) {
     let regionsHash = {};
     let regionsArrAll = []; // Array of regions objects, including inactive (phantom in filters)
 
-    const squeryPublicHave = !filter.s || !filter.s.length || filter.s.includes(5);
-    const squeryPublicOnly = !iAm.registered || filter.s && filter.s.length === 1 && filter.s[0] === status.PUBLIC;
+    const statuses = !iAm.registered || _.isEmpty(filter.s) ? [status.PUBLIC] : filter.s;
+    const statusesOpened = [];
+    const statusesClosed = [];
+
+    statuses.forEach(s => (openedStatusesSet.has(s) ? statusesOpened : statusesClosed).push(s));
+
+    const statusesOpenedOnly = statuses.length === statusesOpened.length;
 
     const result = { query: null, s: [], rcids: [], rarr: [] };
-
-    if (!squeryPublicOnly && filter.s && filter.s.length) {
-        // If public exists, remove, because non-public squery is used only in rqueryMod
-        filter.s = _.without(filter.s, status.PUBLIC, !iAm.isAdmin ? status.REMOVE : undefined);
-    }
 
     if (Array.isArray(filter.r) && filter.r.length) {
         regionsArrAll = regionController.getRegionsArrFromCache(filter.r);
@@ -2338,7 +2341,7 @@ export function buildPhotosQuery(filter, forUserId, iAm) {
         regionsCids = regionsCids.map(Number);
     }
 
-    if (squeryPublicOnly) {
+    if (statusesOpenedOnly) {
         queryPub = {};  // Give only public photos to anonymous or when filter for public is active
 
         if (filter.r === undefined && iAm.registered && iAm.user.regions.length) {
@@ -2348,12 +2351,12 @@ export function buildPhotosQuery(filter, forUserId, iAm) {
         // Own gallery give without removed regions(for non-admins) and without regions in settings, only by filter.r
         queryMod = {};
     } else {
-        if (filter.r === undefined && iAm.user.regions.length) {
+        if (filter.r === undefined && iAm.registered && iAm.user.regions.length) {
             rqueryPub = rqueryMod = iAm.rquery; // If filter not specified - give by own regions
         }
 
         if (iAm.isAdmin) {
-            // Give all statises to the admins
+            // Give all statuses to the admins
             queryMod = {};
         } else if (!iAm.user.role || iAm.user.role < 5) {
             // Give only public to users, who role is below regions moderators
@@ -2366,7 +2369,7 @@ export function buildPhotosQuery(filter, forUserId, iAm) {
                 // Give area as moderated for global moderators or regional moderators,
                 // whose moderators regions match with own, i.e. moderation area includes users area
                 queryMod = {};
-            } else if (filter.r === 0 || !iAm.user.regions.length) {
+            } else if (filter.r === 0 || !regionsCids.length) {
                 // If all users regions requested (i.e. whole world)
                 // do global request for public, and with statuses for moderated
                 queryPub = {};
@@ -2429,36 +2432,34 @@ export function buildPhotosQuery(filter, forUserId, iAm) {
         }
     }
 
-    if (queryPub && squeryPublicHave) {
-        queryPub.s = status.PUBLIC;
-        if (rqueryPub) {
-            _.assign(queryPub, rqueryPub);
+    if (queryPub) {
+        if (statusesOpened.length) {
+            queryPub.s = statusesOpened.length > 1 ? { $in: statusesOpened } : statusesOpened[0];
+            result.s.push(...statusesOpened);
+
+            if (rqueryPub) {
+                Object.assign(queryPub, rqueryPub);
+            }
+        } else {
+            // If filter specified and doesn't contain public, delete query for public
+            queryPub = undefined;
         }
-        result.s.push(status.PUBLIC);
     }
-    if (!squeryPublicHave) {
-        // If filter specified and doesn't contain public, delete query for public
-        queryPub = undefined;
-    }
+
     if (queryMod) {
-        if (filter.s && filter.s.length) {
-            if (!queryPub && squeryPublicHave) {
-                // If query for public doesn't exists, but it has to, add public to moderated
-                // It happens to the admins and global moderators, because they have one queryMod
-                filter.s.push(status.PUBLIC);
-            }
-            if (filter.s.length === 1) {
-                queryMod.s = filter.s[0];
-            } else {
-                queryMod.s = { $in: filter.s };
-            }
-            result.s.push(...filter.s);
-        } else if (!iAm.isAdmin) {
-            queryMod.s = { $ne: status.REMOVE };
+        if (!queryPub && statusesOpened.length) {
+            // If query for public doesn't exists, but it has to, add public to moderated
+            // It happens to the admins and global moderators, because they have one queryMod
+            statusesClosed.push(...statusesOpened);
+        }
+
+        if (statusesClosed.length) {
+            queryMod.s = statusesClosed.length > 1 ? { $in: statusesClosed } : statusesClosed[0];
+            result.s.push(...statusesClosed);
         }
 
         if (rqueryMod) {
-            _.assign(queryMod, rqueryMod);
+            Object.assign(queryMod, rqueryMod);
         }
     }
 
@@ -2472,9 +2473,13 @@ export function buildPhotosQuery(filter, forUserId, iAm) {
         let types;
 
         if (filter.t && filter.t.length) {
-            types = filter.t;
-            query.type = types.length === 1 ? types[0] : { $in: types };
+            // If user selected some(not all) types
+            if (filter.t.length !== typesSet.size) {
+                types = filter.t;
+                query.type = types.length === 1 ? types[0] : { $in: types };
+            }
         } else if (iAm.photoFilterTypes.length) {
+            // If user didn't select any types and has default types in settings - select them
             types = iAm.photoFilterTypes;
             Object.assign(query, iAm.photoFilterQuery);
         }
@@ -2491,7 +2496,7 @@ export function buildPhotosQuery(filter, forUserId, iAm) {
         result.rarr = regionsArrAll;
     }
 
-    // console.log(JSON.stringify(result));
+    // console.log(JSON.stringify(result.query, null, '\t'));
     return result;
 }
 
