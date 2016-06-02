@@ -320,7 +320,13 @@ define([
         },
         photo_filter_typeHandler: function (val) {
             var valNumbers = _.sortBy(val.map(Number)); // Stable number sort
-            if (Array.isArray(val) && !_.isEqual(valNumbers, _.sortBy(this.u.settings.photo_filter_type()))) {
+            var valNumbersCurrent = _.sortBy(this.u.settings.photo_filter_type());
+
+            if (!_.isEqual(valNumbers, valNumbersCurrent)) {
+                if (_.isEmpty(valNumbers) && !_.isEmpty(valNumbersCurrent)) {
+                    // If user takes off last checkbox, select another one
+                    valNumbers = _.difference(this.vars.photo_filter_type, valNumbersCurrent);
+                }
                 this.changeSetting('photo_filter_type', valNumbers);
             }
         },
