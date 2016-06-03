@@ -50,6 +50,14 @@ const paintYears = constants.photo.years[constants.photo.type.PAINTING];
 const photoRange = photoYears.max - photoYears.min;
 const paintRange = paintYears.max - paintYears.min;
 
+const allStatuses = _.values(status);
+const allStatusesSet = new Set(allStatuses);
+const openedStatuses = [status.PUBLIC, status.DEACTIVATE, status.REMOVE];
+const openedStatusesSet = new Set(openedStatuses);
+const publicDefaultStatus = [status.PUBLIC];
+const userGalleryBySelfDefaultStatuses = [status.NEW, status.REVISION, status.READY, status.PUBLIC, status.DEACTIVATE];
+const userGalleryByModeratorDefaultStatuses = [status.NEW, status.REVISION, status.READY, status.PUBLIC];
+
 const parsingFieldsSet = new Set(parsingFields);
 const historyFieldsDiffHash = historyFieldsDiff.reduce(function (result, field) {
     result[field] = field;
@@ -1379,7 +1387,7 @@ export function parseFilter(filterString) {
                     for (filterValItem of filterVal) {
                         if (filterValItem) {
                             filterValItem = Number(filterValItem);
-                            if (!isNaN(filterValItem)) { // 0 must be included, that is why check for NaN
+                            if (allStatusesSet.has(filterValItem)) { // 0 must be included, that is why check for NaN
                                 result.s.push(filterValItem);
                             }
                         }
@@ -1419,10 +1427,6 @@ export function parseFilter(filterString) {
 // Return general gallery
 function givePS(options) {
     const filter = options.filter ? parseFilter(options.filter) : {};
-
-    if (!filter.s) {
-        filter.s = [status.PUBLIC];
-    }
 
     return this.call('photo.givePhotos', { filter, options });
 };
@@ -2292,9 +2296,6 @@ async function resetIndividualDownloadOrigin({ login, r }) {
  * @param forUserId
  * @param iAm Session object of user
  */
-
-const openedStatuses = [status.PUBLIC, status.DEACTIVATE, status.REMOVE];
-const openedStatusesSet = new Set(openedStatuses);
 export function buildPhotosQuery(filter, forUserId, iAm) {
     let query; // Result query
     let queryPub; // Request within the public regions
@@ -2307,7 +2308,21 @@ export function buildPhotosQuery(filter, forUserId, iAm) {
     let regionsHash = {};
     let regionsArrAll = []; // Array of regions objects, including inactive (phantom in filters)
 
-    const statuses = !iAm.registered || _.isEmpty(filter.s) ? [status.PUBLIC] : filter.s;
+    const itsMineGallery = forUserId && forUserId.equals(iAm.user._id);
+    let statuses = publicDefaultStatus;
+
+    if (iAm.registered) {
+        if (filter.s && filter.s.length) {
+            statuses = filter.s;
+        } else if (forUserId) {
+            if (itsMineGallery) {
+                statuses = userGalleryBySelfDefaultStatuses;
+            } else if (iAm.isModerator || iAm.isAdmin) {
+                statuses = userGalleryByModeratorDefaultStatuses;
+            }
+        }
+    }
+
     const statusesOpened = [];
     const statusesClosed = [];
 
@@ -2332,7 +2347,7 @@ export function buildPhotosQuery(filter, forUserId, iAm) {
         const regionQuery = regionController.buildQuery(regionsArr);
         rqueryPub = rqueryMod = regionQuery.rquery;
         regionsHash = regionQuery.rhash;
-    } else if (filter.r === undefined && iAm.registered && iAm.user.regions.length && (!forUserId || !forUserId.equals(iAm.user._id))) {
+    } else if (filter.r === undefined && iAm.registered && iAm.user.regions.length && (!forUserId || !itsMineGallery)) {
         regionsHash = iAm.rhash;
         regionsCids = _.map(iAm.user.regions, 'cid');
         regionsArr = regionsArrAll = regionController.getRegionsArrFromHash(regionsHash, regionsCids);
@@ -2347,7 +2362,7 @@ export function buildPhotosQuery(filter, forUserId, iAm) {
         if (filter.r === undefined && iAm.registered && iAm.user.regions.length) {
             rqueryPub = iAm.rquery; // If filter is not specified - give by own regions
         }
-    } else if (forUserId && forUserId.equals(iAm.user._id)) {
+    } else if (itsMineGallery) {
         // Own gallery give without removed regions(for non-admins) and without regions in settings, only by filter.r
         queryMod = {};
     } else {
@@ -2454,7 +2469,10 @@ export function buildPhotosQuery(filter, forUserId, iAm) {
         }
 
         if (statusesClosed.length) {
-            queryMod.s = statusesClosed.length > 1 ? { $in: statusesClosed } : statusesClosed[0];
+            if (statusesClosed.length < allStatuses.length) {
+                // User is not selecting all statuses, specify list
+                queryMod.s = statusesClosed.length > 1 ? { $in: statusesClosed } : statusesClosed[0];
+            }
             result.s.push(...statusesClosed);
         }
 
@@ -2496,7 +2514,7 @@ export function buildPhotosQuery(filter, forUserId, iAm) {
         result.rarr = regionsArrAll;
     }
 
-    // console.log(JSON.stringify(result.query, null, '\t'));
+    console.log(JSON.stringify(result.query, null, '\t'));
     return result;
 }
 
