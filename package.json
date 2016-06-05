@@ -35,7 +35,7 @@
         "locale": "0.0.21",
         "cookie": "0.3.1",
         "jade": "1.11.0",
-        "redis": "2.6.0-2",
+        "redis": "2.6.1",
         "mongoose": "4.4.19",
         "posix": "4.0.2",
         "mkdirp": "0.5.1",
@@ -89,7 +89,7 @@
         "xmldom": "0.1.22",
         "osm-and-geojson": "0.1.2",
 
-        "eslint": "2.11.0"
+        "eslint": "2.11.1"
     },
     "engines": {
         "node": "^5.9.0"
