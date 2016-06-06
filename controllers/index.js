@@ -33,7 +33,7 @@ const giveRatings = (function () {
     const sortPcount = (a, b) => b.pcount > a.pcount ? 1 : b.pcount < a.pcount ? -1 : 0;
 
     const photosByCommentsCount = $gt => Comment.aggregate([
-        { $match: { stamp: { $gt }, del: null, hidden: null } },
+        { $match: { stamp: { $gt }, s: 5, del: null } },
         { $group: { _id: '$obj', ccount: { $sum: 1 } } },
         { $sort: { ccount: -1 } },
         { $limit: limit }
@@ -50,7 +50,7 @@ const giveRatings = (function () {
     });
 
     const usersByCommentsCount = $gt => Comment.aggregate([
-        { $match: { stamp: { $gt }, del: null, hidden: null } },
+        { $match: { stamp: { $gt }, s: 5, del: null } },
         { $group: { _id: '$user', ccount: { $sum: 1 } } },
         { $sort: { ccount: -1 } },
         { $limit: limit }
@@ -175,12 +175,12 @@ const giveStats = (function () {
             Photo.count({ s: 5, adate: { $gt: dayStart } }).exec(),
             Photo.count({ s: 5, adate: { $gt: weekStart } }).exec(),
 
-            Comment.count({ del: null, hidden: null }).exec(),
-            CommentN.count({ del: null, hidden: null }).exec(),
-            Comment.count({ stamp: { $gt: dayStart }, del: null, hidden: null }).exec(),
-            CommentN.count({ stamp: { $gt: dayStart }, del: null, hidden: null }).exec(),
-            Comment.count({ stamp: { $gt: weekStart }, del: null, hidden: null }).exec(),
-            CommentN.count({ stamp: { $gt: weekStart }, del: null, hidden: null }).exec()
+            Comment.count({ s: 5, del: null }).exec(),
+            CommentN.count({ del: null }).exec(),
+            Comment.count({ s: 5, stamp: { $gt: dayStart }, del: null }).exec(),
+            CommentN.count({ stamp: { $gt: dayStart }, del: null }).exec(),
+            Comment.count({ s: 5, stamp: { $gt: weekStart }, del: null }).exec(),
+            CommentN.count({ stamp: { $gt: weekStart }, del: null }).exec()
         ]);
 
         return {

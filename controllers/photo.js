@@ -178,8 +178,9 @@ export const permissions = {
             // Moderator and owner can see protected file of not public photo
             can.protected = s !== status.PUBLIC && (canModerate || ownPhoto) || undefined;
 
-            // Редактировать может модератор и владелец, если оно не удалено и не отозвано. Администратор - всегда
-            can.edit = usObj.isAdmin || s !== status.REMOVE && s !== status.REVOKE && (canModerate || ownPhoto) || undefined;
+            // Admin can always edit, moderator always except own revoked or removed photo,
+            // owner can edit own photo except revoked or removed
+            can.edit = usObj.isAdmin || canModerate && !ownPhoto || ownPhoto && s !== status.REMOVE && s !== status.REVOKE || undefined;
             // Отправлять на премодерацию может владелец и фото новое или на доработке
             can.ready = (s === status.NEW || s === status.REVISION) && ownPhoto || undefined;
             // Отозвать может только владелец пока фото новое
@@ -188,12 +189,15 @@ export const permissions = {
             can.reject = s < status.REVOKE && canModerate && !ownPhoto || undefined;
             // Administrator can resore rejected photo
             can.rereject = s === status.REJECT && usObj.isAdmin || undefined;
-            // Восстанавливать из удаленных может только администратор
+            // Moderator can remove published or deactivated photo. Owner can remove his deactivated photo
+            can.remove = s >= status.PUBLIC && s !== status.REMOVE && (canModerate || ownPhoto && s === status.DEACTIVATE) || undefined;
+            // Restore from removed can only administrator
             can.restore = s === status.REMOVE && usObj.isAdmin || undefined;
-            // Отправить на конвертацию может только администратор
+            // Send to convert can only admin
             can.convert = usObj.isAdmin || undefined;
-            // Комментировать опубликованное может любой зарегистрированный, или модератор и владелец снятое с публикации
-            can.comment = s === status.PUBLIC || s > status.PUBLIC && canModerate || undefined;
+            // Any registered user can comment public or deactivated photo. Moderator - also removed photos (except owns)
+            can.comment = s === status.PUBLIC || s === status.DEACTIVATE || s === status.REMOVE && canModerate && !ownPhoto || undefined;
+
             // Change watermark sign and download setting can administrator and owner/moderator
             // if administrator didn't prohibit it for this photo or entire owner
             can.watersign = usObj.isAdmin || (ownPhoto || canModerate) &&
@@ -210,8 +214,6 @@ export const permissions = {
                 can.activate = s === status.DEACTIVATE || undefined;
                 // Модератор может деактивировать только опубликованное
                 can.deactivate = s === status.PUBLIC || undefined;
-                // Модератор может удалить уже опубликованное и не удаленное фото
-                can.remove = s >= status.PUBLIC && s !== status.REMOVE || undefined;
             }
         } else {
             can.download = 'login';
@@ -841,7 +843,7 @@ async function prefetchForEdit({ data: { cid, s, cdate, ignoreChange }, can }) {
     const photo = await this.call('photo.find', { query: { cid }, populateUser: true });
 
     if (_.isNumber(s) && s !== photo.s) {
-        // Две кнопки: "Посмотреть", "Продолжить <сохранение|изменение статуса>"
+        // Two buttons if status has been changed: "Show", "Proceed <saving|changing status>"
         throw new NoticeError(constantsError.PHOTO_ANOTHER_STATUS);
     }
 
@@ -938,8 +940,6 @@ const changeFileProtection = async function ({ photo, protect = false }) {
 
 const changePublicExternality = async function ({ photo, makePublic }) {
     return await Promise.all([
-        // Show or hide comments and recalculate it amount of users
-        this.call('comment.changeObjCommentsVisibility', { obj: photo, hide: !makePublic }),
         // Recalculate number of photos of owner
         userPCountUpdate(photo.user, 0, makePublic ? 1 : -1, makePublic ? -1 : 1),
         // If photo has coordinates, means that need to do something with map
@@ -1129,6 +1129,7 @@ async function activateDeactivate(data) {
 
     const { rel } = await this.call('photo.update', { photo });
 
+    await this.call('comment.changeObjCommentsStatus', { obj: photo });
     await this.call('photo.changePublicExternality', { photo, makePublic: !disable });
 
     // Save previous status to history
@@ -1168,11 +1169,10 @@ async function remove(data) {
 
     const { rel } = await this.call('photo.update', { photo });
 
+    // Change comments status
+    await this.call('comment.changeObjCommentsStatus', { obj: photo });
     // Save previous status to history
     await this.call('photo.saveHistory', { oldPhotoObj, photo, canModerate, reason });
-
-    // Unsubscribe all users from this photo
-    await this.call('subscr.unSubscribeObj', { objId: photo._id });
 
     if (oldPhotoObj.s === status.PUBLIC) {
         await this.call('photo.changePublicExternality', { photo, makePublic: false });
@@ -1201,6 +1201,8 @@ async function restore(data) {
 
     const { rel } = await this.call('photo.update', { photo });
 
+    // Change comments status
+    await this.call('comment.changeObjCommentsStatus', { obj: photo });
     // Save previous status to history
     await this.call('photo.saveHistory', { oldPhotoObj, photo, canModerate, reason });
 
@@ -2514,7 +2516,7 @@ export function buildPhotosQuery(filter, forUserId, iAm) {
         result.rarr = regionsArrAll;
     }
 
-    console.log(JSON.stringify(result.query, null, '\t'));
+    // console.log(JSON.stringify(result.query, null, '\t'));
     return result;
 }
 

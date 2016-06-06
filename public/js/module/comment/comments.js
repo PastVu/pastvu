@@ -50,7 +50,8 @@ define([
             countNew: 0, //Начальное кол-во новых комментариев
             subscr: false, //Подписан ли пользователь на комментарии
             autoShowOff: false, //Выключить автоматический show после создания
-            nocomments: false //Запрещено ли писать комментарии
+            nocomments: false, //Запрещено ли писать комментарии
+            canReply: false //Запрещено ли писать комментарии
         },
         create: function () {
             this.destroy = _.wrap(this.destroy, this.localDestroy);
@@ -62,6 +63,7 @@ define([
             this.countNew = ko.observable(this.options.countNew || 0);
             this.subscr = ko.observable(this.options.subscr || false);
             this.nocomments = ko.observable(this.options.nocomments);
+            this.canReply = ko.observable(this.options.canReply);
 
             this.loading = ko.observable(false);
             this.showTree = ko.observable(false);
@@ -70,7 +72,6 @@ define([
             this.touch = Browser.support.touch;
 
             this.canModerate = ko.observable(false);
-            this.canReply = ko.observable(false);
             this.canFrag = this.type === 'photo';
 
             this.commentsHash = {};
@@ -126,7 +127,7 @@ define([
                 this.nocomments(!!params.nocomments);
                 // Предварительно устанавливаем возможность комментирования, если комментарии не закрыты и пользователь зарегистрирован,
                 // так как скорее всего запрос комментариев вернёт такое же право, чтобы сразу показалась кнопка Добавить
-                this.canReply(loggedIn && !params.nocomments);
+                this.canReply(params.canReply && !params.nocomments);
                 this.canModerate(false); // Кнопку модерирования наоборот каждый раз прячем
             }
 

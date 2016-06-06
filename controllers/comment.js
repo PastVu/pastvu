@@ -35,17 +35,20 @@ const commentsUserPerPage = 20;
 const permissions = {
     canModerate(type, obj, usObj) {
         return usObj.registered &&
-            (type === 'photo' && photoController.permissions.canModerate(obj, usObj)
-            || type === 'news' && usObj.isAdmin)
-            || undefined;
-    },
-    canEdit(comment, obj, usObj) {
-        return usObj.registered && !obj.nocomments &&
-            comment.user.equals(usObj.user._id) && comment.stamp > (Date.now() - dayMS);
+            (type === 'photo' &&
+             // Need to check if user can add comment to this photo,
+             // for instance moderator can't reply to own deleted photo and accordingly moderate it
+             photoController.permissions.getCan(obj, usObj).comment &&
+             photoController.permissions.canModerate(obj, usObj) ||
+             type === 'news' && usObj.isAdmin) || undefined;
     },
     canReply(type, obj, usObj) {
         return usObj.registered && !obj.nocomments &&
-            (type === 'photo' && obj.s >= constants.photo.status.PUBLIC || type === 'news');
+            (type === 'photo' && photoController.permissions.getCan(obj, usObj).comment || type === 'news');
+    },
+    canEdit(comment, type, obj, usObj) {
+        return permissions.canReply(type, obj, usObj) &&
+            comment.user.equals(usObj.user._id) && comment.stamp > (Date.now() - dayMS) ;
     }
 };
 
@@ -447,7 +450,7 @@ async function getCommentsObjAuth({ cid, type = 'photo' }) {
     }
 
     const canModerate = permissions.canModerate(type, obj, iAm);
-    const canReply = canModerate || permissions.canReply(type, obj, iAm);
+    const canReply = permissions.canReply(type, obj, iAm);
 
     if (!comments.length) {
         return { comments: [], users: {}, countTotal: 0, countNew: 0, canModerate, canReply };
@@ -544,7 +547,7 @@ async function giveForUser({ login, page = 1, type = 'photo' }) {
 
     const commentModel = type === 'news' ? CommentN : Comment;
     const queryNews = { user: userid, del: null };
-    const queryPhotos = Object.assign({}, queryNews, photoController.buildPhotosQuery({ r: 0, t: null }, null, iAm).query);
+    const queryPhotos = { ...queryNews, ...photoController.buildPhotosQuery({ r: 0, t: null, s: [5, 7] }, null, iAm).query };
     const fields = { _id: 0, lastChanged: 1, cid: 1, obj: 1, stamp: 1, txt: 1 };
     const options = { lean: true, sort: { stamp: -1 }, skip: page * commentsUserPerPage, limit: commentsUserPerPage };
 
@@ -672,7 +675,7 @@ const getComments = (function () {
 const giveForFeed = (function () {
     const globalOptions = { limit: 30 };
     const globalFeed = Utils.memoizePromise(
-        () => getComments(undefined, { del: null, hidden: null }, globalOptions), ms('10s')
+        () => getComments(undefined, { s: 5, del: null }, globalOptions), ms('10s')
     );
 
     return function (params) {
@@ -683,7 +686,7 @@ const giveForFeed = (function () {
             // User without region and types filter will get memozed result for global selection
             return globalFeed();
         } else {
-            const query = Object.assign({ del: null, hidden: null }, iAm.rquery, iAm.photoFilterQuery);
+            const query = Object.assign({ s: 5, del: null }, iAm.rquery, iAm.photoFilterQuery);
             return getComments(iAm, query, params);
         }
     };
@@ -719,7 +722,7 @@ async function create(data) {
     if (!obj) {
         throw new NotFoundError(constantsError.COMMENT_NO_OBJECT);
     }
-    if (!permissions.canReply(data.type, obj, iAm) && !permissions.canModerate(data.type, obj, iAm)) {
+    if (!permissions.canReply(data.type, obj, iAm)) {
         throw obj.nocomments ? new NoticeError(constantsError.COMMENT_NOT_ALLOWED) : new AuthorizationError();
     }
     if (data.parent && (!parent || parent.del || parent.level >= 9 || data.level !== (parent.level || 0) + 1)) {
@@ -735,6 +738,7 @@ async function create(data) {
 
     // If it comment for photo, assign photo's regions to it
     if (data.type === 'photo') {
+        comment.s = obj.s;
         comment.type = obj.type;
 
         if (obj.geo) {
@@ -747,9 +751,6 @@ async function create(data) {
     if (data.parent) {
         comment.parent = data.parent;
         comment.level = data.level;
-    }
-    if (obj.s !== undefined && obj.s !== constants.photo.status.PUBLIC) {
-        comment.hidden = true;
     }
     if (fragAdded) {
         comment.frag = true;
@@ -775,11 +776,9 @@ async function create(data) {
     obj.ccount = (obj.ccount || 0) + 1;
     const promises = [obj.save()];
 
-    if (!comment.hidden) {
-        iAm.user.ccount += 1;
-        promises.push(iAm.user.save());
-        promises.push(userObjectRelController.onCommentAdd(obj._id, iAm.user._id, data.type));
-    }
+    iAm.user.ccount += 1;
+    promises.push(iAm.user.save());
+    promises.push(userObjectRelController.onCommentAdd(obj._id, iAm.user._id, data.type));
 
     await Promise.all(promises);
 
@@ -815,7 +814,7 @@ async function remove(data) {
     const commentModel = data.type === 'news' ? CommentN : Comment;
 
     const comment = await commentModel.findOne(
-        { cid, del: null }, { _id: 1, obj: 1, user: 1, stamp: 1, hidden: 1 }, { lean: true }
+        { cid, del: null }, { _id: 1, obj: 1, user: 1, stamp: 1 }, { lean: true }
     ).exec();
 
     if (!comment) {
@@ -835,7 +834,7 @@ async function remove(data) {
     const childCount = await commentModel.count({ obj: obj._id, parent: cid, del: null }).exec();
 
     // Regular user can remove if there no unremoved comments and it's his own fresh comment
-    const canEdit = !childCount && permissions.canEdit(comment, obj, iAm);
+    const canEdit = !childCount && permissions.canEdit(comment, data.type, obj, iAm);
     let canModerate;
 
     if (!canEdit) {
@@ -863,11 +862,9 @@ async function remove(data) {
 
     comment.user = String(comment.user); // For Map key
 
-    if (!comment.hidden) {
-        // If comment already hidden (ie. object is nut public), we don't need to substruct it from public statistic
-        usersCountMap.set(comment.user, 1);
-        commentsForRelArr.push(comment);
-    }
+    // Substruct it from public statistic
+    usersCountMap.set(comment.user, 1);
+    commentsForRelArr.push(comment);
 
     // Find directly descendants of removing comment by filling commentsSet
     commentsSet.add(cid);
@@ -875,10 +872,8 @@ async function remove(data) {
         child.user = String(child.user);
 
         if (child.level && commentsSet.has(child.parent) && !child.del) {
-            if (!child.hidden) {
-                usersCountMap.set(child.user, (usersCountMap.get(child.user) || 0) + 1);
-                commentsForRelArr.push(child);
-            }
+            usersCountMap.set(child.user, (usersCountMap.get(child.user) || 0) + 1);
+            commentsForRelArr.push(child);
             childsCids.push(child.cid);
             commentsSet.add(child.cid);
         }
@@ -997,7 +992,7 @@ async function restore({ cid, type }) {
 
     const commentModel = type === 'news' ? CommentN : Comment;
     const comment = await commentModel.findOne(
-        { cid, del: { $exists: true } }, { _id: 1, obj: 1, user: 1, stamp: 1, hidden: 1, del: 1 }, { lean: true }
+        { cid, del: { $exists: true } }, { _id: 1, obj: 1, user: 1, stamp: 1, del: 1 }, { lean: true }
     ).exec();
 
     if (!comment) {
@@ -1032,20 +1027,16 @@ async function restore({ cid, type }) {
     comment.user = String(comment.user); // For Map key
 
     commentsCidSet.add(cid);
-    if (!comment.hidden) {
-        usersCountMap.set(comment.user, 1);
-        commentsForRelArr.push(comment);
-    }
+    usersCountMap.set(comment.user, 1);
+    commentsForRelArr.push(comment);
 
     const childsCids = [];
     // Loop by children for restoring comment
     for (const child of children) {
         child.user = String(child.user);
 
-        if (!child.hidden) {
-            usersCountMap.set(child.user, (usersCountMap.get(child.user) || 0) + 1);
-            commentsForRelArr.push(child);
-        }
+        usersCountMap.set(child.user, (usersCountMap.get(child.user) || 0) + 1);
+        commentsForRelArr.push(child);
 
         childsCids.push(child.cid);
         commentsCidSet.add(child.cid);
@@ -1179,7 +1170,7 @@ async function update(data) {
     const hist = { user: iAm.user };
 
     // Ability to edit as regular user, if it' own comment younger than day
-    const canEdit = permissions.canEdit(comment, obj, iAm);
+    const canEdit = permissions.canEdit(comment, data.type, obj, iAm);
     let canModerate;
     if (!canEdit) {
         // В противном случае нужны права модератора/администратора
@@ -1411,28 +1402,26 @@ async function setNoComments({ cid, type = 'photo', val: nocomments }) {
     return { nocomments: obj.nocomments };
 };
 
+export async function changeObjCommentsStatus({ obj: { _id: objId, s } }) {
+    const { n: count = 0 } = await Comment.update({ obj: objId }, { $set: { s } }, { multi: true }).exec();
+
+    return count;
+}
+
 /**
- * Hide/show object comments (so doing them unpublic/public)
+ * Hide/show object comments (so doing them unpublic/public). Temporary not in use, because count all photo statuses
  * @param obj
  * @param {boolean} hide
  */
-export async function changeObjCommentsVisibility({ obj: { _id: objId, s }, hide }) {
-    const { handshake: { usObj: iAm } } = this; // iAm for count how many comments of user are affected
-    const command = { $set: { s } };
-
-    if (s === constants.photo.status.PUBLIC) {
-        command.$unset = { hidden: 1 };
-    } else {
-        command.$set.hidden = true;
-    }
-
-    const { n: count = 0 } = await Comment.update({ obj: objId }, command, { multi: true }).exec();
+export async function changeObjCommentsVisibility({ obj, hide }) {
+    const count = changeObjCommentsStatus(obj);
 
     if (count === 0) {
         return { myCount: 0 };
     }
 
-    const comments = await Comment.find({ obj: objId }, {}, { lean: true }).exec();
+    const { handshake: { usObj: iAm } } = this; // iAm for count how many comments of user are affected
+    const comments = await Comment.find({ obj: obj._id }, {}, { lean: true }).exec();
 
     const usersCountMap = _.transform(comments, (result, comment) => {
         if (comment.del === undefined) {
@@ -1491,6 +1480,7 @@ export default {
     giveDelTree,
     setNoComments,
 
+    changeObjCommentsStatus,
     changeObjCommentsVisibility,
     changePhotoCommentsType
 };

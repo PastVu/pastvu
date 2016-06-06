@@ -1853,14 +1853,15 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             var p = self.p;
 
             // Активируем комментарии, если фото не редактируется и разрешено комментировать
-            if (!self.edit()/* && self.can.comment()*/ && p.s() >= statusKeys.PUBLIC) {
+            if (!self.edit() && p.s() >= statusKeys.PUBLIC) {
                 self.commentsVM.activate(
                     {
                         cid: p.cid(),
                         count: p.ccount(),
                         countNew: p.ccount_new(),
                         subscr: p.subscr(),
-                        nocomments: p.nocomments()
+                        nocomments: p.nocomments(),
+                        canReply: self.can.comment()
                     },
                     _.defaults(options || {}, {
                         instant: !!self.toComment || p.frags().length,
