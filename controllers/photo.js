@@ -143,6 +143,8 @@ export const permissions = {
         const s = photo.s;
 
         if (usObj.registered) {
+            const isAdmin = usObj.isAdmin;
+
             if (typeof ownPhoto !== 'boolean') {
                 ownPhoto = !!photo.user && User.isEqual(photo.user, usObj.user);
             }
@@ -157,17 +159,17 @@ export const permissions = {
 
             if (// If setted individual that photo has now watersing
             photo.watersignIndividual && photo.watersignOption === false ||
-                // If no individual watersign option and setted by profile that photo has now watersing
+                // If no individual watersign option and setted by profile that photo has no watersing
             !photo.watersignIndividual && userSettings.photo_watermark_add_sign === false ||
                 // If individually setted allow to download origin
             photo.disallowDownloadOriginIndividual && !photo.disallowDownloadOrigin ||
-                // If no individual downloading setting and setted by profile that photo has now watersing
+                // If no individual downloading setting and setted by profile that photo has no watersing
                 // or by profile allowed to download origin
             !photo.disallowDownloadOriginIndividual &&
             (userSettings.photo_watermark_add_sign === false || !userSettings.photo_disallow_download_origin)) {
                 // Let download origin
                 can.download = true;
-            } else if (ownPhoto || usObj.isAdmin) {
+            } else if (ownPhoto || isAdmin) {
                 // Or if it photo owner or admin then allow to download origin with special sign on button
                 can.download = 'byrole';
             } else {
@@ -175,44 +177,44 @@ export const permissions = {
                 can.download = 'withwater';
             }
 
-            // Moderator and owner can see protected file of not public photo
-            can.protected = s !== status.PUBLIC && (canModerate || ownPhoto) || undefined;
+            // Who will see protected file (without cover) if photo is not public:
+            // Owner and admin - always, moderator - only if photo is not removed
+            can.protected = s !== status.PUBLIC && (ownPhoto || isAdmin || canModerate && s !== status.REMOVE) || undefined;
 
-            // Admin can always edit, moderator always except own revoked or removed photo,
-            // owner can edit own photo except revoked or removed
-            can.edit = usObj.isAdmin || canModerate && !ownPhoto || ownPhoto && s !== status.REMOVE && s !== status.REVOKE || undefined;
-            // Отправлять на премодерацию может владелец и фото новое или на доработке
+            // Admin can always edit, moderator and owner always except own revoked or removed photo,
+            can.edit = isAdmin || (canModerate || ownPhoto) && s !== status.REMOVE && s !== status.REVOKE || undefined;
+            // Owner can send to premoderation if photo is new or on revision
             can.ready = (s === status.NEW || s === status.REVISION) && ownPhoto || undefined;
-            // Отозвать может только владелец пока фото новое
+            // Revoke can only owner if photo is new
             can.revoke = s < status.REVOKE && ownPhoto || undefined;
-            // Модератор может отклонить не свое фото пока оно новое
+            // Moderator can reject not his own photo until it's new
             can.reject = s < status.REVOKE && canModerate && !ownPhoto || undefined;
             // Administrator can resore rejected photo
-            can.rereject = s === status.REJECT && usObj.isAdmin || undefined;
-            // Moderator can remove published or deactivated photo. Owner can remove his deactivated photo
-            can.remove = s >= status.PUBLIC && s !== status.REMOVE && (canModerate || ownPhoto && s === status.DEACTIVATE) || undefined;
+            can.rereject = s === status.REJECT && isAdmin || undefined;
+            // Remove can owner its deactivated photo or admin any published or deactivated photo
+            can.remove = ownPhoto && s === status.DEACTIVATE || isAdmin && (s === status.PUBLIC || s === status.DEACTIVATE) || undefined;
             // Restore from removed can only administrator
-            can.restore = s === status.REMOVE && usObj.isAdmin || undefined;
+            can.restore = isAdmin && s === status.REMOVE || undefined;
             // Send to convert can only admin
-            can.convert = usObj.isAdmin || undefined;
+            can.convert = isAdmin || undefined;
             // Any registered user can comment public or deactivated photo. Moderator - also removed photos (except owns)
-            can.comment = s === status.PUBLIC || s === status.DEACTIVATE || s === status.REMOVE && canModerate && !ownPhoto || undefined;
+            can.comment = s === status.PUBLIC || s === status.DEACTIVATE || s === status.REMOVE && (isAdmin || canModerate && !ownPhoto) || undefined;
 
             // Change watermark sign and download setting can administrator and owner/moderator
-            // if administrator didn't prohibit it for this photo or entire owner
-            can.watersign = usObj.isAdmin || (ownPhoto || canModerate) &&
-                (!photo.user.nowaterchange && !photo.nowaterchange || photo.nowaterchange === false) || undefined;
+            // if photo is not removed and administrator didn't prohibit it for this photo or entire owner
+            can.watersign = isAdmin || (ownPhoto || canModerate) &&
+                (s !== status.REMOVE || !photo.user.nowaterchange && !photo.nowaterchange || photo.nowaterchange === false) || undefined;
             // Administrator can prohibit watesign changing by owner/moderator
-            can.nowaterchange = usObj.isAdmin || undefined;
+            can.nowaterchange = isAdmin || undefined;
 
             if (canModerate) {
-                // Модератор может отправить на доработку
+                // Moderator can send to revision
                 can.revision = s === status.READY || undefined;
-                // Модератор может одобрить новое фото
+                // Moderator can approve new photo
                 can.approve = s < status.REJECT || undefined;
-                // Модератор может активировать только деактивированное
+                // Moderator can activate only deactivated photo
                 can.activate = s === status.DEACTIVATE || undefined;
-                // Модератор может деактивировать только опубликованное
+                // Moderator can deactivate only published photo
                 can.deactivate = s === status.PUBLIC || undefined;
             }
         } else {
@@ -2519,6 +2521,10 @@ export function buildPhotosQuery(filter, forUserId, iAm) {
     // console.log(JSON.stringify(result.query, null, '\t'));
     return result;
 }
+// Класть protected в redis из галереи/списков
+// Раздача protected файлов из ноды с проверкой в redis по флагу serveProtected
+// Скачивание public/protected с проверкой прав, удаленные - только владелец и админ
+// Парсинг ссылок на изображения
 
 // Resets the view statistics for the day and week
 const planResetDisplayStat = (function () {
