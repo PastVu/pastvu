@@ -290,9 +290,9 @@ export const genObjsShortRegionsArr = function (objs, showlvls = ['r0', 'r1'], d
 
         // If transfered flag that removal of field 'rn' is needed, do it
         if (dropRegionsFields === true) {
-            delete obj.geo;
+            obj.geo = undefined;
             for (j = 0; j <= maxRegionLevel; j++) {
-                delete obj['r' + j];
+                obj['r' + j] = undefined;
             }
         }
     }

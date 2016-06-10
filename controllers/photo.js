@@ -77,17 +77,11 @@ const compactFields = {
     ready: 1
 };
 const compactFieldsForReg = {
-    _id: 1,
-    cid: 1,
-    file: 1,
-    s: 1,
-    ucdate: 1,
-    title: 1,
-    year: 1,
-    ccount: 1,
-    conv: 1,
-    convqueue: 1,
-    ready: 1
+    ...compactFields,
+
+    _id: 1, // To calculate new comments
+    user: 1, //  To understand if photo is mine
+    ucdate: 1 // For checking of changes
 };
 const compactFieldsWithRegions = { geo: 1, ...compactFields, ...regionController.regionsAllSelectHash };
 const compactFieldsForRegWithRegions = { geo: 1, ...compactFieldsForReg, ...regionController.regionsAllSelectHash };
@@ -177,9 +171,7 @@ export const permissions = {
                 can.download = 'withwater';
             }
 
-            // Who will see protected file (without cover) if photo is not public:
-            // Owner and admin - always, moderator - only if photo is not removed
-            can.protected = s !== status.PUBLIC && (ownPhoto || isAdmin || canModerate && s !== status.REMOVE) || undefined;
+            can.protected = permissions.can.protected(s, ownPhoto, canModerate, isAdmin);
 
             // Admin can always edit, moderator and owner always except own revoked or removed photo,
             can.edit = isAdmin || (canModerate || ownPhoto) && s !== status.REMOVE && s !== status.REVOKE || undefined;
@@ -239,6 +231,12 @@ export const permissions = {
         }
 
         return false;
+    },
+    can: {
+        // Who will see protected file (without cover) if photo is not public:
+        // Owner and admin - always, moderator - only if photo is not removed
+        'protected': (s, ownPhoto, canModerate, isAdmin) =>
+            s !== status.PUBLIC && (ownPhoto || isAdmin || canModerate && s !== status.REMOVE) || undefined
     }
 };
 
@@ -918,8 +916,6 @@ const allowGetProtectedPhotoFile = async function ({ file, ttl = config.protecte
 // If photo is being changed from public status,
 // we must copy all public files to protected folder, and then cover all public files with caption
 const changeFileProtection = async function ({ photo, protect = false }) {
-    console.log('changeFileProtection', protect);
-
     try {
         converter.movePhotoFiles({ photo, copy: protect, toProtected: protect });
     } catch (err) {
@@ -1275,17 +1271,28 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40 }, userId })
             Photo.count(query).exec()
         ]);
 
-        // If user is logged, fill amount of new comments for each object
-        if (iAm.registered && photos.length) {
-            await userObjectRelController.fillObjectByRels(photos, iAm.user._id, 'photo');
-        }
-
         if (photos.length) {
             if (iAm.registered) {
+                // If user is logged in, fill amount of new comments for each object
+                await userObjectRelController.fillObjectByRels(photos, iAm.user._id, 'photo');
+
+                const isAdmin = iAm.isAdmin;
+                const myUser = iAm.user;
+
                 for (const photo of photos) {
-                    delete photo._id;
-                    delete photo.vdate;
-                    delete photo.ucdate;
+                    const isMine = User.isEqual(photo.user, myUser);
+
+                    if (!userId && isMine) {
+                        photo.my = true;
+                    }
+                    if (permissions.can.protected(photo.s, isMine, permissions.canModerate(photo, iAm), isAdmin)) {
+                        photo.protected = true;
+                    }
+
+                    photo._id = undefined;
+                    photo.user = undefined;
+                    photo.vdate = undefined;
+                    photo.ucdate = undefined;
                 }
             }
 
