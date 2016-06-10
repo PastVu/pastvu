@@ -50,7 +50,7 @@
         "semver": "5.1.0",
         "request": "2.72.0",
         "yamlparser": "0.0.2",
-        "bcrypt": "0.8.6",
+        "bcrypt": "0.8.7",
         "step": "",
         "socket.io": "1.4.6",
         "socket.io-events": "0.4.6",
