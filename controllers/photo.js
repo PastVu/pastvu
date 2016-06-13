@@ -81,7 +81,8 @@ const compactFieldsForReg = {
 
     _id: 1, // To calculate new comments
     user: 1, //  To understand if photo is mine
-    ucdate: 1 // For checking of changes
+    ucdate: 1, // For checking of changes
+    mime: 1 // For serving protected files
 };
 const compactFieldsWithRegions = { geo: 1, ...compactFields, ...regionController.regionsAllSelectHash };
 const compactFieldsForRegWithRegions = { geo: 1, ...compactFieldsForReg, ...regionController.regionsAllSelectHash };
@@ -458,9 +459,9 @@ async function give(params) {
 
     if (can.protected) {
         try {
-            await this.call('photo.allowGetProtectedPhotoFile', { file: photo.file });
+            await this.call('photo.allowGetProtectedPhotoFile', { file: photo.file, mime: photo.mime });
         } catch (err) {
-            logger.warn(`${this.ridMark} Putting link to redis for protected ${cid} photo's file failed. Giving public`);
+            logger.warn(`${this.ridMark} Putting link to redis for protected ${cid} photo's file failed. Serve public.`, err);
             can.protected = undefined;
         }
     }
@@ -898,13 +899,35 @@ function userPCountUpdate(user, newDelta = 0, publicDelta = 0, inactiveDelta = 0
     }
 }
 
-const allowGetProtectedPhotoFile = async function ({ file, ttl = config.protectedFileLinkTTL }) {
+const allowGetProtectedPhotoFile = async function ({ file, mime = '', ttl = config.protectedFileLinkTTL }) {
     if (!dbRedis.connected) {
         throw new ApplicationError({ code: constantsError.REDIS_NO_CONNECTION, trace: false });
     }
 
     const { handshake: { session } } = this;
-    return dbRedis.setAsync(`pr:${session.key}:${file}`, file, 'EX', ttl)
+    return dbRedis.setAsync(`pr:${session.key}:${file}`, `${file}:${mime}`, 'EX', ttl)
+        .catch(error => {
+            throw new ApplicationError({ code: constantsError.REDIS, trace: false, message: error.message });
+        });
+};
+
+const allowGetProtectedPhotosFiles = async function ({ photos = [], ttl = config.protectedFileLinkTTL }) {
+    if (!dbRedis.connected) {
+        throw new ApplicationError({ code: constantsError.REDIS_NO_CONNECTION, trace: false });
+    }
+
+    if (!photos.length) {
+        return;
+    }
+
+    const { handshake: { session } } = this;
+    const multi = dbRedis.multi();
+
+    for (const { file, mime = '' } of photos) {
+        multi.set(`pr:${session.key}:${file}`, `${file}:${mime}`, 'EX', ttl);
+    }
+
+    return multi.execAsync()
         .catch(error => {
             throw new ApplicationError({ code: constantsError.REDIS, trace: false, message: error.message });
         });
@@ -1278,6 +1301,7 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40 }, userId })
 
                 const isAdmin = iAm.isAdmin;
                 const myUser = iAm.user;
+                const protectedPhotos = [];
 
                 for (const photo of photos) {
                     const isMine = User.isEqual(photo.user, myUser);
@@ -1287,13 +1311,29 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40 }, userId })
                     }
                     if (permissions.can.protected(photo.s, isMine, permissions.canModerate(photo, iAm), isAdmin)) {
                         photo.protected = true;
+                        protectedPhotos.push(photo);
                     }
 
                     photo._id = undefined;
                     photo.user = undefined;
                     photo.vdate = undefined;
                     photo.ucdate = undefined;
+                    photo.mime = undefined;
                 }
+
+                if (protectedPhotos.length) {
+                    await this.call('photo.allowGetProtectedPhotosFiles', { photos: protectedPhotos })
+                        .catch(err => {
+                            logger.warn(
+                                `${this.ridMark} Putting link to redis for protected photos file failed. Serve public.`,
+                                err
+                            );
+                            for (const photo of protectedPhotos) {
+                                photo.protected = undefined;
+                            }
+                        });
+                }
+
             }
 
             // For each photo fill short regions and hash of this regions
@@ -2789,7 +2829,8 @@ export default {
     prefetchForEdit,
     givePrevNextCids,
     changePublicExternality,
-    allowGetProtectedPhotoFile
+    allowGetProtectedPhotoFile,
+    allowGetProtectedPhotosFiles
 };
 
 waitDb.then(planResetDisplayStat); // Plan statistic clean up
