@@ -77,7 +77,7 @@ module.exports = {
     },
 
     // Lifetime of link to file of protected photo for user, that has right to see this photo, in seconds
-    protectedFileLinkTTL: ms('30s') / 1000,
+    protectedFileLinkTTL: ms('1m') / 1000,
 
     // Connection settings for mail provider. Need to be overrided locally
     mail: {},

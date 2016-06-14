@@ -5,6 +5,7 @@ import _ from 'lodash';
 import path from 'path';
 import http from 'http';
 import mime from 'mime';
+import lru from 'lru-cache';
 import log4js from 'log4js';
 import config from './config';
 import Utils from './commons/Utils';
@@ -163,7 +164,11 @@ export async function configure(startStamp) {
      */
     const protectedServePattern = /^\/_pr\/([\/a-z0-9]{26,40}\.(?:jpe?g|png)).*$/i;
     const protectedServeHandler = (function () {
-        const SESSION_COOKIE_KEY = 'past.sid'; // Session key in client cookies
+        // Session key in client cookies
+        const SESSION_COOKIE_KEY = 'past.sid';
+        // Local cache to not pull redis more then once if request for the same file is arrived within TTL
+        console.log(config.protectedFileLinkTTL * 1000);
+        const localCache = lru({ max: 2000, maxAge: config.protectedFileLinkTTL * 1000 });
 
         async function servePublic(req, res, filePath) {
             const filePathFull = path.join(storePath, 'public/photos', filePath);
@@ -200,12 +205,25 @@ export async function configure(startStamp) {
                 throw new AuthorizationError(); // If session doesn't contain header or user-agent - deny
             }
 
-            const redisValue = await dbRedis.getAsync(`pr:${sid}:${file}`) || '';
-            if (!redisValue) {
-                throw new AuthorizationError();
-            }
+            const key = `pr:${sid}:${file}`;
+            let mimeValue = localCache.peek(key);
 
-            const [, mimeValue] = redisValue.split(':');
+            if (mimeValue === undefined) {
+                const [value, ttl] = await dbRedis.multi([['get', key], ['ttl', key]]).execAsync() || [];
+
+                if (!value) {
+                    throw new AuthorizationError();
+                }
+
+                [, mimeValue] = value.split(':');
+
+                if (!mimeValue) {
+                    mimeValue = mime.lookup(filePathFull);
+                }
+
+                // Set result to local lru-cache over remaining ttl, that was returned from redis
+                localCache.set(key, mimeValue, (ttl || 1) * 1000);
+            }
 
             const fileAvailable = await exists(filePathFull);
 

@@ -1318,7 +1318,6 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40 }, userId })
                     photo.user = undefined;
                     photo.vdate = undefined;
                     photo.ucdate = undefined;
-                    photo.mime = undefined;
                 }
 
                 if (protectedPhotos.length) {
