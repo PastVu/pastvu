@@ -47,7 +47,6 @@ define(
                 h: 700,
                 ws: 1050,
                 hs: 700,
-                signs: 'blank',
                 waterhs: 0,
 
                 watersignIndividual: false,

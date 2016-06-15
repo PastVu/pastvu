@@ -2079,7 +2079,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             if (_.isNumber(img.height) && this.p.hs() + waterhs !== img.height) {
                 this.p.hs(img.height - waterhs);
             }
-            this.photoSrc(this.p.sfile() + '?s=' + this.p.signs());
+            this.photoSrc(this.p.sfile());
             this.sizesCalcPhoto();
             this.photoLoadContainer = null;
             this.photoLoading(false);

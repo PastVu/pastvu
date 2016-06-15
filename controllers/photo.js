@@ -347,7 +347,7 @@ async function give(params) {
     if (!_.isEmpty(noselect)) {
         Object.assign(fieldNoSelect, noselect);
     }
-    _.defaults(fieldNoSelect, { path: 0, sign: 0, sdate: 0 });
+    _.defaults(fieldNoSelect, { __v: 0, path: 0, format: 0, sign: 0, signs: 0, sdate: 0, converted: 0 }); // But we need 'mime' for _pr
     if (fieldNoSelect.frags === undefined) {
         fieldNoSelect['frags._id'] = 0;
     }
@@ -2570,7 +2570,7 @@ export function buildPhotosQuery(filter, forUserId, iAm) {
     return result;
 }
 // Класть protected в redis из галереи/списков
-// Раздача protected файлов из ноды с проверкой в redis по флагу serveProtected
+// Проксирование dev на downloader
 // Скачивание public/protected с проверкой прав, удаленные - только владелец и админ
 // Парсинг ссылок на изображения
 
