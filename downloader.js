@@ -167,7 +167,6 @@ export async function configure(startStamp) {
         // Session key in client cookies
         const SESSION_COOKIE_KEY = 'past.sid';
         // Local cache to not pull redis more then once if request for the same file is arrived within TTL
-        console.log(config.protectedFileLinkTTL * 1000);
         const localCache = lru({ max: 2000, maxAge: config.protectedFileLinkTTL * 1000 });
 
         async function servePublic(req, res, filePath) {

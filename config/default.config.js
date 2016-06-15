@@ -79,6 +79,10 @@ module.exports = {
     // Lifetime of link to file of protected photo for user, that has right to see this photo, in seconds
     protectedFileLinkTTL: ms('1m') / 1000,
 
+    // Time to cache photos by browser, that is set as `cache-control: max-age` http header in image response
+    // Is needed to understand for how long file url parameter should exist after photo was reconverted to reset cache
+    photoCacheTime: ms('6h'),
+
     // Connection settings for mail provider. Need to be overrided locally
     mail: {},
 

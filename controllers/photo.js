@@ -248,14 +248,14 @@ export const permissions = {
  * @param options For example, { lean: true }
  * @param populateUser Flag, that user object needed
  */
-export async function find({ query, fieldSelect, options, populateUser }) {
+export async function find({ query, fieldSelect = {}, options = {}, populateUser }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered) {
         query.s = { $gte: status.PUBLIC }; // Anonyms can see only photos, that were published (even if deactivated then)
     }
 
-    let photo = Photo.findOne(query, fieldSelect || {}, options || {});
+    let photo = Photo.findOne(query, fieldSelect, options);
 
     if (populateUser) {
         photo = photo.populate({ path: 'user' });
@@ -347,7 +347,7 @@ async function give(params) {
     if (!_.isEmpty(noselect)) {
         Object.assign(fieldNoSelect, noselect);
     }
-    _.defaults(fieldNoSelect, { sign: 0, sdate: 0 });
+    _.defaults(fieldNoSelect, { path: 0, sign: 0, sdate: 0 });
     if (fieldNoSelect.frags === undefined) {
         fieldNoSelect['frags._id'] = 0;
     }
@@ -567,6 +567,7 @@ async function create({ files }) {
             user,
             s: 0,
             cid: next + i,
+            path: item.fullfile,
             file: item.fullfile,
             ldate: new Date(now + i * 10), // Increase loading time of each file  by 10 ms for proper sorting
             sdate: new Date(now + i * 10 + shift10y), // New photos must be always on top
@@ -905,7 +906,8 @@ const allowGetProtectedPhotoFile = async function ({ file, mime = '', ttl = conf
     }
 
     const { handshake: { session } } = this;
-    return dbRedis.setAsync(`pr:${session.key}:${file}`, `${file}:${mime}`, 'EX', ttl)
+    const [fileUri] = file.split('?');
+    return dbRedis.setAsync(`pr:${session.key}:${fileUri}`, `${fileUri}:${mime}`, 'EX', ttl)
         .catch(error => {
             throw new ApplicationError({ code: constantsError.REDIS, trace: false, message: error.message });
         });
@@ -924,7 +926,8 @@ const allowGetProtectedPhotosFiles = async function ({ photos = [], ttl = config
     const multi = dbRedis.multi();
 
     for (const { file, mime = '' } of photos) {
-        multi.set(`pr:${session.key}:${file}`, `${file}:${mime}`, 'EX', ttl);
+        const [fileUri] = file.split('?');
+        multi.set(`pr:${session.key}:${fileUri}`, `${fileUri}:${mime}`, 'EX', ttl);
     }
 
     return multi.execAsync()
@@ -1332,7 +1335,6 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40 }, userId })
                             }
                         });
                 }
-
             }
 
             // For each photo fill short regions and hash of this regions
@@ -2600,6 +2602,22 @@ const planResetDisplayStat = (function () {
     };
 }());
 
+// Every 5 minute check what photo were reconverted last time earlier than photo's chache time,
+// and delete anticache url parameter 's' from file property
+async function resetPhotosAnticache() {
+    const photos = await Photo.find({
+        converted: { $gte: new Date(Date.now() - ms('1d')), $lte: new Date(Date.now() - config.photoCacheTime)},
+        $where: `this.file !== this.path`
+    }, {_id: 0, cid: 1, path: 1}, { lean: true }).exec();
+
+    // For each of found photo set file equals path, don't wait execution
+    for (const { cid, path } of photos) {
+        Photo.update({ cid }, { $set: { file: path } }).exec();
+    }
+
+    setTimeout(resetPhotosAnticache, ms('5m'));
+};
+
 // Return history of photo edit
 async function giveObjHist({ cid, fetchId, showDiff }) {
     if (!Number(cid) || cid < 1 || !Number(fetchId)) {
@@ -2741,7 +2759,7 @@ async function getDownloadKey({ cid }) {
     const lossless = photo.mime === 'image/png';
     const title = `${photo.cid} ${(photo.title || '').replace(/[\/|]/g, '-')}`.substr(0, 120);
     const fileName = `${title}.${lossless ? 'png' : 'jpg'}`;
-    const path = (origin ? 'private/photos/' : 'public/photos/a/') + photo.file;
+    const path = (origin ? 'private/photos/' : 'public/photos/a/') + photo.path;
     // We keep only size of origin file, size with watermark must be calculated by downloader.js
     const size = origin ? photo.size : null;
 
@@ -2832,4 +2850,7 @@ export default {
     allowGetProtectedPhotosFiles
 };
 
-waitDb.then(planResetDisplayStat); // Plan statistic clean up
+waitDb.then(() => {
+    planResetDisplayStat();
+    resetPhotosAnticache();
+}); // Plan statistic clean up

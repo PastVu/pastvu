@@ -284,7 +284,7 @@ async function conveyerControl() {
                 { cid: photoConv.cid },
                 {
                     cid: 1, s: 1, user: 1,
-                    file: 1, mime: 1,
+                    path: 1, file: 1, mime: 1,
                     w: 1, h: 1, ws: 1, hs: 1,
                     conv: 1, convqueue: 1, watersignText: 1
                 }
@@ -306,8 +306,9 @@ async function conveyerControl() {
             await new PhotoConveyerError(errorObject).save();
         }
 
-        photo.conv = undefined; // Присваиваем undefined, чтобы удалить свойства
+        photo.conv = undefined; // Set undefined to remove properties
         photo.convqueue = undefined;
+        photo.converted = new Date(); // Save last converted stamp
         await Promise.all([photo.save(), photoConv.remove()]);
 
         working -= 1;
@@ -351,13 +352,10 @@ async function conveyorStep(photo, { protect = false, webpOnly = false }) {
     const waterTxt = getWatertext(photo);
     const lossless = photo.mime === 'image/png';
     const targetDir = protect || photo.s === status.PUBLIC ? publicDir : protectedDir;
-    const originSrcPath = path.normalize(sourceDir + photo.file);
+    const originSrcPath = path.join(sourceDir, photo.path);
     const saveStandardSize = function (result) {
         photo.ws = parseInt(result.w, 10) || undefined;
         photo.hs = parseInt(result.h, 10) || undefined;
-    };
-    const saveStandardSign = function (result) {
-        photo.signs = result.signature ? result.signature.substr(0, 7) + result.signature.substr(result.signature.length - 3) : undefined;
     };
     const makeWebp = (variantName, dstPath) => tryPromise(5,
         () => execAsync(`cwebp -preset photo -m 5 ${lossless ? '-lossless ' : ''}${dstPath} -o ${dstPath}.webp`),
@@ -380,9 +378,9 @@ async function conveyorStep(photo, { protect = false, webpOnly = false }) {
         const isStandardsize = variantName === 'd';
         const variant = imageVersions[variantName];
         const srcDir = protect || variant.parent === sourceDir ? sourceDir : targetDir + imageVersions[variant.parent].dir;
-        const srcPath = path.normalize(srcDir + photo.file);
-        const dstDir = path.normalize(targetDir + variant.dir + photo.file.substr(0, 5));
-        const dstPath = path.normalize(targetDir + variant.dir + photo.file);
+        const srcPath = path.join(srcDir, photo.path);
+        const dstDir = path.join(targetDir, variant.dir, photo.path.substr(0, 5));
+        const dstPath = path.join(targetDir, variant.dir, photo.path);
 
         if (webpOnly) {
             await makeWebp(variantName, dstPath);
@@ -482,12 +480,11 @@ async function conveyorStep(photo, { protect = false, webpOnly = false }) {
             }
         }
 
-        // For standard photo we must get signature after watermark, to consider it as well
+        // We must know signature of result photo, to use it for resetting user's browser cache
         if (isStandardsize) {
-            await tryPromise(6,
-                () => identifyImage(dstPath, '{"signature": "%#"}'),
-                `identify sign ${variantName}-variant of photo ${photo.cid}`
-            ).then(saveStandardSign);
+            const { signature, fileParam } = await getFileSign(photo, dstPath);
+            photo.signs = signature || undefined;
+            photo.file = `${photo.path}${fileParam}`;
         }
 
         await sleep(25);
@@ -522,38 +519,58 @@ async function tryPromise(attemps, promiseGenerator, data, attemp) {
     }
 }
 
+async function getFileSign(photo, filePath) {
+    const { signature } = await tryPromise(6,
+        () => identifyImage(filePath, '{"signature": "%#"}'),
+        `identify sign of ${filePath} of photo ${photo.cid}`
+    );
+    const fileParam = signature ? `?s=${signature.substr(0, 7)}${signature.substr(signature.length - 3)}` : '';
+
+    return { signature, fileParam };
+};
+
 // Move photo's files between public/protected folders
-export function movePhotoFiles({ photo, copy = false, toProtected = false }) {
-    const { file } = photo;
-    const fileWebp = file + '.webp';
-    const fileDir = file.substr(0, 5);
+export async function movePhotoFiles({ photo, copy = false, toProtected = false }) {
+    const { path: filePath } = photo;
+    const fileWebp = filePath + '.webp';
+    const fileDir = filePath.substr(0, 5);
 
     const method = copy ? Utils.copyFile : fs.renameAsync.bind(fs);
     const sourceDir = toProtected ? publicDir : protectedDir;
     const targetDir = toProtected ? protectedDir : publicDir;
 
-    return Promise.all(imageVersionsKeys.map(async key => {
+    await Promise.all(imageVersionsKeys.map(async key => {
         const source = path.join(sourceDir, key);
         const target = path.join(targetDir, key);
 
         await mkdirpAsync(path.join(target, fileDir));
 
         return Promise.all([
-            method(path.join(source, file), path.join(target, file)),
+            method(path.join(source, filePath), path.join(target, filePath)),
             method(path.join(source, fileWebp), path.join(target, fileWebp))
         ]);
     }));
+
+    // If we copy/move files to public folder, we must get signuture again and fill anticache param in file property
+    if (!toProtected) {
+        await sleep(50);
+
+        const { signature, fileParam } = await getFileSign(photo, path.join(targetDir, 'd', filePath));
+        await Photo.update(
+            { cid: photo.cid }, { $set: { file: filePath + fileParam, signs: signature || '', converted: new Date() } }
+        ).exec();
+    }
 }
 
 // Delete photo files from public/protected folders, silently, swallowing possible errors if file does not exist
 export function deletePhotoFiles({ photo, fromProtected = false }) {
-    const { file } = photo;
-    const fileWebp = file + '.webp';
+    const { path: filePath } = photo;
+    const fileWebp = filePath + '.webp';
 
     const dir = fromProtected ? protectedDir : publicDir;
 
     return Promise.all(imageVersionsKeys.map(key => Promise.all([
-        fs.unlinkAsync(path.join(dir, key, file)).catch(_.noop),
+        fs.unlinkAsync(path.join(dir, key, filePath)).catch(_.noop),
         fs.unlinkAsync(path.join(dir, key, fileWebp)).catch(_.noop)
     ])));
 }
