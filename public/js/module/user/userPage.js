@@ -118,7 +118,7 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 			storage.user(login, function (data) {
 				if (data) {
 				    if (data.lookat) {
-                        return globalVM.router.navigate(location.pathname.replace(login, data.lookat));
+                        return globalVM.router.navigate(location.pathname.replace(login, data.lookat), { replace: true });
                     }
 					// Если от предыдущего осталась подписка на изменение - удаляем ее
 					if (this.subscriptions.userChange && this.subscriptions.userChange.dispose) {
