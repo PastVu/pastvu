@@ -117,6 +117,9 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 		processStorageUser: function (login, cb, ctx) {
 			storage.user(login, function (data) {
 				if (data) {
+				    if (data.lookat) {
+                        return globalVM.router.navigate(location.pathname.replace(login, data.lookat));
+                    }
 					// Если от предыдущего осталась подписка на изменение - удаляем ее
 					if (this.subscriptions.userChange && this.subscriptions.userChange.dispose) {
 						this.subscriptions.userChange.dispose();
