@@ -81,6 +81,7 @@ module.exports = {
 
     // Time to cache photos by browser, that is set as `cache-control: max-age` http header in image response
     // Is needed to understand for how long file url parameter should exist after photo was reconverted to reset cache
+    // 0 - no cache
     photoCacheTime: ms('6h'),
 
     // Connection settings for mail provider. Need to be overrided locally

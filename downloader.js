@@ -168,6 +168,9 @@ export async function configure(startStamp) {
         const SESSION_COOKIE_KEY = 'past.sid';
         // Local cache to not pull redis more then once if request for the same file is arrived within TTL
         const localCache = lru({ max: 2000, maxAge: config.protectedFileLinkTTL * 1000 });
+        // Cache time
+        const { photoCacheTime } = config;
+        const cacheControl = `private, max-age=${photoCacheTime / 1000}`;
 
         async function servePublic(req, res, filePath) {
             const filePathFull = path.join(storePath, 'public/photos', filePath);
@@ -231,11 +234,23 @@ export async function configure(startStamp) {
             }
 
             res.setHeader('Content-Type', mimeValue || mime.lookup(filePathFull));
-            const size = (await fs.statAsync(filePathFull)).size;
+
+            const { size, mtime } = await fs.statAsync(filePathFull);
 
             if (size) {
                 res.setHeader('Content-Length', size);
             }
+            if (mtime) {
+                res.setHeader('Last-Modified', new Date(mtime).toUTCString());
+            }
+
+            if (photoCacheTime) {
+                const now = new Date();
+                res.setHeader('Cache-Control', cacheControl);
+                res.setHeader('Date', now.toUTCString());
+                res.setHeader('Expires', new Date(now.getTime() + photoCacheTime).toUTCString());
+            }
+
 
             sendFile(filePathFull, res, () => servePublic(req, res, filePath));
         }
