@@ -58,7 +58,8 @@ const PhotoSchema = new Schema({
     r5: { type: Number, sparse: true },
 
     // File name with path, for example, 'i/n/o/ino6k6k6yz.jpg'
-    file: { type: String, required: true },
+    path: { type: String, required: true }, // Path to file in filesystem, for example 'i/n/o/ino6k6k6yz.jpg'
+    file: { type: String, required: true }, // Url to file, can contain parameters, for example 'i/n/o/ino6k6k6yz.jpg?s=abcdef' to reset users cache
 
     mime: { type: String }, // like 'image/jpeg'
     format: { type: String }, // like 'JPEG', 'Zip'(png)
@@ -97,6 +98,7 @@ const PhotoSchema = new Schema({
 
     conv: { type: Boolean }, // Converting now
     convqueue: { type: Boolean }, // In the queue for conversion
+    converted: { type: Date, sparse: true }, // Last convertion stamp
 
     vdcount: { type: Number, index: true }, // Views per day
     vwcount: { type: Number, index: true }, // Views per week
