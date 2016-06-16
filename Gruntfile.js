@@ -47,6 +47,11 @@ module.exports = function (grunt) {
                 cwd: targetDir,
                 stdout: true,
                 stderr: true
+            },
+            movePublic: {
+                command: `mv public-build ${targetDir}public`,
+                stdout: true,
+                stderr: true
             }
         },
         concat: {
@@ -111,12 +116,6 @@ module.exports = function (grunt) {
                         dest: targetDir
                     }
                 ]
-            }
-        },
-        rename: {
-            movePublic: {
-                src: ['public-build'],
-                dest: targetDir + 'public'
             }
         },
         jade: {
@@ -185,7 +184,6 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-contrib-requirejs');
     grunt.loadNpmTasks('grunt-string-replace');
     grunt.loadNpmTasks('grunt-exec');
-    grunt.loadNpmTasks('grunt-rename');
     grunt.loadNpmTasks('grunt-mkdir');
     grunt.loadNpmTasks('grunt-babel');
 
@@ -199,7 +197,7 @@ module.exports = function (grunt) {
         'concat',
         'copy:main',
         'babel',
-        'rename:movePublic',
+        'exec:movePublic',
         'jade:compileMainJades',
         'clean:publicTpl',
         'writeBuildParams',
