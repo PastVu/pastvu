@@ -22,7 +22,7 @@ import * as ourMiddlewares from './controllers/middleware';
 import connectDb from './controllers/connection';
 import './models/_initValues';
 import './controllers/systemjs';
-// import './basepatch/v1.3.0.6';
+import './basepatch/v1.3.0.7';
 
 export async function configure(startStamp) {
     const {
@@ -117,14 +117,11 @@ export async function configure(startStamp) {
                 force: true,
                 once: false,
                 debug: false,
-                compiler: {
+                render: {
                     compress: false,
-                    yuicompress: false,
-                    sourceMap: true,
-                    sourceMapRootpath: '/',
-                    sourceMapBasepath: pub
-                },
-                parser: { dumpLineNumbers: 0, optimization: 0 }
+                    yuicompress: false
+                    // sourceMap: { sourceMapFileInline: true }
+                }
             }));
         }
 
@@ -156,10 +153,7 @@ export async function configure(startStamp) {
         app.get(/^\/(?:_a|_p)(?:\/.*)$/, static404);
     }
     if (config.serveProtected) {
-        const imageServer = ourMiddlewares.serveImages(path.join(storePath, 'protected/photos/'), { maxAge: ms('1d') });
-        app.use('/_pr/', function (req, res, next) {
-            //imageServer
-        }, ourMiddlewares.serveImages(path.join(storePath, 'protected/photos/'), { maxAge: ms('1d') }));
+        app.use('/_pr/', ourMiddlewares.serveImages(path.join(storePath, 'protected/photos/'), { maxAge: ms('1d') }));
 
         // Seal store paths, ie request that achieve this handler will receive 404
         app.get(/^\/(?:_pr)(?:\/.*)$/, static404);

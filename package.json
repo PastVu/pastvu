@@ -73,8 +73,8 @@
         "gulp-util": "3.0.7",
 
         "requirejs": "2.2.0",
-        "less-middleware": "1.0.3",
-        "less": "1.7.3",
+        "less-middleware": "2.1.0",
+        "less": "2.7.1",
         "grunt": "1.0.1",
         "grunt-contrib-copy": "1.0.0",
         "grunt-contrib-jade": "1.0.0",
