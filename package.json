@@ -66,7 +66,7 @@
         "babel-core": "6.9.1",
         "babel-eslint": "6.0.4",
         "babel-plugin-transform-runtime": "6.9.0",
-        "babel-preset-es2015-node5": "1.2.0",
+        "babel-preset-es2015-node6": "0.2.0",
         "babel-preset-stage-1": "6.5.0",
         "grunt-babel": "6.0.0",
 
@@ -92,6 +92,6 @@
         "eslint": "2.12.0"
     },
     "engines": {
-        "node": "^5.9.0"
+        "node": "^6.2.1"
     }
 }
