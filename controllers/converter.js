@@ -344,26 +344,19 @@ function getWatertext(photo) {
 }
 
 /**
- * Очередной шаг конвейера
- * @param photo Объект фотографии
+ * Another step of the conveyor
+ * @param photo Photo object
  */
-async function conveyorStep(photo, { protect = false, webpOnly = false }) {
-    const cid = photo.cid;
+async function conveyorStep(photo, { protect: onlyProtectPublic = false, webpOnly = false }) {
+    const itsPublicPhoto = photo.s === status.PUBLIC;
+    const wasPublished = photo.s >= status.PUBLIC;
     const waterTxt = getWatertext(photo);
-    const lossless = photo.mime === 'image/png';
-    const targetDir = protect || photo.s === status.PUBLIC ? publicDir : protectedDir;
-    const originSrcPath = path.join(sourceDir, photo.path);
-    const saveStandardSize = function (result) {
-        photo.ws = parseInt(result.w, 10) || undefined;
-        photo.hs = parseInt(result.h, 10) || undefined;
-    };
-    const makeWebp = (variantName, dstPath) => tryPromise(5,
-        () => execAsync(`cwebp -preset photo -m 5 ${lossless ? '-lossless ' : ''}${dstPath} -o ${dstPath}.webp`),
-        `convert ${variantName}-variant to webp of photo ${cid}`
-    );
+    const { cid } = photo;
 
     if (!webpOnly) {
-        // Запускаем identify оригинала
+        // Launch identification of original
+        const originSrcPath = path.join(sourceDir, photo.path);
+
         await tryPromise(5, () => identifyImage(originSrcPath, originIdentifyString), `identify origin of photo ${cid}`)
             .then(function (result) {
                 photo.w = parseInt(result.w, 10) || undefined;
@@ -373,11 +366,42 @@ async function conveyorStep(photo, { protect = false, webpOnly = false }) {
             });
     }
 
+    // We always convert to public folder, if file was published once
+    if (wasPublished) {
+        await conveyorSubStep(photo, {
+            webpOnly,
+            waterTxt,
+            protectCover: !itsPublicPhoto || onlyProtectPublic
+        });
+    }
+
+    // And we also convert to protected folder if photo is not public
+    // and there is no flag that we must just cover public with with protection curtain
+    // (we specify this flag when deactivate photo, in this case we just copy public to protected to avoid extra convert)
+    if (!itsPublicPhoto && !onlyProtectPublic) {
+        await conveyorSubStep(photo, {
+            webpOnly, waterTxt,
+            isPublic: false,
+            getStandardAttributes: !wasPublished // Get attributes only if they hasn't been taken on public step
+        });
+    }
+}
+
+async function conveyorSubStep(photo, { isPublic = true, protectCover = false, webpOnly = false, getStandardAttributes = true, waterTxt }) {
+    const { cid } = photo;
+    const targetDir =  isPublic ? publicDir : protectedDir;
+    const lossless = photo.mime === 'image/png';
+
+    const makeWebp = (variantName, dstPath) => tryPromise(5,
+        () => execAsync(`cwebp -preset photo -m 5 ${lossless ? '-lossless ' : ''}${dstPath} -o ${dstPath}.webp`),
+        `convert ${variantName}-variant to webp of photo ${cid}`
+    );
+
     for (const variantName of imageVersionsKeys) {
         const isFullsize = variantName === 'a';
         const isStandardsize = variantName === 'd';
         const variant = imageVersions[variantName];
-        const srcDir = protect || variant.parent === sourceDir ? sourceDir : targetDir + imageVersions[variant.parent].dir;
+        const srcDir = protectCover || variant.parent === sourceDir ? sourceDir : targetDir + imageVersions[variant.parent].dir;
         const srcPath = path.join(srcDir, photo.path);
         const dstDir = path.join(targetDir, variant.dir, photo.path.substr(0, 5));
         const dstPath = path.join(targetDir, variant.dir, photo.path);
@@ -424,7 +448,7 @@ async function conveyorStep(photo, { protect = false, webpOnly = false }) {
             }
         }
 
-        if (protect && !variant.water) {
+        if (protectCover && !variant.water) {
             commands.push(...protectCoverGen({ w: variant.width, h: variant.height }));
         }
 
@@ -439,10 +463,13 @@ async function conveyorStep(photo, { protect = false, webpOnly = false }) {
         }
 
         // For standard photo we must get result size before creating watermark, because it depends on those sizes
-        if (isStandardsize) {
-            await tryPromise(
-                6, () => identifyImage(dstPath, '{"w": "%w", "h": "%h"}'), `identify standard size of photo ${cid}`
-            ).then(saveStandardSize);
+        if (isStandardsize && getStandardAttributes) {
+            await tryPromise(6,
+                () => identifyImage(dstPath, '{"w": "%w", "h": "%h"}'), `identify standard size of photo ${cid}`
+            ).then(function (result) {
+                photo.ws = parseInt(result.w, 10) || undefined;
+                photo.hs = parseInt(result.h, 10) || undefined;
+            });
         }
 
         if (variant.water) {
@@ -454,7 +481,7 @@ async function conveyorStep(photo, { protect = false, webpOnly = false }) {
 
             commands.pop();
 
-            if (protect) {
+            if (protectCover) {
                 const protectCommands = protectCoverGen({
                     w: isFullsize ? photo.w : photo.ws,
                     h: isFullsize ? photo.h : photo.hs
@@ -470,18 +497,18 @@ async function conveyorStep(photo, { protect = false, webpOnly = false }) {
                 () => execAsync(commands.join(' ')), `convert to ${variantName}-variant of photo ${cid}`
             );
 
-            if (photo.watersignText) {
+            if (photo.watersignText && getStandardAttributes) {
                 photo.watersignTextApplied = new Date();
             }
 
             photo[isFullsize ? 'waterh' : 'waterhs'] = watermark.params.splice;
-            if (isStandardsize) {
+            if (isStandardsize && getStandardAttributes) {
                 photo.hs -= watermark.params.splice;
             }
         }
 
         // We must know signature of result photo, to use it for resetting user's browser cache
-        if (isStandardsize) {
+        if (isStandardsize  && getStandardAttributes) {
             const { signature, fileParam } = await getFileSign(photo, dstPath);
             photo.signs = signature || undefined;
             photo.file = `${photo.path}${fileParam}`;
@@ -580,7 +607,7 @@ export function deletePhotoFiles({ photo, fromProtected = false }) {
  * @param data Array of objects like {cid: 123}
  * @param priority Priority of convertation in conveyer
  */
-export async function addPhotos(data, priority, protect) {
+export async function addPhotos(data, priority, potectPublicOnly) {
     const toConvertObjs = [];
     const stamp = new Date();
 
@@ -588,7 +615,7 @@ export async function addPhotos(data, priority, protect) {
         const cid = Number(photo.cid);
 
         if (cid > 0) {
-            toConvertObjs.push({ cid, priority: priority || 4, added: stamp, protect });
+            toConvertObjs.push({ cid, priority: priority || 4, added: stamp, protect: potectPublicOnly });
         }
     }
 
