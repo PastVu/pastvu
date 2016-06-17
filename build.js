@@ -218,7 +218,7 @@ step(
 
 function lessCompile(files, done) {
     var input, output,
-        css, fd,
+        fd,
         i = 0;
 
     next();
@@ -242,34 +242,30 @@ function lessCompile(files, done) {
 
         console.dir('Compiling LESS ' + lessCompileOptions.path + input);
 
-        new (less.Parser)({
+        less.render(data, {
             paths: [lessCompileOptions.path + path.dirname(input)],
             optimization: lessCompileOptions.optimization,
             filename: path.basename(input),
-            strictImports: lessCompileOptions.strictImports
-        }).parse(data, function (err, tree) {
-            if (err) {
-                less.writeError(err, lessCompileOptions);
-                process.exit(1);
-            } else {
-                try {
-                    css = tree.toCSS({
-                        compress: lessCompileOptions.compress,
-                        yuicompress: lessCompileOptions.yuicompress
-                    });
-                    if (output) {
-                        fd = fs.openSync(output, 'w');
-                        fs.writeSync(fd, css, 0, 'utf8');
-                        fs.closeSync(fd);
-                        next();
-                    } else {
-                        sys.print(css);
-                    }
-                } catch (e) {
-                    less.writeError(e, lessCompileOptions);
-                    process.exit(2);
+            strictImports: lessCompileOptions.strictImports,
+            compress: lessCompileOptions.compress,
+            yuicompress: lessCompileOptions.yuicompress
+        }).then(function (result) {
+            try {
+                const css = result.css;
+
+                if (css) {
+                    fd = fs.openSync(output, 'w');
+                    fs.writeSync(fd, css, 0, 'utf8');
+                    fs.closeSync(fd);
                 }
+                next();
+            } catch (err) {
+                console.error(err, lessCompileOptions);
+                process.exit(1);
             }
+        }, function (err) {
+            less.writeError(err, lessCompileOptions);
+            process.exit(1);
         });
     }
 }

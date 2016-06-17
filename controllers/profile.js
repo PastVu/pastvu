@@ -46,17 +46,28 @@ async function giveUser({ login }) {
     const userObj = session.getOnline({ login });
     const itsMe = iAm.registered && iAm.user.login === login;
 
-    const user = userObj ? session.getPlainUser(userObj.user) : await User.findOne(
-        { login, active: true },
-        { _id: 0, cid: 0, pass: 0, activatedate: 0, loginAttempts: 0, active: 0, rules: 0 }, { lean: true }
-    ).populate([
-        {
-            path: 'regionHome',
-            select: { _id: 0, cid: 1, parents: 1, title_en: 1, title_local: 1, center: 1, bbox: 1, bboxhome: 1 }
-        },
-        { path: 'regions', select: { _id: 0, cid: 1, title_en: 1, title_local: 1 } },
-        { path: 'mod_regions', select: { _id: 0, cid: 1, title_en: 1, title_local: 1 } }
-    ]).exec();
+    let user;
+    if (userObj) {
+        user = session.getPlainUser(userObj.user);
+        user.online = Boolean(userObj);
+    } else {
+        user = await User.findOne(
+            { login: new RegExp(`^${login}$`, 'i'), active: true },
+            { _id: 0, cid: 0, pass: 0, activatedate: 0, loginAttempts: 0, active: 0, rules: 0 }, { lean: true }
+        ).populate([
+            {
+                path: 'regionHome',
+                select: { _id: 0, cid: 1, parents: 1, title_en: 1, title_local: 1, center: 1, bbox: 1, bboxhome: 1 }
+            },
+            { path: 'regions', select: { _id: 0, cid: 1, title_en: 1, title_local: 1 } },
+            { path: 'mod_regions', select: { _id: 0, cid: 1, title_en: 1, title_local: 1 } }
+        ]).exec();
+
+        // If login in another case, do redirect to the right one
+        if (user.login !== login) {
+            throw new NotFoundError({ code: constantsError.NO_SUCH_USER, lookat: user.login, trace: false });
+        }
+    }
 
     if (!user) {
         throw new NotFoundError(constantsError.NO_SUCH_USER);
@@ -65,8 +76,6 @@ async function giveUser({ login }) {
     if (itsMe || iAm.isAdmin) {
         user.settings = _.defaults(user.settings || {}, userSettingsDef);
     }
-
-    user.online = Boolean(userObj);
 
     return { user };
 }
@@ -350,7 +359,7 @@ async function changeAvatar({ login, file, mime }) {
 
     await Promise.all([
         // Transfer file from incoming to private
-        fs.renameAsync(incomeDir + file, path.normalize(originPath)),
+        fs.renameAsync(path.join(incomeDir, file), path.normalize(originPath)),
         // Create folders inside public
         mkdirpAsync(path.join(publicDir, 'd/', dirPrefix)),
         mkdirpAsync(path.join(publicDir, 'h/', dirPrefix))

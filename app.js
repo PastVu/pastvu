@@ -22,7 +22,7 @@ import * as ourMiddlewares from './controllers/middleware';
 import connectDb from './controllers/connection';
 import './models/_initValues';
 import './controllers/systemjs';
-// import './basepatch/v1.3.0.6';
+import './basepatch/v1.3.0.7';
 
 export async function configure(startStamp) {
     const {
@@ -41,6 +41,7 @@ export async function configure(startStamp) {
 
     mkdirp.sync(path.join(storePath, 'incoming'));
     mkdirp.sync(path.join(storePath, 'private'));
+    mkdirp.sync(path.join(storePath, 'protected/photos'));
     mkdirp.sync(path.join(storePath, 'public/avatars'));
     mkdirp.sync(path.join(storePath, 'public/photos'));
 
@@ -49,11 +50,15 @@ export async function configure(startStamp) {
 
     logger.info('Application Hash: ' + config.hash);
 
-    await connectDb(config.mongo.connection, config.mongo.pool, logger);
+    await connectDb({
+        redis: config.redis,
+        mongo: { uri: config.mongo.connection, poolSize: config.mongo.pool },
+        logger
+    });
 
     const status404Text = http.STATUS_CODES[404];
     const static404 = ({ url, method, headers: { useragent, referer } = {} }, res) => {
-        //logger404.error(JSON.stringify({ url, method, useragent, referer }));
+        logger404.error(JSON.stringify({ url, method, useragent, referer }));
 
         res.statusCode = 404;
         res.end(status404Text); // Finish with 'end' instead of 'send', that there is no additional operations (etag)
@@ -112,14 +117,11 @@ export async function configure(startStamp) {
                 force: true,
                 once: false,
                 debug: false,
-                compiler: {
+                render: {
                     compress: false,
-                    yuicompress: false,
-                    sourceMap: true,
-                    sourceMapRootpath: '/',
-                    sourceMapBasepath: pub
-                },
-                parser: { dumpLineNumbers: 0, optimization: 0 }
+                    yuicompress: false
+                    // sourceMap: { sourceMapFileInline: true }
+                }
             }));
         }
 
@@ -137,6 +139,7 @@ export async function configure(startStamp) {
     if (config.serveStore) {
         app.use('/_a/', ourMiddlewares.serveImages(path.join(storePath, 'public/avatars/'), { maxAge: ms('2d') }));
         app.use('/_p/', ourMiddlewares.serveImages(path.join(storePath, 'public/photos/'), { maxAge: ms('7d') }));
+        app.use('/_pr/', ourMiddlewares.serveImages(path.join(storePath, 'protected/photos/'), { maxAge: ms('7d') }));
 
         // Replace unfound avatars with default one
         app.get('/_a/d/*', function (req, res) {
@@ -149,6 +152,13 @@ export async function configure(startStamp) {
         // Seal store paths, ie request that achieve this handler will receive 404
         app.get(/^\/(?:_a|_p)(?:\/.*)$/, static404);
     }
+    if (config.serveProtected) {
+        app.use('/_pr/', ourMiddlewares.serveImages(path.join(storePath, 'protected/photos/'), { maxAge: ms('1d') }));
+
+        // Seal store paths, ie request that achieve this handler will receive 404
+        app.get(/^\/(?:_pr)(?:\/.*)$/, static404);
+    }
+
 
     await Promise.all([authReady, settingsReady, regionReady, subscrReady, mailReady]);
 

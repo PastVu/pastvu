@@ -47,7 +47,6 @@ define(
                 h: 700,
                 ws: 1050,
                 hs: 700,
-                signs: 'blank',
                 waterhs: 0,
 
                 watersignIndividual: false,
@@ -93,9 +92,11 @@ define(
             comment: false,
             watersign: false,
             nowaterchange: false,
-            download: 'login'
+            download: 'login',
+            protected: false
         };
         var picPrefix = '/_p';
+        var picProtectedPrefix = '/_pr';
         var picFormats = {
             a: picPrefix + '/a/',
             d: picPrefix + '/d/',
@@ -105,6 +106,15 @@ define(
             s: picPrefix + '/s/',
             x: picPrefix + '/x/'
         };
+        var picProtectedFormats = {
+            a: picProtectedPrefix + '/a/',
+            d: picProtectedPrefix + '/d/',
+            h: picProtectedPrefix + '/h/',
+            m: picProtectedPrefix + '/m/',
+            q: picProtectedPrefix + '/q/',
+            s: picProtectedPrefix + '/s/',
+            x: picProtectedPrefix + '/x/'
+        };
 
         _.assign(defaults.compact, defaults.base);
         _.assign(defaults.full, defaults.compact);
@@ -112,30 +122,36 @@ define(
         /**
          * Фабрика. Из входящих данных создает полноценный объект, в котором недостающие поля заполнены дефолтными значениями
          * @param origin Входящий объект
-         * @param defType Название дефолтного объекта для сляния
-         * @param picType Тим картинки
+         * @param type Название дефолтного объекта для сляния
+         * @param pic Тим картинки
          * @param customDefaults Собственные свойства, заменяющие аналогичные в дефолтном объекте
          * @return {*}
          */
-        function factory(origin, defType, picType, customDefaults, userDefType) {
-            origin = origin || {};
-            defType = defType || 'full';
-            picType = picType || 'd';
-            userDefType = userDefType || 'middle';
+        function factory(origin, options) {
+            if (origin === undefined) {
+                origin = {};
+            }
+            if (options === undefined) {
+                options = {};
+            }
+            var type = options.type || 'full';
+            var pic = options.pic || 'd';
+            var userType = options.userType || 'middle';
+            var can = options.can || {};
 
-            if (customDefaults) {
-                origin = _.defaults(origin, customDefaults, defaults[defType]);
+            if (options.customDefaults) {
+                origin = _.defaults(origin, options.customDefaults, defaults[type]);
             } else {
-                origin = _.defaults(origin, defaults[defType]);
+                origin = _.defaults(origin, defaults[type]);
             }
 
             if (origin.ldate) {
                 origin.ldate = new Date(origin.ldate);
             }
 
-            if (defType === 'full') {
+            if (type === 'full') {
                 if (!Utils.geo.checkLatLng(origin.geo)) {
-                    origin.geo = defaults[defType].geo;
+                    origin.geo = defaults[type].geo;
                 }
                 if (origin.regions.length) {
                     Region.factory(_.last(origin.regions), 'home');
@@ -149,11 +165,18 @@ define(
                 if (origin.stdate) {
                     origin.stdate = new Date(origin.stdate);
                 }
-                User.factory(origin.user, userDefType);
+                User.factory(origin.user, userType);
             }
 
             origin.status = statuses.nums[origin.s] || {};
-            origin.sfile = P.preaddr + picFormats[picType] + origin.file;
+
+            if (can.protected) {
+                origin.sfile = picProtectedFormats[pic] + origin.file;
+                origin.fileroot = picProtectedPrefix;
+            } else {
+                origin.sfile = picFormats[pic] + origin.file;
+                origin.fileroot = picPrefix;
+            }
 
             return origin;
         }
@@ -173,9 +196,9 @@ define(
          * @param withoutFactory Флаг, указывающий что не надо применять к данным фабрику
          * @return {*}
          */
-        function vm(data, vmExist, withoutFactory) {
+        function vm(data, vmExist, withoutFactory, can) {
             if (!withoutFactory) {
-                factory(data, 'full', 'd');
+                factory(data, { can: can });
             }
             if (!vmExist) {
                 vmExist = vmCreate(data);
@@ -195,6 +218,6 @@ define(
             return vmExist;
         }
 
-        return { factory: factory, vm: vm, def: defaults, canDef: canDef, picFormats: picFormats };
+        return { factory: factory, vm: vm, def: defaults, canDef: canDef, picFormats: picFormats, picProtectedFormats: picProtectedFormats };
     }
 );

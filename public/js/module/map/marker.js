@@ -40,8 +40,6 @@ define([
         this.clientClustering = P.settings.CLUSTERING_ON_CLIENT();
         this.clientClusteringDelta = ko_mapping.toJS(P.settings.CLUSTERING_ON_CLIENT_PIX_DELTA);
 
-        this.subdl = P.preaddrs.length; // Для ускорения проверки сохраняем кол-во поддоменов в объект
-
         this.sizePoint = new L.Point(8, 8);
         this.sizeCluster = new L.Point(42, 42);
         this.sizeClusterm = new L.Point(52, 52);
@@ -467,7 +465,7 @@ define([
             } else {
                 // Если оно новое - создаем его объект и маркер
                 if (!boundChanged || this.calcBound.contains(curr.geo)) {
-                    curr.sfile = P.preaddr + Photo.picFormats.m + curr.file;
+                    curr.sfile = Photo.picFormats.m + curr.file;
                     divIcon = L.divIcon({
                         className: 'photoIcon ' + getYearClass(curr.year, isPainting) + ' ' + curr.dir,
                         iconSize: this.sizePoint
@@ -589,7 +587,7 @@ define([
                 if (!this.mapObjects.photos[curr.cid]) {
                     // Если оно новое - создаем его объект и маркер
                     if (!boundChanged || this.calcBound.contains(curr.geo)) {
-                        curr.sfile = P.preaddr + Photo.picFormats.m + curr.file;
+                        curr.sfile = Photo.picFormats.m + curr.file;
                         divIcon = L.divIcon(
                             {
                                 className: 'photoIcon ' + getYearClass(curr.year, isPainting) + ' ' + curr.dir,
@@ -736,11 +734,8 @@ define([
                         measure = '';
                         picFormat = Photo.picFormats.x;
                     }
-                    if (this.subdl > 1) {
-                        cluster.p.sfile = P.preaddrs[i % this.subdl] + picFormat + cluster.p.file;
-                    } else {
-                        cluster.p.sfile = P.preaddr + picFormat + cluster.p.file;
-                    }
+
+                    cluster.p.sfile = picFormat + cluster.p.file;
                     divIcon = L.divIcon({
                         className: 'clusterIcon fringe ' + measure,
                         iconSize: size,
@@ -1039,18 +1034,15 @@ define([
 
         while (++i < len) {
             photo = photos[i];
-            if (this.subdl > 1) {
-                photo.sfile = P.preaddrs[i % this.subdl] + Photo.picFormats.m + photo.file;
-                photoPosterFile = small ? photo.sfile : P.preaddrs[i % this.subdl] + Photo.picFormats.h + photo.file;
-                photoPrevFile = P.preaddrs[i % this.subdl] + Photo.picFormats.x + photo.file;
-            } else {
-                photo.sfile = P.preaddr + Photo.picFormats.m + photo.file;
-                photoPosterFile = P.preaddr + (small ? photo.sfile : Photo.picFormats.h + photo.file);
-                photoPrevFile = P.preaddr + Photo.picFormats.x + photo.file;
-            }
+            photo.sfile = Photo.picFormats.m + photo.file;
+
+            photoPosterFile = small ? photo.sfile : Photo.picFormats.h + photo.file;
+            photoPrevFile = Photo.picFormats.x + photo.file;
+
             if (i > 0 && i % 5 === 0) {
                 content += '<br/>';
             }
+
             content += this.popupClusterTpl({
                 img: photoPrevFile,
                 cid: photo.cid || '',

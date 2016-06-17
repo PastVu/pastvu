@@ -468,7 +468,7 @@ Utils.calcGeoJSONPointsNumReduce = function (previousValue, currentValue) {
 Utils.copyFile = (source, target) => new Promise((resolve, reject) => {
     'use strict';
 
-    let cbCalled = false;
+    let isDone = false;
     const rd = fs.createReadStream(source);
 
     rd.on('error', function (err) {
@@ -486,10 +486,10 @@ Utils.copyFile = (source, target) => new Promise((resolve, reject) => {
     rd.pipe(wr);
 
     function done(err) {
-        if (cbCalled) {
+        if (isDone) {
             return;
         }
-        cbCalled = true;
+        isDone = true;
 
         if (err) {
             reject(err);

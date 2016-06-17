@@ -111,7 +111,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             var self = this;
             socket.run('index.giveNewsPublic', { cid: cid }, true).then(function (data) {
                 _.defaults(data.news, newsDefault);
-                data.news.user.avatar = data.news.user.avatar ? P.preaddr + '/_a/d/' + data.news.user.avatar :
+                data.news.user.avatar = data.news.user.avatar ? '/_a/d/' + data.news.user.avatar :
                     '/img/caps/avatar.png';
 
                 if (self.news) {

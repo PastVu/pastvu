@@ -24,6 +24,7 @@ if (require.main !== module) { // If run.js is required by another module (for e
     const _ = require('lodash');
     const util = require('util');
     const posix = require('posix');
+    const redis = require('redis');
     const mkdirp = require('mkdirp');
     const log4js = require('log4js');
     const Bluebird = require('bluebird');
@@ -97,6 +98,8 @@ if (require.main !== module) { // If run.js is required by another module (for e
         });
     }
     Bluebird.promisifyAll(fs);
+    Bluebird.promisifyAll(redis.RedisClient.prototype);
+    Bluebird.promisifyAll(redis.Multi.prototype);
 
     const requiredModule = requireModule(argv.script);
 

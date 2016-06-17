@@ -1,4 +1,4 @@
-define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket!', 'globalVM', 'model/User', 'model/Photo'], function ($, _, ko, ko_mapping, Utils, socket, globalVM, User, Photo) {
+define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket!', 'globalVM', 'model/User', 'model/Photo', 'noties'], function ($, _, ko, ko_mapping, Utils, socket, globalVM, User, Photo, noties) {
     var storage = {
         users: {},
         photos: {},
@@ -14,7 +14,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
                     { cb: callback, ctx: context }
                 ];
 
-                socket.run('profile.giveUser', { login: login }, true)
+                socket.run('profile.giveUser', { login: login })
                     .then(function (data) {
                         if (_.get(data, 'user.login') === login) {
                             User.factory(data.user, 'full');
@@ -24,6 +24,15 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
                                 item.cb.call(item.ctx, storage.users[login]);
                             });
                             delete storage.waitings['u' + login];
+                        }
+                    })
+                    .catch(function (error) {
+                        if (error.details && error.details.lookat) {
+                            _.forEach(storage.waitings['u' + login], function (item) {
+                                item.cb.call(item.ctx, { lookat: error.details.lookat });
+                            });
+                        } else {
+                            noties.error(error);
                         }
                     });
             }
@@ -44,7 +53,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
                 socket.run('photo.giveForPage', { cid: cid }, true)
                     .then(function (data) {
                         if (data.photo.cid === cid) {
-                            Photo.factory(data.photo, 'full', 'd');
+                            Photo.factory(data.photo, { can: data.can });
                             storage.photos[cid] = {
                                 vm: Photo.vm(data.photo, undefined, true),
                                 origin: data.photo,

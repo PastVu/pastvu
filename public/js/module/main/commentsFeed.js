@@ -71,7 +71,7 @@ define([
 
                         if (photo.comments === undefined) {
                             photo.link = '/p/' + photo.cid;
-                            photo.sfile = (P.preaddrs.length ? P.preaddrs[i % P.preaddrs.length] : '') + Photo.picFormats.s + photo.file;
+                            photo.sfile = Photo.picFormats.s + photo.file;
                             photo.comments = [];
 
                             if (photo.rs) {

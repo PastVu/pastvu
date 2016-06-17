@@ -177,8 +177,8 @@ define([
                         if (this.user.login() !== this.auth.iAm.login()) {
                             // Если меняем не себе, обновляем модель вручную. Себе обновления пришлет _session
                             var origin = storage.userImmediate(this.user.login()).origin;
-                            origin.avatar = P.preaddr + '/_a/d/' + result.avatar;
-                            origin.avatarth = P.preaddr + '/_a/h/' + result.avatar;
+                            origin.avatar = '/_a/d/' + result.avatar;
+                            origin.avatarth = '/_a/h/' + result.avatar;
                             this.user.avatar(origin.avatar);
                             this.user.avatarth(origin.avatarth);
                         }

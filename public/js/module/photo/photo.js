@@ -350,7 +350,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 this.originData = photo;
             }
 
-            this.p = Photo.vm(photo, this.p);
+            this.p = Photo.vm(photo, this.p, false, can);
             this.can = koMapping.fromJS(_.defaults({}, can, Photo.canDef), this.can);
 
             this.watersignOptionTrigger(_.random(9e9));
@@ -448,7 +448,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
         receivePhoto: function (cid, edit, cb, ctx) {
             var finish = function (data) {
-                Photo.factory(data.photo, 'full', 'd', 'middle', 'middle');
+                Photo.factory(data.photo, { can: data.can });
 
                 cb.call(ctx, data);
             };
@@ -1045,7 +1045,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             var desc = p.desc() || '';
             var link = '/p/' + p.cid();
 
-            if (!self.shareVM) {
+            if (!self.shareVM && p.s() === statuses.keys.PUBLIC) {
                 // Include years in OpenGraph title, if they are not in title already
                 if (!title.includes(p.year()) && (!p.year2() || !title.includes(p.year2()))) {
                     title = p.y() + ' ' + title;
@@ -1739,7 +1739,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
             for (var i = 0; i < incomingArr.length; i++) {
                 item = incomingArr[i];
-                resultArr.push(_.find(targetArr, itemExistFunc) || Photo.factory(item, 'base', 'q'));
+                resultArr.push(_.find(targetArr, itemExistFunc) || Photo.factory(item, { type: 'base', pic: 'q' }));
             }
             return resultArr;
         },
@@ -1850,14 +1850,15 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             var p = self.p;
 
             // Активируем комментарии, если фото не редактируется и разрешено комментировать
-            if (!self.edit()/* && self.can.comment()*/ && p.s() >= statusKeys.PUBLIC) {
+            if (!self.edit() && p.s() >= statusKeys.PUBLIC) {
                 self.commentsVM.activate(
                     {
                         cid: p.cid(),
                         count: p.ccount(),
                         countNew: p.ccount_new(),
                         subscr: p.subscr(),
-                        nocomments: p.nocomments()
+                        nocomments: p.nocomments(),
+                        canReply: self.can.comment()
                     },
                     _.defaults(options || {}, {
                         instant: !!self.toComment || p.frags().length,
@@ -2075,7 +2076,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             if (_.isNumber(img.height) && this.p.hs() + waterhs !== img.height) {
                 this.p.hs(img.height - waterhs);
             }
-            this.photoSrc(this.p.sfile() + '?s=' + this.p.signs());
+            this.photoSrc(this.p.sfile());
             this.sizesCalcPhoto();
             this.photoLoadContainer = null;
             this.photoLoading(false);

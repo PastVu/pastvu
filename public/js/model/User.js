@@ -71,8 +71,8 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params
             // Сохраняем исходное значение поля avatar в ava, чтобы при повторном factory не добавить префиксы еще раз
             origin.ava = origin.ava || origin.avatar;
 
-            origin.avatarth = P.preaddr + '/_a/h/' + origin.ava;
-            origin.avatar = P.preaddr + '/_a/d/' + origin.ava;
+            origin.avatarth = '/_a/h/' + origin.ava;
+            origin.avatar = '/_a/d/' + origin.ava;
         }
         if (!origin.disp) {
             origin.disp = origin.login;

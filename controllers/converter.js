@@ -1,3 +1,4 @@
+import fs from 'fs';
 import ms from 'ms';
 import gm from 'gm';
 import _ from 'lodash';
@@ -7,6 +8,7 @@ import mkdirp from 'mkdirp';
 import moment from 'moment';
 import config from '../config';
 import Bluebird from 'bluebird';
+import constants from './constants';
 import Utils from '../commons/Utils';
 import { exec } from 'child_process';
 import { waitDb, dbEval } from './connection';
@@ -24,9 +26,13 @@ let conveyerLength = 0;
 let conveyerMaxLength = 0;
 let conveyerConverted = 0;
 
+const { photo: { status } } = constants;
+
 const sourceDir = path.join(config.storePath, 'private/photos/');
-const targetDir = path.join(config.storePath, 'public/photos/');
+const publicDir = path.join(config.storePath, 'public/photos/');
+const protectedDir = path.join(config.storePath, 'protected/photos/');
 const waterDir = path.join(__dirname, '/../misc/watermark/');
+const waterFontPath = path.normalize(waterDir + 'AdobeFanHeitiStd-Bold.otf');
 
 const maxWorking = 6; // Possible to convert in parallel
 let goingToWork = 0; // Выборка для дальнейшей конвертации
@@ -123,10 +129,9 @@ const imageVersions = {
     }
 };
 const imageVersionsPriority = fillImgPrior(sourceDir, 0);
-const imageVersionsKeys = Object.keys(imageVersionsPriority).sort((a, b) => (imageVersionsPriority[a] - imageVersionsPriority[b]));
+export const imageVersionsKeys = Object.keys(imageVersionsPriority).sort((a, b) => (imageVersionsPriority[a] - imageVersionsPriority[b]));
 
 const waterMarkGen = (function () {
-    const waterFontPath = path.normalize(waterDir + 'AdobeFanHeitiStd-Bold.otf');
     const logo = path.normalize(waterDir + 'logo.png');
     const base = {
         height: 600,
@@ -177,6 +182,34 @@ const waterMarkGen = (function () {
         };
     };
 }());
+
+const protectCoverGen = function (options) {
+    let blurSigma;
+
+    if (options.h < 50) {
+        blurSigma = 0;
+    } else if (options.h < 100) {
+        blurSigma = 1;
+    } else if (options.h < 200) {
+        blurSigma = 2;
+    } else if (options.h < 600) {
+        blurSigma = 3;
+    } else {
+        blurSigma = Math.min(10, Math.floor(options.h / 150)) + 1;
+    }
+
+    return [
+        `-gravity center`,
+        `-blur 0x${blurSigma}`,
+        `-background '#0008'`,
+        `-stroke none`,
+        `-fill '#f2f2f2'`,
+        `-font ${waterFontPath}`,
+        `-size ${options.w}x${options.h}`,
+        `caption:'Not available'`,
+        `-composite`
+    ];
+};
 
 function fillImgPrior(parent, level) {
     return _.transform(imageVersions, function (result, item, key) {
@@ -249,7 +282,12 @@ async function conveyerControl() {
         const photo = await Photo
             .findOne(
                 { cid: photoConv.cid },
-                { cid: 1, file: 1, mime: 1, user: 1, w: 1, h: 1, ws: 1, hs: 1, conv: 1, convqueue: 1, watersignText: 1 }
+                {
+                    cid: 1, s: 1, user: 1,
+                    path: 1, file: 1, mime: 1,
+                    w: 1, h: 1, ws: 1, hs: 1,
+                    conv: 1, convqueue: 1, watersignText: 1
+                }
             )
             .populate({ path: 'user', select: { _id: 0, login: 1 } })
             .exec();
@@ -259,7 +297,7 @@ async function conveyerControl() {
         await Promise.all([photo.save(), photoConv.save()]);
 
         try {
-            await conveyerStep(photo, photoConv);
+            await conveyorStep(photo, photoConv);
             conveyerConverted += 1;
         } catch (err) {
             const errorObject = { cid: photoConv.cid, added: photoConv.added, error: String(err && err.message) };
@@ -268,8 +306,9 @@ async function conveyerControl() {
             await new PhotoConveyerError(errorObject).save();
         }
 
-        photo.conv = undefined; // Присваиваем undefined, чтобы удалить свойства
+        photo.conv = undefined; // Set undefined to remove properties
         photo.convqueue = undefined;
+        photo.converted = new Date(); // Save last converted stamp
         await Promise.all([photo.save(), photoConv.remove()]);
 
         working -= 1;
@@ -305,28 +344,19 @@ function getWatertext(photo) {
 }
 
 /**
- * Очередной шаг конвейера
- * @param photo Объект фотографии
+ * Another step of the conveyor
+ * @param photo Photo object
  */
-async function conveyerStep(photo, { webpOnly = false }) {
-    const cid = photo.cid;
+async function conveyorStep(photo, { protect: onlyProtectPublic = false, webpOnly = false }) {
+    const itsPublicPhoto = photo.s === status.PUBLIC;
+    const wasPublished = photo.s >= status.PUBLIC;
     const waterTxt = getWatertext(photo);
-    const lossless = photo.mime === 'image/png';
-    const originSrcPath = path.normalize(sourceDir + photo.file);
-    const saveStandardSize = function (result) {
-        photo.ws = parseInt(result.w, 10) || undefined;
-        photo.hs = parseInt(result.h, 10) || undefined;
-    };
-    const saveStandardSign = function (result) {
-        photo.signs = result.signature ? result.signature.substr(0, 7) + result.signature.substr(result.signature.length - 3) : undefined;
-    };
-    const makeWebp = (variantName, dstPath) => tryPromise(5,
-        () => execAsync(`cwebp -preset photo -m 5 ${lossless ? '-lossless ' : ''}${dstPath} -o ${dstPath}.webp`),
-        `convert ${variantName}-variant to webp of photo ${cid}`
-    );
+    const { cid } = photo;
 
     if (!webpOnly) {
-        // Запускаем identify оригинала
+        // Launch identification of original
+        const originSrcPath = path.join(sourceDir, photo.path);
+
         await tryPromise(5, () => identifyImage(originSrcPath, originIdentifyString), `identify origin of photo ${cid}`)
             .then(function (result) {
                 photo.w = parseInt(result.w, 10) || undefined;
@@ -336,20 +366,52 @@ async function conveyerStep(photo, { webpOnly = false }) {
             });
     }
 
+    // We always convert to public folder, if file was published once
+    if (wasPublished) {
+        await conveyorSubStep(photo, {
+            webpOnly,
+            waterTxt,
+            protectCover: !itsPublicPhoto || onlyProtectPublic
+        });
+    }
+
+    // And we also convert to protected folder if photo is not public
+    // and there is no flag that we must just cover public with with protection curtain
+    // (we specify this flag when deactivate photo, in this case we just copy public to protected to avoid extra convert)
+    if (!itsPublicPhoto && !onlyProtectPublic) {
+        await conveyorSubStep(photo, {
+            webpOnly, waterTxt,
+            isPublic: false,
+            getStandardAttributes: !wasPublished // Get attributes only if they hasn't been taken on public step
+        });
+    }
+}
+
+async function conveyorSubStep(photo, { isPublic = true, protectCover = false, webpOnly = false, getStandardAttributes = true, waterTxt }) {
+    const { cid } = photo;
+    const targetDir =  isPublic ? publicDir : protectedDir;
+    const lossless = photo.mime === 'image/png';
+
+    const makeWebp = (variantName, dstPath) => tryPromise(5,
+        () => execAsync(`cwebp -preset photo -m 5 ${lossless ? '-lossless ' : ''}${dstPath} -o ${dstPath}.webp`),
+        `convert ${variantName}-variant to webp of photo ${cid}`
+    );
+
     for (const variantName of imageVersionsKeys) {
-        const isOriginal = variantName === 'a';
+        const isFullsize = variantName === 'a';
+        const isStandardsize = variantName === 'd';
         const variant = imageVersions[variantName];
-        const srcDir = variant.parent === sourceDir ? sourceDir : targetDir + imageVersions[variant.parent].dir;
-        const srcPath = path.normalize(srcDir + photo.file);
-        const dstDir = path.normalize(targetDir + variant.dir + photo.file.substr(0, 5));
-        const dstPath = path.normalize(targetDir + variant.dir + photo.file);
+        const srcDir = protectCover || variant.parent === sourceDir ? sourceDir : targetDir + imageVersions[variant.parent].dir;
+        const srcPath = path.join(srcDir, photo.path);
+        const dstDir = path.join(targetDir, variant.dir, photo.path.substr(0, 5));
+        const dstPath = path.join(targetDir, variant.dir, photo.path);
 
         if (webpOnly) {
             await makeWebp(variantName, dstPath);
             continue;
         }
 
-        let commands = [`convert ${srcPath}`];
+        const commands = [`convert ${srcPath}`];
 
         if (variant.strip) {
             commands.push(`-strip`);
@@ -386,10 +448,14 @@ async function conveyerStep(photo, { webpOnly = false }) {
             }
         }
 
+        if (protectCover && !variant.water) {
+            commands.push(...protectCoverGen({ w: variant.width, h: variant.height }));
+        }
+
         commands.push(dstPath);
 
         // Convert photo. For full size ('a') we need straight convert with watermark, because we know origin size
-        if (!isOriginal) {
+        if (!isFullsize) {
             // console.log(variantName, commands.join(' '));
             await tryPromise(5,
                 () => execAsync(commands.join(' ')), `convert to ${variantName}-variant of photo ${cid}`
@@ -397,43 +463,55 @@ async function conveyerStep(photo, { webpOnly = false }) {
         }
 
         // For standard photo we must get result size before creating watermark, because it depends on those sizes
-        if (variantName === 'd') {
-            await tryPromise(
-                6, () => identifyImage(dstPath, '{"w": "%w", "h": "%h"}'), `identify standard size of photo ${cid}`
-            ).then(saveStandardSize);
+        if (isStandardsize && getStandardAttributes) {
+            await tryPromise(6,
+                () => identifyImage(dstPath, '{"w": "%w", "h": "%h"}'), `identify standard size of photo ${cid}`
+            ).then(function (result) {
+                photo.ws = parseInt(result.w, 10) || undefined;
+                photo.hs = parseInt(result.h, 10) || undefined;
+            });
         }
 
         if (variant.water) {
             const watermark = waterMarkGen({
-                w: isOriginal ? photo.w : photo.ws,
-                h: isOriginal ? photo.h : photo.hs,
+                w: isFullsize ? photo.w : photo.ws,
+                h: isFullsize ? photo.h : photo.hs,
                 txt: waterTxt
             });
 
             commands.pop();
-            commands = commands.concat(watermark.commands);
+
+            if (protectCover) {
+                const protectCommands = protectCoverGen({
+                    w: isFullsize ? photo.w : photo.ws,
+                    h: isFullsize ? photo.h : photo.hs
+                });
+
+                commands.push(...protectCommands);
+            }
+
+            commands.push(...watermark.commands);
             commands.push(dstPath);
             // console.log(variantName, commands.join(' '));
             await tryPromise(5,
                 () => execAsync(commands.join(' ')), `convert to ${variantName}-variant of photo ${cid}`
             );
 
-            if (photo.watersignText) {
+            if (photo.watersignText && getStandardAttributes) {
                 photo.watersignTextApplied = new Date();
             }
 
-            photo[isOriginal ? 'waterh' : 'waterhs'] = watermark.params.splice;
-            if (variantName === 'd') {
+            photo[isFullsize ? 'waterh' : 'waterhs'] = watermark.params.splice;
+            if (isStandardsize && getStandardAttributes) {
                 photo.hs -= watermark.params.splice;
             }
         }
 
-        // For standard photo we must get signature after watermark, to consider it as well
-        if (variantName === 'd') {
-            await tryPromise(6,
-                () => identifyImage(dstPath, '{"signature": "%#"}'),
-                `identify sign ${variantName}-variant of photo ${photo.cid}`
-            ).then(saveStandardSign);
+        // We must know signature of result photo, to use it for resetting user's browser cache
+        if (isStandardsize  && getStandardAttributes) {
+            const { signature, fileParam } = await getFileSign(photo, dstPath);
+            photo.signs = signature || undefined;
+            photo.file = `${photo.path}${fileParam}`;
         }
 
         await sleep(25);
@@ -468,12 +546,68 @@ async function tryPromise(attemps, promiseGenerator, data, attemp) {
     }
 }
 
+async function getFileSign(photo, filePath) {
+    const { signature } = await tryPromise(6,
+        () => identifyImage(filePath, '{"signature": "%#"}'),
+        `identify sign of ${filePath} of photo ${photo.cid}`
+    );
+    const fileParam = signature ? `?s=${signature.substr(0, 7)}${signature.substr(signature.length - 3)}` : '';
+
+    return { signature, fileParam };
+};
+
+// Move photo's files between public/protected folders
+export async function movePhotoFiles({ photo, copy = false, toProtected = false }) {
+    const { path: filePath } = photo;
+    const fileWebp = filePath + '.webp';
+    const fileDir = filePath.substr(0, 5);
+
+    const method = copy ? Utils.copyFile : fs.renameAsync.bind(fs);
+    const sourceDir = toProtected ? publicDir : protectedDir;
+    const targetDir = toProtected ? protectedDir : publicDir;
+
+    await Promise.all(imageVersionsKeys.map(async key => {
+        const source = path.join(sourceDir, key);
+        const target = path.join(targetDir, key);
+
+        await mkdirpAsync(path.join(target, fileDir));
+
+        return Promise.all([
+            method(path.join(source, filePath), path.join(target, filePath)),
+            method(path.join(source, fileWebp), path.join(target, fileWebp))
+        ]);
+    }));
+
+    // If we copy/move files to public folder, we must get signuture again and fill anticache param in file property
+    if (!toProtected) {
+        await sleep(50);
+
+        const { signature, fileParam } = await getFileSign(photo, path.join(targetDir, 'd', filePath));
+        await Photo.update(
+            { cid: photo.cid }, { $set: { file: filePath + fileParam, signs: signature || '', converted: new Date() } }
+        ).exec();
+    }
+}
+
+// Delete photo files from public/protected folders, silently, swallowing possible errors if file does not exist
+export function deletePhotoFiles({ photo, fromProtected = false }) {
+    const { path: filePath } = photo;
+    const fileWebp = filePath + '.webp';
+
+    const dir = fromProtected ? protectedDir : publicDir;
+
+    return Promise.all(imageVersionsKeys.map(key => Promise.all([
+        fs.unlinkAsync(path.join(dir, key, filePath)).catch(_.noop),
+        fs.unlinkAsync(path.join(dir, key, fileWebp)).catch(_.noop)
+    ])));
+}
+
 /**
  * Method for add photos to the conveyer
  * @param data Array of objects like {cid: 123}
  * @param priority Priority of convertation in conveyer
  */
-export async function addPhotos(data, priority) {
+export async function addPhotos(data, priority, potectPublicOnly) {
     const toConvertObjs = [];
     const stamp = new Date();
 
@@ -481,7 +615,7 @@ export async function addPhotos(data, priority) {
         const cid = Number(photo.cid);
 
         if (cid > 0) {
-            toConvertObjs.push({ cid, priority: priority || 4, added: stamp });
+            toConvertObjs.push({ cid, priority: priority || 4, added: stamp, protect: potectPublicOnly });
         }
     }
 
@@ -519,12 +653,18 @@ export async function addPhotosAll(params) {
 }
 
 /**
- * Удаление фотографий из конвейера конвертаций
- * @param data Массив cid
+ * Remove photos from conveyor
+ * @param cids Array of cids
  */
-export async function removePhotos(data) {
-    const { result: { n: removedCount = 0 } } = await PhotoConveyer.remove({ cid: { $in: data } }).exec();
+export async function removePhotos(cids) {
+    if (_.isEmpty(cids)) {
+        return 0;
+    }
+
+    const { result: { n: removedCount = 0 } } = await PhotoConveyer.remove({ cid: { $in: cids } }).exec();
     conveyerLength -= removedCount;
+
+    return removedCount;
 }
 
 (async function converterStarter() {
@@ -572,7 +712,10 @@ async function conveyorStat() {
     }
 
     const halfYear = Date.now() - ms('0.5y');
-    const docs = await STPhotoConveyer.find({stamp: {$gt: halfYear}}, { _id: 0, __v: 0 }, { sort: 'stamp', lean: true }).exec();
+    const docs = await STPhotoConveyer.find({ stamp: { $gt: halfYear } }, { _id: 0, __v: 0 }, {
+        sort: 'stamp',
+        lean: true
+    }).exec();
 
     docs.forEach(doc => doc.stamp = doc.stamp.getTime());
 

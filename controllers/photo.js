@@ -6,7 +6,7 @@ import log4js from 'log4js';
 import moment from 'moment';
 import config from '../config';
 import Utils from '../commons/Utils';
-import { waitDb } from './connection';
+import { waitDb, dbRedis } from './connection';
 import constants from './constants';
 import constantsError from '../app/errors/constants';
 import * as session from './_session';
@@ -44,11 +44,19 @@ const {
     }
 } = constants;
 
-const typesValue = new Set(_.values(constants.photo.type));
+const typesSet = new Set(_.values(constants.photo.type));
 const photoYears = constants.photo.years[constants.photo.type.PHOTO];
 const paintYears = constants.photo.years[constants.photo.type.PAINTING];
 const photoRange = photoYears.max - photoYears.min;
 const paintRange = paintYears.max - paintYears.min;
+
+const allStatuses = _.values(status);
+const allStatusesSet = new Set(allStatuses);
+const openedStatuses = [status.PUBLIC, status.DEACTIVATE, status.REMOVE];
+const openedStatusesSet = new Set(openedStatuses);
+const publicDefaultStatus = [status.PUBLIC];
+const userGalleryBySelfDefaultStatuses = [status.NEW, status.REVISION, status.READY, status.PUBLIC, status.DEACTIVATE];
+const userGalleryByModeratorDefaultStatuses = [status.NEW, status.REVISION, status.READY, status.PUBLIC];
 
 const parsingFieldsSet = new Set(parsingFields);
 const historyFieldsDiffHash = historyFieldsDiff.reduce(function (result, field) {
@@ -69,17 +77,12 @@ const compactFields = {
     ready: 1
 };
 const compactFieldsForReg = {
-    _id: 1,
-    cid: 1,
-    file: 1,
-    s: 1,
-    ucdate: 1,
-    title: 1,
-    year: 1,
-    ccount: 1,
-    conv: 1,
-    convqueue: 1,
-    ready: 1
+    ...compactFields,
+
+    _id: 1, // To calculate new comments
+    user: 1, //  To understand if photo is mine
+    ucdate: 1, // For checking of changes
+    mime: 1 // For serving protected files
 };
 const compactFieldsWithRegions = { geo: 1, ...compactFields, ...regionController.regionsAllSelectHash };
 const compactFieldsForRegWithRegions = { geo: 1, ...compactFieldsForReg, ...regionController.regionsAllSelectHash };
@@ -130,10 +133,13 @@ export const permissions = {
             // watersign: [true, false]
             // nowatersign: [true, false]
             // download: [true, byrole, withwater, login]
+            // protected: [true, false]
         };
         const s = photo.s;
 
         if (usObj.registered) {
+            const isAdmin = usObj.isAdmin;
+
             if (typeof ownPhoto !== 'boolean') {
                 ownPhoto = !!photo.user && User.isEqual(photo.user, usObj.user);
             }
@@ -148,17 +154,17 @@ export const permissions = {
 
             if (// If setted individual that photo has now watersing
             photo.watersignIndividual && photo.watersignOption === false ||
-                // If no individual watersign option and setted by profile that photo has now watersing
+                // If no individual watersign option and setted by profile that photo has no watersing
             !photo.watersignIndividual && userSettings.photo_watermark_add_sign === false ||
                 // If individually setted allow to download origin
             photo.disallowDownloadOriginIndividual && !photo.disallowDownloadOrigin ||
-                // If no individual downloading setting and setted by profile that photo has now watersing
+                // If no individual downloading setting and setted by profile that photo has no watersing
                 // or by profile allowed to download origin
             !photo.disallowDownloadOriginIndividual &&
             (userSettings.photo_watermark_add_sign === false || !userSettings.photo_disallow_download_origin)) {
                 // Let download origin
                 can.download = true;
-            } else if (ownPhoto || usObj.isAdmin) {
+            } else if (ownPhoto || isAdmin) {
                 // Or if it photo owner or admin then allow to download origin with special sign on button
                 can.download = 'byrole';
             } else {
@@ -166,40 +172,43 @@ export const permissions = {
                 can.download = 'withwater';
             }
 
-            // Редактировать может модератор и владелец, если оно не удалено и не отозвано. Администратор - всегда
-            can.edit = usObj.isAdmin || s !== status.REMOVE && s !== status.REVOKE && (canModerate || ownPhoto) || undefined;
-            // Отправлять на премодерацию может владелец и фото новое или на доработке
+            can.protected = permissions.can.protected(s, ownPhoto, canModerate, isAdmin);
+
+            // Admin can always edit, moderator and owner always except own revoked or removed photo,
+            can.edit = isAdmin || (canModerate || ownPhoto) && s !== status.REMOVE && s !== status.REVOKE || undefined;
+            // Owner can send to premoderation if photo is new or on revision
             can.ready = (s === status.NEW || s === status.REVISION) && ownPhoto || undefined;
-            // Отозвать может только владелец пока фото новое
+            // Revoke can only owner if photo is new
             can.revoke = s < status.REVOKE && ownPhoto || undefined;
-            // Модератор может отклонить не свое фото пока оно новое
+            // Moderator can reject not his own photo until it's new
             can.reject = s < status.REVOKE && canModerate && !ownPhoto || undefined;
             // Administrator can resore rejected photo
-            can.rereject = s === status.REJECT && usObj.isAdmin || undefined;
-            // Восстанавливать из удаленных может только администратор
-            can.restore = s === status.REMOVE && usObj.isAdmin || undefined;
-            // Отправить на конвертацию может только администратор
-            can.convert = usObj.isAdmin || undefined;
-            // Комментировать опубликованное может любой зарегистрированный, или модератор и владелец снятое с публикации
-            can.comment = s === status.PUBLIC || s > status.PUBLIC && canModerate || undefined;
+            can.rereject = s === status.REJECT && isAdmin || undefined;
+            // Remove can owner its deactivated photo or admin any published or deactivated photo
+            can.remove = ownPhoto && s === status.DEACTIVATE || isAdmin && (s === status.PUBLIC || s === status.DEACTIVATE) || undefined;
+            // Restore from removed can only administrator
+            can.restore = isAdmin && s === status.REMOVE || undefined;
+            // Send to convert can only admin
+            can.convert = isAdmin || undefined;
+            // Any registered user can comment public or deactivated photo. Moderator - also removed photos (except owns)
+            can.comment = s === status.PUBLIC || s === status.DEACTIVATE || s === status.REMOVE && (isAdmin || canModerate && !ownPhoto) || undefined;
+
             // Change watermark sign and download setting can administrator and owner/moderator
-            // if administrator didn't prohibit it for this photo or entire owner
-            can.watersign = usObj.isAdmin || (ownPhoto || canModerate) &&
-                (!photo.user.nowaterchange && !photo.nowaterchange || photo.nowaterchange === false) || undefined;
+            // if photo is not removed and administrator didn't prohibit it for this photo or entire owner
+            can.watersign = isAdmin || (ownPhoto || canModerate) &&
+                (s !== status.REMOVE || !photo.user.nowaterchange && !photo.nowaterchange || photo.nowaterchange === false) || undefined;
             // Administrator can prohibit watesign changing by owner/moderator
-            can.nowaterchange = usObj.isAdmin || undefined;
+            can.nowaterchange = isAdmin || undefined;
 
             if (canModerate) {
-                // Модератор может отправить на доработку
+                // Moderator can send to revision
                 can.revision = s === status.READY || undefined;
-                // Модератор может одобрить новое фото
+                // Moderator can approve new photo
                 can.approve = s < status.REJECT || undefined;
-                // Модератор может активировать только деактивированное
+                // Moderator can activate only deactivated photo
                 can.activate = s === status.DEACTIVATE || undefined;
-                // Модератор может деактивировать только опубликованное
+                // Moderator can deactivate only published photo
                 can.deactivate = s === status.PUBLIC || undefined;
-                // Модератор может удалить уже опубликованное и не удаленное фото
-                can.remove = s >= status.PUBLIC && s !== status.REMOVE || undefined;
             }
         } else {
             can.download = 'login';
@@ -208,7 +217,8 @@ export const permissions = {
         return can;
     },
     canSee(photo, usObj) {
-        if (photo.s === status.PUBLIC) {
+        // If photo was published once, anyone can see its page. Visiblity of image is controlled by can.protected
+        if (photo.s >= status.PUBLIC) {
             return true;
         }
 
@@ -217,15 +227,17 @@ export const permissions = {
             if (User.isEqual(photo.user, usObj.user)) {
                 return true;
             }
-            // Admin can see removed photos
-            if (photo.s === status.REMOVE) {
-                return usObj.isAdmin;
-            }
 
             return permissions.canModerate(photo, usObj);
         }
 
         return false;
+    },
+    can: {
+        // Who will see protected file (without cover) if photo is not public:
+        // Owner and admin - always, moderator - only if photo is not removed
+        'protected': (s, ownPhoto, canModerate, isAdmin) =>
+            s !== status.PUBLIC && (ownPhoto || isAdmin || canModerate && s !== status.REMOVE) || undefined
     }
 };
 
@@ -236,14 +248,14 @@ export const permissions = {
  * @param options For example, { lean: true }
  * @param populateUser Flag, that user object needed
  */
-export async function find({ query, fieldSelect, options, populateUser }) {
+export async function find({ query, fieldSelect = {}, options = {}, populateUser }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered) {
-        query.s = status.PUBLIC; // Anonyms can see only public
+        query.s = { $gte: status.PUBLIC }; // Anonyms can see only photos, that were published (even if deactivated then)
     }
 
-    let photo = Photo.findOne(query, fieldSelect || {}, options || {});
+    let photo = Photo.findOne(query, fieldSelect, options);
 
     if (populateUser) {
         photo = photo.populate({ path: 'user' });
@@ -335,7 +347,7 @@ async function give(params) {
     if (!_.isEmpty(noselect)) {
         Object.assign(fieldNoSelect, noselect);
     }
-    _.defaults(fieldNoSelect, { sign: 0, sdate: 0 });
+    _.defaults(fieldNoSelect, { __v: 0, path: 0, format: 0, sign: 0, signs: 0, sdate: 0, converted: 0 }); // But we need 'mime' for _pr
     if (fieldNoSelect.frags === undefined) {
         fieldNoSelect['frags._id'] = 0;
     }
@@ -445,6 +457,15 @@ async function give(params) {
         }
     }
 
+    if (can.protected) {
+        try {
+            await this.call('photo.allowGetProtectedPhotoFile', { file: photo.file, mime: photo.mime });
+        } catch (err) {
+            logger.warn(`${this.ridMark} Putting link to redis for protected ${cid} photo's file failed. Serve public.`, err);
+            can.protected = undefined;
+        }
+    }
+
     delete photo._id;
 
     return { photo, can };
@@ -546,6 +567,7 @@ async function create({ files }) {
             user,
             s: 0,
             cid: next + i,
+            path: item.fullfile,
             file: item.fullfile,
             ldate: new Date(now + i * 10), // Increase loading time of each file  by 10 ms for proper sorting
             sdate: new Date(now + i * 10 + shift10y), // New photos must be always on top
@@ -823,7 +845,7 @@ async function prefetchForEdit({ data: { cid, s, cdate, ignoreChange }, can }) {
     const photo = await this.call('photo.find', { query: { cid }, populateUser: true });
 
     if (_.isNumber(s) && s !== photo.s) {
-        // Две кнопки: "Посмотреть", "Продолжить <сохранение|изменение статуса>"
+        // Two buttons if status has been changed: "Show", "Proceed <saving|changing status>"
         throw new NoticeError(constantsError.PHOTO_ANOTHER_STATUS);
     }
 
@@ -878,16 +900,77 @@ function userPCountUpdate(user, newDelta = 0, publicDelta = 0, inactiveDelta = 0
     }
 }
 
+const allowGetProtectedPhotoFile = async function ({ file, mime = '', ttl = config.protectedFileLinkTTL }) {
+    if (!dbRedis.connected) {
+        throw new ApplicationError({ code: constantsError.REDIS_NO_CONNECTION, trace: false });
+    }
+
+    const { handshake: { session } } = this;
+    const [fileUri] = file.split('?');
+    return dbRedis.setAsync(`pr:${session.key}:${fileUri}`, `${fileUri}:${mime}`, 'EX', ttl)
+        .catch(error => {
+            throw new ApplicationError({ code: constantsError.REDIS, trace: false, message: error.message });
+        });
+};
+
+const allowGetProtectedPhotosFiles = async function ({ photos = [], ttl = config.protectedFileLinkTTL }) {
+    if (!dbRedis.connected) {
+        throw new ApplicationError({ code: constantsError.REDIS_NO_CONNECTION, trace: false });
+    }
+
+    if (!photos.length) {
+        return;
+    }
+
+    const { handshake: { session } } = this;
+    const multi = dbRedis.multi();
+
+    for (const { file, mime = '' } of photos) {
+        const [fileUri] = file.split('?');
+        multi.set(`pr:${session.key}:${fileUri}`, `${fileUri}:${mime}`, 'EX', ttl);
+    }
+
+    return multi.execAsync()
+        .catch(error => {
+            throw new ApplicationError({ code: constantsError.REDIS, trace: false, message: error.message });
+        });
+};
+
+
+// If photo is getting public status,
+// we must move files from protected to public folder, and overwrite files in public (if exist)
+// If photo is being changed from public status,
+// we must copy all public files to protected folder, and then cover all public files with caption
+const changeFileProtection = async function ({ photo, protect = false }) {
+    try {
+        converter.movePhotoFiles({ photo, copy: protect, toProtected: protect });
+    } catch (err) {
+        logger.warn(`${this.ridMark} Copying/moving of files in changing protection failed:`, err.message);
+
+        // If copying/moving files failed for some reason, simply add converter job to create variants in actual folder
+        await converter.addPhotos([photo], 2);
+
+        if (!protect) {
+            // And if this is moving from protected to public, try to remove all files from protected whatever happens
+            await converter.deletePhotoFiles({ photo, fromProtected: true });
+        }
+    }
+
+    if (protect) {
+        // Cover all public files with caption for protected photo
+        await converter.addPhotos([photo], 2, true);
+    }
+};
+
 const changePublicExternality = async function ({ photo, makePublic }) {
     return await Promise.all([
-        // Show or hide comments and recalculate it amount of users
-        this.call('comment.changeObjCommentsVisibility', { obj: photo, hide: !makePublic }),
         // Recalculate number of photos of owner
         userPCountUpdate(photo.user, 0, makePublic ? 1 : -1, makePublic ? -1 : 1),
         // If photo has coordinates, means that need to do something with map
         Utils.geo.check(photo.geo) ? this.call(makePublic ? 'photo.photoToMap' : 'photo.photoFromMap', {
             photo, paintingMap: photo.type === constants.photo.type.PAINTING
-        }) : null
+        }) : null,
+        changeFileProtection({ photo, protect: !makePublic })
     ]);
 };
 
@@ -1041,6 +1124,8 @@ async function approve(data) {
     // Save previous status to history
     await this.call('photo.saveHistory', { oldPhotoObj, photo, canModerate });
 
+    changeFileProtection({ photo, protect: false });
+
     // Reselect the data to display
     return this.call('photo.give', { cid: photo.cid, rel });
 }
@@ -1068,6 +1153,7 @@ async function activateDeactivate(data) {
 
     const { rel } = await this.call('photo.update', { photo });
 
+    await this.call('comment.changeObjCommentsStatus', { obj: photo });
     await this.call('photo.changePublicExternality', { photo, makePublic: !disable });
 
     // Save previous status to history
@@ -1107,11 +1193,10 @@ async function remove(data) {
 
     const { rel } = await this.call('photo.update', { photo });
 
+    // Change comments status
+    await this.call('comment.changeObjCommentsStatus', { obj: photo });
     // Save previous status to history
     await this.call('photo.saveHistory', { oldPhotoObj, photo, canModerate, reason });
-
-    // Unsubscribe all users from this photo
-    await this.call('subscr.unSubscribeObj', { objId: photo._id });
 
     if (oldPhotoObj.s === status.PUBLIC) {
         await this.call('photo.changePublicExternality', { photo, makePublic: false });
@@ -1140,6 +1225,8 @@ async function restore(data) {
 
     const { rel } = await this.call('photo.update', { photo });
 
+    // Change comments status
+    await this.call('comment.changeObjCommentsStatus', { obj: photo });
     // Save previous status to history
     await this.call('photo.saveHistory', { oldPhotoObj, photo, canModerate, reason });
 
@@ -1210,17 +1297,43 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40 }, userId })
             Photo.count(query).exec()
         ]);
 
-        // If user is logged, fill amount of new comments for each object
-        if (iAm.registered && photos.length) {
-            await userObjectRelController.fillObjectByRels(photos, iAm.user._id, 'photo');
-        }
-
         if (photos.length) {
             if (iAm.registered) {
+                // If user is logged in, fill amount of new comments for each object
+                await userObjectRelController.fillObjectByRels(photos, iAm.user._id, 'photo');
+
+                const isAdmin = iAm.isAdmin;
+                const myUser = iAm.user;
+                const protectedPhotos = [];
+
                 for (const photo of photos) {
-                    delete photo._id;
-                    delete photo.vdate;
-                    delete photo.ucdate;
+                    const isMine = User.isEqual(photo.user, myUser);
+
+                    if (!userId && isMine) {
+                        photo.my = true;
+                    }
+                    if (permissions.can.protected(photo.s, isMine, permissions.canModerate(photo, iAm), isAdmin)) {
+                        photo.protected = true;
+                        protectedPhotos.push(photo);
+                    }
+
+                    photo._id = undefined;
+                    photo.user = undefined;
+                    photo.vdate = undefined;
+                    photo.ucdate = undefined;
+                }
+
+                if (protectedPhotos.length) {
+                    await this.call('photo.allowGetProtectedPhotosFiles', { photos: protectedPhotos })
+                        .catch(err => {
+                            logger.warn(
+                                `${this.ridMark} Putting link to redis for protected photos file failed. Serve public.`,
+                                err
+                            );
+                            for (const photo of protectedPhotos) {
+                                photo.protected = undefined;
+                            }
+                        });
                 }
             }
 
@@ -1326,7 +1439,7 @@ export function parseFilter(filterString) {
                     for (filterValItem of filterVal) {
                         if (filterValItem) {
                             filterValItem = Number(filterValItem);
-                            if (!isNaN(filterValItem)) { // 0 must be included, that is why check for NaN
+                            if (allStatusesSet.has(filterValItem)) { // 0 must be included, that is why check for NaN
                                 result.s.push(filterValItem);
                             }
                         }
@@ -1342,12 +1455,12 @@ export function parseFilter(filterString) {
                     for (filterValItem of filterVal) {
                         if (filterValItem) {
                             filterValItem = Number(filterValItem);
-                            if (typesValue.has(filterValItem)) {
+                            if (typesSet.has(filterValItem)) {
                                 result.t.push(filterValItem);
                             }
                         }
                     }
-                    if (!result.t.length || result.t.length === typesValue.size) {
+                    if (!result.t.length) {
                         delete result.t;
                     }
                 }
@@ -1366,10 +1479,6 @@ export function parseFilter(filterString) {
 // Return general gallery
 function givePS(options) {
     const filter = options.filter ? parseFilter(options.filter) : {};
-
-    if (!filter.s) {
-        filter.s = [status.PUBLIC];
-    }
 
     return this.call('photo.givePhotos', { filter, options });
 };
@@ -1413,7 +1522,7 @@ async function giveForApprove(data) {
         throw new AuthorizationError();
     }
     if (iAm.isModerator) {
-        _.assign(query, iAm.mod_rquery);
+        Object.assign(query, iAm.mod_rquery);
     }
 
     const photos = await Photo.find(query, compactFieldsWithRegions, {
@@ -1471,7 +1580,7 @@ async function giveNearestPhotos({ geo, type, year, year2, except, distance, lim
 
     geo.reverse();
 
-    type = typesValue.has(type) ? type : constants.photo.type.PHOTO;
+    type = typesSet.has(type) ? type : constants.photo.type.PHOTO;
     const isPainting = type === constants.photo.type.PAINTING;
 
     const query = { geo: { $near: geo }, s: status.PUBLIC, type };
@@ -1570,7 +1679,7 @@ async function giveFresh({ login, after, skip, limit }) {
     const asModerator = iAm.user.login !== login && iAm.isModerator;
 
     if (asModerator) {
-        _.assign(query, iAm.mod_rquery);
+        Object.assign(query, iAm.mod_rquery);
     }
     if (userId) {
         query.user = userId;
@@ -1656,7 +1765,7 @@ function photoValidate(newValues, oldValues, can) {
         result.geo = undefined;
     }
 
-    if (_.isNumber(newValues.type) && typesValue.has(newValues.type)) {
+    if (_.isNumber(newValues.type) && typesSet.has(newValues.type)) {
         result.type = newValues.type;
     }
 
@@ -2251,15 +2360,29 @@ export function buildPhotosQuery(filter, forUserId, iAm) {
     let regionsHash = {};
     let regionsArrAll = []; // Array of regions objects, including inactive (phantom in filters)
 
-    const squeryPublicHave = !filter.s || !filter.s.length || filter.s.includes(5);
-    const squeryPublicOnly = !iAm.registered || filter.s && filter.s.length === 1 && filter.s[0] === status.PUBLIC;
+    const itsMineGallery = forUserId && forUserId.equals(iAm.user._id);
+    let statuses = publicDefaultStatus;
+
+    if (iAm.registered) {
+        if (filter.s && filter.s.length) {
+            statuses = filter.s;
+        } else if (forUserId) {
+            if (itsMineGallery) {
+                statuses = userGalleryBySelfDefaultStatuses;
+            } else if (iAm.isModerator || iAm.isAdmin) {
+                statuses = userGalleryByModeratorDefaultStatuses;
+            }
+        }
+    }
+
+    const statusesOpened = [];
+    const statusesClosed = [];
+
+    statuses.forEach(s => (openedStatusesSet.has(s) ? statusesOpened : statusesClosed).push(s));
+
+    const statusesOpenedOnly = statuses.length === statusesOpened.length;
 
     const result = { query: null, s: [], rcids: [], rarr: [] };
-
-    if (!squeryPublicOnly && filter.s && filter.s.length) {
-        // If public exists, remove, because non-public squery is used only in rqueryMod
-        filter.s = _.without(filter.s, status.PUBLIC, !iAm.isAdmin ? status.REMOVE : undefined);
-    }
 
     if (Array.isArray(filter.r) && filter.r.length) {
         regionsArrAll = regionController.getRegionsArrFromCache(filter.r);
@@ -2276,7 +2399,7 @@ export function buildPhotosQuery(filter, forUserId, iAm) {
         const regionQuery = regionController.buildQuery(regionsArr);
         rqueryPub = rqueryMod = regionQuery.rquery;
         regionsHash = regionQuery.rhash;
-    } else if (filter.r === undefined && iAm.registered && iAm.user.regions.length && (!forUserId || !forUserId.equals(iAm.user._id))) {
+    } else if (filter.r === undefined && iAm.registered && iAm.user.regions.length && (!forUserId || !itsMineGallery)) {
         regionsHash = iAm.rhash;
         regionsCids = _.map(iAm.user.regions, 'cid');
         regionsArr = regionsArrAll = regionController.getRegionsArrFromHash(regionsHash, regionsCids);
@@ -2285,22 +2408,22 @@ export function buildPhotosQuery(filter, forUserId, iAm) {
         regionsCids = regionsCids.map(Number);
     }
 
-    if (squeryPublicOnly) {
+    if (statusesOpenedOnly) {
         queryPub = {};  // Give only public photos to anonymous or when filter for public is active
 
         if (filter.r === undefined && iAm.registered && iAm.user.regions.length) {
             rqueryPub = iAm.rquery; // If filter is not specified - give by own regions
         }
-    } else if (forUserId && forUserId.equals(iAm.user._id)) {
+    } else if (itsMineGallery) {
         // Own gallery give without removed regions(for non-admins) and without regions in settings, only by filter.r
         queryMod = {};
     } else {
-        if (filter.r === undefined && iAm.user.regions.length) {
+        if (filter.r === undefined && iAm.registered && iAm.user.regions.length) {
             rqueryPub = rqueryMod = iAm.rquery; // If filter not specified - give by own regions
         }
 
         if (iAm.isAdmin) {
-            // Give all statises to the admins
+            // Give all statuses to the admins
             queryMod = {};
         } else if (!iAm.user.role || iAm.user.role < 5) {
             // Give only public to users, who role is below regions moderators
@@ -2313,7 +2436,7 @@ export function buildPhotosQuery(filter, forUserId, iAm) {
                 // Give area as moderated for global moderators or regional moderators,
                 // whose moderators regions match with own, i.e. moderation area includes users area
                 queryMod = {};
-            } else if (filter.r === 0 || !iAm.user.regions.length) {
+            } else if (filter.r === 0 || !regionsCids.length) {
                 // If all users regions requested (i.e. whole world)
                 // do global request for public, and with statuses for moderated
                 queryPub = {};
@@ -2376,36 +2499,37 @@ export function buildPhotosQuery(filter, forUserId, iAm) {
         }
     }
 
-    if (queryPub && squeryPublicHave) {
-        queryPub.s = status.PUBLIC;
-        if (rqueryPub) {
-            _.assign(queryPub, rqueryPub);
+    if (queryPub) {
+        if (statusesOpened.length) {
+            queryPub.s = statusesOpened.length > 1 ? { $in: statusesOpened } : statusesOpened[0];
+            result.s.push(...statusesOpened);
+
+            if (rqueryPub) {
+                Object.assign(queryPub, rqueryPub);
+            }
+        } else {
+            // If filter specified and doesn't contain public, delete query for public
+            queryPub = undefined;
         }
-        result.s.push(status.PUBLIC);
     }
-    if (!squeryPublicHave) {
-        // If filter specified and doesn't contain public, delete query for public
-        queryPub = undefined;
-    }
+
     if (queryMod) {
-        if (filter.s && filter.s.length) {
-            if (!queryPub && squeryPublicHave) {
-                // If query for public doesn't exists, but it has to, add public to moderated
-                // It happens to the admins and global moderators, because they have one queryMod
-                filter.s.push(status.PUBLIC);
+        if (!queryPub && statusesOpened.length) {
+            // If query for public doesn't exists, but it has to, add public to moderated
+            // It happens to the admins and global moderators, because they have one queryMod
+            statusesClosed.push(...statusesOpened);
+        }
+
+        if (statusesClosed.length) {
+            if (statusesClosed.length < allStatuses.length) {
+                // User is not selecting all statuses, specify list
+                queryMod.s = statusesClosed.length > 1 ? { $in: statusesClosed } : statusesClosed[0];
             }
-            if (filter.s.length === 1) {
-                queryMod.s = filter.s[0];
-            } else {
-                queryMod.s = { $in: filter.s };
-            }
-            result.s.push(...filter.s);
-        } else if (!iAm.isAdmin) {
-            queryMod.s = { $ne: status.REMOVE };
+            result.s.push(...statusesClosed);
         }
 
         if (rqueryMod) {
-            _.assign(queryMod, rqueryMod);
+            Object.assign(queryMod, rqueryMod);
         }
     }
 
@@ -2419,9 +2543,13 @@ export function buildPhotosQuery(filter, forUserId, iAm) {
         let types;
 
         if (filter.t && filter.t.length) {
-            types = filter.t;
-            query.type = types.length === 1 ? types[0] : { $in: types };
+            // If user selected some(not all) types
+            if (filter.t.length !== typesSet.size) {
+                types = filter.t;
+                query.type = types.length === 1 ? types[0] : { $in: types };
+            }
         } else if (iAm.photoFilterTypes.length) {
+            // If user didn't select any types and has default types in settings - select them
             types = iAm.photoFilterTypes;
             Object.assign(query, iAm.photoFilterQuery);
         }
@@ -2438,9 +2566,13 @@ export function buildPhotosQuery(filter, forUserId, iAm) {
         result.rarr = regionsArrAll;
     }
 
-    // console.log(JSON.stringify(result));
+    // console.log(JSON.stringify(result.query, null, '\t'));
     return result;
 }
+// Класть protected в redis из галереи/списков
+// Проксирование dev на downloader
+// Скачивание public/protected с проверкой прав, удаленные - только владелец и админ
+// Парсинг ссылок на изображения
 
 // Resets the view statistics for the day and week
 const planResetDisplayStat = (function () {
@@ -2469,6 +2601,22 @@ const planResetDisplayStat = (function () {
         setTimeout(resetStat, moment.utc().add(1, 'd').startOf('day').diff(moment.utc()) + 2000);
     };
 }());
+
+// Every 5 minute check what photo were reconverted last time earlier than photo's chache time,
+// and delete anticache url parameter 's' from file property
+async function resetPhotosAnticache() {
+    const photos = await Photo.find({
+        converted: { $gte: new Date(Date.now() - ms('1d')), $lte: new Date(Date.now() - config.photoCacheTime)},
+        $where: `this.file !== this.path`
+    }, {_id: 0, cid: 1, path: 1}, { lean: true }).exec();
+
+    // For each of found photo set file equals path, don't wait execution
+    for (const { cid, path } of photos) {
+        Photo.update({ cid }, { $set: { file: path } }).exec();
+    }
+
+    setTimeout(resetPhotosAnticache, ms('5m'));
+};
 
 // Return history of photo edit
 async function giveObjHist({ cid, fetchId, showDiff }) {
@@ -2611,7 +2759,7 @@ async function getDownloadKey({ cid }) {
     const lossless = photo.mime === 'image/png';
     const title = `${photo.cid} ${(photo.title || '').replace(/[\/|]/g, '-')}`.substr(0, 120);
     const fileName = `${title}.${lossless ? 'png' : 'jpg'}`;
-    const path = (origin ? 'private/photos/' : 'public/photos/a/') + photo.file;
+    const path = (origin ? 'private/photos/' : 'public/photos/a/') + photo.path;
     // We keep only size of origin file, size with watermark must be calculated by downloader.js
     const size = origin ? photo.size : null;
 
@@ -2697,7 +2845,12 @@ export default {
     photoFromMap,
     prefetchForEdit,
     givePrevNextCids,
-    changePublicExternality
+    changePublicExternality,
+    allowGetProtectedPhotoFile,
+    allowGetProtectedPhotosFiles
 };
 
-waitDb.then(planResetDisplayStat); // Plan statistic clean up
+waitDb.then(() => {
+    planResetDisplayStat();
+    resetPhotosAnticache();
+}); // Plan statistic clean up

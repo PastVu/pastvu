@@ -90,7 +90,7 @@ export function serveImages(storePath, { maxAge = 0 }) {
             }
         } catch (err) {
             if (acceptWebp) {
-                // Wanted webp, but it does not exists
+                // Wanted webp, but it does not exist
                 acceptWebp = false;
             } else {
                 return next();
@@ -116,7 +116,7 @@ export function serveImages(storePath, { maxAge = 0 }) {
 
         file.pipe(res);
 
-        file.on('error', (err) => next(err));
+        file.on('error', err => next(err));
 
         // Handle unexpected client disconnection to close file read stream and release memory
         res.on('close', () => file.destroy());

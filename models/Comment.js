@@ -63,11 +63,7 @@ const CommentPSchema = new Schema(
         lastChanged: { type: Date }, // Time of last changes
         hist: [new Schema(histSchema)],
 
-        del: delInfo, // Comment is deleted
-
-        // Hidden comment, for example, it belongs to inactive photo.
-        // It doesn't shown in user comments list and doesn't not involved in statistics
-        hidden: { type: Boolean } // true if status not PUBLIC
+        del: delInfo // Comment is deleted
     },
     {
         strict: true

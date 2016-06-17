@@ -67,7 +67,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             hist.frag = changeFragTexts['f' + hist.frag];
                         }
                         user = hist.user;
-                        user.avatar = user.avatar ? P.preaddr + '/_a/h/' + user.avatar : '/img/caps/avatarth.png';
+                        user.avatar = user.avatar ? '/_a/h/' + user.avatar : '/img/caps/avatarth.png';
                     }
 
                     cb.call(ctx, null, data.hists);

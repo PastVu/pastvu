@@ -169,11 +169,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         obj = data.subscr[i];
                         if (type === 'photo') {
                             obj.link = '/p/' + obj.cid;
-                            if (P.preaddrs.length > 1) {
-                                obj.sfile = P.preaddrs[i % P.preaddrs.length] + Photo.picFormats.m + obj.file;
-                            } else {
-                                obj.sfile = P.preaddr + Photo.picFormats.m + obj.file;
-                            }
+                            obj.sfile = Photo.picFormats.m + obj.file;
                         } else if (type === 'news') {
                             obj.link = '/news/' + obj.cid;
                         }

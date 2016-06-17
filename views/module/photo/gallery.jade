@@ -41,14 +41,21 @@
                                     label.checkbox-inline
                                         input(type="checkbox", value="2", data-bind="checked: filter.disp.t, click: ftclick")
                                         span Painting
-                            //ko if: filter.can.s()
                             .row.svars
                                 .filterName Status:
-                                .filterVars(data-bind="foreach: filter.available.s")
+                                .filterVars
+                                    //ko if: filter.can.s()
+                                    //ko foreach: filter.available.s
                                     label.checkbox-inline.s
                                         input(type="checkbox", data-bind="attr: {value: s}, checked: $parent.filter.disp.s")
                                         span(data-bind="text: title")
-                            // /ko
+                                    // /ko
+                                    // /ko
+                                    //ko if: !auth.loggedIn()
+                                    span(data-bind="click: function(data, evt){auth.show('login')}", style="cursor:pointer" title="Click to sign-in or sign-up")
+                                        span.glyphicon.glyphicon-log-in
+                                        |   Login to see more
+                                    // /ko
                             .row.geovars
                                 .filterName Coordinates:
                                 .filterVars
@@ -88,6 +95,10 @@
                 //ko if: status.icon
                 .status.fringe(data-bind="attr: {title: status.tip}")
                     span.glyphicon(data-bind="css: status.icon")
+                // /ko
+                //ko if: $data.my
+                .status.upper.mine.fringe(title="Это ваша фотография")
+                    span.glyphicon.glyphicon-user
                 // /ko
             .info
                 a.title(data-bind="text: title, attr: {href: '/p/' + cid, target: $parent.feed() ? '_blank' : '_self'}")

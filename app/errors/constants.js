@@ -10,6 +10,9 @@ export default Utils.reflectKeys({
     UNHANDLED_ERROR: null,
     COUNTER_ERROR: null,
 
+    REDIS_NO_CONNECTION: null,
+    REDIS_MAX_CONNECTION_ATTEMPS: null,
+
     SESSION_CAN_REGET_REGISTERED_ONLY: null,
     SESSION_EXPIRED_ARCHIVE_NO_RESULT: null,
     SESSION_NO_HEADERS: null,

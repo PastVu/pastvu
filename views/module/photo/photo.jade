@@ -47,9 +47,9 @@
                             .sizeThis(data-bind="text: ws() + '×' + hs()")
                             | &nbsp;|&nbsp;
                             // /ko
-                            a.sizeStandard(target="_blank", data-bind="attr:{href: '/_p/d/' + p.file()}, text: p.ws() + '×' + p.hs()")
+                            a.sizeStandard(target="_blank", data-bind="attr:{href: p.fileroot()+'/d/'+p.file()}, text: p.ws()+'×'+p.hs()")
                             | &nbsp;|&nbsp;
-                            a.sizeOrigin(target="_blank", data-bind="attr:{href: '/_p/a/' + p.file()}, text: p.w() + '×' + p.h()")
+                            a.sizeOrigin(target="_blank", data-bind="attr:{href: p.fileroot()+'/a/'+p.file()}, text: p.w()+'×'+p.h()")
                         //ko if: hscalePossible()
                         button.btn.btn-xxs.btn-primary(data-state="hscaleTumbler", data-bind="css: {active: hscaleTumbler()}, click: stateChange", title="Adjust by the height of the visible area")
                             span.glyphicon.glyphicon-resize-vertical
@@ -61,7 +61,7 @@
                             span.glyphicon.glyphicon-share-alt
                         // /ko
                         //ko if: !edit()
-                        a.btn.btn-xxs(data-bind="click:download, css: downloadCSSClass(), attr: {href:'/_p/a/'+p.file(), download:p.cid()+' '+(p.title()||'').replace(/[\/|]/g, '-')+'.jpg', title:'Download '+(downLoadOrigin()?'original ':'full size ')+p.w() + '×' + p.h()}")
+                        a.btn.btn-xxs(data-bind="click: download, css: downloadCSSClass(), attr: {href: p.fileroot()+'/a/'+p.file(), download:p.cid()+' '+(p.title()||'').replace(/[\/|]/g, '-')+'.jpg', title:'Download '+(downLoadOrigin()?'original ':'full size ')+p.w() + '×' + p.h()}")
                             span.glyphicon.glyphicon-save
                         // /ko
 

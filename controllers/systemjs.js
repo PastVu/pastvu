@@ -713,11 +713,8 @@ waitDb.then(function (db) {
             pcount = db.photos.count({ user: user._id, s: 5 });
             pfcount = db.photos.count({ user: user._id, s: { $in: [0, 1, 2] } });
             pdcount = db.photos.count({ user: user._id, s: { $in: [3, 4, 7, 9] } });
-            ccount = db.comments.count({ user: user._id, del: null, hidden: null }) + db.commentsn.count({
-                    user: user._id,
-                    del: null,
-                    hidden: null
-                });
+            ccount = db.comments.count({ user: user._id, del: null }) +
+                     db.commentsn.count({ user: user._id, del: null });
 
             if (pcount > 0) {
                 $set.pcount = pcount;

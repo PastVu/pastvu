@@ -34,7 +34,6 @@ module.exports = {
         port: ':3000', // Port for users
         uport: ':3001', // Upload files port for users
         dport: ':3002', // Download files port for users
-        subdomains: [] // Subdomains for serving store path's public folder.
     },
 
     storePath: '', // Store folder with static user content (avatars, photos, etc)
@@ -70,6 +69,20 @@ module.exports = {
         con: 'mongodb://localhost:27017/pastvu',
         pool: 2
     },
+    redis: {
+        host: 'localhost',
+        port: '6379',
+        retry_unfulfilled_commands: false,
+        maxReconnectTime: ms('30s')
+    },
+
+    // Lifetime of link to file of protected photo for user, that has right to see this photo, in seconds
+    protectedFileLinkTTL: ms('1m') / 1000,
+
+    // Time to cache photos by browser, that is set as `cache-control: max-age` http header in image response
+    // Is needed to understand for how long file url parameter should exist after photo was reconverted to reset cache
+    // 0 - no cache
+    photoCacheTime: ms('6h'),
 
     // Connection settings for mail provider. Need to be overrided locally
     mail: {},

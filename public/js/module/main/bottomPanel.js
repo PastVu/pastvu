@@ -296,12 +296,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
             for (var i = photos.length; i--;) {
                 photo = photos[i];
 
-                if (P.preaddrs.length > 1) {
-                    photo.sfile = P.preaddrs[i % P.preaddrs.length] + picFormat + photo.file;
-                } else {
-                    photo.sfile = P.preaddr + picFormat + photo.file;
-                }
-
+                photo.sfile = picFormat + photo.file;
                 photo.link = '/p/' + photo.cid;
 
                 if (!photo.title) {
@@ -323,11 +318,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                 user;
             while (i) {
                 user = users[--i];
-                if (user.avatar) {
-                    user.sfile = P.preaddr + '/_a/d/' + user.avatar;
-                } else {
-                    user.sfile = User.def.full.avatar;
-                }
+                user.sfile = user.avatar ? '/_a/d/' + user.avatar : User.def.full.avatar;
                 user.link = '/u/' + user.login + (linkSection ? '/' + linkSection : '');
                 user.title = user.disp;
                 if (numField && numFormat) {
