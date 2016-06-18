@@ -21,6 +21,11 @@
                         | &nbsp;
                 form.form-inline
                     .form-group
+                        | Status numbers:&nbsp;
+                        input.form-control(data-bind="attr: {disabled: exe()}, value: reconvertStatuses, valueUpdate: 'afterkeydown'", style="width: 140px;", placeholder="Comma-separated")
+                        | &nbsp;
+                form.form-inline
+                    .form-group
                         | Region id:&nbsp;
                         input.form-control(type="number", data-bind="attr: {disabled: exe()}, value: reconvertRegion, valueUpdate: 'afterkeydown'", style="width: 70px;")
                         | &nbsp;
