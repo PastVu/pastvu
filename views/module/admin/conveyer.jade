@@ -21,6 +21,11 @@
                         | &nbsp;
                 form.form-inline
                     .form-group
+                        | Номера статусов:&nbsp;
+                        input.form-control(data-bind="attr: {disabled: exe()}, value: reconvertStatuses, valueUpdate: 'afterkeydown'", style="width: 140px;", placeholder="Через запятую")
+                        | &nbsp;
+                form.form-inline
+                    .form-group
                         | Номер региона:&nbsp;
                         input.form-control(type="number", data-bind="attr: {disabled: exe()}, value: reconvertRegion, valueUpdate: 'afterkeydown'", style="width: 70px;")
                         | &nbsp;

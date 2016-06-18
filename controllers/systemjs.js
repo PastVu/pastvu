@@ -301,6 +301,9 @@ waitDb.then(function (db) {
         if (params.onlyWithoutTextApplied) {
             query.watersignTextApplied = null;
         }
+        if (params.statuses && params.statuses.length) {
+            query.s = { $in: params.statuses };
+        }
 
         print('Start to fill conveyer for ' + (query.user ? query.user + ' user for ' : '') + db.photos.count(query) + ' photos');
         db.photos.find(query, selectFields).sort({ cid: 1 }).forEach(function (photo) {

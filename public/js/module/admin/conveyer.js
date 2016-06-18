@@ -279,6 +279,7 @@ define([
             this.reconvertCidMin = ko.observable();
             this.reconvertCidMax = ko.observable();
             this.reconvertRegion = ko.observable();
+            this.reconvertStatuses = ko.observable();
 
             this.conveyerLengthData = [];
             this.conveyerConvertData = [];
@@ -456,7 +457,8 @@ define([
                 .run('photo.convertAll', {
                     min: Number(self.reconvertCidMin()),
                     max: Number(self.reconvertCidMax()),
-                    r: Number(self.reconvertRegion())
+                    r: Number(self.reconvertRegion()),
+                    s: _.chain(self.reconvertStatuses() || '').split(',').map(_.trim).compact().map(Number).value()
                 }, true)
                 .then(function () {
                     self.exe(false);

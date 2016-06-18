@@ -2130,7 +2130,7 @@ async function convert({ cids = []}) {
 }
 
 // Sends all photo for convert
-function convertAll({ min, max, r }) {
+function convertAll({ min, max, r, s }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.isAdmin) {
@@ -2151,6 +2151,9 @@ function convertAll({ min, max, r }) {
         if (region) {
             params.region = { level: _.size(region.parents), cid: region.cid };
         }
+    }
+    if (Array.isArray(s) && s.every(s => allStatusesSet.has(s))) {
+        params.statuses = s;
     }
 
     return converter.addPhotosAll(params);
