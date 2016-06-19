@@ -32,7 +32,7 @@
         "body-parser": "1.15.1",
         "serve-favicon": "2.3.0",
         "basic-auth-connect": "1.0.0",
-        "locale": "0.0.21",
+        "locale": "0.1.0",
         "cookie": "0.3.1",
         "mime": "1.3.4",
         "jade": "1.11.0",
