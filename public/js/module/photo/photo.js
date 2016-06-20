@@ -1138,6 +1138,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             };
 
             return function (data, event) {
+                if (!this.can.download()) {
+                    return;
+                }
                 if (waitingForKey) {
                     event.stopPropagation();
                     event.preventDefault();

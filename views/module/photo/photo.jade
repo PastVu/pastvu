@@ -60,7 +60,7 @@
                         a.btn.btn-xxs.btn-primary(href="?share=1", data-replace="true", title="Поделиться")
                             span.glyphicon.glyphicon-share-alt
                         // /ko
-                        //ko if: !edit()
+                        //ko if: can.download() && !edit()
                         a.btn.btn-xxs(data-bind="click: download, css: downloadCSSClass(), attr: {href: p.fileroot()+'/a/'+p.file(), download:p.cid()+' '+(p.title()||'').replace(/[\/|]/g, '-')+'.jpg', title:'Скачать '+(downLoadOrigin()?'оригинал ':'в полном размере ')+p.w() + '×' + p.h()}")
                             span.glyphicon.glyphicon-save
                         // /ko

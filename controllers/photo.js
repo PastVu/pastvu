@@ -131,7 +131,7 @@ export const permissions = {
             // comment: [true, false]
             // watersign: [true, false]
             // nowatersign: [true, false]
-            // download: [true, byrole, withwater, login]
+            // download: [true, byrole, withwater, login, false]
             // protected: [true, false]
         };
         const s = photo.s;
@@ -151,7 +151,10 @@ export const permissions = {
 
             const userSettings = photo.user.settings || userSettingsDef;
 
-            if (// If setted individual that photo has now watersing
+            can.protected = permissions.can.protected(s, ownPhoto, canModerate, isAdmin);
+
+            if ((s === status.PUBLIC || can.protected) && (
+                // If setted individual that photo has now watersing
             photo.watersignIndividual && photo.watersignOption === false ||
                 // If no individual watersign option and setted by profile that photo has no watersing
             !photo.watersignIndividual && userSettings.photo_watermark_add_sign === false ||
@@ -160,18 +163,18 @@ export const permissions = {
                 // If no individual downloading setting and setted by profile that photo has no watersing
                 // or by profile allowed to download origin
             !photo.disallowDownloadOriginIndividual &&
-            (userSettings.photo_watermark_add_sign === false || !userSettings.photo_disallow_download_origin)) {
+            (userSettings.photo_watermark_add_sign === false || !userSettings.photo_disallow_download_origin))) {
                 // Let download origin
                 can.download = true;
             } else if (ownPhoto || isAdmin) {
                 // Or if it photo owner or admin then allow to download origin with special sign on button
                 can.download = 'byrole';
-            } else {
+            } else if (s === status.PUBLIC) {
                 // Otherwise registered user can download full-size photo only with watermark
                 can.download = 'withwater';
+            } else {
+                can.download = false;
             }
-
-            can.protected = permissions.can.protected(s, ownPhoto, canModerate, isAdmin);
 
             // Admin can always edit, moderator and owner always except own revoked or removed photo,
             can.edit = isAdmin || (canModerate || ownPhoto) && s !== status.REMOVE && s !== status.REVOKE || undefined;
@@ -210,7 +213,7 @@ export const permissions = {
                 can.deactivate = s === status.PUBLIC || undefined;
             }
         } else {
-            can.download = 'login';
+            can.download = s === status.PUBLIC ? 'login' : false;
         }
 
         return can;
@@ -940,7 +943,7 @@ const fillProtection = async function ({ photos = [], theyAreMine, setMyFlag = f
         return;
     }
 
-    const ownershipIsKnown = typeof theyAreMineUser === 'boolean';
+    const ownershipIsKnown = typeof theyAreMine === 'boolean';
     const { handshake: { usObj: iAm } } = this;
     const isAdmin = iAm.isAdmin;
     const myUser = iAm.user;
@@ -2640,7 +2643,6 @@ export function buildPhotosQuery(filter, forUserId, iAm) {
     return result;
 }
 // Проксирование dev на downloader
-// Скачивание public/protected с проверкой прав, удаленные - только владелец и админ
 // Парсинг ссылок на изображения
 
 // Resets the view statistics for the day and week
