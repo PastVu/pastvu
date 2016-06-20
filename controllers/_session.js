@@ -64,7 +64,7 @@ const getBrowserAgent = function (browser) {
 // Determine user locale that we support based on 'accept-language' header
 export const identifyUserLocale = (function () {
     // Locales for comparison
-    const localesSuported = new locale.Locales(config.locales);
+    const localesSuported = new locale.Locales(config.locales, localeDefault);
 
     return function (acceptLanguage) {
         if (_.isEmpty(acceptLanguage)) {

@@ -37,10 +37,14 @@
     | <script id="photosTpl" type="text/html">
     .photosNew
         //ko foreach: photos
-        .photoPreview.withInfo.fringe(data-bind="attr: {title: title}")
+        .photoPreview.withStatus.withInfo.fringe(data-bind="attr: {title: title}")
             a.photoBox(data-bind="attr: {href: $data.link}")
                 img.img(data-bind="attr: {src: sfile, alt: title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}")
                 .curtain
+                //ko if: $data.my
+                .status.upper.mine.fringe(title="Это ваша фотография")
+                    span.glyphicon.glyphicon-user
+                // /ko
             .info
                 a.title(data-bind="text: title, attr: {href: $data.link}")
                 //ko if: $data.rs

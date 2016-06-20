@@ -69,7 +69,7 @@ define(['underscore'], function (_) {
         DEACTIVATE: { // Деактивировано
             num: 7,
             title: 'Photo is deactivated',
-            title_owner: 'Photo is deactivated. Only you and moderators can see and edit it',
+            title_owner: 'Your photo is deactivated. Only you and moderators can see its image and edit this page',
             filter_title: 'Inactive',
             action: 'Deactivated',
             tip: 'Photo is inactive',
@@ -80,7 +80,7 @@ define(['underscore'], function (_) {
         REMOVE: { // Удалено
             num: 9,
             title: 'Photo is removed',
-            title_owner: 'Photo is removed. Only you and moderators can see it',
+            title_owner: 'Your photo has been removed.<br>Only you can see its image and only admin can edit this page',
             filter_title: 'Removed',
             action: 'Removed',
             tip: 'Photo is removed',
