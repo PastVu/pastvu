@@ -227,7 +227,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
             socket.run('photo.giveForApprove', { skip: 0, limit: 42 }, true).then(function (data) {
                 var success = false;
                 if (self.catLoading() === 'photosToApprove') {
-                    self.processPhotos(data.photos, data.rhash, Photo.picFormats.m);
+                    self.processPhotos(data.photos, data.rhash, Photo.picProtectedFormats.m);
                     self.photos(data.photos);
                     self.moreLink('/ps/2?f=r!0_s!' + statuses.keys.READY);
                     success = true;

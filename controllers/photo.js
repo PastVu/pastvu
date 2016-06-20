@@ -1544,6 +1544,7 @@ async function giveUserGallery({ login, filter, skip, limit }) {
 async function giveForApprove(data) {
     const { handshake: { usObj: iAm } } = this;
     const query = { s: status.READY };
+    const myUser = iAm.user;
 
     if (!iAm.registered || iAm.user.role < 5) {
         throw new AuthorizationError();
@@ -1552,7 +1553,7 @@ async function giveForApprove(data) {
         Object.assign(query, iAm.mod_rquery);
     }
 
-    const photos = await Photo.find(query, compactFieldsWithRegions, {
+    const photos = await Photo.find(query, compactFieldsForRegWithRegions, {
         lean: true,
         sort: { sdate: -1 },
         skip: data.skip || 0,
@@ -1560,6 +1561,27 @@ async function giveForApprove(data) {
     }).exec();
 
     const shortRegionsHash = regionController.genObjsShortRegionsArr(photos, iAm.mod_rshortlvls, true);
+
+    await this.call('photo.allowGetProtectedPhotosFiles', { photos })
+        .catch(err => {
+            logger.warn(
+                `${this.ridMark} Putting link to redis for protected photos file failed. Serve public.`,
+                err
+            );
+            for (const photo of protectedPhotos) {
+                photo.protected = undefined;
+            }
+        });
+
+    for (const photo of photos) {
+        if (User.isEqual(photo.user, myUser)) {
+            photo.my = true;
+        }
+        photo._id = undefined;
+        photo.user = undefined;
+        photo.ucdate = undefined;
+        photo.mime = undefined;
+    }
 
     return { photos, rhash: shortRegionsHash };
 };
