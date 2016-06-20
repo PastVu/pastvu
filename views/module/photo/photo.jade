@@ -14,7 +14,7 @@
             //ko if: msg().length
             .photoMsg.label(data-bind="css: msgCss(), attr: {title: msgTitle()}")
                 span.glyphicon.glyphicon-warning-sign
-                span(data-bind="text: ' ' + msg()")
+                span(data-bind="html: ' ' + msg()")
                 //ko if: msgLink()
                 |  [
                 a.msgLink(data-replace="true", data-bind="attr: {href: msgLink()}") Подробнее..
