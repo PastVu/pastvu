@@ -1742,7 +1742,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
             for (var i = 0; i < incomingArr.length; i++) {
                 item = incomingArr[i];
-                resultArr.push(_.find(targetArr, itemExistFunc) || Photo.factory(item, { type: 'base', pic: 'q' }));
+                resultArr.push(
+                    _.find(targetArr, itemExistFunc) ||
+                    Photo.factory(item, { type: 'base', pic: 'q', can: { 'protected': item.protected } })
+                );
             }
             return resultArr;
         },

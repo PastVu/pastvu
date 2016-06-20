@@ -73,8 +73,7 @@ const compactFields = {
     year: 1,
     ccount: 1,
     conv: 1,
-    convqueue: 1,
-    ready: 1
+    convqueue: 1
 };
 const compactFieldsForReg = {
     ...compactFields,
@@ -936,6 +935,44 @@ const allowGetProtectedPhotosFiles = async function ({ photos = [], ttl = config
         });
 };
 
+const fillProtection = async function ({ photos = [], theyAreMine, setMyFlag = false }) {
+    if (!photos.length) {
+        return;
+    }
+
+    const ownershipIsKnown = typeof theyAreMineUser === 'boolean';
+    const { handshake: { usObj: iAm } } = this;
+    const isAdmin = iAm.isAdmin;
+    const myUser = iAm.user;
+    const protectedPhotos = [];
+
+    for (const photo of photos) {
+        const isMine = ownershipIsKnown ? theyAreMine : User.isEqual(photo.user, myUser);
+
+        if (setMyFlag && isMine) {
+            photo.my = true;
+        }
+
+        if (permissions.can.protected(photo.s, isMine, permissions.canModerate(photo, iAm), isAdmin)) {
+            photo.protected = true;
+            protectedPhotos.push(photo);
+        }
+    }
+
+    if (protectedPhotos.length) {
+        await this.call('photo.allowGetProtectedPhotosFiles', { photos: protectedPhotos })
+            .catch(err => {
+                logger.warn(
+                    `${this.ridMark} Putting link to redis for protected photos file failed. Serve public.`,
+                    err
+                );
+                for (const photo of protectedPhotos) {
+                    photo.protected = undefined;
+                }
+            });
+    }
+};
+
 
 // If photo is getting public status,
 // we must move files from protected to public folder, and overwrite files in public (if exist)
@@ -1263,7 +1300,7 @@ async function givePrevNextCids({ cid }) {
  * @param filter Filter object (parsed)
  * @param userId _id of user, if we need gallery by user
  */
-async function givePhotos({ filter, options: { skip = 0, limit = 40 }, userId }) {
+async function givePhotos({ filter, options: { skip = 0, limit = 40, customQuery }, userId }) {
     const { handshake: { usObj: iAm } } = this;
 
     skip = Math.abs(Number(skip)) || 0;
@@ -1288,6 +1325,9 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40 }, userId })
         if (userId) {
             query.user = userId;
         }
+        if (customQuery) {
+            Object.assign(query, customQuery);
+        }
 
         // To calculate new comments we need '_id', for checking of changes - 'ucdate'
         const fieldsSelect = iAm.registered ? compactFieldsForRegWithRegions : compactFieldsWithRegions;
@@ -1302,38 +1342,15 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40 }, userId })
                 // If user is logged in, fill amount of new comments for each object
                 await userObjectRelController.fillObjectByRels(photos, iAm.user._id, 'photo');
 
-                const isAdmin = iAm.isAdmin;
-                const myUser = iAm.user;
-                const protectedPhotos = [];
+                // Check if user should get protected files
+                const itsMineGallery = userId && User.isEqual(iAm.user._id, userId) || undefined;
+                await this.call('photo.fillProtection', { photos, theyAreMine: itsMineGallery, setMyFlag: !userId });
 
                 for (const photo of photos) {
-                    const isMine = User.isEqual(photo.user, myUser);
-
-                    if (!userId && isMine) {
-                        photo.my = true;
-                    }
-                    if (permissions.can.protected(photo.s, isMine, permissions.canModerate(photo, iAm), isAdmin)) {
-                        photo.protected = true;
-                        protectedPhotos.push(photo);
-                    }
-
                     photo._id = undefined;
                     photo.user = undefined;
                     photo.vdate = undefined;
                     photo.ucdate = undefined;
-                }
-
-                if (protectedPhotos.length) {
-                    await this.call('photo.allowGetProtectedPhotosFiles', { photos: protectedPhotos })
-                        .catch(err => {
-                            logger.warn(
-                                `${this.ridMark} Putting link to redis for protected photos file failed. Serve public.`,
-                                err
-                            );
-                            for (const photo of protectedPhotos) {
-                                photo.protected = undefined;
-                            }
-                        });
                 }
             }
 
@@ -1538,6 +1555,18 @@ async function giveForApprove(data) {
 };
 
 // Returns array before and after specified photo (with specified length)
+const userPhotosAroundFields = {
+    _id: 0,
+    cid: 1,
+    file: 1,
+    s: 1,
+    title: 1,
+    mime: 1
+};
+const userPhotosAroundFieldsForModWithRegions = {
+    ...userPhotosAroundFields,
+    ...regionController.regionsAllSelectHash
+};
 async function giveUserPhotosAround({ cid, limitL, limitR }) {
     const { handshake: { usObj: iAm } } = this;
 
@@ -1552,22 +1581,34 @@ async function giveUserPhotosAround({ cid, limitL, limitR }) {
     const photo = await this.call('photo.find', { query: { cid } });
 
     const filter = iAm.registered && iAm.user.settings && !iAm.user.settings.r_f_photo_user_gal ? { r: 0, t: null } : {};
-    const query = buildPhotosQuery(filter, photo.user, iAm).query;
+    const query = Object.assign(buildPhotosQuery(filter, photo.user, iAm).query, { user: photo.user });
     const promises = new Array(2);
 
-    query.user = photo.user;
+    // Moderators can see not yet published photos, so we need to take regions to determine if user can moderate
+    const fields = iAm.isModerator ? userPhotosAroundFieldsForModWithRegions : userPhotosAroundFields;
 
     if (limitL) {
         query.sdate = { $gt: photo.sdate };
-        promises[0] = Photo.find(query, compactFields, { lean: true, sort: { sdate: 1 }, limit: limitL }).exec();
+        promises[0] = Photo.find(query, fields, { lean: true, sort: { sdate: 1 }, limit: limitL }).exec();
     }
 
     if (limitR) {
         query.sdate = { $lt: photo.sdate };
-        promises[1] = Photo.find(query, compactFields, { lean: true, sort: { sdate: -1 }, limit: limitR }).exec();
+        promises[1] = Photo.find(query, fields, { lean: true, sort: { sdate: -1 }, limit: limitR }).exec();
     }
 
     const [left = [], right = []] = await Promise.all(promises);
+
+    // Check if user should get protected files (only owner and moderators can)
+    const theyAreMine = iAm.registered && User.isEqual(iAm.user._id, photo.user);
+    if (iAm.registered && iAm.user.role >= 5 || theyAreMine) {
+        if (left.length) {
+            await this.call('photo.fillProtection', { photos: left, theyAreMine });
+        }
+        if (right.length) {
+            await this.call('photo.fillProtection', { photos: right, theyAreMine });
+        }
+    }
 
     return { left, right };
 }
@@ -2849,6 +2890,7 @@ export default {
     prefetchForEdit,
     givePrevNextCids,
     changePublicExternality,
+    fillProtection,
     allowGetProtectedPhotoFile,
     allowGetProtectedPhotosFiles
 };
