@@ -204,9 +204,9 @@
       "resolved": "https://registry.npmjs.org/babel-core/-/babel-core-6.9.1.tgz"
     },
     "babel-eslint": {
-      "version": "6.0.4",
-      "from": "babel-eslint@6.0.4",
-      "resolved": "https://registry.npmjs.org/babel-eslint/-/babel-eslint-6.0.4.tgz"
+      "version": "6.0.5",
+      "from": "babel-eslint@6.0.5",
+      "resolved": "https://registry.npmjs.org/babel-eslint/-/babel-eslint-6.0.5.tgz"
     },
     "babel-generator": {
       "version": "6.10.2",
@@ -1062,9 +1062,9 @@
       "resolved": "https://registry.npmjs.org/escope/-/escope-3.6.0.tgz"
     },
     "eslint": {
-      "version": "2.13.0",
-      "from": "eslint@2.13.0",
-      "resolved": "https://registry.npmjs.org/eslint/-/eslint-2.13.0.tgz",
+      "version": "2.13.1",
+      "from": "eslint@2.13.1",
+      "resolved": "https://registry.npmjs.org/eslint/-/eslint-2.13.1.tgz",
       "dependencies": {
         "globals": {
           "version": "9.8.0",

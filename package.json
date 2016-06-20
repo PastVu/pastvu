@@ -64,7 +64,7 @@
     },
     "devDependencies": {
         "babel-core": "6.9.1",
-        "babel-eslint": "6.0.4",
+        "babel-eslint": "6.0.5",
         "babel-plugin-transform-runtime": "6.9.0",
         "babel-preset-es2015-node6": "0.2.0",
         "babel-preset-stage-1": "6.5.0",
@@ -89,7 +89,7 @@
         "xmldom": "0.1.22",
         "osm-and-geojson": "0.1.2",
 
-        "eslint": "2.13.0"
+        "eslint": "2.13.1"
     },
     "engines": {
         "node": "^6.2.1"
