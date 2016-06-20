@@ -1169,6 +1169,7 @@ async function approve(data) {
 
 // Activation/deactivation of photo
 async function activateDeactivate(data) {
+    const { handshake: { usObj: iAm } } = this;
     const { reason, disable } = data;
 
     if (disable && _.isEmpty(reason)) {
@@ -1192,6 +1193,15 @@ async function activateDeactivate(data) {
 
     await this.call('comment.changeObjCommentsStatus', { obj: photo });
     await this.call('photo.changePublicExternality', { photo, makePublic: !disable });
+
+    if (disable && iAm.isModerator) {
+        // In case of deactivation subscribe moderator to this photo and set to him stamp of comments view,
+        // to correctly count the number of new comments until he'll enter the page next time
+        await this.call(
+            'subscr.subscribeUserByIds',
+            { user: iAm.user, objId: photo._id, setCommentView: true, type: 'photo' }
+        );
+    }
 
     // Save previous status to history
     await this.call('photo.saveHistory', { oldPhotoObj, photo, canModerate, reason: disable && reason });
