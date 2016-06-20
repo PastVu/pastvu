@@ -9,6 +9,11 @@ import NotFoundError from '../app/errors/NotFound';
 import { getRegionsArrFromCache } from './region';
 import { handleHTTPRequest, registerHTTPAPIHandler } from '../app/request';
 import { parseFilter } from './photo';
+import constants from './constants';
+
+const {
+    photo: { status }
+} = constants;
 
 const logger404 = log4js.getLogger('404.js');
 const loggerError = log4js.getLogger('error.js');
@@ -136,14 +141,16 @@ function meta(req) {
             og.title = twitter.title = photo.y + ' ' + title;
         }
 
-        og.img = {
-            url: `${origin}/_p/a/${photo.file}`,
-            w: photo.w,
-            h: photo.h
-        };
-        twitter.img = {
-            url: `${origin}/_p/d/${photo.file}` // Twitter image must be less than 1MB in size, so use standard
-        };
+        if (photo.s === status.PUBLIC) {
+            og.img = {
+                url: `${origin}/_p/a/${photo.file}`,
+                w: photo.w,
+                h: photo.h
+            };
+            twitter.img = {
+                url: `${origin}/_p/d/${photo.file}` // Twitter image must be less than 1MB in size, so use standard
+            };
+        }
     }
     if (!og.url) {
         og.url = origin + req.url; // req.path if decide without params
@@ -170,9 +177,14 @@ function meta(req) {
 
 function appMainHandler(req, res) {
     const { nojsUrl, nojsShow } = checkNoJS(req);
-    const { browser = {} } = req;
+    const { browser = {}, photoData: { photo, can } = {} } = req;
 
-    res.statusCode = 200;
+    if (photo && photo.s !== status.PUBLIC && !can.protected) {
+        res.statusCode = 403; // This is more for search engines
+    } else {
+        res.statusCode = 200;
+    }
+
     res.render('app', {
         nojsUrl,
         nojsShow,
