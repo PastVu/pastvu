@@ -1564,13 +1564,7 @@ async function giveForApprove(data) {
 
     await this.call('photo.allowGetProtectedPhotosFiles', { photos })
         .catch(err => {
-            logger.warn(
-                `${this.ridMark} Putting link to redis for protected photos file failed. Serve public.`,
-                err
-            );
-            for (const photo of protectedPhotos) {
-                photo.protected = undefined;
-            }
+            logger.warn(`${this.ridMark} Putting link to redis for protected photos file failed. Serve public.`, err);
         });
 
     for (const photo of photos) {
@@ -2645,7 +2639,6 @@ export function buildPhotosQuery(filter, forUserId, iAm) {
     // console.log(JSON.stringify(result.query, null, '\t'));
     return result;
 }
-// Класть protected в redis из галереи/списков
 // Проксирование dev на downloader
 // Скачивание public/protected с проверкой прав, удаленные - только владелец и админ
 // Парсинг ссылок на изображения
