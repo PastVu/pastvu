@@ -180,12 +180,12 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
                         _.forOwn(objs, function (obj) {
                             if (type === 'photo') {
-                                obj.link = '/p/' + obj.cid;
                                 Photo.factory(obj, {
                                     type: 'compact',
                                     pic: 'q',
                                     can: { 'protected': obj.protected }
                                 });
+                                obj.link = '/p/' + obj.cid;
                                 obj.title += ' <span class="photoYear">' + obj.y + '</span>';
                             } else if (type === 'news') {
                                 obj.link = '/news/' + obj.cid;
@@ -255,7 +255,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 style: 'width: 100%;margin-top:7px;padding-top:25px;background: url(/img/misc/imgw.png) 50% 0 no-repeat;',
                 txt: ' '
             });
-            $photoBox.append(content);
+            $photoBox.find('.img').after(content);
             parent.classList.add('showPrv');
         }
     });

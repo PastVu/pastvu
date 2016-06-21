@@ -10,6 +10,7 @@ import { waitDb } from './connection';
 import { send as sendMail } from './mail';
 import { userSettingsDef } from './settings';
 import { buildPhotosQuery } from './photo';
+import * as regionController from './region.js';
 import * as userObjectRelController from './userobjectrel';
 import constantsError from '../app/errors/constants';
 import { AuthorizationError, BadParamsError, NotFoundError } from '../app/errors';
@@ -438,6 +439,10 @@ async function sendUserNotice(userId) {
 }
 
 // Return paged list of user's subscriptions
+const photosFields = {
+    _id: 1, cid: 1, s: 1, user: 1, title: 1, ccount: 1, file: 1, mime: 1,
+    ...regionController.regionsAllSelectHash
+};
 async function giveUserSubscriptions({ login, page = 1, type = 'photo' }) {
     const { handshake: { usObj: iAm } } = this;
 
@@ -479,7 +484,7 @@ async function giveUserSubscriptions({ login, page = 1, type = 'photo' }) {
             ).exec() :
             Photo.find(
                 Object.assign(buildPhotosQuery({ r: 0, t: null, s: [5, 7] }, null, iAm).query, { _id: { $in: objIds } }),
-                { _id: 1, cid: 1, title: 1, ccount: 1, file: 1 }, { lean: true }
+                photosFields, { lean: true }
             ).exec());
     }
 
@@ -498,6 +503,15 @@ async function giveUserSubscriptions({ login, page = 1, type = 'photo' }) {
         // https://github.com/Automattic/mongoose/issues/3457
     ]);
 
+    if (type === 'photo') {
+        await this.call('photo.fillProtection', { photos: objs, setMyFlag: true });
+
+        for (const obj of objs) {
+            obj.user = undefined;
+            obj.mime = undefined;
+        }
+    }
+
     for (const obj of objs) {
         const rel = relHash[obj._id];
 
@@ -510,8 +524,8 @@ async function giveUserSubscriptions({ login, page = 1, type = 'photo' }) {
 
         obj.sbscr_create = rel.sbscr_create.getTime();
 
-        delete obj.subscr;
-        delete obj._id;
+        obj.subscr = undefined;
+        obj._id = undefined;
     }
 
     objs.sort(sortSubscr); // $in doesn't guarantee sorting, so do manual sort

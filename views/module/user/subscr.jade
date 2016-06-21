@@ -21,8 +21,18 @@
 
     | <script id="photoSubscrTpl" type="text/html">
     .object.clearfix
-        a.imgLoad(data-bind="attr: {href: $data.link}")
-            img.img(data-bind="attr: {src: $data.sfile}", onload="G.imgLoadOk(this)", onerror="G.imgLoadFail(this)")
+        .photoPreview.withStatus.fringe(data-bind="attr: {title: $data.title}, css: 's'+$data.s")
+            a.photoBox(data-bind="attr: {href: $data.link}")
+                img.img(data-bind="attr: {src: $data.sfile, alt: $data.title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}")
+                .curtain
+                //ko if: $data.status.icon
+                .status.fringe(data-bind="attr: {title: $data.status.tip}")
+                    span.glyphicon(data-bind="css: $data.status.icon")
+                // /ko
+                //ko if: $data.my
+                .status.upper.mine.fringe(title="Это ваша фотография")
+                    span.glyphicon.glyphicon-user
+                // /ko
         a.objTitle(data-bind="attr: {href: $data.link}, text: $data.title")
         //ko if: $data.ccount
         br

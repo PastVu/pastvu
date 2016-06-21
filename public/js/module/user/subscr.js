@@ -3,6 +3,7 @@
  */
 define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/Photo', 'model/storage', 'moment', 'text!tpl/user/subscr.jade', 'css!style/user/subscr'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, Photo, storage, moment, jade) {
     'use strict';
+    var imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
 
     return Cliche.extend({
         jade: jade,
@@ -168,8 +169,12 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     while (i--) {
                         obj = data.subscr[i];
                         if (type === 'photo') {
+                            Photo.factory(obj, {
+                                type: 'compact',
+                                pic: 'm',
+                                can: { 'protected': obj.protected }
+                            });
                             obj.link = '/p/' + obj.cid;
-                            obj.sfile = Photo.picFormats.m + obj.file;
                         } else if (type === 'news') {
                             obj.link = '/news/' + obj.cid;
                         }
@@ -186,7 +191,23 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 });
         },
 
-        unSubsc: function (pass) {
+        unSubsc: function (/*pass*/) {
+        },
+        onPreviewLoad: function (data, event) {
+            event.target.parentNode.parentNode.classList.add('showPrv');
+        },
+        onPreviewErr: function (data, event) {
+            var $photoBox = $(event.target.parentNode),
+                parent = $photoBox[0].parentNode,
+                content = '';
+
+            event.target.style.visibility = 'hidden';
+            content = imgFailTpl({
+                style: 'width: 100%;margin-top:7px;padding-top:25px;background: url(/img/misc/imgw.png) 50% 0 no-repeat;',
+                txt: ' '
+            });
+            $photoBox.find('.img').after(content);
+            parent.classList.add('showPrv');
         }
     });
 });
