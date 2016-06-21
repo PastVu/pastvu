@@ -171,6 +171,7 @@ export async function configure(startStamp) {
         // Cache time
         const { photoCacheTime } = config;
         const cacheControl = `private, max-age=${photoCacheTime / 1000}`;
+        const hostnameRegexp = new RegExp(`^https?:\\/\\/(www\\.)?${config.client.hostname}`, 'i');
 
         async function servePublic(req, res, filePath) {
             const filePathFull = path.join(storePath, 'public/photos', filePath);
@@ -214,7 +215,7 @@ export async function configure(startStamp) {
                 const [value, ttl] = await dbRedis.multi([['get', key], ['ttl', key]]).execAsync() || [];
 
                 if (!value) {
-                    throw new AuthorizationError();
+                    throw new AuthorizationError({ sid });
                 }
 
                 [, mimeValue] = value.split(':');
@@ -230,7 +231,7 @@ export async function configure(startStamp) {
             const fileAvailable = await exists(filePathFull);
 
             if (!fileAvailable) {
-                throw new NotFoundError();
+                throw new NotFoundError({ sid });
             }
 
             res.setHeader('Content-Type', mimeValue || mime.lookup(filePathFull));
@@ -265,10 +266,20 @@ export async function configure(startStamp) {
 
             serveProtected(req, res, filePath)
                 .catch(error => {
+                    let { referer = '' } = req.headers || {};
+                    let { details: { sid = '' } = {} } = error;
+
+                    if (referer) {
+                        referer = ` to ${referer.replace(hostnameRegexp, '') || '/'}`;
+                    }
+                    if (sid) {
+                        sid = ` for ${sid}`;
+                    }
+
                     if (error instanceof ApplicationError) {
-                        logger.warn(`Serving protected file ${filePath} failed, ${error.message}`);
+                        logger.warn(`Serving protected file ${filePath}${referer}${sid} failed, ${error.message}`);
                     } else {
-                        logger.error(`Serving protected file ${filePath} failed`, error);
+                        logger.error(`Serving protected file ${filePath}${referer}${sid} failed`, error);
                     }
 
                     res.statusCode = 303;
