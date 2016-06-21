@@ -15,8 +15,18 @@
 
     | <script id="photoCommentsTpl" type="text/html">
     .comment.clearfix
-        a.imgLoad(data-bind="attr: {href: $data.obj.link}")
-            img.img(data-bind="attr: {src: $data.obj.sfile}", onload="G.imgLoadOk(this)", onerror="G.imgLoadFail(this)")
+        .photoPreview.withStatus.fringe(data-bind="attr: {title: $data.obj.title}, css: 's'+$data.obj.s")
+            a.photoBox(data-bind="attr: {href: $data.obj.link}")
+                img.img(data-bind="attr: {src: $data.obj.sfile, alt: $data.obj.title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}")
+                .curtain
+                //ko if: $data.obj.status.icon
+                .status.fringe(data-bind="attr: {title: $data.obj.status.tip}")
+                    span.glyphicon(data-bind="css: $data.obj.status.icon")
+                // /ko
+                //ko if: $data.obj.my
+                .status.upper.mine.fringe(title="It is your photo")
+                    span.glyphicon.glyphicon-user
+                // /ko
         .commentHead
             a.photoName(data-bind="attr: {href: $data.obj.link}, html: $data.obj.title")
             .dotDelimeter ·

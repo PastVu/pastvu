@@ -530,6 +530,14 @@ async function giveDelTree({ cid, type = 'photo' }) {
 };
 
 // Select comment of user
+const photosFields = { _id: 1, cid: 1, title: 1, file: 1, y: 1 };
+const photosFieldsForReguser = {
+    s: 1,
+    mime: 1,
+    user: 1,
+    ...photosFields,
+    ...regionController.regionsAllSelectHash
+};
 async function giveForUser({ login, page = 1, type = 'photo' }) {
     const { handshake: { usObj: iAm } } = this;
 
@@ -568,7 +576,7 @@ async function giveForUser({ login, page = 1, type = 'photo' }) {
             { _id: { $in: objIds } }, { _id: 1, cid: 1, title: 1, ccount: 1 }, { lean: true }
         ).exec() :
         Photo.find(
-            { _id: { $in: objIds } }, { _id: 1, cid: 1, title: 1, file: 1, y: 1 }, { lean: true }
+            { _id: { $in: objIds } }, iAm.registered ? photosFieldsForReguser : photosFields, { lean: true }
         ).exec());
 
     if (_.isEmpty(objs)) {
@@ -579,8 +587,27 @@ async function giveForUser({ login, page = 1, type = 'photo' }) {
     const objFormattedHashId = {};
     const commentsArrResult = [];
 
+    if (type === 'photo' && iAm.registered) {
+        await this.call('photo.fillProtection', { photos: objs, setMyFlag: true });
+
+        for (const obj of objs) {
+            objFormattedHashCid[obj.cid] = objFormattedHashId[obj._id] = obj;
+            obj._id = undefined;
+            obj.user = undefined;
+            obj.mime = undefined;
+        }
+    } else {
+        for (const obj of objs) {
+            objFormattedHashCid[obj.cid] = objFormattedHashId[obj._id] = obj;
+            obj._id = undefined;
+        }
+    }
+
     for (const obj of objs) {
-        objFormattedHashCid[obj.cid] = objFormattedHashId[obj._id] = _.omit(obj, '_id');
+        objFormattedHashCid[obj.cid] = objFormattedHashId[obj._id] = obj;
+        obj._id = undefined;
+        obj.mime = undefined;
+        obj.user = undefined;
     }
 
     // For each comment check object existens and assign to comment its cid

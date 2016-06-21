@@ -5,6 +5,8 @@
 define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/Photo', 'model/storage', 'text!tpl/user/comments.jade', 'css!style/user/comments'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, Photo, storage, jade) {
     'use strict';
 
+    var imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
+
     return Cliche.extend({
         jade: jade,
         options: {
@@ -178,8 +180,12 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
                         _.forOwn(objs, function (obj) {
                             if (type === 'photo') {
+                                Photo.factory(obj, {
+                                    type: 'compact',
+                                    pic: 'q',
+                                    can: { 'protected': obj.protected }
+                                });
                                 obj.link = '/p/' + obj.cid;
-                                obj.sfile = Photo.picFormats.q + obj.file;
                                 obj.title += ' <span class="photoYear">' + obj.y + '</span>';
                             } else if (type === 'news') {
                                 obj.link = '/news/' + obj.cid;
@@ -235,6 +241,22 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 this.histVM.destroy();
                 delete this.histVM;
             }
+        },
+        onPreviewLoad: function (data, event) {
+            event.target.parentNode.parentNode.classList.add('showPrv');
+        },
+        onPreviewErr: function (data, event) {
+            var $photoBox = $(event.target.parentNode),
+                parent = $photoBox[0].parentNode,
+                content = '';
+
+            event.target.style.visibility = 'hidden';
+            content = imgFailTpl({
+                style: 'width: 100%;margin-top:7px;padding-top:25px;background: url(/img/misc/imgw.png) 50% 0 no-repeat;',
+                txt: ' '
+            });
+            $photoBox.find('.img').after(content);
+            parent.classList.add('showPrv');
         }
     });
 });
