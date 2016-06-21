@@ -2642,6 +2642,8 @@ export function buildPhotosQuery(filter, forUserId, iAm) {
     // console.log(JSON.stringify(result.query, null, '\t'));
     return result;
 }
+// Ссылка на protected из списка комментариев и подписок
+// Не видна ссылка на историю удаленной/деактивированной фотографии анонимам
 // Проксирование dev на downloader
 // Парсинг ссылок на изображения
 
