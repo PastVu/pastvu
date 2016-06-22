@@ -1,4 +1,5 @@
 import _ from 'lodash';
+import http from 'http';
 import errorMsgs from './intl';
 import constants from './constants';
 
@@ -15,7 +16,11 @@ export default class ApplicationError extends Error {
             data = { code: data };
         }
 
-        const { code = constants.UNHANDLED_ERROR, message, logged = false, trace = true, ...details } = data;
+        const {
+            code = constants.UNHANDLED_ERROR, statusCode = 500,
+            logged = false, trace = true,
+            message, ...details
+        } = data;
 
         super(message || errorMsgs[code] || code); // Native Error contructor accepts message
 
@@ -24,6 +29,8 @@ export default class ApplicationError extends Error {
         this.trace = trace;
         this.logged = logged;
         this.details = details;
+        this.statusCode = statusCode;
+        this.statusText = http.STATUS_CODES[statusCode];
 
         // Ensure we get a proper stack trace in most Javascript environments
         if (CAPTURE_STACK_TRACE_SUPPORT) {

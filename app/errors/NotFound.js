@@ -10,7 +10,8 @@ export default class NotFoundError extends ApplicationError {
         }
 
         _.defaults(data, {
-            code: constants.NO_SUCH_RESOURCE
+            code: constants.NO_SUCH_RESOURCE,
+            statusCode: 404
         });
 
         super(data, rid);

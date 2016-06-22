@@ -16,6 +16,7 @@ export default class InputError extends ApplicationError {
 
         _.defaults(data, {
             code: constants.INPUT,
+            statusCode: 400,
             trace: false
         });
 

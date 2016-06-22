@@ -10,7 +10,8 @@ export default class BadParamsError extends ApplicationError {
         }
 
         _.defaults(data, {
-            code: constants.BAD_PARAMS
+            code: constants.BAD_PARAMS,
+            statusCode: 400
         });
 
         super(data, rid);
