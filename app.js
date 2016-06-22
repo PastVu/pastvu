@@ -11,6 +11,7 @@ import socketIO from 'socket.io';
 import Utils from './commons/Utils';
 import { handleSocketConnection, registerSocketRequestHendler } from './app/request';
 
+import { photosReady } from './controllers/photo';
 import { ready as mailReady } from './controllers/mail';
 import { ready as authReady } from './controllers/auth';
 import { ready as regionReady } from './controllers/region';
@@ -44,6 +45,7 @@ export async function configure(startStamp) {
     mkdirp.sync(path.join(storePath, 'protected/photos'));
     mkdirp.sync(path.join(storePath, 'public/avatars'));
     mkdirp.sync(path.join(storePath, 'public/photos'));
+    mkdirp.sync(path.join(storePath, 'publicCovered/photos'));
 
     const logger = log4js.getLogger('app');
     const logger404 = log4js.getLogger('404.js');
@@ -160,7 +162,7 @@ export async function configure(startStamp) {
     }
 
 
-    await Promise.all([authReady, settingsReady, regionReady, subscrReady, mailReady]);
+    await Promise.all([authReady, settingsReady, regionReady, subscrReady, mailReady, photosReady]);
 
     const httpServer = http.createServer(app);
     const io = socketIO(httpServer, {

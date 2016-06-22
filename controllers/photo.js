@@ -24,6 +24,7 @@ import { Download } from '../models/Download';
 import { Photo, PhotoMap, PaintingMap, PhotoHistory } from '../models/Photo';
 
 const shift10y = ms('10y');
+const loggerApp = log4js.getLogger('app');
 const logger = log4js.getLogger('photo.js');
 const incomeDir = path.join(config.storePath, 'incoming');
 const privateDir = path.join(config.storePath, 'private/photos');
@@ -2645,50 +2646,6 @@ export function buildPhotosQuery(filter, forUserId, iAm) {
 // Проксирование dev на downloader
 // Парсинг ссылок на изображения
 
-// Resets the view statistics for the day and week
-const planResetDisplayStat = (function () {
-    async function resetStat() {
-        const setQuery = { vdcount: 0 };
-        const needWeek = moment.utc().day() === 1; // Week start - monday
-
-        if (needWeek) {
-            setQuery.vwcount = 0;
-        }
-
-        try {
-            const { n: count = 0 } = await Photo.update(
-                { s: { $in: [status.PUBLIC, status.DEACTIVATE, status.REMOVE] } }, { $set: setQuery }, { multi: true }
-            ).exec();
-
-            logger.info(`Reset day ${needWeek ? 'and week ' : ''}display statistics for ${count} photos`);
-        } catch (err) {
-            return logger.error(err);
-        }
-
-        planResetDisplayStat();
-    }
-
-    return function () {
-        setTimeout(resetStat, moment.utc().add(1, 'd').startOf('day').diff(moment.utc()) + 2000);
-    };
-}());
-
-// Every 5 minute check what photo were reconverted last time earlier than photo's chache time,
-// and delete anticache url parameter 's' from file property
-async function resetPhotosAnticache() {
-    const photos = await Photo.find({
-        converted: { $gte: new Date(Date.now() - ms('1d')), $lte: new Date(Date.now() - config.photoCacheTime)},
-        $where: `this.file !== this.path`
-    }, {_id: 0, cid: 1, path: 1}, { lean: true }).exec();
-
-    // For each of found photo set file equals path, don't wait execution
-    for (const { cid, path } of photos) {
-        Photo.update({ cid }, { $set: { file: path } }).exec();
-    }
-
-    setTimeout(resetPhotosAnticache, ms('5m'));
-};
-
 // Return history of photo edit
 async function giveObjHist({ cid, fetchId, showDiff }) {
     if (!Number(cid) || cid < 1 || !Number(fetchId)) {
@@ -2922,7 +2879,115 @@ export default {
     allowGetProtectedPhotosFiles
 };
 
-waitDb.then(() => {
-    planResetDisplayStat();
-    resetPhotosAnticache();
-}); // Plan statistic clean up
+// Resets the view statistics for the day and week
+const planResetDisplayStat = (function () {
+    async function resetStat() {
+        const setQuery = { vdcount: 0 };
+        const needWeek = moment.utc().day() === 1; // Week start - monday
+
+        if (needWeek) {
+            setQuery.vwcount = 0;
+        }
+
+        try {
+            const { n: count = 0 } = await Photo.update(
+                { s: { $in: [status.PUBLIC, status.DEACTIVATE, status.REMOVE] } }, { $set: setQuery }, { multi: true }
+            ).exec();
+
+            logger.info(`Reset day ${needWeek ? 'and week ' : ''}display statistics for ${count} photos`);
+        } catch (err) {
+            return logger.error(err);
+        }
+
+        planResetDisplayStat();
+    }
+
+    return function () {
+        setTimeout(resetStat, moment.utc().add(1, 'd').startOf('day').diff(moment.utc()) + 2000);
+    };
+}());
+
+// Every 5 minute check what photo were reconverted last time earlier than photo's chache time,
+// and delete anticache url parameter 's' from file property
+async function resetPhotosAnticache() {
+    const photos = await Photo.find({
+        converted: { $gte: new Date(Date.now() - ms('7d')), $lte: new Date(Date.now() - config.photoCacheTime)},
+        $where: `this.file !== this.path`
+    }, {_id: 0, cid: 1, path: 1}, { lean: true }).exec();
+
+    // For each of found photo set file equals path, don't wait execution
+    for (const { cid, path } of photos) {
+        Photo.update({ cid }, { $set: { file: path } }).exec();
+    }
+
+    if (photos.length) {
+        loggerApp.info(`Photos anticache was reset for ${photos.length} photos`);
+    }
+
+    setTimeout(resetPhotosAnticache, ms('5m'));
+};
+
+// Check that redis contains file keys that point to the corresponding photo cid for every not public photo
+// This info is needed for downloader process to check client rights to serve him photo's protected file
+// Do this on start and every one hour
+async function syncUnpublishedPhotosWithRedis() {
+    try {
+        let [actualCount = 0, redisCount] = await Promise.all([
+            Photo.count({ s: { $ne: status.PUBLIC } }).exec(),
+            dbRedis.getAsync('notpublic:count')
+        ]);
+
+        redisCount = Number(redisCount) || 0;
+
+        if (actualCount !== redisCount) {
+            const start  = Date.now();
+
+            const [photos] = await Promise.all([
+                // Select cid and path to file for all non public photos
+                Photo.find({ s: { $ne: status.PUBLIC } }, {_id: 0, cid: 1, path: 1}, { lean: true }).exec(),
+
+                // Remove all 'notpublic:' keys fro redis, by evaluating lua script
+                dbRedis.evalAsync('for _,k in ipairs(redis.call("keys","notpublic:*")) do redis.call("del",k) end', 0)
+            ]);
+
+            // Set count first to avoid race condition,
+            // if this counter is incremented from somewhare while we adding keys
+            dbRedis.set(`notpublic:count`, photos.length);
+
+            let multi;
+            const finalCounter = photos.length - 1;
+
+            // Accumulate several set to multi set and flush it to redis by 100 keys
+            for (const [i, { cid, path }] of photos.entries()) {
+                if (i % 100 === 0 || i === finalCounter) {
+                    if (multi) {
+                        await multi.execAsync();
+                    }
+                    if (i !== finalCounter) {
+                        multi = dbRedis.multi();
+                    }
+                }
+
+                multi.set(`notpublic:${path}`, `${cid}`);
+            }
+
+            loggerApp.info(
+                `Redis unpublished photos syncing set ${photos.length} keys to redis in ${Date.now() - start}ms.`,
+                `Was ${actualCount}/${redisCount}`,
+            );
+        } else {
+            loggerApp.info('Redis unpublished photos are in sync with mongodb one');
+        }
+    } catch (error) {
+        loggerApp.error('Redis unpublished photos syncing', error);
+    }
+
+    setTimeout(syncUnpublishedPhotosWithRedis, ms('1h'));
+}
+
+export const photosReady = waitDb.then(() => {
+    planResetDisplayStat(); // Plan statistic clean up
+
+    // Application start should wait cache and redis operations
+    return Promise.all([resetPhotosAnticache(), syncUnpublishedPhotosWithRedis()]);
+});
