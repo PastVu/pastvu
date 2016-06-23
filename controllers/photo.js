@@ -133,7 +133,7 @@ export const permissions = {
             // watersign: [true, false]
             // nowatersign: [true, false]
             // download: [true, byrole, withwater, login, false]
-            // protected: [true, false]
+            // protected: [true, false, undefined]
         };
         const s = photo.s;
 
@@ -237,10 +237,15 @@ export const permissions = {
         return false;
     },
     can: {
-        // Who will see protected file (without cover) if photo is not public:
-        // Owner and admin - always, moderator - only if photo is not removed
-        'protected': (s, ownPhoto, canModerate, isAdmin) =>
-            s !== status.PUBLIC && (ownPhoto || isAdmin || canModerate && s !== status.REMOVE) || undefined
+        // Who will see protected or covered file (without cover) if photo is not public:
+        // Protected(true): owner and admin - always, moderator - only if photo is not yet removed
+        // Covered(false): others
+        // Public(undefined): if photo is public
+        'protected': (s, ownPhoto, canModerate, isAdmin) => {
+            if (s !== status.PUBLIC) {
+                return ownPhoto || isAdmin || canModerate && s !== status.REMOVE || false;
+            }
+        }
     }
 };
 
@@ -462,10 +467,10 @@ async function give(params) {
 
     if (can.protected) {
         try {
-            await this.call('photo.allowGetProtectedPhotoFile', { file: photo.file, mime: photo.mime });
+            await this.call('photo.putProtectedFileAccessCache', { file: photo.file, mime: photo.mime });
         } catch (err) {
             logger.warn(`${this.ridMark} Putting link to redis for protected ${cid} photo's file failed. Serve public.`, err);
-            can.protected = undefined;
+            can.protected = false;
         }
     }
 
@@ -903,7 +908,12 @@ function userPCountUpdate(user, newDelta = 0, publicDelta = 0, inactiveDelta = 0
     }
 }
 
-const allowGetProtectedPhotoFile = async function ({ file, mime = '', ttl = config.protectedFileLinkTTL }) {
+// Set key/value to redis as fast cache to access photo's protected file for specific user,
+// if we think he is going to request this file (for example, he's requested photo page)
+// This is fast cache for downloader, because key give access only to this user for this file.
+// If downloader handle regular _p request and there is no fast cache in redis,
+// it will try to get user's authorities from mongo
+const putProtectedFileAccessCache = async function ({ file, mime = '', ttl = config.protectedFileLinkTTL }) {
     if (!dbRedis.connected) {
         throw new ApplicationError({ code: constantsError.REDIS_NO_CONNECTION, trace: false });
     }
@@ -916,7 +926,8 @@ const allowGetProtectedPhotoFile = async function ({ file, mime = '', ttl = conf
         });
 };
 
-const allowGetProtectedPhotosFiles = async function ({ photos = [], ttl = config.protectedFileLinkTTL }) {
+// The same as above, but for multiple files (for example, user has requested gallery)
+const putProtectedFilesAccessCache = async function ({ photos = [], ttl = config.protectedFileLinkTTL }) {
     if (!dbRedis.connected) {
         throw new ApplicationError({ code: constantsError.REDIS_NO_CONNECTION, trace: false });
     }
@@ -939,7 +950,7 @@ const allowGetProtectedPhotosFiles = async function ({ photos = [], ttl = config
         });
 };
 
-const fillProtection = async function ({ photos = [], theyAreMine, setMyFlag = false }) {
+const fillPhotosProtection = async function ({ photos = [], theyAreMine, setMyFlag = false }) {
     if (!photos.length) {
         return;
     }
@@ -957,21 +968,22 @@ const fillProtection = async function ({ photos = [], theyAreMine, setMyFlag = f
             photo.my = true;
         }
 
-        if (permissions.can.protected(photo.s, isMine, permissions.canModerate(photo, iAm), isAdmin)) {
-            photo.protected = true;
+        // Undefined - will take public(/_p/), true - protected(/_pr/), false - covered(/_prn/)
+        photo.protected = permissions.can.protected(photo.s, isMine, permissions.canModerate(photo, iAm), isAdmin);
+        if (photo.protected) {
             protectedPhotos.push(photo);
         }
     }
 
     if (protectedPhotos.length) {
-        await this.call('photo.allowGetProtectedPhotosFiles', { photos: protectedPhotos })
+        await this.call('photo.putProtectedFilesAccessCache', { photos: protectedPhotos })
             .catch(err => {
                 logger.warn(
                     `${this.ridMark} Putting link to redis for protected photos file failed. Serve public.`,
                     err
                 );
                 for (const photo of protectedPhotos) {
-                    photo.protected = undefined;
+                    photo.protected = false;
                 }
             });
     }
@@ -979,9 +991,9 @@ const fillProtection = async function ({ photos = [], theyAreMine, setMyFlag = f
 
 
 // If photo is getting public status,
-// we must move files from protected to public folder, and overwrite files in public (if exist)
+// we must move files from protected to public folder (overwrite files if exist), and remove covered variants (if exist)
 // If photo is being changed from public status,
-// we must copy all public files to protected folder, and then cover all public files with caption
+// we must copy all public files to protected folder, create covered files with caption and remove public files
 const changeFileProtection = async function ({ photo, protect = false }) {
     try {
         converter.movePhotoFiles({ photo, copy: protect, toProtected: protect });
@@ -998,8 +1010,12 @@ const changeFileProtection = async function ({ photo, protect = false }) {
     }
 
     if (protect) {
-        // Cover all public files with caption for protected photo
+        // Cover all public files with caption for not public photo.
+        // And here public files will be removed after covered ones were created, to avoid gap between files existance
         await converter.addPhotos([photo], 2, true);
+    } else {
+        // Delete covered files if photo has got public files
+        await converter.deletePhotoFiles({ photo, fromCovered: true });
     }
 };
 
@@ -1358,7 +1374,7 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40, customQuery
 
                 // Check if user should get protected files
                 const itsMineGallery = userId && User.isEqual(iAm.user._id, userId) || undefined;
-                await this.call('photo.fillProtection', { photos, theyAreMine: itsMineGallery, setMyFlag: !userId });
+                await this.call('photo.fillPhotosProtection', { photos, theyAreMine: itsMineGallery, setMyFlag: !userId });
 
                 for (const photo of photos) {
                     photo._id = undefined;
@@ -1566,7 +1582,7 @@ async function giveForApprove(data) {
 
     const shortRegionsHash = regionController.genObjsShortRegionsArr(photos, iAm.mod_rshortlvls, true);
 
-    await this.call('photo.allowGetProtectedPhotosFiles', { photos })
+    await this.call('photo.putProtectedFilesAccessCache', { photos })
         .catch(err => {
             logger.warn(`${this.ridMark} Putting link to redis for protected photos file failed. Serve public.`, err);
         });
@@ -1633,10 +1649,10 @@ async function giveUserPhotosAround({ cid, limitL, limitR }) {
     const theyAreMine = iAm.registered && User.isEqual(iAm.user._id, photo.user);
     if (iAm.registered && iAm.user.role >= 5 || theyAreMine) {
         if (left.length) {
-            await this.call('photo.fillProtection', { photos: left, theyAreMine });
+            await this.call('photo.fillPhotosProtection', { photos: left, theyAreMine });
         }
         if (right.length) {
-            await this.call('photo.fillProtection', { photos: right, theyAreMine });
+            await this.call('photo.fillPhotosProtection', { photos: right, theyAreMine });
         }
     }
 
@@ -2874,9 +2890,9 @@ export default {
     prefetchForEdit,
     givePrevNextCids,
     changePublicExternality,
-    fillProtection,
-    allowGetProtectedPhotoFile,
-    allowGetProtectedPhotosFiles
+    fillPhotosProtection,
+    putProtectedFileAccessCache,
+    putProtectedFilesAccessCache
 };
 
 // Resets the view statistics for the day and week

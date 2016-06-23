@@ -504,7 +504,7 @@ async function giveUserSubscriptions({ login, page = 1, type = 'photo' }) {
     ]);
 
     if (type === 'photo') {
-        await this.call('photo.fillProtection', { photos: objs, setMyFlag: true });
+        await this.call('photo.fillPhotosProtection', { photos: objs, setMyFlag: true });
 
         for (const obj of objs) {
             obj.user = undefined;

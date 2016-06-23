@@ -31,6 +31,7 @@ const { photo: { status } } = constants;
 const sourceDir = path.join(config.storePath, 'private/photos/');
 const publicDir = path.join(config.storePath, 'public/photos/');
 const protectedDir = path.join(config.storePath, 'protected/photos/');
+const coveredDir = path.join(config.storePath, 'publicCovered/photos/');
 const waterDir = path.join(__dirname, '/../misc/watermark/');
 const waterFontPath = path.normalize(waterDir + 'AdobeFanHeitiStd-Bold.otf');
 
@@ -366,13 +367,17 @@ async function conveyorStep(photo, { protect: onlyProtectPublic = false, webpOnl
             });
     }
 
-    // We always convert to public folder, if file was published once
+    // We always convert to public (or covered) folder, if file was published once
     if (wasPublished) {
         await conveyorSubStep(photo, {
             webpOnly,
             waterTxt,
             protectCover: !itsPublicPhoto || onlyProtectPublic
         });
+        // If photo is not public anymore, try to delete its files from public folder
+        if (!itsPublicPhoto) {
+            await deletePhotoFiles({ photo });
+        }
     }
 
     // And we also convert to protected folder if photo is not public
@@ -389,8 +394,8 @@ async function conveyorStep(photo, { protect: onlyProtectPublic = false, webpOnl
 
 async function conveyorSubStep(photo, { isPublic = true, protectCover = false, webpOnly = false, getStandardAttributes = true, waterTxt }) {
     const { cid } = photo;
-    const targetDir =  isPublic ? publicDir : protectedDir;
     const lossless = photo.mime === 'image/png';
+    const targetDir = isPublic ? protectCover ? coveredDir : publicDir : protectedDir;
 
     const makeWebp = (variantName, dstPath) => tryPromise(5,
         () => execAsync(`cwebp -preset photo -m 5 ${lossless ? '-lossless ' : ''}${dstPath} -o ${dstPath}.webp`),
@@ -590,11 +595,11 @@ export async function movePhotoFiles({ photo, copy = false, toProtected = false 
 }
 
 // Delete photo files from public/protected folders, silently, swallowing possible errors if file does not exist
-export function deletePhotoFiles({ photo, fromProtected = false }) {
+export function deletePhotoFiles({ photo, fromProtected = false, fromCovered = false }) {
     const { path: filePath } = photo;
     const fileWebp = filePath + '.webp';
 
-    const dir = fromProtected ? protectedDir : publicDir;
+    const dir = fromProtected ? protectedDir : fromCovered ? coveredDir : publicDir;
 
     return Promise.all(imageVersionsKeys.map(key => Promise.all([
         fs.unlinkAsync(path.join(dir, key, filePath)).catch(_.noop),

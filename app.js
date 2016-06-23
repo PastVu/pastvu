@@ -142,6 +142,7 @@ export async function configure(startStamp) {
         app.use('/_a/', ourMiddlewares.serveImages(path.join(storePath, 'public/avatars/'), { maxAge: ms('2d') }));
         app.use('/_p/', ourMiddlewares.serveImages(path.join(storePath, 'public/photos/'), { maxAge: ms('7d') }));
         app.use('/_pr/', ourMiddlewares.serveImages(path.join(storePath, 'protected/photos/'), { maxAge: ms('7d') }));
+        app.use('/_prn/', ourMiddlewares.serveImages(path.join(storePath, 'publicCovered/photos/'), { maxAge: ms('7d') }));
 
         // Replace unfound avatars with default one
         app.get('/_a/d/*', function (req, res) {

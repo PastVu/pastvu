@@ -588,7 +588,7 @@ async function giveForUser({ login, page = 1, type = 'photo' }) {
     const commentsArrResult = [];
 
     if (type === 'photo' && iAm.registered) {
-        await this.call('photo.fillProtection', { photos: objs, setMyFlag: true });
+        await this.call('photo.fillPhotosProtection', { photos: objs, setMyFlag: true });
 
         for (const obj of objs) {
             objFormattedHashCid[obj.cid] = objFormattedHashId[obj._id] = obj;
