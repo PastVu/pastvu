@@ -591,9 +591,15 @@ async function create({ files }) {
         });
 
         cids.push({ cid: photo.cid });
+
+        // Add this photo to redis cache as not public yet, don't wait
+        changePhotoInNotpablicCache({ photo })
+            .catch(error => logger.warn(`${this.ridMark} Adding photo to redis not public cache failed.`, error));
+
         return photo.save();
     }));
 
+    // Add to coverter, don't wait
     converter.addPhotos(cids, 1);
 
     user.pfcount = user.pfcount + files.length;
@@ -989,6 +995,26 @@ const fillPhotosProtection = async function ({ photos = [], theyAreMine, setMyFl
     }
 };
 
+async function changePhotoInNotpablicCache({ photo, add = true }) {
+    if (!dbRedis.connected) {
+        throw new ApplicationError({ code: constantsError.REDIS_NO_CONNECTION, trace: false });
+    }
+    const multi = dbRedis.multi();
+
+    if (add) {
+        // Put information about new not public photo to redis cache
+        multi.incr(`notpublic:count`).set(`notpublic:${photo.path}`, `${photo.cid}`);
+    } else {
+        // Remove information about not public photo from redis cache
+        multi.decr(`notpublic:count`).del(`notpublic:${photo.path}`);
+    }
+
+    return multi.execAsync()
+        .catch(error => {
+            throw new ApplicationError({ code: constantsError.REDIS, trace: false, message: error.message });
+        });
+};
+
 
 // If photo is getting public status,
 // we must move files from protected to public folder (overwrite files if exist), and remove covered variants (if exist)
@@ -996,7 +1022,7 @@ const fillPhotosProtection = async function ({ photos = [], theyAreMine, setMyFl
 // we must copy all public files to protected folder, create covered files with caption and remove public files
 const changeFileProtection = async function ({ photo, protect = false }) {
     try {
-        converter.movePhotoFiles({ photo, copy: protect, toProtected: protect });
+        await converter.movePhotoFiles({ photo, copy: protect, toProtected: protect });
     } catch (err) {
         logger.warn(`${this.ridMark} Copying/moving of files in changing protection failed:`, err.message);
 
@@ -1008,6 +1034,10 @@ const changeFileProtection = async function ({ photo, protect = false }) {
             await converter.deletePhotoFiles({ photo, fromProtected: true });
         }
     }
+
+    // Change redis cache state of this photo
+    await changePhotoInNotpablicCache({ photo, add: protect })
+        .catch(error => logger.warn(`${this.ridMark} Changing photo state in redis not public cache failed.`, error));
 
     if (protect) {
         // Cover all public files with caption for not public photo.
