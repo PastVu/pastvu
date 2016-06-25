@@ -7,7 +7,7 @@ import * as session from './_session';
 import { clientParams, ready as settingsReady } from './settings';
 import NotFoundError from '../app/errors/NotFound';
 import { getRegionsArrFromCache } from './region';
-import { handleHTTPRequest, registerHTTPAPIHandler } from '../app/request';
+import { handleHTTPRequest, handleHTTPAPIRequest } from '../app/request';
 import { parseFilter } from './photo';
 import constants from './constants';
 
@@ -272,7 +272,7 @@ export function bindRoutes(app) {
     app.get(/^\/ps(?:\/(\d{1,6}))?\/?$/, handleHTTPRequest, setStaticHeaders, getRegionForGallery, appMainHandler);
 
     if (config.serveHTTPApi) {
-        app.use('/api2', require('body-parser').json({ limit: '4mb' }), handleHTTPRequest, registerHTTPAPIHandler);
+        app.use('/api2', require('body-parser').json({ limit: '4mb' }), handleHTTPRequest, handleHTTPAPIRequest);
     }
 
     // Admin section
