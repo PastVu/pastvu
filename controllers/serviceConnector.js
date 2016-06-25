@@ -71,10 +71,10 @@ class ClientSocket {
 
                 result.result = methodResult;
             })
-            .catch(err => {
-                result.error = err;
+            .catch(error => {
+                result.error = error;
             })
-            .finally(() => {
+            .then(() => {
                 this.socket.write(JSON.stringify(result) + '\0');
             });
     }

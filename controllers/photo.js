@@ -215,6 +215,11 @@ export const permissions = {
             }
         } else {
             can.download = s === status.PUBLIC ? 'login' : false;
+
+            // Anonyms must request covered files /_prn/ of unpublished photos
+            if (s !== status.PUBLIC) {
+                can.protected = false;
+            }
         }
 
         return can;
@@ -914,12 +919,14 @@ function userPCountUpdate(user, newDelta = 0, publicDelta = 0, inactiveDelta = 0
     }
 }
 
+const protectedFileLinkTTLs = config.protectedFileLinkTTL / 1000;
+
 // Set key/value to redis as fast cache to access photo's protected file for specific user,
 // if we think he is going to request this file (for example, he's requested photo page)
 // This is fast cache for downloader, because key give access only to this user for this file.
 // If downloader handle regular _p request and there is no fast cache in redis,
 // it will try to get user's authorities from mongo
-const putProtectedFileAccessCache = async function ({ file, mime = '', ttl = config.protectedFileLinkTTL }) {
+const putProtectedFileAccessCache = async function ({ file, mime = '', ttl = protectedFileLinkTTLs }) {
     if (!dbRedis.connected) {
         throw new ApplicationError({ code: constantsError.REDIS_NO_CONNECTION, trace: false });
     }
@@ -933,7 +940,7 @@ const putProtectedFileAccessCache = async function ({ file, mime = '', ttl = con
 };
 
 // The same as above, but for multiple files (for example, user has requested gallery)
-const putProtectedFilesAccessCache = async function ({ photos = [], ttl = config.protectedFileLinkTTL }) {
+const putProtectedFilesAccessCache = async function ({ photos = [], ttl = protectedFileLinkTTLs }) {
     if (!dbRedis.connected) {
         throw new ApplicationError({ code: constantsError.REDIS_NO_CONNECTION, trace: false });
     }
@@ -1831,9 +1838,37 @@ async function giveCan({ cid }) {
     }
 
     // Need to get can for anonymous too, but there is nothing to check with owner in this case, so do not populate him
-    const photo = await this.call('photo.find', { query: { cid }, populateUser: iAm.registered ? true : false });
+    const photo = await this.call('photo.find', {
+        query: { cid },
+        options: { lean: true },
+        populateUser: iAm.registered ? true : false
+    });
 
     return { can: permissions.getCan(photo, iAm) };
+}
+
+// Return protected flag for photo
+async function giveCanProtected({ cid }) {
+    const { handshake: { usObj: iAm } } = this;
+
+    cid = Number(cid);
+
+    if (!cid) {
+        throw new NotFoundError(constantsError.NO_SUCH_PHOTO);
+    }
+
+    const photo = await this.call('photo.find', { query: { cid }, options: { lean: true }, populateUser: false });
+
+    if (photo.s !== status.PUBLIC && !iAm.registered) {
+        return { result: false };
+    }
+
+    const isMine = User.isEqual(photo.user, iAm.user);
+
+    return {
+        result: permissions.can.protected(photo.s, isMine, permissions.canModerate(photo, iAm), iAm.isAdmin),
+        mime: photo.mime
+    };
 }
 
 function photoCheckPublickRequired(photo) {
@@ -2919,6 +2954,7 @@ export default {
     photoFromMap,
     prefetchForEdit,
     givePrevNextCids,
+    giveCanProtected,
     changePublicExternality,
     fillPhotosProtection,
     putProtectedFileAccessCache,

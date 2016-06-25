@@ -110,24 +110,26 @@ export const handleServiceRequest = async function ({ sid, methodName, params })
 
     logger.info(`${context.ridMark} -> Service "${methodName}" method has been requested`);
 
-    let session, usObj, result;
-
     try {
-        ({ session, usObj } = await sessionController.getSessionLight.call(context, { sid }));
+        const { session, usObj } = await sessionController.getSessionLight.call(context, { sid });
 
         context.handshake.usObj = usObj;
         context.handshake.session = session;
 
-        result = await callWebApi.call(context, methodName, params);
+        const result = await context.call(methodName, params, false);
+
+        logger.info(
+            `${context.ridMark} Service "${methodName}" request method has been executed in ${Date.now() - start}ms`
+        );
+
+        return result;
     } catch (error) {
-        result = { error };
+        logger.warn(
+            `${context.ridMark} Service "${methodName}" request method failed in ${Date.now() - start}ms`
+        );
+
+        throw error;
     }
-
-    logger.info(
-        `${context.ridMark} Service "${methodName}" request method has been executed in ${Date.now() - start}ms`
-    );
-
-    return result;
 };
 
 /**

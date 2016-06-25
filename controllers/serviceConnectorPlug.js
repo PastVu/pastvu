@@ -65,6 +65,7 @@ export default class Plug extends EventEmitter {
         });
     }
 
+    // Request method from server: { method, params, stringifyResultArgs = false, spread = false, ... }
     request(data) {
         return new Promise((resolve, reject) => {
             if (!this.connected) {
