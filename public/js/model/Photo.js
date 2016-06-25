@@ -93,29 +93,23 @@ define(
             watersign: false,
             nowaterchange: false,
             download: 'login',
-            protected: false
+            'protected': undefined
         };
         var picPrefix = '/_p';
         var picProtectedPrefix = '/_pr';
-        var picFormats = {
-            a: picPrefix + '/a/',
-            d: picPrefix + '/d/',
-            h: picPrefix + '/h/',
-            m: picPrefix + '/m/',
-            q: picPrefix + '/q/',
-            s: picPrefix + '/s/',
-            x: picPrefix + '/x/'
-        };
-        var picProtectedFormats = {
-            a: picProtectedPrefix + '/a/',
-            d: picProtectedPrefix + '/d/',
-            h: picProtectedPrefix + '/h/',
-            m: picProtectedPrefix + '/m/',
-            q: picProtectedPrefix + '/q/',
-            s: picProtectedPrefix + '/s/',
-            x: picProtectedPrefix + '/x/'
-        };
+        var picCoveredPrefix = '/_prn';
+        var sizeVariants = ['a', 'd', 'h', 'm', 'q', 's', 'x'];
 
+        var picFormats = createFormatMap(picPrefix);
+        var picCoveredFormats = createFormatMap(picCoveredPrefix);
+        var picProtectedFormats = createFormatMap(picProtectedPrefix);
+
+        function createFormatMap(prefix) {
+            return sizeVariants.reduce(function (result, size) {
+                result[size] = prefix + '/' + size + '/';
+                return result;
+            }, {});
+        }
         _.assign(defaults.compact, defaults.base);
         _.assign(defaults.full, defaults.compact);
 
@@ -170,9 +164,12 @@ define(
 
             origin.status = statuses.nums[origin.s] || {};
 
-            if (can.protected) {
+            if (can.protected === true) {
                 origin.sfile = picProtectedFormats[pic] + origin.file;
                 origin.fileroot = picProtectedPrefix;
+            } else if (can.protected === false) {
+                origin.sfile = picCoveredFormats[pic] + origin.file;
+                origin.fileroot = picCoveredPrefix;
             } else {
                 origin.sfile = picFormats[pic] + origin.file;
                 origin.fileroot = picPrefix;
@@ -218,6 +215,14 @@ define(
             return vmExist;
         }
 
-        return { factory: factory, vm: vm, def: defaults, canDef: canDef, picFormats: picFormats, picProtectedFormats: picProtectedFormats };
+        return {
+            factory: factory,
+            vm: vm,
+            def: defaults,
+            canDef: canDef,
+            picFormats: picFormats,
+            picCoveredFormats: picCoveredFormats,
+            picProtectedFormats: picProtectedFormats
+        };
     }
 );

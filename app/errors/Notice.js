@@ -15,6 +15,7 @@ export default class NoticeError extends ApplicationError {
 
         _.defaults(data, {
             code: constants.NOTICE,
+            statusCode: 200,
             trace: false
         });
 

@@ -24,6 +24,7 @@ export default class TimeoutError extends ApplicationError {
 
         _.defaults(details, {
             code: constants.TIMEOUT,
+            statusCode: 408,
             message: `${errorMsgs[constants.TIMEOUT]} (${ms(timeout, { long: true })})`
         });
 

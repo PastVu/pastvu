@@ -15,7 +15,7 @@ var express = require('express'),
 	mongoose = require('mongoose'),
 	ms = require('ms'), // Tiny milisecond conversion utility
 	Utils,
-	CoreClient = require('./controllers/coreclient'),
+	CoreClient = require('./controllers/serviceConnectorPlug'),
 
 	app, db,
 	core, server;

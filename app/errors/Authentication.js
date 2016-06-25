@@ -16,6 +16,7 @@ export default class AuthenticationError extends ApplicationError {
 
         _.defaults(data, {
             code: constants.AUTHENTICATION,
+            statusCode: 401,
             trace: false
         });
 

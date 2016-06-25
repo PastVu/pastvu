@@ -4,13 +4,14 @@ import ms from 'ms';
 import _ from 'lodash';
 import path from 'path';
 import http from 'http';
-import mime from 'mime';
+import mimeMap from 'mime';
 import lru from 'lru-cache';
 import log4js from 'log4js';
 import config from './config';
 import Utils from './commons/Utils';
 import { parse as parseCookie } from 'cookie';
 import contentDisposition from 'content-disposition';
+import CorePlug from './controllers/serviceConnectorPlug';
 import { ApplicationError, AuthorizationError, NotFoundError } from './app/errors';
 
 import connectDb, { dbRedis } from './controllers/connection';
@@ -27,12 +28,7 @@ export async function configure(startStamp) {
 
     const status404Text = http.STATUS_CODES[404];
     const logger = log4js.getLogger('downloader');
-
-    await connectDb({
-        redis: config.redis,
-        mongo: { uri: config.mongo.connection, poolSize: config.mongo.pool },
-        logger
-    });
+    const core = new CorePlug(logger, { port: config.core.port, host: config.core.hostname });
 
     const scheduleMemInfo = (function () {
         const INTERVAL = ms('30s');
@@ -142,7 +138,7 @@ export async function configure(startStamp) {
                 const fileName = contentDisposition(keyData.fileName);
 
                 res.setHeader('Content-Disposition', fileName);
-                res.setHeader('Content-Type', keyData.mime || mime.lookup(filePath));
+                res.setHeader('Content-Type', keyData.mime || mimeMap.lookup(filePath));
 
                 if (size) {
                     res.setHeader('Content-Length', size);
@@ -162,40 +158,70 @@ export async function configure(startStamp) {
      * Serve protected files.
      * If user doesn't have rights or protected file doesn't exist - redirect to public version instead
      */
-    const protectedServePattern = /^\/_pr\/([\/a-z0-9]{26,40}\.(?:jpe?g|png)).*$/i;
+    const protectedServePattern = /^\/_pr?\/([\/a-z0-9]{26,40}\.(?:jpe?g|png)).*$/i;
     const protectedServeHandler = (function () {
         // Session key in client cookies
         const SESSION_COOKIE_KEY = 'past.sid';
-        // Local cache to not pull redis more then once if request for the same file is arrived within TTL
-        const localCache = lru({ max: 2000, maxAge: config.protectedFileLinkTTL * 1000 });
+        // Local cache to not pull redis more then once if request/core for the same file is arrived within TTL
+        const L0Cache = lru({ max: 2000, maxAge: config.protectedFileLinkTTL });
         // Cache time
         const { photoCacheTime } = config;
         const cacheControl = `private, max-age=${photoCacheTime / 1000}`;
         const hostnameRegexp = new RegExp(`^https?:\\/\\/(www\\.)?${config.client.hostname}`, 'i');
 
-        async function servePublic(req, res, filePath) {
-            const filePathFull = path.join(storePath, 'public/photos', filePath);
-            const fileAvailable = await exists(filePathFull);
-
-            if (!fileAvailable) {
-                res.statusCode = 404;
-                return res.end(status404Text);
+        // Set result from L1-L2 to L0 cache
+        async function setL0(key, mime, file, ttl = config.protectedFileLinkTTL) {
+            if (!mime) {
+                mime = mimeMap.lookup(file);
             }
 
-            res.setHeader('Content-Type', mime.lookup(filePathFull));
-            const size = (await fs.statAsync(filePathFull)).size;
+            // Set result to L0 lru-cache over remaining ttl, that was returned from redis
+            L0Cache.set(key, mime, ttl);
 
-            if (size) {
-                res.setHeader('Content-Length', size);
+            return mime;
+        }
+
+        // Try to get protected file permission from local lru cache
+        async function getL0(sid, file) {
+            const key = `pr:${sid}:${file}`;
+
+            return L0Cache.peek(key) || getL1(key, sid, file);
+        }
+
+        // Try to get protected file permission from redis fast cache
+        async function getL1(key, sid, file) {
+            const [value, ttl] = await dbRedis.multi([['get', key], ['ttl', key]]).execAsync() || [];
+
+            if (!value) {
+                return getL2(key, sid, file);
             }
 
-            sendFile(filePathFull, res);
+            const [, mime] = value.split(':');
+
+            return setL0(key, mime, file, (ttl || 1) * 1000);
+        }
+
+        // Try to get protected file permission from core service
+        async function getL2(key, sid, file) {
+            // First, check that photo is exists and unpubliched. Redis has map of unpublished photos (path - cid)
+            const cid = Number(await dbRedis.getAsync(`notpublic:${file}`));
+
+            if (!cid || !core.connected) {
+                throw new NotFoundError({ sid });
+            }
+
+            // If coresponding cid has been found, select session and photo from persistent storage (mongo)
+            const { result, mime } = await core.request({ sid, method: 'photo.giveCanProtected', params: { cid }});
+
+            if (!result) {
+                throw new NotFoundError({ sid });
+            }
+
+            return setL0(key, mime, file);
         }
 
         async function serveProtected(req, res, filePath) {
             const { headers } = req;
-            const file = filePath.substr(2);
-            const filePathFull = path.join(storePath, 'protected/photos', filePath);
 
             if (!headers || !headers['user-agent'] || !headers.cookie) {
                 throw new AuthorizationError(); // If session doesn't contain header or user-agent - deny
@@ -208,33 +234,17 @@ export async function configure(startStamp) {
                 throw new AuthorizationError(); // If session doesn't contain header or user-agent - deny
             }
 
-            const key = `pr:${sid}:${file}`;
-            let mimeValue = localCache.peek(key);
+            const file = filePath.substr(2);
+            const filePathFull = path.join(storePath, 'protected/photos', filePath);
 
-            if (mimeValue === undefined) {
-                const [value, ttl] = await dbRedis.multi([['get', key], ['ttl', key]]).execAsync() || [];
-
-                if (!value) {
-                    throw new AuthorizationError({ sid });
-                }
-
-                [, mimeValue] = value.split(':');
-
-                if (!mimeValue) {
-                    mimeValue = mime.lookup(filePathFull);
-                }
-
-                // Set result to local lru-cache over remaining ttl, that was returned from redis
-                localCache.set(key, mimeValue, (ttl || 1) * 1000);
-            }
-
+            const mime = await getL0(sid, file);
             const fileAvailable = await exists(filePathFull);
 
             if (!fileAvailable) {
                 throw new NotFoundError({ sid });
             }
 
-            res.setHeader('Content-Type', mimeValue || mime.lookup(filePathFull));
+            res.setHeader('Content-Type', mime);
 
             const { size, mtime } = await fs.statAsync(filePathFull);
 
@@ -252,8 +262,7 @@ export async function configure(startStamp) {
                 res.setHeader('Expires', new Date(now.getTime() + photoCacheTime).toUTCString());
             }
 
-
-            sendFile(filePathFull, res, () => servePublic(req, res, filePath));
+            sendFile(filePathFull, res);
         }
 
         return function handleProtectedRequest(req, res) {
@@ -277,17 +286,28 @@ export async function configure(startStamp) {
                     }
 
                     if (error instanceof ApplicationError) {
+                        res.statusCode = error.statusCode;
+                        res.write(error.statusText || '');
                         logger.warn(`Serving protected file ${filePath}${referer}${sid} failed, ${error.message}`);
                     } else {
+                        res.statusCode = 500;
+                        res.write(http.STATUS_CODES[500]);
                         logger.error(`Serving protected file ${filePath}${referer}${sid} failed`, error);
                     }
 
-                    res.statusCode = 303;
-                    res.setHeader('Location', `/_p/${filePath}`);
                     res.end();
                 });
         };
     }());
+
+    await connectDb({
+        redis: config.redis,
+        mongo: { uri: config.mongo.connection, poolSize: config.mongo.pool },
+        logger
+    });
+
+    // Connect to core, without waiting
+    core.connect();
 
     // Start server and do manual manual url router, express is not needed
     http

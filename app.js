@@ -9,8 +9,10 @@ import config from './config';
 import express from 'express';
 import socketIO from 'socket.io';
 import Utils from './commons/Utils';
+import CoreServer from './controllers/serviceConnector';
 import { handleSocketConnection, registerSocketRequestHendler } from './app/request';
 
+import { photosReady } from './controllers/photo';
 import { ready as mailReady } from './controllers/mail';
 import { ready as authReady } from './controllers/auth';
 import { ready as regionReady } from './controllers/region';
@@ -32,10 +34,6 @@ export async function configure(startStamp) {
         manualGarbageCollect,
         listen: {
             hostname
-        },
-        core: {
-            hostname: coreHostname,
-            port: corePort
         }
     } = config;
 
@@ -44,6 +42,7 @@ export async function configure(startStamp) {
     mkdirp.sync(path.join(storePath, 'protected/photos'));
     mkdirp.sync(path.join(storePath, 'public/avatars'));
     mkdirp.sync(path.join(storePath, 'public/photos'));
+    mkdirp.sync(path.join(storePath, 'publicCovered/photos'));
 
     const logger = log4js.getLogger('app');
     const logger404 = log4js.getLogger('404.js');
@@ -140,6 +139,7 @@ export async function configure(startStamp) {
         app.use('/_a/', ourMiddlewares.serveImages(path.join(storePath, 'public/avatars/'), { maxAge: ms('2d') }));
         app.use('/_p/', ourMiddlewares.serveImages(path.join(storePath, 'public/photos/'), { maxAge: ms('7d') }));
         app.use('/_pr/', ourMiddlewares.serveImages(path.join(storePath, 'protected/photos/'), { maxAge: ms('7d') }));
+        app.use('/_prn/', ourMiddlewares.serveImages(path.join(storePath, 'publicCovered/photos/'), { maxAge: ms('7d') }));
 
         // Replace unfound avatars with default one
         app.get('/_a/d/*', function (req, res) {
@@ -160,7 +160,7 @@ export async function configure(startStamp) {
     }
 
 
-    await Promise.all([authReady, settingsReady, regionReady, subscrReady, mailReady]);
+    await Promise.all([authReady, settingsReady, regionReady, subscrReady, mailReady, photosReady]);
 
     const httpServer = http.createServer(app);
     const io = socketIO(httpServer, {
@@ -197,8 +197,6 @@ export async function configure(startStamp) {
     // Handle route (express) errors
     routes.bindErrorHandler(app);
 
-    const CoreServer = require('./controllers/coreadapter').Server;
-
     const manualGC = manualGarbageCollect && global.gc;
 
     if (manualGC) {
@@ -229,7 +227,7 @@ export async function configure(startStamp) {
             if (manualGC) {
                 const start = Date.now();
 
-                global.gc(); // Вызываем gc
+                global.gc(); // Call garbage collector
 
                 memory = process.memoryUsage();
                 elapsedMs = Date.now() - startStamp;
@@ -252,19 +250,19 @@ export async function configure(startStamp) {
         };
     }());
 
-    new CoreServer(corePort, coreHostname, function () {
-        httpServer.listen(config.listen.port, hostname, function () {
-            logger.info(`servePublic: ${config.servePublic}, serveStore ${config.serveStore}`);
-            logger.info(`Host for users: [${config.client.host}]`);
-            logger.info(`Core server listening [${coreHostname || '*'}:${corePort}]`);
-            logger.info(
-                `HTTP server started up in ${(Date.now() - startStamp) / 1000}s`,
-                `and listening [${hostname || '*'}:${config.listen.port}]`,
-                config.gzip ? `with gzip` : '',
-                '\n'
-            );
+    logger.info(`servePublic: ${config.servePublic}, serveStore ${config.serveStore}`);
+    logger.info(`Host for users: [${config.client.host}]`);
 
-            scheduleMemInfo(startStamp - Date.now());
-        });
+    await new CoreServer('Core', { port: config.core.port, host: config.core.hostname }, logger).listen();
+
+    httpServer.listen(config.listen.port, hostname, function () {
+        logger.info(
+            `HTTP server started up in ${(Date.now() - startStamp) / 1000}s`,
+            `and listening [${hostname || '*'}:${config.listen.port}]`,
+            config.gzip ? `with gzip` : '',
+            '\n'
+        );
+
+        scheduleMemInfo(startStamp - Date.now());
     });
 };

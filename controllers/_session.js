@@ -818,8 +818,52 @@ export async function handleConnection(ip, headers, overHTTP, req) {
     }
 
     return { usObj, session, browser, cookie: cookieObj };
-
 };
+
+
+// Try to get session
+export async function getSessionLight({ sid }) {
+    let session;
+    let usObj;
+
+    if ((sessConnected[sid] || sessWaitingConnect[sid]) && usSid[sid]) {
+        // If key exists and such session already in hash, then just get this session
+        session = sessConnected[sid] || sessWaitingConnect[sid];
+        usObj = usSid[sid];
+        this.addUserIdToRidMark(usObj, session);
+    } else {
+        if (!sessWaitingSelect[sid]) {
+            sessWaitingSelect[sid] = new Promise(async function (resolve, reject) {
+                try {
+                    const session = await Session.findOne({ key: sid }).populate('user').exec();
+
+                    if (!session) {
+                        reject(new ApplicationError({
+                            code: constantsError.SESSION_NOT_FOUND, trace: false
+                        }, this.rid));
+                    }
+
+                    const usObj = await addSessionToHashes.call(this, session);
+
+                    resolve({ session, usObj });
+                } catch (err) {
+                    reject(err);
+                } finally {
+                    // Remove promise from hash of waiting connect by session key, anyway - success or error
+                    delete sessWaitingSelect[sid];
+                }
+            }.bind(this)); // We can't use arrow function as async yet, so make bind
+        }
+
+        ({ session, usObj } = await sessWaitingSelect[sid]);
+    }
+
+    if (!usObj || !session) {
+        throw new ApplicationError({ code: constantsError.SESSION_NOT_FOUND, trace: false }, this.rid);
+    }
+
+    return { usObj, session };
+}
 
 async function langChange(data) {
     const { socket, handshake: { session } } = this;
@@ -860,6 +904,7 @@ export default {
     langChange,
 
     removeSessionFromHashes,
+    getSessionLight,
     emitSocket,
     regetUsers
 };

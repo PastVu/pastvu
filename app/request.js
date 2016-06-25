@@ -102,6 +102,36 @@ const callWebApi = async function (methodName, params) {
     return result;
 };
 
+export const handleServiceRequest = async function ({ sid, methodName, params }) {
+    const start = Date.now();
+    const context = genRequestContext();
+
+    context.handshake = { context };
+
+    logger.info(`${context.ridMark} -> Service "${methodName}" method has been requested`);
+
+    try {
+        const { session, usObj } = await sessionController.getSessionLight.call(context, { sid });
+
+        context.handshake.usObj = usObj;
+        context.handshake.session = session;
+
+        const result = await context.call(methodName, params, false);
+
+        logger.info(
+            `${context.ridMark} Service "${methodName}" request method has been executed in ${Date.now() - start}ms`
+        );
+
+        return result;
+    } catch (error) {
+        logger.warn(
+            `${context.ridMark} Service "${methodName}" request method failed in ${Date.now() - start}ms`
+        );
+
+        throw error;
+    }
+};
+
 /**
  * Handling incoming http-request
  */
@@ -186,7 +216,7 @@ export const handleHTTPRequest = async function (req, res, next) {
 /**
  * Handler of API requests through http (for mobile applications)
  */
-export const registerHTTPAPIHandler = (function () {
+export const handleHTTPAPIRequest = (function () {
     function finishRequest(status, req, res, start, result) {
         const query = req.query;
         const now = Date.now();
@@ -225,7 +255,7 @@ export const registerHTTPAPIHandler = (function () {
         const methodName = query.method;
         const context = req.handshake.context;
 
-        logger.info(`${context.ridMark} HTTP "${methodName}" method has requested`);
+        logger.info(`${context.ridMark} HTTP "${methodName}" method has been requested`);
 
         if (params === undefined) {
             params = {};

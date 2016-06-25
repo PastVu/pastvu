@@ -16,6 +16,7 @@ import { ApplicationError, AuthorizationError, BadParamsError, NotFoundError, No
 export let DEFAULT_HOME = null;
 export const regionsAllSelectHash = Object.create(null);
 
+const loggerApp = log4js.getLogger('app');
 const logger = log4js.getLogger('region.js');
 const maxRegionLevel = constants.region.maxLevel;
 const nogeoRegion = { cid: 0, title_en: 'Where is it?', title_local: 'Где это?' };
@@ -34,6 +35,7 @@ export const ready = waitDb.then(fillCache);
 // Заполняем кэш (массив и хэш) регионов в память
 async function fillCache() {
     try {
+        const start = Date.now();
         regionCacheArr = await Region.find(
             {},
             { _id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1 },
@@ -47,7 +49,7 @@ async function fillCache() {
         }, { '0': nogeoRegion }); // Zero region means absence of coordinates
 
         DEFAULT_HOME = regionCacheHash[config.regionHome] || regionCacheArr[0];
-        logger.info('Region cache filled with ' + regionCacheArr.length);
+        loggerApp.info(`Region cache filled with ${regionCacheArr.length} in ${Date.now() - start}ms`);
     } catch (err) {
         err.message = `FillCache: ${err.message}`;
         throw err;

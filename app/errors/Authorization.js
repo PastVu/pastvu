@@ -14,7 +14,8 @@ export default class AuthorizationError extends ApplicationError {
         }
 
         _.defaults(data, {
-            code: constants.DENY
+            code: constants.DENY,
+            statusCode: 403
         });
 
         super(data, rid);
