@@ -375,9 +375,13 @@ async function conveyorStep(photo, { protect: onlyProtectPublic = false, webpOnl
             protectCover: !itsPublicPhoto || onlyProtectPublic
         });
         // If photo is not public anymore, try to delete its files from public folder
-        if (!itsPublicPhoto) {
-            await deletePhotoFiles({ photo });
-        }
+        // if (!itsPublicPhoto) {
+        //     await deletePhotoFiles({ photo });
+        // }
+    }
+    // Temporary to delete all not public photos from /_p/
+    if (!itsPublicPhoto) {
+        await deletePhotoFiles({ photo });
     }
 
     // And we also convert to protected folder if photo is not public
