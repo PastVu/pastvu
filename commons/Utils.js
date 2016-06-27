@@ -362,6 +362,10 @@ Utils.inputIncomingParse = (function () {
         //Например, http://domain.com/u/klimashkin/photo -> /u/klimashkin/photo
         result = result.replace(new RegExp(`(\\b)(?:https?://)?(?:www.)?${host}(/[-A-Z0-9+&@#\\/%?=~_|!:,.;]*[-A-Z0-9+&@#\\/%=~_|])`, 'gim'), '$1$2');
 
+        // Replace links to protected/covered photos with regular link
+        // For example, /_pr/a/b/c/abc.jpg -> /_p/a/b/c/abc.jpg
+        result = result.replace(/\/_prn?\/([\/a-z0-9]{26,40}\.(?:jpe?g|png))/gi, '/_p/$1');
+
         const plain = result;
 
         result = escape(result); //Эскейпим
