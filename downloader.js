@@ -157,6 +157,7 @@ export async function configure(startStamp) {
     /**
      * Check if protected files can be served by upper level (nginx/proxy)
      */
+    const counters = { all: 0, ok: 0, fail: 0 };
     const protectedServePattern = /^\/_pr?\/([\/a-z0-9]{26,40}\.(?:jpe?g|png)).*$/i;
     const protectedHandler = (function () {
         // Session key in client cookies
@@ -164,6 +165,13 @@ export async function configure(startStamp) {
         // Local cache to not pull redis more then once if request/core for the same file is arrived within TTL
         const L0Cache = lru({ max: 2000, maxAge: config.protectedFileLinkTTL });
         const hostnameRegexp = new RegExp(`^https?:\\/\\/(www\\.)?${config.client.hostname}`, 'i');
+
+        (function countPrint() {
+            if (counters.all) {
+                logger.info(`Protection serve stat: ${counters.ok} ok, ${counters.fail} fail, ${counters.all} total`);
+            }
+            setTimeout(countPrint, ms('5m'));
+        }());
 
         // Set result from L1-L2 to L0 cache
         async function setL0(key, mime, file, ttl = config.protectedFileLinkTTL) {
@@ -217,6 +225,7 @@ export async function configure(startStamp) {
         }
 
         return async function handleProtectedRequest(req, res) {
+            counters.all++;
             const { headers = {}, url = '' } = req;
             const [, filePath] = url.match(protectedServePattern) || [];
 
@@ -245,9 +254,9 @@ export async function configure(startStamp) {
 
                 res.statusCode = 303;
                 res.setHeader('Location', `/${filePath}`);
-                console.log(filePath, 'OK');
-
+                counters.ok++;
             } catch(error) {
+                counters.fail++;
                 let { referer = '' } = req.headers;
                 let { details: { sid = '' } = {} } = error;
 
