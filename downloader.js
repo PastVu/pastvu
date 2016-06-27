@@ -12,7 +12,7 @@ import Utils from './commons/Utils';
 import { parse as parseCookie } from 'cookie';
 import contentDisposition from 'content-disposition';
 import CorePlug from './controllers/serviceConnectorPlug';
-import { ApplicationError, AuthorizationError, NotFoundError } from './app/errors';
+import { ApplicationError, AuthorizationError, BadParamsError, NotFoundError } from './app/errors';
 
 import connectDb, { dbRedis } from './controllers/connection';
 import { Download } from './models/Download';
@@ -155,18 +155,14 @@ export async function configure(startStamp) {
     }());
 
     /**
-     * Serve protected files.
-     * If user doesn't have rights or protected file doesn't exist - redirect to public version instead
+     * Check if protected files can be served by upper level (nginx/proxy)
      */
     const protectedServePattern = /^\/_pr?\/([\/a-z0-9]{26,40}\.(?:jpe?g|png)).*$/i;
-    const protectedServeHandler = (function () {
+    const protectedHandler = (function () {
         // Session key in client cookies
         const SESSION_COOKIE_KEY = 'past.sid';
         // Local cache to not pull redis more then once if request/core for the same file is arrived within TTL
         const L0Cache = lru({ max: 2000, maxAge: config.protectedFileLinkTTL });
-        // Cache time
-        const { photoCacheTime } = config;
-        const cacheControl = `private, max-age=${photoCacheTime / 1000}`;
         const hostnameRegexp = new RegExp(`^https?:\\/\\/(www\\.)?${config.client.hostname}`, 'i');
 
         // Set result from L1-L2 to L0 cache
@@ -220,83 +216,60 @@ export async function configure(startStamp) {
             return setL0(key, mime, file);
         }
 
-        async function serveProtected(req, res, filePath) {
-            const { headers } = req;
+        return async function handleProtectedRequest(req, res) {
+            const { headers = {}, url = '' } = req;
+            const [, filePath] = url.match(protectedServePattern) || [];
 
-            if (!headers || !headers['user-agent'] || !headers.cookie) {
-                throw new AuthorizationError(); // If session doesn't contain header or user-agent - deny
+            try {
+                if (!filePath) {
+                    throw new BadParamsError();
+                }
+
+                if (!headers || !headers['user-agent'] || !headers.cookie) {
+                    throw new AuthorizationError(); // If session doesn't contain header or user-agent - deny
+                }
+
+                const cookieObj = parseCookie(headers.cookie); // Parse cookie
+                const sid = cookieObj[SESSION_COOKIE_KEY]; // Get session key from cookie
+
+                if (!sid) {
+                    throw new AuthorizationError(); // If session doesn't contain header or user-agent - deny
+                }
+
+                const file = filePath.substr(2);
+                const mime = await getL0(sid, file);
+
+                if (!mime) {
+                    throw new NotFoundError({ sid });
+                }
+
+                res.statusCode = 303;
+                res.setHeader('Location', `/${filePath}`);
+                console.log(filePath, 'OK');
+
+            } catch(error) {
+                let { referer = '' } = req.headers;
+                let { details: { sid = '' } = {} } = error;
+
+                if (referer) {
+                    referer = ` to ${referer.replace(hostnameRegexp, '') || '/'}`;
+                }
+                if (sid) {
+                    sid = ` for ${sid}`;
+                }
+
+                if (error instanceof ApplicationError) {
+                    res.statusCode = error.statusCode;
+                    res.write(error.statusText || '');
+                    logger.warn(`Serving protected file ${filePath}${referer}${sid} failed, ${error.message}`);
+                } else {
+                    res.statusCode = 500;
+                    res.write(http.STATUS_CODES[500]);
+                    logger.error(`Serving protected file ${filePath}${referer}${sid} failed`, error);
+                }
+            } finally {
+                res.end();
             }
-
-            const cookieObj = parseCookie(headers.cookie); // Parse cookie
-            const sid = cookieObj[SESSION_COOKIE_KEY]; // Get session key from cookie
-
-            if (!sid) {
-                throw new AuthorizationError(); // If session doesn't contain header or user-agent - deny
-            }
-
-            const file = filePath.substr(2);
-            const filePathFull = path.join(storePath, 'protected/photos', filePath);
-
-            const mime = await getL0(sid, file);
-            const fileAvailable = await exists(filePathFull);
-
-            if (!fileAvailable) {
-                throw new NotFoundError({ sid });
-            }
-
-            res.setHeader('Content-Type', mime);
-
-            const { size, mtime } = await fs.statAsync(filePathFull);
-
-            if (size) {
-                res.setHeader('Content-Length', size);
-            }
-            if (mtime) {
-                res.setHeader('Last-Modified', new Date(mtime).toUTCString());
-            }
-
-            if (photoCacheTime) {
-                const now = new Date();
-                res.setHeader('Cache-Control', cacheControl);
-                res.setHeader('Date', now.toUTCString());
-                res.setHeader('Expires', new Date(now.getTime() + photoCacheTime).toUTCString());
-            }
-
-            sendFile(filePathFull, res);
-        }
-
-        return function handleProtectedRequest(req, res) {
-            const [, filePath] = req.url.match(protectedServePattern) || [];
-
-            if (!filePath) {
-                res.statusCode = 400;
-                return res.end(http.STATUS_CODES[400]);
-            }
-
-            serveProtected(req, res, filePath)
-                .catch(error => {
-                    let { referer = '' } = req.headers || {};
-                    let { details: { sid = '' } = {} } = error;
-
-                    if (referer) {
-                        referer = ` to ${referer.replace(hostnameRegexp, '') || '/'}`;
-                    }
-                    if (sid) {
-                        sid = ` for ${sid}`;
-                    }
-
-                    if (error instanceof ApplicationError) {
-                        res.statusCode = error.statusCode;
-                        res.write(error.statusText || '');
-                        logger.warn(`Serving protected file ${filePath}${referer}${sid} failed, ${error.message}`);
-                    } else {
-                        res.statusCode = 500;
-                        res.write(http.STATUS_CODES[500]);
-                        logger.error(`Serving protected file ${filePath}${referer}${sid} failed`, error);
-                    }
-
-                    res.end();
-                });
         };
     }());
 
@@ -313,7 +286,7 @@ export async function configure(startStamp) {
     http
         .createServer(function handleRequest(req, res) {
             if (protectedServePattern.test(req.url)) {
-                return protectedServeHandler(req, res);
+                return protectedHandler(req, res);
             }
             if (originDownloadPattern.test(req.url)) {
                 return originDownloadHandler(req, res);
