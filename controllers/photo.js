@@ -2724,8 +2724,6 @@ export function buildPhotosQuery(filter, forUserId, iAm) {
     // console.log(JSON.stringify(result.query, null, '\t'));
     return result;
 }
-// Проксирование dev на downloader
-// Парсинг ссылок на изображения
 
 // Return history of photo edit
 async function giveObjHist({ cid, fetchId, showDiff }) {

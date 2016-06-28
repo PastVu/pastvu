@@ -256,7 +256,6 @@ export function configure(startStamp) {
     };
 
     http.createServer(handleRequest).listen(listenport, hostname, function () {
-        logger.info(`Uploader host for users: [${config.client.hostname + config.client.uport}]`);
         logger.info(
             `Uploader server started up in ${(Date.now() - startStamp) / 1000}s`,
             `and listening [${hostname || '*'}:${listenport}]\n`

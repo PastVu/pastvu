@@ -32,9 +32,7 @@ export async function configure(startStamp) {
         logPath,
         storePath,
         manualGarbageCollect,
-        listen: {
-            hostname
-        }
+        listen: { hostname, port, uport, dport }
     } = config;
 
     mkdirp.sync(path.join(storePath, 'incoming'));
@@ -140,6 +138,8 @@ export async function configure(startStamp) {
         const request = require('request');
         const rewrite = require('express-urlrewrite');
         const proxy = require('http-proxy-middleware');
+        const uploadServer = `http://${hostname || 'localhost'}:${uport}`;
+        const downloadServer = `http://${hostname || 'localhost'}:${dport}`;
 
         // Serve files for public photos
         app.use('/_p/', ourMiddlewares.serveImages(path.join(storePath, 'public/photos/'), { maxAge: ms('7d') }));
@@ -147,12 +147,11 @@ export async function configure(startStamp) {
 
         // Serve protected files for not public photos
         const prServeMiddleware = ourMiddlewares.serveImages(path.join(storePath, 'protected/photos/'), { maxAge: ms('7d') });
-        const prCheckServer = `http://${hostname || 'localhost'}:${config.listen.dport}`;
         app.use('/_pr/',
             function (req, res, next) {
                 request
                     .get({
-                        url: `${prCheckServer}${req.originalUrl}`,
+                        url: `${downloadServer}${req.originalUrl}`,
                         headers: req.headers,
                         followRedirect: false,
                         timeout: 1500
@@ -183,6 +182,9 @@ export async function configure(startStamp) {
         app.get('/_a/h/*', function (req, res) {
             res.redirect(302, '/img/caps/avatarth.png');
         });
+
+        app.use(['/upload', '/uploadava'], proxy({ target: uploadServer, logLevel: 'warn' }));
+        app.use('/download', proxy({ target: downloadServer, logLevel: 'warn' }));
 
         // Seal store paths, ie request that achieve this handler will receive 404
         app.get(/^\/(?:_a|_prn)(?:\/.*)$/, static404);
@@ -283,10 +285,10 @@ export async function configure(startStamp) {
 
     await new CoreServer('Core', { port: config.core.port, host: config.core.hostname }, logger).listen();
 
-    httpServer.listen(config.listen.port, hostname, function () {
+    httpServer.listen(port, hostname, function () {
         logger.info(
             `HTTP server started up in ${(Date.now() - startStamp) / 1000}s`,
-            `and listening [${hostname || '*'}:${config.listen.port}]`,
+            `and listening [${hostname || '*'}:${port}]`,
             config.gzip ? `with gzip` : '',
             '\n'
         );

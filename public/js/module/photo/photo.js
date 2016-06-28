@@ -1105,7 +1105,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         download: (function () {
             var supportDownloadAttribute = 'download' in document.createElement('a');
             var waitingForKey = false;
-            var downloadPath = '//' + P.settings.server.hostname() + P.settings.server.dport() + '/download/';
+            var downloadPath = '/download/';
             var getDownloadKey = function (cid) {
                 waitingForKey = true;
                 socket.run('photo.getDownloadKey', { cid: cid })

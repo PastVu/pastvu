@@ -31,9 +31,7 @@ module.exports = {
     client: {
         protocol: 'http',
         hostname: '127.0.0.1', // Hostname for users, i.e. site entry point
-        port: ':3000', // Port for users
-        uport: ':3001', // Upload files port for users
-        dport: ':3002', // Download files port for users
+        port: ':3000' // Port for users
     },
 
     storePath: '', // Store folder with static user content (avatars, photos, etc)

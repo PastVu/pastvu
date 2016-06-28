@@ -14,8 +14,6 @@ define(['jquery', 'underscore', 'socket!', 'Utils', 'knockout', 'knockout.mappin
                 square: null
             },
             settings: {
-                client: {},
-                server: {},
                 appName: (head.dataset && head.dataset.appname) || head.getAttribute('data-appname') || 'Main',
 
                 USE_OSM_API: true,
