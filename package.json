@@ -27,6 +27,7 @@
     "dependencies": {
         "babel-register": "6.9.0",
         "express": "4.14.0",
+        "express-urlrewrite": "1.2.0",
         "compression": "1.6.2",
         "serve-index": "1.8.0",
         "body-parser": "1.15.2",
@@ -57,6 +58,7 @@
         "socket.io-events": "0.4.6",
         "nodemailer": "2.4.2",
         "nodemailer-ses-transport": "1.4.0",
+        "http-proxy-middleware": "0.16.0",
         "log4js": "0.6.37",
         "formidable": "1.0.17",
         "content-disposition": "0.5.1",
@@ -71,7 +73,6 @@
         "grunt-babel": "6.0.0",
 
         "gulp-util": "3.0.7",
-        "http-proxy-middleware": "0.16.0",
 
         "requirejs": "2.2.0",
         "less-middleware": "2.1.0",

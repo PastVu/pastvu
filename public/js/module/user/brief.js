@@ -113,7 +113,7 @@ define([
                     this.$fileupload = this.$dom.find('.avaInput');
                     this.$fileupload.fileupload();
                     this.$fileupload.fileupload('option', {
-                        url: '//' + P.settings.server.hostname() + P.settings.server.uport() + '/uploadava',
+                        url: '/uploadava',
                         dataType: 'json',
                         dropZone: null,
                         pasteZone: null,
