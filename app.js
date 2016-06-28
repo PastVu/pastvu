@@ -135,12 +135,47 @@ export async function configure(startStamp) {
         // Seal static paths, ie request that achieve this handler will receive 404
         app.get(/^\/(?:img|js|style)(?:\/.*)$/, static404);
     }
+
     if (config.serveStore) {
-        app.use('/_a/', ourMiddlewares.serveImages(path.join(storePath, 'public/avatars/'), { maxAge: ms('2d') }));
+        const request = require('request');
+        const rewrite = require('express-urlrewrite');
+        const proxy = require('http-proxy-middleware');
+
+        // Serve files for public photos
         app.use('/_p/', ourMiddlewares.serveImages(path.join(storePath, 'public/photos/'), { maxAge: ms('7d') }));
-        app.use('/_pr/', ourMiddlewares.serveImages(path.join(storePath, 'protected/photos/'), { maxAge: ms('7d') }));
+        app.use(rewrite('/_p/*', '/_pr/$1')); // If public doesn't exist, try to find protected version
+
+        // Serve protected files for not public photos
+        const prServeMiddleware = ourMiddlewares.serveImages(path.join(storePath, 'protected/photos/'), { maxAge: ms('7d') });
+        const prCheckServer = `http://${hostname || 'localhost'}:${config.listen.dport}`;
+        app.use('/_pr/',
+            function (req, res, next) {
+                request
+                    .get({
+                        url: `${prCheckServer}${req.originalUrl}`,
+                        headers: req.headers,
+                        followRedirect: false,
+                        timeout: 1500
+                    })
+                    .on('response', function(response) {
+                        if (response.statusCode === 303) { // 303 means ok, user can get protected file
+                            return prServeMiddleware(req, res, next);
+                        }
+                        next();
+                    })
+                    .on('error', function(err) {
+                        logger.warn('Downloader server request error:', err.message);
+                        next();
+                    });
+            }
+        );
+        app.use(rewrite('/_pr/*', '/_prn/$1')); // If protected unavalible for user or file doesn't exist, move to covered
+
+        // Serve covered files for not public photos
         app.use('/_prn/', ourMiddlewares.serveImages(path.join(storePath, 'publicCovered/photos/'), { maxAge: ms('7d') }));
 
+        // Serve avatars
+        app.use('/_a/', ourMiddlewares.serveImages(path.join(storePath, 'public/avatars/'), { maxAge: ms('2d') }));
         // Replace unfound avatars with default one
         app.get('/_a/d/*', function (req, res) {
             res.redirect(302, '/img/caps/avatar.png');
@@ -150,15 +185,8 @@ export async function configure(startStamp) {
         });
 
         // Seal store paths, ie request that achieve this handler will receive 404
-        app.get(/^\/(?:_a|_p)(?:\/.*)$/, static404);
+        app.get(/^\/(?:_a|_prn)(?:\/.*)$/, static404);
     }
-    if (config.serveProtected) {
-        app.use('/_pr/', ourMiddlewares.serveImages(path.join(storePath, 'protected/photos/'), { maxAge: ms('1d') }));
-
-        // Seal store paths, ie request that achieve this handler will receive 404
-        app.get(/^\/(?:_pr)(?:\/.*)$/, static404);
-    }
-
 
     await Promise.all([authReady, settingsReady, regionReady, subscrReady, mailReady, photosReady]);
 
