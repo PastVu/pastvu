@@ -1,6 +1,8 @@
 @import "../_vars.less";
 @import "../bs/variables.less";
 @import "../bs/mixins.less";
+@import "../jquery/rangeSlider/ion.rangeSlider.less";
+@import "../jquery/rangeSlider/ion.rangeSlider.skinPastVu.less";
 
 @dtWidth: 300px;
 @optinPanelPaddingTop: 4px;
@@ -9,6 +11,10 @@
 
 .user_settings {
     padding: 0 5px;
+
+    input[type="radio"]:not(:disabled):not(:checked), input[type="checkbox"]:not(:disabled) {
+        cursor: pointer;
+    }
 
     .panel-body {
         padding: 11px 10px 11px 22px;
@@ -156,5 +162,21 @@
     .regionEdit {
         margin-left: 3px;
         line-height: 17px;
+    }
+
+    .eMailSelector {
+        display: inline-block;
+
+        > select {
+            margin: 0;
+
+            &:not(:disabled) {
+                cursor: pointer;
+            }
+        }
+    }
+
+    #email-panel {
+        .user-select(none);
     }
 }

@@ -261,10 +261,31 @@
                         button.btn.btn-primary.no(type="button", data-bind="css: {active: !u.settings.subscr_auto_reply()}, click: autoReply") Нет
             dl.dl-horizontal
                 dt.helpexists
-                    abbr(title="Минимальное время, которое должно пройти между отправками писем с уведомлением")
+                    abbr(title="Отправлять письма с уведомлениями о событиях")
                         span.glyphicon.glyphicon-info-sign
-                        |  Минимальный интервал между отправками
-                dd.throttle(data-bind="foreach: vars.subscr_throttle")
-                    label.radio-inline
-                        input(type="radio", name="subscr_throttle_radios", data-bind="attr: {id: 'subscr_throttle_radios_' + $index(), value: ''+$data}, checked: $parent.u.settings.subscr_throttle")
-                        span(data-bind="text: ($data/60000 > 59 ? $data/3600000 + 'ч' : $data/60000 + 'мин')")
+                        |  Отправлять уведомления на email
+                dd: span.panel-block#email-panel
+                    .btn-group.btn-group-sm
+                        button.btn.btn-primary.yes(type="button", data-bind="css: {active: u.settings.subscr_email_send()}, click: emailSend") Да
+                        button.btn.btn-primary.no(type="button", data-bind="css: {active: !u.settings.subscr_email_send()}, click: emailSend") Нет
+                    br
+                    .radio(style="margin:14px 0 6px")
+                        input(type="radio", name="subscr_email_interval", value="day", data-bind="checked: u.settings.subscr_email_interval")
+                        | Раз в день в&ensp;
+                        .eMailSelector
+                            select.subscr_email_day(data-bind="attr: {disabled: u.settings.subscr_email_interval()!=='day'}, options: subscr_email_day, value: u.settings.subscr_email_day, optionsText: timeSelectFormat")
+                    .radio(style="margin:0 0 6px")
+                        input(type="radio", name="subscr_email_interval", value="week", data-bind="checked: u.settings.subscr_email_interval")
+                        | Раз в неделю&ensp;
+                        .eMailSelector
+                            select.subscr_email_week(data-bind="attr: {disabled: u.settings.subscr_email_interval()!=='week'}, options: subscr_email_week, value: u.settings.subscr_email_day, optionsText: weekSelectFormat")
+                            | &ensp;в&ensp;
+                            select.subscr_email_weektime(data-bind="attr: {disabled: u.settings.subscr_email_interval()!=='week'}, options: subscr_email_day, value: u.settings.subscr_email_day, optionsText: timeSelectFormat")
+                    .radio(style="margin:0 0 6px"): label
+                        input(type="radio", name="subscr_email_interval", value="throttle", data-bind="checked: u.settings.subscr_email_interval")
+                        |  Интервал, не чаще чем каждые
+                        br
+                        input(type="text", id="subscr_email_throttle", name="subscr_email_throttle_name", value="")
+                        p.text-muted(style="line-height:1.1;font-size:11px;")
+                            |  Минимальное время, которое должно пройти между отправками писем с уведомлением
+    br

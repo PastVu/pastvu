@@ -166,7 +166,7 @@
         span.glyphicon.glyphicon-remove
         |  Отмена редактирования
     .typeSelect
-        select.form-control(name="pDir", data-bind="css: {empty: !p.type()}, options: fields.types, value: p.type, optionsText: function(item) {return fields.typeVals[item]}, optionsCaption: 'Тип изображения...'")
+        select.form-control(data-bind="css: {empty: !p.type()}, options: fields.types, value: p.type, optionsText: function(item) {return fields.typeVals[item]}, optionsCaption: 'Тип изображения...'")
     | </script>
 
     //-DATA VIEW MODE

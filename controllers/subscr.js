@@ -263,44 +263,46 @@ async function scheduleUserNotice(users) {
 const notifierConveyor = (function () {
     async function conveyorStep() {
         try {
-            // Find noty, which time nextnoty has passed
-            let usersNoty = await UserNoty.find(
-                { nextnoty: { $lte: new Date() } },
-                { _id: 0 },
-                { lean: true, limit: sendPerStep, sort: { nextnoty: 1 } }
-            ).exec();
+            // Find noty, which nextnoty time has passed. Return noty with embedded user
+            let notiesWithUsers = await UserNoty.aggregate([
+                { $match: { nextnoty: { $lte: new Date() } } },
+                { $sort: { nextnoty: -1 } },
+                { $lookup: { from: 'users', localField: 'user', foreignField: '_id', as: 'user' } },
+                { $unwind: '$user' }, // $lookup returns array with one user, replace it with user object
+                { $match: { 'user.settings.subscr_email_send': { $in: [null, true] } } },
+                { $limit : sendPerStep },
+                { $project: { _id: 0, lastnoty: 1, user: { _id: 1, login: 1, disp: 1, email: 1 } } }
+            ]).exec();
 
-            // Hack fo checking user localization. Do not notify if user's language different from this node instanse
-            // Determine user language by language in last session
+            const userIds = [];
             const usersNotyWithCurrentLang = [];
-            for (const noty of usersNoty) {
+            for (const noty of notiesWithUsers) {
+                userIds.push(noty.user._id);
+
+                // Hack to check user language. Do not notify if user's language different from this node instanse
+                // Determine user language by language in last session
                 const sessions = await Session.find(
-                    { user: noty.user }, { _id: 0, 'data.lang': 1 },
+                    { user: noty.user._id }, { _id: 0, 'data.lang': 1 },
                     { lean: true, limit: 1, sort: { stamp: -1 } }
                 ).exec();
                 if (_.get(sessions, '[0].data.lang', 'ru') === config.lang) {
                     usersNotyWithCurrentLang.push(noty);
                 }
             }
-            usersNoty = usersNotyWithCurrentLang;
+            notiesWithUsers = usersNotyWithCurrentLang;
 
-            if (_.isEmpty(usersNoty)) {
+            if (_.isEmpty(notiesWithUsers)) {
                 return notifierConveyor();
             }
 
-            const userIds = [];
-            const nowDate = new Date();
-
-            await Promise.all(usersNoty.map(({ user }) => {
-                userIds.push(user);
-                return sendUserNotice(user).catch(err => logger.error('sendUserNotice', err));
-            }));
-
-            await UserNoty.update(
-                { user: { $in: userIds } },
-                { $set: { lastnoty: nowDate }, $unset: { nextnoty: 1 } },
-                { multi: true }
-            ).exec();
+            await Promise.all([
+                UserNoty.update(
+                    { user: { $in: userIds } },
+                    { $set: { lastnoty: new Date() }, $unset: { nextnoty: 1 } },
+                    { multi: true }
+                ).exec(),
+                notiesWithUsers.map(noty => sendUserNotice(noty.user).catch(err => logger.error('sendUserNotice', err)))
+            ]);
         } catch (err) {
             logger.error('conveyorStep', err);
         }
@@ -317,14 +319,8 @@ const notifierConveyor = (function () {
  * Forms a letter to user from ready notifications (noty: true) and send it
  * @param userId
  */
-async function sendUserNotice(userId) {
-    const userObj = session.getOnline({ userId });
-    const user = userObj ? userObj.user :
-        await User.findOne({ _id: userId }, { _id: 1, login: 1, disp: 1, email: 1 }, { lean: true }).exec();
-
-    if (!user) {
-        throw new NotFoundError(constantsError.NO_SUCH_USER);
-    }
+async function sendUserNotice(user) {
+    const { _id: userId } = user;
 
     // Find all subscriptions of users, which ready for notyfication (sbscr_noty: true)
     const rels = await UserObjectRel.find(
@@ -345,7 +341,7 @@ async function sendUserNotice(userId) {
     // Reset flag of rediness to notification (sbscr_noty) of sent objects
     async function resetRelsNoty() {
         if (!_.isEmpty(relIds)) {
-            return await UserObjectRel.update(
+            return UserObjectRel.update(
                 { _id: { $in: relIds } },
                 { $unset: { sbscr_noty: 1 }, $set: { sbscr_noty_change: new Date() } },
                 { multi: true }
@@ -378,7 +374,7 @@ async function sendUserNotice(userId) {
     ]);
 
     if (_.isEmpty(news) && _.isEmpty(photos)) {
-        return await resetRelsNoty();
+        return resetRelsNoty();
     }
 
     let totalNewestComments = 0;
@@ -435,7 +431,7 @@ async function sendUserNotice(userId) {
         });
     }
 
-    return await resetRelsNoty();
+    return resetRelsNoty();
 }
 
 // Return paged list of user's subscriptions
@@ -453,9 +449,10 @@ async function giveUserSubscriptions({ login, page = 1, type = 'photo' }) {
         throw new AuthorizationError();
     }
 
-    const userId = await User.getUserID(login);
+    const userObj = session.getOnline({ login });
+    const user = userObj ? userObj.user : await User.findOne({ login }, { _id: 1, 'settings.subscr_email_send': 1 }).exec();
 
-    if (!userId) {
+    if (!user) {
         throw new NotFoundError(constantsError.NO_SUCH_USER);
     }
 
@@ -463,7 +460,7 @@ async function giveUserSubscriptions({ login, page = 1, type = 'photo' }) {
     const skip = page * subscrPerPage;
 
     const rels = await UserObjectRel.find(
-        { user: userId, type, sbscr_create: { $exists: true } },
+        { user: user._id, type, sbscr_create: { $exists: true } },
         { _id: 0, user: 0, type: 0, sbscr_noty_change: 0 },
         { lean: true, skip, limit: subscrPerPage, sort: { ccount_new: -1, sbscr_create: -1 } }
     ).exec();
@@ -488,16 +485,18 @@ async function giveUserSubscriptions({ login, page = 1, type = 'photo' }) {
             ).exec());
     }
 
+    const emailSendingActive = user.settings.subscr_email_send !== false;
+
     const [countPhoto = 0, countNews = 0, { nextnoty: nextNoty } = {}] = await Promise.all([
         // Count total number of photos in subscriptions
-        UserObjectRel.count({ user: userId, type: 'photo', sbscr_create: { $exists: true } }).exec(),
+        UserObjectRel.count({ user: user._id, type: 'photo', sbscr_create: { $exists: true } }).exec(),
 
         // Count total number of news in subscriptions
-        UserObjectRel.count({ user: userId, type: 'news', sbscr_create: { $exists: true } }).exec(),
+        UserObjectRel.count({ user: user._id, type: 'news', sbscr_create: { $exists: true } }).exec(),
 
         // Take time of next scheduled notification
-        await UserNoty.findOne(
-            { user: userId, nextnoty: { $exists: true } }, { _id: 0, nextnoty: 1 }, { lean: true }
+        emailSendingActive && await UserNoty.findOne(
+            { user: user._id, nextnoty: { $exists: true } }, { _id: 0, nextnoty: 1 }, { lean: true }
         ).exec() || undefined
         // ( await xxx || undefined ) needed for 'null' to be replaced with default value '{}' in desctruction
         // https://github.com/Automattic/mongoose/issues/3457
@@ -537,6 +536,7 @@ async function giveUserSubscriptions({ login, page = 1, type = 'photo' }) {
         countPhoto,
         subscr: objs,
         page: page + 1,
+        emailSendingActive,
         perPage: subscrPerPage
     };
 };

@@ -201,7 +201,7 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
 
 			if (val) {
 				try {
-					result = JSON.parse(localStorage[key]);
+					result = JSON.parse(val);
 				} catch (e) {
 					console.warn('Can not parse ' + key);
 				}
@@ -507,9 +507,9 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
 					return date.getDate() + ' ' + months[date.getMonth()] + ' ' + date.getFullYear() + ', ' + (hours > 9 ? hours : '0' + hours) + ':' + (mintues > 9 ? mintues : '0' + mintues);
 				}
 
-				function hhmm(date) {
-					var hours = date.getHours(),
-						mintues = date.getMinutes();
+				function hhmm(date, utc) {
+					var hours = date[utc ? 'getUTCHours' : 'getHours']();
+					var mintues = date[utc ? 'getUTCMinutes' : 'getMinutes']();
 					return (hours > 9 ? hours : '0' + hours) + ':' + (mintues > 9 ? mintues : '0' + mintues);
 				}
 
@@ -556,7 +556,8 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
 					dMMYYYYhhmm: dMMYYYYhhmm,
 					hhmm: hhmm,
 					relative: relative,
-					relativeIn: relativeIn
+					relativeIn: relativeIn,
+                    weekDaysIn: weekDaysIn
 				};
 			}());
 

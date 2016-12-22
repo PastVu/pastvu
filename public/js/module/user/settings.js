@@ -4,7 +4,8 @@
 define([
     'underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
     'renderer', 'noties', 'm/photo/fields', 'model/Region', 'model/User', 'model/storage',
-    'text!tpl/user/settings.jade', 'css!style/user/settings', 'bs/collapse'
+    'text!tpl/user/settings.jade', 'css!style/user/settings',
+    'bs/collapse', 'jquery-plugins/rangeSlider/ion.rangeSlider'
 ], function (_, Utils, socket, P, ko, koMapping, Cliche, globalVM, renderer, noties, fields, Region, User, storage, jade) {
     function isYes(evt) {
         return !!evt.target.classList.contains('yes');
@@ -16,6 +17,8 @@ define([
             userVM: null
         },
         create: function () {
+            this.destroy = _.wrap(this.destroy, this.localDestroy);
+
             this.auth = globalVM.repository['m/common/auth'];
             this.u = this.options.userVM;
 
@@ -122,6 +125,9 @@ define([
                 // Make photo_filter_type as array of strings, because ko checkboxes works with strings
                 this.photoFilterType = ko.observableArray(this.u.settings.photo_filter_type().map(String));
 
+                this.subscr_email_day = ko.observableArray();
+                this.subscr_email_week = ko.observableArray(_.range(0, 7));
+
                 this.getSettingsVars(function () {
                     // Listen to photo_filter_type changing if it happens somewhere (different tab) and emitted here
                     this.subscriptions.photo_filter_type = this.u.settings.photo_filter_type.subscribe(function (val) {
@@ -130,9 +136,15 @@ define([
                     this.subscriptions.photoFilterType = this.photoFilterType.subscribe(
                         _.debounce(this.photo_filter_typeHandler, 700), this
                     );
-                    this.subscriptions.subscr_throttle = this.u.settings.subscr_throttle.subscribe(
-                        _.debounce(this.subscr_throttleHandler, 700), this
+
+                    this.subscr_email_day(
+                        _.range(this.vars.subscr_email_day[0], this.vars.subscr_email_day[1], 30)
                     );
+
+                    this.subscriptions.subscr_email_interval = this.u.settings.subscr_email_interval.subscribe(function (val) {
+                        this.emailSlider.update({ disable: val !== 'throttle' });
+                        _.debounce(this.subscr_emailHandler, 700);
+                    }, this);
 
                     ko.applyBindings(globalVM, this.$dom[0]);
                     this.show();
@@ -145,9 +157,36 @@ define([
             this.$dom.find('#accordion').collapse({
                 toggle: false
             });
+
+            $('#subscr_email_throttle').ionRangeSlider({
+                type: 'single',
+                grid: true,
+                disable: this.u.settings.subscr_email_interval() !== 'throttle',
+                from: this.vars.subscr_email_throttle.indexOf(this.u.settings.subscr_email_throttle()),
+                hide_min_max: true,
+                hide_from_to: false,
+                values: this.vars.subscr_email_throttle,
+                prettify: function (value) {
+                    if (value < 60) {
+                        return value + 'мин';
+                    }
+                    if (value < 1440) {
+                        return (value / 60) + 'час';
+                    }
+                    return (value / 60 / 24) + 'дн';
+                },
+                force_edges: true
+            });
+            this.emailSlider = $('#subscr_email_throttle').data('ionRangeSlider');
+
             globalVM.func.showContainer(this.$container);
             this.showing = true;
         },
+        localDestroy: function (destroy) {
+            this.emailSlider.destroy();
+            destroy.call(this);
+        },
+
         getSettingsVars: function (cb, ctx) {
             socket.run('settings.getUserSettingsVars', undefined, true)
                 .then(function (result) {
@@ -309,6 +348,9 @@ define([
                 }
             });
         },
+        emailSend: function (data, evt) {
+            this.changeSetting('subscr_email_send', isYes(evt), true);
+        },
         autoReply: function (data, evt) {
             this.changeSetting('subscr_auto_reply', isYes(evt), true);
         },
@@ -330,7 +372,7 @@ define([
                 this.changeSetting('photo_filter_type', valNumbers);
             }
         },
-        subscr_throttleHandler: function (val) {
+        subscr_emailHandler: function (val) {
             //Изначальное значение число. А во время изменения radio в knockout это всегда будет строка
             //Соответственно нам нужно отправлять на изменение только когда строка
             //Если число, значит установилось в callback после отправки серверу
@@ -539,6 +581,12 @@ define([
                     level: this.level + 1
                 }
             );
+        },
+        timeSelectFormat: function (item) {
+            return Utils.format.date.hhmm(new Date(item * 60000), true);
+        },
+        weekSelectFormat: function (item) {
+            return Utils.format.date.weekDaysIn[item];
         }
     });
 });

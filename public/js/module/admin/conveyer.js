@@ -4,7 +4,7 @@
 define([
     'underscore', 'jquery', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping',
     'm/_moduleCliche', 'globalVM', 'renderer', 'model/User', 'model/storage', 'noties',
-    'highstock/highstock.src', 'text!tpl/admin/conveyer.jade', 'css!style/admin/conveyer', 'bs/ext/multiselect'
+    'highstock/highstock.src', 'text!tpl/admin/conveyer.jade', 'css!style/admin/conveyer'
 ], function (_, $, Browser, Utils, socket, P, ko, koMapping, Cliche,
              globalVM, renderer, User, storage, noties, Highcharts, jade) {
     'use strict';
