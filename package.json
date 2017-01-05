@@ -54,7 +54,7 @@
         "yamlparser": "0.0.2",
         "bcrypt": "0.8.7",
         "step": "",
-        "socket.io": "1.4.8",
+        "socket.io": "1.7.2",
         "socket.io-events": "0.4.6",
         "nodemailer": "2.4.2",
         "nodemailer-ses-transport": "1.4.0",
@@ -74,7 +74,7 @@
 
         "gulp-util": "3.0.8",
 
-        "requirejs": "2.2.0",
+        "requirejs": "2.3.2",
         "less-middleware": "2.2.0",
         "less": "2.7.1",
         "grunt": "1.0.1",
