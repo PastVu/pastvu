@@ -47,9 +47,9 @@
       "resolved": "https://registry.npmjs.org/after/-/after-0.8.2.tgz"
     },
     "ajv": {
-      "version": "4.10.3",
+      "version": "4.10.4",
       "from": "ajv@>=4.7.0 <5.0.0",
-      "resolved": "https://registry.npmjs.org/ajv/-/ajv-4.10.3.tgz",
+      "resolved": "https://registry.npmjs.org/ajv/-/ajv-4.10.4.tgz",
       "dev": true
     },
     "ajv-keywords": {
@@ -99,15 +99,7 @@
           "version": "2.1.4",
           "from": "async@>=2.0.0 <3.0.0",
           "resolved": "https://registry.npmjs.org/async/-/async-2.1.4.tgz",
-          "dev": true,
-          "dependencies": {
-            "lodash": {
-              "version": "4.17.4",
-              "from": "lodash@>=4.14.0 <5.0.0",
-              "resolved": "https://registry.npmjs.org/lodash/-/lodash-4.17.4.tgz",
-              "dev": true
-            }
-          }
+          "dev": true
         }
       }
     },
@@ -1827,12 +1819,6 @@
           "from": "async@>=2.0.0 <3.0.0",
           "resolved": "https://registry.npmjs.org/async/-/async-2.1.4.tgz",
           "dev": true
-        },
-        "lodash": {
-          "version": "4.17.4",
-          "from": "lodash@>=4.14.0 <5.0.0",
-          "resolved": "https://registry.npmjs.org/lodash/-/lodash-4.17.4.tgz",
-          "dev": true
         }
       }
     },
@@ -1950,14 +1936,7 @@
     "http-proxy-middleware": {
       "version": "0.17.3",
       "from": "http-proxy-middleware@0.17.3",
-      "resolved": "https://registry.npmjs.org/http-proxy-middleware/-/http-proxy-middleware-0.17.3.tgz",
-      "dependencies": {
-        "lodash": {
-          "version": "4.17.4",
-          "from": "lodash@>=4.17.2 <5.0.0",
-          "resolved": "https://registry.npmjs.org/lodash/-/lodash-4.17.4.tgz"
-        }
-      }
+      "resolved": "https://registry.npmjs.org/http-proxy-middleware/-/http-proxy-middleware-0.17.3.tgz"
     },
     "http-signature": {
       "version": "1.1.1",
@@ -2379,9 +2358,9 @@
       "resolved": "https://registry.npmjs.org/locale/-/locale-0.1.0.tgz"
     },
     "lodash": {
-      "version": "4.13.1",
-      "from": "lodash@4.13.1",
-      "resolved": "https://registry.npmjs.org/lodash/-/lodash-4.13.1.tgz"
+      "version": "4.17.4",
+      "from": "lodash@4.17.4",
+      "resolved": "https://registry.npmjs.org/lodash/-/lodash-4.17.4.tgz"
     },
     "lodash._basecopy": {
       "version": "3.0.1",
@@ -2621,9 +2600,9 @@
       "resolved": "https://registry.npmjs.org/mkdirp/-/mkdirp-0.5.1.tgz"
     },
     "moment": {
-      "version": "2.13.0",
-      "from": "moment@2.13.0",
-      "resolved": "https://registry.npmjs.org/moment/-/moment-2.13.0.tgz"
+      "version": "2.17.1",
+      "from": "moment@2.17.1",
+      "resolved": "https://registry.npmjs.org/moment/-/moment-2.17.1.tgz"
     },
     "mongodb": {
       "version": "2.1.18",

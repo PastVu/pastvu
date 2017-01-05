@@ -137,7 +137,7 @@ require([
             }
         };
 
-    moment.lang('ru');
+    moment.locale('ru');
 
     $('body').append(html);
     ko.applyBindings(globalVM);
