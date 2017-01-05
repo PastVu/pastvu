@@ -135,7 +135,7 @@ class UsObj {
 }
 
 // Emit data to specified socket
-function emitSocket({ socket, data, waitResponse = false, timeout = 1000 }) {
+function emitSocket({ socket, data, waitResponse = false, timeout = 10000 }) {
     if (!Array.isArray(data)) {
         data = [data];
     }
@@ -143,18 +143,19 @@ function emitSocket({ socket, data, waitResponse = false, timeout = 1000 }) {
     if (waitResponse) {
         return new Promise((resolve, reject) => {
             let overdue = false;
-
-            if (timeout) {
-                setTimeout(() => {
-                    overdue = true;
-                    reject(new TimeoutError({ timeout, data }));
-                }, timeout);
-            }
+            const overdueTimeout = setTimeout(() => {
+                overdue = true;
+                resolve({data: []});
+                // Replace with next when all clients are updated
+                // reject(new TimeoutError({ timeout, data }));
+            }, timeout);
 
             socket.emit(...data, result => {
                 if (overdue) {
                     return;
                 }
+
+                clearTimeout(overdueTimeout);
 
                 if (_.get(result, 'error')) {
                     reject(result.error);
@@ -195,19 +196,19 @@ export async function emitUser({ usObj, login, userId, sessId, wait, excludeSock
     }
 
     if (!usObj) {
-        return Promise.resolve(0);
+        return 0;
     }
 
     const params = ['youAre', { user: getPlainUser(usObj.user), registered: usObj.registered }];
-    const emits = _.transform(usObj.sessions,
+    const emits = _.reduce(usObj.sessions,
         (result, session) => result.concat(emitSessionSockets(session, params, wait, excludeSocket)), []
     );
 
-    if (wait) {
-        await emits;
+    if (wait && emits.length) {
+        await Promise.all(emits);
     }
 
-    return _.size(emits);
+    return emits.length;
 }
 
 // Save and send user to his sockets
@@ -217,7 +218,7 @@ export async function saveEmitUser({ usObj, login, userId, sessId, wait, exclude
     }
 
     if (!usObj || !usObj.user) {
-        return Promise.resolve(0);
+        return 0;
     }
 
     await usObj.user.save();

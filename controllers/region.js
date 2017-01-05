@@ -17,7 +17,7 @@ export let DEFAULT_HOME = null;
 export const regionsAllSelectHash = Object.create(null);
 
 const loggerApp = log4js.getLogger('app');
-const logger = log4js.getLogger('region.js');
+//const logger = log4js.getLogger('region.js');
 const maxRegionLevel = constants.region.maxLevel;
 const nogeoRegion = { cid: 0, title_en: 'Where is it?', title_local: 'Где это?' };
 

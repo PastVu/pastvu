@@ -253,9 +253,22 @@ define(['module'], function (/* module */) {
                 socket.ons[name] = [stackRecord];
                 manager.on(name, function () {
                     var data = _.head(arguments);
-                    var acknowledgementCallback = _.last(arguments);
+                    var acknowledgementCallback;
+                    var acknowledgementCallbackCallResult;
+                    var acknowledgementCallbackOrigin = _.last(arguments);
+
+                    if (_.isFunction(acknowledgementCallbackOrigin)) {
+                        acknowledgementCallbackCallResult = {data: []};
+                        acknowledgementCallback = function () {
+                            acknowledgementCallbackCallResult.data = acknowledgementCallbackCallResult.data.concat(_.toArray(arguments));
+                        };
+                    }
 
                     eventHandlersNotify(name, [data, acknowledgementCallback]);
+
+                    if (_.isFunction(acknowledgementCallbackOrigin)) {
+                        acknowledgementCallbackOrigin(acknowledgementCallbackCallResult);
+                    }
                 });
             }
 
