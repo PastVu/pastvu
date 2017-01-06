@@ -41,7 +41,7 @@ async function recalcAll({ params, conditions }) {
     }
 
     return result;
-};
+}
 
 async function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, isPainting) {
     const ClusterModel = isPainting ? ClusterPaint : Cluster;
@@ -76,7 +76,7 @@ async function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, isPainting
     }
     if (cluster && c <= 1 && inc === -1) {
         // If after deletion photo from cluster, cluster become empty - remove it
-        return await ClusterModel.remove({ g, z: zParam.z }).exec();
+        return ClusterModel.remove({ g, z: zParam.z }).exec();
     }
 
     if (inc !== 0) {
@@ -138,7 +138,7 @@ async function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, isPainting
     const { n: count = 0 } = await ClusterModel.update({ g, z: zParam.z }, $update, { multi: false, upsert: true }).exec();
 
     return count;
-};
+}
 
 /**
  * Create cluster for new photo coordinates
@@ -218,8 +218,8 @@ export async function clusterPhoto({ photo, geoPhotoOld, yearPhotoOld, isPaintin
         }
     }
 
-    return await Promise.all(recalcPromises);
-};
+    return Promise.all(recalcPromises);
+}
 
 /**
  * Remove photo from clusters
@@ -244,7 +244,7 @@ export function declusterPhoto({ photo, isPainting }) {
 
         return clusterRecalcByPhoto(g, clusterZoom, { o: geoPhoto }, { o: photo.year }, isPainting);
     }));
-};
+}
 
 // Returns clusters within bounds
 export async function getBounds({ bounds, z, isPainting }) {
@@ -270,7 +270,7 @@ export async function getBounds({ bounds, z, isPainting }) {
     }
 
     return { photos, clusters };
-};
+}
 
 // Returns clusters within bounds within given years intervals
 export async function getBoundsByYear({ bounds, z, year, year2, isPainting }) {
@@ -320,7 +320,7 @@ export async function getBoundsByYear({ bounds, z, year, year2, isPainting }) {
     }
 
     return { photos, clusters };
-};
+}
 
 async function getClusterPoster(cluster, yearCriteria, isPainting) {
     cluster.p = await Photo.findOne(

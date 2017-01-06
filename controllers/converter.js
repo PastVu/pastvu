@@ -281,15 +281,12 @@ async function conveyerControl() {
         working += 1;
 
         const photo = await Photo
-            .findOne(
-                { cid: photoConv.cid },
-                {
-                    cid: 1, s: 1, user: 1,
-                    path: 1, file: 1, mime: 1,
-                    w: 1, h: 1, ws: 1, hs: 1,
-                    conv: 1, convqueue: 1, watersignText: 1
-                }
-            )
+            .findOne({ cid: photoConv.cid }, {
+                cid: 1, s: 1, user: 1,
+                path: 1, file: 1, mime: 1,
+                w: 1, h: 1, ws: 1, hs: 1,
+                conv: 1, convqueue: 1, watersignText: 1
+            })
             .populate({ path: 'user', select: { _id: 0, login: 1 } })
             .exec();
 
@@ -376,7 +373,7 @@ async function conveyorStep(photo, { protect: onlyProtectPublic = false, webpOnl
         });
 
         // Check again that photo is public to avoid race condition if photo's status was changed during conveyorSubStep
-        const photoForCurrentStatus = await Photo.findOne({ cid: photo.cid }, {s: 1}).exec();
+        const photoForCurrentStatus = await Photo.findOne({ cid: photo.cid }, { s: 1 }).exec();
         itsPublicPhoto = photoForCurrentStatus.s === status.PUBLIC;
 
         // If photo is not public anymore, try to delete its files from public folder
@@ -518,7 +515,7 @@ async function conveyorSubStep(photo, { isPublic = true, protectCover = false, w
         }
 
         // We must know signature of result photo, to use it for resetting user's browser cache
-        if (isStandardsize  && getStandardAttributes) {
+        if (isStandardsize && getStandardAttributes) {
             const { signature, fileParam } = await getFileSign(photo, dstPath);
             photo.signs = signature || undefined;
             photo.file = `${photo.path}${fileParam}`;
@@ -544,7 +541,7 @@ async function tryPromise(attemps, promiseGenerator, data, attemp) {
         if (attemp < attemps) {
             await sleep(100 * attemp);
             logger.warn(`Trying execute the promise ${attemp + 1}th time. ${data || ''}`);
-            return await tryPromise(attemps, promiseGenerator, data, attemp + 1);
+            return tryPromise(attemps, promiseGenerator, data, attemp + 1);
         }
 
         logger.error(
@@ -564,7 +561,7 @@ async function getFileSign(photo, filePath) {
     const fileParam = signature ? `?s=${signature.substr(0, 7)}${signature.substr(signature.length - 3)}` : '';
 
     return { signature, fileParam };
-};
+}
 
 // Move photo's files between public/protected folders
 export async function movePhotoFiles({ photo, copy = false, toProtected = false }) {

@@ -148,7 +148,9 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
                     addClass: cancelClass, text: params.cancelText || 'Cancel',
                     onClick: function ($noty) {
                         $noty.close();
-                        params.onCancel && params.onCancel.call(params.ctx);
+                        if (params.onCancel) {
+                            params.onCancel.call(params.ctx);
+                        }
                     }
                 }
             ]

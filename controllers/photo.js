@@ -499,7 +499,7 @@ async function giveNewLimit({ login }) {
     }
 
     return { limit: getNewPhotosLimit(user) };
-};
+}
 
 function getUserWaterSign(user, photo) {
     const validOptionValues = userSettingsVars.photo_watermark_add_sign;
@@ -840,7 +840,7 @@ async function saveHistory({ oldPhotoObj, photo, canModerate, reason, parsedFile
         promises.push(PhotoHistory.update({ _id: histories[0]._id }, { $set: { values: histories[0].values } }).exec());
     }
 
-    return await Promise.all(promises);
+    return Promise.all(promises);
 }
 
 /**
@@ -908,15 +908,15 @@ function userPCountUpdate(user, newDelta = 0, publicDelta = 0, inactiveDelta = 0
         ownerObj.user.pcount = ownerObj.user.pcount + publicDelta;
         ownerObj.user.pdcount = ownerObj.user.pdcount + inactiveDelta;
         return session.saveEmitUser({ usObj: ownerObj, wait: true });
-    } else {
-        return User.update({ _id: userId }, {
-            $inc: {
-                pfcount: newDelta || 0,
-                pcount: publicDelta || 0,
-                pdcount: inactiveDelta || 0
-            }
-        }).exec();
     }
+
+    return User.update({ _id: userId }, {
+        $inc: {
+            pfcount: newDelta || 0,
+            pcount: publicDelta || 0,
+            pdcount: inactiveDelta || 0
+        }
+    }).exec();
 }
 
 const protectedFileLinkTTLs = config.protectedFileLinkTTL / 1000;
@@ -1020,7 +1020,7 @@ async function changePhotoInNotpablicCache({ photo, add = true }) {
         .catch(error => {
             throw new ApplicationError({ code: constantsError.REDIS, trace: false, message: error.message });
         });
-};
+}
 
 
 // If photo is getting public status,
@@ -1062,14 +1062,14 @@ const changeFileProtection = async function ({ photo, protect = false }) {
 };
 
 const changePublicExternality = async function ({ photo, makePublic }) {
-    return await Promise.all([
+    return Promise.all([
         // Recalculate number of photos of owner
         userPCountUpdate(photo.user, 0, makePublic ? 1 : -1, makePublic ? -1 : 1),
         // If photo has coordinates, means that need to do something with map
         Utils.geo.check(photo.geo) ? this.call(makePublic ? 'photo.photoToMap' : 'photo.photoFromMap', {
             photo, paintingMap: photo.type === constants.photo.type.PAINTING
         }) : null,
-        this.call('photo.changeFileProtection', {  photo, protect: !makePublic }),
+        this.call('photo.changeFileProtection', { photo, protect: !makePublic }),
     ]);
 };
 
@@ -1223,7 +1223,7 @@ async function approve(data) {
     // Save previous status to history
     await this.call('photo.saveHistory', { oldPhotoObj, photo, canModerate });
 
-    this.call('photo.changeFileProtection', {  photo, protect: false });
+    this.call('photo.changeFileProtection', { photo, protect: false });
 
     // Reselect the data to display
     return this.call('photo.give', { cid: photo.cid, rel });
@@ -1284,7 +1284,7 @@ function removeIncoming({ file }) {
     }
 
     return fs.unlinkAsync(path.join(incomeDir, file));
-};
+}
 
 // Photo removal
 async function remove(data) {
@@ -1570,7 +1570,7 @@ function givePS(options) {
     const filter = options.filter ? parseFilter(options.filter) : {};
 
     return this.call('photo.givePhotos', { filter, options });
-};
+}
 
 // Returns user's gallery
 async function giveUserGallery({ login, filter, skip, limit }) {
@@ -1640,7 +1640,7 @@ async function giveForApprove(data) {
     }
 
     return { photos, rhash: shortRegionsHash };
-};
+}
 
 // Returns array before and after specified photo (with specified length)
 const userPhotosAroundFields = {
@@ -1846,7 +1846,7 @@ async function giveCan({ cid }) {
     const photo = await this.call('photo.find', {
         query: { cid },
         options: { lean: true },
-        populateUser: iAm.registered ? true : false
+        populateUser: Boolean(iAm.registered)
     });
 
     return { can: permissions.getCan(photo, iAm) };
@@ -1901,8 +1901,8 @@ function yearsValidate({ isPainting, maxDelta, year, year2 }) {
 
     // Both year fields must be filled
     if (_.isNumber(year) && _.isNumber(year2) && year >= years.min && year <= years.max &&
-        year2 >= year && year2 <= years.max && Math.abs(year2 - year) <=  maxYearsDelta) {
-        return {year, year2};
+        year2 >= year && year2 <= years.max && Math.abs(year2 - year) <= maxYearsDelta) {
+        return { year, year2 };
     }
 
     return {};
@@ -1953,7 +1953,7 @@ function photoValidate(newValues, oldValues, can) {
 
     // Trim and remove last dot in title, if it is not part of ellipsis
     if (_.isString(newValues.title) && newValues.title.length) {
-        result.title = newValues.title.trim().substr(0, 120).replace(/([^\.])\.$/, '$1');
+        result.title = newValues.title.trim().substr(0, 120).replace(/([^.])\.$/, '$1');
     } else if (newValues.title === null) {
         result.title = undefined;
     }
@@ -2253,11 +2253,11 @@ function getByBounds(data) {
         bound[1].reverse();
     }
 
-    return this.call('photo.getBounds', data).then(result => ({ startAt, z, ...result}));
+    return this.call('photo.getBounds', data).then(result => ({ startAt, z, ...result }));
 }
 
 // Sends selected photos for convert (By admin, whom pressed reconvert button on photo page)
-async function convert({ cids = []}) {
+async function convert({ cids = [] }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.isAdmin) {
@@ -2869,7 +2869,7 @@ async function getDownloadKey({ cid }) {
 
     const key = Utils.randomString(32);
     const lossless = photo.mime === 'image/png';
-    const title = `${photo.cid} ${(photo.title || '').replace(/[\/|]/g, '-')}`.substr(0, 120);
+    const title = `${photo.cid} ${(photo.title || '').replace(/[/|]/g, '-')}`.substr(0, 120);
     const fileName = `${title}.${lossless ? 'png' : 'jpg'}`;
     const path = (origin ? 'private/photos/' : 'public/photos/a/') + photo.path;
     // We keep only size of origin file, size with watermark must be calculated by downloader.js
@@ -2997,9 +2997,9 @@ const planResetDisplayStat = (function () {
 // and delete anticache url parameter 's' from file property
 async function resetPhotosAnticache() {
     const photos = await Photo.find({
-        converted: { $gte: new Date(Date.now() - ms('7d')), $lte: new Date(Date.now() - config.photoCacheTime)},
+        converted: { $gte: new Date(Date.now() - ms('7d')), $lte: new Date(Date.now() - config.photoCacheTime) },
         $where: `this.file !== this.path`
-    }, {_id: 0, cid: 1, path: 1}, { lean: true }).exec();
+    }, { _id: 0, cid: 1, path: 1 }, { lean: true }).exec();
 
     // For each of found photo set file equals path, don't wait execution
     for (const { cid, path } of photos) {
@@ -3011,7 +3011,7 @@ async function resetPhotosAnticache() {
     }
 
     setTimeout(resetPhotosAnticache, ms('5m'));
-};
+}
 
 // Check that redis contains file keys that point to the corresponding photo cid for every not public photo
 // This info is needed for downloader process to check client rights to serve him photo's protected file
@@ -3026,11 +3026,11 @@ async function syncUnpublishedPhotosWithRedis() {
         redisCount = Number(redisCount) || 0;
 
         if (actualCount !== redisCount) {
-            const start  = Date.now();
+            const start = Date.now();
 
             const [photos] = await Promise.all([
                 // Select cid and path to file for all non public photos
-                Photo.find({ s: { $ne: status.PUBLIC } }, {_id: 0, cid: 1, path: 1}, { lean: true }).exec(),
+                Photo.find({ s: { $ne: status.PUBLIC } }, { _id: 0, cid: 1, path: 1 }, { lean: true }).exec(),
 
                 // Remove all 'notpublic:' keys fro redis, by evaluating lua script
                 dbRedis.evalAsync('for _,k in ipairs(redis.call("keys","notpublic:*")) do redis.call("del",k) end', 0)

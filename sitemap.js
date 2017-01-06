@@ -28,7 +28,7 @@ const schedule = (function () {
         schedule();
     }
 
-    return (immediate) => {
+    return immediate => {
         let timeout;
 
         if (immediate) {
@@ -54,7 +54,7 @@ const schedule = (function () {
 export async function configure(startStamp) {
     mkdirp.sync(sitemapPathAbs);
 
-    await connectDb({ mongo: { uri: config.mongo.connection, poolSize: config.mongo.pool }, logger});
+    await connectDb({ mongo: { uri: config.mongo.connection, poolSize: config.mongo.pool }, logger });
     await regionsReady;
 
     logger.info(`Sitemap generator started up in ${(Date.now() - startStamp) / 1000}s`);
@@ -80,13 +80,14 @@ const processPhotos = photos => photos.reduce((result, { cid, file, title, adate
         </url>`;
 }, '');
 
-const processRegions = regions => regions.reduce((result, { cid }) => {
-    return result + `<url>
-            <loc>${origin}/ps?f=r!${cid}</loc>
-            <changefreq>daily</changefreq>
-            <priority>0.7</priority>
-        </url>`;
-}, '');
+const processRegions = regions => regions.reduce((result, { cid }) =>
+    result +
+    `<url>
+        <loc>${origin}/ps?f=r!${cid}</loc>
+        <changefreq>daily</changefreq>
+        <priority>0.7</priority>
+    </url>`
+, '');
 
 async function generateSitemap() {
     const stamp = new Date().toISOString();

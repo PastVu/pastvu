@@ -1,4 +1,4 @@
-'use strict';
+'use strict'; // eslint-disable-line strict
 
 module.exports = function (grunt) {
     require('./bin/run');
@@ -84,7 +84,7 @@ module.exports = function (grunt) {
             baseurl: {
                 options: {
                     replacements: [
-                        {pattern: /__=__/ig, replacement: `__=${hash}`}
+                        { pattern: /__=__/ig, replacement: `__=${hash}` }
                     ]
                 },
                 files: {

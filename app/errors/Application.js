@@ -38,7 +38,7 @@ export default class ApplicationError extends Error {
             Error.captureStackTrace(this, this.constructor);
         } else {
             // Firefox workaround
-            let { stack } = new Error;
+            let { stack } = new Error();
 
             if (stack) {
                 // Skipping first line in stack (it's the line where we have create our `new Error`)
@@ -47,7 +47,7 @@ export default class ApplicationError extends Error {
                 const [, fileName, lineNumber, columnNumber] = FIREFOX_ERROR_INFO.exec(stack[0] || '') || [];
 
                 this.stack = stack.join('\n');
-                this.fileName = fileName ? fileName : undefined;
+                this.fileName = fileName || undefined;
                 this.lineNumber = lineNumber ? Number(lineNumber) : undefined;
                 this.columnNumber = columnNumber ? Number(columnNumber) : undefined;
             }

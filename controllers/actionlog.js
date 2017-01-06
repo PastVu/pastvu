@@ -24,5 +24,5 @@ export async function logIt(user, obj, objtype, type, stamp, reason, roleregion,
         addinfo
     });
 
-    return await action.save();
+    return action.save();
 }

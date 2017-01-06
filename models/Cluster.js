@@ -38,7 +38,7 @@ const ClusterPaintSchema = new Schema(
         y: { type: Schema.Types.Mixed }, // Hash (object kye:value) of years within cluster
         p: ClusterPoster // Cluster poster
     },
-    { strict: true, collection: 'clusterspaint'  }
+    { strict: true, collection: 'clusterspaint' }
 );
 
 ClusterSchema.index({ g: '2d', z: 1 });
@@ -50,7 +50,6 @@ const ClusterParamsSchema = new Schema(
         w: { type: Number }, // Cluster width in degrees
         h: { type: Number }, // Cluster height in degrees
 
-        // Эти поля общие для всех параметров, так что такой документ в коллекции будет один
         // Next fields are common for all parameter, so such document is single
         sgeo: { type: [Number] }, // [lng, lat] of base cluster
         sz: { type: Number }, // Zoom, on which we calculated clusters

@@ -1,40 +1,40 @@
 /**
  * Params
  */
-define(['jquery', 'underscore', 'socket!', 'Utils', 'knockout', 'knockout.mapping'], function ($, _, socket, Utils, ko, ko_mapping) {
+define(['jquery', 'underscore', 'socket!', 'Utils', 'knockout', 'knockout.mapping'], function ($, _, socket, Utils, ko, koMapping) {
     'use strict';
-    var head = document.head,
-        $window = $(window),
+    var head = document.head;
+    var $window = $(window);
 
-        Params = {
-            window: {
-                w: $window.width(),
-                h: $window.height(),
-                head: 35, // Top bar height
-                square: null
-            },
-            settings: {
-                appName: (head.dataset && head.dataset.appname) || head.getAttribute('data-appname') || 'Main',
+    var Params = {
+        window: {
+            w: $window.width(),
+            h: $window.height(),
+            head: 35, // Top bar height
+            square: null
+        },
+        settings: {
+            appName: (head.dataset && head.dataset.appname) || head.getAttribute('data-appname') || 'Main',
 
-                USE_OSM_API: true,
-                USE_GOOGLE_API: true,
-                USE_YANDEX_API: true,
+            USE_OSM_API: true,
+            USE_GOOGLE_API: true,
+            USE_YANDEX_API: true,
 
-                FIRST_CLIENT_WORK_ZOOM: 17,
-                CLUSTERING_ON_CLIENT: true,
-                CLUSTERING_ON_CLIENT_PIX_DELTA: { 17: 25, 18: 20, 19: 15, 20: 5, 'default': 15 },
+            FIRST_CLIENT_WORK_ZOOM: 17,
+            CLUSTERING_ON_CLIENT: true,
+            CLUSTERING_ON_CLIENT_PIX_DELTA: { 17: 25, 18: 20, 19: 15, 20: 5, 'default': 15 },
 
-                locDef: { lat: 40, lng: -17, z: 3 },
-                locDefRange: ['gpsip', '_def_'],
-                locDefRangeUser: ['last', 'home', 'gpsip', '_def_'],
+            locDef: { lat: 40, lng: -17, z: 3 },
+            locDefRange: ['gpsip', '_def_'],
+            locDefRangeUser: ['last', 'home', 'gpsip', '_def_'],
 
-                REGISTRATION_ALLOWED: false
-            }
-        };
+            REGISTRATION_ALLOWED: false
+        }
+    };
 
     Params.window.square = Params.window.w * Params.window.h;
     updateSettings(init.settings, true);
-    Params = ko_mapping.fromJS(Params, { copy: ['window.head', 'settings.lang'] });
+    Params = koMapping.fromJS(Params, { copy: ['window.head', 'settings.lang'] });
 
     // Пересчитываем размеры при ресайзе окна
     $window.on('resize', _.debounce(function () {
@@ -51,7 +51,7 @@ define(['jquery', 'underscore', 'socket!', 'Utils', 'knockout', 'knockout.mappin
         if (plain) {
             _.merge(Params.settings, settings);
         } else {
-            ko_mapping.fromJS({ settings: settings }, Params, { copy: ['window.head'] });
+            koMapping.fromJS({ settings: settings }, Params, { copy: ['window.head'] });
         }
     }
 

@@ -39,7 +39,7 @@ function genInitDataString(req) {
     resultString += '};';
 
     return resultString;
-};
+}
 
 // Check for disabled js in client's browser. In this case client send query parameter '_nojs=1'
 function checkNoJS(req) {
@@ -62,7 +62,7 @@ function getReqBrowser(req, res, next) {
         req.browser = session.checkUserAgent(ua);
     }
     next();
-};
+}
 
 // Fill some headers for fully generated pages
 const setStaticHeaders = (function () {
@@ -218,8 +218,8 @@ async function getPhotoForPage(req, res, next) {
         const cid = Number(req.params[0]);
         const { handshake: { context } } = req;
 
-        req.photoData = await context.call('photo.giveForPage', {cid});
-        req.photoRel = await context.call('photo.givePrevNextCids', {cid});
+        req.photoData = await context.call('photo.giveForPage', { cid });
+        req.photoRel = await context.call('photo.givePrevNextCids', { cid });
 
         next();
     } catch (error) {
@@ -308,7 +308,7 @@ export function bindRoutes(app) {
 
         next(new NotFoundError({ url, method, ua, referer }));
     });
-};
+}
 
 export const send404 = (function () {
     const status404 = http.STATUS_CODES[404];

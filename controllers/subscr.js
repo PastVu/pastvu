@@ -80,7 +80,7 @@ async function subscribeUser({ cid, type = 'photo', subscribe }) {
  * @param setCommentView
  * @param {string} [type=photo]
  */
-export async function subscribeUserByIds({user, objId, setCommentView, type = 'photo'}) {
+export async function subscribeUserByIds({ user, objId, setCommentView, type = 'photo' }) {
     const userId = user._id || user;
     const stamp = new Date();
     const $update = { $set: { sbscr_create: stamp } };
@@ -89,7 +89,7 @@ export async function subscribeUserByIds({user, objId, setCommentView, type = 'p
         $update.$set.comments = stamp;
     }
 
-    return await UserObjectRel.update({ obj: objId, user: userId, type }, $update, { upsert: true }).exec();
+    return UserObjectRel.update({ obj: objId, user: userId, type }, $update, { upsert: true }).exec();
 }
 
 /**
@@ -104,7 +104,7 @@ async function unSubscribeObj({ objId, userId }) {
         query.user = userId;
     }
 
-    return await UserObjectRel.update(
+    return UserObjectRel.update(
         query, { $unset: { sbscr_create: 1, sbscr_noty_change: 1, sbscr_noty: 1 } }
     ).exec();
 }
@@ -345,7 +345,7 @@ async function sendUserNotice(userId) {
     // Reset flag of rediness to notification (sbscr_noty) of sent objects
     async function resetRelsNoty() {
         if (!_.isEmpty(relIds)) {
-            return await UserObjectRel.update(
+            return UserObjectRel.update(
                 { _id: { $in: relIds } },
                 { $unset: { sbscr_noty: 1 }, $set: { sbscr_noty_change: new Date() } },
                 { multi: true }
@@ -378,7 +378,7 @@ async function sendUserNotice(userId) {
     ]);
 
     if (_.isEmpty(news) && _.isEmpty(photos)) {
-        return await resetRelsNoty();
+        return resetRelsNoty();
     }
 
     let totalNewestComments = 0;
@@ -433,7 +433,7 @@ async function sendUserNotice(userId) {
         });
     }
 
-    return await resetRelsNoty();
+    return resetRelsNoty();
 }
 
 // Return paged list of user's subscriptions
@@ -537,7 +537,7 @@ async function giveUserSubscriptions({ login, page = 1, type = 'photo' }) {
         page: page + 1,
         perPage: subscrPerPage
     };
-};
+}
 
 export const ready = new Promise(async function (resolve, reject) {
     try {

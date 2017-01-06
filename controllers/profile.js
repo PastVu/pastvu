@@ -145,7 +145,7 @@ async function changeSetting({ login, key, val }) {
     const defSetting = userSettingsDef[key];
     const vars = userSettingsVars[key];
 
-    const valid = defSetting !== undefined &&  Array.isArray(vars) && (
+    const valid = defSetting !== undefined && Array.isArray(vars) && (
             Array.isArray(defSetting) && Array.isArray(val) && val.every(item => vars.includes(item)) || vars.includes(val)
         );
 
@@ -199,7 +199,7 @@ async function changeSetting({ login, key, val }) {
     }
 
     return { key, val };
-};
+}
 
 // Change displayed name
 async function changeDispName({ login, showName }) {
@@ -217,7 +217,7 @@ async function changeDispName({ login, showName }) {
 
     const { usObjOnline, user } = await getUserByLogin(login);
 
-    if (Boolean(showName)) {
+    if (showName) {
         const f = user.firstName || '';
         const l = user.lastName || '';
         user.disp = (f + (f && l ? ' ' : '') + l) || user.login;
@@ -286,7 +286,7 @@ async function setWatersignCustom({ login, watersign }) {
         watersignCustom: user.watersignCustom,
         photo_watermark_add_sign: user.settings && user.settings.photo_watermark_add_sign
     };
-};
+}
 
 // Change user's email
 async function changeEmail({ login, email, pass }) {
@@ -480,7 +480,7 @@ async function setUserWatermarkChange({ login, nowaterchange }) {
     }
 
     return { nowaterchange: user.nowaterchange };
-};
+}
 
 // Save user ranks
 async function saveUserRanks({ login, ranks }) {

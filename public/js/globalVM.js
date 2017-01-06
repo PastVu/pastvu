@@ -3,18 +3,18 @@
  * globalVM
  */
 define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'i18n', 'knockout', 'lib/PubSub'], function ($, Browser, Utils, _, P, i18n, ko, ps) {
-	"use strict";
+    'use strict';
 
-	window.G = {
-		imgLoadOk: function (target) {
-			target.parentNode.classList.add('showPrv');
-		},
-		imgLoadFail: function (target) {
-			var classList = target.parentNode.classList;
-			classList.add('fail'); //Множестенная установка пока не работает в ie<=11
-			classList.add('showPrv');
-		}
-	};
+    window.G = {
+        imgLoadOk: function (target) {
+            target.parentNode.classList.add('showPrv');
+        },
+        imgLoadFail: function (target) {
+            var classList = target.parentNode.classList;
+            classList.add('fail'); //Множестенная установка пока не работает в ie<=11
+            classList.add('showPrv');
+        }
+    };
 
 
     // Отключает скроллинг body путем задания overflow:hidden и правого marging равного ширине скроллинга
@@ -51,25 +51,25 @@ define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'i18n', 'knockout'
         return $body;
     }
 
-	return {
-		P: P,
-		pb: ps,
-		i18n: i18n,
-		router: null,
+    return {
+        P: P,
+        pb: ps,
+        i18n: i18n,
+        router: null,
 
-		childModules: {},
-		repository: {},
+        childModules: {},
+        repository: {},
 
-		ranks: {
-			mec: {src: '/img/rank/bronse.jpg', title: 'Maecenas'},
-			mec_silv: {src: '/img/rank/silver.jpg', title: 'Silver maecenas'},
-			mec_gold: {src: '/img/rank/gold.jpg', title: 'Gold maecenas'},
-			adviser: {src: '/img/rank/adviser.jpg', title: 'counselor'}
-		},
+        ranks: {
+            mec: { src: '/img/rank/bronse.jpg', title: 'Maecenas' },
+            mec_silv: { src: '/img/rank/silver.jpg', title: 'Silver maecenas' },
+            mec_gold: { src: '/img/rank/gold.jpg', title: 'Gold maecenas' },
+            adviser: { src: '/img/rank/adviser.jpg', title: 'counselor' }
+        },
 
-		func: {
-			showContainer: function ($container, cb, ctx) {
-				var container = $container[0];
+        func: {
+            showContainer: function ($container, cb, ctx) {
+                var container = $container[0];
                 var isModal = container.classList.contains('neoModalContainer');
                 var noDisplay = container.classList.contains('mNoDisplay');
                 var hidden = container.classList.contains('mHidden');
@@ -80,46 +80,46 @@ define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'i18n', 'knockout'
                     bodyScrollOff();
                 }
 
-				if (noDisplay || hidden) {
-					if (fade && Browser.support.cssAnimation) {
-						// Меняем по таймауту, чтобы класс успел удалится с этого контейнера, если для него меняется модуль
-						window.setTimeout(function () {
-							container.classList.add('mShow');
-							if (Utils.isType('function', cb)) {
-								window.setTimeout(cb.bind(ctx || window), 310);
-							}
-						}, 50);
-					} else {
-						container.classList.add('mShow');
-						if (Utils.isType('function', cb)) {
-							cb.call(ctx || window);
-						}
-					}
-				} else if (Utils.isType('function', cb)) {
-					cb.call(ctx || window);
-				}
-			},
-			hideContainer: function ($container, cb, ctx) {
-				var container = $container[0];
+                if (noDisplay || hidden) {
+                    if (fade && Browser.support.cssAnimation) {
+                        // Меняем по таймауту, чтобы класс успел удалится с этого контейнера, если для него меняется модуль
+                        window.setTimeout(function () {
+                            container.classList.add('mShow');
+                            if (Utils.isType('function', cb)) {
+                                window.setTimeout(cb.bind(ctx || window), 310);
+                            }
+                        }, 50);
+                    } else {
+                        container.classList.add('mShow');
+                        if (Utils.isType('function', cb)) {
+                            cb.call(ctx || window);
+                        }
+                    }
+                } else if (Utils.isType('function', cb)) {
+                    cb.call(ctx || window);
+                }
+            },
+            hideContainer: function ($container, cb, ctx) {
+                var container = $container[0];
                 var isModal = container.classList.contains('neoModalContainer');
                 var noDisplay = container.classList.contains('mNoDisplay');
                 var hidden = container.classList.contains('mHidden');
 
-				if (noDisplay || hidden) {
-					container.classList.remove('mShow');
-				}
+                if (noDisplay || hidden) {
+                    container.classList.remove('mShow');
+                }
 
                 if (isModal) {
                     // Включаем скроллинг body, если это было модальное окно
                     bodyScrollOn();
                 }
 
-				if (Utils.isType('function', cb)) {
-					cb.call(ctx || window);
-				}
-			},
+                if (Utils.isType('function', cb)) {
+                    cb.call(ctx || window);
+                }
+            },
             bodyScrollOff: bodyScrollOff,
             bodyScrollOn: bodyScrollOn
-		}
-	};
+        }
+    };
 });
