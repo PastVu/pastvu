@@ -354,15 +354,15 @@
       "dev": true
     },
     "babel-plugin-transform-class-properties": {
-      "version": "6.18.0",
-      "from": "babel-plugin-transform-class-properties@6.18.0",
-      "resolved": "https://registry.npmjs.org/babel-plugin-transform-class-properties/-/babel-plugin-transform-class-properties-6.18.0.tgz",
+      "version": "6.19.0",
+      "from": "babel-plugin-transform-class-properties@6.19.0",
+      "resolved": "https://registry.npmjs.org/babel-plugin-transform-class-properties/-/babel-plugin-transform-class-properties-6.19.0.tgz",
       "dev": true
     },
     "babel-plugin-transform-es2015-destructuring": {
-      "version": "6.18.0",
-      "from": "babel-plugin-transform-es2015-destructuring@6.18.0",
-      "resolved": "https://registry.npmjs.org/babel-plugin-transform-es2015-destructuring/-/babel-plugin-transform-es2015-destructuring-6.18.0.tgz",
+      "version": "6.19.0",
+      "from": "babel-plugin-transform-es2015-destructuring@6.19.0",
+      "resolved": "https://registry.npmjs.org/babel-plugin-transform-es2015-destructuring/-/babel-plugin-transform-es2015-destructuring-6.19.0.tgz",
       "dev": true
     },
     "babel-plugin-transform-es2015-modules-commonjs": {
@@ -372,9 +372,9 @@
       "dev": true
     },
     "babel-plugin-transform-es2015-parameters": {
-      "version": "6.18.0",
-      "from": "babel-plugin-transform-es2015-parameters@6.18.0",
-      "resolved": "https://registry.npmjs.org/babel-plugin-transform-es2015-parameters/-/babel-plugin-transform-es2015-parameters-6.18.0.tgz",
+      "version": "6.21.0",
+      "from": "babel-plugin-transform-es2015-parameters@6.21.0",
+      "resolved": "https://registry.npmjs.org/babel-plugin-transform-es2015-parameters/-/babel-plugin-transform-es2015-parameters-6.21.0.tgz",
       "dev": true
     },
     "babel-plugin-transform-export-extensions": {
@@ -384,9 +384,9 @@
       "dev": true
     },
     "babel-plugin-transform-object-rest-spread": {
-      "version": "6.20.1",
-      "from": "babel-plugin-transform-object-rest-spread@6.20.1",
-      "resolved": "https://registry.npmjs.org/babel-plugin-transform-object-rest-spread/-/babel-plugin-transform-object-rest-spread-6.20.1.tgz",
+      "version": "6.20.2",
+      "from": "babel-plugin-transform-object-rest-spread@6.20.2",
+      "resolved": "https://registry.npmjs.org/babel-plugin-transform-object-rest-spread/-/babel-plugin-transform-object-rest-spread-6.20.2.tgz",
       "dev": true
     },
     "babel-plugin-transform-runtime": {
