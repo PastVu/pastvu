@@ -324,7 +324,7 @@ async function changeEmail({ login, email, pass }) {
     const isMatch = await iAm.user.checkPass(pass);
 
     if (!isMatch) {
-        throw AuthenticationError(constantsError.AUTHENTICATION_PASS_WRONG);
+        throw new AuthenticationError(constantsError.AUTHENTICATION_PASS_WRONG);
     }
 
     user.email = email;

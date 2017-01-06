@@ -329,7 +329,7 @@ async function commentsTreeBuildDel(comment, childs, checkMyId) {
     // If user who request is not moderator, and not whose comments are inside branch,
     // means that he can't see branch, return 'not exists'
     if (!canSee) {
-        throw NotFoundError(constantsError.COMMENT_DOESNT_EXISTS);
+        throw new NotFoundError(constantsError.COMMENT_DOESNT_EXISTS);
     }
 
     const { usersById, usersByLogin } = await getUsersHashForComments(usersSet);
@@ -502,7 +502,7 @@ async function giveDelTree({ cid, type = 'photo' }) {
     ).exec() || {};
 
     if (!objId) {
-        throw NotFoundError(constantsError.COMMENT_DOESNT_EXISTS);
+        throw new NotFoundError(constantsError.COMMENT_DOESNT_EXISTS);
     }
 
     const [obj, childs] = await Promise.all([
@@ -845,7 +845,7 @@ async function remove(data) {
     ).exec();
 
     if (!comment) {
-        throw NotFoundError(constantsError.COMMENT_DOESNT_EXISTS);
+        throw new NotFoundError(constantsError.COMMENT_DOESNT_EXISTS);
     }
 
     const obj = await (data.type === 'news' ?
@@ -1023,7 +1023,7 @@ async function restore({ cid, type }) {
     ).exec();
 
     if (!comment) {
-        throw NotFoundError(constantsError.COMMENT_DOESNT_EXISTS);
+        throw new NotFoundError(constantsError.COMMENT_DOESNT_EXISTS);
     }
 
     const obj = await (type === 'news' ?
@@ -1191,7 +1191,7 @@ async function update(data) {
     ]);
 
     if (!comment || !obj || data.obj !== obj.cid) {
-        throw NotFoundError(constantsError.COMMENT_DOESNT_EXISTS);
+        throw new NotFoundError(constantsError.COMMENT_DOESNT_EXISTS);
     }
 
     const hist = { user: iAm.user };
@@ -1306,7 +1306,7 @@ async function giveHist({ cid, type = 'photo' }) {
     ).populate({ path: 'user hist.user del.user', select: { _id: 0, login: 1, avatar: 1, disp: 1 } }).exec();
 
     if (!comment) {
-        throw NotFoundError(constantsError.COMMENT_DOESNT_EXISTS);
+        throw new NotFoundError(constantsError.COMMENT_DOESNT_EXISTS);
     }
 
     const result = [];
