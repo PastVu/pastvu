@@ -30,7 +30,7 @@ export function jadeToHtml(seekPath) {
             return next();
         }
     };
-};
+}
 
 // Middleware for cors switching-on for a particular domain with wildcard
 export function cors(originRoot) {
@@ -46,7 +46,7 @@ export function cors(originRoot) {
         }
         next();
     };
-};
+}
 
 // Add X-Response-Time header
 export function responseHeaderHook() {
@@ -64,13 +64,13 @@ export function responseHeaderHook() {
         };
         next();
     };
-};
+}
 
 // Serve static images with check for webp support
 export function serveImages(storePath, { maxAge = 0 }) {
     const cacheControl = `public, max-age=${Math.ceil(maxAge / 1000)}`;
 
-    return async function(req, res, next) {
+    return async function (req, res, next) {
         const {
             headers: {
                 accept = ''
@@ -121,4 +121,4 @@ export function serveImages(storePath, { maxAge = 0 }) {
         // Handle unexpected client disconnection to close file read stream and release memory
         res.on('close', () => file.destroy());
     };
-};
+}

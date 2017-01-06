@@ -72,7 +72,7 @@ export default class Plug extends EventEmitter {
                 return reject({ code: 99 });
             }
 
-            const msg = { descriptor: this.promiseDescriptorNext++, ...data};
+            const msg = { descriptor: this.promiseDescriptorNext++, ...data };
 
             this.promiseDescriptors.set(msg.descriptor, { resolve, reject });
 

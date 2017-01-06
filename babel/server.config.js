@@ -32,7 +32,7 @@ module.exports = {
 
         // Stage-3 preset
         'transform-async-generator-functions',
-        ['transform-object-rest-spread', {useBuiltIns: true}], // useBuiltIns means Object.assign instead of babel extends helper
+        ['transform-object-rest-spread', { useBuiltIns: true }], // useBuiltIns means Object.assign instead of babel extends helper
 
         // ES2017
         'syntax-trailing-function-commas',

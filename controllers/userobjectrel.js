@@ -33,7 +33,7 @@ export async function getViewCommentsRel(objIds, userId, type = 'photo', rels) {
 
         result[rel.obj] = res;
     }, {});
-};
+}
 
 /**
  * Fill for every object in transferred array number of new comments - field 'ccount_new'
@@ -77,7 +77,7 @@ export async function fillObjectByRels(objs, userId, type = 'photo', rels) {
     }
 
     return single ? objs[0] : objs;
-};
+}
 
 /**
  * Record time of last object view by user
@@ -91,7 +91,7 @@ export function setObjectView(objId, userId, type = 'photo') {
         { $set: { view: new Date() } },
         { upsert: true, new: true, lean: true, fields: { _id: 0 } }
     ).exec();
-};
+}
 
 /**
  * Record time of last comments view on object by user
@@ -123,7 +123,7 @@ export async function setCommentView(objId, userId, type = 'photo', stamp = new 
     await UserObjectRel.update(query, update, { upsert: true }).exec();
 
     return relBeforeUpdate;
-};
+}
 
 /**
  * Increase new comments counter of users, who saw comments of this object, when new comment added
@@ -139,7 +139,7 @@ export async function onCommentAdd(objId, userId, type = 'photo') {
     ).exec();
 
     return count;
-};
+}
 
 /**
  * When remove comments, decrease number of new comments of users,
@@ -203,7 +203,7 @@ export async function onCommentsRemove(objId, comments, type = 'photo') {
     }
 
     return 0;
-};
+}
 
 /**
  * When restore deleted comments, increase new comments counter of users,
@@ -259,7 +259,7 @@ export async function onCommentsRestore(objId, comments, type = 'photo') {
     }
 
     return 0;
-};
+}
 
 /**
  * Find quantity of new comments for build notification letter for user

@@ -119,7 +119,7 @@ const giveRatings = (function () {
             usersByCommentsCount(weekStart),
             User.find(
                 { ccount: { $gt: 0 } }, { _id: 0, login: 1, avatar: 1, disp: 1, ccount: 1 },
-                { lean: true, limit, sort: { ccount: -1} }
+                { lean: true, limit, sort: { ccount: -1 } }
             ).exec().then(users => _.forEach(users, user => user.online = session.usLogin[user.login] !== undefined)),
 
             // Users by photos count
@@ -200,9 +200,7 @@ const giveOnlineStats = (function () {
 
     return Utils.memoizePromise(function () {
         const usersCount = _.size(session.usLogin);
-        const anonymCount = _.reduce(session.sessConnected, (result, session) => {
-            return session.user ? result : result + 1;
-        }, 0);
+        const anonymCount = _.reduce(session.sessConnected, (result, session) => session.user ? result : result + 1, 0);
 
         return Promise.resolve({
             onall: anonymCount + usersCount,
@@ -261,7 +259,7 @@ const giveIndexNews = (function () {
         };
     }());
 
-    return async function() {
+    return async function () {
         const { handshake: { usObj: iAm } } = this;
         const news = await (iAm.registered ? forRegistered(iAm) : forAnonym());
 
@@ -285,7 +283,7 @@ async function giveAllNews() {
     }
 
     return { news };
-};
+}
 
 // Full news object for administration (create/edit)
 async function giveNewsFull({ cid }) {
@@ -331,7 +329,7 @@ async function giveNewsPublic({ cid } = {}) {
 
     delete news._id;
     return { news };
-};
+}
 
 // Avatars for about
 const giveAbout = (function () {

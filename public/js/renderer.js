@@ -3,15 +3,15 @@
 define([
     'jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'lib/doT', 'text!tpl/modal.jade'
 ], function ($, Utils, _, ko, globalVM, doT, dotModal) {
-    "use strict";
+    'use strict';
 
-    var repository = globalVM.repository,
-        tplModal,
-        defaultOptions = {
-            parent: globalVM,
-            level: 0,
-            context: window
-        };
+    var repository = globalVM.repository;
+    var tplModal;
+    var defaultOptions = {
+        parent: globalVM,
+        level: 0,
+        context: window
+    };
 
     //Помещаем объект промиса в массив, на место имени модуля если есть,
     //чтобы в коллбэке рендера сохранить последовательнсть модулей,
@@ -73,9 +73,9 @@ define([
     }
 
     function render(modules, options) {
-        var replacedContainers = {},
-            promises = _.map(modules, 'module'), // Массив промисов для возврата модулей в callback функцию
-            promisesWhenNew = {}; //Хеш имен модулей, которые рендерятся первый раз. Передается последним параметром в коллбэк рендера
+        var replacedContainers = {};
+        var promises = _.map(modules, 'module'); // Массив промисов для возврата модулей в callback функцию
+        var promisesWhenNew = {}; //Хеш имен модулей, которые рендерятся первый раз. Передается последним параметром в коллбэк рендера
 
         options = _.defaults(options || {}, defaultOptions);
 
@@ -84,11 +84,11 @@ define([
          */
         _.forOwn(repository, function (existingVM, existingVMKey) {
             if (!existingVM.global && existingVM.parentModule === options.parent && existingVM.level === options.level) {
-                var savesExisting = false,
-                    sameContainer = false,
-                    i = modules.length - 1,
-                    item,
-                    dfd;
+                var savesExisting = false;
+                var sameContainer = false;
+                var i = modules.length - 1;
+                var item;
+                var dfd;
 
                 while (i >= 0) {
                     item = modules[i];
@@ -174,8 +174,8 @@ define([
         if (Utils.isType('function', options.callback)) {
             $.when.apply($, promises)
                 .pipe(function () {
-                    var dfd = $.Deferred(),
-                        args = _.toArray(arguments);
+                    var dfd = $.Deferred();
+                    var args = _.toArray(arguments);
 
                     args.push(promisesWhenNew); //Вставляем последним параметром хэш новых модулей
                     dfd.resolveWith.apply(dfd, [options.context, args]);

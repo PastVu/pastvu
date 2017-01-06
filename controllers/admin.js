@@ -91,12 +91,10 @@ function getOnlineStat() {
                 } else {
                     sessUserZeroSockCount++;
                 }
+            } else if (count) {
+                socketAnonymCount += count;
             } else {
-                if (count) {
-                    socketAnonymCount += count;
-                } else {
-                    sessAnonymZeroSockCount++;
-                }
+                sessAnonymZeroSockCount++;
             }
         } else {
             if (isReg) {

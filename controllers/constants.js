@@ -39,6 +39,6 @@ export default {
         ],
 
         watersignLength: 65,
-        watersignPattern: /[\w\.,:;\(\)\[\]\\\|/№§©®℗℠™•\?!@#\$%\^&\*\+\-={}"'<>~` ]/g
+        watersignPattern: /[\w.,:;()[\]\\|/№§©®℗℠™•?!@#$%^&*+\-={}"'<>~` ]/g
     }
 };

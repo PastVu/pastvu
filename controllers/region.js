@@ -134,7 +134,7 @@ async function getOrderedRegionList(cidArr = [], fields = { _id: 0, geo: 0, __v:
     }
 
     return parentsSortedArr;
-};
+}
 
 /**
  * Return array of cid or object regions
@@ -176,7 +176,7 @@ function getObjRegionList({ obj, fields, fromDb }) {
     }
 
     return cidArr;
-};
+}
 
 // Select the maximum levels of the regions, which should be reflected in the summary of regional affiliation of objects
 // Maximum level - under which user filters by default more then one region
@@ -376,7 +376,7 @@ export async function calcRegionsIncludes(cids) {
     }
 
     return result;
-};
+}
 
 /**
  * Returns for region it populated parents and number of children
@@ -401,11 +401,11 @@ async function getChildsLenByLevel(region) {
         }
 
         return _.compact(await Promise.all(promises));
-    } else {
-        // If level is maximum just move to the mext step
-        return [];
     }
-};
+
+    // If level is maximum just move to the mext step
+    return [];
+}
 
 /**
  * Возвращает для региона спопулированные parents и кол-во дочерних регионов по уровням
@@ -414,12 +414,12 @@ async function getChildsLenByLevel(region) {
 async function getParentsAndChilds(region) {
     const level = _.size(region.parents); // Region level equals number of parent regions
 
-    return await Promise.all([
+    return Promise.all([
         getChildsLenByLevel(region),
         // If parents regions exist - populate them
         level ? getOrderedRegionList(region.parents) : null
     ]);
-};
+}
 
 async function changeRegionParentExternality(region, oldParentsArray, childLenArray) {
     const levelWas = oldParentsArray.length;
@@ -427,12 +427,12 @@ async function changeRegionParentExternality(region, oldParentsArray, childLenAr
     const levelDiff = Math.abs(levelWas - levelNew); // The difference between the levels
     const childLen = childLenArray.length;
 
-    async function updateObjects(query, update) {
-        return await Promise.all([
+    function updateObjects(query, update) {
+        return Promise.all([
             Photo.update(query, update, { multi: true }).exec(),
             Comment.update(query, update, { multi: true }).exec()
         ]);
-    };
+    }
 
     // Sequentially raise photos up by level difference
     // First, rename region level field with name of new region level, next rename child levels also up
@@ -1043,12 +1043,12 @@ export async function getRegionsCountByLevel() {
         promises.push(Region.count({ parents: { $size: i } }).exec());
     }
 
-    return await Promise.all(promises);
+    return Promise.all(promises);
 }
 
 // Return stat of regions by level (number of regions, total vertex)
-async function getRegionsStatByLevel() {
-    return await Region.aggregate([
+function getRegionsStatByLevel() {
+    return Region.aggregate([
         // Fields for selection. level - formed field of size of parents array, eg. region level
         // Introduced in 2.5.3 https://jira.mongodb.org/browse/SERVER-4899
         { $project: { _id: 0, level: { $size: '$parents' }, pointsnum: 1 } },
@@ -1253,7 +1253,7 @@ async function updateObjsRegions({ model, criteria = {}, regions = [], additiona
     if (Object.keys($update).length) {
         await model.update(criteria, $update, { multi: true }).exec();
     }
-};
+}
 
 /**
  * Clear all regions from object
@@ -1399,7 +1399,7 @@ async function saveUserRegions({ login, regions }) {
     }
 
     return { saved: 1 };
-};
+}
 
 /**
  * Return query for selecting by regions kind '$or: [{r0: 1}, {r1: {$in: [3, 4]}}, {r2: 10}]' and hash of regions

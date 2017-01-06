@@ -156,13 +156,13 @@ export async function configure(startStamp) {
                         followRedirect: false,
                         timeout: 1500
                     })
-                    .on('response', function(response) {
+                    .on('response', function (response) {
                         if (response.statusCode === 303) { // 303 means ok, user can get protected file
                             return prServeMiddleware(req, res, next);
                         }
                         next();
                     })
-                    .on('error', function(err) {
+                    .on('error', function (err) {
                         logger.warn('Downloader server request error:', err.message);
                         next();
                     });
@@ -295,4 +295,4 @@ export async function configure(startStamp) {
 
         scheduleMemInfo(startStamp - Date.now());
     });
-};
+}

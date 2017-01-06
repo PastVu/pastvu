@@ -236,7 +236,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.fragArea = null;
 
             this.mapVM = null;
-            this.mapModulePromise = new Promise(function(resolve) {
+            this.mapModulePromise = new Promise(function (resolve) {
                 self.mapModulePromiseResolve = resolve;
             });
             this.childs = [
@@ -616,11 +616,12 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         toolsNumFormat: function (num) {
             if (num < 100) {
                 return num;
-            } else if (num < 1000) {
-                return (num / 100 >> 0) + 'h';
-            } else {
-                return (num / 1000 >> 0) + 'k';
             }
+            if (num < 1000) {
+                return (num / 100 >> 0) + 'h';
+            }
+            return (num / 1000 >> 0) + 'k';
+
         },
 
         descSetEdit: function () {
@@ -1261,7 +1262,11 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 return;
             }
 
-            self.edit() ? self.savePhoto() : self.editPhoto();
+            if (self.edit()) {
+                self.savePhoto();
+            } else {
+                self.editPhoto();
+            }
         },
         editCancel: function () {
             var self = this;

@@ -1,11 +1,11 @@
-define(['jquery', 'Browser', 'knockout.mapping', 'Params'/*, 'http://www.geoplugin.net/javascript.gp'*/], function ($, Browser, ko_mapping, P) {
+define(['jquery', 'Browser', 'knockout.mapping', 'Params'/*, 'http://www.geoplugin.net/javascript.gp'*/], function ($, Browser, koMapping, P) {
     'use strict';
 
     var Locations = {
-        types: { '_def_': ko_mapping.toJS(P.settings.locDef) },
+        types: { '_def_': koMapping.toJS(P.settings.locDef) },
         range: P.settings.locDefRange(),
 
-        current: ko_mapping.toJS(P.settings.locDef),
+        current: koMapping.toJS(P.settings.locDef),
 
         subscribers: [],
 
@@ -24,7 +24,7 @@ define(['jquery', 'Browser', 'knockout.mapping', 'Params'/*, 'http://www.geoplug
         },
         subscribersNotify: function () {
             this.current = this.get();
-            this.subscribers.forEach(function (element, index, array) {
+            this.subscribers.forEach(function (element, index) {
                 element.fn.call(element.context || null, this.current);
             }, this);
         },

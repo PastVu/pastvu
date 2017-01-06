@@ -48,7 +48,7 @@ const permissions = {
     },
     canEdit(comment, type, obj, usObj) {
         return permissions.canReply(type, obj, usObj) &&
-            comment.user.equals(usObj.user._id) && comment.stamp > (Date.now() - dayMS) ;
+            comment.user.equals(usObj.user._id) && comment.stamp > (Date.now() - dayMS);
     }
 };
 
@@ -93,7 +93,7 @@ function commentsTreeBuildAnonym(comments, usersHash) {
     }
 
     return tree;
-};
+}
 
 async function commentsTreeBuildAuth(myId, comments, previousViewStamp, canReply) {
     const dayAgo = Date.now() - dayMS;
@@ -213,7 +213,7 @@ async function commentsTreeBuildAuth(myId, comments, previousViewStamp, canReply
     }
 
     return { tree: commentsTree, users: usersByLogin, countTotal, countNew };
-};
+}
 
 async function commentsTreeBuildCanModerate(myId, comments, previousViewStamp) {
     const commentsMap = new Map();
@@ -272,7 +272,7 @@ async function commentsTreeBuildCanModerate(myId, comments, previousViewStamp) {
     }
 
     return { tree: commentsTree, users: usersByLogin, countTotal, countNew };
-};
+}
 
 async function commentsTreeBuildDel(comment, childs, checkMyId) {
     const commentsMap = new Map();
@@ -281,7 +281,7 @@ async function commentsTreeBuildDel(comment, childs, checkMyId) {
     // Determine if user is able to see comment branch.
     // If checkMyId is not passed - can,
     // if passed, we will determine if user is author of one of removed comment in the requested branch
-    let canSee = checkMyId ? false : true;
+    let canSee = Boolean(checkMyId);
 
     // Firstly process removed parent, which was requested
     comment.user = String(comment.user);
@@ -339,7 +339,7 @@ async function commentsTreeBuildDel(comment, childs, checkMyId) {
     }
 
     return { tree: [comment], users: usersByLogin };
-};
+}
 
 // Prepare users hash for comments
 async function getUsersHashForComments(usersSet) {
@@ -481,7 +481,7 @@ async function giveForObj(data) {
     result.cid = data.cid;
 
     return result;
-};
+}
 
 // Select branch of removed comments starting from requested
 async function giveDelTree({ cid, type = 'photo' }) {
@@ -527,7 +527,7 @@ async function giveDelTree({ cid, type = 'photo' }) {
     );
 
     return { comments: commentsTree.tree, users: commentsTree.users, cid };
-};
+}
 
 // Select comment of user
 const photosFields = { _id: 1, cid: 1, title: 1, file: 1, y: 1 };
@@ -629,7 +629,7 @@ async function giveForUser({ login, page = 1, type = 'photo' }) {
         comments: commentsArrResult,
         objs: objFormattedHashCid
     };
-};
+}
 
 // Take comments
 const getComments = (function () {
@@ -712,10 +712,10 @@ const giveForFeed = (function () {
             (!params.limit || params.limit === globalOptions.limit)) {
             // User without region and types filter will get memozed result for global selection
             return globalFeed();
-        } else {
-            const query = Object.assign({ s: 5, del: null }, iAm.rquery, iAm.photoFilterQuery);
-            return getComments(iAm, query, params);
         }
+
+        const query = Object.assign({ s: 5, del: null }, iAm.rquery, iAm.photoFilterQuery);
+        return getComments(iAm, query, params);
     };
 }());
 
@@ -821,7 +821,7 @@ async function create(data) {
     subscrController.commentAdded(obj._id, iAm.user, stamp);
 
     return { comment, frag };
-};
+}
 
 /**
  * Remove comment and its children
@@ -831,7 +831,7 @@ async function remove(data) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered) {
-        new AuthorizationError();
+        throw new AuthorizationError();
     }
     if (!_.isObject(data) || !Number(data.cid) || !data.reason || (!Number(data.reason.cid) && !data.reason.desc)) {
         throw new BadParamsError();
@@ -1001,7 +1001,7 @@ async function remove(data) {
         countComments: countCommentsRemoved,
         myCountComments: usersCountMap.get(String(iAm.user._id)) || 0 // Number of my removed comments
     };
-};
+}
 
 // Restore comment and its descendants
 async function restore({ cid, type }) {
@@ -1162,7 +1162,7 @@ async function restore({ cid, type }) {
         countComments: countCommentsRestored,
         myCountComments: usersCountMap.has(String(iAm.user._id))
     };
-};
+}
 
 // Edit comment
 async function update(data) {
@@ -1273,7 +1273,7 @@ async function update(data) {
     }
 
     return { comment: comment.toObject({ transform: commentDeleteHist }), frag: fragRecieved };
-};
+}
 function commentDeleteHist(doc, ret/* , options */) {
     delete ret.hist;
 }
@@ -1383,7 +1383,7 @@ async function giveHist({ cid, type = 'photo' }) {
     }
 
     return { hists: result };
-};
+}
 
 // Toggle ability to write comments for object (except administrators)
 async function setNoComments({ cid, type = 'photo', val: nocomments }) {
@@ -1427,7 +1427,7 @@ async function setNoComments({ cid, type = 'photo', val: nocomments }) {
     }
 
     return { nocomments: obj.nocomments };
-};
+}
 
 export async function changeObjCommentsStatus({ obj: { _id: objId, s } }) {
     const { n: count = 0 } = await Comment.update({ obj: objId }, { $set: { s } }, { multi: true }).exec();

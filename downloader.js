@@ -158,7 +158,7 @@ export async function configure(startStamp) {
      * Check if protected files can be served by upper level (nginx/proxy)
      */
     const counters = { all: 0, ok: 0, fail: 0 };
-    const protectedServePattern = /^\/_pr?\/([\/a-z0-9]{26,40}\.(?:jpe?g|png)).*$/i;
+    const protectedServePattern = /^\/_pr?\/([/a-z0-9]{26,40}\.(?:jpe?g|png)).*$/i;
     const protectedHandler = (function () {
         // Session key in client cookies
         const SESSION_COOKIE_KEY = 'past.sid';
@@ -215,7 +215,7 @@ export async function configure(startStamp) {
             }
 
             // If coresponding cid has been found, select session and photo from persistent storage (mongo)
-            const { result, mime } = await core.request({ sid, method: 'photo.giveCanProtected', params: { cid }});
+            const { result, mime } = await core.request({ sid, method: 'photo.giveCanProtected', params: { cid } });
 
             if (!result) {
                 throw new NotFoundError({ sid });
@@ -255,7 +255,7 @@ export async function configure(startStamp) {
                 res.statusCode = 303;
                 res.setHeader('Location', `/${filePath}`);
                 counters.ok++;
-            } catch(error) {
+            } catch (error) {
                 counters.fail++;
                 let { referer = '' } = req.headers;
                 let { details: { sid = '' } = {} } = error;
@@ -312,4 +312,4 @@ export async function configure(startStamp) {
 
             scheduleMemInfo(startStamp - Date.now());
         });
-};
+}

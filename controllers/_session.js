@@ -11,7 +11,7 @@ import { userSettingsDef, clientParams } from './settings';
 import { Session, SessionArchive } from '../models/Sessions';
 import { User } from '../models/User';
 import constantsError from '../app/errors/constants';
-import { ApplicationError, BadParamsError, NotFoundError, TimeoutError } from '../app/errors';
+import { ApplicationError, BadParamsError, NotFoundError/*, TimeoutError*/ } from '../app/errors';
 
 const logger = log4js.getLogger('session');
 const SESSION_COOKIE_KEY = 'past.sid'; // Session key in client cookies
@@ -145,7 +145,7 @@ function emitSocket({ socket, data, waitResponse = false, timeout = 10000 }) {
             let overdue = false;
             const overdueTimeout = setTimeout(() => {
                 overdue = true;
-                resolve({data: []});
+                resolve({ data: [] });
                 // Replace with next when all clients are updated
                 // reject(new TimeoutError({ timeout, data }));
             }, timeout);
@@ -164,9 +164,9 @@ function emitSocket({ socket, data, waitResponse = false, timeout = 10000 }) {
                 }
             });
         });
-    } else {
-        socket.emit(...data);
     }
+
+    socket.emit(...data);
 }
 
 // Send command to all session's sockets
@@ -301,7 +301,7 @@ async function createSession(ip, headers, browser) {
         }
     });
 
-    return await session.save();
+    return session.save();
 }
 
 // Update session in db, if it was select from db at entrance
@@ -341,7 +341,7 @@ async function updateSession(session, ip, headers, browser) {
     data.headers = headers;
     session.markModified('data');
 
-    return await session.save();
+    return session.save();
 }
 
 // Create session as copy from transfered session (ip, header, agent)
@@ -488,7 +488,7 @@ export async function regetUser(usObj, emitHim, excludeSocket) {
     }
 
     return user;
-};
+}
 
 // Reget online users from db and populate all dependencies. Replace links in hashes with this new objects
 // Receive 'all' or filter function
@@ -819,7 +819,7 @@ export async function handleConnection(ip, headers, overHTTP, req) {
     }
 
     return { usObj, session, browser, cookie: cookieObj };
-};
+}
 
 
 // Try to get session
@@ -839,9 +839,7 @@ export async function getSessionLight({ sid }) {
                     const session = await Session.findOne({ key: sid }).populate('user').exec();
 
                     if (!session) {
-                        reject(new ApplicationError({
-                            code: constantsError.SESSION_NOT_FOUND, trace: false
-                        }, this.rid));
+                        reject(new ApplicationError({ code: constantsError.SESSION_NOT_FOUND, trace: false }, this.rid));
                     }
 
                     const usObj = await addSessionToHashes.call(this, session);

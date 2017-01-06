@@ -258,7 +258,7 @@ define(['module'], function (/* module */) {
                     var acknowledgementCallbackOrigin = _.last(arguments);
 
                     if (_.isFunction(acknowledgementCallbackOrigin)) {
-                        acknowledgementCallbackCallResult = {data: []};
+                        acknowledgementCallbackCallResult = { data: [] };
                         acknowledgementCallback = function () {
                             acknowledgementCallbackCallResult.data = acknowledgementCallbackCallResult.data.concat(_.toArray(arguments));
                         };

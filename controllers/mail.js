@@ -61,7 +61,7 @@ export async function send(options) {
         logger.error(err);
         throw new ApplicationError(constantsError.MAIL_SEND);
     }
-};
+}
 
 export const ready = new Promise((resolve, reject) => {
     const options = {};

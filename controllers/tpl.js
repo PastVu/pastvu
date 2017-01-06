@@ -19,4 +19,4 @@ export function loadController(app) {
             res.sendStatus(404);
         }
     });
-};
+}

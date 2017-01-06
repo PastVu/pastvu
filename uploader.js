@@ -92,7 +92,7 @@ export function configure(startStamp) {
             return;
         }
 
-        return await new Promise(resolve => {
+        return new Promise(resolve => {
             gm(fileInfo.path).size(function (err, size) {
                 if (err || !size) {
                     logger.error('GM size error:', err);
@@ -123,7 +123,7 @@ export function configure(startStamp) {
             return;
         }
 
-        return await new Promise(resolve => {
+        return new Promise(resolve => {
             gm(fileInfo.path).size(function (err, size) {
                 if (err || !size) {
                     logger.error('GM avatar size error:', err);
