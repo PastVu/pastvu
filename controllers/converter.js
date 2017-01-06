@@ -349,7 +349,7 @@ function getWatertext(photo) {
  * @param photo Photo object
  */
 async function conveyorStep(photo, { protect: onlyProtectPublic = false, webpOnly = false }) {
-    const itsPublicPhoto = photo.s === status.PUBLIC;
+    let itsPublicPhoto = photo.s === status.PUBLIC;
     const wasPublished = photo.s >= status.PUBLIC;
     const waterTxt = getWatertext(photo);
     const { cid } = photo;
@@ -374,14 +374,15 @@ async function conveyorStep(photo, { protect: onlyProtectPublic = false, webpOnl
             waterTxt,
             protectCover: !itsPublicPhoto || onlyProtectPublic
         });
+
+        // Check again that photo is public to avoid race condition if photo's status was changed during conveyorSubStep
+        const photoForCurrentStatus = await Photo.findOne({ cid: photo.cid }, {s: 1}).exec();
+        itsPublicPhoto = photoForCurrentStatus.s === status.PUBLIC;
+
         // If photo is not public anymore, try to delete its files from public folder
-        // if (!itsPublicPhoto) {
-        //     await deletePhotoFiles({ photo });
-        // }
-    }
-    // Temporary to delete all not public photos from /_p/
-    if (!itsPublicPhoto) {
-        await deletePhotoFiles({ photo });
+        if (!itsPublicPhoto) {
+            await deletePhotoFiles({ photo });
+        }
     }
 
     // And we also convert to protected folder if photo is not public
@@ -587,7 +588,7 @@ export async function movePhotoFiles({ photo, copy = false, toProtected = false 
         ]);
     }));
 
-    // If we copy/move files to public folder, we must get signuture again and fill anticache param in file property
+    // If we copy/move files to public folder, we must get signature again and fill anticache param in file property
     if (!toProtected) {
         await sleep(50);
 

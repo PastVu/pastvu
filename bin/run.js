@@ -58,7 +58,7 @@ if (require.main !== module) { // If run.js is required by another module (for e
     mkdirp.sync(logPath);
     log4js.configure('./log4js.json', { cwd: logPath });
     if (env === 'development') {
-        log4js.addAppender(log4js.appenders.console()); // In dev write all logs also to the console
+        log4js.addAppender(log4js.appenders.stdout()); // In dev write all logs also to the terminal
     }
 
     const appName = path.parse(argv.script).name;

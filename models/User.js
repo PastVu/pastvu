@@ -89,7 +89,7 @@ registerModel(db => {
     });
 
     // Before every save generate hash and salt with Blowfish, if password changed
-    UserScheme.pre('save', function (next) {
+    UserScheme.pre('save', async function (next) {
         const user = this;
 
         // only hash the password if it has been modified (or is new)
@@ -97,36 +97,23 @@ registerModel(db => {
             return next();
         }
 
-        // Generate a salt
-        bcrypt.genSalt(SALT_ROUNDS, SALT_SEED, function (err, salt) {
-            if (err) {
-                return next(err);
-            }
-
+        try {
+            // Generate salt
+            const salt = await bcrypt.genSalt(SALT_ROUNDS, SALT_SEED);
             // Hash the password along with our new salt
-            bcrypt.hash(user.pass, salt, function (err, hash) {
-                if (err) {
-                    return next(err);
-                }
+            const hash = await bcrypt.hash(user.pass, salt);
 
-                // Override the cleartext password with the hashed one
-                user.pass = hash;
-                next();
-            });
-        });
+            // Override the cleartext password with the hashed one
+            user.pass = hash;
+            next();
+        } catch (err) {
+            next(err);
+        }
     });
 
     // Checks if pass is right for current user
     UserScheme.methods.checkPass = function (candidatePassword) {
-        return new Promise((resolve, reject) => {
-            bcrypt.compare(candidatePassword, this.pass, (err, isMatch) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(isMatch);
-                }
-            });
-        });
+        return bcrypt.compare(candidatePassword, this.pass);
     };
 
     UserScheme.virtual('isLocked').get(function () {

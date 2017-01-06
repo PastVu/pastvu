@@ -164,7 +164,7 @@ require([
         }
     };
 
-    moment.lang('en');
+    moment.locale('en');
 
     $('body').append(html);
     ko.applyBindings(globalVM);
