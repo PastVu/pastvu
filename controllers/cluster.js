@@ -148,7 +148,7 @@ async function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, isPainting
  */
 export async function clusterPhoto({ photo, geoPhotoOld, yearPhotoOld, isPainting }) {
     if (!photo.year) {
-        throw BadParamsError();
+        throw new BadParamsError();
     }
 
     let g; // Coordinates of top left corner of cluster for new coordinates
@@ -227,7 +227,7 @@ export async function clusterPhoto({ photo, geoPhotoOld, yearPhotoOld, isPaintin
  */
 export function declusterPhoto({ photo, isPainting }) {
     if (!Utils.geo.check(photo.geo) || !photo.year) {
-        throw BadParamsError();
+        throw new BadParamsError();
     }
 
     const geoPhoto = photo.geo;
