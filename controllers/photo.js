@@ -1031,10 +1031,14 @@ const changeFileProtection = async function ({ photo, protect = false }) {
     try {
         await converter.movePhotoFiles({ photo, copy: protect, toProtected: protect });
     } catch (err) {
-        logger.warn(`${this.ridMark} Copying/moving of files in changing protection failed:`, err.message);
+        logger.warn(
+            `${this.ridMark} Copying/moving of files in changing protection failed: ${err.message}.`,
+            'Trying to recreate files with right status from original file'
+        );
 
         // If copying/moving files failed for some reason, simply add converter job to create variants in actual folder
-        await converter.addPhotos([photo], 2);
+        await converter.addPhotos([photo], 2)
+            .catch(err => logger.warn(`${this.ridMark} Failed to add photo to recreate it from original:`, err));
 
         if (!protect) {
             // And if this is moving from protected to public, try to remove all files from protected whatever happens
@@ -1044,14 +1048,15 @@ const changeFileProtection = async function ({ photo, protect = false }) {
 
     // Change redis cache state of this photo
     await changePhotoInNotpablicCache({ photo, add: protect })
-        .catch(error => logger.warn(`${this.ridMark} Changing photo state in redis not public cache failed.`, error));
+        .catch(err => logger.warn(`${this.ridMark} Changing photo state in redis not public cache failed:`, err));
 
     if (protect) {
         // Cover all public files with caption for not public photo.
         // And here public files will be removed after covered ones were created, to avoid gap between files existance
-        await converter.addPhotos([photo], 2, true);
+        await converter.addPhotos([photo], 2, true)
+            .catch(err => logger.warn(`${this.ridMark} Failed to add photo to converter to cover with caption:`, err));
     } else {
-        // Delete covered files if photo has got public files
+        // Delete covered files if photo has got public files. Never fails, just tries for each variant
         await converter.deletePhotoFiles({ photo, fromCovered: true });
     }
 };
@@ -1064,7 +1069,7 @@ const changePublicExternality = async function ({ photo, makePublic }) {
         Utils.geo.check(photo.geo) ? this.call(makePublic ? 'photo.photoToMap' : 'photo.photoFromMap', {
             photo, paintingMap: photo.type === constants.photo.type.PAINTING
         }) : null,
-        changeFileProtection({ photo, protect: !makePublic })
+        this.call('photo.changeFileProtection', {  photo, protect: !makePublic }),
     ]);
 };
 
@@ -1218,7 +1223,7 @@ async function approve(data) {
     // Save previous status to history
     await this.call('photo.saveHistory', { oldPhotoObj, photo, canModerate });
 
-    changeFileProtection({ photo, protect: false });
+    this.call('photo.changeFileProtection', {  photo, protect: false });
 
     // Reselect the data to display
     return this.call('photo.give', { cid: photo.cid, rel });
@@ -2953,6 +2958,7 @@ export default {
     prefetchForEdit,
     givePrevNextCids,
     giveCanProtected,
+    changeFileProtection,
     changePublicExternality,
     fillPhotosProtection,
     putProtectedFileAccessCache,
