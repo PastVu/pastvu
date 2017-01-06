@@ -67,10 +67,18 @@
     "devDependencies": {
         "babel-core": "6.21.0",
         "babel-eslint": "6.1.0",
+        "babel-plugin-syntax-trailing-function-commas": "6.20.0",
+        "babel-plugin-transform-async-to-generator": "6.16.0",
+        "babel-plugin-transform-async-generator-functions": "6.17.0",
+        "babel-plugin-transform-class-constructor-call": "6.18.0",
+        "babel-plugin-transform-class-properties": "6.18.0",
+        "babel-plugin-transform-export-extensions": "6.8.0",
+        "babel-plugin-transform-es2015-modules-commonjs": "6.18.0",
+        "babel-plugin-transform-es2015-destructuring": "6.18.0",
+        "babel-plugin-transform-es2015-parameters": "6.18.0",
+        "babel-plugin-transform-object-rest-spread": "6.20.1",
         "babel-plugin-transform-runtime": "6.15.0",
-        "babel-preset-es2015-node6": "0.4.0",
-        "babel-preset-stage-1": "6.16.0",
-        "babel-preset-latest": "6.16.0",
+
         "grunt-babel": "6.0.0",
 
         "gulp-util": "3.0.8",
@@ -95,6 +103,6 @@
         "eslint": "2.13.1"
     },
     "engines": {
-        "node": "^6.5.0"
+        "node": "^7.3.0"
     }
 }
