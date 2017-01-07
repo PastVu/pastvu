@@ -36,6 +36,7 @@ define([
 
             this.photos = ko.observableArray();
             this.feed = ko.observable(false);
+            this.coin = ko.observable(false);
 
             this.count = ko.observable(0);
             this.limit = 30; //Стараемся подобрать кол-во, чтобы выводилось по-строчного. Самое популярное - 6 на строку
@@ -130,7 +131,7 @@ define([
                 return result;
             }, this);
             this.paginationShow = this.co.paginationShow = ko.computed(function () {
-                return !this.feed() && this.pageLast() > 1;
+                return !this.feed() && !this.coin() && this.pageLast() > 1;
             }, this);
 
             this.briefText = this.co.briefText = ko.computed(function () {
@@ -138,7 +139,7 @@ define([
                 var txt = '';
 
                 if (count) {
-                    if (this.feed()) {
+                    if (this.feed() || this.coin()) {
                         txt = 'Всего ' + count + ' фотографий';
                     } else {
                         txt = 'Показаны ' + this.pageFirstItem() + '&ndash;' + this.pageLastItem() + ' из ' + count;
@@ -241,34 +242,53 @@ define([
             }
 
             if (page === 'feed') {
-                page = 1;
-                this.feed(true);
-                this.scrollActivate();
                 if (this.u) {
                     Utils.title.setTitle({ pre: preTitle + 'Лента изображений - ' });
                 } else {
                     Utils.title.setTitle({ title: preTitle + 'Лента всех изображений' });
                 }
-                if (this.page() === 1 && currPhotoLength && currPhotoLength <= this.limit) {
+
+                if (!this.coin() && this.page() === 1 && currPhotoLength && currPhotoLength <= this.limit) {
                     needRecieve = false; //Если переключаемся на ленту с первой заполненной страницы, то оставляем её данные
                 } else {
                     this.photos([]);
                 }
-            } else {
-                page = Math.abs(Number(page)) || 1;
+
+                page = 1;
+                this.coin(false);
+                this.feed(true);
+                this.scrollActivate();
+            } else if (page === 'coin') {
+                if (this.u) {
+                    // Users gallery can't have random gallery due to some mongodb indexes problem
+                    globalVM.router.navigate(this.pageUrl() + this.pageQuery());
+                    return;
+                }
+
+                Utils.title.setTitle({ title: preTitle + 'Случайные изображения' });
+
+                page = 1;
                 this.feed(false);
                 this.scrollDeActivate();
+                this.coin(true);
+            } else {
                 if (this.u) {
                     Utils.title.setTitle({ pre: preTitle + 'Галерея - ' });
                 } else {
                     Utils.title.setTitle({ title: preTitle + 'Галерея' });
                 }
-                if (page === 1 && this.page() === 1 && currPhotoLength) {
+
+                if (!this.coin() && page === 1 && this.page() === 1 && currPhotoLength) {
                     needRecieve = false; //Если переключаемся на страницы с ленты, то оставляем её данные для первой страницы
                     if (currPhotoLength > this.limit) {
                         this.photos.splice(this.limit);
                     }
                 }
+
+                page = Math.abs(Number(page)) || 1;
+                this.coin(false);
+                this.feed(false);
+                this.scrollDeActivate();
             }
             this.page(page);
 
@@ -438,6 +458,21 @@ define([
         feedSelect: function (feed) {
             globalVM.router.navigate(this.pageUrl() + (feed ? '/feed' : '') + this.pageQuery());
         },
+        modeSelect: function (mode) {
+            var modifier = '';
+
+            switch (mode) {
+                case 2:
+                    modifier = '/feed';
+                    break;
+                case 3:
+                    modifier = '/coin';
+                    break;
+                // no default
+            }
+
+            globalVM.router.navigate(this.pageUrl() + modifier + this.pageQuery());
+        },
         scrollActivate: function () {
             if (!this.scrollActive) {
                 $window.on('scroll', this.scrollHandler);
@@ -455,6 +490,8 @@ define([
             if (this.feed()) {
                 //В режиме ленты перезапрашиваем всё
                 this.getPhotos(0, Math.max(this.photos().length, this.limit), null, null, true);
+            } else if (this.coin()) {
+                this.getPhotos(0, this.limit, null, null, true);
             } else {
                 //В постраничном режиме просто перезапрашиваем страницу
                 this.getPhotos((this.page() - 1) * this.limit, this.limit);
@@ -505,6 +542,10 @@ define([
 
             if (this.u) {
                 params.login = this.u.login();
+            }
+
+            if (this.coin()) {
+                params.random = true;
             }
 
             socket.run(this.u ? 'photo.giveUserGallery' : 'photo.givePS', params, true)

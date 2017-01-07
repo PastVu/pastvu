@@ -69,16 +69,25 @@
                 span.brief(data-bind="html: briefText")
                 //ko if: photos().length
                 .btn-group
-                    button.btn.btn-primary(title="Постранично", data-bind="click: function () {feedSelect(false)}, css: {active: !feed()}")
+                    button.btn.btn-primary(title="Постранично", data-bind="click: function () {modeSelect(1)}, css: {active: !feed() && !coin()}")
                         span.glyphicon.glyphicon-book
-                    button.btn.btn-primary(title="Лента", data-bind="click: function () {feedSelect(true)}, css: {active: feed()}")
+                    button.btn.btn-primary(title="Лента", data-bind="click: function () {modeSelect(2)}, css: {active: feed()}")
                         span.glyphicon.glyphicon-th-list
+                    //ko if: !u
+                    button.btn.btn-primary(title="Монета", data-bind="click: function () {modeSelect(3)}, css: {active: coin()}")
+                        span.glyphicon.glyphicon-adjust
+                    // /ko
                 // /ko
             .clearfix.hidden-lg
             .col-xs-12.col-lg-4.col-lg-pull-4.pag(data-bind="css: {loading: !feed() && loading(), hasPag: paginationShow()}")
                 //ko if: paginationShow()
                 //ko template: {name: 'photoPagerTpl'}
                 // /ko
+                // /ko
+                //ko if: coin()
+                button.btn.btn-sm.btn-primary(type="button", title="Подбросить монетку", data-bind="click: refreshPhotos", style="margin-top: 1px;")
+                    span.glyphicon.glyphicon-refresh
+                    |  Подбросить монетку
                 // /ko
 
         //ko if: u && canAdd()

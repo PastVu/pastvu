@@ -587,6 +587,7 @@ async function create({ files }) {
             mime: item.mime,
             size: item.size,
             geo: undefined,
+            r2d: [Math.random() * 100, Math.random() * 100],
             title: item.name ? item.name.replace(/(.*)\.[^.]+$/, '$1') : undefined, // Cut off file extension
             frags: undefined,
             watersignText: getUserWaterSign(user),
@@ -1372,13 +1373,13 @@ async function givePrevNextCids({ cid }) {
  * @param filter Filter object (parsed)
  * @param userId _id of user, if we need gallery by user
  */
-async function givePhotos({ filter, options: { skip = 0, limit = 40, customQuery }, userId }) {
+async function givePhotos({ filter, options: { skip = 0, limit = 40, random = false, customQuery }, userId }) {
     const { handshake: { usObj: iAm } } = this;
 
     skip = Math.abs(Number(skip)) || 0;
     limit = Math.min(Math.abs(Number(limit)), 100) || 40;
 
-    const buildQueryResult = buildPhotosQuery(filter, userId, iAm);
+    const buildQueryResult = buildPhotosQuery(filter, userId, iAm, random);
     const { query } = buildQueryResult;
 
     let shortRegionsHash;
@@ -1404,10 +1405,21 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40, customQuery
         // To calculate new comments we need '_id', for checking of changes - 'ucdate'
         const fieldsSelect = iAm.registered ? compactFieldsForRegWithRegions : compactFieldsWithRegions;
 
-        [photos, count] = await Promise.all([
-            Photo.find(query, fieldsSelect, { lean: true, skip, limit, sort: { sdate: -1 } }).exec(),
-            Photo.count(query).exec()
-        ]);
+        if (random) {
+            const countQuery = { ...query };
+            delete countQuery.r2d; // Don't need to to consider random field in counting
+
+            [photos, count] = await Promise.all([
+                Photo.find(query, fieldsSelect, { lean: true, limit }).exec(),
+                Photo.count(countQuery).exec()
+            ]);
+        } else {
+            [photos, count] = await Promise.all([
+                Photo.find(query, fieldsSelect, { lean: true, skip, limit, sort: { sdate: -1 } }).exec(),
+                Photo.count(query).exec()
+            ]);
+        }
+
 
         if (photos.length) {
             if (iAm.registered) {
@@ -2508,7 +2520,7 @@ async function resetIndividualDownloadOrigin({ login, r }) {
  * @param forUserId
  * @param iAm Session object of user
  */
-export function buildPhotosQuery(filter, forUserId, iAm) {
+export function buildPhotosQuery(filter, forUserId, iAm, random) {
     let query; // Result query
     let queryPub; // Request within the public regions
     let queryMod; // Request within the moderated regions
@@ -2717,6 +2729,14 @@ export function buildPhotosQuery(filter, forUserId, iAm) {
         if (types) {
             result.types = types;
         }
+    }
+
+    if (random) {
+        if (!query) {
+            query = {};
+        }
+
+        query.r2d = { $near: [Math.random() * 100, Math.random() * 100] };
     }
 
     if (query) {
