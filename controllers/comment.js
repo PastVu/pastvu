@@ -281,7 +281,7 @@ async function commentsTreeBuildDel(comment, childs, checkMyId) {
     // Determine if user is able to see comment branch.
     // If checkMyId is not passed - can,
     // if passed, we will determine if user is author of one of removed comment in the requested branch
-    let canSee = Boolean(checkMyId);
+    let canSee = !checkMyId;
 
     // Firstly process removed parent, which was requested
     comment.user = String(comment.user);
