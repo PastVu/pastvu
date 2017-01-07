@@ -13,4 +13,5 @@ Disallow: /u/*/settings
 Disallow: /admin
 Disallow: /confirm
 Disallow: /ps/feed
+Disallow: /ps/coin
 Disallow: /photoUpload

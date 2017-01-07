@@ -47,6 +47,9 @@ const PhotoSchema = new Schema({
     // Coordinates, [lng, lat]
     geo: { type: [Number], index: '2d' },
 
+    // Randomize selection if needed (gallery flip coin mode)
+    r2d: { type: [Number], index: '2d' },
+
     // Нельзя сделать array вхождений в регионы, так как индекс по массивам не эффективен
     // http://docs.mongodb.org/manual/faq/indexes/#can-i-use-a-multi-key-index-to-support-a-query-for-a-whole-array
     // Поэтому делаем избыточные поля на каждый уровень региона, со sparse индексом
@@ -112,6 +115,7 @@ const PhotoSchema = new Schema({
 // In the main collection if photo do indexing to select on the map by year
 // Compound index http://docs.mongodb.org/manual/core/geospatial-indexes/#compound-geospatial-indexes
 PhotoSchema.index({ geo: '2d', year: 1 });
+PhotoSchema.index({ r2d: '2d', s: 1 });
 PhotoSchema.index({ r0: 1, sdate: 1 });
 PhotoSchema.index({ r1: 1, sdate: 1 });
 PhotoSchema.index({ r2: 1, sdate: 1 });
