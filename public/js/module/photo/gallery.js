@@ -85,7 +85,10 @@ define([
                         }
                         return [];
                     }, this)
-                }
+                },
+                admin: ko.computed(function () {
+                    return this.auth.loggedIn() && this.auth.iAm.role() >= 10;
+                }, this)
             };
             this.subscriptions.filter_disp_r = this.filter.disp.r.subscribe(this.filterChangeHandle, this);
             this.subscriptions.filter_disp_s = this.filter.disp.s.subscribe(this.filterChangeHandle, this);
