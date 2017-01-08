@@ -23,6 +23,11 @@
                                 //ko foreach: filter.disp.r
                                 span.region.candis(data-bind="css: {dis: $parent._.includes($parent.filter.disp.rdis(), $data.cid)}")
                                     span(data-bind="text: $data.title_local")
+                                    //ko if: $parent.filter.admin()
+                                    .rtgl.edit(title="Перейти в редактирование региона")
+                                        a(data-bind="attr: {href: '/admin/region/' + $data.cid}")
+                                            span.glyphicon.glyphicon-pencil
+                                    // /ko
                                     .rtgl.only(title="Оставить активным только этот регион", data-bind="click: function() {$parent.fronly($data.cid);}")
                                         span.glyphicon.glyphicon-ok
                                     .rtgl.dis(title="Переключить активность этого региона", data-bind="click: function() {$parent.frdis($data.cid);}")
