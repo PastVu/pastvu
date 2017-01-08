@@ -96,8 +96,8 @@ define([
 
             if (reallyHL) {
                 window.setTimeout(function () {
-                    $(window).scrollTo(this.$dom.find('.lirow.hl'), 400);
-                }.bind(this), 700);
+                    $(window).scrollTo(this.$dom.find('.lirow.hl'), { offset: -P.window.head - 8, duration: 400 });
+                }.bind(this), 100);
             }
 
             return results;

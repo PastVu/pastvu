@@ -3,10 +3,17 @@
     form.form-horizontal(action='', autocomplete="off", method='POST', data-bind="event: {submit: save}")
         .form-group
             label.col-xs-4.col-sm-3.col-lg-2.control-label Title
-            .col-xs-3.col-sm-2
+            .col-xs-2.col-sm-2
                 input.form-control(type='text', data-bind="value: region.title_en, valueUpdate: 'keyup'", placeholder="(EN) English", required="required", autocorrect="off", autocapitalize="off")
-            .col-xs-3.col-sm-2
+            .col-xs-2.col-sm-2
                 input.form-control(type='text', data-bind="value: region.title_local, valueUpdate: 'keyup'", placeholder="(RU) Russian", autocorrect="off", autocapitalize="off")
+            //ko if: !createMode()
+            .col-xs-2.col-sm-2(style="padding: 1px 0 0 4px;")
+                a.btn.btn-sm.btn-primary(type="button", title="Show in regions tree", data-bind="attr: {href: '/admin/region?hl=' + region.cid()}")
+                    span.glyphicon.glyphicon-indent-left
+                a.btn.btn-sm.btn-primary(type="button", title="Jump te region's gallery", data-bind="attr: {href: '/ps?f=r!' + region.cid()}")
+                    span.glyphicon.glyphicon-th
+            // /ko
         //ko if: !createMode()
         .form-group
             label.col-xs-4.col-sm-3.col-lg-2.control-label
@@ -25,8 +32,6 @@
                     // /ko
                     | ; Vertex count:
                     strong(data-bind="text: ' ' + (formatNum(region.pointsnum() - region.polynum.exterior() - region.polynum.interior()))")
-                    | ;&nbsp;
-                    a(data-bind="attr: {href: '/admin/region?hl=' + region.cid()}") Show in regions tree
         // /ko
         .form-group
             label.col-xs-4.col-sm-3.col-lg-2.control-label Parent region
