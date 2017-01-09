@@ -23,15 +23,40 @@
 		margin-top: 8px;
 	}
 
-	.regions {
+	.path {
 		.current {
 			color: #0ea300;
 			cursor: default;
 		}
 	}
-	.childs {
-		margin: 2px 0 8px;
+	.children {
+        display: inline-block;
+        width: 100%;
+        line-height: 19px;
+        vertical-align: middle;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+
+        &.more {
+            width: calc(~'100% - 50px');
+        }
+
+        &.expanded {
+            white-space: normal;
+            text-overflow: clip;
+        }
 	}
+    .expand {
+        cursor: pointer;
+        vertical-align: middle;
+
+        > .glyphicon {
+            top: 0;
+            color: #7b7b7b;
+            font-size: 10px;
+        }
+    }
 
 	.dopparam {
 		display: inline-block;
