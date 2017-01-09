@@ -182,6 +182,13 @@ define([
         },
         //Пересчитывает размер карты
         sizesCalc: function (square) {
+            this.mapCalc();
+
+            if (square) {
+                this.childrenCalc();
+            }
+        },
+        mapCalc: function () {
             var height = P.window.h() - this.$dom.find('.map').offset().top - 37 >> 0;
 
             this.mh(height + 'px');
@@ -189,9 +196,6 @@ define([
                 this.map.whenReady(this.map._onResize, this.map); //Самостоятельно обновляем размеры карты
             }
 
-            if (square) {
-                this.childrenCalc();
-            }
         },
         childrenCalc: function () {
             var $children = this.$dom.find('.children');
@@ -425,6 +429,7 @@ define([
         childrenExpandToggle: function () {
             if (this.childrenExpand()) {
                 this.childrenExpand(this.childrenExpand() === 1 ? 2 : 1);
+                this.mapCalc();
                 Utils.setLocalStorage('region.childrenExpand', this.childrenExpand());
             }
         },
