@@ -383,7 +383,7 @@ export async function calcRegionsIncludes(cids) {
  * @param region Region object
  */
 async function getChildsLenByLevel(region) {
-    let level = _.size(region.parent); // Region level equals number of parent regions
+    let level = _.size(region.parents); // Region level equals number of parent regions
 
     if (level < maxRegionLevel) {
         // Find number of children by levels
