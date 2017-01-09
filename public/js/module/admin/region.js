@@ -555,8 +555,8 @@ define([
                         var geoChangePhotosCount;
 
                         if (resultStat && Object.keys(resultStat).length) {
-                            if (typeof resultStat.photosCountBeforeGeo === 'number' && typeof resultStat.photosCountAfterGeo === 'number') {
-                                geoChangePhotosCount = resultStat.photosCountAfterGeo - resultStat.photosCountBeforeGeo;
+                            if (typeof resultStat.photosCountBefore === 'number' && typeof resultStat.photosCountAfter === 'number') {
+                                geoChangePhotosCount = resultStat.photosCountAfter - resultStat.photosCountBefore;
 
                                 if (geoChangePhotosCount) {
                                     msg += '<br><b>' + Math.abs(geoChangePhotosCount) + '</b> фотографий ' + (geoChangePhotosCount > 0 ? 'добавлено в регион' : 'удалено из региона') + ' вследствии изменения коордиант поолигона.';
