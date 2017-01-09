@@ -501,7 +501,7 @@ define([
             }
         },
 
-        flipCoin() {
+        flipCoin: function () {
             ga('send', 'event', 'gallery', 'flipcoin');
             this.refreshPhotos();
         },
