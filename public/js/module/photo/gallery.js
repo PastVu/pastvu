@@ -466,12 +466,24 @@ define([
 
             switch (mode) {
                 case 2:
+                    if (this.feed()) {
+                        return;
+                    }
+                    ga('send', 'event', 'gallery', 'mode', 'feed');
                     modifier = '/feed';
                     break;
                 case 3:
+                    if (this.coin()) {
+                        return;
+                    }
+                    ga('send', 'event', 'gallery', 'mode', 'coin');
                     modifier = '/coin';
                     break;
-                // no default
+                default:
+                    if (!this.feed() && !this.coin()) {
+                        return;
+                    }
+                    ga('send', 'event', 'gallery', 'mode', 'page');
             }
 
             globalVM.router.navigate(this.pageUrl() + modifier + this.pageQuery());
@@ -489,6 +501,10 @@ define([
             }
         },
 
+        flipCoin() {
+            ga('send', 'event', 'gallery', 'flipcoin');
+            this.refreshPhotos();
+        },
         refreshPhotos: function () {
             if (this.feed()) {
                 //В режиме ленты перезапрашиваем всё
