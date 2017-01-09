@@ -1,6 +1,18 @@
 .adminRegion(data-bind="with: repository[M!M]")
-    h4(data-bind="text: createMode() ? 'Создание региона' : 'Редактирование региона'")
+    //ko if: createMode()
+    h4 Создание региона
+    // /ko
     form.form-horizontal(action='', autocomplete="off", method='POST', data-bind="event: {submit: save}")
+        //ko if: !createMode()
+        .form-group
+            label.col-xs-4.col-sm-3.col-lg-2.control-label Редактирование региона
+            .col-xs-8.col-sm-9.col-lg-10
+                p.form-control-static
+                    | Номер:
+                    strong(data-bind="text: ' ' + region.cid()")
+                    | ; Уровень:
+                    strong(data-bind="text: ' ' + (Number(haveParent()) ? region.parents().length + 1 : 1)")
+        // /ko
         .form-group
             label.col-xs-4.col-sm-3.col-lg-2.control-label Название
             .col-xs-2.col-sm-2
@@ -14,25 +26,6 @@
                 a.btn.btn-sm.btn-primary(type="button", title="Перейти в галерею региона", data-bind="attr: {href: '/ps?f=r!' + region.cid()}")
                     span.glyphicon.glyphicon-th
             // /ko
-        //ko if: !createMode()
-        .form-group
-            label.col-xs-4.col-sm-3.col-lg-2.control-label
-            .col-xs-8.col-sm-9.col-lg-10
-                p.form-control-static
-                    | Номер:
-                    strong(data-bind="text: ' ' + region.cid()")
-                    | ; Уровень:
-                    strong(data-bind="text: ' ' + (Number(haveParent()) ? region.parents().length + 1 : 1)")
-                    | ; Полигонов:
-                    strong(data-bind="text: ' ' + formatNum(region.polynum.exterior())")
-                    //ko if: region.polynum.interior()
-                    |  (+
-                    strong(data-bind="text: formatNum(region.polynum.interior())")
-                    |  выколотых)
-                    // /ko
-                    | ; Вершин:
-                    strong(data-bind="text: ' ' + (formatNum(region.pointsnum() - region.polynum.exterior() - region.polynum.interior()))")
-        // /ko
         .form-group
             label.col-xs-4.col-sm-3.col-lg-2.control-label Родительский регион
             .col-xs-6.col-sm-4
@@ -50,9 +43,9 @@
                     // /ko
         //ko if: region.parents().length || childLenArr().length
         .form-group
-            label.col-xs-4.col-sm-3.col-lg-2.control-label
+            label.col-xs-4.col-sm-3.col-lg-2.control-label Путь региона
             .col-xs-8.col-sm-9.col-lg-10
-                p.form-control-static.regions
+                p.form-control-static.path
                     //ko foreach: region.parents
                     a(data-bind="text: ' ' + $data.title_en(), attr: {href: '/admin/region/' + $data.cid()}")
                     | &nbsp;
@@ -67,6 +60,26 @@
                     span.glyphicon.glyphicon-play
                     span(data-bind="text: ' ' + $data")
                     // /ko
+        // /ko
+        //ko if: !createMode()
+        .form-group
+            label.col-xs-4.col-sm-3.col-lg-2.control-label Прямые потомки
+            .col-xs-8.col-sm-9.col-lg-10(style="padding-top: 2px")
+                span.children(data-bind="css: {more: childrenExpand() === 1, expanded: childrenExpand() === 2}")
+                    a(data-bind="attr: {href: '/admin/region/create?parent=' + region.cid()}") [+Добавить]
+                    //ko if: children().length
+                    = ' | '
+                    //ko foreach: children
+                    | <!--ko if: $index()-->, <!-- /ko -->
+                    a(data-bind="text: $data.title_local, attr: {href: '/admin/region/' + $data.cid}")
+                    // /ko
+                    // /ko
+                //ko if: childrenExpand()
+                | <!--ko if: childrenExpand() === 1-->, <!-- /ko -->
+                span.expand(data-bind="click: childrenExpandToggle")
+                    span.glyphicon(data-bind="css: {'glyphicon-chevron-right': childrenExpand() === 1, 'glyphicon-chevron-up': childrenExpand() === 2}")
+                    span(data-bind="text: childrenExpand() === 1 ? 'Еще' : 'Свернуть'")
+                // /ko
         // /ko
         .form-group
             label.col-xs-4.col-sm-3.col-lg-2.control-label Доп. параметры
@@ -92,12 +105,24 @@
                     //ko if: !bboxAuto()
                     input.form-control.input-sm.bbox(type="text", data-bind="bboxhomeInput: true, attr: {readonly: bboxAuto()}, css: {invalid: !bboxAuto() && !bboxhomeValid()}", placeholder="Не задан")
                     // /ko
+        //ko if: !createMode() && showGeo()
+        .form-group
+            label.col-xs-4.col-sm-3.col-lg-2.control-label Геометрия
+            .col-xs-8.col-sm-9.col-lg-10
+                p.form-control-static
+                    | Полигонов:
+                    strong(data-bind="text: ' ' + formatNum(region.polynum.exterior())")
+                    //ko if: region.polynum.interior()
+                    |  (+
+                    strong(data-bind="text: formatNum(region.polynum.interior())")
+                    |  выколотых)
+                    // /ko
+                    | ; Вершин:
+                    strong(data-bind="text: ' ' + (formatNum(region.pointsnum() - region.polynum.exterior() - region.polynum.interior()))")
+        // /ko
         //ko if: createMode() || showGeo()
         .form-group
-            label.col-xs-4.col-sm-3.col-lg-2.control-label
-                | Геометрия
-                br
-                | GeoJSON
+            label.col-xs-4.col-sm-3.col-lg-2.control-label GeoJSON
             .col-xs-8.col-sm-9.col-lg-10
                 textarea.form-control(wrap="soft", rows="5", data-bind="value: region.geo, valueUpdate: 'keyup'", placeholder="{ type: 'Polygon | MultiPolygon', coordinates: [[ [] ]] }", required="required")
         // /ko

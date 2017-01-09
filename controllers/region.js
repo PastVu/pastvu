@@ -1003,7 +1003,14 @@ async function give(data) {
         throw new NotFoundError(constantsError.NO_SUCH_REGION);
     }
 
-    const [childLenArr, parentsSortedArr] = await getParentsAndChilds(region);
+    const level = _.size(region.parents); // Region level equals number of parent regions
+    const [[childLenArr, parentsSortedArr], children] = await Promise.all([
+        getParentsAndChilds(region),
+        Region.find(
+            { [`parents.${level}`]: data.cid, parents: { $size: level + 1 } },
+            { _id: 0, cid: 1, title_local: 1 }, { lean: true, sort: { title_local: 1 } }
+        ).exec()
+    ]);
 
     if (parentsSortedArr) {
         region.parents = parentsSortedArr;
@@ -1032,7 +1039,7 @@ async function give(data) {
         }
     }
 
-    return { childLenArr, region };
+    return { childLenArr, children, region };
 }
 
 // Returns array of count of all regions by levels

@@ -126,7 +126,9 @@ define([
             this.haveParent = ko.observable('0');
             this.parentCid = ko.observable(0);
             this.parentCidOrigin = 0;
+            this.children = ko.observableArray();
             this.childLenArr = ko.observableArray();
+            this.childrenExpand = ko.observable(Utils.getLocalStorage('region.childrenExpand') || 0);
             this.geoStringOrigin = null;
             this.geoObj = null;
 
@@ -179,12 +181,26 @@ define([
             }
         },
         //Пересчитывает размер карты
-        sizesCalc: function () {
+        sizesCalc: function (square) {
             var height = P.window.h() - this.$dom.find('.map').offset().top - 37 >> 0;
 
             this.mh(height + 'px');
             if (this.map) {
                 this.map.whenReady(this.map._onResize, this.map); //Самостоятельно обновляем размеры карты
+            }
+
+            if (square) {
+                this.childrenCalc();
+            }
+        },
+        childrenCalc: function () {
+            var $children = this.$dom.find('.children');
+            var childrenExpand = this.childrenExpand();
+
+            if (!childrenExpand && $children[0].scrollWidth > $children.width()) {
+                this.childrenExpand(1);
+            } else if (childrenExpand && $children[0].scrollWidth <= $children.width() && $children.height() < 30) {
+                this.childrenExpand(0);
             }
         },
         routeHandler: function () {
@@ -221,6 +237,7 @@ define([
 
             this.haveParent('0');
             this.parentCid(0);
+            this.children([]);
             this.childLenArr([]);
         },
         removeLayers: function () {
@@ -250,6 +267,7 @@ define([
                 this.bboxLBound = null;
             }
 
+            this.children(data.children || []);
             this.childLenArr(data.childLenArr || []);
             if (data.region.parents && data.region.parents.length) {
                 this.parentCidOrigin = data.region.parents[data.region.parents.length - 1].cid;
@@ -275,6 +293,7 @@ define([
             if (needRedraw) {
                 this.drawData();
             }
+            this.childrenCalc();
 
             return true;
         },
@@ -401,6 +420,12 @@ define([
                     //Если в оригинале центр еще не расчитан (регион новый), то удаляем маркер
                     this.centerMarkerDestroy();
                 }
+            }
+        },
+        childrenExpandToggle: function () {
+            if (this.childrenExpand()) {
+                this.childrenExpand(this.childrenExpand() === 1 ? 2 : 1);
+                Utils.setLocalStorage('region.childrenExpand', this.childrenExpand());
             }
         },
 
