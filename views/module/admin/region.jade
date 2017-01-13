@@ -71,7 +71,11 @@
                     = ' | '
                     //ko foreach: children
                     | <!--ko if: $index()-->, <!-- /ko -->
-                    a(data-bind="text: $data.title_local, attr: {href: '/admin/region/' + $data.cid}")
+                    a(data-bind="attr: {href: '/admin/region/' + $data.cid}", style="white-space:nowrap;")
+                        span(data-bind="text: $data.title")
+                        //ko if: $data.childrenCount
+                        span(data-bind="text: ' +' + $data.childrenCount", style="color:#7489a0;font-size:10px;")
+                        // /ko
                     // /ko
                     // /ko
                 //ko if: childrenExpand()

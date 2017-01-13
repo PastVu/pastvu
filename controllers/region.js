@@ -24,7 +24,9 @@ const nogeoRegion = { cid: 0, title_en: 'Where is it?', title_local: 'Где э�
 let regionCacheArr = []; // Array-cache of regions  [{ _id, cid, parents }]
 let regionCacheHash = {}; // Hash-cache of regions { cid: { _id, cid, parents } }
 
-let regionCacheArrPromise;
+let regionCacheArrPublic = [];
+let regionCacheArrPublicPromise = Promise.resolve({ regions: regionCacheArrPublic });
+let regionsChildrenArrHash = {};
 
 for (let i = 0; i <= maxRegionLevel; i++) {
     regionsAllSelectHash['r' + i] = 1;
@@ -42,11 +44,29 @@ async function fillCache() {
             { lean: true, sort: { cid: 1 } }
         ).exec();
 
-        regionCacheArrPromise = Promise.resolve({ regions: regionCacheArr });
+        regionCacheArrPublic = [];
+        regionCacheHash = { '0': nogeoRegion }; // Zero region means absence of coordinates
+        regionsChildrenArrHash = {};
+        for (const region of regionCacheArr) {
+            const { cid, parents, title_en, title_local } = region;
 
-        regionCacheHash = _.transform(regionCacheArr, (result, region) => {
-            result[region.cid] = region;
-        }, { '0': nogeoRegion }); // Zero region means absence of coordinates
+            regionCacheHash[cid] = region;
+            regionCacheArrPublic.push({ cid, parents, title_en, title_local });
+
+            const parentCid = parents[parents.length - 1];
+
+            if (parentCid) {
+                const parentChildren = regionsChildrenArrHash[parentCid];
+
+                if (parentChildren) {
+                    parentChildren.push(cid);
+                } else {
+                    regionsChildrenArrHash[parentCid] = [cid];
+                }
+            }
+        }
+
+        regionCacheArrPublicPromise = Promise.resolve({ regions: regionCacheArrPublic });
 
         DEFAULT_HOME = regionCacheHash[config.regionHome] || regionCacheArr[0];
         loggerApp.info(`Region cache filled with ${regionCacheArr.length} in ${Date.now() - start}ms`);
@@ -1003,17 +1023,23 @@ async function give(data) {
         throw new NotFoundError(constantsError.NO_SUCH_REGION);
     }
 
-    const level = _.size(region.parents); // Region level equals number of parent regions
-    const [[childLenArr, parentsSortedArr], children] = await Promise.all([
-        getParentsAndChilds(region),
-        Region.find(
-            { [`parents.${level}`]: data.cid, parents: { $size: level + 1 } },
-            { _id: 0, cid: 1, title_local: 1 }, { lean: true, sort: { title_local: 1 } }
-        ).exec()
-    ]);
+    const [childLenArr, parentsSortedArr] = await getParentsAndChilds(region);
 
     if (parentsSortedArr) {
         region.parents = parentsSortedArr;
+    }
+
+    let children;
+    const childrenCids = regionsChildrenArrHash[data.cid];
+
+    if (childrenCids) {
+        children = [];
+        for (const cid of childrenCids) {
+            const region = regionCacheHash[cid];
+
+            children.push({ cid, title: region.title_local, childrenCount: _.size(regionsChildrenArrHash[cid]) || undefined });
+        }
+        children = _.sortBy(children, ['title']);
     }
 
     // Send client stringified geojson
@@ -1079,8 +1105,8 @@ async function giveListFull(data) {
         throw new BadParamsError();
     }
 
-    const [regions, regionsStatByLevel] = await Promise.all([
-        Region.find({}, { _id: 0, geo: 0, __v: 0 }, { lean: true }).exec(),
+    const [{ regions }, regionsStatByLevel] = await Promise.all([
+        regionCacheArrPublicPromise,
         getRegionsStatByLevel()
     ]);
 
@@ -1099,7 +1125,7 @@ async function giveListFull(data) {
     return { regions, stat: { common: regionsStatCommon, byLevel: regionsStatByLevel } };
 }
 
-export const giveListPublic = () => regionCacheArrPromise;
+export const giveListPublic = () => regionCacheArrPublicPromise;
 
 // Returns an array of regions in which a given point falls
 const getRegionsByGeoPoint = (function () {
