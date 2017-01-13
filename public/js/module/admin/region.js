@@ -151,6 +151,7 @@ define([
             this.bboxhomeValid = ko.observable(true);
 
             this.mh = ko.observable('300px'); //Высота карты
+            this.fDateIn = Utils.format.date.relativeIn;
 
             this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandler, this);
             this.routeHandler();

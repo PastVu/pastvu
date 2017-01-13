@@ -8,10 +8,16 @@
             label.col-xs-4.col-sm-3.col-lg-2.control-label Edit region
             .col-xs-8.col-sm-9.col-lg-10
                 p.form-control-static
-                    | Id:
-                    strong(data-bind="text: ' ' + region.cid()")
-                    | ; Level:
-                    strong(data-bind="text: ' ' + (Number(haveParent()) ? region.parents().length + 1 : 1)")
+                    = 'Id: '
+                    strong(data-bind="text: region.cid()")
+                    = '; Level: '
+                    strong(data-bind="text: (Number(haveParent()) ? region.parents().length + 1 : 1)")
+                    = '; Created: '
+                    strong(data-bind="text: fDateIn(new Date(region.cdate()))")
+                    //ko if: region.cdate() !== region.udate()
+                    = '; Updated: '
+                    strong(data-bind="text: fDateIn(new Date(region.udate()))")
+                    // /ko
         // /ko
         .form-group
             label.col-xs-4.col-sm-3.col-lg-2.control-label Title
@@ -71,7 +77,11 @@
                     = ' | '
                     //ko foreach: children
                     | <!--ko if: $index()-->, <!-- /ko -->
-                    a(data-bind="text: $data.title_en, attr: {href: '/admin/region/' + $data.cid}")
+                    a(data-bind="attr: {href: '/admin/region/' + $data.cid}", style="white-space:nowrap;")
+                        span(data-bind="text: $data.title")
+                        //ko if: $data.childrenCount
+                        span(data-bind="text: ' +' + $data.childrenCount", style="color:#7489a0;font-size:10px;")
+                        // /ko
                     // /ko
                     // /ko
                 //ko if: childrenExpand()
