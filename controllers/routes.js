@@ -133,10 +133,10 @@ function meta(req) {
             desc = '';
         }
 
-        title = og.title = twitter.title = photo.title;
+        title = og.title = twitter.title = photo.title || '';
 
         // Include years in OpenGraph title, if they are not in title already
-        if (!photo.title.includes(photo.year) && (!photo.year2 || !photo.title.includes(photo.year2)) &&
+        if (!title.includes(photo.year) && (!photo.year2 || !title.includes(photo.year2)) &&
             !desc.includes(photo.year) && (!photo.year2 || !desc.includes(photo.year2))) {
             og.title = twitter.title = photo.y + ' ' + title;
         }
