@@ -1100,7 +1100,7 @@ async function ready(data) {
     const { photo, canModerate } = await this.call('photo.prefetchForEdit', { data, can: 'ready' });
     const oldPhotoObj = photo.toObject();
 
-    photoCheckPublickRequired(photo);
+    photoCheckPublicRequired(photo);
 
     photo.s = status.READY;
     photo.stdate = photo.cdate = new Date();
@@ -1196,7 +1196,7 @@ async function rereject(data) {
 async function approve(data) {
     const { photo, canModerate } = await this.call('photo.prefetchForEdit', { data, can: 'approve' });
 
-    photoCheckPublickRequired(photo);
+    photoCheckPublicRequired(photo);
 
     const oldPhotoObj = photo.toObject();
 
@@ -1244,7 +1244,7 @@ async function activateDeactivate(data) {
     );
 
     if (!disable) {
-        photoCheckPublickRequired(photo);
+        photoCheckPublicRequired(photo);
     }
 
     const oldPhotoObj = photo.toObject();
@@ -1326,7 +1326,7 @@ async function restore(data) {
 
     const { photo, canModerate } = await this.call('photo.prefetchForEdit', { data, can: 'restore' });
 
-    photoCheckPublickRequired(photo);
+    photoCheckPublicRequired(photo);
 
     const oldPhotoObj = photo.toObject();
 
@@ -1888,7 +1888,7 @@ async function giveCanProtected({ cid }) {
     };
 }
 
-function photoCheckPublickRequired(photo) {
+function photoCheckPublicRequired(photo) {
     if (!photo.r0) {
         throw new NoticeError(constantsError.PHOTO_NEED_COORD);
     }
@@ -2137,9 +2137,9 @@ async function save(data) {
         );
     }
 
-    // If photo is public, check that all required fields is filled
+    // If photo is public, check that all required fields are filled
     if (photo.s === status.READY || photo.s === status.PUBLIC) {
-        photoCheckPublickRequired(photo);
+        photoCheckPublicRequired(photo);
     }
 
     // If photo watersign setting has been changed, send it to reconvert
