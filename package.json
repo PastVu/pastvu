@@ -37,8 +37,8 @@
         "cookie": "0.3.1",
         "mime": "1.3.4",
         "jade": "1.11.0",
-        "redis": "2.6.3",
-        "mongoose": "4.7.6",
+        "redis": "2.6.5",
+        "mongoose": "4.7.7",
         "posix": "4.1.1",
         "mkdirp": "0.5.1",
         "lodash": "4.17.4",
@@ -60,7 +60,7 @@
         "nodemailer-ses-transport": "1.5.0",
         "http-proxy-middleware": "0.17.3",
         "log4js": "1.1.0",
-        "formidable": "1.0.17",
+        "formidable": "1.1.1",
         "content-disposition": "0.5.2",
         "gm": "1.23.0"
     },
@@ -100,7 +100,7 @@
         "xmldom": "0.1.27",
         "osm-and-geojson": "0.1.2",
 
-        "eslint": "3.13.0",
+        "eslint": "3.13.1",
         "eslint-plugin-babel": "4.0.0"
     },
     "engines": {
