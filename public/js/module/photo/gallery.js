@@ -469,21 +469,21 @@ define([
                     if (this.feed()) {
                         return;
                     }
-                    ga('send', 'event', 'gallery', 'mode', 'feed');
+                    ga('send', 'event', 'gallery', 'mode', 'mode feed');
                     modifier = '/feed';
                     break;
                 case 3:
                     if (this.coin()) {
                         return;
                     }
-                    ga('send', 'event', 'gallery', 'mode', 'coin');
+                    ga('send', 'event', 'gallery', 'mode', 'mode coin');
                     modifier = '/coin';
                     break;
                 default:
                     if (!this.feed() && !this.coin()) {
                         return;
                     }
-                    ga('send', 'event', 'gallery', 'mode', 'page');
+                    ga('send', 'event', 'gallery', 'mode', 'mode page');
             }
 
             globalVM.router.navigate(this.pageUrl() + modifier + this.pageQuery());
@@ -502,7 +502,7 @@ define([
         },
 
         flipCoin: function () {
-            ga('send', 'event', 'gallery', 'flipcoin');
+            ga('send', 'event', 'gallery', 'flipcoin', 'flipcoin');
             this.refreshPhotos();
         },
         refreshPhotos: function () {
