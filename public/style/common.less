@@ -2,12 +2,6 @@
 @import "fonts/fontU.less";
 @import "bs/bootstrap.less";
 
-::-webkit-scrollbar-button:decrement {
-	height: 36px;
-	background: url(/img/misc/top_scroll.png) 50% 12px no-repeat, url(/img/misc/top.png) 0 0 repeat-x;
-}
-
-
 @-webkit-keyframes fadeIn {
 	0% { opacity: 0; }
 	100% { opacity: 1; }
@@ -35,13 +29,23 @@
 	100% { transform: scale(1); }
 }
 
-html, body {
-	height: 100%;
+html {
+    height: 100%;
+    background-color: @MainBlueColor;
+
+    &.modal {
+        background-color: @body-bg; // To avoid showing blue instead of scrollbar
+    }
 }
+
 body {
-	background-color: @body-bg;
-	padding-top: 33px; /* equal to topContainer height */
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; /* Avoid the IE 10-11 `min-height` bug. Use `%` instead of `vh` since `vh` is buggy in older mobile Safari */
+	overflow-x: hidden;
 	overflow-y: scroll; // Для правильного подсчета ширины страницы всегда показываем вертикалььный скролл
+    background-color: @body-bg;
 
     &.modal {
         overflow: hidden; // Для предотвращения скроллинга всей страницы когда активно модальное окно
@@ -49,8 +53,8 @@ body {
 }
 
 ::-webkit-scrollbar {
-	height: 16px;
-	width: 16px;
+	height: 10px;
+	width: 10px;
 	overflow: visible;
 	background-color: @body-bg;
 }
@@ -58,6 +62,10 @@ body {
 	height: 0;
 	width: 0;
 }
+//::-webkit-scrollbar-button:decrement {
+//    height: 36px;
+//    background: url(/img/misc/top_scroll.png) 50% 12px no-repeat, url(/img/misc/top.png) 0 0 repeat-x;
+//}
 ::-webkit-scrollbar-track {
 	background-clip: padding-box;
 	border: solid transparent;
@@ -68,58 +76,50 @@ body {
 }
 ::-webkit-scrollbar-track:hover {
 	background-color: #eee;
-	box-shadow: inset 1px 0 0 #aaa,
-}
-::-webkit-scrollbar-track:horizontal:hover {
-	box-shadow: inset 0 1px 0 #aaa;
 }
 ::-webkit-scrollbar-track:active {
 	background-color: #eaeaea;
-	box-shadow: inset 1px 0 0 #999;
-}
-::-webkit-scrollbar-track:horizontal:active {
-	box-shadow: inset 0 1px 0 #999;
 }
 ::-webkit-scrollbar-thumb {
 	background-color: fade(desaturate(@MainBlueColor, 5%), 92%);
 	background-clip: padding-box;
 	border: solid transparent;
-	border-width: 1px 3px 2px 4px;
+	border-width: 0 2px;
 	min-height: 28px;
 	padding: 100px 0 0 0;
-	box-shadow: inset 1px 1px 0 rgba(0, 0, 0, .1);
 }
 ::-webkit-scrollbar-thumb:horizontal {
-	border-width: 6px 1px 1px 1px;
+	border-width: 2px 0;
 	padding: 0 0 0 100px;
-	box-shadow: inset 1px 1px 0 rgba(0, 0, 0, .1);
 }
 ::-webkit-scrollbar-thumb:hover {
 	background-color: fade(desaturate(@MainBlueColor, 5%), 95%);
-	box-shadow: inset 1px 1px 1px rgba(0, 0, 0, .25);
+    border-width: 0 1px;
 }
 ::-webkit-scrollbar-thumb:active {
 	background-color: fade(desaturate(@MainBlueColor, 5%), 100%);
-	box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.35);
 }
 ::-webkit-scrollbar-corner {
 	background: transparent;
 }
 
 .page-wrap {
-	min-height: 100%;
-	margin-bottom: -37px; /* equal to footer height */
+    flex: 1 0 auto;
+    width: 100%;
+    margin-top: 33px; /* topContainer height */
 
 	&::after {
-		content: "";
-		display: block;
-		height: 36px;
+        content: '\00a0'; /* &nbsp; */
+        display: block;
+        margin-top: 0;
+        height: 0;
+        visibility: hidden;
 	}
 }
 
 #footContainer {
-	height: 36px;
-	padding-top: 10px;
+    flex: none;
+    margin-top: 10px;
 }
 
 .mContainer {
@@ -235,8 +235,11 @@ body {
 				height: 0;
 			}
 			&::-webkit-scrollbar-thumb {
-				border-width: 5px 3px 5px 4px;
+				border-width: 5px 2px;
 			}
+            &::-webkit-scrollbar-thumb:hover {
+                border-width: 5px 1px;
+            }
 
 			&.scroll {
 				//Для правильного подсчета ширины некоторых элементов нужно сразу учитывать скролл (Наример, input в tokenfield)
@@ -371,8 +374,6 @@ body {
 		height: 1px;
 		width: 100%;
 		margin: 0 auto;
-		filter: none;
-		background: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/Pgo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgdmlld0JveD0iMCAwIDEgMSIgcHJlc2VydmVBc3BlY3RSYXRpbz0ibm9uZSI+CiAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkLXVjZ2ctZ2VuZXJhdGVkIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMCUiPgogICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iI2Y5ZjlmOSIgc3RvcC1vcGFjaXR5PSIwLjciLz4KICAgIDxzdG9wIG9mZnNldD0iOCUiIHN0b3AtY29sb3I9IiMwNzVhYjMiIHN0b3Atb3BhY2l0eT0iMC44Ii8+CiAgICA8c3RvcCBvZmZzZXQ9IjQ5JSIgc3RvcC1jb2xvcj0iIzA1M2Y3ZSIgc3RvcC1vcGFjaXR5PSIxIi8+CiAgICA8c3RvcCBvZmZzZXQ9IjkyJSIgc3RvcC1jb2xvcj0iIzA3NWFiMyIgc3RvcC1vcGFjaXR5PSIwLjgiLz4KICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI2Y5ZjlmOSIgc3RvcC1vcGFjaXR5PSIwLjciLz4KICA8L2xpbmVhckdyYWRpZW50PgogIDxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9InVybCgjZ3JhZC11Y2dnLWdlbmVyYXRlZCkiIC8+Cjwvc3ZnPg==);
 		background: -webkit-linear-gradient(left, fade(@body-bg, 70%) 0%, rgba(7, 90, 179, 0.8) 8%, rgba(5, 63, 126, 1) 49%, rgba(7, 90, 179, 0.8) 92%, fade(@body-bg, 70%) 100%); /* Chrome10+,Safari5.1+ */
 		background: linear-gradient(to right, fade(@body-bg, 70%) 0%, rgba(7, 90, 179, 0.8) 8%, rgba(5, 63, 126, 1) 49%, rgba(7, 90, 179, 0.8) 92%, fade(@body-bg, 70%) 100%); /* W3C */
 		z-index: -1;
@@ -384,16 +385,14 @@ body {
 }
 
 .strokeBefore::before, .strokeAfter::after {
-	filter: none; /* Needs for support full multi-stop gradients with IE9 (using SVG) */
-	background: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/Pgo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgdmlld0JveD0iMCAwIDEgMSIgcHJlc2VydmVBc3BlY3RSYXRpbz0ibm9uZSI+CiAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkLXVjZ2ctZ2VuZXJhdGVkIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjAlIiB5MT0iMCUiIHgyPSIwJSIgeTI9IjEwMCUiPgogICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzA1M2Y3ZSIgc3RvcC1vcGFjaXR5PSIwIi8+CiAgICA8c3RvcCBvZmZzZXQ9IjE2JSIgc3RvcC1jb2xvcj0iIzA3NWFiMyIgc3RvcC1vcGFjaXR5PSIwLjgiLz4KICAgIDxzdG9wIG9mZnNldD0iNDklIiBzdG9wLWNvbG9yPSIjZjJmMmYyIiBzdG9wLW9wYWNpdHk9IjEiLz4KICAgIDxzdG9wIG9mZnNldD0iODUlIiBzdG9wLWNvbG9yPSIjMDc1YWIzIiBzdG9wLW9wYWNpdHk9IjAuOCIvPgogICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMDUzZjdlIiBzdG9wLW9wYWNpdHk9IjAiLz4KICA8L2xpbmVhckdyYWRpZW50PgogIDxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9InVybCgjZ3JhZC11Y2dnLWdlbmVyYXRlZCkiIC8+Cjwvc3ZnPg==);
-	background: -webkit-linear-gradient(top, fade(@MainBlueColor, 0%) 0%, rgba(7, 90, 179, 0.8) 16%, rgba(242, 242, 242, 1) 49%, rgba(7, 90, 179, 0.8) 85%, fade(@MainBlueColor, 0%) 100%); /* Chrome10+,Safari5.1+ */
-	background: linear-gradient(to bottom, fade(@MainBlueColor, 0%) 0%, rgba(7, 90, 179, 0.8) 16%, rgba(242, 242, 242, 1) 49%, rgba(7, 90, 179, 0.8) 85%, fade(@MainBlueColor, 0%) 100%); /* W3C */
 	content: " ";
-	display: inline-block;
-	height: 100%;
-	position: relative;
+    position: relative;
+    display: inline-block;
+    width: 1px;
+    height: 100%;
 	vertical-align: top;
-	width: 1px;
+    background: -webkit-linear-gradient(top, fade(@MainBlueColor, 0%) 0%, rgba(7, 90, 179, 0.8) 16%, rgba(242, 242, 242, 1) 49%, rgba(7, 90, 179, 0.8) 85%, fade(@MainBlueColor, 0%) 100%); /* Chrome10+,Safari5.1+ */
+    background: linear-gradient(to bottom, fade(@MainBlueColor, 0%) 0%, rgba(7, 90, 179, 0.8) 16%, rgba(242, 242, 242, 1) 49%, rgba(7, 90, 179, 0.8) 85%, fade(@MainBlueColor, 0%) 100%); /* W3C */
 }
 .strokeBefore::before {
 	left: -7px;

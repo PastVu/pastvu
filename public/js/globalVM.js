@@ -28,6 +28,7 @@ define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'i18n', 'knockout'
         if (!$body.hasClass('modal')) {
             bodyWidth = $body.innerWidth();
 
+            $(document.documentElement).addClass('modal');
             $body
                 .addClass('modal')
                 .add('#topContainer')
@@ -42,6 +43,7 @@ define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'i18n', 'knockout'
             $body = $(document.body);
         }
         if ($body.hasClass('modal') && $('.neoModalCurtain').length <= 1) {
+            $(document.documentElement).removeClass('modal');
             $body
                 .removeClass('modal')
                 .add('#topContainer')
