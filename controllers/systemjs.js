@@ -1,6 +1,7 @@
+/* eslint no-var: 0, object-shorthand: [2, 'never'] */
 /*
- global db:true, print:true, linkifyUrlString: true, toPrecision: true, toPrecision6: true, toPrecisionRound:true,
- geoToPrecision:true, spinLng:true, regionClearPhotoTitle:true
+ global print:true, linkifyUrlString: true, toPrecision: true, toPrecision6: true, toPrecisionRound:true,
+ geoToPrecision:true, spinLng:true, regionClearPhotoTitle:true, calcRegionStats:true
  */
 
 /**
@@ -364,6 +365,8 @@ waitDb.then(function (db) {
             print('Finished in ' + (Date.now() - startTime) / 1000 + 's\n');
         });
 
+        calcRegionStats();
+
         return { message: 'All assigning finished in ' + (Date.now() - startTime) / 1000 + 's' };
     });
 
@@ -555,12 +558,10 @@ waitDb.then(function (db) {
                         } else if (x2 < x1 && x2 < bbox[0] && Math.abs(x2 - bbox[0]) <= 180) {
                             bbox[0] = x2;
                         }
-                    } else {
-                        if (x2 < 0 && x1 > 0 && (x2 > bbox[2] || bbox[2] > 0)) {
-                            bbox[2] = x2;
-                        } else if (x2 > 0 && x1 < 0 && (x2 < bbox[0] || bbox[0] < 0)) {
-                            bbox[0] = x2;
-                        }
+                    } else if (x2 < 0 && x1 > 0 && (x2 > bbox[2] || bbox[2] > 0)) {
+                        bbox[2] = x2;
+                    } else if (x2 > 0 && x1 < 0 && (x2 < bbox[0] || bbox[0] < 0)) {
+                        bbox[0] = x2;
                     }
 
                     if (y2 < bbox[1]) {
@@ -662,8 +663,8 @@ waitDb.then(function (db) {
         var startTime = Date.now();
         var count = 0;
         var regRxp = new RegExp('^(\\s*(?:' + (Array.isArray(regionString) ? regionString.filter(function (item) {
-                return !!item;
-            }).join('|') : regionString) + ')\\s*[\\.,-:]\\s*)(.+)$', 'i');
+            return !!item;
+        }).join('|') : regionString) + ')\\s*[\\.,-:]\\s*)(.+)$', 'i');
 
         db.photos.find({ title: regRxp }, { title: 1 }).forEach(function (photo) {
             count++;
@@ -757,7 +758,7 @@ waitDb.then(function (db) {
     saveSystemJSFunc(function calcUsersObjectsRelStats(userId, objId) {
         var startTime = Date.now();
         var counter = 0;
-        var counter_updated = 0;
+        var counterUpdated = 0;
         var query = {};
 
         if (userId) {
@@ -773,22 +774,22 @@ waitDb.then(function (db) {
 
             var commentCollection = rel.type === 'news' ? db.commentsn : db.comments;
             var $update = { $set: {}, $unset: {} };
-            var ccount_new;
+            var ccountNew;
 
             if (rel.comments) {
                 if (!rel.ccount_new) {
                     rel.ccount_new = 0;
                 }
-                ccount_new = commentCollection.count({
+                ccountNew = commentCollection.count({
                     obj: rel.obj,
                     del: null,
                     stamp: { $gt: rel.comments },
                     user: { $ne: rel.user }
                 });
 
-                if (ccount_new !== rel.ccount_new) {
-                    if (ccount_new) {
-                        $update.$set.ccount_new = ccount_new;
+                if (ccountNew !== rel.ccount_new) {
+                    if (ccountNew) {
+                        $update.$set.ccount_new = ccountNew;
                     } else {
                         $update.$unset.ccount_new = 1;
                     }
@@ -803,17 +804,17 @@ waitDb.then(function (db) {
             }
 
             if (Object.keys($update).length) {
-                counter_updated++;
+                counterUpdated++;
                 db.users_objects_rel.update({ _id: rel._id }, $update);
             }
 
             if (counter % 50000 === 0 && counter) {
-                print(((Date.now() - startTime) / 1000) + 's Calculated ' + counter + ' rels. Updated: ' + counter_updated);
+                print(((Date.now() - startTime) / 1000) + 's Calculated ' + counter + ' rels. Updated: ' + counterUpdated);
             }
         });
 
         return {
-            message: ((Date.now() - startTime) / 1000) + 's ' + counter + ' rels statistics were calculated. Updated: ' + counter_updated
+            message: ((Date.now() - startTime) / 1000) + 's ' + counter + ' rels statistics were calculated. Updated: ' + counterUpdated
         };
     });
 
@@ -858,6 +859,123 @@ waitDb.then(function (db) {
         }
 
         return { message: 'Photos statistics were calculated in ' + (Date.now() - startTime) / 1000 + 's' };
+    });
+
+    saveSystemJSFunc(function calcRegionStats(cids) {
+        var startTime = Date.now();
+        var doneCounter = 0;
+        var query = {};
+
+        if (cids && cids.length) {
+            query.cid = { $in: cids };
+        }
+
+        var counter = db.regions.count(query);
+        print('Starting stat calculation for ' + counter + ' regions');
+        db.regions.find(query, { _id: 0, cid: 1, parents: 1 }).sort({ cid: 1 }).forEach(function (region) {
+            var level = region.parents && region.parents.length || 0;
+            var regionHasChildren = db.regions.count({ parents: region.cid }) > 0;
+
+            var queryC = { del: null };
+            var queryImage = {};
+            var queryPhoto = { type: 1 };
+            var queryPaint = { type: 2 };
+            var $update = {
+                photostat: {
+                    all: 0, geo: 0, own: 0, owngeo: 0,
+                    s0: 0, s1: 0, s2: 0, s3: 0, s4: 0, s5: 0, s7: 0, s9: 0
+                },
+                paintstat: {
+                    all: 0, geo: 0, own: 0, owngeo: 0,
+                    s0: 0, s1: 0, s2: 0, s3: 0, s4: 0, s5: 0, s7: 0, s9: 0
+                },
+                cstat: {
+                    all: 0, del: 0,
+                    s5: 0, s7: 0, s9: 0
+                }
+            };
+
+            queryC['r' + level] = region.cid;
+            queryImage['r' + level] = region.cid;
+            queryPhoto['r' + level] = region.cid;
+            queryPaint['r' + level] = region.cid;
+
+            // Returns array of objects with count for each image type and status value
+            // [{type: 1, count: 9, statuses: {s: 0, count: 7, s: 1, count: 2...}},...]
+            var statusesForTypes = db.photos.aggregate([
+                { $match: queryImage },
+                { $project: { _id: 0, type: 1, s: 1 } },
+                { $group: { _id: { type: '$type', status: '$s' }, scount: { $sum: 1 } } },
+                { $group: {
+                    _id: '$_id.type',
+                    statuses: { $push: { s: '$_id.status', count: '$scount' } },
+                    count: { $sum: '$scount' }
+                } },
+                { $project: { type: '$_id', statuses: 1, count: 1 } },
+                { $sort: { type: 1 } }
+            ]).toArray();
+
+            var photos;
+            var paintings;
+
+            if (statusesForTypes) {
+                photos = statusesForTypes.find(function (stat) {
+                    return stat.type === 1;
+                });
+
+                paintings = statusesForTypes.find(function (stat) {
+                    return stat.type === 2;
+                });
+            }
+
+            if (photos) {
+                $update.photostat.all = photos.count;
+                photos.statuses.forEach(function (status) {
+                    $update.photostat['s' + status.s] = status.count;
+                });
+                $update.photostat.geo = db.photos.count((queryPhoto.geo = { $exists: true }, queryPhoto));
+
+                if (regionHasChildren) {
+                    $update.photostat.owngeo = db.photos.count((queryPhoto['r' + (level + 1)] = null, queryPhoto));
+                    $update.photostat.own = db.photos.count((delete queryPhoto.geo, queryPhoto));
+                } else {
+                    $update.photostat.owngeo = $update.photostat.geo;
+                    $update.photostat.own = $update.photostat.all;
+                }
+            }
+
+            if (paintings) {
+                $update.paintstat.all = paintings.count;
+                paintings.statuses.forEach(function (status) {
+                    $update.paintstat['s' + status.s] = status.count;
+                });
+                $update.paintstat.geo = db.photos.count((queryPaint.geo = { $exists: true }, queryPaint));
+
+                if (regionHasChildren) {
+                    $update.paintstat.owngeo = db.photos.count((queryPaint['r' + (level + 1)] = null, queryPaint));
+                    $update.paintstat.own = db.photos.count((delete queryPaint.geo, queryPaint));
+                } else {
+                    $update.paintstat.owngeo = $update.paintstat.geo;
+                    $update.paintstat.own = $update.paintstat.all;
+                }
+            }
+
+            $update.cstat.s5 = db.comments.count((queryC.s = 5, queryC));
+            $update.cstat.s7 = db.comments.count((queryC.s = 7, queryC));
+            $update.cstat.s9 = db.comments.count((queryC.s = 9, queryC));
+            $update.cstat.del = db.comments.count((delete queryC.s, queryC.del = { $exists: true }, queryC));
+            $update.cstat.all = $update.cstat.s5 + $update.cstat.s7 + $update.cstat.s9 + $update.cstat.del;
+
+            db.regions.update({ cid: region.cid }, { $set: $update });
+
+            doneCounter++;
+
+            if (doneCounter % 100 === 0) {
+                print('Calculated stats for ' + doneCounter + ' region. Cumulative time: ' + ((Date.now() - startTime) / 1000) + 's');
+            }
+        });
+
+        return { message: 'Regions statistics were calculated for ' + doneCounter + ' regions in ' + (Date.now() - startTime) / 1000 + 's' };
     });
 
     saveSystemJSFunc(function toPrecision(number, precision) {
@@ -916,11 +1034,11 @@ waitDb.then(function (db) {
         className = className ? ' class="' + className + '"' : '';
 
         //URLs starting with http://, https://, or ftp://
-        replacePattern1 = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gim;
+        replacePattern1 = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%=~_|])/gim;
         replacedText = inputText.replace(replacePattern1, '<a href="$1"' + target + className + '>$1</a>');
 
         //URLs starting with "www." (without // before it, or it'd re-link the ones done above).
-        replacePattern2 = /(^|[^\/])(www\.[\S]+(\b|$))/gim;
+        replacePattern2 = /(^|[^/])(www\.[\S]+(\b|$))/gim;
         replacedText = replacedText.replace(replacePattern2, '$1<a href="http://$2"' + target + className + '>$2</a>');
 
         return replacedText;
@@ -948,7 +1066,7 @@ waitDb.then(function (db) {
         return result;
 
         function spbReplace(inputText) {
-            var matches = inputText.match(/[\s,\.]?(?:http:\/\/)?(?:www\.)?oldsp\.ru\/photo\/view\/(\d{1,8})/gim);
+            var matches = inputText.match(/[\s,.]?(?:http:\/\/)?(?:www\.)?oldsp\.ru\/photo\/view\/(\d{1,8})/gim);
             var shifted;
 
             if (matches && matches.length > 0) {

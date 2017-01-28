@@ -17,7 +17,7 @@ export let DEFAULT_HOME = null;
 export const regionsAllSelectHash = Object.create(null);
 
 const loggerApp = log4js.getLogger('app');
-//const logger = log4js.getLogger('region.js');
+const logger = log4js.getLogger('region.js');
 const maxRegionLevel = constants.region.maxLevel;
 const nogeoRegion = { cid: 0, title_en: 'Where is it?', title_local: 'Где это?' };
 
@@ -26,6 +26,9 @@ let regionCacheHash = {}; // Hash-cache of regions { cid: { _id, cid, parents } 
 
 let regionCacheArrPublic = [];
 let regionCacheArrPublicPromise = Promise.resolve({ regions: regionCacheArrPublic });
+let regionCacheArrAdmin = [];
+let regionCacheArrAdminPromise = Promise.resolve({ regions: regionCacheArrAdmin });
+
 let regionsChildrenArrHash = {};
 
 for (let i = 0; i <= maxRegionLevel; i++) {
@@ -40,18 +43,32 @@ async function fillCache() {
         const start = Date.now();
         regionCacheArr = await Region.find(
             {},
-            { _id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1 },
+            { _id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1, photostat: 1, paintstat: 1, cstat: 1},
             { lean: true, sort: { cid: 1 } }
         ).exec();
 
+        regionCacheArrAdmin = [];
         regionCacheArrPublic = [];
-        regionCacheHash = { '0': nogeoRegion }; // Zero region means absence of coordinates
         regionsChildrenArrHash = {};
+        regionCacheHash = { '0': nogeoRegion }; // Zero region means absence of coordinates
         for (const region of regionCacheArr) {
-            const { cid, parents, title_en, title_local } = region;
+            const { cid, parents, title_en, title_local, photostat = {}, paintstat = {}, cstat = {} } = region;
 
             regionCacheHash[cid] = region;
-            regionCacheArrPublic.push({ cid, parents, title_en, title_local });
+            regionCacheArrPublic.push({
+                cid, parents, title_en, title_local,
+                phc: photostat.s5, pac: paintstat.s5, cc: cstat.all - cstat.del
+            });
+
+            regionCacheArrAdmin.push({
+                cid, parents, title_en, title_local,
+                pc: photostat.all + paintstat.all,
+                pcg: photostat.geo + paintstat.geo,
+                pco: photostat.own + paintstat.own,
+                pcog: photostat.owngeo + paintstat.owngeo,
+                cc: cstat.all,
+                ccd: cstat.del
+            });
 
             const parentCid = parents[parents.length - 1];
 
@@ -67,8 +84,9 @@ async function fillCache() {
         }
 
         regionCacheArrPublicPromise = Promise.resolve({ regions: regionCacheArrPublic });
+        regionCacheArrAdminPromise = Promise.resolve({ regions: regionCacheArrAdmin });
 
-        DEFAULT_HOME = regionCacheHash[config.regionHome] || regionCacheArr[0];
+        DEFAULT_HOME = regionCacheHash[config.regionHome] || regionCacheArrPublic[0];
         loggerApp.info(`Region cache filled with ${regionCacheArr.length} in ${Date.now() - start}ms`);
     } catch (err) {
         err.message = `FillCache: ${err.message}`;
@@ -690,8 +708,8 @@ async function save(data) {
             data.geo = data.geo.geometries[0];
         }
 
-        if (Object.keys(data.geo).length !== 2 || !Array.isArray(data.geo.coordinates) || !data.geo.coordinates.length || !data.geo.type ||
-            data.geo.type !== 'Polygon' && data.geo.type !== 'MultiPolygon') {
+        if (Object.keys(data.geo).length !== 2 || !Array.isArray(data.geo.coordinates) || !data.geo.coordinates.length ||
+            !data.geo.type || data.geo.type !== 'Polygon' && data.geo.type !== 'MultiPolygon') {
             throw new BadParamsError(constantsError.REGION_GEOJSON_GEOMETRY);
         }
     } else if (data.geo) {
@@ -706,6 +724,11 @@ async function save(data) {
 
     if (!data.cid) {
         // Create new region object
+
+        if (!data.geo) {
+            throw new BadParamsError();
+        }
+
         const count = await Counter.increment('region');
 
         if (!count) {
@@ -829,6 +852,18 @@ async function save(data) {
         }
     }
 
+    // If coordinates or parent changed, compute stats for current and parents
+    if (data.geo || parentChange) {
+        const affected = _.union([region.cid], parentsArray, parentsArrayOld);
+
+        try {
+            // Update region stats for current and all parents
+            await dbEval('calcRegionStats', affected, { nolock: true });
+        } catch (error) {
+            logger.warn(`Failed to calculate region stats on region ${region.cid} save`, error);
+        }
+    }
+
     try {
         await fillCache(); // Refresh regions cache
     } catch (err) {
@@ -900,7 +935,8 @@ async function remove(data) {
     //  throw { message: 'Region for reassign descendants does not exists'};
     // }
 
-    const removingLevel = regionToRemove.parents.length;
+    const { parents } = regionToRemove;
+    const removingLevel = parents.length;
 
     const [childRegions, parentRegion] = await Promise.all([
         // Find all child regions
@@ -909,7 +945,7 @@ async function remove(data) {
         // If region has no parent (we removing whole country) - select any another country
         Region.findOne(
             removingLevel ?
-            { cid: regionToRemove.parents[regionToRemove.parents.length - 1] } :
+            { cid: parents[parents.length - 1] } :
             { cid: { $ne: regionToRemove.cid }, parents: { $size: 0 } },
             { _id: 1, cid: 1, title_en: 1 }, { lean: true }
         ).exec()
@@ -961,6 +997,16 @@ async function remove(data) {
         // Remove this regions
         regionToRemove.remove()
     ]);
+
+    // If removing region has parent, recalc parents stat
+    if (removingLevel) {
+        try {
+            // Update stats for all parent regions
+            await dbEval('calcRegionStats', parents, { nolock: true });
+        } catch (error) {
+            logger.warn(`Failed to calculate parent regions stats on region ${data.cid} removal`, error);
+        }
+    }
 
     await fillCache(); // Refresh regions cache
 
@@ -1106,7 +1152,7 @@ async function giveListFull(data) {
     }
 
     const [{ regions }, regionsStatByLevel] = await Promise.all([
-        regionCacheArrPublicPromise,
+        regionCacheArrAdminPromise,
         getRegionsStatByLevel()
     ]);
 
