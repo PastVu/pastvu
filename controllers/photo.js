@@ -888,13 +888,18 @@ async function prefetchForEdit({ data: { cid, s, cdate, ignoreChange }, can }) {
  * Сохраняем объект фотографии с подъемом времени просмотра пользователем объекта
  * @param [stamp] Принудительно устанавливает время просмотра
  */
-async function update({ photo, stamp }) {
+async function update({ photo, oldPhotoObj, stamp }) {
     const { handshake: { usObj: iAm } } = this;
 
     const [, rel] = await Promise.all([
         photo.save(),
         userObjectRelController.setObjectView(photo._id, iAm.user._id, 'photo', stamp)
     ]);
+
+    if (oldPhotoObj) {
+        // Put oldPhoto in regions statistic calculation queue, don't wait
+        regionController.putPhotoToRegionStatQueue(oldPhotoObj, photo);
+    }
 
     return { photo, rel };
 }
@@ -1082,7 +1087,7 @@ async function revoke(data) {
     photo.s = status.REVOKE;
     photo.sdate = photo.stdate = photo.cdate = new Date();
 
-    const { rel } = await this.call('photo.update', { photo });
+    const { rel } = await this.call('photo.update', { photo, oldPhotoObj });
 
     // Compute amount of photos of user
     userPCountUpdate(photo.user, -1, 0, 1);
@@ -1105,7 +1110,7 @@ async function ready(data) {
     photo.s = status.READY;
     photo.stdate = photo.cdate = new Date();
 
-    const { rel } = await this.call('photo.update', { photo });
+    const { rel } = await this.call('photo.update', { photo, oldPhotoObj });
 
     // Save previous status to history
     await this.call('photo.saveHistory', {
@@ -1130,7 +1135,7 @@ async function toRevision(data) {
     photo.s = status.REVISION;
     photo.stdate = photo.cdate = new Date();
 
-    const { rel } = await this.call('photo.update', { photo });
+    const { rel } = await this.call('photo.update', { photo, oldPhotoObj });
 
     // Save previous status to history
     await this.call('photo.saveHistory', { oldPhotoObj, photo, canModerate, reason });
@@ -1153,7 +1158,7 @@ async function reject(data) {
     photo.s = status.REJECT;
     photo.sdate = photo.stdate = photo.cdate = new Date(); // TODO: При возврате на доработку возвращать sdate +shift10y
 
-    const { rel } = await this.call('photo.update', { photo });
+    const { rel } = await this.call('photo.update', { photo, oldPhotoObj });
 
     // Compute amount of photos of user
     userPCountUpdate(photo.user, -1, 0, 1);
@@ -1180,7 +1185,7 @@ async function rereject(data) {
     photo.s = status.READY;
     photo.sdate = photo.stdate = photo.cdate = new Date();
 
-    const { rel } = await this.call('photo.update', { photo });
+    const { rel } = await this.call('photo.update', { photo, oldPhotoObj });
 
     // Recalculate the number of photos of the owner
     userPCountUpdate(photo.user, 1, 0, -1);
@@ -1203,7 +1208,7 @@ async function approve(data) {
     photo.s = status.PUBLIC;
     photo.stdate = photo.cdate = photo.adate = photo.sdate = new Date();
 
-    const { rel } = await this.call('photo.update', { photo });
+    const { rel } = await this.call('photo.update', { photo, oldPhotoObj });
 
     await Promise.all([
         // Recalculate the number of photos of the owner
@@ -1252,7 +1257,7 @@ async function activateDeactivate(data) {
     photo.s = status[disable ? 'DEACTIVATE' : 'PUBLIC'];
     photo.stdate = photo.cdate = new Date();
 
-    const { rel } = await this.call('photo.update', { photo });
+    const { rel } = await this.call('photo.update', { photo, oldPhotoObj });
 
     await this.call('comment.changeObjCommentsStatus', { obj: photo });
     await this.call('photo.changePublicExternality', { photo, makePublic: !disable });
@@ -1301,7 +1306,7 @@ async function remove(data) {
     photo.s = status.REMOVE;
     photo.stdate = photo.cdate = new Date();
 
-    const { rel } = await this.call('photo.update', { photo });
+    const { rel } = await this.call('photo.update', { photo, oldPhotoObj });
 
     // Change comments status
     await this.call('comment.changeObjCommentsStatus', { obj: photo });
@@ -1333,7 +1338,7 @@ async function restore(data) {
     photo.s = status.PUBLIC;
     photo.stdate = photo.cdate = new Date();
 
-    const { rel } = await this.call('photo.update', { photo });
+    const { rel } = await this.call('photo.update', { photo, oldPhotoObj });
 
     // Change comments status
     await this.call('comment.changeObjCommentsStatus', { obj: photo });
@@ -2177,7 +2182,7 @@ async function save(data) {
         saveHistory = true;
     }
 
-    const { rel } = await this.call('photo.update', { photo });
+    const { rel } = await this.call('photo.update', { photo, oldPhotoObj });
 
     if (newValues.type) {
         // If type has been changed, change it in photo's comments also

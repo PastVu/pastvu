@@ -800,6 +800,10 @@ async function create(data) {
         obj.frags.push(frag);
     }
 
+    if (data.type === 'photo') {
+        regionController.putPhotoToRegionStatQueue(obj);
+    }
+
     obj.ccount = (obj.ccount || 0) + 1;
     const promises = [obj.save()];
 
@@ -948,7 +952,12 @@ async function remove(data) {
         }
     }
 
-    obj.ccount -= countCommentsRemoved;
+    if (data.type === 'photo') {
+        regionController.putPhotoToRegionStatQueue(obj);
+    }
+
+    obj.ccount = (obj.ccount || 0) - countCommentsRemoved;
+    obj.cdcount = (obj.cdcount || 0) + countCommentsRemoved;
     const promises = [obj.save()];
 
     for (const [userId, count] of usersCountMap) {
@@ -1110,7 +1119,14 @@ async function restore({ cid, type }) {
     }
 
     const countCommentsRestored = children.length + 1;
-    obj.ccount += countCommentsRestored;
+
+    if (type === 'photo') {
+        regionController.putPhotoToRegionStatQueue(obj);
+    }
+
+    obj.ccount = (obj.ccount || 0) + countCommentsRestored;
+    obj.cdcount = (obj.cdcount || 0) - countCommentsRestored;
+
     const promises = [obj.save()];
 
     for (const [userId, ccount] of usersCountMap) {

@@ -2,6 +2,7 @@ import { Schema } from 'mongoose';
 import { registerModel } from '../controllers/connection';
 
 export let Region = null;
+export let RegionStatQueue = null;
 
 registerModel(db => {
     const imageStatSchema = {
@@ -63,5 +64,18 @@ registerModel(db => {
 
     RegionSchema.index({ geo: '2dsphere' });
 
+    const RegionStatQueueSchema = new Schema(
+        {
+            cid: { type: Number, index: { unique: true } },
+            stamp: { type: Date, 'default': Date.now, required: true, index: true }, // Creation time
+            state: { type: Schema.Types.Mixed, 'default': {} } // Object state on first state set
+        },
+        {
+            collection: 'region_stat_queue',
+            strict: true
+        }
+    );
+
     Region = db.model('Region', RegionSchema);
+    RegionStatQueue = db.model('RegionStatQueue', RegionStatQueueSchema);
 });

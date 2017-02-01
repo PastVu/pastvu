@@ -107,6 +107,7 @@ const PhotoSchema = new Schema({
     vwcount: { type: Number, index: true }, // Views per week
     vcount: { type: Number, index: true }, // Total views
     ccount: { type: Number, index: true }, // Number of comments
+    cdcount: { type: Number }, // Number of deleted comments
     frags: [FragmentSchema], // Array of comment's fragments
 
     nocomments: { type: Boolean } // Prohibit commentation
