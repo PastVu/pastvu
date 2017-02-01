@@ -848,6 +848,12 @@ async function save(data) {
     region.title_en = String(data.title_en);
     region.title_local = data.title_local ? String(data.title_local) : undefined;
 
+    // If we changing region, drain stat queue before saving region,
+    // to align statistics before we will be changing objects belonging
+    if (data.cid) {
+        await regionStatQueueDrain();
+    }
+
     region = await region.save();
     region = region.toObject();
 
@@ -980,7 +986,13 @@ async function remove(data) {
         throw new NotFoundError(constantsError.REGION_PARENT_DOESNT_EXISTS);
     }
 
-    // _ids of all removing regoions
+    // If we removing region, drain stat queue before that,
+    // to align statistics before we will be changing objects belonging
+    if (data.cid) {
+        await regionStatQueueDrain();
+    }
+
+    // _ids of all removing regions
     const removingRegionsIds = childRegions ? _.map(childRegions, '_id') : [];
     removingRegionsIds.push(regionToRemove._id);
 
@@ -1594,16 +1606,22 @@ const $incRegionPhotoStat = function ({ regionsMap, state: { s, type, geo, regio
     });
 };
 
+let drainTimeout;
 let drainingPhotoCidsSet = new Set();
 
-async function regionStatQueueDrain() {
+async function regionStatQueueDrain(limit) {
     logger.info('Draining stat starting');
+    clearTimeout(drainTimeout);
 
     try {
+        const findOptions = { lean: true, sort: { stamp: 1 } };
+
+        if (limit) {
+            findOptions.limit = limit;
+        }
+
         // Find photos in stat queue
-        const stats = await RegionStatQueue.find(
-            {}, { _id: 0, cid: 1, state: 1 }, { lean: true, limit: 1000, sort: { stamp: 1 } }
-        ).exec();
+        const stats = await RegionStatQueue.find({}, { _id: 0, cid: 1, state: 1 }, findOptions).exec();
 
         if (!stats.length) {
             scheduleRegionStatQueueDrain();
@@ -1702,7 +1720,7 @@ async function removeDrainedRegionStat() {
 }
 
 function scheduleRegionStatQueueDrain() {
-    setTimeout(regionStatQueueDrain, ms('1m'));
+    drainTimeout = setTimeout(regionStatQueueDrain, ms('1m'), 1000);
 }
 
 export async function putPhotoToRegionStatQueue(oldPhoto, newPhoto) {
