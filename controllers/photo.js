@@ -1547,18 +1547,23 @@ export function parseFilter(filterString) {
             } else if (filterParam === 's') {
                 filterVal = filterVal.split(delimeterVal);
                 if (Array.isArray(filterVal) && filterVal.length) {
-                    result.s = [];
-                    for (filterValItem of filterVal) {
-                        if (filterValItem) {
-                            filterValItem = Number(filterValItem);
-                            if (allStatusesSet.has(filterValItem)) { // 0 must be included, that is why check for NaN
-                                result.s.push(filterValItem);
+                    if (filterVal.length === 1 && filterVal[0] === 'all') {
+                        result.s = allStatuses;
+                    } else {
+                        result.s = [];
+                        for (filterValItem of filterVal) {
+                            if (filterValItem) {
+                                filterValItem = Number(filterValItem);
+                                if (allStatusesSet.has(filterValItem)) { // 0 must be included, that is why check for NaN
+                                    result.s.push(filterValItem);
+                                }
                             }
                         }
+                        if (!result.s.length) {
+                            delete result.s;
+                        }
                     }
-                    if (!result.s.length) {
-                        delete result.s;
-                    }
+
                 }
             } else if (filterParam === 't') {
                 filterVal = filterVal.split(delimeterVal);

@@ -311,7 +311,7 @@ define([
             var filterString = '';
             var t = this.filter.disp.t().map(Number).sort();
             var r = this.filter.disp.r();
-            var s = this.filter.disp.s().map(Number).sort();
+            var s = this.filter.disp.s().map(Number);
             var geo = this.filter.disp.geo();
             var i;
 
@@ -345,11 +345,34 @@ define([
             if (geo.length === 1) {
                 filterString += (filterString ? '_' : '') + 'geo!' + geo[0];
             }
-            if (s.length) {
-                filterString += (filterString ? '_' : '') + 's';
-                for (i = 0; i < s.length; i++) {
-                    filterString += '!' + s[i];
+            if (s.length && this.auth.iAm) {
+                var allowedS;
+
+                if (this.auth.iAm.role() > 4 || this.itsMine()) {
+                    // Владелец или модератор видят все статусы, можно регулировать
+                    allowedS = filterS;
+                } else {
+                    // Зарегистрированные видят статусы однажды опубликованных
+                    allowedS = filterSPublic;
                 }
+
+                s = _.intersection(s, _.map(allowedS, function (status) {
+                    return Number(status.s);
+                }));
+
+                if (s.length) {
+                    filterString += (filterString ? '_' : '') + 's';
+
+                    if (s.length === allowedS.length) {
+                        filterString += '!all';
+                    } else {
+                        s.sort();
+                        for (i = 0; i < s.length; i++) {
+                            filterString += '!' + s[i];
+                        }
+                    }
+                }
+
             }
             if (t.length && !_.isEqual(t, [1, 2])) {
                 filterString += (filterString ? '_' : '') + 't';

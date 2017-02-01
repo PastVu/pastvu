@@ -183,25 +183,25 @@
                     // /ko
 
     | <script id="photoStat" type="text/html">
-    a.stats-head(data-bind="attr: {href: linkprefix}")
+    a.stats-head(data-bind="attr: {href: linkprefix + '_s!all'}")
         .sn
             span.glyphicon(data-bind="css: 'glyphicon-' + icon")
             span(style="margin-left: 5px", data-bind="text: title + ': '")
         .sc(data-bind="text: $data.alterAll || all")
-    a(style="display:block;margin-top:3px;", data-bind="attr: {href: linkprefix + '_geo!1'}")
+    a(style="display:block;margin-top:3px;", data-bind="attr: {href: linkprefix + '_geo!1_s!all'}")
         .sn(style="font-weight:bold;")= "С координатами: "
         .sc(data-bind="text: geo")
-    a(style="display:block;", data-bind="attr: {href: linkprefix + '_geo!0'}")
+    a(style="display:block;", data-bind="attr: {href: linkprefix + '_geo!0_s!all'}")
         .sn(style="font-weight:bold;")= "Без координат: "
         .sc(data-bind="text: all - geo")
     //ko if: own && all !== own
-    a(style="display:block;margin-top:4px;", data-bind="attr: {href: linkprefix + '_rs!0'}")
+    a(style="display:block;margin-top:4px;", data-bind="attr: {href: linkprefix + '_rs!0_s!all'}")
         .sn(style="font-weight:bold;")= "Без дочерних регионов: "
         .sc(data-bind="text: own")
-    a(style="display:block;padding-left:26px;", data-bind="attr: {href: linkprefix + '_rs!0_geo!1'}")
+    a(style="display:block;padding-left:26px;", data-bind="attr: {href: linkprefix + '_rs!0_geo!1_s!all'}")
         .sn= "C координатами: "
         .sc(data-bind="text: owngeo")
-    a(style="display:block;padding-left:26px;", data-bind="attr: {href: linkprefix + '_rs!0_geo!0'}")
+    a(style="display:block;padding-left:26px;", data-bind="attr: {href: linkprefix + '_rs!0_geo!0_s!all'}")
         .sn= "Без координат: "
         .sc(data-bind="text: own - owngeo")
     // /ko
