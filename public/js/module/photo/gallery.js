@@ -309,22 +309,24 @@ define([
         },
         buildFilterString: function () {
             var filterString = '';
-            var t = this.filter.disp.t();
+            var t = this.filter.disp.t().map(Number).sort();
             var r = this.filter.disp.r();
-            var rp = this.filter.disp.rdis();
-            var rs = this.filter.disp.rs();
-            var s = this.filter.disp.s();
+            var s = this.filter.disp.s().map(Number).sort();
             var geo = this.filter.disp.geo();
             var i;
 
-            if (geo.length === 1) {
-                filterString += (filterString ? '_' : '') + 'geo!' + geo[0];
-            }
             if (r.length) {
                 filterString += (filterString ? '_' : '') + 'r';
                 for (i = 0; i < r.length; i++) {
                     filterString += '!' + r[i].cid;
                 }
+
+                var rhash = _.transform(r, function (result, region) {
+                    result[region.cid] = region;
+                }, {});
+                var rp = _.sortBy(this.filter.disp.rdis().map(Number).filter(function (cid) {
+                    return rhash.hasOwnProperty(cid);
+                }));
 
                 if (rp.length) {
                     filterString += (filterString ? '_' : '') + 'rp';
@@ -332,11 +334,16 @@ define([
                         filterString += '!' + rp[i];
                     }
                 }
+
+                var rs = this.filter.disp.rs();
                 if (rs.length === 1) {
                     filterString += (filterString ? '_' : '') + 'rs!' + rs[0];
                 }
             } else if (this.auth.iAm && this.auth.iAm.regions().length) {
                 filterString += (filterString ? '_' : '') + 'r!0';
+            }
+            if (geo.length === 1) {
+                filterString += (filterString ? '_' : '') + 'geo!' + geo[0];
             }
             if (s.length) {
                 filterString += (filterString ? '_' : '') + 's';
@@ -344,7 +351,7 @@ define([
                     filterString += '!' + s[i];
                 }
             }
-            if (t.length) {
+            if (t.length && !_.isEqual(t, [1, 2])) {
                 filterString += (filterString ? '_' : '') + 't';
                 for (i = 0; i < t.length; i++) {
                     filterString += '!' + t[i];
