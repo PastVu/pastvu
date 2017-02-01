@@ -195,13 +195,13 @@
         .sn(style="font-weight:bold;")= "Без координат: "
         .sc(data-bind="text: all - geo")
     //ko if: own && all !== own
-    a(style="display:block;margin-top:4px;", data-bind="attr: {href: linkprefix + '_sr!0'}")
+    a(style="display:block;margin-top:4px;", data-bind="attr: {href: linkprefix + '_rs!0'}")
         .sn(style="font-weight:bold;")= "Без дочерних регионов: "
         .sc(data-bind="text: own")
-    a(style="display:block;padding-left:26px;", data-bind="attr: {href: linkprefix + '_sr!0_geo!1'}")
+    a(style="display:block;padding-left:26px;", data-bind="attr: {href: linkprefix + '_rs!0_geo!1'}")
         .sn= "C координатами: "
         .sc(data-bind="text: owngeo")
-    a(style="display:block;padding-left:26px;", data-bind="attr: {href: linkprefix + '_sr!0_geo!0'}")
+    a(style="display:block;padding-left:26px;", data-bind="attr: {href: linkprefix + '_rs!0_geo!0'}")
         .sn= "Без координат: "
         .sc(data-bind="text: own - owngeo")
     // /ko

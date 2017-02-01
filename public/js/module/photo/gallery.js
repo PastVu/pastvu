@@ -63,6 +63,7 @@ define([
                     s: ko.observableArray(),
                     r: ko.observableArray(),
                     rdis: ko.observableArray(), //Массив cid неактивных регионов
+                    rs: ko.observableArray(),
                     geo: ko.observableArray()
                 },
                 active: ko.observable(true),
@@ -311,6 +312,7 @@ define([
             var t = this.filter.disp.t();
             var r = this.filter.disp.r();
             var rp = this.filter.disp.rdis();
+            var rs = this.filter.disp.rs();
             var s = this.filter.disp.s();
             var geo = this.filter.disp.geo();
             var i;
@@ -330,10 +332,11 @@ define([
                         filterString += '!' + rp[i];
                     }
                 }
-            } else {
-                if (this.auth.iAm && this.auth.iAm.regions().length) {
-                    filterString += (filterString ? '_' : '') + 'r!0';
+                if (rs.length === 1) {
+                    filterString += (filterString ? '_' : '') + 'rs!' + rs[0];
                 }
+            } else if (this.auth.iAm && this.auth.iAm.regions().length) {
+                filterString += (filterString ? '_' : '') + 'r!0';
             }
             if (s.length) {
                 filterString += (filterString ? '_' : '') + 's';
@@ -442,6 +445,22 @@ define([
                     data.filter.disp.t(['2']);
                 } else {
                     data.filter.disp.t(['1']);
+                }
+            }
+            this.filterChangeHandle(); //Вручную вызываем обработку фильтра
+
+            return true; //Возвращаем true, чтобы галка в браузере переключилась
+        },
+        frsclick: function (data, event) {
+            var currDisp = data.filter.disp.rs();
+            var clicked = event.target.value;
+
+            if (!currDisp.length) {
+                //Если все варианты сняты, делаем активным второй вариант
+                if (clicked === '0') {
+                    data.filter.disp.rs(['1']);
+                } else {
+                    data.filter.disp.rs(['0']);
                 }
             }
             this.filterChangeHandle(); //Вручную вызываем обработку фильтра
@@ -597,9 +616,13 @@ define([
                         if (!data.filter.geo || !data.filter.geo.length) {
                             data.filter.geo = ['0', '1'];
                         }
+                        if (!data.filter.rs || !data.filter.rs.length) {
+                            data.filter.rs = ['0', '1'];
+                        }
 
                         this.filter.disp.t(data.filter.t.map(String));
                         this.filter.disp.geo(data.filter.geo);
+                        this.filter.disp.rs(data.filter.rs);
                         this.filterChangeHandleBlock = false;
                     }
 

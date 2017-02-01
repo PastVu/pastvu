@@ -1522,7 +1522,7 @@ async function saveUserRegions({ login, regions }) {
  * @param regions Array of populated regions
  * @returns {{rquery: {}, rhash: {}}}
  */
-export const buildQuery = regions => {
+export const buildQuery = (regions, rs) => {
     let rquery = Object.create(null);
     const rhash = Object.create(null);
     const result = { rquery, rhash };
@@ -1531,39 +1531,49 @@ export const buildQuery = regions => {
         return result;
     }
 
-    const levels = {};
-    rquery.$or = [];
+    const levels = new Map();
+    const filterBySublevelExistence = Array.isArray(rs);
+    const subRegions = filterBySublevelExistence && Boolean(Number(rs[0]));
 
     // Forming request for the regions
     for (let region of regions) {
         region = regionCacheHash[region.cid];
         rhash[region.cid] = region;
 
-        const level = 'r' + region.parents.length;
+        const level = region.parents.length;
+        const levelCids = levels.get(level) || [];
 
-        if (levels[level] === undefined) {
-            levels[level] = [];
+        if (!levels.has(level)) {
+            levels.set(level, levelCids);
         }
-        levels[level].push(region.cid);
+
+        levelCids.push(region.cid);
     }
 
-    _.forOwn(levels, (cids, level) => {
+    rquery.$or = [];
+
+    for (const [level, cids] of levels.entries()) {
         const $orobj = {};
 
         if (cids.length === 1) {
-            $orobj[level] = cids[0];
+            $orobj['r' + level] = cids[0];
         } else if (cids.length > 1) {
-            $orobj[level] = { $in: cids };
+            $orobj['r' + level] = { $in: cids };
         }
+
+        if (filterBySublevelExistence) {
+            $orobj['r' + (level + 1)] = subRegions ? { $exists: true } : null;
+        }
+
         rquery.$or.push($orobj);
-    });
+    }
 
     if (rquery.$or.length === 1) {
         rquery = rquery.$or[0];
     }
     // console.log(JSON.stringify(rquery));
 
-    return { rquery, rhash };
+    return { rquery, rhash, withSubRegion: filterBySublevelExistence ? subRegions : undefined };
 };
 
 

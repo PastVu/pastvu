@@ -1455,6 +1455,7 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40, random = fa
             t: buildQueryResult.types,
             r: buildQueryResult.rarr,
             rp: filter.rp,
+            rs: filter.rs,
             s: buildQueryResult.s,
             geo: filter.geo
         }
@@ -1483,7 +1484,7 @@ const givePublicNoGeoIndex = (function () {
     };
 }());
 
-const filterProps = { geo: [], r: [], rp: [], s: [], t: [] };
+const filterProps = { geo: [], r: [], rp: [], rs: [], s: [], t: [] };
 const delimeterParam = '_';
 const delimeterVal = '!';
 export function parseFilter(filterString) {
@@ -1537,6 +1538,11 @@ export function parseFilter(filterString) {
                     if (!result.rp.length) {
                         delete result.rp;
                     }
+                }
+            } else if (filterParam === 'rs') {
+                filterVal = filterVal.split(delimeterVal);
+                if (Array.isArray(filterVal) && filterVal.length === 1) {
+                    result.rs = filterVal;
                 }
             } else if (filterParam === 's') {
                 filterVal = filterVal.split(delimeterVal);
@@ -2573,7 +2579,7 @@ export function buildPhotosQuery(filter, forUserId, iAm, random) {
             regionsArr = regionsArrAll;
         }
 
-        const regionQuery = regionController.buildQuery(regionsArr);
+        const regionQuery = regionController.buildQuery(regionsArr, filter.rs);
         rqueryPub = rqueryMod = regionQuery.rquery;
         regionsHash = regionQuery.rhash;
     } else if (filter.r === undefined && iAm.registered && iAm.user.regions.length && (!forUserId || !itsMineGallery)) {
@@ -2663,12 +2669,12 @@ export function buildPhotosQuery(filter, forUserId, iAm, random) {
                 }
 
                 if (regionsPub.length) {
-                    const regionQuery = regionController.buildQuery(regionsPub);
+                    const regionQuery = regionController.buildQuery(regionsPub, filter.rs);
                     rqueryPub = regionQuery.rquery;
                     queryPub = {};
                 }
                 if (regionsMod.length) {
-                    const regionQuery = regionController.buildQuery(regionsMod);
+                    const regionQuery = regionController.buildQuery(regionsMod, filter.rs);
                     rqueryMod = regionQuery.rquery;
                     queryMod = {};
                 }
