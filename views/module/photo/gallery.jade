@@ -22,7 +22,7 @@
                                 // /ko
                                 //ko foreach: filter.disp.r
                                 span.region.candis(data-bind="css: {dis: $parent._.includes($parent.filter.disp.rdis(), $data.cid)}")
-                                    span(data-bind="text: $data.title_local")
+                                    span(data-bind="text: $data.title_en")
                                     //ko if: $parent.filter.admin()
                                     .rtgl.edit(title="Jump to region editor")
                                         a(data-bind="attr: {href: '/admin/region/' + $data.cid}")
@@ -70,6 +70,17 @@
                                     label.checkbox-inline
                                         input(type="checkbox", value="0", data-bind="checked: filter.disp.geo, click: fgeoclk")
                                         span Not setted (Where is it?)
+                            //ko if: filter.disp.r().length
+                            .row.geovars
+                                .filterName Subregions:
+                                .filterVars
+                                    label.checkbox-inline
+                                        input(type="checkbox", value="1", data-bind="checked: filter.disp.rs, click: frsclick")
+                                        span Assigned
+                                    label.checkbox-inline
+                                        input(type="checkbox", value="0", data-bind="checked: filter.disp.rs, click: frsclick")
+                                        span Not assigned
+                            // /ko
             .col-xs-12.col-sm-5.col-lg-4.col-lg-push-4.topcol.switch(data-bind="css: {invisible: !loadedFirst()}")
                 span.brief(data-bind="html: briefText")
                 //ko if: photos().length

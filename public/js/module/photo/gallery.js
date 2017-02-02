@@ -63,6 +63,7 @@ define([
                     s: ko.observableArray(),
                     r: ko.observableArray(),
                     rdis: ko.observableArray(), //Массив cid неактивных регионов
+                    rs: ko.observableArray(),
                     geo: ko.observableArray()
                 },
                 active: ko.observable(true),
@@ -308,21 +309,24 @@ define([
         },
         buildFilterString: function () {
             var filterString = '';
-            var t = this.filter.disp.t();
+            var t = this.filter.disp.t().map(Number).sort();
             var r = this.filter.disp.r();
-            var rp = this.filter.disp.rdis();
-            var s = this.filter.disp.s();
+            var s = this.filter.disp.s().map(Number);
             var geo = this.filter.disp.geo();
             var i;
 
-            if (geo.length === 1) {
-                filterString += (filterString ? '_' : '') + 'geo!' + geo[0];
-            }
             if (r.length) {
                 filterString += (filterString ? '_' : '') + 'r';
                 for (i = 0; i < r.length; i++) {
                     filterString += '!' + r[i].cid;
                 }
+
+                var rhash = _.transform(r, function (result, region) {
+                    result[region.cid] = region;
+                }, {});
+                var rp = _.sortBy(this.filter.disp.rdis().map(Number).filter(function (cid) {
+                    return rhash.hasOwnProperty(cid);
+                }));
 
                 if (rp.length) {
                     filterString += (filterString ? '_' : '') + 'rp';
@@ -330,18 +334,47 @@ define([
                         filterString += '!' + rp[i];
                     }
                 }
-            } else {
-                if (this.auth.iAm && this.auth.iAm.regions().length) {
-                    filterString += (filterString ? '_' : '') + 'r!0';
+
+                var rs = this.filter.disp.rs();
+                if (rs.length === 1) {
+                    filterString += (filterString ? '_' : '') + 'rs!' + rs[0];
                 }
+            } else if (this.auth.iAm && this.auth.iAm.regions().length) {
+                filterString += (filterString ? '_' : '') + 'r!0';
             }
-            if (s.length) {
-                filterString += (filterString ? '_' : '') + 's';
-                for (i = 0; i < s.length; i++) {
-                    filterString += '!' + s[i];
+            if (geo.length === 1) {
+                filterString += (filterString ? '_' : '') + 'geo!' + geo[0];
+            }
+            if (s.length && this.auth.iAm) {
+                var allowedS;
+
+                if (this.auth.iAm.role() > 4 || this.itsMine()) {
+                    // Владелец или модератор видят все статусы, можно регулировать
+                    allowedS = filterS;
+                } else {
+                    // Зарегистрированные видят статусы однажды опубликованных
+                    allowedS = filterSPublic;
                 }
+
+                s = _.intersection(s, _.map(allowedS, function (status) {
+                    return Number(status.s);
+                }));
+
+                if (s.length) {
+                    filterString += (filterString ? '_' : '') + 's';
+
+                    if (s.length === allowedS.length) {
+                        filterString += '!all';
+                    } else {
+                        s.sort();
+                        for (i = 0; i < s.length; i++) {
+                            filterString += '!' + s[i];
+                        }
+                    }
+                }
+
             }
-            if (t.length) {
+            if (t.length && !_.isEqual(t, [1, 2])) {
                 filterString += (filterString ? '_' : '') + 't';
                 for (i = 0; i < t.length; i++) {
                     filterString += '!' + t[i];
@@ -442,6 +475,22 @@ define([
                     data.filter.disp.t(['2']);
                 } else {
                     data.filter.disp.t(['1']);
+                }
+            }
+            this.filterChangeHandle(); //Вручную вызываем обработку фильтра
+
+            return true; //Возвращаем true, чтобы галка в браузере переключилась
+        },
+        frsclick: function (data, event) {
+            var currDisp = data.filter.disp.rs();
+            var clicked = event.target.value;
+
+            if (!currDisp.length) {
+                //Если все варианты сняты, делаем активным второй вариант
+                if (clicked === '0') {
+                    data.filter.disp.rs(['1']);
+                } else {
+                    data.filter.disp.rs(['0']);
                 }
             }
             this.filterChangeHandle(); //Вручную вызываем обработку фильтра
@@ -597,9 +646,13 @@ define([
                         if (!data.filter.geo || !data.filter.geo.length) {
                             data.filter.geo = ['0', '1'];
                         }
+                        if (!data.filter.rs || !data.filter.rs.length) {
+                            data.filter.rs = ['0', '1'];
+                        }
 
                         this.filter.disp.t(data.filter.t.map(String));
                         this.filter.disp.geo(data.filter.geo);
+                        this.filter.disp.rs(data.filter.rs);
                         this.filterChangeHandleBlock = false;
                     }
 

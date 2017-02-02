@@ -5,9 +5,9 @@
  */
 define([
     'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
-    'leaflet', 'noties', 'model/storage',
+    'leaflet', 'noties', 'm/photo/status',
     'text!tpl/admin/region.jade', 'css!style/admin/region', 'css!style/leaflet/leaflet'
-], function (_, $, Utils, socket, P, ko, koMapping, Cliche, globalVM, L, noties, storage, jade) {
+], function (_, $, Utils, socket, P, ko, koMapping, Cliche, globalVM, L, noties, statuses, jade) {
     'use strict';
 
     var regionDef = {
@@ -121,6 +121,7 @@ define([
             this.exe = ko.observable(true); //Указывает, что сейчас идет обработка запроса на действие к серверу
 
             this.showGeo = ko.observable(false);
+            this.statuses = statuses;
 
             this.region = koMapping.fromJS(regionDef);
             this.haveParent = ko.observable('0');
@@ -128,6 +129,11 @@ define([
             this.parentCidOrigin = 0;
             this.children = ko.observableArray();
             this.childLenArr = ko.observableArray();
+            this.imagesByType = ko.observable(Utils.getLocalStorage('region.imagesStatByType') || false);
+            this.imagestat = ko.observableArray();
+            this.photostat = ko.observableArray();
+            this.paintstat = ko.observableArray();
+            this.cstat = ko.observableArray();
             this.childrenExpand = ko.observable(Utils.getLocalStorage('region.childrenExpand') || 0);
             this.geoStringOrigin = null;
             this.geoObj = null;
@@ -190,11 +196,15 @@ define([
             }
         },
         mapCalc: function () {
-            var height = P.window.h() - this.$dom.find('.map').offset().top - 37 >> 0;
+            var height = P.window.h() - this.$dom.find('.map').offset().top >> 0;
 
             this.mh(height + 'px');
             if (this.map) {
-                this.map.whenReady(this.map._onResize, this.map); //Самостоятельно обновляем размеры карты
+                //Самостоятельно обновляем размеры карты
+                this.map.whenReady(function () {
+                    this.map._onResize();
+                    this.map.fitBounds(this.bboxLBound);
+                }, this);
             }
 
         },
@@ -295,6 +305,50 @@ define([
                     return false;
                 }
             }
+
+            var photostat = region.photostat;
+            var paintstat = region.paintstat;
+            var imagestat = _.mergeWith(_.cloneDeep(photostat), paintstat, function (photoval, paintval) {
+                return (photoval || 0) + (paintval || 0);
+            });
+
+            photostat.statuses = _.transform(statuses.keys, function (result, status, key) {
+                result.push({ status: status, count: photostat['s' + status] || 0, title: statuses[key].filter_title });
+            }, []);
+            photostat.icon = 'camera';
+            photostat.title = 'Photos';
+            photostat.linkprefix = '/ps?f=r!' + region.cid + '_t!1';
+            this.photostat(photostat);
+
+            paintstat.statuses = _.transform(statuses.keys, function (result, status, key) {
+                result.push({ status: status, count: paintstat['s' + status] || 0, title: statuses[key].filter_title });
+            }, []);
+            paintstat.icon = 'picture';
+            paintstat.title = 'Paintings';
+            paintstat.linkprefix = '/ps?f=r!' + region.cid + '_t!2';
+            this.paintstat(paintstat);
+
+            imagestat.statuses = _.transform(statuses.keys, function (result, status, key) {
+                result.push({ status: status, count: imagestat['s' + status] || 0, title: statuses[key].filter_title });
+            }, []);
+            imagestat.icon = 'camera';
+            imagestat.title = 'Images';
+            if (paintstat.all) {
+                imagestat.alterAll = imagestat.all + ' (' + paintstat.all + ' картин)';
+            }
+            imagestat.linkprefix = '/ps?f=r!' + region.cid;
+            this.imagestat(imagestat);
+
+            var cstat = region.cstat;
+            cstat.statuses = _.transform(statuses.keys, function (result, status, key) {
+                if (_.isNumber(cstat['s' + status])) {
+                    result.push({ status: status, count: cstat['s' + status], title: statuses[key].filter_title });
+                }
+            }, []);
+            this.cstat(cstat);
+
+            imagestat.cid = photostat.cid = paintstat.cid = cstat.cid = region.cid;
+
             if (needRedraw) {
                 this.drawData();
             }
@@ -433,6 +487,14 @@ define([
                 this.mapCalc();
                 Utils.setLocalStorage('region.childrenExpand', this.childrenExpand());
             }
+        },
+        toggleGeo: function () {
+            this.showGeo(!this.showGeo());
+            this.mapCalc();
+        },
+        toggleImagesStatType: function () {
+            this.imagesByType(!this.imagesByType());
+            Utils.setLocalStorage('region.imagesStatByType', this.imagesByType());
         },
 
         //Создание прямоугольника bboxhome
