@@ -1010,14 +1010,13 @@ waitDb.then(function (db) {
         return { message: 'Photos statistics were calculated in ' + (Date.now() - startTime) / 1000 + 's' };
     });
 
-    saveSystemJSFunc(function calcRegionStats(cids) {
+    saveSystemJSFunc(function calcRegionStats() {
         var startTime = Date.now();
         var doneCounter = 0;
         var query = {};
 
-        if (cids && cids.length) {
-            query.cid = { $in: cids };
-        }
+        // Delete photos stat queue first
+        db.region_stat_queue.remove();
 
         var counter = db.regions.count(query);
         print('Starting stat calculation for ' + counter + ' regions');
