@@ -1730,7 +1730,7 @@ async function removeDrainedRegionStat() {
 }
 
 function scheduleRegionStatQueueDrain() {
-    drainTimeout = setTimeout(regionStatQueueDrain, ms('1m'), 1000);
+    drainTimeout = setTimeout(regionStatQueueDrain, ms('97s'), 1000); // Different in ENGLISH to avoid overlapping
 }
 
 export async function putPhotoToRegionStatQueue(oldPhoto, newPhoto) {
