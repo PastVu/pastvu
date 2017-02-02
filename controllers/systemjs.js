@@ -1,7 +1,8 @@
 /* eslint no-var: 0, object-shorthand: [2, 'never'] */
 /*
  global print:true, linkifyUrlString: true, toPrecision: true, toPrecision6: true, toPrecisionRound:true,
- geoToPrecision:true, spinLng:true, regionClearPhotoTitle:true, calcRegionStats:true
+ geoToPrecision:true, spinLng:true, regionClearPhotoTitle:true,
+ regionsAssignPhotos:true, regionsAssignComments:true, calcPhotoStats:true,, calcUserStats:true, calcRegionStats:true
  */
 
 /**
@@ -330,44 +331,171 @@ waitDb.then(function (db) {
         };
     });
 
-    //Для фотографий с координатой заново расчитываем регионы
-    saveSystemJSFunc(function regionsAssignObjects() {
+    saveSystemJSFunc(function calcUserPhotoCommentsRegionsStat() {
         var startTime = Date.now();
 
-        //Очищаем принадлежность к регионам у всех фотографий с проставленной точкой
-        print('Clearing current regions assignment\n');
-        db.photos.update(
-            { geo: { $exists: true } }, { $unset: { r0: 1, r1: 1, r2: 1, r3: 1, r4: 1, r5: 1 } }, { multi: true }
-        );
-
-        //Для каждого региона находим фотографии
-        print('Start to assign for ' + db.regions.count() + ' regions..\n');
-        db.regions.find({ cid: { $ne: 1000000 } }, {
-            cid: 1,
-            parents: 1,
-            geo: 1,
-            title_en: 1
-        }).forEach(function (region) {
-            var startTime = Date.now();
-            var count;
-            var queryObject = {};
-            var setObject = { $set: {} };
-
-            queryObject.geo = { $geoWithin: { $geometry: region.geo } };
-            setObject.$set['r' + region.parents.length] = region.cid;
-
-            count = db.photos.count(queryObject);
-            print('Assigning ' + count + ' photos for [r' + region.parents.length + '] ' + region.cid + ' ' + region.title_en + ' region');
-            if (count) {
-                db.photos.update(queryObject, setObject, { multi: true });
-            }
-
-            print('Finished in ' + (Date.now() - startTime) / 1000 + 's\n');
-        });
-
+        calcPhotoStats();
+        calcUserStats();
+        regionsAssignPhotos();
+        regionsAssignComments();
         calcRegionStats();
 
-        return { message: 'All assigning finished in ' + (Date.now() - startTime) / 1000 + 's' };
+        return { message: 'All finished in ' + (Date.now() - startTime) / 1000 + 's.' };
+    });
+
+    // Для фотографий с координатой заново расчитываем регионы
+    saveSystemJSFunc(function regionsAssignPhotos(clearBefore) {
+        var startTime = Date.now();
+        var query = { cid: { $ne: 1000000 } };
+        var parentRegionsSet = new Set();
+        var maxRegionLevel = 5;
+        var modifiedCounter = 0;
+
+        if (clearBefore) {
+            print('Clearing current regions assignment\n');
+            db.photos.update(
+                { geo: { $exists: true } }, { $unset: { r0: 1, r1: 1, r2: 1, r3: 1, r4: 1, r5: 1 } }, { multi: true }
+            );
+        }
+
+        // For each level starting from maximum
+        for (var level = maxRegionLevel; level >= 0; level--) {
+            var regionsCounter = 0;
+            query.parents = { $size: level };
+
+            print('Starting objects assignment to ' + db.regions.count(query) + ' regions at ' + level + 'th level...');
+            db.regions.find(query, { _id: 0, cid: 1, parents: 1, geo: 1, title_en: 1 }).forEach(function (region) {
+                var startTime = Date.now();
+                var query = { geo: { $geoWithin: { $geometry: region.geo } } };
+                var $update = { $set: { ['r' + level]: region.cid } };
+                var hasChildren = parentRegionsSet.has(region.cid);
+                var i;
+
+                region.parents.forEach(function (cid, index) {
+                    $update.$set['r' + index] = cid;
+                });
+
+                if (hasChildren) {
+                    // Region has children, so try to update only photos that are assigned to any of its children,
+                    // because such photos already have all regions assigned all the way up, inluding current region
+                    for (i = level + 1; i <= maxRegionLevel; i++) {
+                        query['r' + i] = null;
+                    }
+                } else {
+                    // Final region, no children, so nullify all possible assignment to subregions
+                    if (level < maxRegionLevel) {
+                        $update.$unset = {};
+                    }
+                    for (i = level + 1; i <= maxRegionLevel; i++) {
+                        $update.$unset['r' + i] = 1;
+                    }
+                    if (region.parents) {
+                        region.parents.forEach(function (cid) {
+                            parentRegionsSet.add(cid);
+                        });
+                    }
+                }
+
+                var updated = db.photos.update(query, $update, { multi: true });
+                modifiedCounter += updated.nModified;
+
+                print('[r' + level + '.' + ++regionsCounter + '] Modified ' + updated.nModified + ' (matched ' + updated.nMatched + ') photos in ' + region.cid + ' ' + region.title_en + ' region ' + (hasChildren ? '(has children) ' : '') + 'in ' + (Date.now() - startTime) / 1000 + 's');
+            });
+
+            if (level) {
+                print('Modified ' + modifiedCounter + ' photos so far\n');
+            }
+        }
+
+        // Set Open sea to photos without top region
+        db.photos.update(
+            { r0: null, geo: { $exists: true } },
+            { $set: { r0: 1000000 }, $unset: { r1: 1, r2: 1, r3: 1, r4: 1, r5: 1 } },
+            { multi: true }
+        );
+
+        return { message: 'Assigning finished in ' + (Date.now() - startTime) / 1000 + 's. Modified ' + modifiedCounter + ' photos' };
+    });
+
+    // Для фотографий с координатой заново расчитываем регионы
+    // TOO slow, use regionsAssignPhotos instead
+    saveSystemJSFunc(function regionsAssignPhotosOld(cids) {
+        if (!cids) {
+            return;
+        }
+        var startTime = Date.now();
+        var maxRegionLevel = 5;
+
+
+        var query = { geo: { $exists: true } };
+        var fields = { _id: 0, cid: 1, geo: 1 };
+        var regionFields = { _id: 0, cid: 1, parents: 1 };
+
+        if (cids && cids.length) {
+            query.cid = { $in: cids };
+        }
+
+        for (var i = 0; i <= maxRegionLevel; i++) {
+            fields['r' + i] = 1;
+        }
+
+        var counter = 0;
+        var counterUpdated = 0;
+        var count = db.photos.count(query);
+
+        print('Starting iteration over ' + db.photos.count(query) + ' photos..');
+        db.photos.find(query, fields).sort({ cid: 1 }).forEach(function (photo) {
+            var regions = db.regions.find(
+                { geo: { $nearSphere: { $geometry: { type: 'Point', coordinates: photo.geo }, $maxDistance: 1 } } },
+                regionFields
+            ).sort({ parents: -1 }).limit(1).toArray();
+
+            var region = regions[0];
+            var regionCids = region ? (region.parents || []).concat(region.cid) : [1000000];
+
+            var r;
+            var regionCid;
+            var $set = {};
+            var $unset = {};
+            var $update = {};
+            var setCounter = 0;
+            var unsetCounter = 0;
+
+            for (var i = 0; i <= maxRegionLevel; i++) {
+                r = 'r' + i;
+                regionCid = regionCids[i];
+
+                if (regionCid) {
+                    if (photo[r] !== regionCid) {
+                        $set[r] = regionCid;
+                        setCounter++;
+                    }
+                } else if (photo[r]) {
+                    $unset[r] = 1;
+                    unsetCounter++;
+                }
+            }
+
+            if (setCounter > 0) {
+                $update.$set = $set;
+            }
+            if (unsetCounter > 0) {
+                $update.$unset = $unset;
+            }
+
+            if (setCounter > 0 || unsetCounter > 0) {
+                counterUpdated++;
+                db.photos.update({ cid: photo.cid }, $update);
+            }
+
+            counter++;
+
+            if (counter && counter % 2000 === 0 || counter === count) {
+                print((Date.now() - startTime) / 1000 + 's Calculated ' + counter + ' photos (' + counterUpdated + ' updated)');
+            }
+        });
+
+        return { message: 'Photo assigning finished in ' + (Date.now() - startTime) / 1000 + 's' };
     });
 
     //Присваиваем регионы и координаты комментариям фотографий
@@ -384,29 +512,35 @@ waitDb.then(function (db) {
             var $set = {};
             var $unset = {};
             var $update = {};
+            var setCounter = 0;
+            var unsetCounter = 0;
 
             for (var i = 0; i <= maxRegionLevel; i++) {
                 r = 'r' + i;
                 if (photo[r]) {
                     $set[r] = photo[r];
+                    setCounter++;
                 } else {
                     $unset[r] = 1;
+                    unsetCounter++;
                 }
             }
 
             if (photo.geo) {
                 $set.geo = photo.geo;
+                setCounter++;
             } else {
                 $unset.geo = 1;
+                unsetCounter++;
             }
-            if (Object.keys($set).length) {
+            if (setCounter > 0) {
                 $update.$set = $set;
             }
-            if (Object.keys($unset).length) {
+            if (unsetCounter > 0) {
                 $update.$unset = $unset;
             }
 
-            if (Object.keys($update).length) {
+            if (setCounter > 0 || unsetCounter > 0) {
                 db.comments.update({ obj: photo._id }, $update, { multi: true });
             }
 
@@ -695,9 +829,15 @@ waitDb.then(function (db) {
         return { message: 'Renamed ' + renamedCounter + ' photo titles. All done in ' + (Date.now() - startTime) / 1000 + 's' };
     });
 
-    saveSystemJSFunc(function calcUserStats() {
+    saveSystemJSFunc(function calcUserStats(logins) {
         var startTime = Date.now();
-        var users = db.users.find({}, { _id: 1 }).sort({ cid: -1 }).toArray();
+        var query = {};
+
+        if (logins && logins.length) {
+            query.login = { $in: logins };
+        }
+
+        var users = db.users.find(query, { _id: 1 }).sort({ cid: -1 }).toArray();
         var user;
         var userCounter = users.length;
         var $set;
@@ -828,6 +968,7 @@ waitDb.then(function (db) {
         var $unset;
         var $update;
         var ccount;
+        var cdcount;
 
         print('Start to calc for ' + counter + ' photos');
         while (counter--) {
@@ -841,6 +982,14 @@ waitDb.then(function (db) {
                 $set.ccount = ccount;
             } else {
                 $unset.ccount = 1;
+            }
+
+            cdcount = db.comments.count({ obj: photo._id, del: null });
+
+            if (cdcount > 0) {
+                $set.cdcount = cdcount;
+            } else {
+                $unset.cdcount = 1;
             }
 
             if (Object.keys($set).length) {
