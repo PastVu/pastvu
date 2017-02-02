@@ -1,3 +1,4 @@
+import ms from 'ms';
 import _ from 'lodash';
 import log4js from 'log4js';
 import config from '../config';
@@ -7,9 +8,9 @@ import constants from './constants.js';
 import * as _session from './_session.js';
 import { User } from '../models/User';
 import { Photo } from '../models/Photo';
-import { Region } from '../models/Region';
 import { Comment } from '../models/Comment';
 import { Counter } from '../models/Counter';
+import { Region, RegionStatQueue } from '../models/Region';
 import constantsError from '../app/errors/constants';
 import { ApplicationError, AuthorizationError, BadParamsError, NotFoundError, NoticeError } from '../app/errors';
 
@@ -17,7 +18,7 @@ export let DEFAULT_HOME = null;
 export const regionsAllSelectHash = Object.create(null);
 
 const loggerApp = log4js.getLogger('app');
-//const logger = log4js.getLogger('region.js');
+const logger = log4js.getLogger('region.js');
 const maxRegionLevel = constants.region.maxLevel;
 const nogeoRegion = { cid: 0, title_en: 'Where is it?', title_local: 'Где это?' };
 
@@ -25,14 +26,19 @@ let regionCacheArr = []; // Array-cache of regions  [{ _id, cid, parents }]
 let regionCacheHash = {}; // Hash-cache of regions { cid: { _id, cid, parents } }
 
 let regionCacheArrPublic = [];
+let regionCacheMapPublic = new Map();
 let regionCacheArrPublicPromise = Promise.resolve({ regions: regionCacheArrPublic });
+let regionCacheArrAdmin = [];
+let regionCacheMapAdmin = new Map();
+let regionCacheArrAdminPromise = Promise.resolve({ regions: regionCacheArrAdmin });
+
 let regionsChildrenArrHash = {};
 
 for (let i = 0; i <= maxRegionLevel; i++) {
     regionsAllSelectHash['r' + i] = 1;
 }
 
-export const ready = waitDb.then(fillCache);
+export const ready = waitDb.then(fillCache).then(scheduleRegionStatQueueDrain);
 
 // Заполняем кэш (массив и хэш) регионов в память
 async function fillCache() {
@@ -40,18 +46,23 @@ async function fillCache() {
         const start = Date.now();
         regionCacheArr = await Region.find(
             {},
-            { _id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1 },
+            { _id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1, photostat: 1, paintstat: 1, cstat: 1 },
             { lean: true, sort: { cid: 1 } }
         ).exec();
 
+        regionCacheArrAdmin = [];
+        regionCacheMapAdmin = new Map();
         regionCacheArrPublic = [];
-        regionCacheHash = { '0': nogeoRegion }; // Zero region means absence of coordinates
+        regionCacheMapPublic = new Map();
         regionsChildrenArrHash = {};
+        regionCacheHash = { '0': nogeoRegion }; // Zero region means absence of coordinates
         for (const region of regionCacheArr) {
-            const { cid, parents, title_en, title_local } = region;
+            const { cid, parents } = region;
+            const { regionAdmin, regionPublic } = fillPublicAndAdminMaps(region);
 
             regionCacheHash[cid] = region;
-            regionCacheArrPublic.push({ cid, parents, title_en, title_local });
+            regionCacheArrAdmin.push(regionAdmin);
+            regionCacheArrPublic.push(regionPublic);
 
             const parentCid = parents[parents.length - 1];
 
@@ -67,13 +78,45 @@ async function fillCache() {
         }
 
         regionCacheArrPublicPromise = Promise.resolve({ regions: regionCacheArrPublic });
+        regionCacheArrAdminPromise = Promise.resolve({ regions: regionCacheArrAdmin });
 
-        DEFAULT_HOME = regionCacheHash[config.regionHome] || regionCacheArr[0];
+        DEFAULT_HOME = regionCacheHash[config.regionHome] || regionCacheArrPublic[0];
         loggerApp.info(`Region cache filled with ${regionCacheArr.length} in ${Date.now() - start}ms`);
     } catch (err) {
         err.message = `FillCache: ${err.message}`;
         throw err;
     }
+}
+
+function fillPublicAndAdminMaps(region) {
+    const { cid, parents, title_en, title_local, photostat = {}, paintstat = {}, cstat = {} } = region;
+    const regionAdmin = regionCacheMapAdmin.get(cid) || { cid };
+    const regionPublic = regionCacheMapPublic.get(cid) || { cid };
+
+    Object.assign(regionPublic, {
+        parents, title_en, title_local,
+        phc: photostat.s5, pac: paintstat.s5, cc: cstat.all - cstat.del
+    });
+
+    Object.assign(regionAdmin, {
+        parents, title_en, title_local,
+        pc: photostat.all + paintstat.all,
+        pcg: photostat.geo + paintstat.geo,
+        pco: photostat.own + paintstat.own,
+        pcog: photostat.owngeo + paintstat.owngeo,
+        cc: cstat.all,
+        ccd: cstat.del
+    });
+
+    if (!regionCacheMapAdmin.has(cid)) {
+        regionCacheMapAdmin.set(cid, regionAdmin);
+    }
+
+    if (!regionCacheMapPublic.has(cid)) {
+        regionCacheMapPublic.set(cid, regionPublic);
+    }
+
+    return { regionAdmin, regionPublic };
 }
 
 export const getRegionFromCache = cid => regionCacheHash[cid];
@@ -690,8 +733,8 @@ async function save(data) {
             data.geo = data.geo.geometries[0];
         }
 
-        if (Object.keys(data.geo).length !== 2 || !Array.isArray(data.geo.coordinates) || !data.geo.coordinates.length || !data.geo.type ||
-            data.geo.type !== 'Polygon' && data.geo.type !== 'MultiPolygon') {
+        if (Object.keys(data.geo).length !== 2 || !Array.isArray(data.geo.coordinates) || !data.geo.coordinates.length ||
+            !data.geo.type || data.geo.type !== 'Polygon' && data.geo.type !== 'MultiPolygon') {
             throw new BadParamsError(constantsError.REGION_GEOJSON_GEOMETRY);
         }
     } else if (data.geo) {
@@ -706,6 +749,11 @@ async function save(data) {
 
     if (!data.cid) {
         // Create new region object
+
+        if (!data.geo) {
+            throw new BadParamsError();
+        }
+
         const count = await Counter.increment('region');
 
         if (!count) {
@@ -800,6 +848,12 @@ async function save(data) {
     region.title_en = String(data.title_en);
     region.title_local = data.title_local ? String(data.title_local) : undefined;
 
+    // If we changing region, drain stat queue before saving region,
+    // to align statistics before we will be changing objects belonging
+    if (data.cid) {
+        await regionStatQueueDrain();
+    }
+
     region = await region.save();
     region = region.toObject();
 
@@ -826,6 +880,18 @@ async function save(data) {
             }
         } catch (err) {
             throw new ApplicationError({ code: constantsError.REGION_SAVED_BUT_PARENT_EXTERNALITY, why: err.message });
+        }
+    }
+
+    // If coordinates or parent changed, compute stats for current and parents
+    if (data.geo || parentChange) {
+        const affected = _.union([region.cid], parentsArray, parentsArrayOld);
+
+        try {
+            // Update region stats for current and all parents
+            await dbEval('calcRegionStats', affected, { nolock: true });
+        } catch (error) {
+            logger.warn(`Failed to calculate region stats on region ${region.cid} save`, error);
         }
     }
 
@@ -900,7 +966,8 @@ async function remove(data) {
     //  throw { message: 'Region for reassign descendants does not exists'};
     // }
 
-    const removingLevel = regionToRemove.parents.length;
+    const { parents } = regionToRemove;
+    const removingLevel = parents.length;
 
     const [childRegions, parentRegion] = await Promise.all([
         // Find all child regions
@@ -909,7 +976,7 @@ async function remove(data) {
         // If region has no parent (we removing whole country) - select any another country
         Region.findOne(
             removingLevel ?
-            { cid: regionToRemove.parents[regionToRemove.parents.length - 1] } :
+            { cid: parents[parents.length - 1] } :
             { cid: { $ne: regionToRemove.cid }, parents: { $size: 0 } },
             { _id: 1, cid: 1, title_en: 1 }, { lean: true }
         ).exec()
@@ -919,7 +986,13 @@ async function remove(data) {
         throw new NotFoundError(constantsError.REGION_PARENT_DOESNT_EXISTS);
     }
 
-    // _ids of all removing regoions
+    // If we removing region, drain stat queue before that,
+    // to align statistics before we will be changing objects belonging
+    if (data.cid) {
+        await regionStatQueueDrain();
+    }
+
+    // _ids of all removing regions
     const removingRegionsIds = childRegions ? _.map(childRegions, '_id') : [];
     removingRegionsIds.push(regionToRemove._id);
 
@@ -961,6 +1034,16 @@ async function remove(data) {
         // Remove this regions
         regionToRemove.remove()
     ]);
+
+    // If removing region has parent, recalc parents stat
+    if (removingLevel) {
+        try {
+            // Update stats for all parent regions
+            await dbEval('calcRegionStats', parents, { nolock: true });
+        } catch (error) {
+            logger.warn(`Failed to calculate parent regions stats on region ${data.cid} removal`, error);
+        }
+    }
 
     await fillCache(); // Refresh regions cache
 
@@ -1106,7 +1189,7 @@ async function giveListFull(data) {
     }
 
     const [{ regions }, regionsStatByLevel] = await Promise.all([
-        regionCacheArrPublicPromise,
+        regionCacheArrAdminPromise,
         getRegionsStatByLevel()
     ]);
 
@@ -1439,7 +1522,7 @@ async function saveUserRegions({ login, regions }) {
  * @param regions Array of populated regions
  * @returns {{rquery: {}, rhash: {}}}
  */
-export const buildQuery = regions => {
+export const buildQuery = (regions, rs) => {
     let rquery = Object.create(null);
     const rhash = Object.create(null);
     const result = { rquery, rhash };
@@ -1448,40 +1531,246 @@ export const buildQuery = regions => {
         return result;
     }
 
-    const levels = {};
-    rquery.$or = [];
+    const levels = new Map();
+    const filterBySublevelExistence = Array.isArray(rs);
+    const subRegions = filterBySublevelExistence && Boolean(Number(rs[0]));
 
     // Forming request for the regions
     for (let region of regions) {
         region = regionCacheHash[region.cid];
         rhash[region.cid] = region;
 
-        const level = 'r' + region.parents.length;
+        const level = region.parents.length;
+        const levelCids = levels.get(level) || [];
 
-        if (levels[level] === undefined) {
-            levels[level] = [];
+        if (!levels.has(level)) {
+            levels.set(level, levelCids);
         }
-        levels[level].push(region.cid);
+
+        levelCids.push(region.cid);
     }
 
-    _.forOwn(levels, (cids, level) => {
+    rquery.$or = [];
+
+    for (const [level, cids] of levels.entries()) {
         const $orobj = {};
 
         if (cids.length === 1) {
-            $orobj[level] = cids[0];
+            $orobj['r' + level] = cids[0];
         } else if (cids.length > 1) {
-            $orobj[level] = { $in: cids };
+            $orobj['r' + level] = { $in: cids };
         }
+
+        if (filterBySublevelExistence) {
+            $orobj['r' + (level + 1)] = subRegions ? { $exists: true } : null;
+        }
+
         rquery.$or.push($orobj);
-    });
+    }
 
     if (rquery.$or.length === 1) {
         rquery = rquery.$or[0];
     }
     // console.log(JSON.stringify(rquery));
 
-    return { rquery, rhash };
+    return { rquery, rhash, withSubRegion: filterBySublevelExistence ? subRegions : undefined };
 };
+
+
+const $incRegionPhotoStat = function ({ regionsMap, state: { s, type, geo, regions, cc = 0, ccd = 0 }, sign = 1 }) {
+    const imageField = type === constants.photo.type.PHOTO ? 'photostat' : 'paintstat';
+    const geoExists = Utils.geo.check(geo);
+    const call = cc + ccd;
+
+    regions.forEach((cid, index, regions) => {
+        const region$inc = regionsMap.get(cid) || Object.create(null);
+
+        region$inc[`${imageField}.all`] = (region$inc[`${imageField}.all`] || 0) + sign;
+        region$inc[`${imageField}.s${s}`] = (region$inc[`${imageField}.s${s}`] || 0) + sign;
+
+        if (geoExists) {
+            region$inc[`${imageField}.geo`] = (region$inc[`${imageField}.geo`] || 0) + sign;
+        }
+
+        if (index === regions.length - 1) {
+            region$inc[`${imageField}.own`] = (region$inc[`${imageField}.own`] || 0) + sign;
+
+            if (geoExists) {
+                region$inc[`${imageField}.owngeo`] = (region$inc[`${imageField}.owngeo`] || 0) + sign;
+            }
+        }
+
+        if (call) {
+            region$inc['cstat.all'] = (region$inc['cstat.all'] || 0) + sign * call;
+
+            if (cc) {
+                region$inc[`cstat.s${s}`] = (region$inc[`cstat.s${s}`] || 0) + sign * cc;
+            }
+
+            if (ccd) {
+                region$inc['cstat.del'] = (region$inc['cstat.del'] || 0) + sign * ccd;
+            }
+        }
+
+        regionsMap.set(cid, region$inc);
+    });
+};
+
+let drainTimeout;
+let drainingPhotoCidsSet = new Set();
+
+async function regionStatQueueDrain(limit) {
+    logger.info('Draining stat starting');
+    clearTimeout(drainTimeout);
+
+    try {
+        const findOptions = { lean: true, sort: { stamp: 1 } };
+
+        if (limit) {
+            findOptions.limit = limit;
+        }
+
+        // Find photos in stat queue
+        const stats = await RegionStatQueue.find({}, { _id: 0, cid: 1, state: 1 }, findOptions).exec();
+
+        if (!stats.length) {
+            scheduleRegionStatQueueDrain();
+            return;
+        }
+
+        // Get photos cids array
+        const photoCids = stats.map(stat => stat.cid);
+        // Fill set of photos cids that are going to be drained
+        drainingPhotoCidsSet = new Set(photoCids);
+
+        // Find all photos that are going to be drained
+        const photos = await Photo.find(
+            { cid: { $in: photoCids } },
+            { _id: 0, cid: 1, s: 1, type: 1, geo: 1, ccount: 1, cdcount: 1, ...regionsAllSelectHash },
+            { lean: true }
+        ).exec();
+
+        if (photos.length !== stats.length) {
+            logger.warn(`Stat queue length ${stats.length} is not equal to number of photos ${photos.length}`);
+
+            await removeDrainedRegionStat();
+            scheduleRegionStatQueueDrain();
+            return;
+        }
+
+        const regionsMap = new Map();
+        const photosMap = photos.reduce((map, photo) => map.set(photo.cid, photo), new Map());
+
+        // Iterate over each stat record and calculate final delta for each region in all stat records
+        for (const { cid, state } of stats) {
+            // If regions exists in time of photo's first change, decrement stat of each regions by values of that state
+            if (Array.isArray(state.regions) && state.regions.length) {
+                $incRegionPhotoStat({ regionsMap, state, sign: -1 });
+            }
+
+            const photo = photosMap.get(cid);
+            const regions = getObjRegionCids(photo);
+
+            // If regions exists for current photo (actual state), increment stat of each regions by current values
+            if (regions.length) {
+                $incRegionPhotoStat({ regionsMap, state: {
+                    s: photo.s, type: photo.type, geo: photo.geo, regions, cc: photo.ccount, ccd: photo.cdcount
+                } });
+            }
+        }
+
+        // Get only valuable deltas for each region, and update it in db and regions cache
+        const updatePromises = [];
+        for (const [cid, inc] of regionsMap.entries()) {
+            let count = 0;
+            const $inc = _.transform(inc, (result, value, key) => {
+                if (value) {
+                    count++;
+                    result[key] = value;
+                }
+            }, Object.create(null));
+
+            if (count) {
+                updatePromises.push(Region.update({ cid }, { $inc }).exec());
+
+                const region = regionCacheHash[cid];
+
+                if (region) {
+                    // Update each stat value in general regionCacheHash
+                    _.forOwn($inc, (delta, key) => {
+                        _.set(region, key, _.get(region, key, 0) + delta);
+                    });
+
+                    // Then update stat in each public and admin caches
+                    fillPublicAndAdminMaps(region);
+                }
+            }
+        }
+
+        if (updatePromises.length) {
+            await Promise.all(updatePromises);
+        }
+
+        await removeDrainedRegionStat();
+        logger.info(`Drained ${stats.length} stats for ${updatePromises.length} regions`);
+    } catch (error) {
+        logger.error('Stat queue drain failed', error);
+    }
+
+    scheduleRegionStatQueueDrain();
+}
+
+async function removeDrainedRegionStat() {
+    if (drainingPhotoCidsSet.size) {
+        const photoCidsToRemove = Array.from(drainingPhotoCidsSet);
+
+        drainingPhotoCidsSet = new Set();
+        await RegionStatQueue.remove({ cid: { $in: photoCidsToRemove } }).exec();
+    }
+}
+
+function scheduleRegionStatQueueDrain() {
+    drainTimeout = setTimeout(regionStatQueueDrain, ms('1m'), 1000);
+}
+
+export async function putPhotoToRegionStatQueue(oldPhoto, newPhoto) {
+    const regionCids = getObjRegionCids(oldPhoto);
+    const { cid, s, type, geo, ccount: cc = 0, cdcount: ccd = 0 } = oldPhoto;
+
+    // If new photo info has been passed, check if we need to update stat by comparing properties which are taken into account
+    if (newPhoto) {
+        const newRegionCids = getObjRegionCids(newPhoto);
+        const { s: newS, type: newType, geo: newGeo, ccount: newcc = 0, cdcount: newccd = 0 } = newPhoto;
+        const geoExists = Utils.geo.check(geo);
+        const newGeoExists = Utils.geo.check(newGeo);
+        const geoExistenceChanged = !geoExists && newGeoExists || geoExists && !newGeoExists;
+        const statInfoCanged =
+            s !== newS || type !== newType ||
+            !_.isEqual(regionCids, newRegionCids) || geoExistenceChanged ||
+            cc !== newcc || ccd !== newccd;
+
+        if (!statInfoCanged) {
+            return;
+        }
+    }
+
+    let updateMethod;
+
+    // If current photo is being drained now,
+    // replace its state in queue with current state and
+    // remove it from drain set to avoid removing it from queue on regionStatQueueDrain finish
+    if (drainingPhotoCidsSet.has(cid)) {
+        updateMethod = '$set';
+        drainingPhotoCidsSet.delete(cid);
+    } else {
+        updateMethod = '$setOnInsert';
+    }
+
+    await RegionStatQueue.update({ cid }, { [updateMethod]: {
+        stamp: new Date(), cid,
+        state: { s, type, geo: _.isEmpty(geo) ? undefined : geo, regions: regionCids, cc, ccd }
+    } }, { upsert: true }).exec();
+}
 
 give.isPublic = true;
 save.isPublic = true;

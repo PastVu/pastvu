@@ -70,6 +70,17 @@
                                     label.checkbox-inline
                                         input(type="checkbox", value="0", data-bind="checked: filter.disp.geo, click: fgeoclk")
                                         span Нет (Где это?)
+                            //ko if: filter.disp.r().length
+                            .row.geovars
+                                .filterName Подрегионы:
+                                .filterVars
+                                    label.checkbox-inline
+                                        input(type="checkbox", value="1", data-bind="checked: filter.disp.rs, click: frsclick")
+                                        span Есть
+                                    label.checkbox-inline
+                                        input(type="checkbox", value="0", data-bind="checked: filter.disp.rs, click: frsclick")
+                                        span Нет
+                            // /ko
             .col-xs-12.col-sm-5.col-lg-4.col-lg-push-4.topcol.switch(data-bind="css: {invisible: !loadedFirst()}")
                 span.brief(data-bind="html: briefText")
                 //ko if: photos().length

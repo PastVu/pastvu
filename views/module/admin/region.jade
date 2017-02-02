@@ -2,7 +2,7 @@
     //ko if: createMode()
     h4 Создание региона
     // /ko
-    form.form-horizontal(action='', autocomplete="off", method='POST', data-bind="event: {submit: save}")
+    form.form-horizontal(action='', autocomplete="off", data-bind="event: {submit: save}")
         //ko if: !createMode()
         .form-group
             label.col-xs-4.col-sm-3.col-lg-2.control-label Редактирование региона
@@ -80,7 +80,7 @@
                     a(data-bind="attr: {href: '/admin/region/' + $data.cid}", style="white-space:nowrap;")
                         span(data-bind="text: $data.title")
                         //ko if: $data.childrenCount
-                        span(data-bind="text: ' +' + $data.childrenCount", style="color:#7489a0;font-size:10px;")
+                        span(data-bind="text: ' +' + $data.childrenCount", style="color:#7489a0;font-size:11px;")
                         // /ko
                     // /ko
                     // /ko
@@ -91,6 +91,22 @@
                     span(data-bind="text: childrenExpand() === 1 ? 'Еще' : 'Свернуть'")
                 // /ko
         // /ko
+        //ko if: !createMode() && showGeo()
+        .form-group
+            label.col-xs-4.col-sm-3.col-lg-2.control-label Геометрия
+            .col-xs-8.col-sm-9.col-lg-10
+                p.form-control-static
+                    | Полигонов:
+                    strong(data-bind="text: ' ' + formatNum(region.polynum.exterior())")
+                    //ko if: region.polynum.interior()
+                    |  (+
+                    strong(data-bind="text: formatNum(region.polynum.interior())")
+                    |  выколотых)
+                    // /ko
+                    | ; Вершин:
+                    strong(data-bind="text: ' ' + (formatNum(region.pointsnum() - region.polynum.exterior() - region.polynum.interior()))")
+        // /ko
+        //ko if: createMode() || showGeo()
         .form-group
             label.col-xs-4.col-sm-3.col-lg-2.control-label Доп. параметры
             .col-xs-8.col-sm-9.col-lg-10(style="padding-top: 3px")
@@ -115,28 +131,12 @@
                     //ko if: !bboxAuto()
                     input.form-control.input-sm.bbox(type="text", data-bind="bboxhomeInput: true, attr: {readonly: bboxAuto()}, css: {invalid: !bboxAuto() && !bboxhomeValid()}", placeholder="Не задан")
                     // /ko
-        //ko if: !createMode() && showGeo()
-        .form-group
-            label.col-xs-4.col-sm-3.col-lg-2.control-label Геометрия
-            .col-xs-8.col-sm-9.col-lg-10
-                p.form-control-static
-                    | Полигонов:
-                    strong(data-bind="text: ' ' + formatNum(region.polynum.exterior())")
-                    //ko if: region.polynum.interior()
-                    |  (+
-                    strong(data-bind="text: formatNum(region.polynum.interior())")
-                    |  выколотых)
-                    // /ko
-                    | ; Вершин:
-                    strong(data-bind="text: ' ' + (formatNum(region.pointsnum() - region.polynum.exterior() - region.polynum.interior()))")
-        // /ko
-        //ko if: createMode() || showGeo()
         .form-group
             label.col-xs-4.col-sm-3.col-lg-2.control-label GeoJSON
             .col-xs-8.col-sm-9.col-lg-10
                 textarea.form-control(wrap="soft", rows="5", data-bind="value: region.geo, valueUpdate: 'keyup'", placeholder="{ type: 'Polygon | MultiPolygon', coordinates: [[ [] ]] }", required="required")
         // /ko
-        .form-group
+        .form-group.actions
             button.btn.btn-success(type="submit", data-bind="attr: {disabled: exe()}")
                 span.glyphicon.glyphicon-ok
                 |  Сохранить
@@ -144,8 +144,72 @@
                 span.glyphicon.glyphicon-remove
                 |  Удалить
             //ko if: !createMode()
-            button.btn.btn-primary(type="button", data-bind="click: function () {showGeo(!showGeo())}, attr: {disabled: exe()}")
+            button.btn.btn-primary(type="button", data-bind="click: toggleGeo, attr: {disabled: exe()}")
                 span.glyphicon.glyphicon-th-list
-                span(data-bind="text: showGeo() ? ' Скрыть координаты' : ' Показать координаты'")
+                span(data-bind="text: showGeo() ? ' Скрыть геометрию' : ' Управление геометрией'")
             // /ko
-    .map(data-bind="style: {height: mh()}")
+    .maprow
+        .map(data-bind="style: {height: mh()}")
+        .mapPanel
+            .stats
+                //ko if: photostat().all && paintstat().all
+                .stats-section.stats-photo
+                    | <!--ko template: {name: 'photoStat', data: imagestat()}--><!-- /ko -->
+                    .toggleStatByType(data-bind="text: (imagesByType() ? 'Скрыть' : 'Показать') + ' статистику по типам изображений', click: toggleImagesStatType")
+                // /ko
+                //ko if: photostat().all && (!paintstat().all || imagesByType())
+                .stats-section.stats-photo(data-bind="template: {name: 'photoStat', data: photostat()}")
+                // /ko
+                //ko if: paintstat().all && (!photostat().all || imagesByType())
+                .stats-section.stats-photo(data-bind="template: {name: 'photoStat', data: paintstat()}")
+                // /ko
+                .stats-section.stats-comment(data-bind="with: cstat()")
+                    .stats-head
+                        span.glyphicon.glyphicon-comment
+                        = " Комментариев: "
+                        span(data-bind="text: all")
+                    div(style="margin-top:3px;")
+                        b= "Активных: "
+                        span(data-bind="text: all - del")
+                    div
+                        b= "Удаленных: "
+                        span(data-bind="text: del")
+                    b(style="display:block;margin-top:4px;") Активных по статусам изображений:
+                    //ko foreach: statuses
+                    | <!--ko if: $index-->, <!-- /ko -->
+                    span(style="white-space:nowrap;")
+                        span(data-bind="text: $data.title + ': '")
+                        span(data-bind="text: $data.count, css: 'sc' + $data.status")
+                    // /ko
+
+    | <script id="photoStat" type="text/html">
+    a.stats-head(data-bind="attr: {href: linkprefix + '_s!all'}")
+        .sn
+            span.glyphicon(data-bind="css: 'glyphicon-' + icon")
+            span(style="margin-left: 5px", data-bind="text: title + ': '")
+        .sc(data-bind="text: $data.alterAll || all")
+    a(style="display:block;margin-top:3px;", data-bind="attr: {href: linkprefix + '_geo!1_s!all'}")
+        .sn(style="font-weight:bold;")= "С координатами: "
+        .sc(data-bind="text: geo")
+    a(style="display:block;", data-bind="attr: {href: linkprefix + '_geo!0_s!all'}")
+        .sn(style="font-weight:bold;")= "Без координат: "
+        .sc(data-bind="text: all - geo")
+    //ko if: own && all !== own
+    a(style="display:block;margin-top:4px;", data-bind="attr: {href: linkprefix + '_rs!0_s!all'}")
+        .sn(style="font-weight:bold;")= "Без дочерних регионов: "
+        .sc(data-bind="text: own")
+    a(style="display:block;padding-left:26px;", data-bind="attr: {href: linkprefix + '_rs!0_geo!1_s!all'}")
+        .sn= "C координатами: "
+        .sc(data-bind="text: owngeo")
+    a(style="display:block;padding-left:26px;", data-bind="attr: {href: linkprefix + '_rs!0_geo!0_s!all'}")
+        .sn= "Без координат: "
+        .sc(data-bind="text: own - owngeo")
+    // /ko
+    b(style="display:block;margin-top:4px;") По статусам:
+    //ko foreach: statuses
+    | <!--ko if: $index-->, <!-- /ko -->
+    a(style="white-space:nowrap;", data-bind="attr: {href: $parent.linkprefix + '_s!' + $data.status }")
+        .sn(data-bind="text: $data.title + ': '")
+        .sc(data-bind="text: $data.count, css: 'sc' + $data.status")
+    // /ko
+    | </script>

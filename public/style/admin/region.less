@@ -12,12 +12,24 @@
 	.control-label {
 		padding-right: 10px;
 	}
+    .maprow {
+        display: flex;
+    }
+    .actions, .maprow {
+        margin-left: -13%;
+    }
 	.map {
+        flex: 3 3 70%;
 		position: relative;
 		min-height: 300px;
 		max-height: 1200px;
 		background-color: #eee;
 	}
+    .mapPanel {
+        flex: 1 1 30%;
+        min-width: 300px;
+        padding: 0 2px 0 7px;
+    }
 
 	.regionInfo {
 		margin-top: 8px;
@@ -86,6 +98,49 @@
 	input.invalid {
 		border-color: #f00;
 	}
+
+    .stats-head {
+        font-size: @font-size-h4;
+
+        .glyphicon {
+            vertical-align: text-top;
+        }
+    }
+
+    .stats-section {
+        margin-bottom: 15px;
+    }
+
+    .sn {
+        display: inline;
+        color: @MainDarkColor;
+    }
+    a:hover > .sn {
+        color: @link-hover-color;
+    }
+
+    .sc {
+        display: inline;
+    }
+
+    .sc5 {
+        display: inline;
+        font-weight: bold;
+    }
+
+    .toggleStatByType {
+        margin-top: 3px;
+        cursor: pointer;
+        color: darken(@link-hover-color, 30%);
+        text-decoration-line: underline;
+        text-decoration-style: dotted;
+        text-decoration-color: darken(@link-hover-color, 30%);
+
+        &:hover {
+            color: @link-hover-color;
+            text-decoration-color: @link-hover-color;
+        }
+    }
 }
 
 
