@@ -1010,17 +1010,44 @@ waitDb.then(function (db) {
         return { message: 'Photos statistics were calculated in ' + (Date.now() - startTime) / 1000 + 's' };
     });
 
-    saveSystemJSFunc(function calcRegionStats() {
+    saveSystemJSFunc(function calcRegionStats(cids) {
         var startTime = Date.now();
         var doneCounter = 0;
         var query = {};
+        var fields = { _id: 0, cid: 1, parents: 1, photostat: 1, paintstat: 1, cstat: 1 };
 
-        // Delete photos stat queue first
-        db.region_stat_queue.remove();
+        if (cids && cids.length) {
+            query.cid = { $in: cids };
+        }
 
-        var counter = db.regions.count(query);
-        print('Starting stat calculation for ' + counter + ' regions');
-        db.regions.find(query, { _id: 0, cid: 1, parents: 1 }).sort({ cid: 1 }).forEach(function (region) {
+        const queueLength = db.region_stat_queue.count({});
+        if (queueLength) {
+            print('Heads up, removing ' + queueLength + ' queue items');
+
+            // Delete photos stat queue first
+            db.region_stat_queue.remove({});
+        }
+
+        var changeCounter = 0;
+        var changeRegionCounter = 0;
+        function countChangingValues(current, upcoming) {
+            var changedSomething = false;
+            if (!current) {
+                current = {};
+            }
+            for (var key in upcoming) {
+                if (upcoming[key] !== current[key]) {
+                    changeCounter++;
+                    changedSomething = true;
+                }
+            }
+
+            return changedSomething;
+        }
+
+        var count = db.regions.count(query);
+        print('Starting stat calculation for ' + count + ' regions');
+        db.regions.find(query, fields).sort({ cid: 1 }).forEach(function (region) {
             var level = region.parents && region.parents.length || 0;
             var regionHasChildren = db.regions.count({ parents: region.cid }) > 0;
 
@@ -1116,6 +1143,16 @@ waitDb.then(function (db) {
 
             db.regions.update({ cid: region.cid }, { $set: $update });
 
+            var currentChangeCounter = changeCounter;
+
+            countChangingValues(region.photostat, $update.photostat);
+            countChangingValues(region.paintstat, $update.paintstat);
+            countChangingValues(region.cstat, $update.cstat);
+
+            if (changeCounter !== currentChangeCounter) {
+                changeRegionCounter++;
+            }
+
             doneCounter++;
 
             if (doneCounter % 100 === 0) {
@@ -1123,7 +1160,11 @@ waitDb.then(function (db) {
             }
         });
 
-        return { message: 'Regions statistics were calculated for ' + doneCounter + ' regions in ' + (Date.now() - startTime) / 1000 + 's' };
+        return {
+            valuesChanged: changeCounter,
+            regionChanged: changeRegionCounter,
+            message: 'Regions statistics were calculated for ' + doneCounter + ' regions in ' + (Date.now() - startTime) / 1000 + 's'
+        };
     });
 
     saveSystemJSFunc(function toPrecision(number, precision) {

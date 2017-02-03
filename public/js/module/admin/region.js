@@ -812,6 +812,48 @@ define([
 
             return false;
         },
+
+        recalcStats: function () {
+            if (this.exe()) {
+                return false;
+            }
+            this.exe(true);
+
+            var that = this;
+            var title = this.region.title_local();
+
+            socket.run('region.recalcStatistics', { cids: [this.region.cid()] })
+                .then(function (data) {
+                    var msg;
+
+                    if (data.running) {
+                        msg = 'В данный момент статистика пересчитывается по всем регионам';
+                    } else {
+                        msg = 'Статистика по региону ' + title + ' пересчитана<br>';
+
+                        if (data.valuesChanged) {
+                            msg += '<b>' + data.valuesChanged + '</b> значений было изменено';
+                        } else {
+                            msg += 'Значения не изменились';
+                        }
+                    }
+
+                    noties.alert({
+                        message: msg,
+                        ok: true,
+                        text: 'Закрыть',
+                        countdown: 10,
+                        onOk: function () {
+                            that.exe(false);
+                        }
+                    });
+                })
+                .catch(function (error) {
+                    that.exe(false);
+                    noties.error(error);
+                });
+        },
+
         changeParentWarn: function (cb, ctx) {
             var msg = 'Вы хотите поменять положение региона в иерархии.';
             var childLenArr = this.childLenArr();

@@ -849,7 +849,7 @@ async function save(data) {
     region.title_local = data.title_local ? String(data.title_local) : undefined;
 
     // If we changing region, drain stat queue before saving region,
-    // to align statistics before we will be changing objects belonging
+    // to align statistics before we will be changing objects belongings
     if (data.cid) {
         await regionStatQueueDrain();
     }
@@ -887,12 +887,16 @@ async function save(data) {
     if (data.geo || parentChange) {
         const affected = _.union([region.cid], parentsArray, parentsArrayOld);
 
+        let recalcStatsResult;
         try {
             // Update region stats for current and all parents
-            await dbEval('calcRegionStats', affected, { nolock: true });
+            recalcStatsResult = await recalcStats(affected);
         } catch (error) {
+            recalcStatsResult = { recalcStatsError: error };
             logger.warn(`Failed to calculate region stats on region ${region.cid} save`, error);
         }
+
+        Object.assign(resultStat, recalcStatsResult);
     }
 
     try {
@@ -1036,11 +1040,13 @@ async function remove(data) {
     ]);
 
     // If removing region has parent, recalc parents stat
+    let recalcStatsResult = {};
     if (removingLevel) {
         try {
-            // Update stats for all parent regions
-            await dbEval('calcRegionStats', parents, { nolock: true });
+            // Update region stats for current and all parents
+            recalcStatsResult = await recalcStats(parents);
         } catch (error) {
+            recalcStatsResult = { recalcStatsError: error };
             logger.warn(`Failed to calculate parent regions stats on region ${data.cid} removal`, error);
         }
     }
@@ -1059,7 +1065,8 @@ async function remove(data) {
         affectedComments,
         homeAffectedUsers,
         homeReplacedWith: parentRegion,
-        ...modsResult
+        ...modsResult,
+        ...recalcStatsResult
     };
 }
 
@@ -1617,11 +1624,18 @@ const $incRegionPhotoStat = function ({ regionsMap, state: { s, type, geo, regio
 };
 
 let drainTimeout;
+let statsIsBeingRecalc = false;
 let drainingPhotoCidsSet = new Set();
 
 async function regionStatQueueDrain(limit) {
-    logger.info('Draining stat starting');
     clearTimeout(drainTimeout);
+
+    if (statsIsBeingRecalc) {
+        scheduleRegionStatQueueDrain();
+        return;
+    }
+
+    logger.info('Draining stat starting');
 
     try {
         const findOptions = { lean: true, sort: { stamp: 1 } };
@@ -1772,9 +1786,46 @@ export async function putPhotoToRegionStatQueue(oldPhoto, newPhoto) {
     } }, { upsert: true }).exec();
 }
 
+async function recalcStats(cids = []) {
+    if (statsIsBeingRecalc) {
+        return { running: true };
+    }
+
+    // If we are going to recalc some regions, drain queue
+    // Otherwise whole queue will be dropped in calcRegionStats, because anyway everything will be recalculated
+    if (cids.length) {
+        await regionStatQueueDrain();
+    }
+
+    statsIsBeingRecalc = true;
+
+    try {
+        // Update all regions stats
+        return dbEval('calcRegionStats', [cids], { nolock: true });
+    } finally {
+        statsIsBeingRecalc = false;
+    }
+}
+
+async function recalcStatistics({ cids = [] }) {
+    const { handshake: { usObj: iAm } } = this;
+
+    if (!iAm.isAdmin) {
+        throw new AuthorizationError();
+    }
+
+    try {
+        return recalcStats(cids);
+    } catch (error) {
+        logger.warn(`Failed to calculate recalcStatistics`, error);
+        throw new ApplicationError({ message: error.message });
+    }
+}
+
 give.isPublic = true;
 save.isPublic = true;
 remove.isPublic = true;
+recalcStatistics.isPublic = true;
 giveListFull.isPublic = true;
 giveListPublic.isPublic = true;
 giveRegionsByGeo.isPublic = true;
@@ -1784,6 +1835,7 @@ export default {
     give,
     save,
     remove,
+    recalcStatistics,
     giveListFull,
     giveListPublic,
     giveRegionsByGeo,
