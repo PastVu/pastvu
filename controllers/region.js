@@ -1801,7 +1801,8 @@ async function recalcStats(cids = []) {
 
     try {
         // Update all regions stats
-        return dbEval('calcRegionStats', [cids], { nolock: true });
+        // await is necessary to reset statsIsBeingRecalc after dbEval is done
+        return await dbEval('calcRegionStats', [cids], { nolock: true });
     } finally {
         statsIsBeingRecalc = false;
     }

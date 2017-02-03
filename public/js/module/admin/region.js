@@ -798,7 +798,7 @@ define([
 
                         },
                         cancelText: 'Нет',
-                        canceClass: 'btn-success',
+                        cancelClass: 'btn-success',
                         onCancel: function () {
                             that.exe(false);
                         }

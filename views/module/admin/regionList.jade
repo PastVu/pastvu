@@ -31,6 +31,9 @@
         .headElem.interact(data-bind="click: collapseAll")
             span.glyphicon.glyphicon-chevron-up
             |  Свернуть все
+        .headElem.interact(data-bind="click: recalcStats")
+            span.glyphicon.glyphicon-refresh
+            |  Пересчитать статистику
     .tree.well.well-sm
         ul(data-bind="template: {name: 'treeNode', foreach: regions}")
 

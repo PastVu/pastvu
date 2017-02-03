@@ -5,8 +5,8 @@
  */
 define([
     'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM',
-    'model/storage', 'text!tpl/admin/regionList.jade', 'css!style/admin/regionList'
-], function (_, $, Utils, socket, P, ko, Cliche, globalVM, storage, jade) {
+    'model/storage', 'noties', 'text!tpl/admin/regionList.jade', 'css!style/admin/regionList'
+], function (_, $, Utils, socket, P, ko, Cliche, globalVM, storage, noties, jade) {
     'use strict';
 
     return Cliche.extend({
@@ -115,6 +115,48 @@ define([
             for (var i = this.regionsFlat.length - 1; i >= 0; i--) {
                 this.regionsFlat[i].opened(expand);
             }
-        }
+        },
+
+        recalcStats: function () {
+            var that = this;
+
+            noties.confirm({
+                message: 'Перерасчет статистики регионов займет 2-5 минут. Продолжить?',
+                okText: 'Да, налью чаю',
+                okClass: 'btn-success',
+                onOk: function (confirmer) {
+                    confirmer.disable();
+
+                    socket.run('region.recalcStatistics', {})
+                        .then(function (data) {
+                            var msg;
+
+                            if (data.running) {
+                                msg = 'В данный момент статистика уже пересчитывается';
+                            } else {
+                                msg = 'Статистика регионам пересчитана<br>';
+
+                                if (data.valuesChanged) {
+                                    if (data.regionChanged) {
+                                        msg += '<b>' + data.regionChanged + '</b> регионов было обновлено<br>';
+                                    }
+
+                                    msg += '<b>' + data.valuesChanged + '</b> значений было изменено';
+                                } else {
+                                    msg += 'Значения не изменились';
+                                }
+                            }
+
+                            confirmer.success(msg, 'Ok', null, function () {
+                                that.getRegions();
+                            });
+                        })
+                        .catch(function (error) {
+                            confirmer.error(error, 'Закрыть');
+                        });
+                },
+                cancelText: 'Нет',
+            });
+        },
     });
 });
