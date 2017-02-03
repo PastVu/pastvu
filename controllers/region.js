@@ -1786,7 +1786,7 @@ export async function putPhotoToRegionStatQueue(oldPhoto, newPhoto) {
     } }, { upsert: true }).exec();
 }
 
-async function recalcStats(cids = []) {
+async function recalcStats(cids = [], refillCache = false) {
     if (statsIsBeingRecalc) {
         return { running: true };
     }
@@ -1801,7 +1801,13 @@ async function recalcStats(cids = []) {
 
     try {
         // Update all regions stats
-        return dbEval('calcRegionStats', [cids], { nolock: true });
+        const result = await dbEval('calcRegionStats', [cids], { nolock: true });
+
+        if (refillCache) {
+            await fillCache(); // Refresh regions cache
+        }
+
+        return result;
     } finally {
         statsIsBeingRecalc = false;
     }
@@ -1815,7 +1821,7 @@ async function recalcStatistics({ cids = [] }) {
     }
 
     try {
-        return recalcStats(cids);
+        return recalcStats(cids, true);
     } catch (error) {
         logger.warn(`Failed to calculate recalcStatistics`, error);
         throw new ApplicationError({ message: error.message });

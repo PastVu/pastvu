@@ -306,8 +306,8 @@ define([
                 }
             }
 
-            var photostat = region.photostat;
-            var paintstat = region.paintstat;
+            var photostat = region.photostat || {};
+            var paintstat = region.paintstat || {};
             var imagestat = _.mergeWith(_.cloneDeep(photostat), paintstat, function (photoval, paintval) {
                 return (photoval || 0) + (paintval || 0);
             });
@@ -339,7 +339,7 @@ define([
             imagestat.linkprefix = '/ps?f=r!' + region.cid;
             this.imagestat(imagestat);
 
-            var cstat = region.cstat;
+            var cstat = region.cstat || {};
             cstat.statuses = _.transform(statuses.keys, function (result, status, key) {
                 if (_.isNumber(cstat['s' + status])) {
                     result.push({ status: status, count: cstat['s' + status], title: statuses[key].filter_title });
@@ -798,7 +798,7 @@ define([
 
                         },
                         cancelText: 'No',
-                        canceClass: 'btn-success',
+                        cancelClass: 'btn-success',
                         onCancel: function () {
                             that.exe(false);
                         }

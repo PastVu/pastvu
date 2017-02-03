@@ -1,3 +1,4 @@
+import ms from 'ms';
 import log4js from 'log4js';
 import { ApplicationError } from '../app/errors';
 import constantsError from '../app/errors/constants';
@@ -54,7 +55,7 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
                         keepAlive: 0, // Enable keep alive connection
                         autoReconnect: true,
                         socketTimeoutMS: 0,
-                        connectTimeoutMS: 0
+                        connectTimeoutMS: ms('5m')
                     }
                 }
             });
