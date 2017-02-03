@@ -1623,12 +1623,13 @@ const $incRegionPhotoStat = function ({ regionsMap, state: { s, type, geo, regio
     });
 };
 
-let drainTimeout;
+let drainTimeout = null;
 let statsIsBeingRecalc = false;
 let drainingPhotoCidsSet = new Set();
 
 async function regionStatQueueDrain(limit) {
     clearTimeout(drainTimeout);
+    drainTimeout = null;
 
     if (statsIsBeingRecalc) {
         scheduleRegionStatQueueDrain();
@@ -1744,7 +1745,9 @@ async function removeDrainedRegionStat() {
 }
 
 function scheduleRegionStatQueueDrain() {
-    drainTimeout = setTimeout(regionStatQueueDrain, ms('1m'), 1000);
+    if (!drainTimeout) {
+        drainTimeout = setTimeout(regionStatQueueDrain, ms('1m'), 1000);
+    }
 }
 
 export async function putPhotoToRegionStatQueue(oldPhoto, newPhoto) {
