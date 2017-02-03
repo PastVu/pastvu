@@ -812,6 +812,48 @@ define([
 
             return false;
         },
+
+        recalcStats: function () {
+            if (this.exe()) {
+                return false;
+            }
+            this.exe(true);
+
+            var that = this;
+            var title = this.region.title_local();
+
+            socket.run('region.recalcStatistics', { cids: [this.region.cid()] })
+                .then(function (data) {
+                    var msg;
+
+                    if (data.running) {
+                        msg = 'Statistics is being recalculated for all regions at this moment';
+                    } else {
+                        msg = 'Statistics for ' + title + ' has been recalculated<br>';
+
+                        if (data.valuesChanged) {
+                            msg += '<b>' + data.valuesChanged + '</b> values have been changed';
+                        } else {
+                            msg += 'Values have not been changed';
+                        }
+                    }
+
+                    noties.alert({
+                        message: msg,
+                        ok: true,
+                        text: 'Close',
+                        countdown: 10,
+                        onOk: function () {
+                            that.exe(false);
+                        }
+                    });
+                })
+                .catch(function (error) {
+                    that.exe(false);
+                    noties.error(error);
+                });
+        },
+
         changeParentWarn: function (cb, ctx) {
             var msg = 'You want to change the position of the region in the hierarchy.';
             var childLenArr = this.childLenArr();

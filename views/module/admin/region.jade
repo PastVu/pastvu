@@ -183,6 +183,9 @@
                         span(data-bind="text: $data.title + ': '")
                         span(data-bind="text: $data.count, css: 'sc' + $data.status")
                     // /ko
+            button.btn.btn-primary(type="button", data-bind="click: recalcStats, attr: {disabled: exe()}")
+                span.glyphicon.glyphicon-refresh
+                span  Recalculate stat
 
     | <script id="photoStat" type="text/html">
     a.stats-head(data-bind="attr: {href: linkprefix + '_s!all'}")
