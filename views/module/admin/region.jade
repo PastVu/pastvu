@@ -150,6 +150,7 @@
             // /ko
     .maprow
         .map(data-bind="style: {height: mh()}")
+        //ko if: !createMode()
         .mapPanel
             .stats
                 //ko if: photostat().all && paintstat().all
@@ -184,13 +185,14 @@
             button.btn.btn-primary(type="button", data-bind="click: recalcStats, attr: {disabled: exe()}")
                 span.glyphicon.glyphicon-refresh
                 span  Пересчитать статистику
+        // /ko
 
     | <script id="photoStat" type="text/html">
     a.stats-head(data-bind="attr: {href: linkprefix + '_s!all'}")
         .sn
             span.glyphicon(data-bind="css: 'glyphicon-' + icon")
             span(style="margin-left: 5px", data-bind="text: title + ': '")
-        .sc(data-bind="text: $data.alterAll || all")
+        .sc(data-bind="text: $data.alterAll || $data.all")
     a(style="display:block;margin-top:3px;", data-bind="attr: {href: linkprefix + '_geo!1_s!all'}")
         .sn(style="font-weight:bold;")= "С координатами: "
         .sc(data-bind="text: geo")
