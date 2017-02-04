@@ -820,9 +820,10 @@ define([
             this.exe(true);
 
             var that = this;
+            var cid = this.region.cid();
             var title = this.region.title_local();
 
-            socket.run('region.recalcStatistics', { cids: [this.region.cid()] })
+            socket.run('region.recalcStatistics', { cids: [cid] })
                 .then(function (data) {
                     var msg;
 
@@ -844,7 +845,9 @@ define([
                         text: 'Закрыть',
                         countdown: 10,
                         onOk: function () {
-                            that.exe(false);
+                            that.getOneRegion(cid, function () {
+                                that.exe(false);
+                            });
                         }
                     });
                 })
