@@ -1106,9 +1106,9 @@
       "dev": true
     },
     "eslint": {
-      "version": "3.13.1",
-      "from": "eslint@3.13.1",
-      "resolved": "https://registry.npmjs.org/eslint/-/eslint-3.13.1.tgz",
+      "version": "3.15.0",
+      "from": "eslint@3.15.0",
+      "resolved": "https://registry.npmjs.org/eslint/-/eslint-3.15.0.tgz",
       "dev": true,
       "dependencies": {
         "strip-bom": {
@@ -1126,14 +1126,14 @@
       }
     },
     "eslint-plugin-babel": {
-      "version": "4.0.0",
-      "from": "eslint-plugin-babel@4.0.0",
-      "resolved": "https://registry.npmjs.org/eslint-plugin-babel/-/eslint-plugin-babel-4.0.0.tgz",
+      "version": "4.0.1",
+      "from": "eslint-plugin-babel@4.0.1",
+      "resolved": "https://registry.npmjs.org/eslint-plugin-babel/-/eslint-plugin-babel-4.0.1.tgz",
       "dev": true
     },
     "espree": {
       "version": "3.4.0",
-      "from": "espree@>=3.3.1 <4.0.0",
+      "from": "espree@>=3.4.0 <4.0.0",
       "resolved": "https://registry.npmjs.org/espree/-/espree-3.4.0.tgz",
       "dev": true,
       "dependencies": {

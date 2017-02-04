@@ -233,6 +233,8 @@ module.exports = {
         'no-warning-comments': [0, { 'terms': ['todo', 'fixme', 'xxx'], 'location': 'start' }],
         // disallow use of the with statement
         'no-with': 2,
+        // require using Error objects as Promise rejection reasons
+        'prefer-promise-reject-errors': 2,
         // require use of the second argument for parseInt()
         'radix': 2,
         // disallow async functions which have no await expression
@@ -450,6 +452,8 @@ module.exports = {
         'no-lonely-if': 2,
         // disallow mixed spaces and tabs for indentation
         'no-mixed-spaces-and-tabs': 2,
+        // disallow use of chained assignment expressions
+        'no-multi-assign': 0,
         // disallow multiple empty lines and only one newline at the end
         'no-multiple-empty-lines': [2, { 'max': 2, 'maxEOF': 1, 'maxBOF': 1 }],
         // disallow nested ternary expressions
@@ -519,6 +523,8 @@ module.exports = {
             'exceptions': ['-', '+'],
             'markers': ['=', '!'],           // space here to support sprockets directives
         }],
+        // require or disallow spacing between template tags and their literals
+        'template-tag-spacing': [2, 'never'],
         // files must not begin with the Unicode Byte Order Mark (BOM)
         'unicode-bom': [2, 'never'],
         // require regex literals to be wrapped in parentheses
