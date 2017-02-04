@@ -984,7 +984,7 @@ waitDb.then(function (db) {
                 $unset.ccount = 1;
             }
 
-            cdcount = db.comments.count({ obj: photo._id, del: null });
+            cdcount = db.comments.count({ obj: photo._id, del: { $exists: true } });
 
             if (cdcount > 0) {
                 $set.cdcount = cdcount;
