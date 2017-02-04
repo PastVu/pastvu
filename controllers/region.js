@@ -1644,103 +1644,101 @@ function regionStatQueueDrain(limit) {
     logger.info('Draining stat starting');
 
     drainingPromise = (async function () {
-        try {
-            const findOptions = { lean: true, sort: { stamp: 1 } };
+        const findOptions = { lean: true, sort: { stamp: 1 } };
 
-            if (limit) {
-                findOptions.limit = limit;
-            }
-
-            // Find photos in stat queue
-            const stats = await RegionStatQueue.find({}, { _id: 0, cid: 1, state: 1 }, findOptions).exec();
-
-            if (!stats.length) {
-                scheduleRegionStatQueueDrain();
-                return;
-            }
-
-            // Get photos cids array
-            const photoCids = stats.map(stat => stat.cid);
-            // Fill set of photos cids that are going to be drained
-            drainingPhotoCidsSet = new Set(photoCids);
-
-            // Find all photos that are going to be drained
-            const photos = await Photo.find(
-                { cid: { $in: photoCids } },
-                { _id: 0, cid: 1, s: 1, type: 1, geo: 1, ccount: 1, cdcount: 1, ...regionsAllSelectHash },
-                { lean: true }
-            ).exec();
-
-            if (photos.length !== stats.length) {
-                logger.warn(`Stat queue length ${stats.length} is not equal to number of photos ${photos.length}`);
-
-                await removeDrainedRegionStat();
-                scheduleRegionStatQueueDrain();
-                return;
-            }
-
-            const regionsMap = new Map();
-            const photosMap = photos.reduce((map, photo) => map.set(photo.cid, photo), new Map());
-
-            // Iterate over each stat record and calculate final delta for each region in all stat records
-            for (const { cid, state } of stats) {
-                // If regions exists in time of photo's first change, decrement stat of each regions by values of that state
-                if (Array.isArray(state.regions) && state.regions.length) {
-                    $incRegionPhotoStat({ regionsMap, state, sign: -1 });
-                }
-
-                const photo = photosMap.get(cid);
-                const regions = getObjRegionCids(photo);
-
-                // If regions exists for current photo (actual state), increment stat of each regions by current values
-                if (regions.length) {
-                    $incRegionPhotoStat({ regionsMap, state: {
-                        s: photo.s, type: photo.type, geo: photo.geo, regions, cc: photo.ccount, ccd: photo.cdcount
-                    } });
-                }
-            }
-
-            // Get only valuable deltas for each region, and update it in db and regions cache
-            const updatePromises = [];
-            for (const [cid, inc] of regionsMap.entries()) {
-                let count = 0;
-                const $inc = _.transform(inc, (result, value, key) => {
-                    if (value) {
-                        count++;
-                        result[key] = value;
-                    }
-                }, Object.create(null));
-
-                if (count) {
-                    updatePromises.push(Region.update({ cid }, { $inc }).exec());
-
-                    const region = regionCacheHash[cid];
-
-                    if (region) {
-                        // Update each stat value in general regionCacheHash
-                        _.forOwn($inc, (delta, key) => {
-                            _.set(region, key, _.get(region, key, 0) + delta);
-                        });
-
-                        // Then update stat in each public and admin caches
-                        fillPublicAndAdminMaps(region);
-                    }
-                }
-            }
-
-            if (updatePromises.length) {
-                await Promise.all(updatePromises);
-            }
-
-            await removeDrainedRegionStat();
-            logger.info(`Drained ${stats.length} stats for ${updatePromises.length} regions`);
-        } catch (error) {
-            logger.error('Stat queue drain failed', error);
+        if (limit) {
+            findOptions.limit = limit;
         }
 
-        drainingPromise = null;
-        scheduleRegionStatQueueDrain();
-    }());
+        // Find photos in stat queue
+        const stats = await RegionStatQueue.find({}, { _id: 0, cid: 1, state: 1 }, findOptions).exec();
+
+        if (!stats.length) {
+            return;
+        }
+
+        // Get photos cids array
+        const photoCids = stats.map(stat => stat.cid);
+        // Fill set of photos cids that are going to be drained
+        drainingPhotoCidsSet = new Set(photoCids);
+
+        // Find all photos that are going to be drained
+        const photos = await Photo.find(
+            { cid: { $in: photoCids } },
+            { _id: 0, cid: 1, s: 1, type: 1, geo: 1, ccount: 1, cdcount: 1, ...regionsAllSelectHash },
+            { lean: true }
+        ).exec();
+
+        if (photos.length !== stats.length) {
+            logger.warn(`Stat queue length ${stats.length} is not equal to number of photos ${photos.length}`);
+
+            await removeDrainedRegionStat();
+            return;
+        }
+
+        const regionsMap = new Map();
+        const photosMap = photos.reduce((map, photo) => map.set(photo.cid, photo), new Map());
+
+        // Iterate over each stat record and calculate final delta for each region in all stat records
+        for (const { cid, state } of stats) {
+            // If regions exists in time of photo's first change, decrement stat of each regions by values of that state
+            if (Array.isArray(state.regions) && state.regions.length) {
+                $incRegionPhotoStat({ regionsMap, state, sign: -1 });
+            }
+
+            const photo = photosMap.get(cid);
+            const regions = getObjRegionCids(photo);
+
+            // If regions exists for current photo (actual state), increment stat of each regions by current values
+            if (regions.length) {
+                $incRegionPhotoStat({ regionsMap, state: {
+                    s: photo.s, type: photo.type, geo: photo.geo, regions, cc: photo.ccount, ccd: photo.cdcount
+                } });
+            }
+        }
+
+        // Get only valuable deltas for each region, and update it in db and regions cache
+        const updatePromises = [];
+        for (const [cid, inc] of regionsMap.entries()) {
+            let count = 0;
+            const $inc = _.transform(inc, (result, value, key) => {
+                if (value) {
+                    count++;
+                    result[key] = value;
+                }
+            }, Object.create(null));
+
+            if (count) {
+                updatePromises.push(Region.update({ cid }, { $inc }).exec());
+
+                const region = regionCacheHash[cid];
+
+                if (region) {
+                    // Update each stat value in general regionCacheHash
+                    _.forOwn($inc, (delta, key) => {
+                        _.set(region, key, _.get(region, key, 0) + delta);
+                    });
+
+                    // Then update stat in each public and admin caches
+                    fillPublicAndAdminMaps(region);
+                }
+            }
+        }
+
+        if (updatePromises.length) {
+            await Promise.all(updatePromises);
+        }
+
+        await removeDrainedRegionStat();
+        logger.info(`Drained ${stats.length} stats for ${updatePromises.length} regions`);
+    }())
+        .catch(error => {
+            logger.error('Stat queue drain failed', error);
+        })
+        .then(() => {
+            drainingPromise = null;
+            scheduleRegionStatQueueDrain();
+        });
 
     return drainingPromise;
 }
