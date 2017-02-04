@@ -15,7 +15,7 @@ import { handleSocketConnection, registerSocketRequestHendler } from './app/requ
 import { photosReady } from './controllers/photo';
 import { ready as mailReady } from './controllers/mail';
 import { ready as authReady } from './controllers/auth';
-import { ready as regionReady } from './controllers/region';
+import { ready as regionReady, scheduleRegionStatQueueDrain } from './controllers/region';
 import { ready as subscrReady } from './controllers/subscr';
 import { ready as settingsReady } from './controllers/settings';
 import * as routes from './controllers/routes';
@@ -191,6 +191,8 @@ export async function configure(startStamp) {
     }
 
     await Promise.all([authReady, settingsReady, regionReady, subscrReady, mailReady, photosReady]);
+
+    scheduleRegionStatQueueDrain();
 
     const httpServer = http.createServer(app);
     const io = socketIO(httpServer, {

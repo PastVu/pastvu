@@ -38,7 +38,7 @@ for (let i = 0; i <= maxRegionLevel; i++) {
     regionsAllSelectHash['r' + i] = 1;
 }
 
-export const ready = waitDb.then(fillCache).then(scheduleRegionStatQueueDrain);
+export const ready = waitDb.then(fillCache);
 
 // Заполняем кэш (массив и хэш) регионов в память
 async function fillCache() {
@@ -1755,7 +1755,7 @@ async function removeDrainedRegionStat() {
     }
 }
 
-function scheduleRegionStatQueueDrain() {
+export function scheduleRegionStatQueueDrain() {
     // No in ENGLISH to avoid overlapping
     //if (!drainTimeout) {
     //    drainTimeout = setTimeout(regionStatQueueDrain, ms('1m'), 1000);
