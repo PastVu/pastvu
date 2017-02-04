@@ -1208,7 +1208,7 @@ async function approve(data) {
     photo.s = status.PUBLIC;
     photo.stdate = photo.cdate = photo.adate = photo.sdate = new Date();
 
-    const { rel } = await this.call('photo.update', { photo, oldPhotoObj });
+    const { rel } = await this.call('photo.update', { photo });
 
     await Promise.all([
         // Recalculate the number of photos of the owner
@@ -1230,6 +1230,9 @@ async function approve(data) {
     await this.call('photo.saveHistory', { oldPhotoObj, photo, canModerate });
 
     this.call('photo.changeFileProtection', { photo, protect: false });
+
+    // Put oldPhoto in regions statistic calculation queue, don't wait
+    regionController.putPhotoToRegionStatQueue(oldPhotoObj);
 
     // Reselect the data to display
     return this.call('photo.give', { cid: photo.cid, rel });
@@ -1257,7 +1260,7 @@ async function activateDeactivate(data) {
     photo.s = status[disable ? 'DEACTIVATE' : 'PUBLIC'];
     photo.stdate = photo.cdate = new Date();
 
-    const { rel } = await this.call('photo.update', { photo, oldPhotoObj });
+    const { rel } = await this.call('photo.update', { photo });
 
     await this.call('comment.changeObjCommentsStatus', { obj: photo });
     await this.call('photo.changePublicExternality', { photo, makePublic: !disable });
@@ -1273,6 +1276,9 @@ async function activateDeactivate(data) {
 
     // Save previous status to history
     await this.call('photo.saveHistory', { oldPhotoObj, photo, canModerate, reason: disable && reason });
+
+    // Put oldPhoto in regions statistic calculation queue, don't wait
+    regionController.putPhotoToRegionStatQueue(oldPhotoObj);
 
     // Reselect the data to display
     return this.call('photo.give', { cid: photo.cid, rel });
@@ -1306,7 +1312,7 @@ async function remove(data) {
     photo.s = status.REMOVE;
     photo.stdate = photo.cdate = new Date();
 
-    const { rel } = await this.call('photo.update', { photo, oldPhotoObj });
+    const { rel } = await this.call('photo.update', { photo });
 
     // Change comments status
     await this.call('comment.changeObjCommentsStatus', { obj: photo });
@@ -1316,6 +1322,9 @@ async function remove(data) {
     if (oldPhotoObj.s === status.PUBLIC) {
         await this.call('photo.changePublicExternality', { photo, makePublic: false });
     }
+
+    // Put oldPhoto in regions statistic calculation queue, don't wait
+    regionController.putPhotoToRegionStatQueue(oldPhotoObj);
 
     // Reselect the data to display
     return this.call('photo.give', { cid: photo.cid, rel });
@@ -1338,7 +1347,7 @@ async function restore(data) {
     photo.s = status.PUBLIC;
     photo.stdate = photo.cdate = new Date();
 
-    const { rel } = await this.call('photo.update', { photo, oldPhotoObj });
+    const { rel } = await this.call('photo.update', { photo });
 
     // Change comments status
     await this.call('comment.changeObjCommentsStatus', { obj: photo });
@@ -1346,6 +1355,9 @@ async function restore(data) {
     await this.call('photo.saveHistory', { oldPhotoObj, photo, canModerate, reason });
 
     await this.call('photo.changePublicExternality', { photo, makePublic: true });
+
+    // Put oldPhoto in regions statistic calculation queue, don't wait
+    regionController.putPhotoToRegionStatQueue(oldPhotoObj);
 
     // Reselect the data to display
     return this.call('photo.give', { cid: photo.cid, rel });
@@ -2193,7 +2205,7 @@ async function save(data) {
         saveHistory = true;
     }
 
-    const { rel } = await this.call('photo.update', { photo, oldPhotoObj });
+    const { rel } = await this.call('photo.update', { photo });
 
     if (newValues.type) {
         // If type has been changed, change it in photo's comments also
@@ -2261,6 +2273,9 @@ async function save(data) {
     if (reconvert) {
         converter.addPhotos([{ cid: photo.cid }], 2);
     }
+
+    // Put oldPhoto in regions statistic calculation queue, don't wait
+    regionController.putPhotoToRegionStatQueue(oldPhotoObj);
 
     // Reselect the data to display
     return this.call('photo.give', { cid: photo.cid, rel }).then(result => ({ reconvert, ...result }));
