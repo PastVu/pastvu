@@ -6,13 +6,6 @@
 module.exports = {
     comments: false,
     plugins: [
-        // Although 'destructuring' and 'parameters' are supported, we still need transformers for them
-        // because 'object rest spread' transformer depends on those transformers
-        // so babel would have to rewrite it to be independent of it
-        // Track https://phabricator.babeljs.io/T7086
-        'transform-es2015-destructuring',
-        'transform-es2015-parameters',
-
         // Modules are standardized, but there are no native loaders for them
         'transform-es2015-modules-commonjs',
 
