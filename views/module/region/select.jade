@@ -41,7 +41,7 @@
                 span.glyphicon(data-bind="css: {'glyphicon-minus': $data.opened(), 'glyphicon-plus': !$data.opened()}")
             // /ko
             .rname(data-bind="click: function() {$parents[$data.level].clickNode($data.title_local)}, attr: {title: $data.selected() ? 'Снять выбор' : ($data.selectable() ? 'Выбрать регион' : '')}")
-                .name(data-bind="text: ' ' + $data.title_local")
+                .name(data-bind="text: ' ' + $data.title_local, css: {'nameborder': $data.phc || $data.pac || $data.cc}")
                 //ko if: $data.phc
                 .section(title="Фотографии")
                     span.glyphicon.glyphicon-camera
