@@ -1416,11 +1416,11 @@ define([
             }
 
             up.classList[upCount ? 'add' : 'remove']('active');
-            up.querySelector('.navTxt').innerHTML = upCount ? upCount : '';
+            up.querySelector('.navTxt').innerHTML = upCount ? globalVM.intl.num(upCount) : '';
             up[upCount ? 'setAttribute' : 'removeAttribute']('title', 'Предыдущий непрочитанный комментарий');
 
             down.classList[downCount ? 'add' : 'remove']('active');
-            down.querySelector('.navTxt').innerHTML = downCount ? downCount : '';
+            down.querySelector('.navTxt').innerHTML = downCount ? globalVM.intl.num(downCount) : '';
             down[downCount ? 'setAttribute' : 'removeAttribute']('title', 'Следующий непрочитанный комментарий');
         }
     });

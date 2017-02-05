@@ -3,23 +3,23 @@
     .regionsStat
         .stat
             span Всего регионов:
-            b(data-bind="text: ' '+formatNum(stat.common.regionsCount)")
+            b(data-bind="text: ' '+$root.intl.num(stat.common.regionsCount)")
             span &nbsp;&nbsp;По уровням:
             //ko foreach: stat.byLevel
             //ko if: $index() > 0
             span.glyphicon.glyphicon-play
             // /ko
-            b(data-bind="text: ' ' + $parent.formatNum($data.regionsCount) + ' ', attr: {title: ($index() + 1) + ' уровень'}")
+            b(data-bind="text: ' ' + $root.intl.num($data.regionsCount) + ' ', attr: {title: ($index() + 1) + ' уровень'}")
             // /ko
         .stat
             span Всего вершин:
-            b(data-bind="text: ' '+formatNum(stat.common.pointsCount)")
+            b(data-bind="text: ' '+$root.intl.num(stat.common.pointsCount)")
             span &nbsp;&nbsp;По уровням:
             //ko foreach: stat.byLevel
             //ko if: $index() > 0
             span.glyphicon.glyphicon-play
             // /ko
-            b(data-bind="text: ' ' + $parent.formatNum($data.pointsCount) + ' ', attr: {title: ($index() + 1) + ' уровень'}")
+            b(data-bind="text: ' ' + $root.intl.num($data.pointsCount) + ' ', attr: {title: ($index() + 1) + ' уровень'}")
             // /ko
     .regionsHead
         a.headElem.interact(href="/admin/region/create")
@@ -51,25 +51,25 @@
                     //ko foreach: childLenArr
                     | &nbsp;
                     span.glyphicon.glyphicon-play
-                    span(data-bind="text: ' ' + $data")
+                    span(data-bind="text: ' ' + $root.intl.num($data)")
                     // /ko
                 // /ko
                 //ko if: $data.pc
                 .section(title="Изображения")
                     span.glyphicon.glyphicon-camera
-                    .pc(title="Изображения с/без координат", data-bind="text: $data.pcg + ' / ' + ($data.pc - $data.pcg)")
+                    .pc(title="Изображения с/без координат", data-bind="text: $root.intl.num($data.pcg) + ' / ' + $root.intl.num($data.pc - $data.pcg)")
                     //ko if: $data.childLen && $data.pco
-                    .pco(title="Изображения без сабрегиона с/без координат", data-bind="text: $data.pcog + ' / ' + ($data.pco - $data.pcog)")
+                    .pco(title="Изображения без сабрегиона с/без координат", data-bind="text: $root.intl.num($data.pcog) + ' / ' + $root.intl.num($data.pco - $data.pcog)")
                     // /ko
                 // /ko
                 //ko if: $data.cc > 0
                 .section(title="Комментарии")
                     span.glyphicon.glyphicon-comment
                     //ko if: !$data.ccd
-                    .cc(title="Комментариев всего", data-bind="text: $data.cc")
+                    .cc(title="Комментариев всего", data-bind="text: $root.intl.num($data.cc)")
                     // /ko
                     //ko if: $data.ccd
-                    .cc(title="Комментарии активные/удаленные", data-bind="text: ($data.cc - $data.ccd) + ' / ' + $data.ccd")
+                    .cc(title="Комментарии активные/удаленные", data-bind="text: $root.intl.num($data.cc - $data.ccd) + ' / ' + $root.intl.num($data.ccd)")
                     // /ko
                 // /ko
             //ko if: $data.level < 5

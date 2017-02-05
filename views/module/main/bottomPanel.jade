@@ -10,7 +10,7 @@
             .newsLeft
                 .newsDate(data-bind="text: moment($data.pdate).format('D MMM')")
                 //ko if: $data.ccount
-                a.newsComms(data-bind="html: $data.ccount + ($data.ccount_new ? '<div class=\"cnew\">+' + $data.ccount_new + '</div>' : ''), attr: {href: '/news/' + $data.cid + '?hl=comments'}", title="Перейти к комментариям новости")
+                a.newsComms(data-bind="html: $root.intl.num($data.ccount) + ($data.ccount_new ? '<div class=\"cnew\">+' + $root.intl.num($data.ccount_new) + '</div>' : ''), attr: {href: '/news/' + $data.cid + '?hl=comments'}", title="Перейти к комментариям новости")
                 // /ko
             .newsBody
                 a.newsTitle(data-bind="text: $data.title, attr: {href: '/news/' + $data.cid}")
@@ -55,7 +55,7 @@
             //ko if: $data.ccount || $data.changed
             .rightBlocks
                 //ko if: $data.ccount
-                a.rightBlock.comm(data-bind="html: $data.ccount + ($data.ccount_new ? '<span class=\"cnew\"> +' + $data.ccount_new + '</span>' : ''), attr: {href: $data.link + '?hl=comments'}", title="Комментарии")
+                a.rightBlock.comm(data-bind="html: $root.intl.num($data.ccount) + ($data.ccount_new ? '<span class=\"cnew\"> +' + $root.intl.num($data.ccount_new) + '</span>' : ''), attr: {href: $data.link + '?hl=comments'}", title="Комментарии")
                 // /ko
                 //ko if: $data.changed
                 a.rightBlock.changed(data-bind="attr: {href: $data.link + '?history=1'}", title="Фотография изменена с момента прошлого просмотра")
@@ -128,12 +128,28 @@
         .row
             .col-xs-12
                 .catHead Весь проект
-                .statrow(data-bind="text: 'Зарегистрированных пользователей: ' + stats.all.userCount")
-                .statrow(data-bind="text: 'Фотографий: ' + stats.all.pallCount")
-                .statrow(data-bind="text: 'Больше всего фотографий относится к ' + stats.all.photoYear.pop.year + ' году, их ' + stats.all.photoYear.pop.count")
-                .statrow(data-bind="text: 'Сегодня новых фотографий: ' + stats.all.pdayCount")
-                .statrow(data-bind="text: 'За неделю новых фотографий: ' + stats.all.pweekCount")
-                .statrow(data-bind="text: 'Комментариев: ' + stats.all.callCount")
-                .statrow(data-bind="text: 'Сегодня новых комментариев: ' + stats.all.cdayCount")
-                .statrow(data-bind="text: 'За неделю новых комментариев: ' + stats.all.cweekCount")
+                .statrow
+                    = 'Зарегистрированных пользователей: '
+                    b(data-bind="text: $root.intl.num(stats.all.userCount)")
+                .statrow
+                    = 'Фотографий: '
+                    b(data-bind="text: $root.intl.num(stats.all.pallCount)")
+                .statrow
+                    span(data-bind="text: 'Больше всего фотографий относится к ' + stats.all.photoYear.pop.year + ' году, их '")
+                    b(data-bind="text: $root.intl.num(stats.all.photoYear.pop.count)")
+                .statrow
+                    = 'Сегодня новых фотографий: '
+                    b(data-bind="text: $root.intl.num(stats.all.pdayCount)")
+                .statrow
+                    = 'За неделю новых фотографий: '
+                    b(data-bind="text: $root.intl.num(stats.all.pweekCount)")
+                .statrow
+                    = 'Комментариев: '
+                    b(data-bind="text: $root.intl.num(stats.all.callCount)")
+                .statrow
+                    = 'Сегодня новых комментариев: '
+                    b(data-bind="text: $root.intl.num(stats.all.cdayCount)")
+                .statrow
+                    = 'За неделю новых комментариев: '
+                    b(data-bind="text: $root.intl.num(stats.all.cweekCount)")
     | </script>

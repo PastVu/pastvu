@@ -273,9 +273,9 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                 if (self.catLoading() === 'stats') {
                     self.stats.all = data.all;
                     self.stats.common = data.common;
-                    self.stats.common.onlineTxt = 'Сейчас на сайте ' + data.common.onall +
+                    self.stats.common.onlineTxt = 'Сейчас на сайте ' + globalVM.intl.num(data.common.onall) +
                         Utils.format.wordEndOfNum(data.common.onall, declension.user) +
-                        ', из них ' + data.common.onreg + Utils.format.wordEndOfNum(data.common.onall, declension.reg);
+                        ', из них ' + globalVM.intl.num(data.common.onreg) + Utils.format.wordEndOfNum(data.common.onall, declension.reg);
                     success = true;
                 }
                 if (Utils.isType('function', cb)) {
@@ -303,7 +303,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                     photo.title = 'Без названия';
                 }
                 if (numField && numFormat) {
-                    photo.amount = photo[numField] + Utils.format.wordEndOfNum(photo[numField], numFormat);
+                    photo.amount = globalVM.intl.num(photo[numField]) + Utils.format.wordEndOfNum(photo[numField], numFormat);
                 }
                 if (regionsHash && photo.rs !== undefined) {
                     for (j = photo.rs.length; j--;) {
@@ -314,15 +314,15 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
             return photos;
         },
         processUsers: function (users, linkSection, numField, numFormat) {
-            var i = users.length,
-                user;
+            var i = users.length;
+            var user;
             while (i) {
                 user = users[--i];
                 user.sfile = user.avatar ? '/_a/d/' + user.avatar : User.def.full.avatar;
                 user.link = '/u/' + user.login + (linkSection ? '/' + linkSection : '');
                 user.title = user.disp;
                 if (numField && numFormat) {
-                    user.amount = user[numField] + Utils.format.wordEndOfNum(user[numField], numFormat);
+                    user.amount = globalVM.intl.num(user[numField]) + Utils.format.wordEndOfNum(user[numField], numFormat);
                 }
             }
             return users;

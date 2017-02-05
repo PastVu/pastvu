@@ -49,7 +49,7 @@
 			tbody
 				tr
 					td Фотографий:
-					td(data-bind="text: user.pcount()")
+					td(data-bind="text: $root.intl.num(user.pcount())")
 				tr
 					td Комментариев:
-					td(data-bind="text: user.ccount()")
+					td(data-bind="text: $root.intl.num(user.ccount())")

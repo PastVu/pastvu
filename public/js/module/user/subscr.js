@@ -71,10 +71,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 }, this);
 
                 this.briefText = this.co.briefText = ko.computed(function () {
-                    var count = this.types[this.type() + '_persist'](),
-                        txt = '';
+                    var count = this.types[this.type() + '_persist']();
+                    var txt = '';
                     if (count) {
-                        txt = 'Показаны ' + this.pageFirstItem() + '&ndash;' + (this.pageLastItem() || this.pageSize()) + ' из ' + count;
+                        txt = 'Показаны ' + globalVM.intl.num(this.pageFirstItem()) + '&nbsp;&ndash;&nbsp;' + globalVM.intl.num(this.pageLastItem() || this.pageSize()) + ' из ' + globalVM.intl.num(count);
                     } else {
                         txt = 'Пока нет подписок в данной категории';
                     }

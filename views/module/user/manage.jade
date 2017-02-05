@@ -43,8 +43,8 @@
 
         .panel.panel-pastvu
             .panel-heading: .panel-title
-                a.accordion-toggle(data-toggle="collapse", href="#ranks") Ограничения
-            .panel-collapse.collapse.in#ranks: .panel-body
+                a.accordion-toggle(data-toggle="collapse", href="#restrictions") Ограничения
+            .panel-collapse.collapse.in#restrictions: .panel-body
                 dl.dl-horizontal
                     dt.helpexists
                         abbr(title="Разрешать менять подпись на своих фотографиях и управлять настройками скачивания оригинала" +
@@ -73,10 +73,10 @@
                     // /ko
 
                 .setTitle Лимит количества неподтвержденных фотографий
-                div(data-bind="html: 'Действующая настройка: <b>'+photoNewLimitOrigin()+'</b>'", style="margin-bottom: 2px;")
-                .calcInfo(data-bind="html: 'Доступный лимит: <b>'+photoNewCan()+'</b>'")
-                .calcInfo(data-bind="html: 'Всего неподтвержденных: <b>'+u.pfcount()+'</b>'")
-                .calcInfo(data-bind="html: 'Всего опубликованных: <b>'+u.pcount()+'</b>'")
+                div(data-bind="html: 'Действующая настройка: <b>'+$root.intl.num(photoNewLimitOrigin())+'</b>'", style="margin-bottom: 2px;")
+                .calcInfo(data-bind="html: 'Доступный лимит: <b>'+$root.intl.num(photoNewCan())+'</b>'")
+                .calcInfo(data-bind="html: 'Всего неподтвержденных: <b>'+$root.intl.num(u.pfcount())+'</b>'")
+                .calcInfo(data-bind="html: 'Всего опубликованных: <b>'+$root.intl.num(u.pcount())+'</b>'")
                 form.form-inline(style="margin-top: 7px;"): .form-group
                     .radio: label.radio-inline
                         input(type="radio", value="auto", name="photo_new_radios", data-bind="checked: photoNewLimitOption")

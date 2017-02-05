@@ -38,9 +38,9 @@
                         .tool.type: span.glyphicon.light(data-bind="css: {'glyphicon-camera': !isPainting(), 'glyphicon-picture': isPainting()}, attr: {title: isPainting() ? 'Картина/рисунок' : 'Фотография'}")
                         .tool.watched
                             span.glyphicon.glyphicon-eye-open.light(title="Количество просмотров изображения")
-                            .watch(data-bind="text: toolsNumFormat(p.vdcount()), attr: {title: p.vdcount()+ ' раз смотрели сегодня'}")
-                            .watch(data-bind="text: toolsNumFormat(p.vwcount()), attr: {title: p.vwcount()+ ' раз смотрели за неделю'}")
-                            .watch(data-bind="text: toolsNumFormat(p.vcount()), attr: {title: p.vcount()+ ' раз смотрели всего'}")
+                            .watch(data-bind="text: toolsNumFormat(p.vdcount()), attr: {title: $root.intl.num(p.vdcount())+ ' раз смотрели сегодня'}")
+                            .watch(data-bind="text: toolsNumFormat(p.vwcount()), attr: {title: $root.intl.num(p.vwcount())+ ' раз смотрели за неделю'}")
+                            .watch(data-bind="text: toolsNumFormat(p.vcount()), attr: {title: $root.intl.num(p.vcount())+ ' раз смотрели всего'}")
                     .toolsBtm(data-bind="style: {width: ws() + 'px'}")
                         span.toolsTxt
                             | Размеры:&nbsp;

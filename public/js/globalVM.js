@@ -2,7 +2,7 @@
 /**
  * globalVM
  */
-define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'i18n', 'knockout', 'lib/PubSub'], function ($, Browser, Utils, _, P, i18n, ko, ps) {
+define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'intl', 'i18n', 'knockout', 'lib/PubSub'], function ($, Browser, Utils, _, P, intl, i18n, ko, ps) {
     'use strict';
 
     window.G = {
@@ -56,6 +56,7 @@ define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'i18n', 'knockout'
     return {
         P: P,
         pb: ps,
+        intl: intl,
         i18n: i18n,
         router: null,
 

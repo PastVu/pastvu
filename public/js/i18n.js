@@ -2,7 +2,7 @@
 /**
  * Localizations
  */
-define(['knockout', 'knockout.mapping', 'Utils'], function (ko, ko_mapping, Utils) {
+define(['knockout', 'knockout.mapping'], function (ko, koMapping) {
     'use strict';
     var i18n = {
         en: {
@@ -11,8 +11,8 @@ define(['knockout', 'knockout.mapping', 'Utils'], function (ko, ko_mapping, Util
             register: 'Registration',
             mod: 'Moderation',
             admin: 'Administration',
-            gallery: 'Галерея',
-            image_upload: 'Загрузить фото'
+            gallery: 'Gallery',
+            image_upload: 'Upload Image'
         },
         ru: {
             login: 'Вход',
@@ -24,5 +24,5 @@ define(['knockout', 'knockout.mapping', 'Utils'], function (ko, ko_mapping, Util
             image_upload: 'Загрузить фото'
         }
     };
-    return ko_mapping.fromJS(i18n.ru);
+    return koMapping.fromJS(i18n.ru);
 });

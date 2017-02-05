@@ -144,9 +144,9 @@ define([
 
                 if (count) {
                     if (this.feed() || this.coin()) {
-                        txt = 'Всего ' + count + ' фотографий';
+                        txt = 'Всего ' + globalVM.intl.num(count) + ' фотографий';
                     } else {
-                        txt = 'Показаны ' + this.pageFirstItem() + '&ndash;' + this.pageLastItem() + ' из ' + count;
+                        txt = 'Показаны ' + globalVM.intl.num(this.pageFirstItem()) + '&nbsp;&ndash;&nbsp;' + globalVM.intl.num(this.pageLastItem()) + ' из ' + globalVM.intl.num(count);
                     }
                 } else {
                     txt = 'Пока нет ни одной фотографии';
