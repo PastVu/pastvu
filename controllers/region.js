@@ -1218,22 +1218,42 @@ async function giveListFull(data) {
 export const giveListPublic = () => regionCacheArrPublicPromise;
 
 // Returns an array of regions in which a given point falls
+// Determine regions path to geo by parents of the very last in path
 const getRegionsByGeoPoint = (function () {
     const defRegion = 1000000; // If the region is not found, return the Open sea
 
     return async function ({ geo, fields = { _id: 0, geo: 0, __v: 0 } }) {
-        const regions = await Region.find(
+        console.time('HOHO');
+        const closestRegions = await Region.find(
             { geo: { $nearSphere: { $geometry: { type: 'Point', coordinates: geo }, $maxDistance: 1 } } },
-            fields, { lean: true, sort: { parents: -1 } }
+            fields, { lean: true, sort: { parents: -1 }, limit: 1 }
         ).exec();
+        const result = [];
 
-        if (_.isEmpty(regions)) {
+        if (_.isEmpty(closestRegions)) {
             if (regionCacheHash[defRegion]) {
-                regions.push(regionCacheHash[defRegion]);
+                result.push(regionCacheHash[defRegion]);
             }
+        } else {
+            const region = closestRegions[0];
+
+            if (region.parents && region.parents.length) {
+                const parentRegions = await Region.find({ cid: { $in: region.parents } }, fields, { lean: true }).exec();
+                const parentRegionsMap = parentRegions.reduce((map, region) => map.set(region.cid, region), new Map());
+
+                for (const cid of region.parents) {
+                    const region = parentRegionsMap.get(cid);
+                    if (region) {
+                        result.push(parentRegionsMap.get(cid));
+                    }
+                }
+            }
+
+            result.push(region);
         }
 
-        return regions;
+        console.timeEnd('HOHO');
+        return result;
     };
 }());
 
