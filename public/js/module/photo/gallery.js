@@ -144,9 +144,9 @@ define([
 
                 if (count) {
                     if (this.feed() || this.coin()) {
-                        txt = '' + count + ' images total';
+                        txt = '' + globalVM.intl.num(count) + ' images total';
                     } else {
-                        txt = '' + this.pageFirstItem() + '&ndash;' + this.pageLastItem() + ' of ' + count + ' are shown';
+                        txt = '' + globalVM.intl.num(this.pageFirstItem()) + '&nbsp;&ndash;&nbsp;' + globalVM.intl.num(this.pageLastItem()) + ' of ' + globalVM.intl.num(count) + ' are shown';
                     }
                 } else {
                     txt = 'There is not a single image';

@@ -13,7 +13,6 @@ define([
         jade: jade,
         create: function () {
             this.auth = globalVM.repository['m/common/auth'];
-            this.formatNum = Utils.format.numberByThousands; //Передаем функцию форматирования числа в шаблон
             this.regions = ko.observableArray();
             this.stat = null;
 
@@ -138,10 +137,10 @@ define([
 
                                 if (data.valuesChanged) {
                                     if (data.regionChanged) {
-                                        msg += '<b>' + data.regionChanged + '</b> регионов было обновлено<br>';
+                                        msg += '<b>' + globalVM.intl.num(data.regionChanged) + '</b> регионов было обновлено<br>';
                                     }
 
-                                    msg += '<b>' + data.valuesChanged + '</b> значений было изменено';
+                                    msg += '<b>' + globalVM.intl.num(data.valuesChanged) + '</b> значений было изменено';
                                 } else {
                                     msg += 'Значения не изменились';
                                 }

@@ -41,7 +41,7 @@
                     td(data-bind="text: moment(user.regdate()).format('D MMMM YYYY')")
                 tr
                     td Status:
-                    td(data-bind="text: user.online() ? 'Online' : 'Offline', css: {online : user.online()}")
+                    td(data-bind="text: user.online() ? 'Онлайн' : 'Оффлайн', css: {online : user.online()}")
     .briefBlock
         .head Brief statistics
         .h_separator
@@ -49,7 +49,7 @@
             tbody
                 tr
                     td Photos:
-                    td(data-bind="text: user.pcount()")
+                    td(data-bind="text: $root.intl.num(user.pcount())")
                 tr
                     td Comments:
-                    td(data-bind="text: user.ccount()")
+                    td(data-bind="text: $root.intl.num(user.ccount())")

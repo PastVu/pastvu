@@ -38,9 +38,9 @@
                         .tool.type: span.glyphicon.light(data-bind="css: {'glyphicon-camera': !isPainting(), 'glyphicon-picture': isPainting()}, attr: {title: isPainting() ? 'Painting' : 'Photo'}")
                         .tool.watched
                             span.glyphicon.glyphicon-eye-open.light(title="Number of images's views")
-                            .watch(data-bind="text: toolsNumFormat(p.vdcount()), attr: {title: p.vdcount()+ ' views today'}")
-                            .watch(data-bind="text: toolsNumFormat(p.vwcount()), attr: {title: p.vwcount()+ ' views this week'}")
-                            .watch(data-bind="text: toolsNumFormat(p.vcount()), attr: {title: p.vcount()+ ' views total'}")
+                            .watch(data-bind="text: toolsNumFormat(p.vdcount()), attr: {title: $root.intl.num(p.vdcount())+ ' views today'}")
+                            .watch(data-bind="text: toolsNumFormat(p.vwcount()), attr: {title: $root.intl.num(p.vwcount())+ ' views this week'}")
+                            .watch(data-bind="text: toolsNumFormat(p.vcount()), attr: {title: $root.intl.num(p.vcount())+ ' views total'}")
                     .toolsBtm(data-bind="style: {width: ws() + 'px'}")
                         span.toolsTxt
                             | Sizes:&nbsp;

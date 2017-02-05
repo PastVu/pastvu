@@ -71,10 +71,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 }, this);
 
                 this.briefText = this.co.briefText = ko.computed(function () {
-                    var count = this.types[this.type() + '_persist'](),
-                        txt = '';
+                    var count = this.types[this.type() + '_persist']();
+                    var txt = '';
                     if (count) {
-                        txt = '' + this.pageFirstItem() + '&ndash;' + (this.pageLastItem() || this.pageSize()) + ' of ' + count + ' are shown';
+                        txt = '' + globalVM.intl.num(this.pageFirstItem()) + '&nbsp;&ndash;&nbsp;' + globalVM.intl.num(this.pageLastItem() || this.pageSize()) + ' of ' + globalVM.intl.num(count) + ' are shown';
                     } else {
                         txt = 'Still has no subscription in this category';
                     }

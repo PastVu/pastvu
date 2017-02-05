@@ -27,6 +27,8 @@
             .headElem.interact(data-bind="click: collapseAll")
                 span.glyphicon.glyphicon-minus
                 |  Collapse all
+            abbr(style="margin-left:5px;vertical-align:middle;", title="For each region specified number of public images and deleted comments")
+                span.glyphicon.glyphicon-info-sign
     .tree
         ul(data-bind="template: {name: 'treeNode', foreach: regionsTree}")
     // /ko
@@ -38,8 +40,23 @@
             .chevron(data-bind="click: $parents[$data.level].collapseToggle, attr: {title: ($data.opened() ? 'Collapse' : 'Expand') + ' children regions'}")
                 span.glyphicon(data-bind="css: {'glyphicon-minus': $data.opened(), 'glyphicon-plus': !$data.opened()}")
             // /ko
-            .name(data-bind="click: function() {$parents[$data.level].clickNode($data.title_en)}, attr: {title: $data.selected() ? 'Remove selection' : ($data.selectable() ? 'Select region' : '')}")
-                span(data-bind="text: ' ' + $data.title_en")
+            .rname(data-bind="click: function() {$parents[$data.level].clickNode($data.title_local)}, attr: {title: $data.selected() ? 'Снять выбор' : ($data.selectable() ? 'Select region' : '')}")
+                .name(data-bind="text: ' ' + $data.title_local, css: {'nameborder': $data.phc || $data.pac || $data.cc}")
+                //ko if: $data.phc
+                .section(title="Photos")
+                    span.glyphicon.glyphicon-camera
+                    span(data-bind="text: ' ' + $root.intl.num($data.phc)")
+                // /ko
+                //ko if: $data.pac
+                .section(title="Paintings")
+                    span.glyphicon.glyphicon-picture
+                    span(data-bind="text: ' ' + $root.intl.num($data.pac)")
+                // /ko
+                //ko if: $data.cc
+                .section(title="Comments")
+                    span.glyphicon.glyphicon-comment(style="vertical-align:text-top;")
+                    span(data-bind="text: ' ' + $root.intl.num($data.cc)")
+                // /ko
         //ko if: $data.childLen && $data.opened()
         //ko template: {name: 'treeNode', foreach: $data.regions}
         // /ko

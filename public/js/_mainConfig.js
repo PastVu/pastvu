@@ -73,7 +73,9 @@ requirejs.config({
 
         'noty': 'lib/jquery/plugins/noty/jquery.noty',
         'noty.layouts': 'lib/jquery/plugins/noty/layouts',
-        'noty.themes': 'lib/jquery/plugins/noty/themes'
+        'noty.themes': 'lib/jquery/plugins/noty/themes',
+
+        'intl': 'intl/intl'
     }
 });
 require(['lib/JSExtensions']); //Делаем require вместо deps чтобы модуль заинлайнился во время оптимизации не в каждый модуль, а только в этот файл

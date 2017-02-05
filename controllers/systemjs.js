@@ -376,7 +376,7 @@ waitDb.then(function (db) {
                 });
 
                 if (hasChildren) {
-                    // Region has children, so try to update only photos that are assigned to any of its children,
+                    // Region has children, so try to update only photos that are not assigned to any of its children,
                     // because such photos already have all regions assigned all the way up, inluding current region
                     for (i = level + 1; i <= maxRegionLevel; i++) {
                         query['r' + i] = null;

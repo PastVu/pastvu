@@ -3,23 +3,23 @@
     .regionsStat
         .stat
             span Total regions count:
-            b(data-bind="text: ' '+formatNum(stat.common.regionsCount)")
+            b(data-bind="text: ' '+$root.intl.num(stat.common.regionsCount)")
             span &nbsp;&nbsp;By level:
             //ko foreach: stat.byLevel
             //ko if: $index() > 0
             span.glyphicon.glyphicon-play
             // /ko
-            b(data-bind="text: ' ' + $parent.formatNum($data.regionsCount) + ' ', attr: {title: ($index() + 1) + ' level'}")
+            b(data-bind="text: ' ' + $root.intl.num($data.regionsCount) + ' ', attr: {title: ($index() + 1) + ' level'}")
             // /ko
         .stat
             span Total vertex count:
-            b(data-bind="text: ' '+formatNum(stat.common.pointsCount)")
+            b(data-bind="text: ' '+$root.intl.num(stat.common.pointsCount)")
             span &nbsp;&nbsp;By level:
             //ko foreach: stat.byLevel
             //ko if: $index() > 0
             span.glyphicon.glyphicon-play
             // /ko
-            b(data-bind="text: ' ' + $parent.formatNum($data.pointsCount) + ' ', attr: {title: ($index() + 1) + ' level'}")
+            b(data-bind="text: ' ' + $root.intl.num($data.pointsCount) + ' ', attr: {title: ($index() + 1) + ' level'}")
             // /ko
     .regionsHead
         a.headElem.interact(href="/admin/region/create")
@@ -51,25 +51,25 @@
                     //ko foreach: childLenArr
                     | &nbsp;
                     span.glyphicon.glyphicon-play
-                    span(data-bind="text: ' ' + $data")
+                    span(data-bind="text: ' ' + $root.intl.num($data)")
                     // /ko
                 // /ko
                 //ko if: $data.pc
                 .section(title="Images")
                     span.glyphicon.glyphicon-camera
-                    .pc(title="Images with/without coordinates", data-bind="text: $data.pcg + ' / ' + ($data.pc - $data.pcg)")
+                    .pc(title="Images with/without coordinates", data-bind="text: $root.intl.num($data.pcg) + ' / ' + $root.intl.num($data.pc - $data.pcg)")
                     //ko if: $data.childLen && $data.pco
-                    .pco(title="Images without subregions with/without coordinates", data-bind="text: $data.pcog + ' / ' + ($data.pco - $data.pcog)")
+                    .pco(title="Images without subregions with/without coordinates", data-bind="text: $root.intl.num($data.pcog) + ' / ' + $root.intl.num($data.pco - $data.pcog)")
                     // /ko
                 // /ko
                 //ko if: $data.cc > 0
                 .section(title="Comments")
                     span.glyphicon.glyphicon-comment
                     //ko if: !$data.ccd
-                    .cc(title="Comments total", data-bind="text: $data.cc")
+                    .cc(title="Comments total", data-bind="text: $root.intl.num($data.cc)")
                     // /ko
                     //ko if: $data.ccd
-                    .cc(title="Comments active/delete", data-bind="text: ($data.cc - $data.ccd) + ' / ' + $data.ccd")
+                    .cc(title="Comments active/delete", data-bind="text: $root.intl.num($data.cc - $data.ccd) + ' / ' + $root.intl.num($data.ccd)")
                     // /ko
                 // /ko
             //ko if: $data.level < 5

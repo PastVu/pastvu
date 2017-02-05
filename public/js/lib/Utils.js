@@ -627,6 +627,7 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
 
 			//Разделяет число по тысячам переданной строкой(если не передана - пробелом)
 			//http://stackoverflow.com/a/2901298/1309851
+            //DEPRECATED. Use intl instead
 			function numberByThousands(val, divider) {
 				return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, divider || ' ');
 			}

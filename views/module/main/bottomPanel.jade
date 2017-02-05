@@ -10,7 +10,7 @@
             .newsLeft
                 .newsDate(data-bind="text: moment($data.pdate).format('D MMM')")
                 //ko if: $data.ccount
-                a.newsComms(data-bind="html: $data.ccount + ($data.ccount_new ? '<div class=\"cnew\">+' + $data.ccount_new + '</div>' : ''), attr: {href: '/news/' + $data.cid + '?hl=comments'}", title="Jump to news comments")
+                a.newsComms(data-bind="html: $root.intl.num($data.ccount) + ($data.ccount_new ? '<div class=\"cnew\">+' + $root.intl.num($data.ccount_new) + '</div>' : ''), attr: {href: '/news/' + $data.cid + '?hl=comments'}", title="Jump to news comments")
                 // /ko
             .newsBody
                 a.newsTitle(data-bind="text: $data.title, attr: {href: '/news/' + $data.cid}")
@@ -55,7 +55,7 @@
             //ko if: $data.ccount || $data.changed
             .rightBlocks
                 //ko if: $data.ccount
-                a.rightBlock.comm(data-bind="html: $data.ccount + ($data.ccount_new ? '<span class=\"cnew\"> +' + $data.ccount_new + '</span>' : ''), attr: {href: $data.link + '?hl=comments'}", title="Комментарии")
+                a.rightBlock.comm(data-bind="html: $root.intl.num($data.ccount) + ($data.ccount_new ? '<span class=\"cnew\"> +' + $root.intl.num($data.ccount_new) + '</span>' : ''), attr: {href: $data.link + '?hl=comments'}", title="Комментарии")
                 // /ko
                 //ko if: $data.changed
                 a.rightBlock.changed(data-bind="attr: {href: $data.link + '?history=1'}", title="Photo has been changed since last view")
@@ -128,12 +128,28 @@
         .row
             .col-xs-12
                 .catHead The entire project
-                .statrow(data-bind="text: 'Registered users: ' + stats.all.userCount")
-                .statrow(data-bind="text: 'Photos: ' + stats.all.pallCount")
-                .statrow(data-bind="text: 'Vast majority of photos refers to ' + stats.all.photoYear.pop.year + ' year, ' + stats.all.photoYear.pop.count")
-                .statrow(data-bind="text: 'New photos today: ' + stats.all.pdayCount")
-                .statrow(data-bind="text: 'New photos this week: ' + stats.all.pweekCount")
-                .statrow(data-bind="text: 'Comments: ' + stats.all.callCount")
-                .statrow(data-bind="text: 'Today new comments: ' + stats.all.cdayCount")
-                .statrow(data-bind="text: 'New comments this week: ' + stats.all.cweekCount")
+                .statrow
+                    = 'Registered users: '
+                    b(data-bind="text: $root.intl.num(stats.all.userCount)")
+                .statrow
+                    = 'Photos: '
+                    b(data-bind="text: $root.intl.num(stats.all.pallCount)")
+                .statrow
+                    span(data-bind="text: 'Vast majority of photos refers to ' + stats.all.photoYear.pop.year + ' year, '")
+                    b(data-bind="text: $root.intl.num(stats.all.photoYear.pop.count)")
+                .statrow
+                    = 'New photos today: '
+                    b(data-bind="text: $root.intl.num(stats.all.pdayCount)")
+                .statrow
+                    = 'New photos this week: '
+                    b(data-bind="text: $root.intl.num(stats.all.pweekCount)")
+                .statrow
+                    = 'Comments: '
+                    b(data-bind="text: $root.intl.num(stats.all.callCount)")
+                .statrow
+                    = 'Today new comments: '
+                    b(data-bind="text: $root.intl.num(stats.all.cdayCount)")
+                .statrow
+                    = 'New comments this week: '
+                    b(data-bind="text: $root.intl.num(stats.all.cweekCount)")
     | </script>

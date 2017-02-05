@@ -4,6 +4,8 @@ html
         include includes/head_meta
 
         if polyfills
+            if polyfills.intl
+                script(type="text/javascript", src='https://cdn.polyfill.io/v2/polyfill.min.js?features=Intl.~locale.' + config.lang + '|always')
             if polyfills.promise
                 script(type="text/javascript", src='/js/lib/es6-promise.min.js')
 

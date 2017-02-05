@@ -75,7 +75,7 @@ const requireBuildConfig = {
                 'noty', 'noty.layouts', 'noty.themes/pastvu',
                 'Browser', 'Utils', 'socket', 'router', 'Params', 'globalVM',
                 'm/_moduleCliche', 'renderer',
-                'model/Photo', 'model/User', 'model/storage'
+                'model/Photo', 'model/User', 'model/storage', 'intl'
             ]
         },
 

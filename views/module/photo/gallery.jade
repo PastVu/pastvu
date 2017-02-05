@@ -156,7 +156,7 @@
         li.edge(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: pageUrl() + pageQuery()}", title="First page") &laquo;&laquo;
         li.edge(data-bind="css: {disabled: !pageHasPrev()}"): a(data-bind="attr: {href: pageUrl() + (page() > 1 ? '/' + (page() - 1) : '')+ pageQuery()}", title="Previous page") &laquo;
         //ko foreach: pages
-        li(data-bind="css: {active: $data === $parent.page()}"): a(data-bind="attr: {href: $parent.pageUrl() + '/' + $data + $parent.pageQuery()}, text: $data")
+        li(data-bind="css: {active: $data === $parent.page()}"): a(data-bind="attr: {href: $parent.pageUrl() + '/' + $data + $parent.pageQuery()}, text: $root.intl.num($data)")
         // /ko
         li.edge(data-bind="css: {disabled: !pageHasNext()}"): a(data-bind="attr: {href: pageUrl() + '/' + (page() + 1) + pageQuery()}", title="Next page") &raquo;
         li.edge(data-bind="css: {disabled: page() === pageLast()}"): a(data-bind="attr: {href: pageUrl() + '/' + pageLast() + pageQuery()}", title="Last page") &raquo;&raquo;

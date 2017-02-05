@@ -116,7 +116,6 @@ define([
         create: function () {
             this.destroy = _.wrap(this.destroy, this.localDestroy);
             this.auth = globalVM.repository['m/common/auth'];
-            this.formatNum = Utils.format.numberByThousands; //Передаем функцию форматирования числа в шаблон
             this.createMode = ko.observable(true);
             this.exe = ko.observable(true); //Указывает, что сейчас идет обработка запроса на действие к серверу
 
@@ -334,7 +333,7 @@ define([
             imagestat.icon = 'camera';
             imagestat.title = 'Images';
             if (paintstat.all) {
-                imagestat.alterAll = imagestat.all + ' (' + paintstat.all + ' картин)';
+                imagestat.alterAll = globalVM.intl.num(imagestat.all) + ' (' + globalVM.intl.num(paintstat.all) + ' paintings)';
             }
             imagestat.linkprefix = '/ps?f=r!' + region.cid;
             this.imagestat(imagestat);
@@ -833,7 +832,7 @@ define([
                         msg = 'Statistics for ' + title + ' has been recalculated<br>';
 
                         if (data.valuesChanged) {
-                            msg += '<b>' + data.valuesChanged + '</b> values have been changed';
+                            msg += '<b>' + globalVM.intl.num(data.valuesChanged) + '</b> values have been changed';
                         } else {
                             msg += 'Values have not been changed';
                         }

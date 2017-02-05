@@ -97,14 +97,14 @@
             .col-xs-8.col-sm-9.col-lg-10
                 p.form-control-static
                     | Полигонов:
-                    strong(data-bind="text: ' ' + formatNum(region.polynum.exterior())")
+                    strong(data-bind="text: ' ' + $root.intl.num(region.polynum.exterior())")
                     //ko if: region.polynum.interior()
                     |  (+
-                    strong(data-bind="text: formatNum(region.polynum.interior())")
+                    strong(data-bind="text: $root.intl.num(region.polynum.interior())")
                     |  выколотых)
                     // /ko
                     | ; Вершин:
-                    strong(data-bind="text: ' ' + (formatNum(region.pointsnum() - region.polynum.exterior() - region.polynum.interior()))")
+                    strong(data-bind="text: ' ' + ($root.intl.num(region.pointsnum() - region.polynum.exterior() - region.polynum.interior()))")
         // /ko
         //ko if: createMode() || showGeo()
         .form-group
@@ -170,19 +170,19 @@
                     .stats-head
                         span.glyphicon.glyphicon-comment
                         = " Comments: "
-                        span(data-bind="text: all")
+                        span(data-bind="text: $root.intl.num(all)")
                     div(style="margin-top:3px;")
                         b= "Active: "
-                        span(data-bind="text: all - del")
+                        span(data-bind="text: $root.intl.num(all - del)")
                     div
                         b= "Deleted: "
-                        span(data-bind="text: del")
-                    b(style="display:block;margin-top:4px;") Active by image status:
+                        span(data-bind="text: $root.intl.num(del)")
+                    b(style="display:block;margin-top:4px;") Активных по статусам изображений:
                     //ko foreach: statuses
                     | <!--ko if: $index-->, <!-- /ko -->
                     span(style="white-space:nowrap;")
                         span(data-bind="text: $data.title + ': '")
-                        span(data-bind="text: $data.count, css: 'sc' + $data.status")
+                        span(data-bind="text: $root.intl.num($data.count), css: 'sc' + $data.status")
                     // /ko
             button.btn.btn-primary(type="button", data-bind="click: recalcStats, attr: {disabled: exe()}")
                 span.glyphicon.glyphicon-refresh
@@ -194,29 +194,29 @@
         .sn
             span.glyphicon(data-bind="css: 'glyphicon-' + icon")
             span(style="margin-left: 5px", data-bind="text: title + ': '")
-        .sc(data-bind="text: $data.alterAll || $data.all")
+        .sc(data-bind="text: $data.alterAll || $root.intl.num($data.all)")
     a(style="display:block;margin-top:3px;", data-bind="attr: {href: linkprefix + '_geo!1_s!all'}")
         .sn(style="font-weight:bold;")= "With coordinates: "
-        .sc(data-bind="text: geo")
+        .sc(data-bind="text: $root.intl.num(geo)")
     a(style="display:block;", data-bind="attr: {href: linkprefix + '_geo!0_s!all'}")
         .sn(style="font-weight:bold;")= "Without coordinates: "
-        .sc(data-bind="text: all - geo")
+        .sc(data-bind="text: $root.intl.num(all - geo)")
     //ko if: own && all !== own
     a(style="display:block;margin-top:4px;", data-bind="attr: {href: linkprefix + '_rs!0_s!all'}")
         .sn(style="font-weight:bold;")= "No subregions: "
-        .sc(data-bind="text: own")
+        .sc(data-bind="text: $root.intl.num(own)")
     a(style="display:block;padding-left:26px;", data-bind="attr: {href: linkprefix + '_rs!0_geo!1_s!all'}")
         .sn= "With coordinates: "
-        .sc(data-bind="text: owngeo")
+        .sc(data-bind="text: $root.intl.num(owngeo)")
     a(style="display:block;padding-left:26px;", data-bind="attr: {href: linkprefix + '_rs!0_geo!0_s!all'}")
         .sn= "Without coordinates: "
-        .sc(data-bind="text: own - owngeo")
+        .sc(data-bind="text: $root.intl.num(own - owngeo)")
     // /ko
     b(style="display:block;margin-top:4px;") By status:
     //ko foreach: statuses
     | <!--ko if: $index-->, <!-- /ko -->
     a(style="white-space:nowrap;", data-bind="attr: {href: $parent.linkprefix + '_s!' + $data.status }")
         .sn(data-bind="text: $data.title + ': '")
-        .sc(data-bind="text: $data.count, css: 'sc' + $data.status")
+        .sc(data-bind="text: $root.intl.num($data.count), css: 'sc' + $data.status")
     // /ko
     | </script>

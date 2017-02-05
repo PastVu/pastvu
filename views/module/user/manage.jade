@@ -43,8 +43,8 @@
 
         .panel.panel-pastvu
             .panel-heading: .panel-title
-                a.accordion-toggle(data-toggle="collapse", href="#ranks") Restrictions
-            .panel-collapse.collapse.in#ranks: .panel-body
+                a.accordion-toggle(data-toggle="collapse", href="#restrictions") Restrictions
+            .panel-collapse.collapse.in#restrictions: .panel-body
                 dl.dl-horizontal
                     dt.helpexists
                         abbr(title="Allow to change watermark on own photos and manage download of original settings," +
@@ -73,10 +73,10 @@
                     // /ko
 
                 .setTitle Limit of unconfirmed photos
-                div(data-bind="html: 'Current setting: <b>'+photoNewLimitOrigin()+'</b>'", style="margin-bottom: 2px;")
-                .calcInfo(data-bind="html: 'Available limit: <b>'+photoNewCan()+'</b>'")
-                .calcInfo(data-bind="html: 'Total unconfirmed: <b>'+u.pfcount()+'</b>'")
-                .calcInfo(data-bind="html: 'Total published: <b>'+u.pcount()+'</b>'")
+                div(data-bind="html: 'Current setting: <b>'+$root.intl.num(photoNewLimitOrigin())+'</b>'", style="margin-bottom: 2px;")
+                .calcInfo(data-bind="html: 'Available limit: <b>'+$root.intl.num(photoNewCan())+'</b>'")
+                .calcInfo(data-bind="html: 'Total unconfirmed: <b>'+$root.intl.num(u.pfcount())+'</b>'")
+                .calcInfo(data-bind="html: 'Total published: <b>'+$root.intl.num(u.pcount())+'</b>'")
                 form.form-inline(style="margin-top: 7px;"): .form-group
                     .radio: label.radio-inline
                         input(type="radio", value="auto", name="photo_new_radios", data-bind="checked: photoNewLimitOption")

@@ -85,7 +85,7 @@ define([
 
             this.photoNewCan = ko.observable(0);
             this.photoNewLimit = ko.observable(null);
-            this.photoNewLimitOrigin = ko.observable('Авто');
+            this.photoNewLimitOrigin = ko.observable('Auto');
             this.photoNewLimitOption = ko.computed({
                 read: function () {
                     return _.isString(that.photoNewLimit()) ? 'manual' : 'auto';
@@ -143,7 +143,7 @@ define([
                 this.photoNewLimitOrigin(this.photoNewLimit());
             } else {
                 this.photoNewLimit(null);
-                this.photoNewLimitOrigin('Авто');
+                this.photoNewLimitOrigin('Auto');
             }
             this.photoNewCan(info.canPhotoNew || 0);
         },

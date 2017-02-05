@@ -74,7 +74,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 var count = this.types[this.type() + '_persist'](),
                     txt = '';
                 if (count) {
-                    txt = '' + this.pageFirstItem() + '&ndash;' + this.pageLastItem() + ' of ' + count + ' are shown';
+                    txt = '' + globalVM.intl.num(this.pageFirstItem()) + '&nbsp;&ndash;&nbsp;' + globalVM.intl.num(this.pageLastItem()) + ' of ' + globalVM.intl.num(count) + ' are shown';
                 } else {
                     txt = 'User still has no comments in this category';
                 }

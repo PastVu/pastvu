@@ -20,6 +20,7 @@ module.exports = function (config/* , appRequire */) {
             'intl': {
                 'IE': '>=11.0.0',
                 'Edge': '>=12.0.0',
+                'Safari': '>=10.0.0',
                 'Firefox': '>=29.0.0',
                 'Opera': '>=15.0.0',
                 'Chrome': '>=24.0.0',

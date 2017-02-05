@@ -1,6 +1,6 @@
 .fullComments(data-bind="with: repository[M!M]")
     .cmtsHead
-        a.count.headElem.interact(href="?hl=comments", data-replace="true", data-bind="html: count() + (countNew() ? '<span class=\"cnew\"> +' + countNew() + '</span>' : '')", title="Link to the comments area")
+        a.count.headElem.interact(href="?hl=comments", data-replace="true", data-bind="html: $root.intl.num(count()) + (countNew() ? '<span class=\"cnew\"> +' + $root.intl.num(countNew()) + '</span>' : '')", title="Link to the comments area")
         //ko if: canReply()
         .addZero.headElem.interact.strokeBefore(data-bind="click: replyZero", title="Add first level comment")
             span.glyphicon.glyphicon-edit
@@ -32,7 +32,7 @@
     .navigator(data-bind="css: {touch: touch}")
         .arrow
         .navigatorInn
-            .countAll(data-bind="text: '+' + countNew()")
+            .countAll(data-bind="text: '+' + $root.intl.num(countNew())")
             .up(data-bind="click: navUp")
                 span.glyphicon.glyphicon-arrow-up
                 .navTxt
