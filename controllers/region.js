@@ -1223,7 +1223,6 @@ const getRegionsByGeoPoint = (function () {
     const defRegion = 1000000; // If the region is not found, return the Open sea
 
     return async function ({ geo, fields = { _id: 0, geo: 0, __v: 0 } }) {
-        console.time('HOHO');
         const closestRegions = await Region.find(
             { geo: { $nearSphere: { $geometry: { type: 'Point', coordinates: geo }, $maxDistance: 1 } } },
             fields, { lean: true, sort: { parents: -1 }, limit: 1 }
@@ -1252,7 +1251,6 @@ const getRegionsByGeoPoint = (function () {
             result.push(region);
         }
 
-        console.timeEnd('HOHO');
         return result;
     };
 }());

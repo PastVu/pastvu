@@ -152,18 +152,29 @@
 				border-style: solid;
 				border-color: transparent;
 			}
-			.name {
+			.rname {
 				position: relative;
 				display: inline-block;
 				min-width: 100px;
 				margin-left: 22px;
-				padding: 2px 18px 2px 6px;
+				padding: 2px 6px;
 				color: @gray;
 				cursor: default;
 				text-decoration: none;
 				border: 1px solid #999;
 				background-color: #DFDFF0;
 			}
+			.name {
+				display: inline-block;
+                padding-right: 10px;
+				border-right: 1px solid #fff;
+			}
+            .section {
+                display: inline-block;
+                padding-left: 10px;
+                font-size: 11px;
+                color: #525252;
+            }
 
 			&.isparent {
 				margin: 0 0 0 28px;
@@ -178,7 +189,7 @@
 					width: 10px;
 				}
 
-				.name {
+				.rname {
 					margin-left: 0;
 				}
 			}
@@ -189,28 +200,32 @@
 						border-color: #999;
 					}
 				}
-				.name {
+				.rname {
 					color: @gray-dark;
 					cursor: pointer;
 
-					&:hover::after {
-						position: absolute;
-						display: block;
-						content: '\e013';
-						top: 4px;
-						right: 2px;
-						width: 14px;
-						font-family: 'Glyphicons Halflings';
-						font-style: normal;
-						font-weight: normal;
-						line-height: 1;
-						color: #00c300;
-						-webkit-font-smoothing: antialiased;
-						-moz-osx-font-smoothing: grayscale;
+					&:hover{
+                        padding-right: 23px;
+
+                        &::after {
+                            position: absolute;
+                            display: block;
+                            content: '\e013';
+                            top: 4px;
+                            right: 4px;
+                            width: 14px;
+                            font-family: 'Glyphicons Halflings';
+                            font-style: normal;
+                            font-weight: normal;
+                            line-height: 1;
+                            color: #00c300;
+                            -webkit-font-smoothing: antialiased;
+                            -moz-osx-font-smoothing: grayscale;
+					    }
 					}
 				}
 
-				.chevron, .name {
+				.chevron, .rname {
 					&:hover {
 						color: @gray-darker;
 						background-color: @MainLigthColor;
@@ -218,7 +233,7 @@
 				}
 			}
 			> .lirow.selected {
-				> .name {
+				> .rname {
 					background-color: #94ff82;
 
 					&:hover {

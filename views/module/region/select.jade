@@ -27,6 +27,8 @@
             .headElem.interact(data-bind="click: collapseAll")
                 span.glyphicon.glyphicon-minus
                 |  Свернуть все
+            abbr(style="margin-left:5px;vertical-align:middle;", title="Для каждого региона указано кол-во публичный изображений и не удаленных комментариев")
+                span.glyphicon.glyphicon-info-sign
     .tree
         ul(data-bind="template: {name: 'treeNode', foreach: regionsTree}")
     // /ko
@@ -38,8 +40,23 @@
             .chevron(data-bind="click: $parents[$data.level].collapseToggle, attr: {title: ($data.opened() ? 'Скрыть' : 'Раскрыть') + ' дочерние регионы'}")
                 span.glyphicon(data-bind="css: {'glyphicon-minus': $data.opened(), 'glyphicon-plus': !$data.opened()}")
             // /ko
-            .name(data-bind="click: function() {$parents[$data.level].clickNode($data.title_local)}, attr: {title: $data.selected() ? 'Снять выбор' : ($data.selectable() ? 'Выбрать регион' : '')}")
-                span(data-bind="text: ' ' + $data.title_local")
+            .rname(data-bind="click: function() {$parents[$data.level].clickNode($data.title_local)}, attr: {title: $data.selected() ? 'Снять выбор' : ($data.selectable() ? 'Выбрать регион' : '')}")
+                .name(data-bind="text: ' ' + $data.title_local")
+                //ko if: $data.phc
+                .section(title="Фотографии")
+                    span.glyphicon.glyphicon-camera
+                    span(data-bind="text: ' ' + $root.intl.num($data.phc)")
+                // /ko
+                //ko if: $data.pac
+                .section(title="Картины")
+                    span.glyphicon.glyphicon-picture
+                    span(data-bind="text: ' ' + $root.intl.num($data.pac)")
+                // /ko
+                //ko if: $data.cc
+                .section(title="Комментарии")
+                    span.glyphicon.glyphicon-comment(style="vertical-align:text-top;")
+                    span(data-bind="text: ' ' + $root.intl.num($data.cc)")
+                // /ko
         //ko if: $data.childLen && $data.opened()
         //ko template: {name: 'treeNode', foreach: $data.regions}
         // /ko
