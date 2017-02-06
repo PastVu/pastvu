@@ -442,13 +442,13 @@ body {
 // Tooltip
 .tltp {
     position: absolute;
-    padding: 2px 5px;
     display: flex;
     color: @MainLigthColor;
     opacity: 0;
+    font-size: @font-size-small;
     transition: all .25s ease-out;
     box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.28);
-    background: lighten(@MainDarkColor, 10%);
+    background: lighten(@MainDarkColor, 17%);
     z-index: @zindex-tooltip;
 
     /* This bridges the gap so you can mouse into the tooltip without it disappearing */
@@ -475,6 +475,8 @@ body {
     left: 50%;
     bottom: 100%;
     margin-bottom: 7px;
+    padding: 3px 7px;
+    text-align: center;
     transform: translate(-50%, -7px);
 
     &::before {
@@ -487,7 +489,7 @@ body {
         left: 50%;
         bottom: -6px;
         margin-left: -3px;
-        border-top: solid lighten(@MainDarkColor, 10%) 6px;
+        border-top: solid lighten(@MainDarkColor, 17%) 6px;
         border-right: solid transparent 6px;
         border-left: solid transparent 6px;
         transform: translateX(-3px);
@@ -497,6 +499,7 @@ body {
     top: 50%;
     left: 100%;
     margin-left: 5px;
+    padding: 2px 5px;
     transform: translate(5px, -50%);
 
     &::before {
@@ -519,6 +522,8 @@ body {
     top: 50%;
     right: 100%;
     margin-right: 5px;
+    padding: 2px 5px;
+    text-align: right;
     transform: translate(-5px, -50%);
 
     &::before {
@@ -541,6 +546,8 @@ body {
     left: 50%;
     top: 100%;
     margin-top: 7px;
+    padding: 3px 7px;
+    text-align: center;
     transform: translate(-50%, 7px);
 
     &::before {
