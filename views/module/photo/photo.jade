@@ -61,18 +61,35 @@
                             | &nbsp;|&nbsp;
                             a.sizeOrigin(target="_blank", data-bind="attr:{href: '/_p/a/'+p.file()}, text: p.w()+'×'+p.h()")
                         //ko if: hscalePossible()
-                        button.btn.btn-xxs.btn-primary(data-state="hscaleTumbler", data-bind="css: {active: hscaleTumbler()}, click: stateChange", title="Подгонять по высоте видимой области")
-                            span.glyphicon.glyphicon-resize-vertical
+                        .tltp-wrap
+                            button.btn.btn-xxs.btn-primary(data-state="hscaleTumbler", data-bind="css: {active: hscaleTumbler()}, click: stateChange")
+                                span.glyphicon.glyphicon-resize-vertical
+                            .tltp.tltp-bottom.tltp-notouch
+                                = 'Подгонять по высоте'
+                                br
+                                = 'видимой области'
                         // /ko
-                        button.btn.btn-xxs.btn-primary(data-state="watermarkShow", data-bind="css: {active: watermarkShow()}, click: stateChange", title="Показывать вотермарк изображения")
-                            | W
+                        .tltp-wrap
+                            button.btn.btn-xxs.btn-primary(data-state="watermarkShow", data-bind="css: {active: watermarkShow()}, click: stateChange")
+                                | W
+                            .tltp.tltp-bottom.tltp-notouch
+                                = 'Показывать вотермарк'
+                                br
+                                = 'на изображении'
                         //ko if: p.s()===statuses.keys.PUBLIC
-                        a.btn.btn-xxs.btn-primary(href="?share=1", data-replace="true", title="Поделиться")
-                            span.glyphicon.glyphicon-share-alt
+                        .tltp-wrap
+                            a.btn.btn-xxs.btn-primary(href="?share=1", data-replace="true")
+                                span.glyphicon.glyphicon-share-alt
+                            .tltp.tltp-bottom.tltp-notouch
+                                = 'Поделиться'
+                                br
+                                = 'в социальных сетях'
                         // /ko
                         //ko if: can.download() && !edit()
-                        a.btn.btn-xxs(data-bind="click: download, css: downloadCSSClass(), attr: {href: p.fileroot()+'/a/'+p.file(), download:p.cid()+' '+(p.title()||'').replace(/[\/|]/g, '-')+'.jpg', title:'Скачать '+(downLoadOrigin()?'оригинал ':'в полном размере ')+p.w() + '×' + p.h()}")
-                            span.glyphicon.glyphicon-save
+                        .tltp-wrap
+                            a.btn.btn-xxs(data-bind="click: download, css: downloadCSSClass(), attr: {href: p.fileroot()+'/a/'+p.file(), download:p.cid()+' '+(p.title()||'').replace(/[\/|]/g, '-')+'.jpg'}")
+                                span.glyphicon.glyphicon-save
+                            .tltp.tltp-bottom.tltp-notouch(data-bind="html:'Скачать '+(downLoadOrigin()?'оригинал':'в полном размере')+'<br>'+p.w() + '×' + p.h()")
                         // /ko
 
             //ko template: {name: edit() ? p.type() === '2' ? 'paintingEdit' : 'photoEdit' : 'photoView', afterRender: tplAfterRender}
