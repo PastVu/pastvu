@@ -439,6 +439,149 @@ body {
 	}
 }
 
+// Tooltip
+.tltp {
+    position: absolute;
+    padding: 2px 5px;
+    display: flex;
+    color: @MainLigthColor;
+    opacity: 0;
+    transition: all .25s ease-out;
+    box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.28);
+    background: lighten(@MainDarkColor, 10%);
+
+    /* This bridges the gap so you can mouse into the tooltip without it disappearing */
+    &::before {
+        position: absolute;
+        display: block;
+        content: ' ';
+    }
+    // Triangle
+    &::after {
+        position: absolute;
+        content: ' ';
+        width: 0;
+        height: 0;
+    }
+}
+
+.tltp-notouch {
+    user-select: none;
+    pointer-events: none;
+}
+
+.tltp-top {
+    left: 50%;
+    bottom: 100%;
+    margin-bottom: 7px;
+    transform: translate(-50%, -7px);
+
+    &::before {
+        width: 100%;
+        height: 7px;
+        left: 0;
+        bottom: -7px;
+    }
+    &::after {
+        left: 50%;
+        bottom: -6px;
+        margin-left: -3px;
+        border-top: solid lighten(@MainDarkColor, 10%) 6px;
+        border-right: solid transparent 6px;
+        border-left: solid transparent 6px;
+        transform: translateX(-3px);
+    }
+}
+.tltp-right {
+    top: 50%;
+    left: 100%;
+    margin-left: 5px;
+    transform: translate(5px, -50%);
+
+    &::before {
+        width: 5px;
+        height: 100%;
+        top: 0;
+        left: -5px;
+    }
+    &::after {
+        top: 50%;
+        left: -4px;
+        margin-top: -2px;
+        border-top: solid transparent 4px;
+        border-right: solid lighten(@MainDarkColor, 10%) 4px;
+        border-bottom: solid transparent 4px;
+        transform: translateY(-2px);
+    }
+}
+.tltp-left {
+    top: 50%;
+    right: 100%;
+    margin-right: 5px;
+    transform: translate(-5px, -50%);
+
+    &::before {
+        width: 5px;
+        height: 100%;
+        top: 0;
+        right: -5px;
+    }
+    &::after {
+        top: 50%;
+        right: -4px;
+        margin-top: -2px;
+        border-top: solid transparent 4px;
+        border-bottom: solid transparent 4px;
+        border-left: solid lighten(@MainDarkColor, 10%) 4px;
+        transform: translateY(-2px);
+    }
+}
+.tltp-bottom {
+    left: 50%;
+    top: 100%;
+    margin-top: 7px;
+    transform: translate(-50%, 7px);
+
+    &::before {
+        width: 100%;
+        height: 7px;
+        left: 0;
+        top: -7px;
+    }
+    &::after {
+        left: 50%;
+        top: -6px;
+        margin-left: -3px;
+        border-right: solid transparent 6px;
+        border-bottom: solid lighten(@MainDarkColor, 10%) 6px;
+        border-left: solid transparent 6px;
+        transform: translateX(-3px);
+    }
+}
+
+.tltp-wrap {
+    position: relative;
+
+    &:hover {
+        > .tltp {
+            opacity: 1;
+            transition: all .25s ease-out;
+        }
+        > .tltp-top {
+            transform: translate(-50%, 0);
+        }
+        > .tltp-right {
+            transform: translate(0, -50%);
+        }
+        > .tltp-left {
+            transform: translate(0, -50%);
+        }
+        > .tltp-bottom {
+            transform: translate(-50%, 0);
+        }
+    }
+}
+
 //Cтиль для подгрузки фото в контейнере с отображением ошибки
 .imgLoad {
 	position: relative;
