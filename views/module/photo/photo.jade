@@ -35,12 +35,21 @@
                         // /ko
                         .photoLoading
                     .toolsRht
-                        .tool.type: span.glyphicon.light(data-bind="css: {'glyphicon-camera': !isPainting(), 'glyphicon-picture': isPainting()}, attr: {title: isPainting() ? 'Картина/рисунок' : 'Фотография'}")
+                        .tool.type
+                            .tltp-wrap
+                                span.glyphicon.light(data-bind="css: {'glyphicon-camera': !isPainting(), 'glyphicon-picture': isPainting()}")
+                                .tltp.tltp-right.tltp-notouch(data-bind="text: isPainting() ? 'Картина/рисунок' : 'Фотография'")
                         .tool.watched
                             span.glyphicon.glyphicon-eye-open.light(title="Количество просмотров изображения")
-                            .watch(data-bind="text: toolsNumFormat(p.vdcount()), attr: {title: $root.intl.num(p.vdcount())+ ' раз смотрели сегодня'}")
-                            .watch(data-bind="text: toolsNumFormat(p.vwcount()), attr: {title: $root.intl.num(p.vwcount())+ ' раз смотрели за неделю'}")
-                            .watch(data-bind="text: toolsNumFormat(p.vcount()), attr: {title: $root.intl.num(p.vcount())+ ' раз смотрели всего'}")
+                            .tltp-wrap
+                                .watch(data-bind="text: toolsNumFormat(p.vdcount())")
+                                .tltp.tltp-right.tltp-notouch(data-bind="text: $root.intl.num(p.vdcount())+ ' раз смотрели сегодня'")
+                            .tltp-wrap
+                                .watch(data-bind="text: toolsNumFormat(p.vwcount())")
+                                .tltp.tltp-right.tltp-notouch(data-bind="text: $root.intl.num(p.vwcount())+ ' раз смотрели за неделю'")
+                            .tltp-wrap
+                                .watch(data-bind="text: toolsNumFormat(p.vcount())")
+                                .tltp.tltp-right.tltp-notouch(data-bind="text: $root.intl.num(p.vcount())+ ' раз смотрели всего'")
                     .toolsBtm(data-bind="style: {width: ws() + 'px'}")
                         span.toolsTxt
                             | Размеры:&nbsp;

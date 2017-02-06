@@ -175,22 +175,22 @@
             font-size: 12px;
             color: #F5F5F5;
             cursor: default;
-            overflow: hidden;
             white-space: nowrap;
             text-decoration: none;
             background-color: @toolColor;
+            transition: all .25s ease-out;
 
-            &.interact {
-                cursor: pointer;
+            &:hover {
+                color: #fff;
+                background-color: @toolColorHover;
+            }
 
-                &:hover {
-                    color: #fff;
-                    background-color: @toolColorHover;
-                }
+            .tltp-wrap {
+                cursor: help;
             }
         }
         .type {
-            > .glyphicon {
+            .glyphicon {
                 padding-top: 3px;
                 font-size: 15px;
             }
@@ -200,7 +200,6 @@
 
             > .watch, > .glyphicon {
                 padding: 1px 0;
-                cursor: help;
 
                 &:hover {
                     color: #fff;
