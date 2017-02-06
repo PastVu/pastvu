@@ -61,18 +61,29 @@
                             | &nbsp;|&nbsp;
                             a.sizeOrigin(target="_blank", data-bind="attr:{href: '/_p/a/'+p.file()}, text: p.w()+'×'+p.h()")
                         //ko if: hscalePossible()
-                        button.btn.btn-xxs.btn-primary(data-state="hscaleTumbler", data-bind="css: {active: hscaleTumbler()}, click: stateChange", title="Adjust by the height of the visible area")
-                            span.glyphicon.glyphicon-resize-vertical
+                        .tltp-wrap
+                            button.btn.btn-xxs.btn-primary(data-state="hscaleTumbler", data-bind="css: {active: hscaleTumbler()}, click: stateChange")
+                                span.glyphicon.glyphicon-resize-vertical
+                            .tltp.tltp-bottom.tltp-notouch
+                                = 'Adjust by the height'
+                                br
+                                = 'of the visible area'
                         // /ko
-                        button.btn.btn-xxs.btn-primary(data-state="watermarkShow", data-bind="css: {active: watermarkShow()}, click: stateChange", title="Show images's watermark")
-                            | W
+                        .tltp-wrap
+                            button.btn.btn-xxs.btn-primary(data-state="watermarkShow", data-bind="css: {active: watermarkShow()}, click: stateChange")
+                                | W
+                            .tltp.tltp-bottom.tltp-notouch Show watermark
                         //ko if: p.s()===statuses.keys.PUBLIC
-                        a.btn.btn-xxs.btn-primary(href="?share=1", data-replace="true", title="Share")
-                            span.glyphicon.glyphicon-share-alt
+                        .tltp-wrap
+                            a.btn.btn-xxs.btn-primary(href="?share=1", data-replace="true")
+                                span.glyphicon.glyphicon-share-alt
+                            .tltp.tltp-bottom.tltp-notouch Share
                         // /ko
                         //ko if: can.download() && !edit()
-                        a.btn.btn-xxs(data-bind="click: download, css: downloadCSSClass(), attr: {href: p.fileroot()+'/a/'+p.file(), download:p.cid()+' '+(p.title()||'').replace(/[\/|]/g, '-')+'.jpg', title:'Download '+(downLoadOrigin()?'original ':'full size ')+p.w() + '×' + p.h()}")
-                            span.glyphicon.glyphicon-save
+                        .tltp-wrap
+                            a.btn.btn-xxs(data-bind="click: download, css: downloadCSSClass(), attr: {href: p.fileroot()+'/a/'+p.file(), download:p.cid()+' '+(p.title()||'').replace(/[\/|]/g, '-')+'.jpg'}")
+                                span.glyphicon.glyphicon-save
+                            .tltp.tltp-bottom.tltp-notouch(data-bind="html:'Download '+(downLoadOrigin()?'original':'full size')+'<br>'+p.w() + '×' + p.h()")
                         // /ko
 
             //ko template: {name: edit() ? p.type() === '2' ? 'paintingEdit' : 'photoEdit' : 'photoView', afterRender: tplAfterRender}
