@@ -38,18 +38,18 @@
                         .tool.type
                             .tltp-wrap
                                 span.glyphicon.light(data-bind="css: {'glyphicon-camera': !isPainting(), 'glyphicon-picture': isPainting()}")
-                                .tltp.tltp-right.tltp-notouch(data-bind="text: isPainting() ? 'Картина/рисунок' : 'Фотография'")
+                                .tltp.tltp-right(data-bind="text: isPainting() ? 'Картина/рисунок' : 'Фотография'")
                         .tool.watched
                             span.glyphicon.glyphicon-eye-open.light(title="Количество просмотров изображения")
                             .tltp-wrap
                                 .watch(data-bind="text: toolsNumFormat(p.vdcount())")
-                                .tltp.tltp-right.tltp-notouch(data-bind="text: $root.intl.num(p.vdcount())+ ' раз смотрели сегодня'")
+                                .tltp.tltp-right(data-bind="text: $root.intl.num(p.vdcount())+ ' раз смотрели сегодня'")
                             .tltp-wrap
                                 .watch(data-bind="text: toolsNumFormat(p.vwcount())")
-                                .tltp.tltp-right.tltp-notouch(data-bind="text: $root.intl.num(p.vwcount())+ ' раз смотрели за неделю'")
+                                .tltp.tltp-right(data-bind="text: $root.intl.num(p.vwcount())+ ' раз смотрели за неделю'")
                             .tltp-wrap
                                 .watch(data-bind="text: toolsNumFormat(p.vcount())")
-                                .tltp.tltp-right.tltp-notouch(data-bind="text: $root.intl.num(p.vcount())+ ' раз смотрели всего'")
+                                .tltp.tltp-right(data-bind="text: $root.intl.num(p.vcount())+ ' раз смотрели всего'")
                     .toolsBtm(data-bind="style: {width: ws() + 'px'}")
                         span.toolsTxt
                             | Размеры:&nbsp;
@@ -64,7 +64,7 @@
                         .tltp-wrap
                             button.btn.btn-xxs.btn-primary(data-state="hscaleTumbler", data-bind="css: {active: hscaleTumbler()}, click: stateChange")
                                 span.glyphicon.glyphicon-resize-vertical
-                            .tltp.tltp-bottom.tltp-notouch
+                            .tltp.tltp-bottom
                                 = 'Подгонять по высоте'
                                 br
                                 = 'видимой области'
@@ -72,7 +72,7 @@
                         .tltp-wrap
                             button.btn.btn-xxs.btn-primary(data-state="watermarkShow", data-bind="css: {active: watermarkShow()}, click: stateChange")
                                 | W
-                            .tltp.tltp-bottom.tltp-notouch
+                            .tltp.tltp-bottom
                                 = 'Показывать вотермарк'
                                 br
                                 = 'на изображении'
@@ -80,7 +80,7 @@
                         .tltp-wrap
                             a.btn.btn-xxs.btn-primary(href="?share=1", data-replace="true")
                                 span.glyphicon.glyphicon-share-alt
-                            .tltp.tltp-bottom.tltp-notouch
+                            .tltp.tltp-bottom
                                 = 'Поделиться'
                                 br
                                 = 'в социальных сетях'
@@ -89,7 +89,7 @@
                         .tltp-wrap
                             a.btn.btn-xxs(data-bind="click: download, css: downloadCSSClass(), attr: {href: p.fileroot()+'/a/'+p.file(), download:p.cid()+' '+(p.title()||'').replace(/[\/|]/g, '-')+'.jpg'}")
                                 span.glyphicon.glyphicon-save
-                            .tltp.tltp-bottom.tltp-notouch(data-bind="html:'Скачать '+(downLoadOrigin()?'оригинал':'в полном размере')+'<br>'+p.w() + '×' + p.h()")
+                            .tltp.tltp-bottom(data-bind="html:'Скачать '+(downLoadOrigin()?'оригинал':'в полном размере')+'<br>'+p.w() + '×' + p.h()")
                         // /ko
 
             //ko template: {name: edit() ? p.type() === '2' ? 'paintingEdit' : 'photoEdit' : 'photoView', afterRender: tplAfterRender}
@@ -213,7 +213,33 @@
             //ko foreach: p.regions
             | <!--ko if: $index()-->, <!-- /ko -->
             .region
-                a(data-bind="text: $data.title_local(), attr: {href: '/ps?f=r!' + $data.cid()}")
+                .tltp-wrap
+                    a(data-bind="text: $data.title_local(), attr: {href: '/ps?f=r!' + $data.cid()}")
+                    //ko if: $parent.IAdmin() || $data.phc() || $data.pac() || $data.cc()
+                    .tltp.tltp-top.tltp-touch
+                        //ko if: $parent.IAdmin()
+                        .region-type-stat.region-type-stat-clickable(title="Перейти в редактирование региона")(style="margin:1px 0;padding-right:4px;border-right:1px solid #e8e8e8;")
+                            a(data-bind="attr: {href: '/admin/region/' + $data.cid()}")(style="color:orange;")
+                                span.glyphicon.glyphicon-pencil
+                        // /ko
+                        //ko if: $data.phc()
+                        .region-type-stat.region-type-stat-clickable
+                            a(data-bind="attr: {href: '/ps?f=r!' + $data.cid() + '_t!1'}")
+                                span.glyphicon.glyphicon-camera
+                                span(data-bind="text: ' ' + $root.intl.num($data.phc())")
+                        // /ko
+                        //ko if: $data.pac()
+                        .region-type-stat.region-type-stat-clickable
+                            a(data-bind="attr: {href: '/ps?f=r!' + $data.cid() + '_t!2'}")
+                                span.glyphicon.glyphicon-picture
+                                span(data-bind="text: ' ' + $root.intl.num($data.pac())")
+                        // /ko
+                        //ko if: $data.pac()
+                        .region-type-stat
+                            span.glyphicon.glyphicon-comment(style="vertical-align:text-top;")
+                            span(data-bind="text: ' ' + $root.intl.num($data.pac())")
+                        // /ko
+                    // /ko
             // /ko
             //ko if: !p.geo()
             =', '

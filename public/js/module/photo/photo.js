@@ -44,6 +44,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 return this.auth.iAm.login() === this.p.user.login();
             }, this);
 
+            this.IAdmin = this.co.IAdmin = ko.computed(function () {
+                return this.auth.loggedIn() && this.auth.iAm.role() >= 10;
+            }, this);
+
             this.fDateIn = Utils.format.date.relativeIn;
 
             this.edit = ko.observable(undefined);

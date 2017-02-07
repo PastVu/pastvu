@@ -393,6 +393,9 @@ async function give(params) {
 
     const regions = await this.call('region.getObjRegionList', { obj: photo, fields: regionFields, fromDb: !photo.geo });
 
+    // Add public stat for each region
+    regionController.fillRegionsPublicStats(regions);
+
     photo = photo.toObject();
     owner = owner.toObject();
 
