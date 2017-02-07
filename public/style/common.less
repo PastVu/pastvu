@@ -446,7 +446,9 @@ body {
     color: @MainLigthColor;
     opacity: 0;
     font-size: @font-size-small;
-    transition: all .25s ease-out;
+    user-select: none;
+    pointer-events: none;
+    transition: all .2s ease-out;
     box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.28);
     background: lighten(@MainDarkColor, 17%);
     z-index: @zindex-tooltip;
@@ -464,11 +466,6 @@ body {
         width: 0;
         height: 0;
     }
-}
-
-.tltp-notouch {
-    user-select: none;
-    pointer-events: none;
 }
 
 .tltp-top {
@@ -571,6 +568,11 @@ body {
     position: relative;
 
     &:hover {
+        .tltp-touch {
+            user-select: text;
+            pointer-events: auto;
+        }
+
         > .tltp {
             opacity: 1;
             transition: all .25s ease-out;
