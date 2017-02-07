@@ -38,18 +38,18 @@
                         .tool.type
                             .tltp-wrap
                                 span.glyphicon.light(data-bind="css: {'glyphicon-camera': !isPainting(), 'glyphicon-picture': isPainting()}")
-                                .tltp.tltp-right.tltp-notouch(data-bind="text: isPainting() ? 'Painting' : 'Photo'")
+                                .tltp.tltp-right(data-bind="text: isPainting() ? 'Painting' : 'Photo'")
                         .tool.watched
-                            span.glyphicon.glyphicon-eye-open.light(title="Number of images views")
+                            span.glyphicon.glyphicon-eye-open.light(title="Number of image views")
                             .tltp-wrap
                                 .watch(data-bind="text: toolsNumFormat(p.vdcount())")
-                                .tltp.tltp-right.tltp-notouch(data-bind="text: $root.intl.num(p.vdcount())+ ' views today'")
+                                .tltp.tltp-right(data-bind="text: $root.intl.num(p.vdcount())+ ' views today'")
                             .tltp-wrap
                                 .watch(data-bind="text: toolsNumFormat(p.vwcount())")
-                                .tltp.tltp-right.tltp-notouch(data-bind="text: $root.intl.num(p.vwcount())+ ' views this week'")
+                                .tltp.tltp-right(data-bind="text: $root.intl.num(p.vwcount())+ ' views this week'")
                             .tltp-wrap
                                 .watch(data-bind="text: toolsNumFormat(p.vcount())")
-                                .tltp.tltp-right.tltp-notouch(data-bind="text: $root.intl.num(p.vcount())+ ' views total'")
+                                .tltp.tltp-right(data-bind="text: $root.intl.num(p.vcount())+ ' views total'")
                     .toolsBtm(data-bind="style: {width: ws() + 'px'}")
                         span.toolsTxt
                             | Sizes:&nbsp;
@@ -64,7 +64,7 @@
                         .tltp-wrap
                             button.btn.btn-xxs.btn-primary(data-state="hscaleTumbler", data-bind="css: {active: hscaleTumbler()}, click: stateChange")
                                 span.glyphicon.glyphicon-resize-vertical
-                            .tltp.tltp-bottom.tltp-notouch
+                            .tltp.tltp-bottom
                                 = 'Adjust by the height'
                                 br
                                 = 'of the visible area'
@@ -72,18 +72,18 @@
                         .tltp-wrap
                             button.btn.btn-xxs.btn-primary(data-state="watermarkShow", data-bind="css: {active: watermarkShow()}, click: stateChange")
                                 | W
-                            .tltp.tltp-bottom.tltp-notouch Show watermark
+                            .tltp.tltp-bottom Show watermark
                         //ko if: p.s()===statuses.keys.PUBLIC
                         .tltp-wrap
                             a.btn.btn-xxs.btn-primary(href="?share=1", data-replace="true")
                                 span.glyphicon.glyphicon-share-alt
-                            .tltp.tltp-bottom.tltp-notouch Share
+                            .tltp.tltp-bottom Share
                         // /ko
                         //ko if: can.download() && !edit()
                         .tltp-wrap
                             a.btn.btn-xxs(data-bind="click: download, css: downloadCSSClass(), attr: {href: p.fileroot()+'/a/'+p.file(), download:p.cid()+' '+(p.title()||'').replace(/[\/|]/g, '-')+'.jpg'}")
                                 span.glyphicon.glyphicon-save
-                            .tltp.tltp-bottom.tltp-notouch(data-bind="html:'Download '+(downLoadOrigin()?'original':'full size')+'<br>'+p.w() + '×' + p.h()")
+                            .tltp.tltp-bottom(data-bind="html:'Download '+(downLoadOrigin()?'original':'full size')+'<br>'+p.w() + '×' + p.h()")
                         // /ko
 
             //ko template: {name: edit() ? p.type() === '2' ? 'paintingEdit' : 'photoEdit' : 'photoView', afterRender: tplAfterRender}
@@ -207,7 +207,33 @@
             //ko foreach: p.regions
             | <!--ko if: $index()-->, <!-- /ko -->
             .region
-                a(data-bind="text: $data.title_en(), attr: {href: '/ps?f=r!' + $data.cid()}")
+                .tltp-wrap
+                    a(data-bind="text: $data.title_en(), attr: {href: '/ps?f=r!' + $data.cid()}")
+                    //ko if: $parent.IAdmin() || $data.phc() || $data.pac() || $data.cc()
+                    .tltp.tltp-top.tltp-touch
+                        //ko if: $parent.IAdmin()
+                        .region-type-stat.region-type-stat-clickable(title="Edit region")(style="margin:1px 0;padding-right:4px;border-right:1px solid #e8e8e8;")
+                            a(data-bind="attr: {href: '/admin/region/' + $data.cid()}")(style="color:orange;")
+                                span.glyphicon.glyphicon-pencil
+                        // /ko
+                        //ko if: $data.phc()
+                        .region-type-stat.region-type-stat-clickable
+                            a(data-bind="attr: {href: '/ps?f=r!' + $data.cid() + '_t!1'}")
+                                span.glyphicon.glyphicon-camera
+                                span(data-bind="text: ' ' + $root.intl.num($data.phc())")
+                        // /ko
+                        //ko if: $data.pac()
+                        .region-type-stat.region-type-stat-clickable
+                            a(data-bind="attr: {href: '/ps?f=r!' + $data.cid() + '_t!2'}")
+                                span.glyphicon.glyphicon-picture
+                                span(data-bind="text: ' ' + $root.intl.num($data.pac())")
+                        // /ko
+                        //ko if: $data.pac()
+                        .region-type-stat
+                            span.glyphicon.glyphicon-comment(style="vertical-align:text-top;")
+                            span(data-bind="text: ' ' + $root.intl.num($data.pac())")
+                        // /ko
+                    // /ko
             // /ko
             //ko if: !p.geo()
             =', '

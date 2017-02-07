@@ -383,9 +383,54 @@
 
     .region {
         display: inline-block;
+        white-space: nowrap;
 
         &.err {
             color: #E49F0D;
+        }
+
+        .tltp-top {
+            margin-bottom: 5px;
+            transform: translate(-50%, -5px);
+
+            &::before {
+                height: 5px;
+                bottom: -5px;
+            }
+        }
+        .tltp-wrap:hover {
+            > .tltp-top {
+                transform: translate(-50%, 2px);
+            }
+        }
+
+        .region-type-stat {
+            display: inline-block;
+            margin: 0 4px 1px 4px;
+            padding: 1px 1px 0 1px;
+            cursor: default;
+            line-height: 13px;
+            color: @MainLigthColor;
+            border-bottom: 1px solid transparent;
+
+            > a {
+                cursor: inherit;
+                color: @MainLigthColor;
+                text-decoration: none;
+            }
+        }
+
+        .region-type-stat-clickable {
+            cursor: pointer;
+
+            &:hover {
+                color: #fff;
+                border-bottom-color: #fff;
+
+                > a {
+                    color: #fff;
+                }
+            }
         }
     }
     .regionEdit {

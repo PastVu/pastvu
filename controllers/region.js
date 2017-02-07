@@ -173,6 +173,19 @@ export const fillRegionsHash = (hash, fileds) => {
 
     return hash;
 };
+export const fillRegionsPublicStats = regions => {
+    if (regions) {
+        for (const region of regions) {
+            const { phc = 0, pac = 0, cc = 0 } = regionCacheMapPublic.get(region.cid) || {};
+
+            region.phc = phc;
+            region.pac = pac;
+            region.cc = cc;
+        }
+    }
+
+    return regions;
+};
 
 /**
  * Returns regions array in the same order as received array of cids
@@ -1276,6 +1289,9 @@ async function giveRegionsByGeo({ geo }) {
     if (_.isEmpty(regions)) {
         throw new NotFoundError(constantsError.NO_SUCH_REGIONS);
     }
+
+    // Add public stat for each region
+    fillRegionsPublicStats(regions);
 
     const regionsArr = [];
 
