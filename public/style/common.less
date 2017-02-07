@@ -448,7 +448,8 @@ body {
     font-size: @font-size-small;
     user-select: none;
     pointer-events: none;
-    transition: all .2s ease-out;
+    will-change: transform, opacity;
+    transition: transform .25s ease-out, opacity .25s ease-out;
     box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.28);
     background: lighten(@MainDarkColor, 17%);
     border: 1px solid #7a7a7a;
@@ -602,7 +603,7 @@ body {
 
         > .tltp {
             opacity: 1;
-            transition: all .25s ease-out;
+            transition: transform .2s ease-out, opacity .2s ease-out;
         }
 
         > .tltp-top {
