@@ -210,7 +210,7 @@
                 .tltp-wrap
                     a(data-bind="text: $data.title_en(), attr: {href: '/ps?f=r!' + $data.cid()}")
                     //ko if: $parent.IAdmin() || $data.phc() || $data.pac() || $data.cc()
-                    .tltp.tltp-top.tltp-touch
+                    .tltp.tltp-top.tltp-touch(data-bind="css: {'tltp-hotizontal-left': !$index()}")
                         //ko if: $parent.IAdmin()
                         .region-type-stat.region-type-stat-clickable(title="Edit region")(style="margin:1px 0;padding-right:4px;border-right:1px solid #e8e8e8;")
                             a(data-bind="attr: {href: '/admin/region/' + $data.cid()}")(style="color:orange;")
@@ -228,10 +228,10 @@
                                 span.glyphicon.glyphicon-picture
                                 span(data-bind="text: ' ' + $root.intl.num($data.pac())")
                         // /ko
-                        //ko if: $data.pac()
+                        //ko if: $data.cc()
                         .region-type-stat
                             span.glyphicon.glyphicon-comment(style="vertical-align:text-top;")
-                            span(data-bind="text: ' ' + $root.intl.num($data.pac())")
+                            span(data-bind="text: ' ' + $root.intl.num($data.cc())")
                         // /ko
                     // /ko
             // /ko

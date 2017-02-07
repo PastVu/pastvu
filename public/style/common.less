@@ -451,6 +451,7 @@ body {
     transition: all .2s ease-out;
     box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.28);
     background: lighten(@MainDarkColor, 17%);
+    border: 1px solid #7a7a7a;
     z-index: @zindex-tooltip;
 
     /* This bridges the gap so you can mouse into the tooltip without it disappearing */
@@ -564,6 +565,32 @@ body {
     }
 }
 
+.tltp-top, .tltp-bottom {
+    &.tltp-hotizontal-left {
+        left: 0;
+        transform: translate(0, -7px);
+
+        &::after {
+            left: 0;
+            margin-left: 0;
+            transform: translateX(12px);
+        }
+    }
+
+    &.tltp-hotizontal-right {
+        left: auto;
+        right: 0;
+        transform: translate(0, -7px);
+
+        &::after {
+            left: auto;
+            right: 0;
+            margin-left: 0;
+            transform: translateX(-12px);
+        }
+    }
+}
+
 .tltp-wrap {
     position: relative;
 
@@ -577,17 +604,22 @@ body {
             opacity: 1;
             transition: all .25s ease-out;
         }
+
         > .tltp-top {
             transform: translate(-50%, 0);
         }
+        > .tltp-bottom {
+            transform: translate(-50%, 0);
+        }
+        > .tltp-hotizontal-left, > .tltp-hotizontal-right {
+            transform: translate(0, 0);
+        }
+
         > .tltp-right {
             transform: translate(0, -50%);
         }
         > .tltp-left {
             transform: translate(0, -50%);
-        }
-        > .tltp-bottom {
-            transform: translate(-50%, 0);
         }
     }
 }

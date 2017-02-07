@@ -393,6 +393,10 @@
             margin-bottom: 5px;
             transform: translate(-50%, -5px);
 
+            &.tltp-hotizontal-left {
+                transform: translate(0, -5px);
+            }
+
             &::before {
                 height: 5px;
                 bottom: -5px;
@@ -401,6 +405,10 @@
         .tltp-wrap:hover {
             > .tltp-top {
                 transform: translate(-50%, 2px);
+
+                &.tltp-hotizontal-left {
+                    transform: translate(0, 2px);
+                }
             }
         }
 
