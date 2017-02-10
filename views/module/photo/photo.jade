@@ -212,8 +212,8 @@
                     //ko if: $parent.IAdmin() || $data.phc() || $data.pac() || $data.cc()
                     .tltp.tltp-top.tltp-touch(data-bind="css: {'tltp-hotizontal-left': !$index()}")
                         //ko if: $parent.IAdmin()
-                        .region-type-stat.region-type-stat-clickable(title="Edit region")(style="margin:1px 0;padding-right:4px;border-right:1px solid #e8e8e8;")
-                            a(data-bind="attr: {href: '/admin/region/' + $data.cid()}")(style="color:orange;")
+                        .region-type-stat.region-type-stat-clickable(title="Edit region", style="margin:1px 0;padding-right:4px;border-right:1px solid #e8e8e8;")
+                            a(data-bind="attr: {href: '/admin/region/' + $data.cid()}", style="color:orange;")
                                 span.glyphicon.glyphicon-pencil
                         // /ko
                         //ko if: $data.phc()
