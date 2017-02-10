@@ -46,7 +46,7 @@ async function fillCache() {
         const start = Date.now();
         regionCacheArr = await Region.find(
             {},
-            { _id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1, photostat: 1, paintstat: 1, cstat: 1 },
+            { _id: 1, cid: 1, parents: 1, cdate: 1, udate: 1, title_en: 1, title_local: 1, photostat: 1, paintstat: 1, cstat: 1 },
             { lean: true, sort: { cid: 1 } }
         ).exec();
 
@@ -89,7 +89,7 @@ async function fillCache() {
 }
 
 function fillPublicAndAdminMaps(region) {
-    const { cid, parents, title_en, title_local, photostat = {}, paintstat = {}, cstat = {} } = region;
+    const { cid, parents, cdate, udate, title_en, title_local, photostat = {}, paintstat = {}, cstat = {} } = region;
     const regionAdmin = regionCacheMapAdmin.get(cid) || { cid };
     const regionPublic = regionCacheMapPublic.get(cid) || { cid };
 
@@ -98,8 +98,13 @@ function fillPublicAndAdminMaps(region) {
         phc: photostat.s5, pac: paintstat.s5, cc: cstat.all - cstat.del
     });
 
+    const cTime = new Date(cdate).getTime();
+    const uTime = new Date(udate).getTime();
+
     Object.assign(regionAdmin, {
         parents, title_en, title_local,
+        cdate: cTime,
+        udate: cTime !== uTime ? uTime : undefined,
         pc: photostat.all + paintstat.all,
         pcg: photostat.geo + paintstat.geo,
         pco: photostat.own + paintstat.own,

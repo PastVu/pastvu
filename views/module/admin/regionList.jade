@@ -22,6 +22,15 @@
             b(data-bind="text: ' ' + $root.intl.num($data.pointsCount) + ' ', attr: {title: ($index() + 1) + ' уровень'}")
             // /ko
     .regionsHead
+        = 'Группировать по: '
+        .headElem.interact(data-bind="click: function () {mode('inheritence')}, css: {'selected':mode()==='inheritence'}") Наследованию
+        .headElem.interact(data-bind="click: function () {mode('cdate')}, css: {'selected':mode()==='cdate'}") Дате создания
+        .headElem.interact(data-bind="click: function () {mode('udate')}, css: {'selected':mode()==='udate'}") Дате изменения
+    .regionsHead
+        = 'Сортировать по: '
+        .headElem.interact(data-bind="click: function () {sort(1)}, css: {'selected':sort()===1}") Возрастанию
+        .headElem.interact(data-bind="click: function () {sort(-1)}, css: {'selected':sort()===-1}") Убыванию
+    .regionsHead
         a.headElem.interact(href="/admin/region/create")
             span.glyphicon.glyphicon-plus
             |  Добавить
@@ -35,12 +44,12 @@
             span.glyphicon.glyphicon-refresh
             |  Пересчитать статистику
     .tree.well.well-sm
-        ul(data-bind="template: {name: 'treeNode', foreach: regions}")
+        ul(data-bind="template: {name:mode()==='inheritence'?'treeNode':'dateNode', foreach:mode()==='inheritence'?regions:regionsByYear}")
 
     | <script id="treeNode" type="text/html">
     li(data-bind="css: {isparent: $data.childLen}")
         .lirow(data-bind="css: {hl: $data.hl}")
-            //ko if: $data.childLen
+            //ko if: $data.childLen && $parents[$data.level] && $parents[$data.level].mode && $parents[$data.level].mode() === 'inheritence'
             .chevron(data-bind="click: $parents[$data.level].collapseToggle, attr: {title: ($data.opened() ? 'Скрыть' : 'Показать') + ' дочерние регионы'}")
                 span.glyphicon(data-bind="css: {'glyphicon-chevron-up': $data.opened(), 'glyphicon-chevron-down': !$data.opened()}")
             // /ko
@@ -78,6 +87,29 @@
                 |  Добавить потомка
             // /ko
         //ko if: $data.childLen && $data.opened()
+        //ko template: {name: 'treeNode', foreach: $data.regions}
+        // /ko
+        // /ko
+    | </script>
+
+    | <script id="dateNode" type="text/html">
+    li
+        .lirow.notRegion(data-bind="click: $parents[$data.level].collapseToggle, attr: {title: $data.opened() ? 'Раскрыть' : 'Закрыть'}")
+            .chevron
+                span.glyphicon(data-bind="css: {'glyphicon-chevron-up': $data.opened(), 'glyphicon-chevron-down': !$data.opened()}")
+            .name
+                .rname(data-bind="text: ' ' + $data.title")
+                .section.childsCount(title="Количество регионов")
+                    | &nbsp;
+                    span.glyphicon.glyphicon-play
+                    span(data-bind="text: ' ' + $root.intl.num($data.count)")
+
+        //ko if: $data.children && $data.opened()
+        //ko template: {name: 'dateNode', foreach: $data.children}
+        // /ko
+        // /ko
+
+        //ko if: $data.regions && $data.opened()
         //ko template: {name: 'treeNode', foreach: $data.regions}
         // /ko
         // /ko

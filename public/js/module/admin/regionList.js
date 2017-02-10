@@ -9,16 +9,27 @@ define([
 ], function (_, $, Utils, socket, P, ko, Cliche, globalVM, storage, noties, jade) {
     'use strict';
 
+    var months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
     return Cliche.extend({
         jade: jade,
         create: function () {
             this.auth = globalVM.repository['m/common/auth'];
             this.regions = ko.observableArray();
+            this.regionsFlat = this.regions();
+            this.regionsByYear = ko.observableArray();
+            this.dateItemsFlat = [];
+            this.mode = ko.observable(Utils.getLocalStorage('regionList.mode') || 'inheritence'); // inheritence, cdate, udate, gdate
+            this.sort = ko.observable(Utils.getLocalStorage('regionList.sort') || 1);
             this.stat = null;
 
             this.getRegions(function () {
                 ko.applyBindings(globalVM, this.$dom[0]);
                 this.show();
+
+                this.subscriptions.mode = this.mode.subscribe(this.handleModeChange, this);
+                this.subscriptions.sort = this.sort.subscribe(this.handleSortChange, this);
+                this.scrolltoHighLight();
             }, this);
         },
         show: function () {
@@ -29,6 +40,16 @@ define([
             globalVM.func.hideContainer(this.$container);
             this.showing = false;
         },
+        scrolltoHighLight: function () {
+            if (this.reallyHL) {
+                window.setTimeout(function () {
+                    var element = this.$dom.find('.lirow.hl');
+                    if (element && element.length) {
+                        $(window).scrollTo(this.$dom.find('.lirow.hl'), { offset: -P.window.head - 8, duration: 400 });
+                    }
+                }.bind(this), 100);
+            }
+        },
         getRegions: function (cb, ctx) {
             socket.run('region.giveListFull', {}, true)
                 .then(function (data) {
@@ -36,10 +57,53 @@ define([
                     this.regions(this.treeBuild(data.regions));
                     this.regionsFlat = data.regions;
 
+                    if (this.mode() !== 'inheritence') {
+                        this.treeBuildDate(this.mode());
+                    } else if (this.sort() === -1) {
+                        this.sortInheritanceMode();
+                    }
+
                     if (Utils.isType('function', cb)) {
                         cb.call(ctx, data);
                     }
                 }.bind(this));
+        },
+        handleModeChange: function (val) {
+            if (val === 'inheritence') {
+                this.regionsByYear([]);
+                this.sortInheritanceMode();
+            } else {
+                this.treeBuildDate(val);
+            }
+
+            Utils.setLocalStorage('regionList.mode', val);
+            this.scrolltoHighLight();
+        },
+        handleSortChange: function (val) {
+            var mode = this.mode();
+
+            if (mode === 'inheritence') {
+                this.sortInheritanceMode();
+            } else {
+                this.treeBuildDate(this.mode());
+            }
+
+            Utils.setLocalStorage('regionList.sort', val);
+            this.scrolltoHighLight();
+        },
+        sortInheritanceMode: function () {
+            var sort = this.sort();
+
+            (function recursiveSort(arr) {
+                arr.sort(function (a, b) {
+                    return a.title_local < b.title_local ? -sort : sort;
+                });
+
+                arr = arr();
+                for (var i = 0; i < arr.length; i++) {
+                    recursiveSort(arr[i].regions);
+                }
+            }(this.regions));
         },
         treeBuild: function (arr) {
             var i = 0;
@@ -48,7 +112,8 @@ define([
             var region;
             var results = [];
             var cidHL = Number(globalVM.router.params().hl);
-            var reallyHL;
+
+            this.reallyHL = false;
 
             //Сортируем массим по уровням и названиям в пределах одного уровня
             arr.sort(function (a, b) {
@@ -72,7 +137,11 @@ define([
 
             for (; i < len; i++) {
                 region = arr[i];
-                region.regions = [];
+                region.regions = ko.observableArray();
+                region.cdateDate = new Date(region.cdate);
+                if (region.udate) {
+                    region.udateDate = new Date(region.udate);
+                }
                 region.level = region.parents.length;
                 region.childLen = 0; //Количество непосредственных потомков
                 region.childLenAll = 0; //Количество всех потомков
@@ -88,18 +157,92 @@ define([
                     results.push(region);
                 }
                 if (region.hl) {
-                    reallyHL = true;
+                    this.reallyHL = true;
                 }
                 hash[region.cid] = region;
             }
 
-            if (reallyHL) {
-                window.setTimeout(function () {
-                    $(window).scrollTo(this.$dom.find('.lirow.hl'), { offset: -P.window.head - 8, duration: 400 });
-                }.bind(this), 100);
+            return results;
+        },
+        treeBuildDate: function (field) {
+            var date;
+            var year;
+            var month;
+            var region;
+            var result = {};
+            var fieldDate = field + 'Date';
+
+            var sort = this.sort();
+            var regions = this.regionsFlat.slice();
+            this.dateItemsFlat = [];
+
+            // Sort by given date, undefined values to the end
+            regions.sort(function (a, b) {
+                var aval = a[field];
+                if (!aval) {
+                    return sort;
+                }
+                var bval = b[field];
+                if (!bval) {
+                    return -sort;
+                }
+                return aval > bval ? sort : -sort;
+            });
+
+            for (var i = 0; i < regions.length; i++) {
+                region = regions[i];
+
+                if (region[field]) {
+                    date = region[fieldDate];
+
+                    year = date.getFullYear();
+                    month = date.getMonth();
+
+                    if (!result[year]) {
+                        result[year] = { sort: year, title: year, count: 0, children: {}, opened: ko.observable(false), level: 0 };
+                        this.dateItemsFlat.push(result[year]);
+                    }
+                    if (!result[year].children[month]) {
+                        result[year].children[month] = { sort: month, title: months[month], count: 0, regions: [], opened: ko.observable(false), level: 1 };
+                        this.dateItemsFlat.push(result[year].children[month]);
+                    }
+
+                    result[year].count++;
+                    result[year].children[month].count++;
+                    result[year].children[month].regions.push(region);
+
+                    if (region.hl) {
+                        result[year].opened(true);
+                        result[year].children[month].opened(true);
+                    }
+                } else {
+                    if (!result.no) {
+                        result.no = { sort: 0, title: 'Never', count: 0, regions: [], opened: ko.observable(false), level: 0 };
+                        this.dateItemsFlat.push(result.no);
+                    }
+
+                    result.no.count++;
+                    result.no.regions.push(region);
+                    if (region.hl) {
+                        result.no.opened(true);
+                    }
+                }
             }
 
-            return results;
+            function toArray(obj) {
+                return _.transform(obj, function (result, item) {
+                    result.push(item);
+
+                    if (item.children) {
+                        item.children = toArray(item.children);
+                    }
+
+                }, []).sort(function (a, b) {
+                    return a.sort > b.sort ? sort : -sort;
+                });
+            }
+
+            this.regionsByYear(toArray(result));
         },
         collapseToggle: function (data/*, event*/) {
             data.opened(!data.opened());
@@ -111,8 +254,9 @@ define([
             this.collapseToggleAll(false);
         },
         collapseToggleAll: function (expand) {
-            for (var i = this.regionsFlat.length - 1; i >= 0; i--) {
-                this.regionsFlat[i].opened(expand);
+            var items = this.mode() === 'inheritence' ? this.regionsFlat : this.dateItemsFlat;
+            for (var i = items.length - 1; i >= 0; i--) {
+                items[i].opened(expand);
             }
         },
 
