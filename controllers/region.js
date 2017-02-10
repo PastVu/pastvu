@@ -103,13 +103,10 @@ function fillPublicAndAdminMaps(region) {
         phc: photostat.s5, pac: paintstat.s5, cc: cstat.all - cstat.del
     });
 
-    const cTime = new Date(cdate).getTime();
-    const uTime = new Date(udate).getTime();
-
     Object.assign(regionAdmin, {
         parents, title_en, title_local,
-        cdate: cTime,
-        udate: cTime !== uTime ? uTime : undefined,
+        cdate: new Date(cdate).getTime(),
+        udate: udate ? new Date(udate).getTime() : undefined,
         gdate: gdate ? new Date(gdate).getTime() : undefined,
         pc: photostat.all + paintstat.all,
         pcg: photostat.geo + paintstat.geo,
@@ -784,7 +781,7 @@ async function save(data) {
             throw new ApplicationError(constantsError.COUNTER_ERROR);
         }
 
-        region = new Region({ cid: count.next, parents: parentsArray });
+        region = new Region({ cid: count.next, parents: parentsArray, cuser: iAm.user._id });
     } else {
         // Find region by cid
         region = await Region.findOne({ cid: data.cid }).exec();
@@ -810,9 +807,11 @@ async function save(data) {
         }
 
         region.udate = new Date();
+        region.uuser = iAm.user._id;
 
         if (data.geo) {
             region.gdate = region.udate;
+            region.guser = iAm.user._id;
         }
     }
 

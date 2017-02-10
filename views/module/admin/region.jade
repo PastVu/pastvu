@@ -14,7 +14,7 @@
                     strong(data-bind="text: (Number(haveParent()) ? region.parents().length + 1 : 1)")
                     = '; Создан: '
                     strong(data-bind="text: fDateIn(new Date(region.cdate()))")
-                    //ko if: region.cdate() !== region.udate()
+                    //ko if: region.udate && region.cdate() !== region.udate()
                     = '; Обновлен: '
                     strong(data-bind="text: fDateIn(new Date(region.udate()))")
                     // /ko

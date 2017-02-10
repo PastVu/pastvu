@@ -50,8 +50,12 @@ registerModel(db => {
             bboxhome: { type: [Number] },
 
             cdate: { type: Date, 'default': Date.now, required: true, index: true }, // Creation stamp
-            udate: { type: Date, 'default': Date.now, required: true }, // Update stamp
+            udate: { type: Date }, // Update stamp
             gdate: { type: Date }, // Update geo stamp
+
+            cuser: { type: Schema.Types.ObjectId, ref: 'User' }, // User who created
+            uuser: { type: Schema.Types.ObjectId, ref: 'User' }, // User who last updated
+            guser: { type: Schema.Types.ObjectId, ref: 'User' }, // User who last updated geometry
 
             title_en: { type: String },
             title_local: { type: String },
