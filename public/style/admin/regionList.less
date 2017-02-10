@@ -39,7 +39,7 @@
 		&.interact {
 			cursor: pointer;
 
-			&:hover {
+			&:hover, &.selected {
 				color: #fff;
 				background-color: @headColorHover;
 			}
@@ -176,6 +176,16 @@
 						display: inline-block;
 					}
 				}
+
+                &.notRegion {
+                    cursor: pointer;
+                    &:hover {
+                        .chevron, .name, .addChild {
+                            color: #fff;
+                            background: @MainBlueColor !important;
+                        }
+                    }
+                }
 			}
 		}
 	}

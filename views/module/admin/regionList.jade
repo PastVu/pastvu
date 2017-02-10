@@ -22,6 +22,16 @@
             b(data-bind="text: ' ' + $root.intl.num($data.pointsCount) + ' ', attr: {title: ($index() + 1) + ' level'}")
             // /ko
     .regionsHead
+        = 'Group by: '
+        .headElem.interact(data-bind="click: function () {mode('inheritence')}, css: {'selected':mode()==='inheritence'}") Inheritance
+        .headElem.interact(data-bind="click: function () {mode('cdate')}, css: {'selected':mode()==='cdate'}") Creation date
+        .headElem.interact(data-bind="click: function () {mode('udate')}, css: {'selected':mode()==='udate'}") Update date
+        .headElem.interact(data-bind="click: function () {mode('gdate')}, css: {'selected':mode()==='gdate'}") Geometry update date
+    .regionsHead
+        = 'Sort by: '
+        .headElem.interact(data-bind="click: function () {sort(1)}, css: {'selected':sort()===1}") Ascending
+        .headElem.interact(data-bind="click: function () {sort(-1)}, css: {'selected':sort()===-1}") Descending
+    .regionsHead
         a.headElem.interact(href="/admin/region/create")
             span.glyphicon.glyphicon-plus
             |  Add
@@ -35,12 +45,12 @@
             span.glyphicon.glyphicon-refresh
             |  Recalculate stat
     .tree.well.well-sm
-        ul(data-bind="template: {name: 'treeNode', foreach: regions}")
+        ul(data-bind="template: {name:mode()==='inheritence'?'treeNode':'dateNode', foreach:mode()==='inheritence'?regions:regionsByYear}")
 
     | <script id="treeNode" type="text/html">
     li(data-bind="css: {isparent: $data.childLen}")
         .lirow(data-bind="css: {hl: $data.hl}")
-            //ko if: $data.childLen
+            //ko if: $data.childLen && $parents[$data.level] && $parents[$data.level].mode && $parents[$data.level].mode() === 'inheritence'
             .chevron(data-bind="click: $parents[$data.level].collapseToggle, attr: {title: ($data.opened() ? 'Hide' : 'Show') + ' children regions'}")
                 span.glyphicon(data-bind="css: {'glyphicon-chevron-up': $data.opened(), 'glyphicon-chevron-down': !$data.opened()}")
             // /ko
@@ -78,6 +88,29 @@
                 |  Add descendant
             // /ko
         //ko if: $data.childLen && $data.opened()
+        //ko template: {name: 'treeNode', foreach: $data.regions}
+        // /ko
+        // /ko
+    | </script>
+
+    | <script id="dateNode" type="text/html">
+    li
+        .lirow.notRegion(data-bind="click: $parents[$data.level].collapseToggle, attr: {title: $data.opened() ? 'Expand' : 'Close'}")
+            .chevron
+                span.glyphicon(data-bind="css: {'glyphicon-chevron-up': $data.opened(), 'glyphicon-chevron-down': !$data.opened()}")
+            .name
+                .rname(data-bind="text: ' ' + $data.title")
+                .section.childsCount(title="Number of regions")
+                    | &nbsp;
+                    span.glyphicon.glyphicon-play
+                    span(data-bind="text: ' ' + $root.intl.num($data.count)")
+
+        //ko if: $data.children && $data.opened()
+        //ko template: {name: 'dateNode', foreach: $data.children}
+        // /ko
+        // /ko
+
+        //ko if: $data.regions && $data.opened()
         //ko template: {name: 'treeNode', foreach: $data.regions}
         // /ko
         // /ko

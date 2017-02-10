@@ -402,7 +402,9 @@ async function conveyorSubStep(photo, { isPublic = true, protectCover = false, w
     const makeWebp = (variantName, dstPath) => tryPromise(5,
         () => execAsync(`cwebp -preset photo -m 5 ${lossless ? '-lossless ' : ''}${dstPath} -o ${dstPath}.webp`),
         `convert ${variantName}-variant to webp of photo ${cid}`
-    );
+    ).catch(() => {
+        logger.warn(`Webp variant of ${cid} could not be created, skipping`);
+    });
 
     for (const variantName of imageVersionsKeys) {
         const isFullsize = variantName === 'a';
