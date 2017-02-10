@@ -26,6 +26,7 @@
         .headElem.interact(data-bind="click: function () {mode('inheritence')}, css: {'selected':mode()==='inheritence'}") Наследованию
         .headElem.interact(data-bind="click: function () {mode('cdate')}, css: {'selected':mode()==='cdate'}") Дате создания
         .headElem.interact(data-bind="click: function () {mode('udate')}, css: {'selected':mode()==='udate'}") Дате изменения
+        .headElem.interact(data-bind="click: function () {mode('gdate')}, css: {'selected':mode()==='gdate'}") Дате изменения координат
     .regionsHead
         = 'Сортировать по: '
         .headElem.interact(data-bind="click: function () {sort(1)}, css: {'selected':sort()===1}") Возрастанию

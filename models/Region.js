@@ -51,6 +51,7 @@ registerModel(db => {
 
             cdate: { type: Date, 'default': Date.now, required: true, index: true }, // Creation stamp
             udate: { type: Date, 'default': Date.now, required: true }, // Update stamp
+            gdate: { type: Date }, // Update geo stamp
 
             title_en: { type: String },
             title_local: { type: String },

@@ -142,6 +142,9 @@ define([
                 if (region.udate) {
                     region.udateDate = new Date(region.udate);
                 }
+                if (region.gdate) {
+                    region.gdateDate = new Date(region.gdate);
+                }
                 region.level = region.parents.length;
                 region.childLen = 0; //Количество непосредственных потомков
                 region.childLenAll = 0; //Количество всех потомков
