@@ -399,12 +399,18 @@ async function conveyorSubStep(photo, { isPublic = true, protectCover = false, w
     const lossless = photo.mime === 'image/png';
     const targetDir = isPublic ? protectCover ? coveredDir : publicDir : protectedDir;
 
-    const makeWebp = (variantName, dstPath) => tryPromise(5,
-        () => execAsync(`cwebp -preset photo -m 5 ${lossless ? '-lossless ' : ''}${dstPath} -o ${dstPath}.webp`),
-        `convert ${variantName}-variant to webp of photo ${cid}`
-    ).catch(() => {
-        logger.warn(`Webp variant of ${cid} could not be created, skipping`);
-    });
+    const makeWebp = (variantName, dstPath) => {
+        // WebP size limit
+        if (photo.w > 16383 || photo.h > 16383) {
+            return;
+        }
+        return tryPromise(5,
+            () => execAsync(`cwebp -preset photo -m 5 ${lossless ? '-lossless ' : ''}${dstPath} -o ${dstPath}.webp`),
+            `convert ${variantName}-variant to webp of photo ${cid}`
+        ).catch(() => {
+            logger.warn(`Webp variant of ${cid} could not be created, skipping`);
+        });
+    };
 
     for (const variantName of imageVersionsKeys) {
         const isFullsize = variantName === 'a';
