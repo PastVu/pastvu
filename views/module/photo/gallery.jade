@@ -40,9 +40,9 @@
                             .row.geovars
                                 .filterName Годы:
                                 .filterVars
-                                    input.form-control.years(type="text", data-bind="value: filter.disp.year, valueUpdate: 'keyup'", maxlength="4")
+                                    input.form-control.years(type="text", data-bind="value: filter.disp.year, valueUpdate: 'keyup', event: {keydown: yearArrow}", maxlength="4")
                                     = ' – '
-                                    input.form-control.years(type="text", data-bind="value: filter.disp.year2, valueUpdate: 'keyup'", maxlength="4")
+                                    input.form-control.years(type="text", data-bind="value: filter.disp.year2, valueUpdate: 'keyup', event: {keydown: year2Arrow}", maxlength="4")
                                     = ' '
                                     .tltp-wrap.resetYears(data-bind="click: yearsReset")
                                         span.glyphicon.glyphicon-remove-circle(style="top:3px")

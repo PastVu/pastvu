@@ -604,6 +604,56 @@ define([
                 this.yearApplyTimeout = setTimeout(this.filterChangeHandle.bind(this), 10);
             }
         },
+        yearArrow: function (data, evt) {
+            var yearsRange = this.getTypeYearsRange();
+            var year = Number(this.filter.disp.year());
+            var year2 = Number(this.filter.disp.year2());
+
+            switch (evt.key) {
+                case 'ArrowUp':
+                    if (year < yearsRange.max) {
+                        year = year + 1;
+                        this.filter.disp.year(year);
+
+                        if (year > year2) {
+                            this.filter.disp.year2(year);
+                        }
+                    }
+                    break;
+                case 'ArrowDown':
+                    if (year > yearsRange.min) {
+                        this.filter.disp.year(year - 1);
+                    }
+                    break;
+                default:
+                    return true;
+            }
+        },
+        year2Arrow: function (data, evt) {
+            var yearsRange = this.getTypeYearsRange();
+            var year = Number(this.filter.disp.year());
+            var year2 = Number(this.filter.disp.year2());
+
+            switch (evt.key) {
+                case 'ArrowUp':
+                    if (year2 < yearsRange.max) {
+                        this.filter.disp.year2(year2 + 1);
+                    }
+                    break;
+                case 'ArrowDown':
+                    if (year2 > yearsRange.min) {
+                        year2 = year2 - 1;
+                        this.filter.disp.year2(year2);
+
+                        if (year > year2) {
+                            this.filter.disp.year(year2);
+                        }
+                    }
+                    break;
+                default:
+                    return true;
+            }
+        },
         yearsReset: function () {
             clearTimeout(this.yearApplyTimeout);
             var yearsRange = this.getTypeYearsRange();
