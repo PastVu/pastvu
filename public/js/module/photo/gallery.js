@@ -604,6 +604,15 @@ define([
                 this.yearApplyTimeout = setTimeout(this.filterChangeHandle.bind(this), 10);
             }
         },
+        yearsReset: function () {
+            clearTimeout(this.yearApplyTimeout);
+            var yearsRange = this.getTypeYearsRange();
+
+            this.filter.disp.year(yearsRange.min);
+            this.filter.disp.year2(yearsRange.max);
+
+            this.filterChangeHandle();
+        },
         updateFilterUrl: function (filterString) {
             var uri = new Uri(location.pathname + location.search);
             if (filterString) {

@@ -43,6 +43,10 @@
                                     input.form-control.years(type="text", data-bind="value: filter.disp.year, valueUpdate: 'keyup'", maxlength="4")
                                     = ' – '
                                     input.form-control.years(type="text", data-bind="value: filter.disp.year2, valueUpdate: 'keyup'", maxlength="4")
+                                    = ' '
+                                    .tltp-wrap.resetYears(data-bind="click: yearsReset")
+                                        span.glyphicon.glyphicon-remove-circle(style="top:3px")
+                                        .tltp.tltp-right(style="white-space:nowrap") Сбросить диапазон лет
                             .row.geovars
                                 .filterName Тип:
                                 .filterVars
