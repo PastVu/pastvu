@@ -1472,6 +1472,7 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40, random = fa
             rp: filter.rp,
             rs: filter.rs,
             s: buildQueryResult.s,
+            y: buildQueryResult.y,
             geo: filter.geo
         }
     };
@@ -1499,7 +1500,7 @@ const givePublicNoGeoIndex = (function () {
     };
 }());
 
-const filterProps = { geo: [], r: [], rp: [], rs: [], s: [], t: [] };
+const filterProps = { geo: [], r: [], rp: [], rs: [], s: [], t: [], y: [] };
 const delimeterParam = '_';
 const delimeterVal = '!';
 export function parseFilter(filterString) {
@@ -1559,6 +1560,20 @@ export function parseFilter(filterString) {
                 if (Array.isArray(filterVal) && filterVal.length === 1) {
                     result.rs = filterVal;
                 }
+            } else if (filterParam === 'y') {
+                //constants.photo.years[constants.photo.type.PAINTING].max
+                filterVal = filterVal.split(delimeterVal);
+                if (Array.isArray(filterVal) && filterVal.length === 2) {
+                    const year = Number(filterVal[0]);
+                    const year2 = Number(filterVal[1]);
+
+                    if (year >= constants.photo.years[constants.photo.type.PAINTING].min &&
+                        year2 <= constants.photo.years[constants.photo.type.PHOTO].max &&
+                        year <= year2) {
+                        result.y = [year, year2];
+                    }
+                }
+
             } else if (filterParam === 's') {
                 filterVal = filterVal.split(delimeterVal);
                 if (Array.isArray(filterVal) && filterVal.length) {
@@ -2763,6 +2778,13 @@ export function buildPhotosQuery(filter, forUserId, iAm, random) {
         if (types) {
             result.types = types;
         }
+    }
+
+    if (filter.y && filter.y.length === 2) {
+        query.year = { $lte: filter.y[1] };
+        query.year2 = { $gte: filter.y[0] };
+
+        result.y = filter.y;
     }
 
     if (random) {

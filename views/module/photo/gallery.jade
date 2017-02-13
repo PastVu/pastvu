@@ -38,6 +38,12 @@
                                     | Изменить
                         .row.others
                             .row.geovars
+                                .filterName Годы:
+                                .filterVars
+                                    input.form-control.years(type="text", data-bind="value: filter.disp.year, valueUpdate: 'keyup'", maxlength="4")
+                                    = ' – '
+                                    input.form-control.years(type="text", data-bind="value: filter.disp.year2, valueUpdate: 'keyup'", maxlength="4")
+                            .row.geovars
                                 .filterName Тип:
                                 .filterVars
                                     label.checkbox-inline
