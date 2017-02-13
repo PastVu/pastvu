@@ -38,6 +38,10 @@ define([
             this.feed = ko.observable(false);
             this.coin = ko.observable(false);
 
+            this.t = [];
+            this.year = statuses.years[statuses.type.PAINTING].min;
+            this.year2 = statuses.years[statuses.type.PHOTO].max;
+
             this.count = ko.observable(0);
             this.limit = 30; //Стараемся подобрать кол-во, чтобы выводилось по-строчного. Самое популярное - 6 на строку
             this.loading = ko.observable(false);
@@ -64,7 +68,9 @@ define([
                     r: ko.observableArray(),
                     rdis: ko.observableArray(), //Массив cid неактивных регионов
                     rs: ko.observableArray(),
-                    geo: ko.observableArray()
+                    geo: ko.observableArray(),
+                    year: ko.observable(this.year),
+                    year2: ko.observable(this.year2)
                 },
                 active: ko.observable(true),
                 inactivateString: '',
@@ -93,6 +99,8 @@ define([
             };
             this.subscriptions.filter_disp_r = this.filter.disp.r.subscribe(this.filterChangeHandle, this);
             this.subscriptions.filter_disp_s = this.filter.disp.s.subscribe(this.filterChangeHandle, this);
+            this.subscriptions.filter_disp_y = this.filter.disp.year.subscribe(_.debounce(this.yearHandle, 800), this);
+            this.subscriptions.filter_disp_y2 = this.filter.disp.year2.subscribe(_.debounce(this.year2Handle, 800), this);
             this.subscriptions.filter_active = this.filter.active.subscribe(this.filterActiveChange, this);
             this.filterChangeHandleBlock = false;
 
@@ -313,6 +321,9 @@ define([
             var r = this.filter.disp.r();
             var s = this.filter.disp.s().map(Number);
             var geo = this.filter.disp.geo();
+            var year = this.filter.disp.year();
+            var year2 = this.filter.disp.year2();
+            var yearsRange = this.getTypeYearsRange();
             var i;
 
             if (r.length) {
@@ -379,6 +390,11 @@ define([
                 for (i = 0; i < t.length; i++) {
                     filterString += '!' + t[i];
                 }
+            }
+            if (year > yearsRange.min && year !== this.year || year2 < yearsRange.max && year2 !== this.year2) {
+                this.year = year;
+                this.year2 = year2;
+                filterString += (filterString ? '_' : '') + 'y!' + year + '!' + year2;
             }
 
             return filterString;
@@ -477,6 +493,26 @@ define([
                     data.filter.disp.t(['1']);
                 }
             }
+
+            var currentYearsRange = this.getTypeYearsRange(this.t);
+
+            if (this.filter.disp.year() === currentYearsRange.min && this.filter.disp.year2() === currentYearsRange.max) {
+                // If current years range is filling all possible range, also set new whole possible range
+                var newYearsRange = this.getTypeYearsRange();
+
+                this.filter.disp.year(newYearsRange.min);
+                this.yearHandle(newYearsRange.min);
+                this.filter.disp.year2(newYearsRange.max);
+                this.year2Handle(newYearsRange.max);
+            } else {
+                // If not whole range was set, means user set it manually, so check if range fits
+                this.yearHandle(this.filter.disp.year());
+                this.year2Handle(this.filter.disp.year2());
+            }
+
+            clearTimeout(this.yearApplyTimeout);
+
+            this.t = currDispType;
             this.filterChangeHandle(); //Вручную вызываем обработку фильтра
 
             return true; //Возвращаем true, чтобы галка в браузере переключилась
@@ -496,6 +532,86 @@ define([
             this.filterChangeHandle(); //Вручную вызываем обработку фильтра
 
             return true; //Возвращаем true, чтобы галка в браузере переключилась
+        },
+
+        getTypeYearsRange: function (t) {
+            return (t || this.filter.disp.t()).reduce(function (result, type) {
+                var typeYears = statuses.years[type];
+
+                result.min = Math.min(result.min, typeYears.min);
+                result.max = Math.max(result.max, typeYears.max);
+
+                return result;
+            }, { min: Infinity, max: -Infinity });
+        },
+        yearHandle: function (year) {
+            clearTimeout(this.yearApplyTimeout);
+
+            year = Number(year);
+            var yearsRange = this.getTypeYearsRange();
+
+            // There is no zero year, people often muddle it up with 1 A.D.
+            // https://en.wikipedia.org/wiki/0_(year)
+            if (year === 0) {
+                this.filter.disp.year(1);
+                return;
+            }
+            if (!year || year < yearsRange.min) {
+                this.filter.disp.year(yearsRange.min);
+                return;
+            }
+            if (year > yearsRange.max) {
+                this.filter.disp.year(yearsRange.max);
+                return;
+            }
+            if (year > Number(this.filter.disp.year2())) {
+                this.filter.disp.year2(year);
+                return;
+            }
+
+            if (year !== this.year) {
+                // Вручную вызываем обработку фильтра (по таймауту, чтобы обработчик смены типов мог сбросить)
+                this.yearApplyTimeout = setTimeout(this.filterChangeHandle.bind(this), 10);
+            }
+        },
+        year2Handle: function (year2) {
+            clearTimeout(this.yearApplyTimeout);
+
+            year2 = Number(year2);
+            var yearsRange = this.getTypeYearsRange();
+
+            // There is no zero year, people often muddle it up with 1 A.D.
+            // https://en.wikipedia.org/wiki/0_(year)
+            if (year2 === 0) {
+                this.filter.disp.year2(1);
+                return;
+            }
+            if (!year2 || year2 < yearsRange.min) {
+                this.filter.disp.year2(yearsRange.min);
+                return;
+            }
+            if (year2 > yearsRange.max) {
+                this.filter.disp.year2(yearsRange.max);
+                return;
+            }
+            if (year2 < Number(this.filter.disp.year())) {
+                this.filter.disp.year(year2);
+                return;
+            }
+
+            if (year2 !== this.year2) {
+                // Вручную вызываем обработку фильтра (по таймауту, чтобы обработчик смены типов мог сбросить)
+                this.yearApplyTimeout = setTimeout(this.filterChangeHandle.bind(this), 10);
+            }
+        },
+        yearsReset: function () {
+            clearTimeout(this.yearApplyTimeout);
+            var yearsRange = this.getTypeYearsRange();
+
+            this.filter.disp.year(yearsRange.min);
+            this.filter.disp.year2(yearsRange.max);
+
+            this.filterChangeHandle();
         },
         updateFilterUrl: function (filterString) {
             var uri = new Uri(location.pathname + location.search);
@@ -650,9 +766,18 @@ define([
                             data.filter.rs = ['0', '1'];
                         }
 
-                        this.filter.disp.t(data.filter.t.map(String));
+                        this.t = data.filter.t.map(String);
+                        this.filter.disp.t(this.t.slice());
                         this.filter.disp.geo(data.filter.geo);
                         this.filter.disp.rs(data.filter.rs);
+
+                        if (data.filter.y) {
+                            this.year = data.filter.y[0];
+                            this.year2 = data.filter.y[1];
+                            this.filter.disp.year(String(this.year));
+                            this.filter.disp.year2(String(this.year2));
+                        }
+
                         this.filterChangeHandleBlock = false;
                     }
 
