@@ -442,14 +442,11 @@ body {
 // Tooltip
 .tltp {
     position: absolute;
-    display: flex;
     color: @MainLigthColor;
     opacity: 0;
     font-size: @font-size-small;
     user-select: none;
     pointer-events: none;
-    will-change: transform, opacity;
-    transition: transform .25s ease-out, opacity .25s ease-out;
     box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.28);
     background: lighten(@MainDarkColor, 17%);
     border: 1px solid #7a7a7a;
@@ -470,13 +467,26 @@ body {
     }
 }
 
+.tltp-animate-move {
+    will-change: transform, opacity;
+    transition: transform .25s ease-out, opacity .25s ease-out;
+}
+.tltp-animate-opacity {
+    will-change: opacity;
+    transition: opacity .25s ease-out;
+}
+
 .tltp-top {
     left: 50%;
     bottom: 100%;
     margin-bottom: 7px;
     padding: 3px 7px;
     text-align: center;
-    transform: translate(-50%, -7px);
+    transform: translate(-50%, 0);
+
+    &.tltp-animate-move {
+        transform: translate(-50%, -7px);
+    }
 
     &::before {
         width: 100%;
@@ -499,7 +509,11 @@ body {
     left: 100%;
     margin-left: 5px;
     padding: 2px 5px;
-    transform: translate(5px, -50%);
+    transform: translate(0, -50%);
+
+    &.tltp-animate-move {
+        transform: translate(5px, -50%);
+    }
 
     &::before {
         width: 5px;
@@ -523,7 +537,11 @@ body {
     margin-right: 5px;
     padding: 2px 5px;
     text-align: right;
-    transform: translate(-5px, -50%);
+    transform: translate(0, -50%);
+
+    &.tltp-animate-move {
+        transform: translate(-5px, -50%);
+    }
 
     &::before {
         width: 5px;
@@ -547,7 +565,11 @@ body {
     margin-top: 7px;
     padding: 3px 7px;
     text-align: center;
-    transform: translate(-50%, 7px);
+    transform: translate(-50%, 0);
+
+    &.tltp-animate-move {
+        transform: translate(-50%, 7px);
+    }
 
     &::before {
         width: 100%;
@@ -569,7 +591,11 @@ body {
 .tltp-top, .tltp-bottom {
     &.tltp-hotizontal-left {
         left: 0;
-        transform: translate(0, -7px);
+        transform: translate(0, 0);
+
+        &.tltp-animate-move {
+            transform: translate(0, -7px);
+        }
 
         &::after {
             left: 0;
@@ -581,7 +607,11 @@ body {
     &.tltp-hotizontal-right {
         left: auto;
         right: 0;
-        transform: translate(0, -7px);
+        transform: translate(0, 0);
+
+        &.tltp-animate-move {
+            transform: translate(0, -7px);
+        }
 
         &::after {
             left: auto;
@@ -603,24 +633,29 @@ body {
 
         > .tltp {
             opacity: 1;
+        }
+        > .tltp-animate-opacity {
+            transition: opacity .1s ease-out;
+        }
+        > .tltp-animate-move {
             transition: transform .2s ease-out, opacity .2s ease-out;
-        }
 
-        > .tltp-top {
-            transform: translate(-50%, 0);
-        }
-        > .tltp-bottom {
-            transform: translate(-50%, 0);
-        }
-        > .tltp-hotizontal-left, > .tltp-hotizontal-right {
-            transform: translate(0, 0);
-        }
+            &.tltp-top {
+                transform: translate(-50%, 0);
+            }
+            &.tltp-bottom {
+                transform: translate(-50%, 0);
+            }
+            &.tltp-hotizontal-left, &.tltp-hotizontal-right {
+                transform: translate(0, 0);
+            }
 
-        > .tltp-right {
-            transform: translate(0, -50%);
-        }
-        > .tltp-left {
-            transform: translate(0, -50%);
+            &.tltp-right {
+                transform: translate(0, -50%);
+            }
+            &.tltp-left {
+                transform: translate(0, -50%);
+            }
         }
     }
 }

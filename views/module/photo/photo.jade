@@ -38,18 +38,18 @@
                         .tool.type
                             .tltp-wrap
                                 span.glyphicon.light(data-bind="css: {'glyphicon-camera': !isPainting(), 'glyphicon-picture': isPainting()}")
-                                .tltp.tltp-right(data-bind="text: isPainting() ? 'Картина/рисунок' : 'Фотография'")
+                                .tltp.tltp-right.tltp-animate-move(data-bind="text: isPainting() ? 'Картина/рисунок' : 'Фотография'")
                         .tool.watched
                             span.glyphicon.glyphicon-eye-open.light(title="Количество просмотров изображения")
                             .tltp-wrap
                                 .watch(data-bind="text: toolsNumFormat(p.vdcount())")
-                                .tltp.tltp-right(data-bind="text: $root.intl.num(p.vdcount())+ ' раз смотрели сегодня'")
+                                .tltp.tltp-right.tltp-animate-move(data-bind="text: $root.intl.num(p.vdcount())+ ' раз смотрели сегодня'")
                             .tltp-wrap
                                 .watch(data-bind="text: toolsNumFormat(p.vwcount())")
-                                .tltp.tltp-right(data-bind="text: $root.intl.num(p.vwcount())+ ' раз смотрели за неделю'")
+                                .tltp.tltp-right.tltp-animate-move(data-bind="text: $root.intl.num(p.vwcount())+ ' раз смотрели за неделю'")
                             .tltp-wrap
                                 .watch(data-bind="text: toolsNumFormat(p.vcount())")
-                                .tltp.tltp-right(data-bind="text: $root.intl.num(p.vcount())+ ' раз смотрели всего'")
+                                .tltp.tltp-right.tltp-animate-move(data-bind="text: $root.intl.num(p.vcount())+ ' раз смотрели всего'")
                     .toolsBtm(data-bind="style: {width: ws() + 'px'}")
                         span.toolsTxt
                             | Размеры:&nbsp;
@@ -64,7 +64,7 @@
                         .tltp-wrap
                             button.btn.btn-xxs.btn-primary(data-state="hscaleTumbler", data-bind="css: {active: hscaleTumbler()}, click: stateChange")
                                 span.glyphicon.glyphicon-resize-vertical
-                            .tltp.tltp-bottom
+                            .tltp.tltp-bottom.tltp-animate-move
                                 = 'Подгонять по высоте'
                                 br
                                 = 'видимой области'
@@ -72,7 +72,7 @@
                         .tltp-wrap
                             button.btn.btn-xxs.btn-primary(data-state="watermarkShow", data-bind="css: {active: watermarkShow()}, click: stateChange")
                                 | W
-                            .tltp.tltp-bottom
+                            .tltp.tltp-bottom.tltp-animate-move
                                 = 'Показывать вотермарк'
                                 br
                                 = 'на изображении'
@@ -80,7 +80,7 @@
                         .tltp-wrap
                             a.btn.btn-xxs.btn-primary(href="?share=1", data-replace="true")
                                 span.glyphicon.glyphicon-share-alt
-                            .tltp.tltp-bottom
+                            .tltp.tltp-bottom.tltp-animate-move
                                 = 'Поделиться'
                                 br
                                 = 'в социальных сетях'
@@ -89,7 +89,7 @@
                         .tltp-wrap
                             a.btn.btn-xxs(data-bind="click: download, css: downloadCSSClass(), attr: {href: p.fileroot()+'/a/'+p.file(), download:p.cid()+' '+(p.title()||'').replace(/[\/|]/g, '-')+'.jpg'}")
                                 span.glyphicon.glyphicon-save
-                            .tltp.tltp-bottom(data-bind="html:'Скачать '+(downLoadOrigin()?'оригинал':'в полном размере')+'<br>'+p.w() + '×' + p.h()")
+                            .tltp.tltp-bottom.tltp-animate-move(data-bind="html:'Скачать '+(downLoadOrigin()?'оригинал':'в полном размере')+'<br>'+p.w() + '×' + p.h()")
                         // /ko
 
             //ko template: {name: edit() ? p.type() === '2' ? 'paintingEdit' : 'photoEdit' : 'photoView', afterRender: tplAfterRender}
@@ -203,20 +203,45 @@
         // /ko
 
         div
-            //ko if: p.y()
-            span.years(data-bind="html: p.y()", style="word-spacing:-0.2em;")
+            //ko if: p.year()
+            span.tltp-wrap.rytltp-wrap
+                a(data-bind="text:p.year(), attr: {href:'/ps?f=_y!'+p.year()+'!'+p.year()}")
+                //ko if: p.regions().length
+                .tltp.tltp-top.tltp-touch.tltp-hotizontal-left.tltp-animate-opacity.rytltp.ytltp(data-bind="foreach: p.regions")
+                    .yregion
+                        a(data-bind="text:$parent.p.year()+' '+$data.title_local(), attr: {href: '/ps?f=r!'+$data.cid()+'_y!'+$parent.p.year()+'!'+$parent.p.year()}")
+                // /ko
             // /ko
+            //ko if: p.year2() && p.year() !== p.year2()
+            span.tltp-wrap.rytltp-wrap
+                a(data-bind="attr: {href:'/ps?f=_y!'+p.year()+'!'+p.year2()}")
+                    = ' – '
+                //ko if: p.regions().length
+                .tltp.tltp-top.tltp-touch.tltp-hotizontal-left.tltp-animate-opacity.rytltp.ytltpBetween(data-bind="foreach: p.regions")
+                    .yregion
+                        a(data-bind="text:$parent.p.year()+' – '+$parent.p.year2()+' '+$data.title_local(), attr: {href: '/ps?f=r!'+$data.cid()+'_y!'+$parent.p.year()+'!'+$parent.p.year2()}")
+                // /ko
+            span.tltp-wrap.rytltp-wrap
+                a(data-bind="text:p.year2(), attr: {href:'/ps?f=_y!'+p.year2()+'!'+p.year2()}")
+                //ko if: p.regions().length
+                .tltp.tltp-top.tltp-touch.tltp-hotizontal-left.tltp-animate-opacity.rytltp.ytltp2(data-bind="foreach: p.regions")
+                    .yregion
+                        a(data-bind="text:$parent.p.year2()+' '+$data.title_local(), attr: {href: '/ps?f=r!'+$data.cid()+'_y!'+$parent.p.year2()+'!'+$parent.p.year2()}")
+                // /ko
+            // /ko
+
             //ko if: p.y() && p.regions().length
             =', '
             // /ko
             //ko if: p.regions().length
             //ko foreach: p.regions
-            | <!--ko if: $index()-->, <!-- /ko -->
+            | <!--ko if: $index()-->,<!-- /ko -->
             .region
-                .tltp-wrap
+                .tltp-wrap.rytltp-wrap
+                    | <!--ko if: $index()-->&nbsp;<!-- /ko -->
                     a(data-bind="text: $data.title_local(), attr: {href: '/ps?f=r!' + $data.cid()}")
                     //ko if: $parent.IAdmin() || $data.phc() || $data.pac() || $data.cc()
-                    .tltp.tltp-top.tltp-touch(data-bind="css: {'tltp-hotizontal-left': !$index()}")
+                    .tltp.tltp-top.tltp-touch.tltp-animate-opacity.rytltp(data-bind="css: {'tltp-hotizontal-left': !$index()}")
                         //ko if: $parent.IAdmin()
                         .region-type-stat.region-type-stat-clickable(title="Перейти в редактирование региона", style="margin:1px 0;padding-right:4px;border-right:1px solid #e8e8e8;")
                             a(data-bind="attr: {href: '/admin/region/' + $data.cid()}", style="color:orange;")
@@ -295,7 +320,8 @@
         .yearsEdit.mandatory(data-bind="css: {hasContent: typeof p.year() === 'number'}")
             span.infoName(data-bind="html: fields.y+':'")
             input.form-control.year(type="text", data-bind="value: p.year, valueUpdate: 'keyup', event: {blur: yearCheck}", maxlength="4")
-            | —
+            span
+                = ' – '
             input.form-control.year(type="text", data-bind="value: p.year2, valueUpdate: 'keyup', event: {blur: year2Check}", maxlength="4")
         .regions(data-bind="css: {loading: exeregion()}")
             span.infoName.mandatory(data-bind="html: fields.regions+':'")
@@ -418,7 +444,8 @@
         .yearsEdit.mandatory(data-bind="css: {hasContent: typeof p.year() === 'number'}")
             span.infoName(data-bind="html: fields.y+':'")
             input.form-control.year(type="text", data-bind="value: p.year, valueUpdate: 'keyup', event: {blur: yearCheck}", maxlength="4")
-            | —
+            span
+                = ' – '
             input.form-control.year(type="text", data-bind="value: p.year2, valueUpdate: 'keyup', event: {blur: year2Check}", maxlength="4")
         .regions(data-bind="css: {loading: exeregion()}")
             span.infoName.mandatory(data-bind="html: fields.regions+':'")
