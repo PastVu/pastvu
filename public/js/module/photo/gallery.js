@@ -321,8 +321,8 @@ define([
             var r = this.filter.disp.r();
             var s = this.filter.disp.s().map(Number);
             var geo = this.filter.disp.geo();
-            var year = this.filter.disp.year();
-            var year2 = this.filter.disp.year2();
+            var year = Number(this.filter.disp.year());
+            var year2 = Number(this.filter.disp.year2());
             var yearsRange = this.getTypeYearsRange();
             var i;
 
@@ -391,7 +391,7 @@ define([
                     filterString += '!' + t[i];
                 }
             }
-            if (year > yearsRange.min && year !== this.year || year2 < yearsRange.max && year2 !== this.year2) {
+            if (year > yearsRange.min || year2 < yearsRange.max) {
                 this.year = year;
                 this.year2 = year2;
                 filterString += (filterString ? '_' : '') + 'y!' + year + '!' + year2;
@@ -496,7 +496,7 @@ define([
 
             var currentYearsRange = this.getTypeYearsRange(this.t);
 
-            if (this.filter.disp.year() === currentYearsRange.min && this.filter.disp.year2() === currentYearsRange.max) {
+            if (Number(this.filter.disp.year()) === currentYearsRange.min && Number(this.filter.disp.year2()) === currentYearsRange.max) {
                 // If current years range is filling all possible range, also set new whole possible range
                 var newYearsRange = this.getTypeYearsRange();
 
@@ -602,6 +602,56 @@ define([
             if (year2 !== this.year2) {
                 // Вручную вызываем обработку фильтра (по таймауту, чтобы обработчик смены типов мог сбросить)
                 this.yearApplyTimeout = setTimeout(this.filterChangeHandle.bind(this), 10);
+            }
+        },
+        yearArrow: function (data, evt) {
+            var yearsRange = this.getTypeYearsRange();
+            var year = Number(this.filter.disp.year());
+            var year2 = Number(this.filter.disp.year2());
+
+            switch (evt.key) {
+                case 'ArrowUp':
+                    if (year < yearsRange.max) {
+                        year = year + 1;
+                        this.filter.disp.year(year);
+
+                        if (year > year2) {
+                            this.filter.disp.year2(year);
+                        }
+                    }
+                    break;
+                case 'ArrowDown':
+                    if (year > yearsRange.min) {
+                        this.filter.disp.year(year - 1);
+                    }
+                    break;
+                default:
+                    return true;
+            }
+        },
+        year2Arrow: function (data, evt) {
+            var yearsRange = this.getTypeYearsRange();
+            var year = Number(this.filter.disp.year());
+            var year2 = Number(this.filter.disp.year2());
+
+            switch (evt.key) {
+                case 'ArrowUp':
+                    if (year2 < yearsRange.max) {
+                        this.filter.disp.year2(year2 + 1);
+                    }
+                    break;
+                case 'ArrowDown':
+                    if (year2 > yearsRange.min) {
+                        year2 = year2 - 1;
+                        this.filter.disp.year2(year2);
+
+                        if (year > year2) {
+                            this.filter.disp.year(year2);
+                        }
+                    }
+                    break;
+                default:
+                    return true;
             }
         },
         yearsReset: function () {
@@ -771,12 +821,14 @@ define([
                         this.filter.disp.geo(data.filter.geo);
                         this.filter.disp.rs(data.filter.rs);
 
-                        if (data.filter.y) {
-                            this.year = data.filter.y[0];
-                            this.year2 = data.filter.y[1];
-                            this.filter.disp.year(String(this.year));
-                            this.filter.disp.year2(String(this.year2));
+                        if (_.isEmpty(data.filter.y)) {
+                            var yearsRange = this.getTypeYearsRange();
+                            data.filter.y = [yearsRange.min, yearsRange.max];
                         }
+                        this.year = data.filter.y[0];
+                        this.year2 = data.filter.y[1];
+                        this.filter.disp.year(String(this.year));
+                        this.filter.disp.year2(String(this.year2));
 
                         this.filterChangeHandleBlock = false;
                     }
