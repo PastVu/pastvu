@@ -205,7 +205,7 @@
         div
             //ko if: p.year()
             span.tltp-wrap.rytltp-wrap
-                a(data-bind="text:p.year(), attr: {href:'/ps?f=_y!'+p.year()+'!'+p.year()}")
+                a(data-bind="text:p.year(), attr: {href:'/ps?f=y!'+p.year()+'!'+p.year()}")
                 //ko if: p.regions().length
                 .tltp.tltp-top.tltp-touch.tltp-hotizontal-left.tltp-animate-opacity.rytltp.ytltp(data-bind="foreach: p.regions")
                     .yregion
@@ -214,7 +214,7 @@
             // /ko
             //ko if: p.year2() && p.year() !== p.year2()
             span.tltp-wrap.rytltp-wrap
-                a(data-bind="attr: {href:'/ps?f=_y!'+p.year()+'!'+p.year2()}")
+                a(data-bind="attr: {href:'/ps?f=y!'+p.year()+'!'+p.year2()}")
                     = ' – '
                 //ko if: p.regions().length
                 .tltp.tltp-top.tltp-touch.tltp-hotizontal-left.tltp-animate-opacity.rytltp.ytltpBetween(data-bind="foreach: p.regions")
@@ -222,7 +222,7 @@
                         a(data-bind="text:$parent.p.year()+' – '+$parent.p.year2()+' '+$data.title_local(), attr: {href: '/ps?f=r!'+$data.cid()+'_y!'+$parent.p.year()+'!'+$parent.p.year2()}")
                 // /ko
             span.tltp-wrap.rytltp-wrap
-                a(data-bind="text:p.year2(), attr: {href:'/ps?f=_y!'+p.year2()+'!'+p.year2()}")
+                a(data-bind="text:p.year2(), attr: {href:'/ps?f=y!'+p.year2()+'!'+p.year2()}")
                 //ko if: p.regions().length
                 .tltp.tltp-top.tltp-touch.tltp-hotizontal-left.tltp-animate-opacity.rytltp.ytltp2(data-bind="foreach: p.regions")
                     .yregion
