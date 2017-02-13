@@ -389,29 +389,6 @@
             color: #E49F0D;
         }
 
-        .tltp-top {
-            margin-bottom: 5px;
-            transform: translate(-50%, -5px);
-
-            &.tltp-hotizontal-left {
-                transform: translate(0, -5px);
-            }
-
-            &::before {
-                height: 5px;
-                bottom: -5px;
-            }
-        }
-        .tltp-wrap:hover {
-            > .tltp-top {
-                transform: translate(-50%, 2px);
-
-                &.tltp-hotizontal-left {
-                    transform: translate(0, 2px);
-                }
-            }
-        }
-
         .region-type-stat {
             display: inline-block;
             margin: 0 4px 1px 4px;
@@ -447,6 +424,73 @@
         font-weight: bold;
         line-height: 19px;
     }
+    .yregion {
+        white-space: nowrap;
+
+        > a {
+            color: inherit;
+        }
+    }
+
+    .rytltp {
+        margin-bottom: 5px;
+        transform: translate(-50%, 2px);
+
+        &.tltp-hotizontal-left {
+            transform: translate(0, 2px);
+        }
+
+        &.tltp-animate-move {
+            transform: translate(-50%, -5px);
+
+            &.tltp-hotizontal-left {
+                transform: translate(0, -5px);
+            }
+        }
+
+        &::before {
+            height: 5px;
+            bottom: -5px;
+        }
+    }
+    .rytltp-wrap:hover {
+        > .rytltp.tltp-animate-move {
+            transform: translate(-50%, 2px);
+
+            &.tltp-hotizontal-left {
+                transform: translate(0, 2px);
+            }
+        }
+    }
+
+    .ytltp {
+        margin-left: -6px;
+        padding-left: 6px;
+        text-align: left;
+
+        &::after {
+            transform: translateX(14px);
+        }
+    }
+    .ytltpBetween {
+        margin-left: -35px;
+        padding-left: 6px;
+        text-align: left;
+
+        &::after {
+            transform: translateX(35px);
+        }
+    }
+    .ytltp2 {
+        margin-left: -9.5px;
+        padding-left: 6px;
+        text-align: left;
+
+        &::after {
+            transform: translateX(18px);
+        }
+    }
+
     .photoData {
         &.editMode {
             .fieldWrap {
