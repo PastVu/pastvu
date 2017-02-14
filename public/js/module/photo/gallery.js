@@ -77,7 +77,6 @@ define([
                 },
                 active: ko.observable(true),
                 inactivateString: '',
-                open: ko.observable(false),
                 can: {
                     s: this.co.filtercans = ko.computed(function () {
                         return this.auth.loggedIn();
@@ -251,9 +250,6 @@ define([
             if (filterString !== this.filter.origin && this.filter.active()) {
                 this.filter.origin = filterString && filterString.length < 512 ? filterString : '';
                 this.pageQuery(location.search);
-                if (this.filter.origin && !this.loadedFirst()) {
-                    this.filter.open(true);
-                }
                 filterChange = true;
             }
 

@@ -10,21 +10,29 @@
 
 	.rowoffset {
 		position: relative;
-		margin-left: 5px;
-		margin-right: 8px;
+		margin: 11px 8px 0 5px;
 	}
 
 	.filter, .pageHeader {
 		line-height: 22px;
 	}
 	.pageHeader {
-		margin-top: 5px;
-		margin-bottom: 4px;
-		font-size: 20px;
+        padding-bottom: 11px;
+		font-size: 22px;
 		text-align: center;
+        background-repeat: no-repeat;
+        background-position: 50% 100%;
+
+        &.loading {
+            background-image: url(/img/misc/load.gif);
+        }
 	}
 
 	.filter {
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+
 		> .ftitle, > .fopen {
 			float: left;
 			width: 20px;
@@ -50,7 +58,7 @@
 		> .fvals {
 			position: relative;
 			display: table;
-			margin-left: 40px;
+            margin-right: 20px;
 			border: 1px solid #ccc;
 			background-color: #fff;
 
@@ -58,7 +66,9 @@
 				margin-top: 1px;
 			}
 			> .others {
-				display: none;
+                > .row {
+                    margin-top: 1px;
+                }
 			}
 
             .years, .ccount {
@@ -100,19 +110,6 @@
 			}
 		}
 
-		&.opened {
-			> .fvals {
-
-				> .others {
-					display: block;
-
-					> .row {
-						margin-top: 1px;
-					}
-				}
-			}
-		}
-
 		.filterName {
 			display: table-cell;
 			min-width: 94px;
@@ -126,10 +123,11 @@
 		}
 		.filterVars {
 			display: table-cell;
+            min-width: 219px;
 			padding: 0 3px;
 
 			> label.checkbox-inline {
-			  	min-width: 102px;
+			  	min-width: 92px;
 				margin-left: 0;
 				margin-right: 10px;
 				padding-left: 17px;
@@ -228,11 +226,6 @@
 				}
 			}
 		}
-	}
-
-	.topcol {
-		margin-top: 2px;
-		margin-bottom: 4px;
 	}
 
 	.switch {
