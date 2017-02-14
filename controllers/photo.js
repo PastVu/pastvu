@@ -1473,6 +1473,7 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40, random = fa
             rs: filter.rs,
             s: buildQueryResult.s,
             y: buildQueryResult.y,
+            c: buildQueryResult.c,
             geo: filter.geo
         }
     };
@@ -1500,7 +1501,7 @@ const givePublicNoGeoIndex = (function () {
     };
 }());
 
-const filterProps = { geo: [], r: [], rp: [], rs: [], s: [], t: [], y: [] };
+const filterProps = { geo: [], r: [], rp: [], rs: [], s: [], t: [], y: [], c: [] };
 const delimeterParam = '_';
 const delimeterVal = '!';
 export function parseFilter(filterString) {
@@ -1615,6 +1616,33 @@ export function parseFilter(filterString) {
                 filterVal = filterVal.split(delimeterVal);
                 if (Array.isArray(filterVal) && filterVal.length === 1) {
                     result.geo = filterVal;
+                }
+            } else if (filterParam === 'c') {
+                filterVal = filterVal.split(delimeterVal);
+                if (Array.isArray(filterVal) && (filterVal.length === 1 || filterVal.length === 2)) {
+                    filterVal = filterVal.map(Number).sort();
+
+                    if (!_.isEqual(filterVal, [0, 1])) {
+                        const [c0, c1] = filterVal;
+                        const c = {};
+                        let active = true;
+
+                        if (c0 === 0) {
+                            c.no = true;
+
+                            if (c1 > 0 && c1 < 1e4) {
+                                c.min = c1;
+                            }
+                        } else if (c0 > 0 && c0 < 1e4) {
+                            c.min = c0;
+                        } else {
+                            active = false;
+                        }
+
+                        if (active) {
+                            result.c = c;
+                        }
+                    }
                 }
             }
         }
@@ -2785,6 +2813,25 @@ export function buildPhotosQuery(filter, forUserId, iAm, random) {
         query.year2 = { $gte: filter.y[0] };
 
         result.y = filter.y;
+    }
+
+    if (filter.c) {
+        if (filter.c.no && filter.c.min) {
+            const cquey = { $or: [{ ccount: null }, { ccount: { $gte: filter.c.min } }] };
+
+            if (query.$or) {
+                query.$and = [{ $or: query.$or }, cquey];
+                delete query.$or;
+            } else {
+                query.$or = cquey.$or;
+            }
+        } else if (filter.c.no) {
+            query.ccount = null;
+        } else if (filter.c.min) {
+            query.ccount = { $gte: filter.c.min };
+        }
+
+        result.c = filter.c;
     }
 
     if (random) {

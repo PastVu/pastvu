@@ -38,6 +38,15 @@
                                     | Изменить
                         .row.others
                             .row.geovars
+                                .filterName Тип:
+                                .filterVars
+                                    label.checkbox-inline
+                                        input(type="checkbox", value="1", data-bind="checked: filter.disp.t, click: ftclick")
+                                        span Фотография
+                                    label.checkbox-inline
+                                        input(type="checkbox", value="2", data-bind="checked: filter.disp.t, click: ftclick")
+                                        span Картина/Рисунок
+                            .row.geovars
                                 .filterName Годы:
                                 .filterVars
                                     input.form-control.years(type="text", data-bind="value: filter.disp.year, valueUpdate: 'keyup', event: {keydown: yearArrow}", maxlength="4")
@@ -47,15 +56,37 @@
                                     .tltp-wrap.resetYears(data-bind="click: yearsReset")
                                         span.glyphicon.glyphicon-remove-circle(style="top:3px")
                                         .tltp.tltp-right.tltp-animate-move(style="white-space:nowrap") Сбросить диапазон лет
+                            //ko if: filter.disp.r().length
                             .row.geovars
-                                .filterName Тип:
+                                .filterName Подрегионы:
                                 .filterVars
                                     label.checkbox-inline
-                                        input(type="checkbox", value="1", data-bind="checked: filter.disp.t, click: ftclick")
-                                        span Фотография
+                                        input(type="checkbox", value="0", data-bind="checked: filter.disp.rs, click: frsclick")
+                                        span Нет
                                     label.checkbox-inline
-                                        input(type="checkbox", value="2", data-bind="checked: filter.disp.t, click: ftclick")
-                                        span Картина/Рисунок
+                                        input(type="checkbox", value="1", data-bind="checked: filter.disp.rs, click: frsclick")
+                                        span Есть
+                            // /ko
+                            .row.geovars
+                                .filterName Координаты:
+                                .filterVars
+                                    label.checkbox-inline
+                                        input(type="checkbox", value="0", data-bind="checked: filter.disp.geo, click: fgeoclk")
+                                        span Нет (Где это?)
+                                    label.checkbox-inline
+                                        input(type="checkbox", value="1", data-bind="checked: filter.disp.geo, click: fgeoclk")
+                                        span Установлены
+                            .row.geovars
+                                .filterName Комментарии:
+                                .filterVars
+                                    label.checkbox-inline
+                                        input(type="checkbox", value="0", data-bind="checked: filter.disp.c, click: fcclick")
+                                        span Нет
+                                    label.checkbox-inline(style="margin-right:0;min-width:auto;")
+                                        input(type="checkbox", value="1", data-bind="checked: filter.disp.c, click: fcclick")
+                                        span Есть
+                                    = ' от '
+                                    input.form-control.ccount(type="text", data-bind="value: filter.disp.ccount, valueUpdate: 'keyup', event: {keydown: ccountArrow}, attr: {disabled:filter.disp.c.indexOf('1')<0}", maxlength="4")
                             .row.svars
                                 .filterName Статусы:
                                 .filterVars
@@ -71,26 +102,6 @@
                                         span.glyphicon.glyphicon-log-in
                                         |   Войдите, чтобы видеть больше
                                     // /ko
-                            .row.geovars
-                                .filterName Точка:
-                                .filterVars
-                                    label.checkbox-inline
-                                        input(type="checkbox", value="1", data-bind="checked: filter.disp.geo, click: fgeoclk")
-                                        span Есть
-                                    label.checkbox-inline
-                                        input(type="checkbox", value="0", data-bind="checked: filter.disp.geo, click: fgeoclk")
-                                        span Нет (Где это?)
-                            //ko if: filter.disp.r().length
-                            .row.geovars
-                                .filterName Подрегионы:
-                                .filterVars
-                                    label.checkbox-inline
-                                        input(type="checkbox", value="1", data-bind="checked: filter.disp.rs, click: frsclick")
-                                        span Есть
-                                    label.checkbox-inline
-                                        input(type="checkbox", value="0", data-bind="checked: filter.disp.rs, click: frsclick")
-                                        span Нет
-                            // /ko
             .col-xs-12.col-sm-5.col-lg-4.col-lg-push-4.topcol.switch(data-bind="css: {invisible: !loadedFirst()}")
                 span.brief(data-bind="html: briefText")
                 //ko if: photos().length

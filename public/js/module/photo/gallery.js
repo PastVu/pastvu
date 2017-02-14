@@ -65,6 +65,8 @@ define([
                 disp: {
                     t: ko.observableArray(),
                     s: ko.observableArray(),
+                    c: ko.observableArray(),
+                    ccount: ko.observable(1),
                     r: ko.observableArray(),
                     rdis: ko.observableArray(), //Массив cid неактивных регионов
                     rs: ko.observableArray(),
@@ -101,6 +103,7 @@ define([
             this.subscriptions.filter_disp_s = this.filter.disp.s.subscribe(this.filterChangeHandle, this);
             this.subscriptions.filter_disp_y = this.filter.disp.year.subscribe(_.debounce(this.yearHandle, 800), this);
             this.subscriptions.filter_disp_y2 = this.filter.disp.year2.subscribe(_.debounce(this.year2Handle, 800), this);
+            this.subscriptions.filter_disp_ccount = this.filter.disp.ccount.subscribe(_.debounce(this.ccountHandle, 800), this);
             this.subscriptions.filter_active = this.filter.active.subscribe(this.filterActiveChange, this);
             this.filterChangeHandleBlock = false;
 
@@ -318,11 +321,13 @@ define([
         buildFilterString: function () {
             var filterString = '';
             var t = this.filter.disp.t().map(Number).sort();
+            var c = this.filter.disp.c().map(Number).sort();
             var r = this.filter.disp.r();
             var s = this.filter.disp.s().map(Number);
             var geo = this.filter.disp.geo();
             var year = Number(this.filter.disp.year());
             var year2 = Number(this.filter.disp.year2());
+            var ccount = Number(this.filter.disp.ccount());
             var yearsRange = this.getTypeYearsRange();
             var i;
 
@@ -395,6 +400,15 @@ define([
                 this.year = year;
                 this.year2 = year2;
                 filterString += (filterString ? '_' : '') + 'y!' + year + '!' + year2;
+            }
+            if (c.length && (!_.isEqual(c, [0, 1]) || ccount)) {
+                filterString += (filterString ? '_' : '') + 'c';
+                if (_.includes(c, 0)) {
+                    filterString += '!0';
+                }
+                if (_.includes(c, 1)) {
+                    filterString += '!' + (ccount > 1 ? ccount : 1);
+                }
             }
 
             return filterString;
@@ -663,6 +677,59 @@ define([
 
             this.filterChangeHandle();
         },
+        fcclick: function (data, event) {
+            var currC = data.filter.disp.c();
+            var clicked = event.target.value;
+
+            if (!currC.length) {
+                //Если все варианты сняты, делаем активным второй вариант
+                if (clicked === '0') {
+                    data.filter.disp.c(['1']);
+                } else {
+                    data.filter.disp.c(['0']);
+                }
+            }
+
+            this.filterChangeHandle(); //Вручную вызываем обработку фильтра
+
+            return true; //Возвращаем true, чтобы галка в браузере переключилась
+        },
+        ccountHandle: function (ccount) {
+            ccount = Number(ccount);
+
+            if (!ccount || ccount < 1) {
+                this.filter.disp.ccount(1);
+                return;
+            }
+            if (ccount > 9999) {
+                this.filter.disp.ccount(9999);
+                return;
+            }
+
+            if (_.includes(this.filter.disp.c(), '1')) {
+                // Вручную вызываем обработку фильтра
+                this.filterChangeHandle();
+            }
+        },
+        ccountArrow: function (data, evt) {
+            var ccount = Number(this.filter.disp.ccount());
+
+            switch (evt.key) {
+                case 'ArrowUp':
+                    if (ccount < 9999) {
+                        ccount = ccount + 1;
+                        this.filter.disp.ccount(ccount);
+                    }
+                    break;
+                case 'ArrowDown':
+                    if (ccount > 1) {
+                        this.filter.disp.ccount(ccount - 1);
+                    }
+                    break;
+                default:
+                    return true;
+            }
+        },
         updateFilterUrl: function (filterString) {
             var uri = new Uri(location.pathname + location.search);
             if (filterString) {
@@ -829,6 +896,19 @@ define([
                         this.year2 = data.filter.y[1];
                         this.filter.disp.year(String(this.year));
                         this.filter.disp.year2(String(this.year2));
+
+                        var c = [0, 1];
+                        if (!_.isEmpty(data.filter.c)) {
+                            c = [];
+                            if (data.filter.c.no) {
+                                c.push(0);
+                            }
+                            if (data.filter.c.min > 0) {
+                                c.push(1);
+                                this.filter.disp.ccount(data.filter.c.min);
+                            }
+                        }
+                        this.filter.disp.c(c.map(String));
 
                         this.filterChangeHandleBlock = false;
                     }
