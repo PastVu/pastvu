@@ -39,6 +39,7 @@ define([
             this.coin = ko.observable(false);
 
             this.t = [];
+            this.ccount = 1;
             this.year = statuses.years[statuses.type.PAINTING].min;
             this.year2 = statuses.years[statuses.type.PHOTO].max;
 
@@ -66,7 +67,7 @@ define([
                     t: ko.observableArray(),
                     s: ko.observableArray(),
                     c: ko.observableArray(),
-                    ccount: ko.observable(1),
+                    ccount: ko.observable(this.ccount),
                     r: ko.observableArray(),
                     rdis: ko.observableArray(), //Массив cid неактивных регионов
                     rs: ko.observableArray(),
@@ -402,6 +403,8 @@ define([
                 filterString += (filterString ? '_' : '') + 'y!' + year + '!' + year2;
             }
             if (c.length && (!_.isEqual(c, [0, 1]) || ccount)) {
+                this.ccount = ccount;
+
                 filterString += (filterString ? '_' : '') + 'c';
                 if (_.includes(c, 0)) {
                     filterString += '!0';
@@ -698,15 +701,15 @@ define([
             ccount = Number(ccount);
 
             if (!ccount || ccount < 1) {
-                this.filter.disp.ccount(1);
+                this.filter.disp.ccount('1');
                 return;
             }
             if (ccount > 9999) {
-                this.filter.disp.ccount(9999);
+                this.filter.disp.ccount('9999');
                 return;
             }
 
-            if (_.includes(this.filter.disp.c(), '1')) {
+            if (_.includes(this.filter.disp.c(), '1') && ccount !== this.ccount) {
                 // Вручную вызываем обработку фильтра
                 this.filterChangeHandle();
             }
@@ -718,12 +721,12 @@ define([
                 case 'ArrowUp':
                     if (ccount < 9999) {
                         ccount = ccount + 1;
-                        this.filter.disp.ccount(ccount);
+                        this.filter.disp.ccount(String(ccount));
                     }
                     break;
                 case 'ArrowDown':
                     if (ccount > 1) {
-                        this.filter.disp.ccount(ccount - 1);
+                        this.filter.disp.ccount(String(ccount - 1));
                     }
                     break;
                 default:
@@ -897,7 +900,7 @@ define([
                         this.filter.disp.year(String(this.year));
                         this.filter.disp.year2(String(this.year2));
 
-                        var c = [0, 1];
+                        var c;
                         if (!_.isEmpty(data.filter.c)) {
                             c = [];
                             if (data.filter.c.no) {
@@ -905,8 +908,13 @@ define([
                             }
                             if (data.filter.c.min > 0) {
                                 c.push(1);
-                                this.filter.disp.ccount(data.filter.c.min);
+                                this.ccount = data.filter.c.min;
+                                this.filter.disp.ccount(String(this.ccount));
                             }
+                        } else {
+                            c = [0, 1];
+                            this.ccount = 1;
+                            this.filter.disp.ccount(String(this.ccount));
                         }
                         this.filter.disp.c(c.map(String));
 
