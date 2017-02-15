@@ -149,6 +149,10 @@ define([
                 return !this.feed() && !this.coin() && this.pageLast() > 1;
             }, this);
 
+            this.yearsRange = this.co.yearsRange = ko.computed(function () {
+                return this.getTypeYearsRange(this.filter.disp.t());
+            }, this);
+
             this.briefText = this.co.briefText = ko.computed(function () {
                 var count = this.count();
                 var txt = '';
