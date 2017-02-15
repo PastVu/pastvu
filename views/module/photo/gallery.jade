@@ -44,7 +44,7 @@
                                     input(type="checkbox", value="2", data-bind="checked: filter.disp.t, click: ftclick")
                                     span Картина/Рисунок
                             .filterName Годы:
-                            .filterVars
+                            .filterVars(data-bind="css: {yearsSet:Number(filter.disp.year()) > yearsRange().min || Number(filter.disp.year2()) < yearsRange().max}")
                                 input.form-control.years(type="text", data-bind="value: filter.disp.year, valueUpdate: 'keyup', event: {keydown: yearArrow}", maxlength="4")
                                 = ' – '
                                 input.form-control.years(type="text", data-bind="value: filter.disp.year2, valueUpdate: 'keyup', event: {keydown: year2Arrow}", maxlength="4")
@@ -84,7 +84,7 @@
                                         input(type="checkbox", value="1", data-bind="checked: filter.disp.c, click: fcclick")
                                         = 'Есть от'
                                     = ' '
-                                    input.form-control.ccount(type="text", data-bind="value: filter.disp.ccount, valueUpdate: 'keyup', event: {keydown: ccountArrow}, attr: {disabled:filter.disp.c.indexOf('1')<0}", maxlength="4")
+                                    input.form-control.ccount(type="text", data-bind="value: filter.disp.ccount, valueUpdate: 'keyup', event: {keydown: ccountArrow}, attr: {disabled:filter.disp.c.indexOf('1')<0}, css: {ccountSet: filter.disp.ccount()>1 && filter.disp.c.indexOf('1')>=0}", maxlength="4")
                         .row.svars
                             .filterName Статусы:
                             .filterVars
