@@ -68,9 +68,10 @@ define([
                     s: ko.observableArray(),
                     c: ko.observableArray(),
                     ccount: ko.observable(this.ccount),
-                    r: ko.observableArray(),
-                    rdis: ko.observableArray(), //Массив cid неактивных регионов
-                    rs: ko.observableArray(),
+                    r: ko.observableArray(), // Array of selected regions
+                    rdis: ko.observableArray(), // Array of cids of inactive regions
+                    rs: ko.observableArray(), // Enable/disable subregions
+                    re: ko.observableArray(), // Array of cids of excluded regions
                     geo: ko.observableArray(),
                     year: ko.observable(this.year),
                     year2: ko.observable(this.year2)
@@ -99,13 +100,6 @@ define([
                     return this.auth.loggedIn() && this.auth.iAm.role() >= 10;
                 }, this)
             };
-            this.subscriptions.filter_disp_r = this.filter.disp.r.subscribe(this.filterChangeHandle, this);
-            this.subscriptions.filter_disp_s = this.filter.disp.s.subscribe(this.filterChangeHandle, this);
-            this.subscriptions.filter_disp_y = this.filter.disp.year.subscribe(_.debounce(this.yearHandle, 800), this);
-            this.subscriptions.filter_disp_y2 = this.filter.disp.year2.subscribe(_.debounce(this.year2Handle, 800), this);
-            this.subscriptions.filter_disp_ccount = this.filter.disp.ccount.subscribe(_.debounce(this.ccountHandle, 800), this);
-            this.subscriptions.filter_active = this.filter.active.subscribe(this.filterActiveChange, this);
-            this.filterChangeHandleBlock = false;
 
             this.panelW = ko.observable('0px');
             this.w = ko.observable('0px');
@@ -153,6 +147,37 @@ define([
                 return this.getTypeYearsRange(this.filter.disp.t());
             }, this);
 
+            this.rsIsPossible = this.co.rsIsPossible = ko.computed(function () {
+                var rLen = this.filter.disp.r().length;
+                var rdisLen = this.filter.disp.rdis().length;
+                return rLen > 0 && rdisLen < rLen;
+            }, this);
+
+            this.activeChildLen = this.co.activeChildLen = ko.computed(function () {
+                var r = this.filter.disp.r();
+                var rdis = this.filter.disp.rdis();
+
+                if (!this.rsIsPossible()) {
+                    return Infinity;
+                }
+
+                return r.reduce(function (acc, region) {
+                    if (region.childLen && !_.includes(rdis, region.cid)) {
+                        return acc + region.childLen;
+                    }
+
+                    return acc;
+                }, 0);
+            }, this);
+
+            this.reIsPossible = this.co.reIsPossible = ko.computed(function () {
+                return !this.filter.disp.r().length || this.activeChildLen() > 0;
+            }, this);
+
+            this.reIsActive = this.co.reIsActive = ko.computed(function () {
+                return this.reIsPossible() && !_.isEqual(this.filter.disp.rs(), ['0']);
+            }, this);
+
             this.briefText = this.co.briefText = ko.computed(function () {
                 var count = this.count();
                 var txt = '';
@@ -183,6 +208,14 @@ define([
             // Subscriptions
             this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandlerDebounced, this);
             this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
+            this.subscriptions.filter_disp_r = this.filter.disp.r.subscribe(this.filterChangeHandle, this);
+            this.subscriptions.filter_disp_rdis = this.filter.disp.rdis.subscribe(this.filterChangeHandle, this);
+            this.subscriptions.filter_disp_s = this.filter.disp.s.subscribe(this.filterSHandle, this);
+            this.subscriptions.filter_disp_y = this.filter.disp.year.subscribe(_.debounce(this.yearHandle, 800), this);
+            this.subscriptions.filter_disp_y2 = this.filter.disp.year2.subscribe(_.debounce(this.year2Handle, 800), this);
+            this.subscriptions.filter_disp_ccount = this.filter.disp.ccount.subscribe(_.debounce(this.ccountHandle, 800), this);
+            this.subscriptions.filter_active = this.filter.active.subscribe(this.filterActiveChange, this);
+            this.filterChangeHandleBlock = false;
 
             this.sizesCalc();
             this.routeHandler();
@@ -324,6 +357,7 @@ define([
             var t = this.filter.disp.t().map(Number).sort();
             var c = this.filter.disp.c().map(Number).sort();
             var r = this.filter.disp.r();
+            var re = this.filter.disp.re();
             var s = this.filter.disp.s().map(Number);
             var geo = this.filter.disp.geo();
             var year = Number(this.filter.disp.year());
@@ -356,13 +390,21 @@ define([
                 if (rs.length === 1) {
                     filterString += (filterString ? '_' : '') + 'rs!' + rs[0];
                 }
-            } else if (this.auth.iAm && this.auth.iAm.regions().length) {
+            } else if (this.auth.iAm && this.auth.iAm.regions().length || re.length) {
                 filterString += (filterString ? '_' : '') + 'r!0';
             }
+
+            if (re.length) {
+                filterString += (filterString ? '_' : '') + 're';
+                for (i = 0; i < re.length; i++) {
+                    filterString += '!' + re[i].cid;
+                }
+            }
+
             if (geo.length === 1) {
                 filterString += (filterString ? '_' : '') + 'geo!' + geo[0];
             }
-            if (s.length && this.auth.iAm) {
+            if (s.length && this.auth.iAm && !_.isEqual(s, [statuses.keys.PUBLIC])) {
                 var allowedS;
 
                 if (this.auth.iAm.role() > 4 || this.itsMine()) {
@@ -402,7 +444,7 @@ define([
                 this.year2 = year2;
                 filterString += (filterString ? '_' : '') + 'y!' + year + '!' + year2;
             }
-            if (c.length && (!_.isEqual(c, [0, 1]) || ccount)) {
+            if (c.length && (!_.isEqual(c, [0, 1]) || ccount > 1)) {
                 this.ccount = ccount;
 
                 filterString += (filterString ? '_' : '') + 'c';
@@ -439,9 +481,24 @@ define([
                 this.filter.active(true);
                 this.filterActiveChangeBlock = false;
             }
+
+            // If number of children regions equals to zero and rs equals '1',
+            // change it to '0' (set all, but in template will be set only '0')
+            if (!this.activeChildLen() && _.isEqual(this.filter.disp.rs(), ['1'])) {
+                this.filter.disp.rs(['0', '1']);
+            }
+
             var newFilter = this.buildFilterString();
             if (newFilter !== this.filter.origin) {
                 this.updateFilterUrl(newFilter);
+            }
+        },
+        filterSHandle: function (val) {
+            if (_.isEmpty(val)) {
+                // If user removes last status checkbox, set public status as default
+                this.filter.disp.s([String(statuses.keys.PUBLIC)]);
+            } else {
+                this.filterChangeHandle();
             }
         },
         //Делает активным в фильтре только один переданный регион
@@ -458,7 +515,6 @@ define([
                     }
                 });
                 this.filter.disp.rdis(diss);
-                this.filterChangeHandle();
             }
         },
         // Активирует/деактивирует в фильтре переданный регион
@@ -476,7 +532,6 @@ define([
                     } else {
                         this.filter.disp.rdis.push(cid);
                     }
-                    this.filterChangeHandle();
                 }
             }
         },
@@ -874,7 +929,7 @@ define([
                         }
 
                         this.filter.disp.rdis(data.filter.rp || []);
-                        this.filter.disp.s(data.filter.s ? data.filter.s.map(String) : []);
+                        this.filter.disp.s(data.filter.s ? data.filter.s.map(String) : [String(statuses.keys.PUBLIC)]);
 
                         if (!data.filter.t || !data.filter.t.length) {
                             data.filter.t = [1, 2];
@@ -890,6 +945,7 @@ define([
                         this.filter.disp.t(this.t.slice());
                         this.filter.disp.geo(data.filter.geo);
                         this.filter.disp.rs(data.filter.rs);
+                        this.filter.disp.re(data.filter.re || []);
 
                         if (_.isEmpty(data.filter.y)) {
                             var yearsRange = this.getTypeYearsRange();
@@ -1134,7 +1190,7 @@ define([
                                         text: 'Применить',
                                         glyphicon: 'glyphicon-ok',
                                         click: function () {
-                                            var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']);
+                                            var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local', 'childLen']);
 
                                             if (regions.length > 5) {
                                                 return noties.alert({
@@ -1167,6 +1223,93 @@ define([
             }
         },
         closeRegionSelect: function () {
+            if (this.regselectVM) {
+                this.regselectVM.destroy();
+                delete this.regselectVM;
+            }
+        },
+
+        regionExcludeSelect: function () {
+            if (this.regselectVM || !this.activeChildLen()) {
+                return;
+            }
+
+            var topcids;
+            var r = this.filter.disp.r();
+
+            if (r.length) {
+                var rdis = this.filter.disp.rdis();
+                topcids = r.reduce(function (result, region) {
+                    if (region.childLen && !_.includes(rdis, region.cid)) {
+                        result.push(region.cid);
+                    }
+                    return result;
+                }, []);
+
+                if (!topcids.length) {
+                    return;
+                }
+            }
+
+            renderer(
+                [
+                    {
+                        module: 'm/region/select',
+                        options: {
+                            min: 0,
+                            max: 5,
+                            selectedInit: this.filter.disp.re(),
+                            topCidsFilter: topcids,
+                            neverSelectable: topcids
+                        },
+                        modal: {
+                            topic: 'Выбор регионов для исключения из фильтрации',
+                            initWidth: '900px',
+                            maxWidthRatio: 0.95,
+                            fullHeight: true,
+                            withScroll: true,
+                            offIcon: { text: 'Отмена', click: this.closeRegionExcludeSelect, ctx: this },
+                            btns: [
+                                {
+                                    css: 'btn-success',
+                                    text: 'Применить',
+                                    glyphicon: 'glyphicon-ok',
+                                    click: function () {
+                                        var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']);
+
+                                        if (regions.length > 5) {
+                                            return noties.alert({
+                                                message: 'Допускается выбирать до 5 регионов',
+                                                type: 'warning',
+                                                timeout: 4000,
+                                                ok: true
+                                            });
+                                        }
+
+                                        this.filter.disp.re(regions);
+                                        this.closeRegionExcludeSelect();
+
+                                        // Вручную вызываем обработку фильтра
+                                        this.filterChangeHandle();
+                                    },
+                                    ctx: this
+                                },
+                                { css: 'btn-warning', text: 'Отмена', click: this.closeRegionExcludeSelect, ctx: this }
+                            ]
+                        },
+                        callback: function (vm) {
+                            this.regselectVM = vm;
+                            this.childModules[vm.id] = vm;
+                        }.bind(this)
+                    }
+                ],
+                {
+                    parent: this,
+                    level: this.level + 1
+                }
+            );
+        },
+        closeRegionExcludeSelect: function () {
             if (this.regselectVM) {
                 this.regselectVM.destroy();
                 delete this.regselectVM;

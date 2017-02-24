@@ -55,17 +55,35 @@ async function fillCache() {
             { lean: true, sort: { cid: 1 } }
         ).exec();
 
+        regionCacheArr.sort((a, b) =>
+            a.parents.length < b.parents.length || a.parents.length === b.parents.length && a.cid < b.cid ? -1 : 1
+        );
+
         regionCacheArrAdmin = [];
         regionCacheMapAdmin = new Map();
         regionCacheArrPublic = [];
         regionCacheMapPublic = new Map();
         regionsChildrenArrHash = {};
         regionCacheHash = { '0': nogeoRegion }; // Zero region means absence of coordinates
+
+        // Fill number of children regions for each region
+        for (const region of regionCacheArr) {
+            const { cid, parents } = region;
+
+            region.childLen = 0;
+            if (parents && parents.length) {
+                for (const parentCid of parents) {
+                    regionCacheHash[parentCid].childLen++;
+                }
+            }
+
+            regionCacheHash[cid] = region;
+        }
+
         for (const region of regionCacheArr) {
             const { cid, parents } = region;
             const { regionAdmin, regionPublic } = fillPublicAndAdminMaps(region);
 
-            regionCacheHash[cid] = region;
             regionCacheArrAdmin.push(regionAdmin);
             regionCacheArrPublic.push(regionPublic);
 
@@ -94,17 +112,17 @@ async function fillCache() {
 }
 
 function fillPublicAndAdminMaps(region) {
-    const { cid, parents, cdate, udate, gdate, title_en, title_local, photostat = {}, paintstat = {}, cstat = {} } = region;
+    const { cid, parents, childLen, cdate, udate, gdate, title_en, title_local, photostat = {}, paintstat = {}, cstat = {} } = region;
     const regionAdmin = regionCacheMapAdmin.get(cid) || { cid };
     const regionPublic = regionCacheMapPublic.get(cid) || { cid };
 
     Object.assign(regionPublic, {
-        parents, title_en, title_local,
+        parents, title_en, title_local, childLen,
         phc: photostat.s5, pac: paintstat.s5, cc: cstat.all - cstat.del
     });
 
     Object.assign(regionAdmin, {
-        parents, title_en, title_local,
+        parents, title_en, title_local, childLen,
         cdate: new Date(cdate).getTime(),
         udate: udate ? new Date(udate).getTime() : undefined,
         gdate: gdate ? new Date(gdate).getTime() : undefined,
@@ -134,7 +152,16 @@ export const getRegionsArrFromCache = cids => _.transform(cids, (result, cid) =>
     if (region !== undefined) {
         result.push(region);
     }
-});
+}, []);
+export const getRegionsArrPublicFromCache = cids => Array.isArray(cids) ? cids.reduce((result, cid) => {
+    const region = regionCacheMapPublic.get(cid);
+
+    if (region !== undefined) {
+        result.push(region);
+    }
+
+    return result;
+}, []) : cids;
 export const getRegionsHashFromCache = cids => _.transform(cids, (result, cid) => {
     const region = regionCacheHash[cid];
 
@@ -1577,7 +1604,7 @@ async function saveUserRegions({ login, regions }) {
  * @param regions Array of populated regions
  * @returns {{rquery: {}, rhash: {}}}
  */
-export const buildQuery = (regions, rs) => {
+export const buildQuery = (regions, rs, regionsToExclude, insensitiveForRsCidsSet) => {
     let rquery = Object.create(null);
     const rhash = Object.create(null);
     const result = { rquery, rhash };
@@ -1591,44 +1618,181 @@ export const buildQuery = (regions, rs) => {
     const subRegions = filterBySublevelExistence && Boolean(Number(rs[0]));
 
     // Forming request for the regions
-    for (let region of regions) {
-        region = regionCacheHash[region.cid];
+    for (const region of regions) {
         rhash[region.cid] = region;
 
         const level = region.parents.length;
-        const levelCids = levels.get(level) || [];
+        let levelObject = levels.get(level);
 
-        if (!levels.has(level)) {
-            levels.set(level, levelCids);
+        if (!levelObject) {
+            levelObject = { rCids: [] };
+            levels.set(level, levelObject);
         }
 
-        levelCids.push(region.cid);
+        levelObject.rCids.push(region.cid);
+    }
+
+    // If array of excluded region cids passed and there is no subregion setting or it is set to 'must exist',
+    // calculate array if excluded region for each level of included region
+    if (regionsToExclude && regionsToExclude.length && (!filterBySublevelExistence || subRegions)) {
+        const rehash = Object.create(null);
+
+        for (const reRegion of regionsToExclude) {
+            // Check that parent of excluding region is not in excluded list already
+            if (rehash[reRegion.cid]) {
+                continue;
+            }
+
+            let includedRegion;
+            for (const parentCid of reRegion.parents) {
+                includedRegion = rhash[parentCid];
+
+                if (includedRegion) {
+                    break;
+                }
+            }
+
+            // Check that at least one parent of excluding region is in the list of including regions
+            if (!includedRegion) {
+                continue;
+            }
+
+            const level = includedRegion.parents.length;
+            const levelObject = levels.get(level);
+
+            if (!levelObject.reRegions) {
+                levelObject.reRegions = [];
+            }
+
+            levelObject.reRegions.push(reRegion);
+            rehash[reRegion.cid] = reRegion;
+        }
+
+        if (Object.keys(rehash).length) {
+            result.rehash = rehash;
+        }
     }
 
     rquery.$or = [];
 
-    for (const [level, cids] of levels.entries()) {
+    for (const [level, { rCids, reRegions }] of levels.entries()) {
         const $orobj = {};
 
-        if (cids.length === 1) {
-            $orobj['r' + level] = cids[0];
-        } else if (cids.length > 1) {
-            $orobj['r' + level] = { $in: cids };
+        if (filterBySublevelExistence && insensitiveForRsCidsSet && rCids.some(cid => insensitiveForRsCidsSet.has(cid))) {
+            // If rs filter is active and insensitive cids have been passed (usually for modarators subregions)
+            // we should make separate query for sensitive and insensitive cids,
+            // because insensitive cids should not depend on subregions existence
+            const $or = [];
+            const [rcidsSensitive, rcidsInsensitive] = rCids.reduce((result, cid) => {
+                result[insensitiveForRsCidsSet.has(cid) ? 1 : 0].push(cid);
+                return result;
+            }, [[], []]);
+
+            if (rcidsSensitive.length) {
+                const obj = {};
+                if (rcidsSensitive.length === 1 && !reRegions) {
+                    obj['r' + level] = rcidsSensitive[0];
+                } else {
+                    obj['r' + level] = { $in: rcidsSensitive };
+                }
+
+                if (filterBySublevelExistence) {
+                    obj[`r${level + 1}`] = { $exists: subRegions };
+                }
+                $or.push(obj);
+            }
+
+            if (rcidsInsensitive.length) {
+                const obj = {};
+                if (rcidsInsensitive.length === 1 && !reRegions) {
+                    obj['r' + level] = rcidsInsensitive[0];
+                } else {
+                    obj['r' + level] = { $in: rcidsInsensitive };
+                }
+
+                $or.push(obj);
+            }
+
+
+            if ($or.length === 1) {
+                Object.assign($orobj, $or[0]);
+            } else {
+                // result will be like
+                // $or: [{r1: {$in: [3,5]}, r2: {$exists: true}}, {r1: {$in: [7]}}]
+                $orobj.$or = $or;
+            }
+        } else {
+            if (rCids.length === 1 && !reRegions) {
+                $orobj['r' + level] = rCids[0];
+            } else {
+                $orobj['r' + level] = { $in: rCids };
+            }
+
+            if (filterBySublevelExistence) {
+                $orobj[`r${level + 1}`] = { $exists: subRegions };
+            }
         }
 
-        if (filterBySublevelExistence) {
-            $orobj['r' + (level + 1)] = subRegions ? { $exists: true } : null;
+        if (reRegions) {
+            for (const region of reRegions) {
+                const reLevel = region.parents.length;
+                let queryObj = $orobj['r' + reLevel];
+
+                if (!queryObj) {
+                    queryObj = $orobj['r' + reLevel] = { $nin: [] };
+                } else if (!queryObj.$nin) {
+                    queryObj.$nin = [];
+                }
+
+                queryObj.$nin.push(region.cid);
+            }
         }
 
         rquery.$or.push($orobj);
     }
 
     if (rquery.$or.length === 1) {
-        rquery = rquery.$or[0];
+        rquery = result.rquery = rquery.$or[0];
     }
-    // console.log(JSON.stringify(rquery));
 
-    return { rquery, rhash, withSubRegion: filterBySublevelExistence ? subRegions : undefined };
+    if (filterBySublevelExistence) {
+        result.withSubRegion = subRegions;
+    }
+
+    // console.log(JSON.stringify(rquery));
+    return result;
+};
+
+export const buildGlobalReQuery = regionsToExclude => {
+    const rquery = Object.create(null);
+    const rhash = Object.create(null);
+    const result = { rquery, rhash };
+
+    if (_.isEmpty(regionsToExclude)) {
+        return result;
+    }
+
+    const levels = new Map();
+
+    for (const region of regionsToExclude) {
+        rhash[region.cid] = region;
+
+        const level = region.parents.length;
+        let levelCids = levels.get(level);
+
+        if (!levelCids) {
+            levelCids = [];
+            levels.set(level, levelCids);
+        }
+
+        levelCids.push(region.cid);
+    }
+
+    for (const [level, cids] of levels.entries()) {
+        rquery['r' + level] = cids.length === 1 ? { $ne: cids[0] } : { $nin: cids };
+    }
+
+    return result;
 };
 
 

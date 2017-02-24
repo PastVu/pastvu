@@ -14,7 +14,7 @@
 	}
 
 	.filter, .pageHeader {
-		line-height: 22px;
+		line-height: 20px;
 	}
 	.pageHeader {
         padding-bottom: 11px;
@@ -28,209 +28,248 @@
         }
 	}
 
-	.filter {
-        display: flex;
+    .rowFilter {
+        text-align: center;
+    }
+
+    .filter {
+        position: relative;
+        display: inline-flex;
+        margin: 0 20px;
+        padding: 0 1px;
         align-items: flex-start;
         justify-content: center;
+        text-align: left;
+        border: 1px solid #ccc;
+        background-color: #fff;
+    }
+    .inactive {
+        &, * {
+            cursor: default;
+            user-select: none;
+            pointer-events: none;
+            color: @gray-light;
+        }
 
-		> .ftitle, > .fopen {
-			float: left;
-			width: 20px;
-			padding: 2px 4px 1px 3px;
-			line-height: 19px;
-			text-align: center;
-			vertical-align: top;
-			cursor: pointer;
-			border-width: 1px 0 1px 1px;
-			border-color: @input-group-addon-border-color;
-			border-style: solid;
-			background-color: @input-group-addon-bg;
-			.user-select(none);
+        .fVars .yearsSet > .years, .fVars .ccountSet {
+            font-weight: normal;
+            color: @gray-light;
+        }
 
-			&:hover {
-				color: @gray-darker;
-			}
-		}
-		> .ftitle {
-			color: #008805;
-		}
+        input[type="checkbox"] {
+            opacity: .7;
+        }
 
-		> .fvals {
-			position: relative;
-			display: table;
-            margin-right: 20px;
-			border: 1px solid #ccc;
-			background-color: #fff;
-
-			.frow {
-				margin-top: 1px;
-			}
-			> .others {
-                > .row {
-                    margin-top: 1px;
+        .region.candis {
+            &:hover {
+                &::after {
+                    color: #d76c66;
                 }
-			}
+            }
+        }
+    }
 
-            .years, .ccount {
-                display: inline-block;
-                width: 50px;
-                height: 21px;
+    .fToggle, .fExpand {
+        position: absolute;
+        top: -1px;
+        width: 20px;
+        color: @MainLigthColor;
+        line-height: 19px;
+        text-align: center;
+        vertical-align: top;
+        cursor: pointer;
+        border: 1px solid @input-group-addon-border-color;
+        background-color: @input-group-addon-bg;
+        .user-select(none);
+
+        &:hover {
+            color: @gray-darker;
+        }
+    }
+    .fToggle {
+        left: -21px;
+        color: #008805;
+        padding: 2px 4px 1px 3px;
+        border-right-width: 0;
+    }
+    .fToggleInactive {
+        color: #AA4A4A;
+    }
+    .fExpand {
+        right: -21px;
+        padding: 2px 3px 1px 4px;
+        border-left-width: 0;
+    }
+
+    .fCol {
+        flex: 1 1 auto;
+
+        &:not(:last-child) {
+            margin-right: 10px;
+        }
+    }
+
+    .fRow {
+        display: flex;
+        margin: 1px 0;
+        padding-left: 5px;
+    }
+
+    .fName {
+        flex: 0 1 94px;
+        min-width: 94px;
+        margin: 0 5px 0 -5px;
+        padding: 0 5px;
+        cursor: default;
+        border-color: #EEE;
+        border-style: solid;
+        border-width: 0 1px 0 0;
+        background-color: #F5F5F5;
+    }
+
+    .fNameRegion {
+        flex-basis: 65px;
+        min-width: 65px;
+        margin-right: 0;
+    }
+
+    .fVars {
+        flex: 0 1 100%;
+        min-width: 219px;
+        max-width: 450px;
+        padding: 0 3px;
+
+        &.fVars-inactive {
+            color: dimgray;
+        }
+
+        > label.checkbox-inline {
+            min-width: 100px;
+            margin-left: 0;
+            margin-right: 10px;
+            padding-left: 17px;
+            line-height: 20px;
+            vertical-align: baseline;
+
+            > input[type="checkbox"] {
+                margin-left: -17px;
+            }
+        }
+
+        .years, .ccount {
+            display: inline-block;
+            width: 50px;
+            height: 21px;
+            text-align: center;
+        }
+
+        &.yearsSet > .years, .ccountSet {
+            font-weight: bold;
+            color: @MainBlueColor;
+        }
+
+        .resetYears {
+            display: inline-block;
+            padding: 0 3px;
+            cursor: pointer;
+
+            &:hover {
+                color: #251519;
+            }
+        }
+
+        &:not(.yearsSet) > .resetYears {
+            visibility: hidden;
+            pointer-events: none;
+        }
+    }
+
+    .fRegion {
+        position: relative;
+        display: inline-block;
+        min-width: 46px;
+        margin: 0 3px 1px 0;
+        padding: 0 4px;
+        font-weight: bold;
+        line-height: 20px;
+        text-align: center;
+        cursor: default;
+        background-color: #E4E4E4;
+
+        &.candis {
+            cursor: pointer;
+
+            > .rtgl {
+                position: absolute;
+                display: none;
+                top: 0;
+                width: 23px;
                 text-align: center;
-            }
-            .yearsSet > .years, .ccountSet {
-                font-weight: bold;
-                color: @MainBlueColor;
-            }
+                line-height: 18px;
+                font-size: 14px;
+                border-width: 1px;
+                border-style: solid;
+                background-color: rgba(228, 228, 235, 0.94);
+                .user-select(none);
 
-            .resetYears {
-                display: inline-block;
-                padding: 0 3px;
-                cursor: pointer;
+                &.edit {
+                    right: 46px;
+                    border-color: rgba(0, 96, 195, 0.3);
+
+                    > a {
+                        display: block;
+                        color: #4188b3;
+                    }
+
+                    &:hover > a {
+                        color: #58b4ee;
+                    }
+                }
+                &.only {
+                    right: 23px;
+                    color: #2A9C1A;
+                    border-color: rgba(4, 233, 11, 0.30);
+
+                    &:hover {
+                        color: #31b71e;
+                    }
+                }
+                &.dis {
+                    right: 0;
+                    color: #D19D0D;
+                    border-color: rgba(233, 157, 10, .3);
+
+                    &:hover {
+                        color: #f7a900;
+                    }
+                }
 
                 &:hover {
-                    color: #251519;
+                    text-shadow: 1px 1px 1px #222, -1px 1px 1px #999;
                 }
             }
-		}
 
-		&.inactive {
-			> .ftitle {
-				color: #AA4A4A;
-			}
-			> .fvals {
-				color: @gray-light;
-			}
+            &:hover {
+                > .rtgl {
+                    display: block;
+                }
+            }
+        }
 
-			input[type="checkbox"] {
-				opacity: .7;
-			}
+        &.dis {
+            color: #D1D1D1;
+            background-color: #f1f1f1;
 
-			.region.candis {
-				&:hover {
-					&::after {
-						color: #d76c66;
-					}
-				}
-			}
-		}
+            &.candis > .rtgl.dis {
+                color: #4f9c41;
+                border-color: rgba(4, 233, 11, 0.30);
 
-		.filterName {
-			display: table-cell;
-			min-width: 94px;
-			padding-left: 5px;
-			vertical-align: middle;
-			cursor: default;
-			border-color: #EEE;
-			border-style: solid;
-			border-width: 0 1px 0 0;
-			background-color: #F5F5F5;
-		}
-		.filterVars {
-			display: table-cell;
-            min-width: 219px;
-			padding: 0 3px;
-
-			> label.checkbox-inline {
-			  	min-width: 92px;
-				margin-left: 0;
-				margin-right: 10px;
-				padding-left: 17px;
-				line-height: 20px;
-				vertical-align: baseline;
-
-				> input[type="checkbox"] {
-					margin-left: -17px;
-				}
-			}
-		}
-
-		.region {
-			position: relative;
-			display: inline-block;
-			min-width: 46px;
-			margin: 1px 3px 1px 0;
-			padding: 0 4px;
-			font-weight: bold;
-			line-height: 20px;
-			text-align: center;
-			cursor: default;
-			background-color: #E4E4E4;
-
-			&.candis {
-				cursor: pointer;
-
-				> .rtgl {
-					position: absolute;
-					display: none;
-					top: 0;
-					width: 23px;
-					text-align: center;
-					line-height: 18px;
-					font-size: 14px;
-					border-width: 1px;
-					border-style: solid;
-					background-color: rgba(228, 228, 235, 0.94);
-					.user-select(none);
-
-					&.edit {
-						right: 46px;
-						border-color: rgba(0, 96, 195, 0.3);
-
-                        > a {
-                            display: block;
-                            color: #4188b3;
-                        }
-
-						&:hover > a {
-							color: #58b4ee;
-						}
-					}
-					&.only {
-						right: 23px;
-						color: #2A9C1A;
-						border-color: rgba(4, 233, 11, 0.30);
-
-						&:hover {
-							color: #31b71e;
-						}
-					}
-					&.dis {
-						right: 0;
-						color: #D19D0D;
-						border-color: rgba(233, 157, 10, .3);
-
-						&:hover {
-							color: #f7a900;
-						}
-					}
-
-					&:hover {
-						text-shadow: 1px 1px 1px #222, -1px 1px 1px #999;
-					}
-				}
-
-				&:hover {
-					> .rtgl {
-						display: block;
-					}
-				}
-			}
-
-			&.dis {
-				color: #D1D1D1;
-				background-color: #f1f1f1;
-
-				&.candis > .rtgl.dis {
-					color: #4f9c41;
-					border-color: rgba(4, 233, 11, 0.30);
-
-					&:hover {
-						color: #31b71e;
-					}
-				}
-			}
-		}
-	}
+                &:hover {
+                    color: #31b71e;
+                }
+            }
+        }
+    }
 
 	.switch {
 		text-align: right;
@@ -413,6 +452,11 @@
 
 @media (max-width: 899px) {
 	.gallery {
+        // Make filter in one column
+        .filter {
+            display: inline-block;
+        }
+
 		.photoPreview {
 			font-size: @font-size-mini;
 			padding-bottom: @PhotoInfoHeight - 7;

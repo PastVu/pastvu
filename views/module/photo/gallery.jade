@@ -4,21 +4,25 @@
         .row.rowoffset: .col-xs-12: .pageHeader(data-bind="css: {loading: !feed() && loading()}, text: topTitle()")
         // /ko
 
-        .row.rowoffset(style="margin-top:2px;"): .col-xs-12(data-bind="css: {invisible: !loadedFirst()}")
-            .filter(data-bind="css: {inactive: !filter.active()}")
-                .ftitle(data-bind="attr: {title: 'Фильтр. ' + (filter.active() ? 'Выключить' : 'Включить')}, click: function () {filter.active(!filter.active())}")
+        .row.rowoffset.rowFilter(style="margin-top:2px;", data-bind="css: {invisible: !loadedFirst()}")
+            .filter
+                .fToggle.tltp-wrap(data-bind="click: function () {filter.active(!filter.active())}, css: {fToggleInactive: !filter.active()}")
                     span.glyphicon.glyphicon-filter
-                .fvals
-                    .regions
-                        .filterName Регионы:
-                        .filterVars
+                    .tltp.tltp-bottom.tltp-animate-move(data-bind="text: (filter.active() ? 'Выключить' : 'Включить') + ' фильтр'")
+                //.fExpand.tltp-wrap(data-bind="click: function () {filter.active(!filter.active())}")
+                //    span.glyphicon.glyphicon-chevron-up
+                //    .tltp.tltp-bottom.tltp-animate-move(data-bind="text: (filter.active() ? 'Свернуть' : 'Развернуть') + ' фильтр'")
+                .fCol(data-bind="css: {inactive: !filter.active()}")
+                    .fRow
+                        .fName.fNameRegion Регионы:
+                        .fVars
                             //ko if: !filter.disp.r().length
-                            span.region
+                            span.fRegion
                                 span.glyphicon.glyphicon-globe
                                 |  Весь мир
                             // /ko
                             //ko foreach: filter.disp.r
-                            span.region.candis(data-bind="css: {dis: $parent._.includes($parent.filter.disp.rdis(), $data.cid)}")
+                            span.fRegion.candis(data-bind="css: {dis: $parent._.includes($parent.filter.disp.rdis(), $data.cid)}")
                                 span(data-bind="text: $data.title_local")
                                 //ko if: $parent.filter.admin()
                                 .rtgl.edit(title="Перейти в редактирование региона")
@@ -30,76 +34,95 @@
                                 .rtgl.dis(title="Переключить активность этого региона", data-bind="click: function() {$parent.frdis($data.cid);}")
                                     span.glyphicon.glyphicon-off
                             // /ko
-                            span.regionEdit(data-bind="click: regionSelect")
+                            span.regionEdit(data-bind="click: regionSelect", style="padding-top:1px;")
                                 span.glyphicon.glyphicon-pencil
                                 | Изменить
-                    .row.others
-                        .row
-                            .filterName Тип:
-                            .filterVars
-                                label.checkbox-inline
-                                    input(type="checkbox", value="1", data-bind="checked: filter.disp.t, click: ftclick")
-                                    span Фотография
-                                label.checkbox-inline
-                                    input(type="checkbox", value="2", data-bind="checked: filter.disp.t, click: ftclick")
-                                    span Картина/Рисунок
-                            .filterName Годы:
-                            .filterVars(data-bind="css: {yearsSet:Number(filter.disp.year()) > yearsRange().min || Number(filter.disp.year2()) < yearsRange().max}")
-                                input.form-control.years(type="text", data-bind="value: filter.disp.year, valueUpdate: 'keyup', event: {keydown: yearArrow}", maxlength="4")
-                                = ' – '
-                                input.form-control.years(type="text", data-bind="value: filter.disp.year2, valueUpdate: 'keyup', event: {keydown: year2Arrow}", maxlength="4")
-                                = ' '
-                                .tltp-wrap.resetYears(data-bind="click: yearsReset")
-                                    span.glyphicon.glyphicon-remove-circle(style="top:3px")
-                                    .tltp.tltp-right.tltp-animate-move(style="white-space:nowrap") Сбросить диапазон лет
-                        .row
-                            .filterName Координаты:
-                            .filterVars(style="padding-right:26px;")
-                                label.checkbox-inline
-                                    input(type="checkbox", value="0", data-bind="checked: filter.disp.geo, click: fgeoclk")
-                                    span.tltp-wrap
-                                        | Нет
-                                        .tltp.tltp-right.tltp-animate-move(style="white-space:nowrap") Раздел "Где это?"
-                                label.checkbox-inline
-                                    input(type="checkbox", value="1", data-bind="checked: filter.disp.geo, click: fgeoclk")
-                                    span Установлены
-                            //ko if: filter.disp.r().length
-                            .filterName Подрегионы:
-                            .filterVars
-                                label.checkbox-inline(style="min-width:54px;")
-                                    input(type="checkbox", value="0", data-bind="checked: filter.disp.rs, click: frsclick")
-                                    span Нет
-                                label.checkbox-inline
-                                    input(type="checkbox", value="1", data-bind="checked: filter.disp.rs, click: frsclick")
-                                    span Есть
+                    .fRow(style="white-space:nowrap", data-bind="css: {inactive: !reIsPossible()}") Изображения привязаны также к подрегионам:
+                    .fRow: .fVars(style="max-width:550px;", data-bind="css: {inactive: !reIsPossible()}")
+                        label.checkbox-inline.tltp-wrap(data-bind="css: {inactive: !rsIsPossible()}", style="min-width:auto;")
+                            input(type="checkbox", value="0", data-bind="checked: filter.disp.rs, click: frsclick, attr: {disabled: !rsIsPossible()||!reIsPossible()}")
+                            span Нет
+                            .tltp.tltp-bottom.tltp-animate-move(style="white-space:nowrap")
+                                | Изображения которые привязаны только
+                                br
+                                | непосредственно к выбранным регионам
+                        label.checkbox-inline.tltp-wrap(data-bind="css: {inactive: !rsIsPossible()}", style="min-width:auto;margin-right:5px;")
+                            input(type="checkbox", value="1", data-bind="checked: reIsPossible() && filter.disp.rs, click: frsclick, attr: {disabled: !rsIsPossible()||!reIsPossible()}")
+                            span Да
+                            .tltp.tltp-bottom.tltp-animate-move(style="white-space:nowrap")
+                                | Изображения которые также привязаны
+                                br
+                                | к потомкам выбранных регионов
+                        div(data-bind="css: {inactive: !reIsActive()}", style="display:inline-block;")
+                            = " кроме: "
+                            //ko foreach: filter.disp.re
+                            span.fRegion.candis
+                                span(data-bind="text: $data.title_local")
+                                //ko if: $parent.filter.admin()
+                                .rtgl.edit(title="Перейти в редактирование региона")
+                                    a(data-bind="attr: {href: '/admin/region/' + $data.cid}")
+                                        span.glyphicon.glyphicon-pencil
+                                // /ko
                             // /ko
-                        .row
-                            .filterName Комментарии:
-                            .filterVars
-                                label.checkbox-inline
-                                    input(type="checkbox", value="0", data-bind="checked: filter.disp.c, click: fcclick")
-                                    span Нет
-                                div(style="display:inline-block;")
-                                    label.checkbox-inline(style="margin-right:0;min-width:auto;")
-                                        input(type="checkbox", value="1", data-bind="checked: filter.disp.c, click: fcclick")
-                                        = 'Есть от'
-                                    = ' '
-                                    input.form-control.ccount(type="text", data-bind="value: filter.disp.ccount, valueUpdate: 'keyup', event: {keydown: ccountArrow}, attr: {disabled:filter.disp.c.indexOf('1')<0}, css: {ccountSet: filter.disp.ccount()>1 && filter.disp.c.indexOf('1')>=0}", maxlength="4")
-                        .row.svars
-                            .filterName Статусы:
-                            .filterVars
-                                //ko if: filter.can.s()
-                                //ko foreach: filter.available.s
-                                label.checkbox-inline.s
-                                    input(type="checkbox", data-bind="attr: {value: s}, checked: $parent.filter.disp.s")
-                                    span(data-bind="text: title")
-                                // /ko
-                                // /ko
-                                //ko if: !auth.loggedIn()
-                                span(data-bind="click: function(data, evt){auth.show('login')}", style="cursor:pointer" title="Кликните, чтобы войти или зарегистрироваться")
-                                    span.glyphicon.glyphicon-log-in
-                                    |   Войдите, чтобы видеть больше
-                                // /ko
+                            span.regionEdit(data-bind="click: regionExcludeSelect")
+                                span.glyphicon.glyphicon-pencil
+                                span(data-bind="text: filter.disp.re().length ? 'Изменить' : 'Выбрать'")
+                    .fRow(style="white-space:nowrap") Изображение имеет координату:
+                    .fRow: .fVars(style="max-width:550px;")
+                        label.checkbox-inline.tltp-wrap(style="min-width:auto;")
+                            input(type="checkbox", value="0", data-bind="checked: filter.disp.geo, click: fgeoclk")
+                            span Нет
+                            .tltp.tltp-right.tltp-animate-move(style="white-space:nowrap") Раздел "Где это?"
+                        label.checkbox-inline(style="min-width:auto;")
+                            input(type="checkbox", value="1", data-bind="checked: filter.disp.geo, click: fgeoclk")
+                            span Да
+                .fCol(data-bind="css: {inactive: !filter.active()}")
+                    .fRow
+                        .fName Годы:
+                        .fVars(data-bind="css: {yearsSet:Number(filter.disp.year()) > yearsRange().min || Number(filter.disp.year2()) < yearsRange().max}")
+                            input.form-control.years(type="text", data-bind="value: filter.disp.year, valueUpdate: 'keyup', event: {keydown: yearArrow}", maxlength="4")
+                            = ' – '
+                            input.form-control.years(type="text", data-bind="value: filter.disp.year2, valueUpdate: 'keyup', event: {keydown: year2Arrow}", maxlength="4")
+                            = ' '
+                            .tltp-wrap.resetYears(data-bind="click: yearsReset")
+                                span.glyphicon.glyphicon-remove-circle(style="top:3px")
+                                .tltp.tltp-right.tltp-animate-move(style="white-space:nowrap") Сбросить диапазон лет
+                    .fRow
+                        .fName Тип:
+                        .fVars
+                            label.checkbox-inline
+                                input(type="checkbox", value="1", data-bind="checked: filter.disp.t, click: ftclick")
+                                span Фотография
+                            label.checkbox-inline
+                                input(type="checkbox", value="2", data-bind="checked: filter.disp.t, click: ftclick")
+                                span Картина/Рисунок
+                    .fRow
+                        .fName Комментарии:
+                        .fVars
+                            label.checkbox-inline
+                                input(type="checkbox", value="0", data-bind="checked: filter.disp.c, click: fcclick")
+                                span Нет
+                            div(style="display:inline-block;")
+                                label.checkbox-inline(style="margin-right:0;min-width:auto;")
+                                    input(type="checkbox", value="1", data-bind="checked: filter.disp.c, click: fcclick")
+                                    = 'Есть от'
+                                = ' '
+                                input.form-control.ccount(type="text", data-bind="value: filter.disp.ccount, valueUpdate: 'keyup', event: {keydown: ccountArrow}, attr: {disabled:filter.disp.c.indexOf('1')<0}, css: {ccountSet: filter.disp.ccount()>1 && filter.disp.c.indexOf('1')>=0}", maxlength="4")
+                    .fRow.svars
+                        .fName Статусы:
+                        .fVars
+                            //ko if: filter.can.s()
+                            //ko foreach: filter.available.s
+                            label.checkbox-inline.s
+                                input(type="checkbox", data-bind="attr: {value: s}, checked: $parent.filter.disp.s")
+                                span(data-bind="text: title")
+                            // /ko
+                            // /ko
+                            //ko if: !auth.loggedIn()
+                            span(data-bind="click: function(data, evt){auth.show('login')}", style="cursor:pointer" title="Кликните, чтобы войти или зарегистрироваться")
+                                span.glyphicon.glyphicon-log-in
+                                |   Войдите, чтобы видеть больше
+                            // /ko
 
         .row.rowoffset
             .col-xs-12.col-sm-7.col-lg-4(data-bind="css: {invisible: !loadedFirst()}")

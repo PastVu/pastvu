@@ -1,5 +1,5 @@
 /**
- * Модель создания/редактирования новости
+ * Модель выбора регионов
  */
 define([
     'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
@@ -8,26 +8,35 @@ define([
     'use strict';
 
     var $window = $(window);
+    var cache = null;
 
     return Cliche.extend({
         jade: jade,
         options: {
             min: 1,
             max: 5,
-            selectedInit: []
+            selectedInit: [],
+            topCidsFilter: [],
+            neverSelectable: []
         },
         create: function () {
             this.auth = globalVM.repository['m/common/auth'];
-            this.loading = ko.observable(true);
+            this.loading = ko.observable(!cache);
 
             this.isSticked = false;
+
+            this.topCidsFilter = this.options.topCidsFilter;
+            this.neverSelectable = this.options.neverSelectable.reduce(function (hash, cid) {
+                hash[cid] = true;
+                return hash;
+            }, Object.create(null));
 
             this.selectedInit = this.options.selectedInit;
             this.selectedInitHash = {};
             this.selectedInitTkns = [];
             if (this.selectedInit && this.selectedInit.length) {
                 this.selectedInit.forEach(function (region) {
-                    this.selectedInitHash[region.title_local] = region;
+                    this.selectedInitHash[region.cid] = region;
                     this.selectedInitTkns.push({ value: region.title_local, label: region.title_local });
                 }, this);
             }
@@ -35,13 +44,25 @@ define([
             this.regionsTree = ko.observableArray();
             this.regionsFlat = [];
             this.regionsTypehead = [];
-            this.regionsHashByCid = null;
+            this.regionsHashByCid = {};
             this.regionsHashByTitle = {};
 
-            ko.applyBindings(globalVM, this.$dom[0]);
-            this.show();
+            this.clickNode = this.clickNode.bind(this);
 
-            this.getRegions(function () {
+            if (!cache) {
+                // If there is no cached data, show modal to see loading indicator
+                this.show();
+            }
+
+            this.getRegions(function (data) {
+                this.regionsTree(this.treeBuild(data.regions));
+                this.regionsFlat = data.regions;
+
+                if (!this.showing) {
+                    // If data has been cached, show modal after data was prepared (no need to show loading)
+                    this.show();
+                }
+
                 // Создавать токены должны после отображения, чтобы появился скроллинг и правильно посчиталась ширина инпута для typehead
                 setTimeout(function () {
                     this.loading(false);
@@ -49,10 +70,12 @@ define([
 
                     this.subscriptions.sizes = P.window.square.subscribe(this.sizeHandler, this);
                     this.affixInputOn();
-                }.bind(this), 100);
+                }.bind(this), 25);
             }, this);
         },
         show: function () {
+            ko.applyBindings(globalVM, this.$dom[0]);
+
             globalVM.func.showContainer(this.$container);
             if (this.modal) {
                 this.modal.$curtain.addClass('showModalCurtain');
@@ -61,6 +84,7 @@ define([
         },
         hide: function () {
             this.affixInputOff();
+            this.$dom.find('.regionstkn').tokenfield('destroy');
             globalVM.func.hideContainer(this.$container);
             this.showing = false;
         },
@@ -129,16 +153,25 @@ define([
             delete this.topShadowBacking;
         },
         getRegions: function (cb, ctx) {
-            socket.run('region.giveListPublic', undefined, true)
-                .then(function (data) {
+            if (cache) {
+                cb.call(ctx, cache);
+            } else {
+                socket.run('region.giveListPublic', undefined, true)
+                    .then(function (data) {
+                        //Сортируем массив по уровням и названиям в пределах одного уровня
+                        data.regions.sort(function (a, b) {
+                            return a.parents.length < b.parents.length ||
+                                   a.parents.length === b.parents.length && a.title_local < b.title_local ? -1 : 1;
+                        });
 
-                    this.regionsTree(this.treeBuild(data.regions));
-                    this.regionsFlat = data.regions;
-
-                    if (Utils.isType('function', cb)) {
+                        cache = data;
                         cb.call(ctx, data);
-                    }
-                }.bind(this));
+
+                        setTimeout(function () {
+                            cache = null;
+                        }, 60000);
+                    });
+            }
         },
         //Возвращает массив выбранных регионов с переданными полями
         getSelectedRegions: function (fields) {
@@ -148,7 +181,7 @@ define([
 
             tokens.forEach(function (item) {
                 var region = this.regionsHashByTitle[item.value];
-                if (region) {
+                if (region && region.exists) {
                     result.push(fields ? _.pick(region, fields) : region);
                 }
             }, this);
@@ -163,14 +196,14 @@ define([
             tokens.forEach(function (item) {
                 var region = this.regionsHashByTitle[item.value];
 
-                if (region) {
+                if (region && region.exists) {
                     var result = [];
 
                     //Если есть родительские, то вставляем и их
                     if (region.parents && region.parents.length) {
                         region.parents.forEach(function (cid) {
                             var region = this.regionsHashByCid[cid];
-                            if (region) {
+                            if (region && region.exists) {
                                 result.push(fields ? _.pick(region, fields) : region);
                             }
                         }, this);
@@ -193,7 +226,7 @@ define([
                     typeahead: {
                         name: 'regions',
                         valueKey: 'title',
-                        limit: 7,
+                        limit: 10,
                         local: this.regionsTypehead/*[{title: 'США', tokens: ['USA', 'США', 'Соединенные Штаты Америки']}]*/
                     }
                 })
@@ -206,7 +239,7 @@ define([
             var title = e.token.value;
             var region = this.regionsHashByTitle[title];
 
-            if (region) {
+            if (region && region.exists) {
                 //Если регион уже выбран, значит, мы создаем токен вручную после клика по узлу дерева
                 //или пересоздаем после удаления одного из токенов и ничего делать не надо
                 if (!region.selected()) {
@@ -225,7 +258,7 @@ define([
             var title = e.token.value;
             var region = this.regionsHashByTitle[title];
 
-            if (region) {
+            if (region && region.exists) {
                 region.selected(false);
                 this.toggleBranchSelectable(region, true);
             }
@@ -245,6 +278,9 @@ define([
         },
 
         selectRegion: function (region) {
+            if (this.neverSelectable[region.cid] !== undefined) {
+                return false;
+            }
             if (this.checkBranchSelected(region)) {
                 noties.alert({
                     message: 'Нельзя одновременно выбирать родительский и дочерний регионы',
@@ -259,8 +295,11 @@ define([
             return true;
         },
         //Клик по узлу дерева
-        clickNode: function (title) {
-            var region = this.regionsHashByTitle[title];
+        clickNode: function (region) {
+            if (!region.selectable()) {
+                return;
+            }
+            var title = region.title_local;
             var add = !region.selected();
             var tkn = this.$dom.find('.regionstkn');
 
@@ -295,10 +334,11 @@ define([
         },
         //Ставит selectable всем в ветке, в которой находится переданный регион
         toggleBranchSelectable: function (region, selectable) {
+            var neverSelectable = this.neverSelectable;
             return uprecursive(region.parent) || downrecursive(region.regions);
 
             function uprecursive(region) {
-                if (region) {
+                if (region && neverSelectable[region.cid] === undefined) {
                     region.selectable(selectable);
                     uprecursive(region.parent);
                 }
@@ -307,7 +347,9 @@ define([
             function downrecursive(regions) {
                 if (regions && regions.length) {
                     for (var i = regions.length; i--;) {
-                        regions[i].selectable(selectable);
+                        if (neverSelectable[regions[i].cid] === undefined) {
+                            regions[i].selectable(selectable);
+                        }
                         downrecursive(regions[i].regions);
                     }
                 }
@@ -315,65 +357,94 @@ define([
         },
 
         treeBuild: function (arr) {
-            var firstCountryCid = this.auth.loggedIn() && (this.auth.iAm.regionHome.parents()[0] || this.auth.iAm.regionHome.cid());
-            var hash = {};
+            var firstCountryCid = this.auth.loggedIn() && (this.auth.iAm.regionHome.parents()[0] || this.auth.iAm.regionHome.cid()) || null;
+            var filterByCids = Boolean(this.topCidsFilter.length);
+            var parentsCidsFilterHash = this.topCidsFilter.reduce(function (hash, cid) {
+                hash[cid] = true;
+                return hash;
+            }, {});
+
+            var cid;
             var region;
             var selected;
+            var selectable;
+            var hash = {};
             var selectedRegions = [];
             var result = [];
 
-            //Сортируем массив по уровням и названиям в пределах одного уровня
-            arr.sort(function (a, b) {
-                return a.parents.length < b.parents.length || a.parents.length === b.parents.length && a.title_local < b.title_local ? -1 : 1;
-            });
-
-            function incrementParentsChildLen(region, deepestLevel) {
+            function openRegionParents(region) {
                 var parentRegion = region.parent;
-                var parentChildsArrPosition = deepestLevel - parentRegion.level - 1;
 
-                //Если открыт дочерний, надо открыть и родителя
-                if (region.opened()) {
+                if (parentRegion) {
                     parentRegion.opened(true);
-                }
-                parentRegion.childLenAll += 1;
-                parentRegion.childLenArr[parentChildsArrPosition] = -~parentRegion.childLenArr[parentChildsArrPosition];
-                if (parentRegion.parent) {
-                    incrementParentsChildLen(parentRegion, deepestLevel);
+                    openRegionParents(parentRegion);
                 }
             }
 
             for (var i = 0, len = arr.length; i < len; i++) {
                 region = arr[i];
-                region.regions = [];
                 region.level = region.parents.length;
-                region.childLen = 0; //Количество непосредственных потомков
-                region.childLenAll = 0; //Количество всех потомков
-                region.childLenArr = [0]; //Массив количеств потомков
 
-                selected = this.selectedInitHash[region.title_local] !== undefined;
-                region.selectable = ko.observable(true);
+                // Due to some bug in tokenfield/typehead we have typehead list created only once and never removed,
+                // so track region existence
+                region.exists = false;
+                this.regionsTypehead.push({
+                    title: region.title_local,
+                    tokens: [String(cid), region.title_local, region.title_en]
+                });
+                this.regionsHashByTitle[region.title_local] = region;
+
+                if (region.level) {
+                    region.parent = hash[region.parents[region.level - 1]];
+                }
+
+                cid = region.cid;
+
+                var proceed = !filterByCids || parentsCidsFilterHash[cid] === true ||
+                    region.level > 0 && parentsCidsFilterHash[region.parents[region.level - 1]] === true;
+
+                if (!proceed) {
+                    continue;
+                }
+
+                region.exists = true;
+                region.regions = [];
+
+                selectable = this.neverSelectable[cid] === undefined;
+                selected = this.selectedInitHash[cid] !== undefined;
+                region.selectable = ko.observable(selectable);
                 region.selected = ko.observable(selected);
                 region.opened = ko.observable(selected);
+
                 if (selected) {
+                    openRegionParents(region);
                     selectedRegions.push(region);
                 }
 
                 if (region.level) {
-                    region.parent = hash[region.parents[region.level - 1]];
-                    region.parent.regions.push(region);
-                    region.parent.childLen += 1;
-                    incrementParentsChildLen(region, region.level);
-                } else {
-                    if (firstCountryCid && firstCountryCid === region.cid) {
-                        result.unshift(region);
+                    // Parent can be absent, if tree is not full (topCidsFilter)
+                    if (region.parent) {
+                        region.parent.regions.push(region);
                     } else {
                         result.push(region);
                     }
+                } else if (cid === firstCountryCid) {
+                    result.unshift(region);
+                } else {
+                    result.push(region);
                 }
 
-                hash[region.cid] = region;
-                this.regionsTypehead.push({ title: region.title_local, tokens: [region.title_local, region.title_en] });
-                this.regionsHashByTitle[region.title_local] = region;
+                region.collapseToggle = this.collapseToggle;
+                region.clickNode = this.clickNode;
+
+                hash[cid] = region;
+                if (filterByCids) {
+                    parentsCidsFilterHash[cid] = true;
+                }
+            }
+
+            if (result.length === 1) {
+                result[0].opened(true);
             }
 
             //У изначально выбранных регионов делаем невыбираемыми другие регионы этой ветки
@@ -396,7 +467,7 @@ define([
         nodeToggle: function (region, expandSelf, cascadeExpand, cascadeDir) {
             var nextRegions;
 
-            if (region) {
+            if (region && region.exists) {
                 region.opened(typeof expandSelf === 'boolean' ? expandSelf : (typeof cascadeExpand === 'boolean' ? cascadeExpand : !region.opened()));
             } else if (cascadeDir) {
                 region = { regions: this.regionsTree() };
