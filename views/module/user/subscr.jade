@@ -8,7 +8,7 @@
     // /ko
     ul.nav.nav-tabs
         li(data-bind="css: {active: type() === 'photo'}")
-            a(data-bind="attr: {href: pageUrl()}, text: 'Фотографии [' + $root.intl.num(types['photo_persist']()) + ']'")
+            a(data-bind="attr: {href: pageUrl()}, text: 'Изображения [' + $root.intl.num(types['photo_persist']()) + ']'")
         li(data-bind="css: {active: type() === 'news'}")
             a(data-bind="attr: {href: pageUrl() + '?type=news'}, text: 'Новости [' + $root.intl.num(types['news_persist']()) + ']'")
     .navContent
