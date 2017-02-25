@@ -72,6 +72,7 @@ define([
                     rdis: ko.observableArray(), // Array of cids of inactive regions
                     rs: ko.observableArray(), // Enable/disable subregions
                     re: ko.observableArray(), // Array of cids of excluded regions
+                    redis: ko.observableArray(), // Array of cids of inactive excluded regions, because of inactive parents
                     geo: ko.observableArray(),
                     year: ko.observable(this.year),
                     year2: ko.observable(this.year2)
@@ -208,8 +209,8 @@ define([
             // Subscriptions
             this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandlerDebounced, this);
             this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
-            this.subscriptions.filter_disp_r = this.filter.disp.r.subscribe(this.filterChangeHandle, this);
-            this.subscriptions.filter_disp_rdis = this.filter.disp.rdis.subscribe(this.filterChangeHandle, this);
+            this.subscriptions.filter_disp_r = this.filter.disp.r.subscribe(this.filterRHandle, this);
+            this.subscriptions.filter_disp_rdis = this.filter.disp.rdis.subscribe(this.filterRdisHandle, this);
             this.subscriptions.filter_disp_s = this.filter.disp.s.subscribe(this.filterSHandle, this);
             this.subscriptions.filter_disp_y = this.filter.disp.year.subscribe(_.debounce(this.yearHandle, 800), this);
             this.subscriptions.filter_disp_y2 = this.filter.disp.year2.subscribe(_.debounce(this.year2Handle, 800), this);
@@ -375,7 +376,7 @@ define([
                 var rhash = _.transform(r, function (result, region) {
                     result[region.cid] = region;
                 }, {});
-                var rp = _.sortBy(this.filter.disp.rdis().map(Number).filter(function (cid) {
+                var rp = _.sortBy(this.filter.disp.rdis().filter(function (cid) {
                     return rhash.hasOwnProperty(cid);
                 }));
 
@@ -493,6 +494,59 @@ define([
                 this.updateFilterUrl(newFilter);
             }
         },
+        filterRHandle: function (val) {
+            var rhash = _.transform(val, function (hash, region) {
+                hash[region.cid] = region;
+            }, {});
+
+            // Check if we need to delete some excluded regions if some parent have been removed
+            var re = this.filter.disp.re();
+            if (re.length) {
+                var reNew = re.reduce(function (result, region) {
+                    if (region.parents && region.parents.some(function (cid) {return rhash[cid] !== undefined;})) {
+                        result.push(region);
+                    }
+                    return result;
+                }, []);
+
+                if (reNew.length !== re.length) {
+                    this.filter.disp.re(reNew);
+                }
+            }
+
+            // Check if we need to delete some rdis
+            var rdis = this.filter.disp.rdis();
+            if (rdis.length) {
+                var rdisNew = rdis.reduce(function (result, cid) {
+                    if (rhash[cid]) {
+                        result.push(cid);
+                    }
+                    return result;
+                }, []);
+
+                if (rdisNew.length !== rdis.length) {
+                    this.filter.disp.rdis(rdisNew);
+                }
+            }
+
+            this.filterChangeHandle();
+        },
+        filterRdisHandle: function (val) {
+            var re = this.filter.disp.re();
+
+            if (re.length) {
+                // Check if we need to change array of inactive excluded regions
+                var redisNew = re.reduce(function (result, region) {
+                    if (region.parents && region.parents.some(function (cid) {return val.includes(cid);})) {
+                        result.push(region.cid);
+                    }
+                    return result;
+                }, []);
+
+                this.filter.disp.redis(redisNew);
+            }
+
+        },
         filterSHandle: function (val) {
             if (_.isEmpty(val)) {
                 // If user removes last status checkbox, set public status as default
@@ -515,6 +569,7 @@ define([
                     }
                 });
                 this.filter.disp.rdis(diss);
+                this.filterChangeHandle();
             }
         },
         // Активирует/деактивирует в фильтре переданный регион
@@ -532,6 +587,7 @@ define([
                     } else {
                         this.filter.disp.rdis.push(cid);
                     }
+                    this.filterChangeHandle();
                 }
             }
         },
@@ -924,11 +980,19 @@ define([
                         var rEquals = this.filter.disp.r().length === data.filter.r.length &&
                             (!data.filter.r.length || _.isEqual(_.map(this.filter.disp.r(), 'cid'), _.map(data.filter.r, 'cid')));
 
+
+                        if (!data.filter.rs || !data.filter.rs.length) {
+                            data.filter.rs = ['0', '1'];
+                        }
+
+                        this.filter.disp.rs(data.filter.rs);
+                        this.filter.disp.re(data.filter.re || []);
+                        this.filter.disp.rdis(data.filter.rp || []);
+
                         if (!rEquals) {
                             this.filter.disp.r(data.filter.r || []);
                         }
 
-                        this.filter.disp.rdis(data.filter.rp || []);
                         this.filter.disp.s(data.filter.s ? data.filter.s.map(String) : [String(statuses.keys.PUBLIC)]);
 
                         if (!data.filter.t || !data.filter.t.length) {
@@ -937,15 +1001,10 @@ define([
                         if (!data.filter.geo || !data.filter.geo.length) {
                             data.filter.geo = ['0', '1'];
                         }
-                        if (!data.filter.rs || !data.filter.rs.length) {
-                            data.filter.rs = ['0', '1'];
-                        }
 
                         this.t = data.filter.t.map(String);
                         this.filter.disp.t(this.t.slice());
                         this.filter.disp.geo(data.filter.geo);
-                        this.filter.disp.rs(data.filter.rs);
-                        this.filter.disp.re(data.filter.re || []);
 
                         if (_.isEmpty(data.filter.y)) {
                             var yearsRange = this.getTypeYearsRange();
@@ -1238,9 +1297,8 @@ define([
             var r = this.filter.disp.r();
 
             if (r.length) {
-                var rdis = this.filter.disp.rdis();
                 topcids = r.reduce(function (result, region) {
-                    if (region.childLen && !_.includes(rdis, region.cid)) {
+                    if (region.childLen) {
                         result.push(region.cid);
                     }
                     return result;

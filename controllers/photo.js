@@ -2694,6 +2694,7 @@ export function buildPhotosQuery(filter, forUserId, iAm, random) {
             // If user switched off all selected regions, consider request as with all regions (r = 0)
             r = 0;
             rs = undefined;
+            regionExludeCids = undefined; // Consider that if user disabled all selected regions, he disbaled all excluded too
         }
     } else if (r === undefined && iAm.registered && iAm.user.regions.length && (!forUserId || !itsMineGallery)) {
         regionsHash = iAm.rhash;
