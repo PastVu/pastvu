@@ -1174,7 +1174,7 @@ define([
                             module: 'm/region/select',
                             options: {
                                 min: 0,
-                                max: 5,
+                                max: 10,
                                 selectedInit: this.filter.disp.r()
                             },
                             modal: {
@@ -1192,9 +1192,9 @@ define([
                                         click: function () {
                                             var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local', 'childLen']);
 
-                                            if (regions.length > 5) {
+                                            if (regions.length > 10) {
                                                 return noties.alert({
-                                                    message: 'Допускается выбирать до 5 регионов',
+                                                    message: 'Допускается выбирать до 10 регионов',
                                                     type: 'warning',
                                                     timeout: 4000,
                                                     ok: true
@@ -1257,7 +1257,7 @@ define([
                         module: 'm/region/select',
                         options: {
                             min: 0,
-                            max: 5,
+                            max: 10,
                             selectedInit: this.filter.disp.re(),
                             topCidsFilter: topcids,
                             neverSelectable: topcids
@@ -1277,9 +1277,9 @@ define([
                                     click: function () {
                                         var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']);
 
-                                        if (regions.length > 5) {
+                                        if (regions.length > 10) {
                                             return noties.alert({
-                                                message: 'Допускается выбирать до 5 регионов',
+                                                message: 'Допускается выбирать до 10 регионов',
                                                 type: 'warning',
                                                 timeout: 4000,
                                                 ok: true

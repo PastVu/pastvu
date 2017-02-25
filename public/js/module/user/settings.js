@@ -468,16 +468,16 @@ define([
         },
         regionFilterSelect: function () {
             if (!this.regselectVM) {
-                this.regionSelect(koMapping.toJS(this.u.regions), 0, 5, 'Изменение списка регионов для фильтрации по умолчанию',
+                this.regionSelect(koMapping.toJS(this.u.regions), 0, 10, 'Изменение списка регионов для фильтрации по умолчанию',
                     function (vm) {
                         this.regselectVM = vm;
                     },
                     function () {
                         var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']);
 
-                        if (regions.length > 5) {
+                        if (regions.length > 10) {
                             return noties.alert({
-                                message: 'Допускается выбирать до 5 регионов',
+                                message: 'Допускается выбирать до 10 регионов',
                                 type: 'warning',
                                 timeout: 4000,
                                 ok: true

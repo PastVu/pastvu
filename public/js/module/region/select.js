@@ -14,7 +14,7 @@ define([
         jade: jade,
         options: {
             min: 1,
-            max: 5,
+            max: 10,
             selectedInit: [],
             topCidsFilter: [],
             neverSelectable: []

@@ -1532,7 +1532,7 @@ export function parseFilter(filterString) {
                     result.r = 0;
                 } else {
                     filterVal = filterVal.split(delimeterVal).map(Number);
-                    if (Array.isArray(filterVal) && filterVal.length) {
+                    if (Array.isArray(filterVal) && filterVal.length && filterVal.length <= 10) {
                         result.r = [];
                         for (filterValItem of filterVal) {
                             if (filterValItem) {
@@ -1547,7 +1547,7 @@ export function parseFilter(filterString) {
             } else if (filterParam === 'rp') {
                 // Regions phantom. Inactive filter regions
                 filterVal = filterVal.split(delimeterVal).map(Number);
-                if (Array.isArray(filterVal) && filterVal.length) {
+                if (Array.isArray(filterVal) && filterVal.length && filterVal.length <= 10) {
                     result.rp = [];
                     for (filterValItem of filterVal) {
                         if (filterValItem) {
@@ -1565,7 +1565,7 @@ export function parseFilter(filterString) {
                 }
             } else if (filterParam === 're') {
                 filterVal = filterVal.split(delimeterVal).map(Number);
-                if (Array.isArray(filterVal) && filterVal.length) {
+                if (Array.isArray(filterVal) && filterVal.length && filterVal.length <= 10) {
                     result.re = [];
                     for (filterValItem of filterVal) {
                         if (filterValItem) {

@@ -1565,7 +1565,7 @@ async function saveUserRegions({ login, regions }) {
     if (!login || !Array.isArray(regions)) {
         throw new BadParamsError();
     }
-    if (regions.length > maxRegionLevel) {
+    if (regions.length > 10) {
         throw new BadParamsError(constantsError.REGION_SELECT_LIMIT);
     }
 
