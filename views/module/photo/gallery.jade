@@ -22,19 +22,36 @@
                                 |  Весь мир
                             // /ko
                             //ko foreach: filter.disp.r
-                            span.fRegion.candis(data-bind="css: {dis: $parent._.includes($parent.filter.disp.rdis(), $data.cid)}")
+                            span.fRegion.tltp-wrap(data-bind="css: {dis: $parent._.includes($parent.filter.disp.rdis(), $data.cid)}")
                                 span(data-bind="text: $data.title_local")
-                                //ko if: $parent.filter.admin()
-                                .rtgl.edit(title="Перейти в редактирование региона")
-                                    a(data-bind="attr: {href: '/admin/region/' + $data.cid}")
-                                        span.glyphicon.glyphicon-pencil
-                                // /ko
-                                .rtgl.only(title="Оставить активным только этот регион", data-bind="click: function() {$parent.fronly($data.cid);}")
-                                    span.glyphicon.glyphicon-ok
-                                .rtgl.dis(title="Переключить активность этого региона", data-bind="click: function() {$parent.frdis($data.cid);}")
-                                    span.glyphicon.glyphicon-off
+                                .tltp.tltp-top.tltp-touch.tltp-animate-opacity(style="white-space:nowrap")
+                                    //ko if: $parent.filter.admin()
+                                    .rtgl.edit(title="Перейти в редактирование региона")
+                                        a(data-bind="attr: {href: '/admin/region/' + $data.cid}")
+                                            span.glyphicon.glyphicon-pencil(style="vertical-align:text-top;")
+                                    // /ko
+                                    //ko if: $parent.filter.disp.r().length > 1
+                                    .rtgl.only(title="Оставить активным только этот регион", data-bind="click: function() {$parent.fronly($data.cid);}")
+                                        span.glyphicon.glyphicon-ok
+                                    // /ko
+                                    .rtgl.dis(title="Переключить активность этого региона", data-bind="click: function() {$parent.frdis($data.cid);}")
+                                        span.glyphicon.glyphicon-off(style="vertical-align:text-top;")
+                                    .rtgl.del(title="Удалить регион", data-bind="click: function() {$parent.frdel($data.cid);}")
+                                        span.glyphicon.glyphicon-remove(style="vertical-align:text-top;")
+                                    //ko if: $parent.filter.disp.r().length > 1
+                                    .rtgl.del(title="Удалить остальные регионы", data-bind="click: function() {$parent.frdelothers($data.cid);}")
+                                        span.glyphicon.glyphicon-remove-sign(style="vertical-align:text-top;")
+                                    // /ko
                             // /ko
-                            span.regionEdit(data-bind="click: regionSelect", style="padding-top:1px;")
+                            //ko if: filter.disp.r().length
+                            .rtgl.only(title="Активировать все регионы", data-bind="click: fronlyall")
+                                span.glyphicon.glyphicon-ok
+                            .rtgl.dis(title="Деактивировать все регионы", data-bind="click: frdisall")
+                                span.glyphicon.glyphicon-off(style="vertical-align:text-top;")
+                            .rtgl.del(title="Удалить все регионы", data-bind="click: frdelall")
+                                span.glyphicon.glyphicon-remove(style="vertical-align:text-top;")
+                            // /ko
+                            .rtgl.select(data-bind="click: regionSelect")
                                 span.glyphicon.glyphicon-pencil
                                 | Изменить
                     .fRow(style="white-space:nowrap", data-bind="css: {inactive: !reIsPossible()}") Изображения привязаны также к подрегионам:
@@ -56,17 +73,35 @@
                         div(data-bind="css: {inactive: !reIsActive()}", style="display:inline-block;")
                             = " кроме: "
                             //ko foreach: filter.disp.re
-                            span.fRegion.candis(data-bind="css: {dis: $parent._.includes($parent.filter.disp.redis(), $data.cid)}")
+                            span.fRegion.tltp-wrap(data-bind="css: {dis: $parent._.includes($parent.filter.disp.redis(), $data.cid)}")
                                 span(data-bind="text: $data.title_local")
-                                //ko if: $parent.filter.admin()
-                                .rtgl.edit(title="Перейти в редактирование региона")
-                                    a(data-bind="attr: {href: '/admin/region/' + $data.cid}")
-                                        span.glyphicon.glyphicon-pencil
-                                // /ko
+                                .tltp.tltp-top.tltp-touch.tltp-animate-opacity(style="white-space:nowrap")
+                                    //ko if: $parent.filter.admin()
+                                    .rtgl.edit(title="Перейти в редактирование региона")
+                                        a(data-bind="attr: {href: '/admin/region/' + $data.cid}")
+                                            span.glyphicon.glyphicon-pencil
+                                    // /ko
+                                    .rtgl.del(title="Удалить регион", data-bind="click: function() {$parent.fredel($data.cid);}")
+                                        span.glyphicon.glyphicon-remove(style="vertical-align:text-top;")
+                                    //ko if: $parent.filter.disp.r().length > 1
+                                    .rtgl.del(title="Удалить остальные регионы", data-bind="click: function() {$parent.fredelothers($data.cid);}")
+                                        span.glyphicon.glyphicon-remove-sign(style="vertical-align:text-top;")
+                                    // /ko
                             // /ko
+                            //ko if: filter.disp.re().length
+                            .rtgl.del(title="Удалить все исключающие регионы", data-bind="click: fredelall")
+                                span.glyphicon.glyphicon-remove(style="vertical-align:text-top;")
+                            // /ko
+                            //ko if: !filter.disp.re().length
                             span.regionEdit(data-bind="click: regionExcludeSelect")
+                                span.glyphicon.glyphicon-list(style="margin-right:2px;font-size:10px;vertical-align:text-top;")
+                                | Выбрать
+                            // /ko
+                            //ko if: filter.disp.re().length
+                            .rtgl.select(data-bind="click: regionSelect")
                                 span.glyphicon.glyphicon-pencil
-                                span(data-bind="text: filter.disp.re().length ? 'Изменить' : 'Выбрать'")
+                                | Изменить
+                            // /ko
                     .fRow(style="white-space:nowrap") Изображение имеет координату:
                     .fRow: .fVars(style="max-width:550px;")
                         label.checkbox-inline.tltp-wrap(style="min-width:auto;")

@@ -557,20 +557,26 @@ define([
         },
         //Делает активным в фильтре только один переданный регион
         fronly: function (cid) {
+            if (this.loading() || !cid) {
+                return false;
+            }
+            var diss = [];
+
+            this.filter.disp.r().forEach(function (item) {
+                if (item.cid !== cid) {
+                    diss.push(item.cid);
+                }
+            });
+            this.filter.disp.rdis(diss);
+            this.filterChangeHandle();
+        },
+        //Делает активнымы в фильтре все регионы
+        fronlyall: function () {
             if (this.loading()) {
                 return false;
             }
-            if (cid) {
-                var diss = [];
-
-                this.filter.disp.r().forEach(function (item) {
-                    if (item.cid !== cid) {
-                        diss.push(item.cid);
-                    }
-                });
-                this.filter.disp.rdis(diss);
-                this.filterChangeHandle();
-            }
+            this.filter.disp.rdis([]);
+            this.filterChangeHandle();
         },
         // Активирует/деактивирует в фильтре переданный регион
         frdis: function (cid) {
@@ -590,6 +596,69 @@ define([
                     this.filterChangeHandle();
                 }
             }
+        },
+        // Деактивирует в фильтре все регионы
+        frdisall: function () {
+            if (this.loading()) {
+                return false;
+            }
+            this.filter.disp.rdis(this.filter.disp.r().map(function (region) {
+                return region.cid;
+            }));
+            this.filterChangeHandle();
+        },
+        // Удаляет из фильтра переданный регион
+        frdel: function (cid) {
+            if (this.loading() || !cid) {
+                return false;
+            }
+            this.filter.disp.r.remove(function (item) {
+                return item.cid === cid;
+            });
+        },
+        // Удаляет из фильтра все регионы
+        frdelall: function () {
+            if (this.loading()) {
+                return false;
+            }
+            this.filter.disp.r.removeAll();
+        },
+        // Удаляет из фильтра все регионы кроме переданного
+        frdelothers: function (cid) {
+            if (this.loading() || !cid) {
+                return false;
+            }
+            this.filter.disp.r.remove(function (item) {
+                return item.cid !== cid;
+            });
+        },
+        // Удаляет из фильтра переданный исключающий регион
+        fredel: function (cid) {
+            if (this.loading() || !cid) {
+                return false;
+            }
+            this.filter.disp.re.remove(function (item) {
+                return item.cid === cid;
+            });
+            this.filterChangeHandle();
+        },
+        // Удаляет из фильтра все исключающие регионы
+        fredelall: function () {
+            if (this.loading()) {
+                return false;
+            }
+            this.filter.disp.re.removeAll();
+            this.filterChangeHandle();
+        },
+        // Удаляет из фильтра все исключающие регионы кроме переданного
+        fredelothers: function (cid) {
+            if (this.loading() || !cid) {
+                return false;
+            }
+            this.filter.disp.re.remove(function (item) {
+                return item.cid !== cid;
+            });
+            this.filterChangeHandle();
         },
         //Обработка клика вариантов присутствия координат в фильтре
         //Чтобы постаыить вторую галку, если обе сняты, т.к. должно быть хотя-бы одно из состояний

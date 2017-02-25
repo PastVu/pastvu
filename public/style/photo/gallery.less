@@ -60,7 +60,7 @@
             opacity: .7;
         }
 
-        .region.candis {
+        .region {
             &:hover {
                 &::after {
                     color: #d76c66;
@@ -184,6 +184,88 @@
         }
     }
 
+    .rtgl {
+        display: inline-block;
+        width: 20px;
+        margin: 0 3px 0 0;
+        text-align: center;
+        line-height: 16px;
+        font-size: 12px;
+        cursor: pointer;
+        border-width: 1px;
+        border-style: solid;
+        background-color: #E4E4E4;
+        user-select: none;
+        transition: border-color ease-in-out .1s, color ease-in-out .1s;
+
+        &.edit {
+            color: #f09800;
+            border-color: rgba(255, 165, 0, 0.2);
+
+            > a {
+                display: block;
+                color: orange;
+                transition: color ease-in-out .1s;
+            }
+
+            &:hover {
+                color: #ffbc06;
+                border-color: rgba(255, 165, 0, 0.5);
+
+                > a {
+                    color: #ffbc06;
+                }
+            }
+        }
+        &.only {
+            color: #2a961a;
+            border-color: rgba(4, 233, 11, 0.2);
+
+            &:hover {
+                color: #31b71e;
+                border-color: rgba(4, 233, 11, 0.5);
+            }
+        }
+        &.dis {
+            color: #bd8a0d;
+            border-color: rgba(233, 157, 10, .2);
+
+            &:hover {
+                color: #f7a900;
+                border-color: rgba(233, 157, 10, .5);
+            }
+        }
+        &.del {
+            color: #880824;
+            border-color: rgba(136, 12, 56, 0.2);
+
+            &:hover {
+                color: #ad0a2e;
+                border-color: rgba(136, 12, 56, 0.5);
+            }
+        }
+        &.select {
+            width: auto;
+            padding: 0 2px;
+            color: #192063;
+            border-color: rgba(25, 32, 99, 0.15);
+
+            &:hover {
+                color: #2938c4;
+                border-color: rgba(61, 76, 203, 0.45);
+            }
+
+            > .glyphicon {
+                margin: 0 2px 0 1px;
+                font-size: 10px;
+            }
+        }
+    }
+
+    .tltp .rtgl {
+        background-color: #2d2d2d;
+    }
+
     .fRegion {
         position: relative;
         display: inline-block;
@@ -196,76 +278,17 @@
         cursor: default;
         background-color: #E4E4E4;
 
-        &.candis {
-            cursor: pointer;
-
-            > .rtgl {
-                position: absolute;
-                display: none;
-                top: 0;
-                width: 23px;
-                text-align: center;
-                line-height: 18px;
-                font-size: 14px;
-                border-width: 1px;
-                border-style: solid;
-                background-color: rgba(228, 228, 235, 0.94);
-                .user-select(none);
-
-                &.edit {
-                    right: 46px;
-                    border-color: rgba(0, 96, 195, 0.3);
-
-                    > a {
-                        display: block;
-                        color: #4188b3;
-                    }
-
-                    &:hover > a {
-                        color: #58b4ee;
-                    }
-                }
-                &.only {
-                    right: 23px;
-                    color: #2A9C1A;
-                    border-color: rgba(4, 233, 11, 0.30);
-
-                    &:hover {
-                        color: #31b71e;
-                    }
-                }
-                &.dis {
-                    right: 0;
-                    color: #D19D0D;
-                    border-color: rgba(233, 157, 10, .3);
-
-                    &:hover {
-                        color: #f7a900;
-                    }
-                }
-
-                &:hover {
-                    text-shadow: 1px 1px 1px #222, -1px 1px 1px #999;
-                }
-            }
-
-            &:hover {
-                > .rtgl {
-                    display: block;
-                }
-            }
-        }
-
         &.dis {
             color: #D1D1D1;
             background-color: #f1f1f1;
 
-            &.candis > .rtgl.dis {
-                color: #4f9c41;
-                border-color: rgba(4, 233, 11, 0.30);
+            .rtgl.dis {
+                color: #2A9C1A;
+                border-color: rgba(4, 233, 11, 0.2);
 
                 &:hover {
                     color: #31b71e;
+                    border-color: rgba(4, 233, 11, 0.5);
                 }
             }
         }
