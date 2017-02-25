@@ -367,7 +367,7 @@ define([
                 this.makeBinding();
                 this.getPhotos((page - 1) * this.limit, this.limit, function () {
                     this.loadedFirst(true);
-                }, this);
+                }, this, true);
             }
         },
         buildFilterString: function () {
@@ -1025,7 +1025,7 @@ define([
                 //В режиме ленты перезапрашиваем всё
                 this.getPhotos(0, Math.max(this.photos().length, this.limit), null, null, true);
             } else if (this.coin()) {
-                this.getPhotos(0, this.limit, null, null, true);
+                this.getPhotos(0, this.limit, null, null);
             } else {
                 //В постраничном режиме просто перезапрашиваем страницу
                 this.getPhotos((this.page() - 1) * this.limit, this.limit);
@@ -1051,7 +1051,7 @@ define([
                 }
 
                 if (this.feed()) {
-                    if (data.photos && data.photos.length) {
+                    if (data.photos) {
                         if (forceReplace) {
                             this.photos(data.photos);
                         } else {
