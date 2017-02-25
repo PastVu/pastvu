@@ -509,7 +509,7 @@ define([
                 this.updateFilterUrl(newFilter);
             }
         },
-        filterRHandle: function (val) {
+        filterRHandle: function () {
             var rhash = this.rHash();
 
             // Check if we need to delete some excluded regions if some parent have been removed
@@ -641,7 +641,7 @@ define([
             if (this.loading() || !cid) {
                 return false;
             }
-            this.filter.disp.rdis([])
+            this.filter.disp.rdis([]);
             this.filter.disp.r.remove(function (item) {
                 return item.cid !== cid;
             });
@@ -1094,29 +1094,46 @@ define([
                     if (this.filter.active()) {
                         this.filterChangeHandleBlock = true;
 
-                        // Если количество регионов равно, они пусты или массивы их cid равны,
-                        // то и заменять их не надо, чтобы небыло "прыжка"
-                        var rEquals = this.filter.disp.r().length === data.filter.r.length &&
-                            (!data.filter.r.length || _.isEqual(_.map(this.filter.disp.r(), 'cid'), data.filter.r));
+                        this.filter.disp.rs(data.filter.rs && data.filter.rs.length ? data.filter.rs : ['0', '1']);
 
+                        // Treat current re order. First insert re that already on page, then new ones (if exist)
+                        var reCurrent = this.filter.disp.re();
+                        var reNewHash = _.transform(data.filter.re, function (result, cid) {
+                            result[cid] = cid;
+                        }, {});
+                        var reNew = reCurrent.reduce(function (result, re) {
+                            if (reNewHash[re.cid]) {
+                                var region = data.filter.rhash[re.cid];
+                                result.push(region);
 
-                        if (!data.filter.rs || !data.filter.rs.length) {
-                            data.filter.rs = ['0', '1'];
-                        }
+                                if (region.parents) {
+                                    region.parentRegionsArr = region.parents.map(function (cid) {
+                                        return data.filter.rhash[cid];
+                                    }).reverse();
+                                }
 
-                        this.filter.disp.rs(data.filter.rs);
-                        this.filter.disp.re(data.filter.re.map(function (cid) {
+                                delete reNewHash[re.cid];
+                            }
+                            return result;
+                        }, []);
+                        _.forOwn(reNewHash, function (cid) {
                             var region = data.filter.rhash[cid];
+                            reNew.push(region);
 
                             if (region.parents) {
                                 region.parentRegionsArr = region.parents.map(function (cid) {
                                     return data.filter.rhash[cid];
                                 }).reverse();
                             }
+                        });
 
-                            return region;
-                        }));
+                        this.filter.disp.re(reNew);
                         this.filter.disp.rdis(data.filter.rp || []);
+
+                        // Если количество регионов равно, они пусты или массивы их cid равны,
+                        // то и заменять их не надо, чтобы небыло "прыжка"
+                        var rEquals = this.filter.disp.r().length === data.filter.r.length &&
+                            (!data.filter.r.length || _.isEqual(_.map(this.filter.disp.r(), 'cid'), data.filter.r));
 
                         if (!rEquals) {
                             this.filter.disp.r(data.filter.r.map(function (cid) {
