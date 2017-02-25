@@ -18,6 +18,8 @@ define(['underscore', 'Params', 'socket!', 'jquery', 'knockout', 'm/_moduleClich
                 self.langClick(null, evt);
             };
 
+            this.pageTitle = ko.observable();
+
             this.registrationAllowed = this.co.registrationAllowed = ko.computed({
                 read: function () {
                     return P.settings.REGISTRATION_ALLOWED();
@@ -62,6 +64,9 @@ define(['underscore', 'Params', 'socket!', 'jquery', 'knockout', 'm/_moduleClich
             this.msg = ko.observable('');
             this.msgCss = ko.observable('');
 
+            this.routeHandler();
+            this.subscriptions.route = globalVM.router.params.subscribe(this.routeHandler, this);
+
             ko.applyBindings(globalVM, this.$dom[0]);
         },
         show: function () {
@@ -97,6 +102,11 @@ define(['underscore', 'Params', 'socket!', 'jquery', 'knockout', 'm/_moduleClich
         hide: function () {
             globalVM.func.hideContainer(this.$container);
             this.showing = false;
+        },
+        routeHandler: function () {
+            var params = globalVM.router.params();
+
+            this.pageTitle("Retro View of Mankind's Habitat" + (params._handler === 'gallery' ? '&ensp;–&ensp;Gallery' : ''));
         },
 
         langClick: function (data, evt) {

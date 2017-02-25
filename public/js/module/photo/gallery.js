@@ -25,13 +25,11 @@ define([
             addPossible: false,
             userVM: null,
             goUpload: false,
-            topTitle: '',
             filter: {}
         },
         create: function () {
             this.auth = globalVM.repository['m/common/auth'];
             this.u = this.options.userVM;
-            this.topTitle = ko.observable(this.options.topTitle);
             this._ = _;
 
             this.photos = ko.observableArray();
@@ -146,6 +144,25 @@ define([
 
             this.yearsRange = this.co.yearsRange = ko.computed(function () {
                 return this.getTypeYearsRange(this.filter.disp.t());
+            }, this);
+
+            this.rHash = this.co.rHash = ko.computed(function () {
+                return this.filter.disp.r().reduce(function (result, region) {
+                    result[region.cid] = region;
+                    return result;
+                }, {});
+            }, this);
+
+            this.rHashPlusParents = this.co.rHash = ko.computed(function () {
+                return this.filter.disp.r().reduce(function (result, region) {
+                    result[region.cid] = region;
+                    if (region.parentRegionsArr) {
+                        region.parentRegionsArr.forEach(function (region) {
+                            result[region.cid] = region;
+                        });
+                    }
+                    return result;
+                }, {});
             }, this);
 
             this.rsIsPossible = this.co.rsIsPossible = ko.computed(function () {
@@ -373,9 +390,7 @@ define([
                     filterString += '!' + r[i].cid;
                 }
 
-                var rhash = _.transform(r, function (result, region) {
-                    result[region.cid] = region;
-                }, {});
+                var rhash = this.rHash();
                 var rp = _.sortBy(this.filter.disp.rdis().filter(function (cid) {
                     return rhash.hasOwnProperty(cid);
                 }));
@@ -495,9 +510,7 @@ define([
             }
         },
         filterRHandle: function (val) {
-            var rhash = _.transform(val, function (hash, region) {
-                hash[region.cid] = region;
-            }, {});
+            var rhash = this.rHash();
 
             // Check if we need to delete some excluded regions if some parent have been removed
             var re = this.filter.disp.re();
@@ -628,9 +641,46 @@ define([
             if (this.loading() || !cid) {
                 return false;
             }
+            this.filter.disp.rdis([])
             this.filter.disp.r.remove(function (item) {
                 return item.cid !== cid;
             });
+        },
+        frselectparent: function (regionCidToReplace, parentRegion) {
+            // Replace hovered region with clicked parent and remove all other selected children on that parent (if they exist)
+            this.filter.disp.r(this.filter.disp.r().reduce(function (result, region) {
+                if (region.cid === regionCidToReplace) {
+                    result.push(parentRegion);
+
+                    // And assign parents array object to assigning parent
+                    if (parentRegion.parents) {
+                        parentRegion.parentRegionsArr = region.parentRegionsArr.slice(parentRegion.parents.length);
+                    }
+                } else if (!region.parents || region.parents.every(function (cid) {return cid !== parentRegion.cid;})) {
+                    result.push(region);
+                }
+                return result;
+            }, []));
+        },
+        freselectparent: function (regionCidToReplace, parentRegion) {
+            if (this.rHashPlusParents()[parentRegion.cid]) {
+                return;
+            }
+            // Replace hovered region with clicked parent and remove all other selected children on that parent (if they exist)
+            this.filter.disp.re(this.filter.disp.re().reduce(function (result, region) {
+                if (region.cid === regionCidToReplace) {
+                    result.push(parentRegion);
+
+                    // And assign parents array object to assigning parent
+                    if (parentRegion.parents) {
+                        parentRegion.parentRegionsArr = region.parentRegionsArr.slice(parentRegion.parents.length);
+                    }
+                } else if (!region.parents || region.parents.every(function (cid) {return cid !== parentRegion.cid;})) {
+                    result.push(region);
+                }
+                return result;
+            }, []));
+            this.filterChangeHandle();
         },
         // Удаляет из фильтра переданный исключающий регион
         fredel: function (cid) {
@@ -1047,7 +1097,7 @@ define([
                         // Если количество регионов равно, они пусты или массивы их cid равны,
                         // то и заменять их не надо, чтобы небыло "прыжка"
                         var rEquals = this.filter.disp.r().length === data.filter.r.length &&
-                            (!data.filter.r.length || _.isEqual(_.map(this.filter.disp.r(), 'cid'), _.map(data.filter.r, 'cid')));
+                            (!data.filter.r.length || _.isEqual(_.map(this.filter.disp.r(), 'cid'), data.filter.r));
 
 
                         if (!data.filter.rs || !data.filter.rs.length) {
@@ -1055,11 +1105,31 @@ define([
                         }
 
                         this.filter.disp.rs(data.filter.rs);
-                        this.filter.disp.re(data.filter.re || []);
+                        this.filter.disp.re(data.filter.re.map(function (cid) {
+                            var region = data.filter.rhash[cid];
+
+                            if (region.parents) {
+                                region.parentRegionsArr = region.parents.map(function (cid) {
+                                    return data.filter.rhash[cid];
+                                }).reverse();
+                            }
+
+                            return region;
+                        }));
                         this.filter.disp.rdis(data.filter.rp || []);
 
                         if (!rEquals) {
-                            this.filter.disp.r(data.filter.r || []);
+                            this.filter.disp.r(data.filter.r.map(function (cid) {
+                                var region = data.filter.rhash[cid];
+
+                                if (region.parents) {
+                                    region.parentRegionsArr = region.parents.map(function (cid) {
+                                        return data.filter.rhash[cid];
+                                    }).reverse();
+                                }
+
+                                return region;
+                            }));
                         }
 
                         this.filter.disp.s(data.filter.s ? data.filter.s.map(String) : [String(statuses.keys.PUBLIC)]);
@@ -1318,7 +1388,7 @@ define([
                                         text: 'Применить',
                                         glyphicon: 'glyphicon-ok',
                                         click: function () {
-                                            var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local', 'childLen']);
+                                            var regions = this.regselectVM.getSelectedRegions(['cid', 'parents', 'title_local', 'childLen']);
 
                                             if (regions.length > 10) {
                                                 return noties.alert({
@@ -1329,7 +1399,16 @@ define([
                                                 });
                                             }
 
-                                            this.filter.disp.r(regions);
+                                            this.filter.disp.r(regions.map(function (region) {
+                                                if (region.parents) {
+                                                    region.parentRegionsArr = this.regselectVM
+                                                        .getRegionsByCids(region.parents, ['cid', 'parents', 'title_local', 'childLen'])
+                                                        .reverse();
+                                                }
+
+                                                return region;
+                                            }, this));
+
                                             this.closeRegionSelect();
                                         },
                                         ctx: this
@@ -1402,7 +1481,7 @@ define([
                                     text: 'Применить',
                                     glyphicon: 'glyphicon-ok',
                                     click: function () {
-                                        var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']);
+                                        var regions = this.regselectVM.getSelectedRegions(['cid', 'parents', 'title_local']);
 
                                         if (regions.length > 10) {
                                             return noties.alert({
@@ -1413,7 +1492,15 @@ define([
                                             });
                                         }
 
-                                        this.filter.disp.re(regions);
+                                        this.filter.disp.re(regions.map(function (region) {
+                                            if (region.parents) {
+                                                region.parentRegionsArr = this.regselectVM
+                                                    .getRegionsByCids(region.parents, ['cid', 'parents', 'title_local', 'childLen'])
+                                                    .reverse();
+                                            }
+
+                                            return region;
+                                        }, this));
                                         this.closeRegionExcludeSelect();
 
                                         // Вручную вызываем обработку фильтра

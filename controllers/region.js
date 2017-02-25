@@ -153,6 +153,7 @@ export const getRegionsArrFromCache = cids => _.transform(cids, (result, cid) =>
         result.push(region);
     }
 }, []);
+export const getRegionPublicFromCache = cid => regionCacheMapPublic.get(cid);
 export const getRegionsArrPublicFromCache = cids => Array.isArray(cids) ? cids.reduce((result, cid) => {
     const region = regionCacheMapPublic.get(cid);
 

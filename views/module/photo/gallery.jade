@@ -1,10 +1,6 @@
 .gallery(data-bind="with: repository[M!M]")
     .thumbs(data-bind="style: {width: panelW()}")
-        //ko if: topTitle()
-        .row.rowoffset: .col-xs-12: .pageHeader(data-bind="css: {loading: !feed() && loading()}, text: topTitle()")
-        // /ko
-
-        .row.rowoffset.rowFilter(style="margin-top:2px;", data-bind="css: {invisible: !loadedFirst()}")
+        .row.rowoffset.rowFilter(style="margin-top:12px;", data-bind="css: {invisible: !loadedFirst()}")
             .filter
                 .fToggle.tltp-wrap(data-bind="click: function () {filter.active(!filter.active())}, css: {fToggleInactive: !filter.active()}")
                     span.glyphicon.glyphicon-filter
@@ -24,7 +20,7 @@
                             //ko foreach: filter.disp.r
                             span.fRegion.tltp-wrap(data-bind="css: {dis: $parent._.includes($parent.filter.disp.rdis(), $data.cid)}")
                                 span(data-bind="text: $data.title_local")
-                                .tltp.tltp-top.tltp-touch.tltp-animate-opacity(style="white-space:nowrap")
+                                .tltp.tltp-bottom.tltp-touch.tltp-animate-opacity(style="padding:3px 3px 1px;white-space:nowrap;font-weight:normal;")
                                     //ko if: $parent.filter.admin()
                                     .rtgl.edit(title="Перейти в редактирование региона")
                                         a(data-bind="attr: {href: '/admin/region/' + $data.cid}")
@@ -41,6 +37,11 @@
                                     //ko if: $parent.filter.disp.r().length > 1
                                     .rtgl.del(title="Удалить остальные регионы", data-bind="click: function() {$parent.frdelothers($data.cid);}")
                                         span.glyphicon.glyphicon-remove-sign(style="vertical-align:text-top;")
+                                    // /ko
+                                    //ko if: $data.parentRegionsArr
+                                    //ko foreach: $data.parentRegionsArr
+                                    .selectParent.selectParentSelectable(data-bind="text:$data.title_local, click:function() {$parents[1].frselectparent($parent.cid, $data);}")
+                                    // /ko
                                     // /ko
                             // /ko
                             //ko if: filter.disp.r().length
@@ -75,7 +76,7 @@
                             //ko foreach: filter.disp.re
                             span.fRegion.tltp-wrap(data-bind="css: {dis: $parent._.includes($parent.filter.disp.redis(), $data.cid)}")
                                 span(data-bind="text: $data.title_local")
-                                .tltp.tltp-top.tltp-touch.tltp-animate-opacity(style="white-space:nowrap")
+                                .tltp.tltp-bottom.tltp-touch.tltp-animate-opacity(style="padding:3px 3px 1px;white-space:nowrap;font-weight:normal;")
                                     //ko if: $parent.filter.admin()
                                     .rtgl.edit(title="Перейти в редактирование региона")
                                         a(data-bind="attr: {href: '/admin/region/' + $data.cid}")
@@ -86,6 +87,11 @@
                                     //ko if: $parent.filter.disp.r().length > 1
                                     .rtgl.del(title="Удалить остальные регионы", data-bind="click: function() {$parent.fredelothers($data.cid);}")
                                         span.glyphicon.glyphicon-remove-sign(style="vertical-align:text-top;")
+                                    // /ko
+                                    //ko if: $data.parentRegionsArr
+                                    //ko foreach: $data.parentRegionsArr
+                                    .selectParent(data-bind="text:$data.title_local, click:function() {$parents[1].freselectparent($parent.cid, $data);}, css: {selectParentBold: $parents[1].rHash()[$data.cid], selectParentSelectable: !$parents[1].rHashPlusParents()[$data.cid]}")
+                                    // /ko
                                     // /ko
                             // /ko
                             //ko if: filter.disp.re().length
@@ -98,7 +104,7 @@
                                 | Выбрать
                             // /ko
                             //ko if: filter.disp.re().length
-                            .rtgl.select(data-bind="click: regionSelect")
+                            .rtgl.select(data-bind="click: regionExcludeSelect")
                                 span.glyphicon.glyphicon-pencil
                                 | Изменить
                             // /ko
@@ -175,7 +181,7 @@
                     // /ko
                 // /ko
             .clearfix.hidden-lg
-            .col-xs-12.col-lg-4.col-lg-pull-4.pag(data-bind="css: {hasPag: paginationShow()}")
+            .col-xs-12.col-lg-4.col-lg-pull-4.pag(data-bind="css: {loading: !feed() && loading(), hasPag: paginationShow()}")
                 //ko if: paginationShow()
                 //ko template: {name: 'photoPagerTpl'}
                 // /ko

@@ -13,19 +13,8 @@
 		margin: 11px 8px 0 5px;
 	}
 
-	.filter, .pageHeader {
+	.filter {
 		line-height: 20px;
-	}
-	.pageHeader {
-        padding-bottom: 11px;
-		font-size: 22px;
-		text-align: center;
-        background-repeat: no-repeat;
-        background-position: 50% 100%;
-
-        &.loading {
-            background-image: url(/img/misc/load.gif);
-        }
 	}
 
     .rowFilter {
@@ -263,6 +252,7 @@
     }
 
     .tltp .rtgl {
+        margin-bottom: 4px;
         background-color: #2d2d2d;
     }
 
@@ -290,6 +280,30 @@
                     color: #31b71e;
                     border-color: rgba(4, 233, 11, 0.5);
                 }
+            }
+        }
+    }
+
+    .selectParent {
+        margin-bottom: 2px;
+        padding: 2px 4px;
+        color: #b4b4b4;
+        font-size: @font-size-base;
+        line-height: 18px;
+        cursor: default;
+        background-color: #585858;
+
+        &.selectParentBold {
+            font-weight: bold;
+        }
+
+        &.selectParentSelectable {
+            color: #ebebeb;
+            cursor: pointer;
+
+            &:hover {
+                color: white;
+                background-color: #626262;
             }
         }
     }

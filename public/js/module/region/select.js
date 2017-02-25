@@ -215,6 +215,35 @@ define([
             }, this);
             return results;
         },
+        //Возвращает массив cid выбранных регионов
+        getSelectedCids: function () {
+            var tkn = this.$dom.find('.regionstkn');
+            var tokens = tkn.tokenfield('getTokens');
+            var result = [];
+
+            tokens.forEach(function (item) {
+                var region = this.regionsHashByTitle[item.value];
+                if (region && region.exists) {
+                    result.push(region.cid);
+                }
+            }, this);
+            return result;
+        },
+        getRegionsByCids: function (cids, fields) {
+            var regionsHashByCid = this.regionsHashByCid;
+
+            return cids.map(function (cid) {
+                return fields ? _.pick(regionsHashByCid[cid], fields) : regionsHashByCid[cid];
+            }, {});
+        },
+        getRegionsHashByCids: function (cids, fields) {
+            var regionsHashByCid = this.regionsHashByCid;
+
+            return cids.reduce(function (result, cid) {
+                result[cid] = fields ? _.pick(regionsHashByCid[cid], fields) : regionsHashByCid[cid];
+                return result;
+            }, {});
+        },
         createTokenfield: function () {
             this.$dom.find('.regionstkn')
                 .tokenfield({

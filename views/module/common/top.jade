@@ -2,7 +2,7 @@
     .fringe#panel
         a#brand(href='/', title="PastVu - ретроспектива среды обитания человечества")
             img.logo(src="/img/misc/logo.png")
-            .name Retro View of Mankind's Habitat
+            .name(data-bind="html: pageTitle()")
         #panelTools.hide-text
             //ko if: auth.loggedIn()
             a#toUpload.labledIco.strokeAfter(href="/photoUpload")

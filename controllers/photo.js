@@ -1465,14 +1465,49 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40, random = fa
         }
     }
 
+    const r = [];
+    const re = [];
+    const filterRegionsHash = {};
+
+    // Create hash of filter regions (selected and exluded) and their parents
+    if (buildQueryResult.rarr.length) {
+        for (const region of buildQueryResult.rarr) {
+            r.push(region.cid);
+            filterRegionsHash[region.cid] = region;
+
+            if (region.parents && region.parents.length) {
+                for (const cid of region.parents) {
+                    if (filterRegionsHash[cid] === undefined) {
+                        filterRegionsHash[cid] = regionController.getRegionPublicFromCache(cid);
+                    }
+                }
+            }
+        }
+    }
+    if (buildQueryResult.rearr && buildQueryResult.rearr.length) {
+        for (const region of buildQueryResult.rearr) {
+            re.push(region.cid);
+            filterRegionsHash[region.cid] = region;
+
+            if (region.parents && region.parents.length) {
+                for (const cid of region.parents) {
+                    if (filterRegionsHash[cid] === undefined) {
+                        filterRegionsHash[cid] = regionController.getRegionPublicFromCache(cid);
+                    }
+                }
+            }
+        }
+    }
+
     return {
         skip, count, photos, rhash: shortRegionsHash,
         filter: {
-            t: buildQueryResult.types,
-            r: buildQueryResult.rarr,
-            re: buildQueryResult.rearr,
+            r,
+            re,
             rp: filter.rp,
             rs: filter.rs,
+            rhash: filterRegionsHash,
+            t: buildQueryResult.types,
             s: buildQueryResult.s,
             y: buildQueryResult.y,
             c: buildQueryResult.c,
@@ -2642,7 +2677,7 @@ export function buildPhotosQuery(filter, forUserId, iAm, random) {
     let rs;
     let r = filter.r;
     let regionExludeAll; // Array if excluded regions objects, to return it to user
-    let regionExludeCids; // Arra if excluded regions cids, can be undefined whils regionExludeAll is not, if rdis is active
+    let regionExludeCids; // Array if excluded regions cids, can be undefined whils regionExludeAll is not, if rdis is active
     // Excluding regions only available if some regions are specified
     // So ignore showing children option and excluded regions list if regions are not specified
     if (Array.isArray(r) && r.length) {
@@ -2672,7 +2707,7 @@ export function buildPhotosQuery(filter, forUserId, iAm, random) {
 
     const statusesOpenedOnly = statuses.length === statusesOpened.length;
 
-    const result = { query: null, s: [], rcids: [], rarr: [] };
+    const result = { query: null, s: [], rcids: [], rarr: [], rhash: Object.create(null) };
 
     if (Array.isArray(r) && r.length) {
         regionsArrAll = regionController.getRegionsArrPublicFromCache(r);
