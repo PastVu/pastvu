@@ -33,11 +33,17 @@
         .panel-collapse.collapse.in#region: .panel-body
             dl.dl-horizontal
                 dt.helpexists
-                    abbr(title="Регион, который определяет некоторые настройки, например, позицию кнопки Домой на карте, первый элемент в списке выбора регионов и т.д.")
+                    .help.tltp-wrap
                         span.glyphicon.glyphicon-info-sign
-                        | &nbsp;
-                        span.glyphicon.glyphicon-home
-                        |  Домашний регион
+                        .tltp.tltp-top.tltp-animate-move
+                            | Регион, который определяет некоторые настройки,
+                            br
+                            | например, позицию кнопки Домой на карте,
+                            br
+                            | первый элемент в списке выбора регионов и т.д.
+                    | &nbsp;
+                    span.glyphicon.glyphicon-home
+                    | &nbsp;Домашний регион
                 dd
                     span.region
                         span(data-bind="text: u.regionHome.title_local()")
@@ -47,9 +53,13 @@
             //ko if: u.role() === 5 && u.mod_regions()
             dl.dl-horizontal.forMod
                 dt.helpexists
-                    abbr(title="Регионы, в которых вы являетесь модератором. Назначаются администратором")
+                    .help.tltp-wrap
                         span.glyphicon.glyphicon-info-sign
-                        |  Модерируемые мной регионы
+                        .tltp.tltp-top.tltp-animate-move
+                            | Регионы, в которых вы являетесь модератором
+                            br
+                            | Назначаются администратором
+                    | &nbsp;Модерируемые мной регионы
                 dd
                     //ko if: !u.mod_regions().length
                     span.region
@@ -66,11 +76,15 @@
         .panel-collapse.collapse.in#filters: .panel-body
             dl.dl-horizontal
                 dt.helpexists
-                    abbr(title="Изображения, по которым будет производится автоматическая фильтрация контента")
+                    .help.tltp-wrap
                         span.glyphicon.glyphicon-info-sign
-                        | &nbsp;
-                        span.glyphicon.glyphicon-filter
-                        |  Типы изображений
+                        .tltp.tltp-top.tltp-animate-move
+                            | Изображения, по которым будет производится
+                            br
+                            | автоматическая фильтрация контента
+                    | &nbsp;
+                    span.glyphicon.glyphicon-filter
+                    | &nbsp;Типы изображений
                 dd: span.panel-block(style="padding-bottom:5px;")
                     //ko foreach: vars.photo_filter_type
                     label.checkbox-inline
@@ -79,11 +93,15 @@
                     // /ko
             dl.dl-horizontal
                 dt.helpexists
-                    abbr(title="Регионы, по которым будет производится автоматическая фильтрация контента")
+                    .help.tltp-wrap
                         span.glyphicon.glyphicon-info-sign
-                        | &nbsp;
-                        span.glyphicon.glyphicon-filter
-                        |  Регионы
+                        .tltp.tltp-top.tltp-animate-move
+                            | Регионы, по которым будет производится
+                            br
+                            | автоматическая фильтрация контента
+                    | &nbsp;
+                    span.glyphicon.glyphicon-filter
+                    |  Регионы
                 dd: span.panel-block
                     .radio(style="margin-top:0"): label
                         input(type="radio", name="regfilter_radios", value="all", data-bind="checked: regfiltercheck")
@@ -115,18 +133,26 @@
                 dd
             dl.dl-horizontal.dl-tight
                 dt.helpexists
-                    abbr(title="Изображения пользователей, доступые в соответствующих профилях")
+                    .help.tltp-wrap
                         span.glyphicon.glyphicon-info-sign
-                        |  Галереи пользователей
+                        .tltp.tltp-top.tltp-animate-move
+                            | Изображения пользователей,
+                            br
+                            | доступые в соответствующих профилях
+                    | &nbsp;Галереи пользователей
                 dd
                     .btn-group.btn-group-sm
                         button.btn.btn-primary.yes(type="button", data-bind="css: {active: u.settings.r_f_user_gal()}, click: regionUserGal") Да
                         button.btn.btn-primary.no(type="button", data-bind="css: {active: !u.settings.r_f_user_gal()}, click: regionUserGal") Нет
             dl.dl-horizontal.dl-tight
                 dt.helpexists
-                    abbr(title="Полоса изображений, находящаяся рядом с именем пользователя, на странице просмотра загруженного им изображения")
+                    .help.tltp-wrap
                         span.glyphicon.glyphicon-info-sign
-                        |  Полосу других изображений пользователя
+                        .tltp.tltp-top.tltp-animate-move
+                            | Полоса изображений, находящаяся рядом с именем пользователя,
+                            br
+                            | на странице просмотра загруженного им изображения
+                    | &nbsp;Полосу других изображений пользователя
                 dd
                     .btn-group.btn-group-sm
                         button.btn.btn-primary.yes(type="button", data-bind="css: {active: u.settings.r_f_photo_user_gal()}, click: regionPhotoUserGal") Да
@@ -137,27 +163,35 @@
         .panel-collapse.collapse.in#photo: .panel-body
             dl.dl-horizontal
                 dt.helpexists
-                    abbr(title="Показывать по умолчанию вотермарк pastvu.com, встроенный в изображение")
+                    .help.tltp-wrap
                         span.glyphicon.glyphicon-info-sign
-                        |  Показывать вотермарк изображения
+                        .tltp.tltp-top.tltp-animate-move
+                            | Показывать по умолчанию вотермарк
+                            br
+                            | pastvu.com, встроенный в изображение
+                    | &nbsp;Показывать вотермарк изображения
                 dd
                     .btn-group.btn-group-sm
                         button.btn.btn-primary.yes(type="button", data-bind="css: {active: u.settings.photo_show_watermark()}, click: watermarkShow") Да
                         button.btn.btn-primary.no(type="button", data-bind="css: {active: !u.settings.photo_show_watermark()}, click: watermarkShow") Нет
 
             //ko if: u.nowaterchange()
-            dl.dl-horizontal: .helpexists: abbr.text-danger
+            dl.dl-horizontal: .helpexists: .help.text-danger
                 span.glyphicon.glyphicon-warning-sign
                 span(data-bind="text: ' Администратор запретил ' + (itsMe()?'вам':'пользователю') + ' управлять настройками установки подписи на ' + (itsMe()?'ваших':'его') + ' изображениях'")
             // /ko
             .watersingcontrol(data-bind="css: {deny: itsMe() && u.nowaterchange()}")
                 dl.dl-horizontal
                     dt.helpexists
-                        abbr(title="Поведение можно менять для каждом отдельном изображении на странице редактирования")
+                        .help.tltp-wrap
                             span.glyphicon.glyphicon-info-sign
-                            |  Подпись на вотермарке
-                            br
-                            |  загружаемых мной изображений
+                            .tltp.tltp-top.tltp-animate-move
+                                | Поведение можно менять на каждом отдельном
+                                br
+                                | изображении на странице редактирования
+                        | &nbsp;Подпись на вотермарке
+                        br
+                        |  загружаемых мной изображений
                     dd: span.panel-block
                         .btn-group.btn-group-sm(style="margin-bottom:8px")
                             button.btn.btn-primary.yes(type="button", data-bind="css: {active: !!u.settings.photo_watermark_add_sign()}, click: watersignAdd") Да
@@ -183,8 +217,12 @@
                             |  Настройка сохраняется автоматически и будет применена ко всем вновь загружаемым изображениям. Чтобы применить ее к существующим изображениям, нажмите "применить" ниже
 
                         hr(style="margin:8px 0 9px;")
-                        abbr(title="Отправить на переконвертацию свои изображения, в которых подпись на вотермарке берется из текущих настроек профиля")
-                            | Применить настройку к загруженным изображениям, у которых нет индивидульных настроек подписи:
+                        .tltp-wrap
+                            abbr(title="") Применить настройку к загруженным изображениям, у которых нет индивидульных настроек подписи:
+                            .tltp.tltp-top.tltp-hotizontal-left.tltp-animate-move
+                                | Отправить на переконвертацию свои изображения,
+                                br
+                                | в которых подпись на вотермарке берется из текущих настроек профиля
                         div
                             label.radio-inline
                                 input(type="radio", name="reconvert", value="all", data-bind="checked: reconvertcheck")
@@ -197,8 +235,12 @@
                             button.btn.btn-sm.btn-primary(type="button", style="margin: 5px 0 8px;", data-bind="click: reconvertPhotos, attr: {disabled: reconvertingPhotos()}") Применить
 
                         hr(style="margin:8px 0 9px;")
-                        abbr(title="Сбросить установленные индивидульные настройки подписи в изображениям (если такие устанавливались)")
-                            | Сбросить установленные в изображениях индивидульные настройки подписи
+                        .tltp-wrap
+                            abbr(title="") Сбросить установленные в изображениях индивидульные настройки подписи
+                            .tltp.tltp-top.tltp-hotizontal-left.tltp-animate-move
+                                | Сбросить установленные индивидульные настройки
+                                br
+                                |подписи в изображениям (если такие устанавливались)
                         div
                             label.radio-inline
                                 input(type="radio", name="resetwatersign", value="all", data-bind="checked: resetwatersigncheck")
@@ -215,11 +257,15 @@
 
                 dl.dl-horizontal
                     dt.helpexists
-                        abbr(title="Другие зарегистрированные пользователи смогут скачивать оригиналы ваших изображений")
+                        .help.tltp-wrap
                             span.glyphicon.glyphicon-info-sign
-                            |  Разрешать скачивать оригиналы
-                            br
-                            | моих изображений
+                            .tltp.tltp-top.tltp-animate-move
+                                | Другие зарегистрированные пользователи
+                                br
+                                | смогут скачивать оригиналы ваших изображений
+                        | &nbsp;Разрешать скачивать оригиналы
+                        br
+                        | моих изображений
                     dd: span.panel-block
                         .btn-group.btn-group-sm(style="margin-bottom:8px")
                             button.btn.btn-primary.yes(type="button", data-bind="attr: {disabled: !u.settings.photo_watermark_add_sign()}, css: {active: !u.settings.photo_watermark_add_sign() || !u.settings.photo_disallow_download_origin()}, click: disallowDownloadOrigin") Да
@@ -252,18 +298,28 @@
         .panel-collapse.collapse.in#notice: .panel-body
             dl.dl-horizontal
                 dt.helpexists
-                    abbr(title="Исходное состояние опции «Подписаться на тему» при отправке комментария")
+                    .help.tltp-wrap
                         span.glyphicon.glyphicon-info-sign
-                        |  Автоподписка при комментировании темы
+                        .tltp.tltp-top.tltp-animate-move
+                            | Исходное состояние опции
+                            br
+                            | «Подписаться на тему»
+                            br
+                            | при отправке комментария
+                    | &nbsp;Автоподписка при комментировании темы
                 dd
                     .btn-group.btn-group-sm
                         button.btn.btn-primary.yes(type="button", data-bind="css: {active: u.settings.subscr_auto_reply()}, click: autoReply") Да
                         button.btn.btn-primary.no(type="button", data-bind="css: {active: !u.settings.subscr_auto_reply()}, click: autoReply") Нет
             dl.dl-horizontal
                 dt.helpexists
-                    abbr(title="Минимальное время, которое должно пройти между отправками писем с уведомлением")
+                    .help.tltp-wrap
                         span.glyphicon.glyphicon-info-sign
-                        |  Минимальный интервал между отправками
+                        .tltp.tltp-top.tltp-animate-move
+                            | Минимальное время, которое должно пройти
+                            br
+                            | между отправками писем с уведомлением
+                    | &nbsp;Минимальный интервал между отправками
                 dd.throttle(data-bind="foreach: vars.subscr_throttle")
                     label.radio-inline
                         input(type="radio", name="subscr_throttle_radios", data-bind="attr: {id: 'subscr_throttle_radios_' + $index(), value: ''+$data}, checked: $parent.u.settings.subscr_throttle")

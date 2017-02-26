@@ -47,10 +47,15 @@
             .panel-collapse.collapse.in#restrictions: .panel-body
                 dl.dl-horizontal
                     dt.helpexists
-                        abbr(title="Разрешать менять подпись на своих фотографиях и управлять настройками скачивания оригинала" +
-                        " отправлять свои фотографии на переконвертацию")
+                        .help.tltp-wrap
                             span.glyphicon.glyphicon-info-sign
-                            |  Может менять вотермарк и правила скачивания
+                            .tltp.tltp-top.tltp-animate-move
+                                | Разрешать менять подпись на своих фотографиях,
+                                br
+                                | управлять настройками скачивания оригинала и
+                                br
+                                | отправлять свои фотографии на переконвертацию
+                        | &nbsp;Может менять вотермарк и правила скачивания
                     dd
                         .btn-group.btn-group-sm
                             button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nowaterchange()}, click: changewaterchange") Да
