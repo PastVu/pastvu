@@ -10,7 +10,7 @@ import Utils from '../commons/Utils';
 import * as session from './_session';
 import { send as sendMail } from './mail';
 import { userSettingsDef } from './settings';
-import { getRegionsArrFromCache } from './region';
+import { getRegionsArrPublicFromCache } from './region';
 import constants from '../app/errors/constants';
 import { AuthenticationError, AuthorizationError, BadParamsError, InputError } from '../app/errors';
 
@@ -120,7 +120,7 @@ async function register({ login, email, pass, pass2 }) {
 
     const count = await Counter.increment('user');
 
-    let regionHome = getRegionsArrFromCache([config.regionHome]);
+    let regionHome = getRegionsArrPublicFromCache([config.regionHome]);
 
     if (regionHome.length) {
         regionHome = regionHome[0]._id;

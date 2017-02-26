@@ -25,13 +25,11 @@ define([
             addPossible: false,
             userVM: null,
             goUpload: false,
-            topTitle: '',
             filter: {}
         },
         create: function () {
             this.auth = globalVM.repository['m/common/auth'];
             this.u = this.options.userVM;
-            this.topTitle = ko.observable(this.options.topTitle);
             this._ = _;
 
             this.photos = ko.observableArray();
@@ -68,9 +66,11 @@ define([
                     s: ko.observableArray(),
                     c: ko.observableArray(),
                     ccount: ko.observable(this.ccount),
-                    r: ko.observableArray(),
-                    rdis: ko.observableArray(), //Массив cid неактивных регионов
-                    rs: ko.observableArray(),
+                    r: ko.observableArray(), // Array of selected regions
+                    rdis: ko.observableArray(), // Array of cids of inactive regions
+                    rs: ko.observableArray(), // Enable/disable subregions
+                    re: ko.observableArray(), // Array of cids of excluded regions
+                    redis: ko.observableArray(), // Array of cids of inactive excluded regions, because of inactive parents
                     geo: ko.observableArray(),
                     year: ko.observable(this.year),
                     year2: ko.observable(this.year2)
@@ -99,13 +99,6 @@ define([
                     return this.auth.loggedIn() && this.auth.iAm.role() >= 10;
                 }, this)
             };
-            this.subscriptions.filter_disp_r = this.filter.disp.r.subscribe(this.filterChangeHandle, this);
-            this.subscriptions.filter_disp_s = this.filter.disp.s.subscribe(this.filterChangeHandle, this);
-            this.subscriptions.filter_disp_y = this.filter.disp.year.subscribe(_.debounce(this.yearHandle, 800), this);
-            this.subscriptions.filter_disp_y2 = this.filter.disp.year2.subscribe(_.debounce(this.year2Handle, 800), this);
-            this.subscriptions.filter_disp_ccount = this.filter.disp.ccount.subscribe(_.debounce(this.ccountHandle, 800), this);
-            this.subscriptions.filter_active = this.filter.active.subscribe(this.filterActiveChange, this);
-            this.filterChangeHandleBlock = false;
 
             this.panelW = ko.observable('0px');
             this.w = ko.observable('0px');
@@ -153,6 +146,56 @@ define([
                 return this.getTypeYearsRange(this.filter.disp.t());
             }, this);
 
+            this.rHash = this.co.rHash = ko.computed(function () {
+                return this.filter.disp.r().reduce(function (result, region) {
+                    result[region.cid] = region;
+                    return result;
+                }, {});
+            }, this);
+
+            this.rHashPlusParents = this.co.rHash = ko.computed(function () {
+                return this.filter.disp.r().reduce(function (result, region) {
+                    result[region.cid] = region;
+                    if (region.parentRegionsArr) {
+                        region.parentRegionsArr.forEach(function (region) {
+                            result[region.cid] = region;
+                        });
+                    }
+                    return result;
+                }, {});
+            }, this);
+
+            this.rsIsPossible = this.co.rsIsPossible = ko.computed(function () {
+                var rLen = this.filter.disp.r().length;
+                var rdisLen = this.filter.disp.rdis().length;
+                return rLen > 0 && rdisLen < rLen;
+            }, this);
+
+            this.activeChildLen = this.co.activeChildLen = ko.computed(function () {
+                var r = this.filter.disp.r();
+                var rdis = this.filter.disp.rdis();
+
+                if (!this.rsIsPossible()) {
+                    return Infinity;
+                }
+
+                return r.reduce(function (acc, region) {
+                    if (region.childLen && !_.includes(rdis, region.cid)) {
+                        return acc + region.childLen;
+                    }
+
+                    return acc;
+                }, 0);
+            }, this);
+
+            this.reIsPossible = this.co.reIsPossible = ko.computed(function () {
+                return !this.filter.disp.r().length || this.activeChildLen() > 0;
+            }, this);
+
+            this.reIsActive = this.co.reIsActive = ko.computed(function () {
+                return this.reIsPossible() && !_.isEqual(this.filter.disp.rs(), ['0']);
+            }, this);
+
             this.briefText = this.co.briefText = ko.computed(function () {
                 var count = this.count();
                 var txt = '';
@@ -183,6 +226,14 @@ define([
             // Subscriptions
             this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandlerDebounced, this);
             this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
+            this.subscriptions.filter_disp_r = this.filter.disp.r.subscribe(this.filterRHandle, this);
+            this.subscriptions.filter_disp_rdis = this.filter.disp.rdis.subscribe(this.filterRdisHandle, this);
+            this.subscriptions.filter_disp_s = this.filter.disp.s.subscribe(this.filterSHandle, this);
+            this.subscriptions.filter_disp_y = this.filter.disp.year.subscribe(_.debounce(this.yearHandle, 800), this);
+            this.subscriptions.filter_disp_y2 = this.filter.disp.year2.subscribe(_.debounce(this.year2Handle, 800), this);
+            this.subscriptions.filter_disp_ccount = this.filter.disp.ccount.subscribe(_.debounce(this.ccountHandle, 800), this);
+            this.subscriptions.filter_active = this.filter.active.subscribe(this.filterActiveChange, this);
+            this.filterChangeHandleBlock = false;
 
             this.sizesCalc();
             this.routeHandler();
@@ -316,7 +367,7 @@ define([
                 this.makeBinding();
                 this.getPhotos((page - 1) * this.limit, this.limit, function () {
                     this.loadedFirst(true);
-                }, this);
+                }, this, true);
             }
         },
         buildFilterString: function () {
@@ -324,6 +375,7 @@ define([
             var t = this.filter.disp.t().map(Number).sort();
             var c = this.filter.disp.c().map(Number).sort();
             var r = this.filter.disp.r();
+            var re = this.filter.disp.re();
             var s = this.filter.disp.s().map(Number);
             var geo = this.filter.disp.geo();
             var year = Number(this.filter.disp.year());
@@ -338,10 +390,8 @@ define([
                     filterString += '!' + r[i].cid;
                 }
 
-                var rhash = _.transform(r, function (result, region) {
-                    result[region.cid] = region;
-                }, {});
-                var rp = _.sortBy(this.filter.disp.rdis().map(Number).filter(function (cid) {
+                var rhash = this.rHash();
+                var rp = _.sortBy(this.filter.disp.rdis().filter(function (cid) {
                     return rhash.hasOwnProperty(cid);
                 }));
 
@@ -356,13 +406,21 @@ define([
                 if (rs.length === 1) {
                     filterString += (filterString ? '_' : '') + 'rs!' + rs[0];
                 }
-            } else if (this.auth.iAm && this.auth.iAm.regions().length) {
+            } else if (this.auth.iAm && this.auth.iAm.regions().length || re.length) {
                 filterString += (filterString ? '_' : '') + 'r!0';
             }
+
+            if (re.length) {
+                filterString += (filterString ? '_' : '') + 're';
+                for (i = 0; i < re.length; i++) {
+                    filterString += '!' + re[i].cid;
+                }
+            }
+
             if (geo.length === 1) {
                 filterString += (filterString ? '_' : '') + 'geo!' + geo[0];
             }
-            if (s.length && this.auth.iAm) {
+            if (s.length && this.auth.iAm && !_.isEqual(s, [statuses.keys.PUBLIC])) {
                 var allowedS;
 
                 if (this.auth.iAm.role() > 4 || this.itsMine()) {
@@ -402,7 +460,7 @@ define([
                 this.year2 = year2;
                 filterString += (filterString ? '_' : '') + 'y!' + year + '!' + year2;
             }
-            if (c.length && (!_.isEqual(c, [0, 1]) || ccount)) {
+            if (c.length && (!_.isEqual(c, [0, 1]) || ccount > 1)) {
                 this.ccount = ccount;
 
                 filterString += (filterString ? '_' : '') + 'c';
@@ -439,27 +497,99 @@ define([
                 this.filter.active(true);
                 this.filterActiveChangeBlock = false;
             }
+
+            // If number of children regions equals to zero and rs equals '1',
+            // change it to '0' (set all, but in template will be set only '0')
+            if (!this.activeChildLen() && _.isEqual(this.filter.disp.rs(), ['1'])) {
+                this.filter.disp.rs(['0', '1']);
+            }
+
             var newFilter = this.buildFilterString();
             if (newFilter !== this.filter.origin) {
                 this.updateFilterUrl(newFilter);
             }
         },
+        filterRHandle: function () {
+            var rhash = this.rHash();
+
+            // Check if we need to delete some excluded regions if some parent have been removed
+            var re = this.filter.disp.re();
+            if (re.length) {
+                var reNew = re.reduce(function (result, region) {
+                    if (region.parents && region.parents.some(function (cid) {return rhash[cid] !== undefined;})) {
+                        result.push(region);
+                    }
+                    return result;
+                }, []);
+
+                if (reNew.length !== re.length) {
+                    this.filter.disp.re(reNew);
+                }
+            }
+
+            // Check if we need to delete some rdis
+            var rdis = this.filter.disp.rdis();
+            if (rdis.length) {
+                var rdisNew = rdis.reduce(function (result, cid) {
+                    if (rhash[cid]) {
+                        result.push(cid);
+                    }
+                    return result;
+                }, []);
+
+                if (rdisNew.length !== rdis.length) {
+                    this.filter.disp.rdis(rdisNew);
+                }
+            }
+
+            this.filterChangeHandle();
+        },
+        filterRdisHandle: function (val) {
+            var re = this.filter.disp.re();
+
+            if (re.length) {
+                // Check if we need to change array of inactive excluded regions
+                var redisNew = re.reduce(function (result, region) {
+                    if (region.parents && region.parents.some(function (cid) {return val.includes(cid);})) {
+                        result.push(region.cid);
+                    }
+                    return result;
+                }, []);
+
+                this.filter.disp.redis(redisNew);
+            }
+
+        },
+        filterSHandle: function (val) {
+            if (_.isEmpty(val)) {
+                // If user removes last status checkbox, set public status as default
+                this.filter.disp.s([String(statuses.keys.PUBLIC)]);
+            } else {
+                this.filterChangeHandle();
+            }
+        },
         //Делает активным в фильтре только один переданный регион
         fronly: function (cid) {
+            if (this.loading() || !cid) {
+                return false;
+            }
+            var diss = [];
+
+            this.filter.disp.r().forEach(function (item) {
+                if (item.cid !== cid) {
+                    diss.push(item.cid);
+                }
+            });
+            this.filter.disp.rdis(diss);
+            this.filterChangeHandle();
+        },
+        //Делает активнымы в фильтре все регионы
+        fronlyall: function () {
             if (this.loading()) {
                 return false;
             }
-            if (cid) {
-                var diss = [];
-
-                this.filter.disp.r().forEach(function (item) {
-                    if (item.cid !== cid) {
-                        diss.push(item.cid);
-                    }
-                });
-                this.filter.disp.rdis(diss);
-                this.filterChangeHandle();
-            }
+            this.filter.disp.rdis([]);
+            this.filterChangeHandle();
         },
         // Активирует/деактивирует в фильтре переданный регион
         frdis: function (cid) {
@@ -479,6 +609,106 @@ define([
                     this.filterChangeHandle();
                 }
             }
+        },
+        // Деактивирует в фильтре все регионы
+        frdisall: function () {
+            if (this.loading()) {
+                return false;
+            }
+            this.filter.disp.rdis(this.filter.disp.r().map(function (region) {
+                return region.cid;
+            }));
+            this.filterChangeHandle();
+        },
+        // Удаляет из фильтра переданный регион
+        frdel: function (cid) {
+            if (this.loading() || !cid) {
+                return false;
+            }
+            this.filter.disp.r.remove(function (item) {
+                return item.cid === cid;
+            });
+        },
+        // Удаляет из фильтра все регионы
+        frdelall: function () {
+            if (this.loading()) {
+                return false;
+            }
+            this.filter.disp.r.removeAll();
+        },
+        // Удаляет из фильтра все регионы кроме переданного
+        frdelothers: function (cid) {
+            if (this.loading() || !cid) {
+                return false;
+            }
+            this.filter.disp.rdis([]);
+            this.filter.disp.r.remove(function (item) {
+                return item.cid !== cid;
+            });
+        },
+        frselectparent: function (regionCidToReplace, parentRegion) {
+            // Replace hovered region with clicked parent and remove all other selected children on that parent (if they exist)
+            this.filter.disp.r(this.filter.disp.r().reduce(function (result, region) {
+                if (region.cid === regionCidToReplace) {
+                    result.push(parentRegion);
+
+                    // And assign parents array object to assigning parent
+                    if (parentRegion.parents) {
+                        parentRegion.parentRegionsArr = region.parentRegionsArr.slice(parentRegion.parents.length);
+                    }
+                } else if (!region.parents || region.parents.every(function (cid) {return cid !== parentRegion.cid;})) {
+                    result.push(region);
+                }
+                return result;
+            }, []));
+        },
+        freselectparent: function (regionCidToReplace, parentRegion) {
+            if (this.rHashPlusParents()[parentRegion.cid]) {
+                return;
+            }
+            // Replace hovered region with clicked parent and remove all other selected children on that parent (if they exist)
+            this.filter.disp.re(this.filter.disp.re().reduce(function (result, region) {
+                if (region.cid === regionCidToReplace) {
+                    result.push(parentRegion);
+
+                    // And assign parents array object to assigning parent
+                    if (parentRegion.parents) {
+                        parentRegion.parentRegionsArr = region.parentRegionsArr.slice(parentRegion.parents.length);
+                    }
+                } else if (!region.parents || region.parents.every(function (cid) {return cid !== parentRegion.cid;})) {
+                    result.push(region);
+                }
+                return result;
+            }, []));
+            this.filterChangeHandle();
+        },
+        // Удаляет из фильтра переданный исключающий регион
+        fredel: function (cid) {
+            if (this.loading() || !cid) {
+                return false;
+            }
+            this.filter.disp.re.remove(function (item) {
+                return item.cid === cid;
+            });
+            this.filterChangeHandle();
+        },
+        // Удаляет из фильтра все исключающие регионы
+        fredelall: function () {
+            if (this.loading()) {
+                return false;
+            }
+            this.filter.disp.re.removeAll();
+            this.filterChangeHandle();
+        },
+        // Удаляет из фильтра все исключающие регионы кроме переданного
+        fredelothers: function (cid) {
+            if (this.loading() || !cid) {
+                return false;
+            }
+            this.filter.disp.re.remove(function (item) {
+                return item.cid !== cid;
+            });
+            this.filterChangeHandle();
         },
         //Обработка клика вариантов присутствия координат в фильтре
         //Чтобы постаыить вторую галку, если обе сняты, т.к. должно быть хотя-бы одно из состояний
@@ -795,7 +1025,7 @@ define([
                 //В режиме ленты перезапрашиваем всё
                 this.getPhotos(0, Math.max(this.photos().length, this.limit), null, null, true);
             } else if (this.coin()) {
-                this.getPhotos(0, this.limit, null, null, true);
+                this.getPhotos(0, this.limit, null, null);
             } else {
                 //В постраничном режиме просто перезапрашиваем страницу
                 this.getPhotos((this.page() - 1) * this.limit, this.limit);
@@ -821,7 +1051,7 @@ define([
                 }
 
                 if (this.feed()) {
-                    if (data.photos && data.photos.length) {
+                    if (data.photos) {
                         if (forceReplace) {
                             this.photos(data.photos);
                         } else {
@@ -864,17 +1094,62 @@ define([
                     if (this.filter.active()) {
                         this.filterChangeHandleBlock = true;
 
+                        this.filter.disp.rs(data.filter.rs && data.filter.rs.length ? data.filter.rs : ['0', '1']);
+
+                        // Treat current re order. First insert re that already on page, then new ones (if exist)
+                        var reCurrent = this.filter.disp.re();
+                        var reNewHash = _.transform(data.filter.re, function (result, cid) {
+                            result[cid] = cid;
+                        }, {});
+                        var reNew = reCurrent.reduce(function (result, re) {
+                            if (reNewHash[re.cid]) {
+                                var region = data.filter.rhash[re.cid];
+                                result.push(region);
+
+                                if (region.parents) {
+                                    region.parentRegionsArr = region.parents.map(function (cid) {
+                                        return data.filter.rhash[cid];
+                                    }).reverse();
+                                }
+
+                                delete reNewHash[re.cid];
+                            }
+                            return result;
+                        }, []);
+                        _.forOwn(reNewHash, function (cid) {
+                            var region = data.filter.rhash[cid];
+                            reNew.push(region);
+
+                            if (region.parents) {
+                                region.parentRegionsArr = region.parents.map(function (cid) {
+                                    return data.filter.rhash[cid];
+                                }).reverse();
+                            }
+                        });
+
+                        this.filter.disp.re(reNew);
+                        this.filter.disp.rdis(data.filter.rp || []);
+
                         // Если количество регионов равно, они пусты или массивы их cid равны,
                         // то и заменять их не надо, чтобы небыло "прыжка"
                         var rEquals = this.filter.disp.r().length === data.filter.r.length &&
-                            (!data.filter.r.length || _.isEqual(_.map(this.filter.disp.r(), 'cid'), _.map(data.filter.r, 'cid')));
+                            (!data.filter.r.length || _.isEqual(_.map(this.filter.disp.r(), 'cid'), data.filter.r));
 
                         if (!rEquals) {
-                            this.filter.disp.r(data.filter.r || []);
+                            this.filter.disp.r(data.filter.r.map(function (cid) {
+                                var region = data.filter.rhash[cid];
+
+                                if (region.parents) {
+                                    region.parentRegionsArr = region.parents.map(function (cid) {
+                                        return data.filter.rhash[cid];
+                                    }).reverse();
+                                }
+
+                                return region;
+                            }));
                         }
 
-                        this.filter.disp.rdis(data.filter.rp || []);
-                        this.filter.disp.s(data.filter.s ? data.filter.s.map(String) : []);
+                        this.filter.disp.s(data.filter.s ? data.filter.s.map(String) : [String(statuses.keys.PUBLIC)]);
 
                         if (!data.filter.t || !data.filter.t.length) {
                             data.filter.t = [1, 2];
@@ -882,14 +1157,10 @@ define([
                         if (!data.filter.geo || !data.filter.geo.length) {
                             data.filter.geo = ['0', '1'];
                         }
-                        if (!data.filter.rs || !data.filter.rs.length) {
-                            data.filter.rs = ['0', '1'];
-                        }
 
                         this.t = data.filter.t.map(String);
                         this.filter.disp.t(this.t.slice());
                         this.filter.disp.geo(data.filter.geo);
-                        this.filter.disp.rs(data.filter.rs);
 
                         if (_.isEmpty(data.filter.y)) {
                             var yearsRange = this.getTypeYearsRange();
@@ -1118,7 +1389,7 @@ define([
                             module: 'm/region/select',
                             options: {
                                 min: 0,
-                                max: 5,
+                                max: 10,
                                 selectedInit: this.filter.disp.r()
                             },
                             modal: {
@@ -1134,18 +1405,27 @@ define([
                                         text: 'Apply',
                                         glyphicon: 'glyphicon-ok',
                                         click: function () {
-                                            var regions = this.regselectVM.getSelectedRegions(['cid', 'title_en']);
+                                            var regions = this.regselectVM.getSelectedRegions(['cid', 'parents', 'title_en', 'childLen']);
 
-                                            if (regions.length > 5) {
+                                            if (regions.length > 10) {
                                                 return noties.alert({
-                                                    message: 'Allowed to select up to 5 regions',
+                                                    message: 'Allowed to select up to 10 regions',
                                                     type: 'warning',
                                                     timeout: 4000,
                                                     ok: true
                                                 });
                                             }
 
-                                            this.filter.disp.r(regions);
+                                            this.filter.disp.r(regions.map(function (region) {
+                                                if (region.parents) {
+                                                    region.parentRegionsArr = this.regselectVM
+                                                        .getRegionsByCids(region.parents, ['cid', 'parents', 'title_en', 'childLen'])
+                                                        .reverse();
+                                                }
+
+                                                return region;
+                                            }, this));
+
                                             this.closeRegionSelect();
                                         },
                                         ctx: this
@@ -1167,6 +1447,100 @@ define([
             }
         },
         closeRegionSelect: function () {
+            if (this.regselectVM) {
+                this.regselectVM.destroy();
+                delete this.regselectVM;
+            }
+        },
+
+        regionExcludeSelect: function () {
+            if (this.regselectVM || !this.activeChildLen()) {
+                return;
+            }
+
+            var topcids;
+            var r = this.filter.disp.r();
+
+            if (r.length) {
+                topcids = r.reduce(function (result, region) {
+                    if (region.childLen) {
+                        result.push(region.cid);
+                    }
+                    return result;
+                }, []);
+
+                if (!topcids.length) {
+                    return;
+                }
+            }
+
+            renderer(
+                [
+                    {
+                        module: 'm/region/select',
+                        options: {
+                            min: 0,
+                            max: 10,
+                            selectedInit: this.filter.disp.re(),
+                            topCidsFilter: topcids,
+                            neverSelectable: topcids
+                        },
+                        modal: {
+                            topic: 'Select regions to exclude from filtration',
+                            initWidth: '900px',
+                            maxWidthRatio: 0.95,
+                            fullHeight: true,
+                            withScroll: true,
+                            offIcon: { text: 'Cancel', click: this.closeRegionExcludeSelect, ctx: this },
+                            btns: [
+                                {
+                                    css: 'btn-success',
+                                    text: 'Apply',
+                                    glyphicon: 'glyphicon-ok',
+                                    click: function () {
+                                        var regions = this.regselectVM.getSelectedRegions(['cid', 'parents', 'title_en']);
+
+                                        if (regions.length > 10) {
+                                            return noties.alert({
+                                                message: 'Allowed to select up to 10 regions',
+                                                type: 'warning',
+                                                timeout: 4000,
+                                                ok: true
+                                            });
+                                        }
+
+                                        this.filter.disp.re(regions.map(function (region) {
+                                            if (region.parents) {
+                                                region.parentRegionsArr = this.regselectVM
+                                                    .getRegionsByCids(region.parents, ['cid', 'parents', 'title_en', 'childLen'])
+                                                    .reverse();
+                                            }
+
+                                            return region;
+                                        }, this));
+                                        this.closeRegionExcludeSelect();
+
+                                        // Вручную вызываем обработку фильтра
+                                        this.filterChangeHandle();
+                                    },
+                                    ctx: this
+                                },
+                                { css: 'btn-warning', text: 'Cancel', click: this.closeRegionExcludeSelect, ctx: this }
+                            ]
+                        },
+                        callback: function (vm) {
+                            this.regselectVM = vm;
+                            this.childModules[vm.id] = vm;
+                        }.bind(this)
+                    }
+                ],
+                {
+                    parent: this,
+                    level: this.level + 1
+                }
+            );
+        },
+        closeRegionExcludeSelect: function () {
             if (this.regselectVM) {
                 this.regselectVM.destroy();
                 delete this.regselectVM;

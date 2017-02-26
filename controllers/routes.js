@@ -6,7 +6,7 @@ import Utils from '../commons/Utils';
 import * as session from './_session';
 import { clientParams, ready as settingsReady } from './settings';
 import NotFoundError from '../app/errors/NotFound';
-import { getRegionsArrFromCache } from './region';
+import { getRegionsArrPublicFromCache } from './region';
 import { handleHTTPRequest, handleHTTPAPIRequest } from '../app/request';
 import { parseFilter } from './photo';
 import constants from './constants';
@@ -232,7 +232,7 @@ function getRegionForGallery(req, res, next) {
 
     if (filter) {
         try {
-            const regions = getRegionsArrFromCache(parseFilter(filter).r);
+            const regions = getRegionsArrPublicFromCache(parseFilter(filter).r);
 
             if (!_.isEmpty(regions)) {
                 let hasRussianRegions = false;

@@ -905,7 +905,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 buttons: [
                     {
                         addClass: 'btn btn-success margBott',
-                        text: 'Указать координаты',
+                        text: 'Enter coordinates',
                         onClick: function ($noty) {
                             this.edit(true);
                             $noty.close();
@@ -913,7 +913,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     },
                     {
                         addClass: 'btn btn-warning margBott',
-                        text: 'Выбрать регион вручную',
+                        text: 'Select region manually',
                         onClick: function ($noty) {
                             this.edit(true);
                             $noty.close();
@@ -921,7 +921,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         }.bind(this)
                     },
                     {
-                        addClass: 'btn btn-danger margBott', text: 'Отмена',
+                        addClass: 'btn btn-danger margBott', text: 'Cancel',
                         onClick: function ($noty) {
                             if (cb) {
                                 cb.call(ctx);

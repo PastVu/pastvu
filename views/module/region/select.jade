@@ -17,7 +17,7 @@
     .inputwrap.origin
         .input-group.regionsgroup
             span.input-group-addon Selection:
-            input.regionstkn.form-control(type="text", placeholder="Start to type region name")
+            input.regionstkn.form-control(type="text", placeholder="Start typing region name")
 
     .offsetwrap
         .regionsHead
@@ -37,10 +37,10 @@
     li(data-bind="css: {isparent: $data.childLen}")
         .lirow(data-bind="css: {selected: $data.selected(), selectable: $data.selectable()}")
             //ko if: $data.childLen
-            .chevron(data-bind="click: $parents[$data.level].collapseToggle, attr: {title: ($data.opened() ? 'Collapse' : 'Expand') + ' children regions'}")
+            .chevron(data-bind="click: $data.collapseToggle, attr: {title: ($data.opened() ? 'Collapse' : 'Expand') + ' children regions'}")
                 span.glyphicon(data-bind="css: {'glyphicon-minus': $data.opened(), 'glyphicon-plus': !$data.opened()}")
             // /ko
-            .rname(data-bind="click: function() {$parents[$data.level].clickNode($data.title_en)}, attr: {title: $data.selected() ? 'Снять выбор' : ($data.selectable() ? 'Select region' : '')}")
+            .rname(data-bind="click: $data.clickNode, attr: {title: $data.selected() ? 'Снять выбор' : ($data.selectable() ? 'Select region' : '')}")
                 .name(data-bind="text: ' ' + $data.title_en, css: {'nameborder': $data.phc || $data.pac || $data.cc}")
                 //ko if: $data.phc
                 .section(title="Photos")

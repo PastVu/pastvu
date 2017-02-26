@@ -55,7 +55,9 @@ export async function configure(startStamp) {
 
     const status404Text = http.STATUS_CODES[404];
     const static404 = ({ url, method, headers: { useragent, referer } = {} }, res) => {
-        logger404.error(JSON.stringify({ url, method, useragent, referer }));
+        if (env !== 'development') {
+            logger404.error(JSON.stringify({ url, method, useragent, referer }));
+        }
 
         res.statusCode = 404;
         res.end(status404Text); // Finish with 'end' instead of 'send', that there is no additional operations (etag)

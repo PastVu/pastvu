@@ -1425,6 +1425,7 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40, random = fa
         // To calculate new comments we need '_id', for checking of changes - 'ucdate'
         const fieldsSelect = iAm.registered ? compactFieldsForRegWithRegions : compactFieldsWithRegions;
 
+        // console.log(JSON.stringify(query, null, '\t'));
         if (random) {
             const countQuery = { ...query };
             delete countQuery.r2d; // Don't need to to consider random field in counting
@@ -1464,13 +1465,49 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40, random = fa
         }
     }
 
+    const r = [];
+    const re = [];
+    const filterRegionsHash = {};
+
+    // Create hash of filter regions (selected and exluded) and their parents
+    if (buildQueryResult.rarr.length) {
+        for (const region of buildQueryResult.rarr) {
+            r.push(region.cid);
+            filterRegionsHash[region.cid] = region;
+
+            if (region.parents && region.parents.length) {
+                for (const cid of region.parents) {
+                    if (filterRegionsHash[cid] === undefined) {
+                        filterRegionsHash[cid] = regionController.getRegionPublicFromCache(cid);
+                    }
+                }
+            }
+        }
+    }
+    if (buildQueryResult.rearr && buildQueryResult.rearr.length) {
+        for (const region of buildQueryResult.rearr) {
+            re.push(region.cid);
+            filterRegionsHash[region.cid] = region;
+
+            if (region.parents && region.parents.length) {
+                for (const cid of region.parents) {
+                    if (filterRegionsHash[cid] === undefined) {
+                        filterRegionsHash[cid] = regionController.getRegionPublicFromCache(cid);
+                    }
+                }
+            }
+        }
+    }
+
     return {
         skip, count, photos, rhash: shortRegionsHash,
         filter: {
-            t: buildQueryResult.types,
-            r: buildQueryResult.rarr,
+            r,
+            re,
             rp: filter.rp,
             rs: filter.rs,
+            rhash: filterRegionsHash,
+            t: buildQueryResult.types,
             s: buildQueryResult.s,
             y: buildQueryResult.y,
             c: buildQueryResult.c,
@@ -1501,7 +1538,7 @@ const givePublicNoGeoIndex = (function () {
     };
 }());
 
-const filterProps = { geo: [], r: [], rp: [], rs: [], s: [], t: [], y: [], c: [] };
+const filterProps = { geo: [], r: [], rp: [], rs: [], re: [], s: [], t: [], y: [], c: [] };
 const delimeterParam = '_';
 const delimeterVal = '!';
 export function parseFilter(filterString) {
@@ -1530,7 +1567,7 @@ export function parseFilter(filterString) {
                     result.r = 0;
                 } else {
                     filterVal = filterVal.split(delimeterVal).map(Number);
-                    if (Array.isArray(filterVal) && filterVal.length) {
+                    if (Array.isArray(filterVal) && filterVal.length && filterVal.length <= 10) {
                         result.r = [];
                         for (filterValItem of filterVal) {
                             if (filterValItem) {
@@ -1545,7 +1582,7 @@ export function parseFilter(filterString) {
             } else if (filterParam === 'rp') {
                 // Regions phantom. Inactive filter regions
                 filterVal = filterVal.split(delimeterVal).map(Number);
-                if (Array.isArray(filterVal) && filterVal.length) {
+                if (Array.isArray(filterVal) && filterVal.length && filterVal.length <= 10) {
                     result.rp = [];
                     for (filterValItem of filterVal) {
                         if (filterValItem) {
@@ -1560,6 +1597,19 @@ export function parseFilter(filterString) {
                 filterVal = filterVal.split(delimeterVal);
                 if (Array.isArray(filterVal) && filterVal.length === 1) {
                     result.rs = filterVal;
+                }
+            } else if (filterParam === 're') {
+                filterVal = filterVal.split(delimeterVal).map(Number);
+                if (Array.isArray(filterVal) && filterVal.length && filterVal.length <= 10) {
+                    result.re = [];
+                    for (filterValItem of filterVal) {
+                        if (filterValItem) {
+                            result.re.push(filterValItem);
+                        }
+                    }
+                    if (!result.re.length) {
+                        delete result.re;
+                    }
                 }
             } else if (filterParam === 'y') {
                 //constants.photo.years[constants.photo.type.PAINTING].max
@@ -2624,6 +2674,32 @@ export function buildPhotosQuery(filter, forUserId, iAm, random) {
         }
     }
 
+    let rs;
+    let r = filter.r;
+    let regionExludeAll; // Array if excluded regions objects, to return it to user
+    let regionExludeCids; // Array if excluded regions cids, can be undefined whils regionExludeAll is not, if rdis is active
+    // Excluding regions only available if some regions are specified
+    // So ignore showing children option and excluded regions list if regions are not specified
+    if (Array.isArray(r) && r.length) {
+        rs = filter.rs;
+        regionExludeCids = filter.re;
+    } else if (r === 0) {
+        regionExludeCids = filter.re;
+    }
+
+    if (regionExludeCids && regionExludeCids.length) {
+        regionExludeAll = regionController.getRegionsArrPublicFromCache(regionExludeCids).sort((a, b) =>
+            a.parents.length < b.parents.length || a.parents.length === b.parents.length && a.cid < b.cid ? -1 : 1
+        );
+        if (regionExludeAll.length !== regionExludeCids) {
+            if (!regionExludeAll.length) {
+                regionExludeAll = regionExludeCids = undefined;
+            } else {
+                regionExludeCids = regionExludeAll.map(region => region.cid);
+            }
+        }
+    }
+
     const statusesOpened = [];
     const statusesClosed = [];
 
@@ -2631,24 +2707,31 @@ export function buildPhotosQuery(filter, forUserId, iAm, random) {
 
     const statusesOpenedOnly = statuses.length === statusesOpened.length;
 
-    const result = { query: null, s: [], rcids: [], rarr: [] };
+    const result = { query: null, s: [], rcids: [], rarr: [], rhash: Object.create(null) };
 
-    if (Array.isArray(filter.r) && filter.r.length) {
-        regionsArrAll = regionController.getRegionsArrFromCache(filter.r);
+    if (Array.isArray(r) && r.length) {
+        regionsArrAll = regionController.getRegionsArrPublicFromCache(r);
 
         if (Array.isArray(filter.rp) && filter.rp.length) {
             // If exists array of inactive (phantom) regions of filter, take the difference
-            regionsCids = _.difference(filter.r, filter.rp);
-            regionsArr = regionController.getRegionsArrFromCache(regionsCids);
+            regionsCids = _.difference(r, filter.rp);
+            regionsArr = regionController.getRegionsArrPublicFromCache(regionsCids);
         } else {
-            regionsCids = filter.r;
+            regionsCids = r;
             regionsArr = regionsArrAll;
         }
 
-        const regionQuery = regionController.buildQuery(regionsArr, filter.rs);
-        rqueryPub = rqueryMod = regionQuery.rquery;
-        regionsHash = regionQuery.rhash;
-    } else if (filter.r === undefined && iAm.registered && iAm.user.regions.length && (!forUserId || !itsMineGallery)) {
+        if (regionsArr.length) {
+            const regionQuery = regionController.buildQuery(regionsArr, rs, regionExludeAll);
+            rqueryPub = rqueryMod = regionQuery.rquery;
+            regionsHash = regionQuery.rhash;
+        } else {
+            // If user switched off all selected regions, consider request as with all regions (r = 0)
+            r = 0;
+            rs = undefined;
+            regionExludeCids = undefined; // Consider that if user disabled all selected regions, he disbaled all excluded too
+        }
+    } else if (r === undefined && iAm.registered && iAm.user.regions.length && (!forUserId || !itsMineGallery)) {
         regionsHash = iAm.rhash;
         regionsCids = _.map(iAm.user.regions, 'cid');
         regionsArr = regionsArrAll = regionController.getRegionsArrFromHash(regionsHash, regionsCids);
@@ -2660,15 +2743,19 @@ export function buildPhotosQuery(filter, forUserId, iAm, random) {
     if (statusesOpenedOnly) {
         queryPub = {};  // Give only public photos to anonymous or when filter for public is active
 
-        if (filter.r === undefined && iAm.registered && iAm.user.regions.length) {
-            rqueryPub = iAm.rquery; // If filter is not specified - give by own regions
+        if (r === undefined && iAm.registered && iAm.user.regions.length) {
+            // If filter is not specified - give by own user regions (that user specified in settings)
+            // In this case rs and re are ignored
+            rqueryPub = iAm.rquery;
         }
     } else if (itsMineGallery) {
         // Own gallery give without removed regions(for non-admins) and without regions in settings, only by filter.r
         queryMod = {};
     } else {
-        if (filter.r === undefined && iAm.registered && iAm.user.regions.length) {
-            rqueryPub = rqueryMod = iAm.rquery; // If filter not specified - give by own regions
+        if (r === undefined && iAm.registered && iAm.user.regions.length) {
+            // If filter is not specified - give by own user regions (that user specified in settings)
+            // In this case rs and re are ignored
+            rqueryPub = rqueryMod = iAm.rquery;
         }
 
         if (iAm.isAdmin) {
@@ -2685,18 +2772,48 @@ export function buildPhotosQuery(filter, forUserId, iAm, random) {
                 // Give area as moderated for global moderators or regional moderators,
                 // whose moderators regions match with own, i.e. moderation area includes users area
                 queryMod = {};
-            } else if (filter.r === 0 || !regionsCids.length) {
+            } else if (r === 0 || !regionsCids.length) {
                 // If all users regions requested (i.e. whole world)
                 // do global request for public, and with statuses for moderated
                 queryPub = {};
-                queryMod = {};
-                rqueryMod = iAm.mod_rquery;
+
+                // if it global filter with exluded, need to find out what should be excluded from moderation regions
+                if (r === 0 && regionExludeCids) {
+                    const regionsMod = [];
+
+                    // First exclude modaration regions that are under excluded regions
+                    for (const region of iAm.user.mod_regions) {
+                        // Exclude moderation region if it's in the list of excluded
+                        if (regionExludeCids.includes(region.cid)) {
+                            continue;
+                        }
+
+                        // Exclude moderation region if any of it's parent in the list of excluded
+                        if (!region.parents || region.parents.some(parentCid => regionExludeCids.includes(parentCid))) {
+                            continue;
+                        }
+
+                        regionsMod.push(region);
+                    }
+
+                    // Then exclude ecluded regions that are children of moderation
+                    if (regionsMod.length) {
+                        const regionQuery = regionController.buildQuery(regionsMod, null, regionExludeAll);
+                        rqueryMod = regionQuery.rquery;
+                        queryMod = {};
+                    }
+                } else {
+                    // Otherwise just use user's moderation query
+                    queryMod = {};
+                    rqueryMod = iAm.mod_rquery;
+                }
             } else {
                 // If arrays of users and moderated regions are different,
-                // "subtract" public from moderated, obtaining two new clean arrays
+                // "subtract" moderated from public , obtaining two new arrays
 
-                const regionsPub = []; // Pure array of public regions
-                const regionsMod = []; // Pure array of moderated regions
+                const regionsPub = []; // Array of public regions that are selected
+                const regionsMod = []; // Array of moderated regions
+                let regionsModUnderSelectedPubCidsSet;
 
                 // If user region or one of its parent is moderated,
                 // then include it into array of moderation regions
@@ -2720,27 +2837,49 @@ export function buildPhotosQuery(filter, forUserId, iAm, random) {
                     }
                 }
 
-                // If one of moderated regions is a child to one of users regions,
-                // then include that moderated region in array of moderated,
-                // despite the fact that the parent is an array of public
-                for (let region of iAm.user.mod_regions) {
-                    region = iAm.mod_rhash[region.cid];
-                    if (region.parents) {
-                        for (const parentCid of region.parents) {
-                            if (regionsHash[parentCid]) {
+                if (regionsPub.length) {
+                    const regionQuery = regionController.buildQuery(regionsPub, rs, regionExludeAll);
+                    const regionsExcludeHash = regionQuery.rehash || {};
+                    rqueryPub = regionQuery.rquery;
+                    queryPub = {};
+
+                    if (regionQuery.withSubRegion !== false) {
+                        // If showing subregions option (rs) is not switched to 'No',
+                        // find moderated regions that are children to selected public regions,
+                        // are not in the list of excluded or their parents is in that list.
+                        // Then include that moderated regions in array of moderated,
+                        // despite the fact that the parent is an array of public.
+
+                        regionsModUnderSelectedPubCidsSet = new Set();
+
+                        for (const region of iAm.user.mod_regions) {
+                            // Exclude moderation region if it's in the list of excluded
+                            if (regionsExcludeHash[region.cid]) {
+                                continue;
+                            }
+
+                            // Exclude moderation region if any of it's parent in the list of excluded
+                            if (!region.parents || region.parents.some(parentCid => regionsExcludeHash[parentCid])) {
+                                continue;
+                            }
+
+                            // If moderation region is child of selected public, put it into the array of moderation
+                            // Note: can't be combine with previous 'some', because excluded parent can be on different level
+                            if (region.parents.some(parentCid => regionQuery.rhash[parentCid])) {
                                 regionsMod.push(region);
+                                regionsModUnderSelectedPubCidsSet.add(region.cid);
                             }
                         }
                     }
                 }
 
-                if (regionsPub.length) {
-                    const regionQuery = regionController.buildQuery(regionsPub, filter.rs);
-                    rqueryPub = regionQuery.rquery;
-                    queryPub = {};
-                }
+                // Treat moderation regions that took places of some selected regions
+                // in the same way as selected regions on which current user have public rights only,
+                // i.e consider rs and re
+                // But not moderation regions that are children to selected -
+                // they don't need to consider rs and re, they affected by that options
                 if (regionsMod.length) {
-                    const regionQuery = regionController.buildQuery(regionsMod, filter.rs);
+                    const regionQuery = regionController.buildQuery(regionsMod, rs, regionExludeAll, regionsModUnderSelectedPubCidsSet);
                     rqueryMod = regionQuery.rquery;
                     queryMod = {};
                 }
@@ -2752,6 +2891,13 @@ export function buildPhotosQuery(filter, forUserId, iAm, random) {
         if (statusesOpened.length) {
             queryPub.s = statusesOpened.length > 1 ? { $in: statusesOpened } : statusesOpened[0];
             result.s.push(...statusesOpened);
+
+            // If rquery has not been set and request is global and array of excluded has been set,
+            // for query of excluded regions, like {r1: {$ne: 3}, r2: {$nin: [7, 9]}}
+            if (!rqueryPub && r === 0 && regionExludeCids) {
+                const reQuery = regionController.buildGlobalReQuery(regionExludeAll);
+                rqueryPub = reQuery.rquery;
+            }
 
             if (rqueryPub) {
                 Object.assign(queryPub, rqueryPub);
@@ -2775,6 +2921,13 @@ export function buildPhotosQuery(filter, forUserId, iAm, random) {
                 queryMod.s = statusesClosed.length > 1 ? { $in: statusesClosed } : statusesClosed[0];
             }
             result.s.push(...statusesClosed);
+        }
+
+        // If rquery has not been set and request is global and array of excluded has been set,
+        // for query of excluded regions, like {r1: {$ne: 3}, r2: {$nin: [7, 9]}}
+        if (!rqueryMod && r === 0 && regionExludeCids) {
+            const reQuery = regionController.buildGlobalReQuery(regionExludeAll);
+            rqueryMod = reQuery.rquery;
         }
 
         if (rqueryMod) {
@@ -2847,6 +3000,7 @@ export function buildPhotosQuery(filter, forUserId, iAm, random) {
         result.rcids = regionsCids;
         result.rhash = regionsHash;
         result.rarr = regionsArrAll;
+        result.rearr = regionExludeAll;
     }
 
     // console.log(JSON.stringify(result.query, null, '\t'));
@@ -3099,11 +3253,12 @@ const planResetDisplayStat = (function () {
         }
 
         try {
+            logger.info(`Resetting day ${needWeek ? 'and week ' : ''}display statistics...`);
             const { n: count = 0 } = await Photo.update(
                 { s: { $in: [status.PUBLIC, status.DEACTIVATE, status.REMOVE] } }, { $set: setQuery }, { multi: true }
             ).exec();
 
-            logger.info(`Reset day ${needWeek ? 'and week ' : ''}display statistics for ${count} photos`);
+            logger.info(`Reset day ${needWeek ? 'and week ' : ''}display statistics for ${count} photos complete`);
         } catch (err) {
             return logger.error(err);
         }

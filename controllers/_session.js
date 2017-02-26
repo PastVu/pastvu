@@ -425,14 +425,14 @@ async function popUserRegions(usObj) {
             path: pathPrefix + 'regionHome',
             select: { _id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1, center: 1, bbox: 1, bboxhome: 1 }
         },
-        { path: pathPrefix + 'regions', select: { _id: 1, cid: 1, title_en: 1, title_local: 1 } }
+        { path: pathPrefix + 'regions', select: { _id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1 } }
     ];
 
     let modregionsEquals; // Profile regions and moderation regions are equals
 
     if (registered && user.role === 5) {
         modregionsEquals = _.isEqual(user.regions, user.mod_regions) || undefined;
-        paths.push({ path: pathPrefix + 'mod_regions', select: { _id: 1, cid: 1, title_en: 1, title_local: 1 } });
+        paths.push({ path: pathPrefix + 'mod_regions', select: { _id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1 } });
     }
     await user.populate(paths).execPopulate();
 

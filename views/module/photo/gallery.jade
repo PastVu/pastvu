@@ -1,105 +1,169 @@
 .gallery(data-bind="with: repository[M!M]")
     .thumbs(data-bind="style: {width: panelW()}")
-        //ko if: topTitle()
-        .row.rowoffset: .col-xs-12: .pageHeader(data-bind="css: {loading: !feed() && loading()}, text: topTitle()")
-        // /ko
-
-        .row.rowoffset(style="margin-top:2px;"): .col-xs-12(data-bind="css: {invisible: !loadedFirst()}")
-            .filter(data-bind="css: {inactive: !filter.active()}")
-                .ftitle(data-bind="attr: {title: 'Фильтр. ' + (filter.active() ? 'Выключить' : 'Включить')}, click: function () {filter.active(!filter.active())}")
+        .row.rowoffset.rowFilter(style="margin-top:12px;", data-bind="css: {invisible: !loadedFirst()}")
+            .filter
+                .fToggle.tltp-wrap(data-bind="click: function () {filter.active(!filter.active())}, css: {fToggleInactive: !filter.active()}")
                     span.glyphicon.glyphicon-filter
-                .fvals
-                    .regions
-                        .filterName Regions:
-                        .filterVars
+                    .tltp.tltp-bottom.tltp-animate-move(data-bind="text: (filter.active() ? 'Disable' : 'Enable') + ' filter'")
+                //.fExpand.tltp-wrap(data-bind="click: function () {filter.active(!filter.active())}")
+                //    span.glyphicon.glyphicon-chevron-up
+                //    .tltp.tltp-bottom.tltp-animate-move(data-bind="text: (filter.active() ? 'Collapse' : 'Expand') + ' filter'")
+                .fCol(data-bind="css: {inactive: !filter.active()}")
+                    .fRow
+                        .fName.fNameRegion Regions:
+                        .fVars
                             //ko if: !filter.disp.r().length
-                            span.region
+                            span.fRegion
                                 span.glyphicon.glyphicon-globe
                                 |  Whole world
                             // /ko
                             //ko foreach: filter.disp.r
-                            span.region.candis(data-bind="css: {dis: $parent._.includes($parent.filter.disp.rdis(), $data.cid)}")
+                            span.fRegion.tltp-wrap(data-bind="css: {dis: $parent._.includes($parent.filter.disp.rdis(), $data.cid)}")
                                 span(data-bind="text: $data.title_en")
-                                //ko if: $parent.filter.admin()
-                                .rtgl.edit(title="Jump to region editor")
-                                    a(data-bind="attr: {href: '/admin/region/' + $data.cid}")
-                                        span.glyphicon.glyphicon-pencil
-                                // /ko
-                                .rtgl.only(title="Make only this region active", data-bind="click: function() {$parent.fronly($data.cid);}")
-                                    span.glyphicon.glyphicon-ok
-                                .rtgl.dis(title="Toggle activity of this region", data-bind="click: function() {$parent.frdis($data.cid);}")
-                                    span.glyphicon.glyphicon-off
+                                .tltp.tltp-bottom.tltp-touch.tltp-animate-opacity(style="padding:3px 3px 1px;white-space:nowrap;font-weight:normal;")
+                                    //ko if: $parent.filter.admin()
+                                    .rtgl.edit(title="Jump to region editor")
+                                        a(data-bind="attr: {href: '/admin/region/' + $data.cid}")
+                                            span.glyphicon.glyphicon-pencil(style="vertical-align:text-top;")
+                                    // /ko
+                                    //ko if: $parent.filter.disp.r().length > 1
+                                    .rtgl.only(title="Make only this region active", data-bind="click: function() {$parent.fronly($data.cid);}")
+                                        span.glyphicon.glyphicon-ok
+                                    // /ko
+                                    .rtgl.dis(title="Toggle activity of this region", data-bind="click: function() {$parent.frdis($data.cid);}")
+                                        span.glyphicon.glyphicon-off(style="vertical-align:text-top;")
+                                    .rtgl.del(title="Remove region", data-bind="click: function() {$parent.frdel($data.cid);}")
+                                        span.glyphicon.glyphicon-remove(style="vertical-align:text-top;")
+                                    //ko if: $parent.filter.disp.r().length > 1
+                                    .rtgl.del(title="Remove another regions", data-bind="click: function() {$parent.frdelothers($data.cid);}")
+                                        span.glyphicon.glyphicon-remove-sign(style="vertical-align:text-top;")
+                                    // /ko
+                                    //ko if: $data.parentRegionsArr
+                                    //ko foreach: $data.parentRegionsArr
+                                    .selectParent.selectParentSelectable(data-bind="text:$data.title_en, click:function() {$parents[1].frselectparent($parent.cid, $data);}")
+                                    // /ko
+                                    // /ko
                             // /ko
-                            span.regionEdit(data-bind="click: regionSelect")
+                            //ko if: filter.disp.r().length
+                            .rtgl.only(title="Activate all regions", data-bind="click: fronlyall")
+                                span.glyphicon.glyphicon-ok
+                            .rtgl.dis(title="Deactivate all regions", data-bind="click: frdisall")
+                                span.glyphicon.glyphicon-off(style="vertical-align:text-top;")
+                            .rtgl.del(title="Remove all regions", data-bind="click: frdelall")
+                                span.glyphicon.glyphicon-remove(style="vertical-align:text-top;")
+                            // /ko
+                            .rtgl.select(data-bind="click: regionSelect")
                                 span.glyphicon.glyphicon-pencil
                                 | Change
-                    .row.others
-                        .row
-                            .filterName Type:
-                            .filterVars
-                                label.checkbox-inline
-                                    input(type="checkbox", value="1", data-bind="checked: filter.disp.t, click: ftclick")
-                                    span Photo
-                                label.checkbox-inline
-                                    input(type="checkbox", value="2", data-bind="checked: filter.disp.t, click: ftclick")
-                                    span Painting
-                            .filterName Years:
-                            .filterVars(data-bind="css: {yearsSet:Number(filter.disp.year()) > yearsRange().min || Number(filter.disp.year2()) < yearsRange().max}")
-                                input.form-control.years(type="text", data-bind="value: filter.disp.year, valueUpdate: 'keyup', event: {keydown: yearArrow}", maxlength="4")
-                                = ' – '
-                                input.form-control.years(type="text", data-bind="value: filter.disp.year2, valueUpdate: 'keyup', event: {keydown: year2Arrow}", maxlength="4")
-                                = ' '
-                                .tltp-wrap.resetYears(data-bind="click: yearsReset")
-                                    span.glyphicon.glyphicon-remove-circle(style="top:3px")
-                                    .tltp.tltp-right.tltp-animate-move(style="white-space:nowrap") Reset years range
-                        .row
-                            .filterName Coordinates:
-                            .filterVars(style="padding-right:12px;")
-                                label.checkbox-inline
-                                    input(type="checkbox", value="0", data-bind="checked: filter.disp.geo, click: fgeoclk")
-                                    span.tltp-wrap
-                                        | Not set
-                                        .tltp.tltp-right.tltp-animate-move(style="white-space:nowrap") Section "Where is it?"
-                                label.checkbox-inline
-                                    input(type="checkbox", value="1", data-bind="checked: filter.disp.geo, click: fgeoclk")
-                                    span Set
-                            //ko if: filter.disp.r().length
-                            .filterName Subregions:
-                            .filterVars
-                                label.checkbox-inline(style="min-width:54px;")
-                                    input(type="checkbox", value="0", data-bind="checked: filter.disp.rs, click: frsclick")
-                                    span Not set
-                                label.checkbox-inline
-                                    input(type="checkbox", value="1", data-bind="checked: filter.disp.rs, click: frsclick")
-                                    span Set
+                    .fRow(style="white-space:nowrap", data-bind="css: {inactive: !reIsPossible()}") Images are also attached to the subregions:
+                    .fRow: .fVars(style="max-width:550px;", data-bind="css: {inactive: !reIsPossible()}")
+                        label.checkbox-inline.tltp-wrap(data-bind="css: {inactive: !rsIsPossible()}", style="min-width:auto;")
+                            input(type="checkbox", value="0", data-bind="checked: filter.disp.rs, click: frsclick, attr: {disabled: !rsIsPossible()||!reIsPossible()}")
+                            span No
+                            .tltp.tltp-bottom.tltp-animate-move(style="white-space:nowrap")
+                                | Images which attached only
+                                br
+                                | directly to the selected regions
+                        label.checkbox-inline.tltp-wrap(data-bind="css: {inactive: !rsIsPossible()}", style="min-width:auto;margin-right:5px;")
+                            input(type="checkbox", value="1", data-bind="checked: reIsPossible() && filter.disp.rs, click: frsclick, attr: {disabled: !rsIsPossible()||!reIsPossible()}")
+                            span Yes
+                            .tltp.tltp-bottom.tltp-animate-move(style="white-space:nowrap")
+                                | Images which also attached to the
+                                br
+                                | descendants of the selected regions
+                        div(data-bind="css: {inactive: !reIsActive()}", style="display:inline-block;")
+                            = " except: "
+                            //ko foreach: filter.disp.re
+                            span.fRegion.tltp-wrap(data-bind="css: {dis: $parent._.includes($parent.filter.disp.redis(), $data.cid)}")
+                                span(data-bind="text: $data.title_en")
+                                .tltp.tltp-bottom.tltp-touch.tltp-animate-opacity(style="padding:3px 3px 1px;white-space:nowrap;font-weight:normal;")
+                                    //ko if: $parent.filter.admin()
+                                    .rtgl.edit(title="Jump to region edit")
+                                        a(data-bind="attr: {href: '/admin/region/' + $data.cid}")
+                                            span.glyphicon.glyphicon-pencil
+                                    // /ko
+                                    .rtgl.del(title="Remove region", data-bind="click: function() {$parent.fredel($data.cid);}")
+                                        span.glyphicon.glyphicon-remove(style="vertical-align:text-top;")
+                                    //ko if: $parent.filter.disp.r().length > 1
+                                    .rtgl.del(title="Remove other regions", data-bind="click: function() {$parent.fredelothers($data.cid);}")
+                                        span.glyphicon.glyphicon-remove-sign(style="vertical-align:text-top;")
+                                    // /ko
+                                    //ko if: $data.parentRegionsArr
+                                    //ko foreach: $data.parentRegionsArr
+                                    .selectParent(data-bind="text:$data.title_en, click:function() {$parents[1].freselectparent($parent.cid, $data);}, css: {selectParentBold: $parents[1].rHash()[$data.cid], selectParentSelectable: !$parents[1].rHashPlusParents()[$data.cid]}")
+                                    // /ko
+                                    // /ko
                             // /ko
-                        .row
-                            .filterName Comments:
-                            .filterVars
-                                label.checkbox-inline
-                                    input(type="checkbox", value="0", data-bind="checked: filter.disp.c, click: fcclick")
-                                    span No
-                                div(style="display:inline-block;")
-                                    label.checkbox-inline(style="margin-right:0;min-width:auto;")
-                                        input(type="checkbox", value="1", data-bind="checked: filter.disp.c, click: fcclick")
-                                        = 'Exists starting at'
-                                    = ' '
-                                    input.form-control.ccount(type="text", data-bind="value: filter.disp.ccount, valueUpdate: 'keyup', event: {keydown: ccountArrow}, attr: {disabled:filter.disp.c.indexOf('1')<0}, css: {ccountSet: filter.disp.ccount()>1 && filter.disp.c.indexOf('1')>=0}", maxlength="4")
-                        .row.svars
-                            .filterName Statuses:
-                            .filterVars
-                                //ko if: filter.can.s()
-                                //ko foreach: filter.available.s
-                                label.checkbox-inline.s
-                                    input(type="checkbox", data-bind="attr: {value: s}, checked: $parent.filter.disp.s")
-                                    span(data-bind="text: title")
-                                // /ko
-                                // /ko
-                                //ko if: !auth.loggedIn()
-                                span(data-bind="click: function(data, evt){auth.show('login')}", style="cursor:pointer" title="Click to sign-in or sign-up")
-                                    span.glyphicon.glyphicon-log-in
-                                    |   Login to see more
-                                // /ko
+                            //ko if: filter.disp.re().length
+                            .rtgl.del(title="Remove all excluded regions", data-bind="click: fredelall")
+                                span.glyphicon.glyphicon-remove(style="vertical-align:text-top;")
+                            // /ko
+                            //ko if: !filter.disp.re().length
+                            span.regionEdit(data-bind="click: regionExcludeSelect")
+                                span.glyphicon.glyphicon-list(style="margin-right:2px;font-size:10px;vertical-align:text-top;")
+                                | Select
+                            // /ko
+                            //ko if: filter.disp.re().length
+                            .rtgl.select(data-bind="click: regionExcludeSelect")
+                                span.glyphicon.glyphicon-pencil
+                                | Change
+                            // /ko
+                    .fRow(style="white-space:nowrap") Images have coordinates:
+                    .fRow: .fVars(style="max-width:550px;")
+                        label.checkbox-inline.tltp-wrap(style="min-width:auto;")
+                            input(type="checkbox", value="0", data-bind="checked: filter.disp.geo, click: fgeoclk")
+                            span No
+                            .tltp.tltp-right.tltp-animate-move(style="white-space:nowrap") Section "Where is it?"
+                        label.checkbox-inline(style="min-width:auto;")
+                            input(type="checkbox", value="1", data-bind="checked: filter.disp.geo, click: fgeoclk")
+                            span Yes
+                .fCol(data-bind="css: {inactive: !filter.active()}")
+                    .fRow
+                        .fName Years:
+                        .fVars(data-bind="css: {yearsSet:Number(filter.disp.year()) > yearsRange().min || Number(filter.disp.year2()) < yearsRange().max}")
+                            input.form-control.years(type="text", data-bind="value: filter.disp.year, valueUpdate: 'keyup', event: {keydown: yearArrow}", maxlength="4")
+                            = ' – '
+                            input.form-control.years(type="text", data-bind="value: filter.disp.year2, valueUpdate: 'keyup', event: {keydown: year2Arrow}", maxlength="4")
+                            = ' '
+                            .tltp-wrap.resetYears(data-bind="click: yearsReset")
+                                span.glyphicon.glyphicon-remove-circle(style="top:3px")
+                                .tltp.tltp-right.tltp-animate-move(style="white-space:nowrap") Reset years range
+                    .fRow
+                        .fName Type:
+                        .fVars
+                            label.checkbox-inline
+                                input(type="checkbox", value="1", data-bind="checked: filter.disp.t, click: ftclick")
+                                span Photo
+                            label.checkbox-inline
+                                input(type="checkbox", value="2", data-bind="checked: filter.disp.t, click: ftclick")
+                                span Painting
+                    .fRow
+                        .fName Comments:
+                        .fVars
+                            label.checkbox-inline
+                                input(type="checkbox", value="0", data-bind="checked: filter.disp.c, click: fcclick")
+                                span No
+                            div(style="display:inline-block;")
+                                label.checkbox-inline(style="margin-right:0;min-width:auto;")
+                                    input(type="checkbox", value="1", data-bind="checked: filter.disp.c, click: fcclick")
+                                    = 'Exist from'
+                                = ' '
+                                input.form-control.ccount(type="text", data-bind="value: filter.disp.ccount, valueUpdate: 'keyup', event: {keydown: ccountArrow}, attr: {disabled:filter.disp.c.indexOf('1')<0}, css: {ccountSet: filter.disp.ccount()>1 && filter.disp.c.indexOf('1')>=0}", maxlength="4")
+                    .fRow.svars
+                        .fName Statuses:
+                        .fVars
+                            //ko if: filter.can.s()
+                            //ko foreach: filter.available.s
+                            label.checkbox-inline.s
+                                input(type="checkbox", data-bind="attr: {value: s}, checked: $parent.filter.disp.s")
+                                span(data-bind="text: title")
+                            // /ko
+                            // /ko
+                            //ko if: !auth.loggedIn()
+                            span(data-bind="click: function(data, evt){auth.show('login')}", style="cursor:pointer" title="Click to sign in or sign up")
+                                span.glyphicon.glyphicon-log-in
+                                |   Login to see more
+                            // /ko
 
         .row.rowoffset
             .col-xs-12.col-sm-7.col-lg-4(data-bind="css: {invisible: !loadedFirst()}")
@@ -117,7 +181,7 @@
                     // /ko
                 // /ko
             .clearfix.hidden-lg
-            .col-xs-12.col-lg-4.col-lg-pull-4.pag(data-bind="css: {hasPag: paginationShow()}")
+            .col-xs-12.col-lg-4.col-lg-pull-4.pag(data-bind="css: {loading: !feed() && loading(), hasPag: paginationShow() || coin()}")
                 //ko if: paginationShow()
                 //ko template: {name: 'photoPagerTpl'}
                 // /ko

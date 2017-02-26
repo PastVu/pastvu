@@ -468,16 +468,16 @@ define([
         },
         regionFilterSelect: function () {
             if (!this.regselectVM) {
-                this.regionSelect(koMapping.toJS(this.u.regions), 0, 5, 'List of regions for filtering by default',
+                this.regionSelect(koMapping.toJS(this.u.regions), 0, 10, 'List of regions for filtering by default',
                     function (vm) {
                         this.regselectVM = vm;
                     },
                     function () {
                         var regions = this.regselectVM.getSelectedRegions(['cid', 'title_en']);
 
-                        if (regions.length > 5) {
+                        if (regions.length > 10) {
                             return noties.alert({
-                                message: 'Allowed to select up to 5 regions',
+                                message: 'Allowed to select up to 10 regions',
                                 type: 'warning',
                                 timeout: 4000,
                                 ok: true

@@ -820,7 +820,7 @@ define([
 
             var that = this;
             var cid = this.region.cid();
-            var title = this.region.title_local();
+            var title = this.region.title_en();
 
             socket.run('region.recalcStatistics', { cids: [cid] })
                 .then(function (data) {

@@ -32,7 +32,7 @@ require([
             { route: /^\/?$/, handler: 'index' },
             { route: /^\/p\/([0-9]{1,7})\/?$/, handler: 'photo' },
             { route: /^\/ps(?:\/(\w{1,5}))?\/?$/, handler: 'photos' },
-            { route: /^\/u(?:\/([\.\w-]+)(?:\/(\w+)(?:\/(\w+))?)?)?\/?$/, handler: 'userPage' },
+            { route: /^\/u(?:\/([.\w-]+)(?:\/(\w+)(?:\/(\w+))?)?)?\/?$/, handler: 'userPage' },
             { route: /^\/news(?:\/([0-9]{1,5}))?\/?$/, handler: 'news' },
             { route: /^\/photoUpload\/?$/, handler: 'photoUpload' },
             { route: /^\/(rules|about)\/?$/, handler: 'rules' },
@@ -67,7 +67,7 @@ require([
                 ga('set', 'page', '/ps' + (page ? '/' + page : ''));
                 renderer(
                     [
-                        { module: 'm/photo/gallery', container: '#bodyContainer', options: { topTitle: 'Gallery' } }
+                        { module: 'm/photo/gallery', container: '#bodyContainer', options: { } }
                     ]
                 );
             },

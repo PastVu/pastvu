@@ -13,224 +13,300 @@
 		margin: 11px 8px 0 5px;
 	}
 
-	.filter, .pageHeader {
-		line-height: 22px;
-	}
-	.pageHeader {
-        padding-bottom: 11px;
-		font-size: 22px;
-		text-align: center;
-        background-repeat: no-repeat;
-        background-position: 50% 100%;
-
-        &.loading {
-            background-image: url(/img/misc/load.gif);
-        }
-	}
-
 	.filter {
-        display: flex;
+		line-height: 20px;
+	}
+
+    .rowFilter {
+        text-align: center;
+    }
+
+    .filter {
+        position: relative;
+        display: inline-flex;
+        margin: 0 20px;
+        padding: 0 1px;
         align-items: flex-start;
         justify-content: center;
+        text-align: left;
+        border: 1px solid #ccc;
+        background-color: #fff;
+    }
+    .inactive {
+        &, * {
+            cursor: default;
+            user-select: none;
+            pointer-events: none;
+            color: @gray-light;
+        }
 
-		> .ftitle, > .fopen {
-			float: left;
-			width: 20px;
-			padding: 2px 4px 1px 3px;
-			line-height: 19px;
-			text-align: center;
-			vertical-align: top;
-			cursor: pointer;
-			border-width: 1px 0 1px 1px;
-			border-color: @input-group-addon-border-color;
-			border-style: solid;
-			background-color: @input-group-addon-bg;
-			.user-select(none);
+        .fVars .yearsSet > .years, .fVars .ccountSet {
+            font-weight: normal;
+            color: @gray-light;
+        }
 
-			&:hover {
-				color: @gray-darker;
-			}
-		}
-		> .ftitle {
-			color: #008805;
-		}
+        input[type="checkbox"] {
+            opacity: .7;
+        }
 
-		> .fvals {
-			position: relative;
-			display: table;
-            margin-right: 20px;
-			border: 1px solid #ccc;
-			background-color: #fff;
-
-			.frow {
-				margin-top: 1px;
-			}
-			> .others {
-                > .row {
-                    margin-top: 1px;
+        .region {
+            &:hover {
+                &::after {
+                    color: #d76c66;
                 }
-			}
-
-            .years, .ccount {
-                display: inline-block;
-                width: 50px;
-                height: 21px;
-                text-align: center;
             }
-            .yearsSet > .years, .ccountSet {
-                font-weight: bold;
-                color: @MainBlueColor;
+        }
+    }
+
+    .fToggle, .fExpand {
+        position: absolute;
+        top: -1px;
+        width: 20px;
+        color: @MainLigthColor;
+        line-height: 19px;
+        text-align: center;
+        vertical-align: top;
+        cursor: pointer;
+        border: 1px solid @input-group-addon-border-color;
+        background-color: @input-group-addon-bg;
+        .user-select(none);
+
+        &:hover {
+            color: @gray-darker;
+        }
+    }
+    .fToggle {
+        left: -21px;
+        color: #008805;
+        padding: 2px 4px 1px 3px;
+        border-right-width: 0;
+    }
+    .fToggleInactive {
+        color: #AA4A4A;
+    }
+    .fExpand {
+        right: -21px;
+        padding: 2px 3px 1px 4px;
+        border-left-width: 0;
+    }
+
+    .fCol {
+        flex: 1 1 auto;
+
+        &:not(:last-child) {
+            margin-right: 10px;
+        }
+    }
+
+    .fRow {
+        display: flex;
+        margin: 1px 0;
+        padding-left: 5px;
+    }
+
+    .fName {
+        flex: 0 1 94px;
+        min-width: 94px;
+        margin: 0 5px 0 -5px;
+        padding: 0 5px;
+        cursor: default;
+        border-color: #EEE;
+        border-style: solid;
+        border-width: 0 1px 0 0;
+        background-color: #F5F5F5;
+    }
+
+    .fNameRegion {
+        flex-basis: 65px;
+        min-width: 65px;
+        margin-right: 0;
+    }
+
+    .fVars {
+        flex: 0 1 100%;
+        min-width: 219px;
+        max-width: 450px;
+        padding: 0 3px;
+
+        &.fVars-inactive {
+            color: dimgray;
+        }
+
+        > label.checkbox-inline {
+            min-width: 100px;
+            margin-left: 0;
+            margin-right: 10px;
+            padding-left: 17px;
+            line-height: 20px;
+            vertical-align: baseline;
+
+            > input[type="checkbox"] {
+                margin-left: -17px;
+            }
+        }
+
+        .years, .ccount {
+            display: inline-block;
+            width: 50px;
+            height: 21px;
+            text-align: center;
+        }
+
+        &.yearsSet > .years, .ccountSet {
+            font-weight: bold;
+            color: @MainBlueColor;
+        }
+
+        .resetYears {
+            display: inline-block;
+            padding: 0 3px;
+            cursor: pointer;
+
+            &:hover {
+                color: #251519;
+            }
+        }
+
+        &:not(.yearsSet) > .resetYears {
+            visibility: hidden;
+            pointer-events: none;
+        }
+    }
+
+    .rtgl {
+        display: inline-block;
+        width: 20px;
+        margin: 0 3px 0 0;
+        text-align: center;
+        line-height: 16px;
+        font-size: 12px;
+        cursor: pointer;
+        border-width: 1px;
+        border-style: solid;
+        background-color: #E4E4E4;
+        user-select: none;
+        transition: border-color ease-in-out .1s, color ease-in-out .1s;
+
+        &.edit {
+            color: #f09800;
+            border-color: rgba(255, 165, 0, 0.2);
+
+            > a {
+                display: block;
+                color: orange;
+                transition: color ease-in-out .1s;
             }
 
-            .resetYears {
-                display: inline-block;
-                padding: 0 3px;
-                cursor: pointer;
+            &:hover {
+                color: #ffbc06;
+                border-color: rgba(255, 165, 0, 0.5);
+
+                > a {
+                    color: #ffbc06;
+                }
+            }
+        }
+        &.only {
+            color: #2a961a;
+            border-color: rgba(4, 233, 11, 0.2);
+
+            &:hover {
+                color: #31b71e;
+                border-color: rgba(4, 233, 11, 0.5);
+            }
+        }
+        &.dis {
+            color: #bd8a0d;
+            border-color: rgba(233, 157, 10, .2);
+
+            &:hover {
+                color: #f7a900;
+                border-color: rgba(233, 157, 10, .5);
+            }
+        }
+        &.del {
+            color: #880824;
+            border-color: rgba(136, 12, 56, 0.2);
+
+            &:hover {
+                color: #ad0a2e;
+                border-color: rgba(136, 12, 56, 0.5);
+            }
+        }
+        &.select {
+            width: auto;
+            padding: 0 2px;
+            color: #192063;
+            border-color: rgba(25, 32, 99, 0.15);
+
+            &:hover {
+                color: #2938c4;
+                border-color: rgba(61, 76, 203, 0.45);
+            }
+
+            > .glyphicon {
+                margin: 0 2px 0 1px;
+                font-size: 10px;
+            }
+        }
+    }
+
+    .tltp .rtgl {
+        margin-bottom: 4px;
+        background-color: #2d2d2d;
+    }
+
+    .fRegion {
+        position: relative;
+        display: inline-block;
+        min-width: 46px;
+        margin: 0 3px 1px 0;
+        padding: 0 4px;
+        font-weight: bold;
+        line-height: 20px;
+        text-align: center;
+        cursor: default;
+        background-color: #E4E4E4;
+
+        &.dis {
+            color: #D1D1D1;
+            background-color: #f1f1f1;
+
+            .rtgl.dis {
+                color: #2A9C1A;
+                border-color: rgba(4, 233, 11, 0.2);
 
                 &:hover {
-                    color: #251519;
+                    color: #31b71e;
+                    border-color: rgba(4, 233, 11, 0.5);
                 }
             }
-		}
+        }
+    }
 
-		&.inactive {
-			> .ftitle {
-				color: #AA4A4A;
-			}
-			> .fvals {
-				color: @gray-light;
-			}
+    .selectParent {
+        margin-bottom: 2px;
+        padding: 2px 4px;
+        color: #b4b4b4;
+        font-size: @font-size-base;
+        line-height: 18px;
+        cursor: default;
+        background-color: #585858;
 
-			input[type="checkbox"] {
-				opacity: .7;
-			}
+        &.selectParentBold {
+            font-weight: bold;
+        }
 
-			.region.candis {
-				&:hover {
-					&::after {
-						color: #d76c66;
-					}
-				}
-			}
-		}
+        &.selectParentSelectable {
+            color: #ebebeb;
+            cursor: pointer;
 
-		.filterName {
-			display: table-cell;
-			min-width: 94px;
-			padding-left: 5px;
-			vertical-align: middle;
-			cursor: default;
-			border-color: #EEE;
-			border-style: solid;
-			border-width: 0 1px 0 0;
-			background-color: #F5F5F5;
-		}
-		.filterVars {
-			display: table-cell;
-            min-width: 219px;
-			padding: 0 3px;
-
-			> label.checkbox-inline {
-			  	min-width: 92px;
-				margin-left: 0;
-				margin-right: 10px;
-				padding-left: 17px;
-				line-height: 20px;
-				vertical-align: baseline;
-
-				> input[type="checkbox"] {
-					margin-left: -17px;
-				}
-			}
-		}
-
-		.region {
-			position: relative;
-			display: inline-block;
-			min-width: 46px;
-			margin: 1px 3px 1px 0;
-			padding: 0 4px;
-			font-weight: bold;
-			line-height: 20px;
-			text-align: center;
-			cursor: default;
-			background-color: #E4E4E4;
-
-			&.candis {
-				cursor: pointer;
-
-				> .rtgl {
-					position: absolute;
-					display: none;
-					top: 0;
-					width: 23px;
-					text-align: center;
-					line-height: 18px;
-					font-size: 14px;
-					border-width: 1px;
-					border-style: solid;
-					background-color: rgba(228, 228, 235, 0.94);
-					.user-select(none);
-
-					&.edit {
-						right: 46px;
-						border-color: rgba(0, 96, 195, 0.3);
-
-                        > a {
-                            display: block;
-                            color: #4188b3;
-                        }
-
-						&:hover > a {
-							color: #58b4ee;
-						}
-					}
-					&.only {
-						right: 23px;
-						color: #2A9C1A;
-						border-color: rgba(4, 233, 11, 0.30);
-
-						&:hover {
-							color: #31b71e;
-						}
-					}
-					&.dis {
-						right: 0;
-						color: #D19D0D;
-						border-color: rgba(233, 157, 10, .3);
-
-						&:hover {
-							color: #f7a900;
-						}
-					}
-
-					&:hover {
-						text-shadow: 1px 1px 1px #222, -1px 1px 1px #999;
-					}
-				}
-
-				&:hover {
-					> .rtgl {
-						display: block;
-					}
-				}
-			}
-
-			&.dis {
-				color: #D1D1D1;
-				background-color: #f1f1f1;
-
-				&.candis > .rtgl.dis {
-					color: #4f9c41;
-					border-color: rgba(4, 233, 11, 0.30);
-
-					&:hover {
-						color: #31b71e;
-					}
-				}
-			}
-		}
-	}
+            &:hover {
+                color: white;
+                background-color: #626262;
+            }
+        }
+    }
 
 	.switch {
 		text-align: right;
@@ -413,6 +489,11 @@
 
 @media (max-width: 899px) {
 	.gallery {
+        // Make filter in one column
+        .filter {
+            display: inline-block;
+        }
+
 		.photoPreview {
 			font-size: @font-size-mini;
 			padding-bottom: @PhotoInfoHeight - 7;
