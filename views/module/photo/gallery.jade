@@ -181,7 +181,7 @@
                     // /ko
                 // /ko
             .clearfix.hidden-lg
-            .col-xs-12.col-lg-4.col-lg-pull-4.pag(data-bind="css: {loading: !feed() && loading(), hasPag: paginationShow()}")
+            .col-xs-12.col-lg-4.col-lg-pull-4.pag(data-bind="css: {loading: !feed() && loading(), hasPag: paginationShow() || coin()}")
                 //ko if: paginationShow()
                 //ko template: {name: 'photoPagerTpl'}
                 // /ko
