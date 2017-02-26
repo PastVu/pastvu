@@ -40,7 +40,7 @@ define([
             });
 
             this.$dom.find('textarea#newsPrimary').redactor(redactorOptions);
-            this.$dom.find('#newsPdate').datetimepicker({ defaultDate: new Date() });
+            this.$dom.find('#newsPdate').datetimepicker({ defaultDate: new Date(), collapse: false });
 
             this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandler, this);
             this.routeHandler();
@@ -83,7 +83,8 @@ define([
             var pickerP = this.$dom.find('#newsPdate').data('DateTimePicker');
 
             primaryRedactor.set(primaryRedactor.opts.emptyHtml);
-            pickerP.setDate(new Date());
+            pickerP.date(new Date());
+            pickerP.show();
             this.noticeOff();
             this.tDateOff();
 
@@ -102,7 +103,7 @@ define([
             var primaryTxt = this.news.txt();
             var pickerP = this.$dom.find('#newsPdate').data('DateTimePicker');
 
-            pickerP.setDate(new Date(this.news.pdate() || Date.now()));
+            pickerP.date(new Date(this.news.pdate() || Date.now()));
             if (primaryTxt) {
                 primaryRedactor.set(primaryTxt);
             }
@@ -149,7 +150,7 @@ define([
         tDateOn: function () {
             this.tDateExists(true);
             var pickerT = this.$dom.find('#newsTdate').datetimepicker().data('DateTimePicker');
-            pickerT.setDate(new Date(this.news.tdate() || (Date.now() + (5 * 24 * 60 * 60 * 1000))));
+            pickerT.date(new Date(this.news.tdate() || (Date.now() + (5 * 24 * 60 * 60 * 1000))));
         },
         tDateOff: function () {
             if (this.tDateExists()) {
@@ -172,7 +173,7 @@ define([
             if (!this.tDateExists()) {
                 delete saveData.tdate;
             } else {
-                saveData.tdate = this.$dom.find('#newsTdate').data('DateTimePicker').getDate().toDate();
+                saveData.tdate = this.$dom.find('#newsTdate').data('DateTimePicker').date().toDate();
             }
 
             if (this.noticeExists()) {
@@ -181,7 +182,7 @@ define([
                 delete saveData.notice;
             }
 
-            saveData.pdate = this.$dom.find('#newsPdate').data('DateTimePicker').getDate().toDate();
+            saveData.pdate = this.$dom.find('#newsPdate').data('DateTimePicker').date().toDate();
             saveData.txt = this.$dom.find('textarea#newsPrimary').redactor('get');
 
             socket.run('admin.saveOrCreateNews', saveData, true)
