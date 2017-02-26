@@ -47,10 +47,15 @@
             .panel-collapse.collapse.in#restrictions: .panel-body
                 dl.dl-horizontal
                     dt.helpexists
-                        abbr(title="Allow to change watermark on own photos and manage download of original settings," +
-                        " send own photos to reconvert")
+                        .help.tltp-wrap
                             span.glyphicon.glyphicon-info-sign
-                            |  Can change watermark and download settings
+                            .tltp.tltp-top.tltp-animate-move
+                                | Allow to change watermark on own photos,
+                                br
+                                | manage downloading settings of original and
+                                br
+                                | send own photos to reconvert
+                        | &nbsp;Can change watermark and download settings
                     dd
                         .btn-group.btn-group-sm
                             button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nowaterchange()}, click: changewaterchange") Yes

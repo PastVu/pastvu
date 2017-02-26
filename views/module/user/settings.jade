@@ -33,11 +33,17 @@
         .panel-collapse.collapse.in#region: .panel-body
             dl.dl-horizontal
                 dt.helpexists
-                    abbr(title="Region, which affect on some settings, for example, region of Home button on map, first element on list of regions etc.")
+                    .help.tltp-wrap
                         span.glyphicon.glyphicon-info-sign
-                        | &nbsp;
-                        span.glyphicon.glyphicon-home
-                        |  Home region
+                        .tltp.tltp-top.tltp-animate-move
+                            | Region, which affects some settings,
+                            br
+                            | for example, region of Home button on map,
+                            br
+                            | first element on list of regions etc.
+                    | &nbsp;
+                    span.glyphicon.glyphicon-home
+                    | &nbsp;Home region
                 dd
                     span.region
                         span(data-bind="text: u.regionHome.title_en()")
@@ -47,9 +53,13 @@
             //ko if: u.role() === 5 && u.mod_regions()
             dl.dl-horizontal.forMod
                 dt.helpexists
-                    abbr(title="Regions, where you are moderator. Assigned by administrator")
+                    .help.tltp-wrap
                         span.glyphicon.glyphicon-info-sign
-                        |  Regions where I'm moderator
+                        .tltp.tltp-top.tltp-animate-move
+                            | Regions, where you are a moderator
+                            br
+                            | Assigned by administrator
+                    | &nbsp;Regions where I am a moderator
                 dd
                     //ko if: !u.mod_regions().length
                     span.region
@@ -66,11 +76,15 @@
         .panel-collapse.collapse.in#filters: .panel-body
             dl.dl-horizontal
                 dt.helpexists
-                    abbr(title="Images, which define automatic content filtration")
+                    .help.tltp-wrap
                         span.glyphicon.glyphicon-info-sign
-                        | &nbsp;
-                        span.glyphicon.glyphicon-filter
-                        |  Image types
+                        .tltp.tltp-top.tltp-animate-move
+                            | Images, which define
+                            br
+                            | automatic content filtration
+                    | &nbsp;
+                    span.glyphicon.glyphicon-filter
+                    | &nbsp;Image types
                 dd: span.panel-block(style="padding-bottom:5px;")
                     //ko foreach: vars.photo_filter_type
                     label.checkbox-inline
@@ -79,11 +93,15 @@
                     // /ko
             dl.dl-horizontal
                 dt.helpexists
-                    abbr(title="Regions, which define automatic content filtration")
+                    .help.tltp-wrap
                         span.glyphicon.glyphicon-info-sign
-                        | &nbsp;
-                        span.glyphicon.glyphicon-filter
-                        |  Regions
+                        .tltp.tltp-top.tltp-animate-move
+                            | Regions, which define
+                            br
+                            | automatic content filtration
+                    | &nbsp;
+                    span.glyphicon.glyphicon-filter
+                    |  Regions
                 dd: span.panel-block
                     .radio(style="margin-top:0"): label
                         input(type="radio", name="regfilter_radios", value="all", data-bind="checked: regfiltercheck")
@@ -115,18 +133,26 @@
                 dd
             dl.dl-horizontal.dl-tight
                 dt.helpexists
-                    abbr(title="Images which located in users profile")
+                    .help.tltp-wrap
                         span.glyphicon.glyphicon-info-sign
-                        |  User galleries
+                        .tltp.tltp-top.tltp-animate-move
+                            | Images which located
+                            br
+                            | in users profile
+                    | &nbsp;User galleries
                 dd
                     .btn-group.btn-group-sm
                         button.btn.btn-primary.yes(type="button", data-bind="css: {active: u.settings.r_f_user_gal()}, click: regionUserGal") Yes
                         button.btn.btn-primary.no(type="button", data-bind="css: {active: !u.settings.r_f_user_gal()}, click: regionUserGal") No
             dl.dl-horizontal.dl-tight
                 dt.helpexists
-                    abbr(title="Strip, which located close to user avatar on photo page")
+                    .help.tltp-wrap
                         span.glyphicon.glyphicon-info-sign
-                        |  Strip of other user's images
+                        .tltp.tltp-top.tltp-animate-move
+                            | Strip, which located close
+                            br
+                            | to user avatar on photo page
+                    | &nbsp;Strip of other user's images
                 dd
                     .btn-group.btn-group-sm
                         button.btn.btn-primary.yes(type="button", data-bind="css: {active: u.settings.r_f_photo_user_gal()}, click: regionPhotoUserGal") Yes
@@ -137,25 +163,33 @@
         .panel-collapse.collapse.in#photo: .panel-body
             dl.dl-horizontal
                 dt.helpexists
-                    abbr(title="Show pastvu.com watermark by default, embedded in image")
+                    .help.tltp-wrap
                         span.glyphicon.glyphicon-info-sign
-                        |  Show watermark by default
+                        .tltp.tltp-top.tltp-animate-move
+                            | Show by default pastvu.com
+                            br
+                            | watermark embedded in image
+                    | &nbsp;Show watermark by default
                 dd
                     .btn-group.btn-group-sm
                         button.btn.btn-primary.yes(type="button", data-bind="css: {active: u.settings.photo_show_watermark()}, click: watermarkShow") Yes
                         button.btn.btn-primary.no(type="button", data-bind="css: {active: !u.settings.photo_show_watermark()}, click: watermarkShow") No
 
             //ko if: u.nowaterchange()
-            dl.dl-horizontal: .helpexists: abbr.text-danger
+            dl.dl-horizontal: .helpexists: .help.text-danger
                 span.glyphicon.glyphicon-warning-sign
                 span(data-bind="text: ' Administrator has forbidden ' + (itsMe()?'you':'user') + ' to change watermark settings on ' + (itsMe()?'your':'his') + ' images'")
             // /ko
             .watersingcontrol(data-bind="css: {deny: itsMe() && u.nowaterchange()}")
                 dl.dl-horizontal
                     dt.helpexists
-                        abbr(title="Behavior can be changed for each image individually on edit page")
+                        .help.tltp-wrap
                             span.glyphicon.glyphicon-info-sign
-                            |  Text on watermark on my images
+                            .tltp.tltp-top.tltp-animate-move
+                                | Behavior can be changed for each image
+                                br
+                                | individually on image's edit page
+                        | &nbsp;Text on watermark on my images
                     dd: span.panel-block
                         .btn-group.btn-group-sm(style="margin-bottom:8px")
                             button.btn.btn-primary.yes(type="button", data-bind="css: {active: !!u.settings.photo_watermark_add_sign()}, click: watersignAdd") Yes
@@ -181,8 +215,12 @@
                             |  Setting saves automatically and will be applied to all newly uploaded images. To apply it to existing images, push "Apply" below
 
                         hr(style="margin:8px 0 9px;")
-                        abbr(title="Send to reconvert own images, which have no individual watermark setting")
-                            | Apply setting to existing images, which have no individual watermark setting:
+                        .tltp-wrap
+                            abbr(title="") Apply setting to existing images, which have no individual watermark setting:
+                            .tltp.tltp-top.tltp-hotizontal-left.tltp-animate-move
+                                | Send to reconvert own images,
+                                br
+                                | which have no individual watermark setting
                         div
                             label.radio-inline
                                 input(type="radio", name="reconvert", value="all", data-bind="checked: reconvertcheck")
@@ -195,8 +233,10 @@
                             button.btn.btn-sm.btn-primary(type="button", style="margin: 5px 0 8px;", data-bind="click: reconvertPhotos, attr: {disabled: reconvertingPhotos()}") Apply
 
                         hr(style="margin:8px 0 9px;")
-                        abbr(title="Reset individual watermark settings")
-                            | Reset individual watermark settings
+                        .tltp-wrap
+                            abbr(title="") Reset individual watermark settings
+                            .tltp.tltp-top.tltp-hotizontal-left.tltp-animate-move
+                                | Reset individual watermark settings
                         div
                             label.radio-inline
                                 input(type="radio", name="resetwatersign", value="all", data-bind="checked: resetwatersigncheck")
@@ -213,9 +253,13 @@
 
                 dl.dl-horizontal
                     dt.helpexists
-                        abbr(title="Another registered users will be able to download file that you uploaded")
+                        .help.tltp-wrap
                             span.glyphicon.glyphicon-info-sign
-                            |  Allow to download origin of my images
+                            .tltp.tltp-top.tltp-animate-move
+                                | Another registered users will be able
+                                br
+                                | to download file that you uploaded
+                        | &nbsp;Allow to download origin of my images
                     dd: span.panel-block
                         .btn-group.btn-group-sm(style="margin-bottom:8px")
                             button.btn.btn-primary.yes(type="button", data-bind="attr: {disabled: !u.settings.photo_watermark_add_sign()}, css: {active: !u.settings.photo_watermark_add_sign() || !u.settings.photo_disallow_download_origin()}, click: disallowDownloadOrigin") Yes
@@ -248,18 +292,26 @@
         .panel-collapse.collapse.in#notice: .panel-body
             dl.dl-horizontal
                 dt.helpexists
-                    abbr(title="Default state of «Subscribe» checkbox at comment writing form")
+                    .help.tltp-wrap
                         span.glyphicon.glyphicon-info-sign
-                        |  Automatic subscription when comment topic
+                        .tltp.tltp-top.tltp-animate-move
+                            | Default state of «Subscribe» checkbox
+                            br
+                            | at comment writing form
+                    | &nbsp;Automatic subscription when comment topic
                 dd
                     .btn-group.btn-group-sm
                         button.btn.btn-primary.yes(type="button", data-bind="css: {active: u.settings.subscr_auto_reply()}, click: autoReply") Yes
                         button.btn.btn-primary.no(type="button", data-bind="css: {active: !u.settings.subscr_auto_reply()}, click: autoReply") No
             dl.dl-horizontal
                 dt.helpexists
-                    abbr(title="Minimal amount of time between sending of notification letter")
+                    .help.tltp-wrap
                         span.glyphicon.glyphicon-info-sign
-                        |  Minimum interval between sending
+                        .tltp.tltp-top.tltp-animate-move
+                            | Minimal amount of time between
+                            br
+                            | sending of notification letter
+                    | &nbsp;Minimum interval between sending
                 dd.throttle(data-bind="foreach: vars.subscr_throttle")
                     label.radio-inline
                         input(type="radio", name="subscr_throttle_radios", data-bind="attr: {id: 'subscr_throttle_radios_' + $index(), value: ''+$data}, checked: $parent.u.settings.subscr_throttle")
