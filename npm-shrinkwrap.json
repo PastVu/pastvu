@@ -1106,9 +1106,9 @@
       "dev": true
     },
     "eslint": {
-      "version": "3.15.0",
-      "from": "eslint@3.15.0",
-      "resolved": "https://registry.npmjs.org/eslint/-/eslint-3.15.0.tgz",
+      "version": "3.16.1",
+      "from": "eslint@3.16.1",
+      "resolved": "https://registry.npmjs.org/eslint/-/eslint-3.16.1.tgz",
       "dev": true,
       "dependencies": {
         "strip-bom": {
