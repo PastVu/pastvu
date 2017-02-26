@@ -2734,7 +2734,7 @@ export function buildPhotosQuery(filter, forUserId, iAm, random) {
     } else if (r === undefined && iAm.registered && iAm.user.regions.length && (!forUserId || !itsMineGallery)) {
         regionsHash = iAm.rhash;
         regionsCids = _.map(iAm.user.regions, 'cid');
-        regionsArr = regionsArrAll = regionController.getRegionsArrFromHash(regionsHash, regionsCids);
+        regionsArr = regionsArrAll = regionController.getRegionsArrPublicFromCache(regionsCids);
     }
     if (regionsCids.length) {
         regionsCids = regionsCids.map(Number);
