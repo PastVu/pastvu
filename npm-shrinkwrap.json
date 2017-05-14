@@ -1825,9 +1825,9 @@
       "dev": true
     },
     "hooks-fixed": {
-      "version": "1.2.0",
-      "from": "hooks-fixed@1.2.0",
-      "resolved": "https://registry.npmjs.org/hooks-fixed/-/hooks-fixed-1.2.0.tgz"
+      "version": "2.0.0",
+      "from": "hooks-fixed@2.0.0",
+      "resolved": "https://registry.npmjs.org/hooks-fixed/-/hooks-fixed-2.0.0.tgz"
     },
     "hosted-git-info": {
       "version": "2.4.2",
@@ -2730,9 +2730,9 @@
       "resolved": "https://registry.npmjs.org/jstransformer/-/jstransformer-0.0.2.tgz"
     },
     "kareem": {
-      "version": "1.2.1",
-      "from": "kareem@1.2.1",
-      "resolved": "https://registry.npmjs.org/kareem/-/kareem-1.2.1.tgz"
+      "version": "1.4.1",
+      "from": "kareem@1.4.1",
+      "resolved": "https://registry.npmjs.org/kareem/-/kareem-1.4.1.tgz"
     },
     "kind-of": {
       "version": "3.2.0",
@@ -3091,31 +3091,26 @@
       "resolved": "https://registry.npmjs.org/moment/-/moment-2.18.1.tgz"
     },
     "mongodb": {
-      "version": "2.2.24",
-      "from": "mongodb@2.2.24",
-      "resolved": "https://registry.npmjs.org/mongodb/-/mongodb-2.2.24.tgz",
+      "version": "2.2.26",
+      "from": "mongodb@2.2.26",
+      "resolved": "https://registry.npmjs.org/mongodb/-/mongodb-2.2.26.tgz",
       "dependencies": {
         "readable-stream": {
-          "version": "2.1.5",
-          "from": "readable-stream@2.1.5",
-          "resolved": "https://registry.npmjs.org/readable-stream/-/readable-stream-2.1.5.tgz"
-        },
-        "string_decoder": {
-          "version": "0.10.31",
-          "from": "string_decoder@>=0.10.0 <0.11.0",
-          "resolved": "https://registry.npmjs.org/string_decoder/-/string_decoder-0.10.31.tgz"
+          "version": "2.2.7",
+          "from": "readable-stream@2.2.7",
+          "resolved": "https://registry.npmjs.org/readable-stream/-/readable-stream-2.2.7.tgz"
         }
       }
     },
     "mongodb-core": {
-      "version": "2.1.8",
-      "from": "mongodb-core@2.1.8",
-      "resolved": "https://registry.npmjs.org/mongodb-core/-/mongodb-core-2.1.8.tgz"
+      "version": "2.1.10",
+      "from": "mongodb-core@2.1.10",
+      "resolved": "https://registry.npmjs.org/mongodb-core/-/mongodb-core-2.1.10.tgz"
     },
     "mongoose": {
-      "version": "4.8.4",
-      "from": "mongoose@4.8.4",
-      "resolved": "https://registry.npmjs.org/mongoose/-/mongoose-4.8.4.tgz",
+      "version": "4.9.9",
+      "from": "mongoose@4.9.9",
+      "resolved": "https://registry.npmjs.org/mongoose/-/mongoose-4.9.9.tgz",
       "dependencies": {
         "ms": {
           "version": "0.7.2",
@@ -3135,9 +3130,9 @@
       "resolved": "https://registry.npmjs.org/mpromise/-/mpromise-0.5.5.tgz"
     },
     "mquery": {
-      "version": "2.2.3",
-      "from": "mquery@2.2.3",
-      "resolved": "https://registry.npmjs.org/mquery/-/mquery-2.2.3.tgz",
+      "version": "2.3.0",
+      "from": "mquery@2.3.0",
+      "resolved": "https://registry.npmjs.org/mquery/-/mquery-2.3.0.tgz",
       "dependencies": {
         "bluebird": {
           "version": "2.10.2",
