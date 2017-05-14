@@ -1279,21 +1279,31 @@ export const giveListPublic = () => regionCacheArrPublicPromise;
 // Determine regions path to geo by parents of the very last in path
 const getRegionsByGeoPoint = (function () {
     const defRegion = 1000000; // If the region is not found, return the Open sea
+    const sortDeepestFirst = (a, b) => {
+        if (!a.parents || !a.parents.length) {
+            return 1;
+        }
+        if (!b.parents || !b.parents.length) {
+            return -1;
+        }
+
+        return a.parents.length < b.parents.length ? 1 : a.parents.length > b.parents.length ? -1 : 0;
+    };
 
     return async function ({ geo, fields = { _id: 0, geo: 0, __v: 0 } }) {
         const closestRegions = await Region.find(
             { geo: { $nearSphere: { $geometry: { type: 'Point', coordinates: geo }, $maxDistance: 1 } } },
-            fields, { lean: true, sort: { parents: -1 }, limit: 1 }
+            fields, { lean: true, limit: maxRegionLevel + 1 }
         ).exec();
-        const result = [];
 
-        if (_.isEmpty(closestRegions)) {
+        const result = [];
+        const region = closestRegions.sort(sortDeepestFirst)[0];
+
+        if (_.isEmpty(region)) {
             if (regionCacheHash[defRegion]) {
                 result.push(regionCacheHash[defRegion]);
             }
         } else {
-            const region = closestRegions[0];
-
             if (region.parents && region.parents.length) {
                 const parentRegions = await Region.find({ cid: { $in: region.parents } }, fields, { lean: true }).exec();
                 const parentRegionsMap = parentRegions.reduce((map, region) => map.set(region.cid, region), new Map());

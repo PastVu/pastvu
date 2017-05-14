@@ -280,6 +280,8 @@ module.exports = {
         /** Possible Errors section http://eslint.org/docs/rules/#possible-errors **/
         // disallow await inside of loops
         'no-await-in-loop': 0,
+        // disallow comparing against -0. Use Object.is(x, -0)
+        'no-compare-neg-zero': 2,
         // disallow assignment in conditional expressions
         'no-cond-assign': [2, 'always'],
         // disallow use of console
@@ -477,6 +479,8 @@ module.exports = {
         'no-unneeded-ternary': [2, { 'defaultAssignment': false }],
         // disallow whitespace before properties
         'no-whitespace-before-property': 2,
+        // enforce the location of single-line statements
+        'nonblock-statement-body-position': [2, 'beside'],
         // enforce consistent line breaks inside braces
         'object-curly-newline': [0, { 'multiline': true }],
         // TODO: require padding inside curly braces
@@ -534,7 +538,6 @@ module.exports = {
         // Turn them on as they're needed
         'babel/new-cap': 0,
         'babel/object-curly-spacing': 0,
-        'babel/no-await-in-loop': 0,
         'babel/no-invalid-this': 0,
     }
 };
