@@ -198,6 +198,7 @@ export async function configure(startStamp) {
 
     const httpServer = http.createServer(app);
     const io = socketIO(httpServer, {
+        wsEngine: 'uws',
         transports: ['websocket', 'polling'],
         path: '/socket.io',
         serveClient: false
@@ -284,6 +285,7 @@ export async function configure(startStamp) {
         };
     }());
 
+    logger.info(`Socket.io engine: ${io.engine.wsEngine}`);
     logger.info(`servePublic: ${config.servePublic}, serveStore ${config.serveStore}`);
     logger.info(`Host for users: [${config.client.host}]`);
 
