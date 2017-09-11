@@ -44,7 +44,7 @@
         "lodash": "4.17.4",
         "bluebird": "3.5.0",
         "underscore.string": "3.3.4",
-        "yargs": "8.0.1",
+        "yargs": "8.0.2",
         "ms": "1.0.0",
         "moment": "2.18.1",
         "useragent": "2.1.13",
@@ -96,7 +96,13 @@
         "grunt-exec": "2.0.0",
         "jqueryui-amd": "0.0.2",
         "xmldom": "0.1.27",
+
         "osm-and-geojson": "0.1.2",
+        "geojson-rewind": "0.2.0",
+        "@mapbox/geojson-area": "0.2.2",
+        "@mapbox/geojsonhint": "2.0.1",
+        "@turf/intersect": "4.6.0",
+        "@turf/turf": "4.7.2",
 
         "eslint": "3.19.0",
         "eslint-plugin-babel": "4.1.1"

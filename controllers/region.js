@@ -3,6 +3,11 @@ import _ from 'lodash';
 import log4js from 'log4js';
 import config from '../config';
 import Utils from '../commons/Utils';
+import turf from '@turf/turf';
+import turfIntersect from '@turf/intersect';
+import geojsonRewind from 'geojson-rewind';
+import geojsonHint from '@mapbox/geojsonhint';
+import geojsonArea from '@mapbox/geojson-area';
 import { waitDb, dbEval } from './connection';
 import constants from './constants.js';
 import * as _session from './_session.js';
@@ -786,6 +791,94 @@ async function save(data) {
             !data.geo.type || data.geo.type !== 'Polygon' && data.geo.type !== 'MultiPolygon') {
             throw new BadParamsError(constantsError.REGION_GEOJSON_GEOMETRY);
         }
+
+        // If multipolygon contains only one polygon, take it and make type Polygon
+        if (data.geo.type === 'MultiPolygon' && data.geo.coordinates.length === 1) {
+            data.geo.coordinates = data.geo.coordinates[0];
+            data.geo.type = 'Polygon';
+        }
+
+        const sortPolygonSegmentsByArea = (function () {
+            const polygonsArea = new Map(); // Cache to avoid computing area of a polygon more than once
+
+            return (a, b) => {
+                const areaA = polygonsArea.get(a) || geojsonArea.geometry({ type: 'Polygon', coordinates: a });
+                const areaB = polygonsArea.get(b) || geojsonArea.geometry({ type: 'Polygon', coordinates: b });
+
+                polygonsArea.set(a, areaA);
+                polygonsArea.set(b, areaB);
+
+                return areaA > areaB ? -1 : areaA < areaB ? 1 : 0;
+            };
+        }());
+
+
+        if (data.geo.type === 'Polygon' && data.geo.coordinates.length > 1) {
+            // If it is polygon with excluded polygons, make sure the first on is the biggest (exterior ring)
+            // ([ [[x, y], [x,y]], [[x, y], [x,y]] ])
+            //    ^^^^polygon^^^^  ^^^^polygon^^^^
+            data.geo.coordinates.sort(sortPolygonSegmentsByArea);
+        } else if (data.geo.type === 'MultiPolygon') {
+            // If it is MultiPolygon without holes, automatically reveal if each polygon is a hole for the bigger one
+            // Find holes (interior rings) in each polygon, and if there at least one that means nesting is done for us
+            const polygonsContainHoles = data.geo.coordinates.some(polygonCoord => polygonCoord.length > 1);
+
+            // If there is no holes in polygons, check if polygons are holes of each other
+            if (!polygonsContainHoles) {
+                // Sort polygons by area size, to make potential exterior one first
+                data.geo.coordinates.sort(sortPolygonSegmentsByArea);
+
+                // Recursively move through polygons, considering first one as an exterior and testing with each next for intersection
+                const newCoordinates = (function processCoordinates(leftPolygons, result) {
+                    const nextLeftCoordinates = [];
+                    const exteriorPolygon = leftPolygons[0]; // First one is supposed to be exterior, because of size
+
+                    result.push(exteriorPolygon);
+
+                    for (let i = 1; i < leftPolygons.length; i++) {
+                        const polygon = leftPolygons[i];
+                        const intersectionWithExterior = turfIntersect(turf.polygon(exteriorPolygon), turf.polygon(polygon));
+
+                        if (intersectionWithExterior && intersectionWithExterior.geometry.type === 'Polygon') {
+                            // If polygons intersect as Polygon, means current one is a hole (interior ring)
+                            exteriorPolygon.push(polygon[0]);
+                        } else {
+                            // If the don't intersect, mean molygons are really separate
+                            nextLeftCoordinates.push(polygon);
+                        }
+                    }
+
+                    if (nextLeftCoordinates.length) {
+                        // If there are still left polygons, repeat recursively for them
+                        processCoordinates(nextLeftCoordinates, result);
+                    }
+
+                    return result;
+                }(data.geo.coordinates, []));
+
+                if (newCoordinates.length !== data.geo.coordinates.length) {
+                    data.geo.coordinates = newCoordinates;
+                }
+            }
+        }
+
+        // Enforce polygon ring winding order for geojson
+        // RFC 7946 GeoJSON now recommends right-hand rule winding order
+        // https://macwright.org/2015/03/23/geojson-second-bite.html
+        data.geo = geojsonRewind(data.geo);
+
+        // Validate geojson objects against the specification
+        const hints = geojsonHint.hint(data.geo, {
+            noDuplicateMembers: true,
+            precisionWarning: false,
+        });
+
+        if (hints.length) {
+            throw new BadParamsError({
+                code: constantsError.REGION_GEOJSON_PARSE,
+                why: hints.reduce((acc, hint) => `${acc}${hint.message}${hint.line ? `, ${hint.line}` : ''}.<br>`, ''),
+            });
+        }
     } else if (data.geo) {
         delete data.geo;
     }
@@ -845,32 +938,11 @@ async function save(data) {
 
     // If 'geo' was updated - write it, marking modified, because it has type Mixed
     if (data.geo) {
-        // If multipolygon contains only one polygon, take it and make type Polygon
-        if (data.geo.type === 'MultiPolygon' && data.geo.coordinates.length === 1) {
-            data.geo.coordinates = data.geo.coordinates[0];
-            data.geo.type = 'Polygon';
-        }
+        // Count number of segments
+        region.polynum = Utils.calcGeoJSONPolygonsNum(data.geo);
 
         // Count number of points
         region.pointsnum = data.geo.type === 'Point' ? 1 : Utils.calcGeoJSONPointsNum(data.geo.coordinates);
-
-        if (data.geo.type === 'Polygon' || data.geo.type === 'MultiPolygon') {
-
-            // TODO: determine polygon intersection, they must be segments inside one polygon,
-            // then sort segments in one polygon by its area
-            // *if (data.geo.type === 'MultiPolygon') {
-            //    data.geo.coordinates.forEach(
-            //        polygon => polygon.length > 1 ? polygon.sort(Utils.sortPolygonSegmentsByArea) : null
-            //    );
-            // } else if (data.geo.coordinates.length > 1) {
-            //    data.geo.coordinates.sort(Utils.sortPolygonSegmentsByArea);
-            // }*/
-
-            // Count number of segments
-            region.polynum = Utils.calcGeoJSONPolygonsNum(data.geo);
-        } else {
-            region.polynum = { exterior: 0, interior: 0 };
-        }
 
         // Compute bbox
         region.bbox = Utils.geo.polyBBOX(data.geo).map(Utils.math.toPrecision6);
