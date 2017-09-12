@@ -62,7 +62,13 @@
         "log4js": "1.1.1",
         "formidable": "1.1.1",
         "content-disposition": "0.5.2",
-        "gm": "1.23.0"
+        "gm": "1.23.0",
+
+        "geojson-rewind": "0.2.0",
+        "@mapbox/geojson-area": "0.2.2",
+        "@mapbox/geojsonhint": "2.0.1",
+        "@turf/intersect": "4.6.0",
+        "@turf/turf": "4.7.2"
     },
     "devDependencies": {
         "babel-core": "6.26.0",
@@ -98,11 +104,6 @@
         "xmldom": "0.1.27",
 
         "osm-and-geojson": "0.1.2",
-        "geojson-rewind": "0.2.0",
-        "@mapbox/geojson-area": "0.2.2",
-        "@mapbox/geojsonhint": "2.0.1",
-        "@turf/intersect": "4.6.0",
-        "@turf/turf": "4.7.2",
 
         "eslint": "3.19.0",
         "eslint-plugin-babel": "4.1.1"
