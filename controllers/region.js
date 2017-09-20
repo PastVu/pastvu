@@ -844,6 +844,8 @@ async function save(data) {
                             exteriorPolygon.push(polygon[0]);
                         } else {
                             // If the don't intersect, mean molygons are really separate
+                            // It also correctly handles case where polygon can be inside of hole of exterior,
+                            // then it will return undefined and polygon will become next exterior ring
                             nextLeftCoordinates.push(polygon);
                         }
                     }
