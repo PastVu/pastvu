@@ -847,6 +847,8 @@ async function save(data) {
                             exteriorPolygon.push(polygon[0]);
                         } else {
                             // If the don't intersect, mean molygons are really separate
+                            // It also correctly handles case where polygon can be inside of hole of exterior,
+                            // then it will return undefined and polygon will become next exterior ring
                             nextLeftCoordinates.push(polygon);
                         }
                     }
@@ -1255,10 +1257,14 @@ async function give(data) {
     if (childrenCids) {
         children = [];
         for (const cid of childrenCids) {
-            const region = regionCacheHash[cid];
+            const { cdate, udate, title_en: title } = regionCacheHash[cid];
 
-            children.push({ cid, title: region.title_en, childrenCount: _.size(regionsChildrenArrHash[cid]) || undefined });
+            children.push({ cid, cdate, udate, title, childrenCount: _.size(regionsChildrenArrHash[cid]) || undefined, });
         }
+
+        // Add public stat for each region
+        fillRegionsPublicStats(children);
+
         children = _.sortBy(children, ['title']);
     }
 

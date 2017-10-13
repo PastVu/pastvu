@@ -2,7 +2,7 @@
     //ko if: createMode()
     h4 Region creation
     // /ko
-    form.form-horizontal(action='', autocomplete="off", data-bind="event: {submit: save}")
+    form.form-horizontal(action='', autocomplete="off", data-bind="event: {submit: save}", style="overflow:hidden;")
         //ko if: !createMode()
         .form-group
             label.col-xs-4.col-sm-3.col-lg-2.control-label Edit region
@@ -76,20 +76,54 @@
                     //ko if: children().length
                     = ' | '
                     //ko foreach: children
-                    | <!--ko if: $index()-->, <!-- /ko -->
-                    a(data-bind="attr: {href: '/admin/region/' + $data.cid}", style="white-space:nowrap;")
-                        span(data-bind="text: $data.title")
-                        //ko if: $data.childrenCount
-                        span(data-bind="text: ' +' + $data.childrenCount", style="color:#7489a0;font-size:11px;")
-                        // /ko
+                    | <!--ko if: $index() --> <!-- /ko -->
+                    .region
+                        .tltp-wrap.rytltp-wrap
+                            a(data-bind="attr: {href: '/admin/region/' + $data.cid}, css: {'noPhotos': !$data.phc && !$data.pac && !$data.cc}")
+                                span(data-bind="text: $data.title")
+                                //ko if: $data.childrenCount
+                                span(data-bind="text: ' +' + $data.childrenCount", style="color:#5b6d82;font-size:10px;")
+                                // /ko
+                            | <!--ko if: $index() < $parent.children().length - 1 -->,<!-- /ko -->
+                            .tltp.tltp-top.tltp-animate-opacity.rytltp
+                                //ko if: $data.cdate
+                                .region-type-stat(style="display:block;text-align:left;")
+                                    span.glyphicon.glyphicon-plus(style="color:#00c500;")
+                                    span(data-bind="text: ' '+$parent.fDateIn(new Date($data.cdate))")
+                                // /ko
+                                //ko if: $data.udate
+                                .region-type-stat(style="display:block;text-align:left;")
+                                    span.glyphicon.glyphicon-pencil(style="color:#ffbd01;")
+                                    span(data-bind="text: ' '+$parent.fDateIn(new Date($data.udate))")
+                                // /ko
+                                //ko if: $data.phc || $data.pac || $data.cc
+                                hr(style="margin:2px 4px;border-color:#989898;")
+                                // /ko
+                                //ko if: $data.phc
+                                .region-type-stat
+                                    a(data-bind="attr: {href: '/ps?f=r!' + $data.cid + '_t!1'}")
+                                        span.glyphicon.glyphicon-camera
+                                        span(data-bind="text: ' ' + $root.intl.num($data.phc)")
+                                // /ko
+                                //ko if: $data.pac
+                                .region-type-stat
+                                    a(data-bind="attr: {href: '/ps?f=r!' + $data.cid + '_t!2'}")
+                                        span.glyphicon.glyphicon-picture
+                                        span(data-bind="text: ' ' + $root.intl.num($data.pac)")
+                                // /ko
+                                //ko if: $data.cc
+                                .region-type-stat
+                                    span.glyphicon.glyphicon-comment(style="vertical-align:text-top;")
+                                    span(data-bind="text: ' ' + $root.intl.num($data.cc)")
+                                // /ko
                     // /ko
                     // /ko
-                //ko if: childrenExpand()
-                | <!--ko if: childrenExpand() === 1-->, <!-- /ko -->
-                span.expand(data-bind="click: childrenExpandToggle")
-                    span.glyphicon(data-bind="css: {'glyphicon-chevron-right': childrenExpand() === 1, 'glyphicon-chevron-up': childrenExpand() === 2}")
-                    span(data-bind="text: childrenExpand() === 1 ? 'Еще' : 'Свернуть'")
-                // /ko
+                    //ko if: childrenExpand()
+                    | <!--ko if: childrenExpand() === 1-->, <!-- /ko -->
+                    span.expand(data-bind="click: childrenExpandToggle")
+                        span.glyphicon(data-bind="css: {'glyphicon-chevron-right': childrenExpand() === 1, 'glyphicon-chevron-up': childrenExpand() === 2}")
+                        span(data-bind="text: childrenExpand() === 1 ? 'Еще' : 'Свернуть'")
+                    // /ko
         // /ko
         //ko if: !createMode() && showGeo()
         .form-group
@@ -138,6 +172,7 @@
             .col-xs-8.col-sm-9.col-lg-10
                 textarea.form-control(wrap="soft", rows="5", data-bind="value: region.geo, valueUpdate: 'keyup'", placeholder="{ type: 'Polygon | MultiPolygon', coordinates: [[ [] ]] }", required="required")
         // /ko
+    form.form-horizontal(action='', autocomplete="off", data-bind="event: {submit: save}")
         .form-group.actions
             button.btn.btn-success(type="submit", data-bind="attr: {disabled: exe()}")
                 span.glyphicon.glyphicon-ok
