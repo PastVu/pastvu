@@ -1254,10 +1254,14 @@ async function give(data) {
     if (childrenCids) {
         children = [];
         for (const cid of childrenCids) {
-            const region = regionCacheHash[cid];
+            const { cdate, udate, title_local: title } = regionCacheHash[cid];
 
-            children.push({ cid, title: region.title_local, childrenCount: _.size(regionsChildrenArrHash[cid]) || undefined });
+            children.push({ cid, cdate, udate, title, childrenCount: _.size(regionsChildrenArrHash[cid]) || undefined, });
         }
+
+        // Add public stat for each region
+        fillRegionsPublicStats(children);
+
         children = _.sortBy(children, ['title']);
     }
 

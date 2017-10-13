@@ -213,8 +213,17 @@ define([
 
             if (!childrenExpand && $children[0].scrollWidth > $children.width()) {
                 this.childrenExpand(1);
-            } else if (childrenExpand && $children[0].scrollWidth <= $children.width() && $children.height() < 30) {
-                this.childrenExpand(0);
+            } else if (childrenExpand && $children[0].scrollWidth <= $children.width()) {
+                var $expand = this.$dom.find('.expand');
+                var childrenHight = $children.height();
+
+                if (childrenExpand === 2 && $expand.length) {
+                    childrenHight -= $expand.height() / 2 + 2;
+                }
+
+                if (childrenHight < 30) {
+                    this.childrenExpand(0);
+                }
             }
         },
         routeHandler: function () {
