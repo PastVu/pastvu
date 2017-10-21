@@ -75,6 +75,11 @@
                     span.glyphicon.glyphicon-comment(style="vertical-align:text-top;")
                     span(data-bind="text: ' ' + $root.intl.num($data.cc)")
                 // /ko
+                //ko if: $data.childLen
+                .section(title="Подрегионы")
+                    span.glyphicon.glyphicon-play(style="vertical-align:text-top;")
+                    span(data-bind="text: ' ' + $root.intl.num($data.childLen)")
+                // /ko
             //ko if: $data.home
             .home(title="Домашний регион"): span.glyphicon.glyphicon-home
             //ko if: $parents[$data.level].pinHome() && !$data.opened()
