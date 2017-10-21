@@ -47,6 +47,9 @@ define([
             this.regionsHashByCid = {};
             this.regionsHashByTitle = {};
 
+            this.sortBy = ko.observable(Utils.getLocalStorage('regionSelect.sortBy') || 'alphabet'); // alphabet, sub, photo, pic, comment
+            this.sortOrder = ko.observable(Utils.getLocalStorage('regionSelect.sortOrder') || 1); // 1, -1
+
             this.clickNode = this.clickNode.bind(this);
 
             if (!cache) {
@@ -55,13 +58,16 @@ define([
             }
 
             this.getRegions(function (data) {
-                this.regionsTree(this.treeBuild(data.regions));
                 this.regionsFlat = data.regions;
+                this.regionsTree(this.sortTree(this.treeBuild(data.regions))());
 
                 if (!this.showing) {
                     // If data has been cached, show modal after data was prepared (no need to show loading)
                     this.show();
                 }
+
+                this.subscriptions.sortBy = this.sortBy.subscribe(this.handleSortChange, this);
+                this.subscriptions.sortOrder = this.sortOrder.subscribe(this.handleSortChange, this);
 
                 // Создавать токены должны после отображения, чтобы появился скроллинг и правильно посчиталась ширина инпута для typehead
                 setTimeout(function () {
@@ -158,10 +164,9 @@ define([
             } else {
                 socket.run('region.giveListPublic', undefined, true)
                     .then(function (data) {
-                        //Сортируем массив по уровням и названиям в пределах одного уровня
+                        //Сортируем массив по уровням
                         data.regions.sort(function (a, b) {
-                            return a.parents.length < b.parents.length ||
-                                   a.parents.length === b.parents.length && a.title_local < b.title_local ? -1 : 1;
+                            return a.parents.length < b.parents.length ? -1 : a.parents.length > b.parents.length ? 1 : 0;
                         });
 
                         cache = data;
@@ -344,7 +349,7 @@ define([
         },
         //Проверяем, выбран ли какой-то другой регион в ветке, в которой находится переданный регион
         checkBranchSelected: function (region) {
-            return uprecursive(region.parent) || downrecursive(region.regions);
+            return uprecursive(region.parent) || downrecursive(region.regions());
 
             function uprecursive(region) {
                 return region && (region.selected() || uprecursive(region.parent));
@@ -353,7 +358,7 @@ define([
             function downrecursive(regions) {
                 if (regions && regions.length) {
                     for (var i = regions.length; i--;) {
-                        if (regions[i].selected() || downrecursive(regions[i].regions)) {
+                        if (regions[i].selected() || downrecursive(regions[i].regions())) {
                             return true;
                         }
                     }
@@ -364,7 +369,7 @@ define([
         //Ставит selectable всем в ветке, в которой находится переданный регион
         toggleBranchSelectable: function (region, selectable) {
             var neverSelectable = this.neverSelectable;
-            return uprecursive(region.parent) || downrecursive(region.regions);
+            return uprecursive(region.parent) || downrecursive(region.regions());
 
             function uprecursive(region) {
                 if (region && neverSelectable[region.cid] === undefined) {
@@ -379,14 +384,13 @@ define([
                         if (neverSelectable[regions[i].cid] === undefined) {
                             regions[i].selectable(selectable);
                         }
-                        downrecursive(regions[i].regions);
+                        downrecursive(regions[i].regions());
                     }
                 }
             }
         },
 
         treeBuild: function (arr) {
-            var firstCountryCid = this.auth.loggedIn() && (this.auth.iAm.regionHome.parents()[0] || this.auth.iAm.regionHome.cid()) || null;
             var filterByCids = Boolean(this.topCidsFilter.length);
             var parentsCidsFilterHash = this.topCidsFilter.reduce(function (hash, cid) {
                 hash[cid] = true;
@@ -399,7 +403,10 @@ define([
             var selectable;
             var hash = {};
             var selectedRegions = [];
-            var result = [];
+            var result = ko.observableArray();
+
+            var homeRegionsCids = this.auth.loggedIn() && this.auth.iAm.regionHome.parents().concat(this.auth.iAm.regionHome.cid()) || false;
+            var homeCountryCidFound = false;
 
             function openRegionParents(region) {
                 var parentRegion = region.parent;
@@ -437,7 +444,7 @@ define([
                 }
 
                 region.exists = true;
-                region.regions = [];
+                region.regions = ko.observableArray();
 
                 selectable = this.neverSelectable[cid] === undefined;
                 selected = this.selectedInitHash[cid] !== undefined;
@@ -451,13 +458,20 @@ define([
                 }
 
                 if (region.level) {
-                    // Parent can be absent, if tree is not full (topCidsFilter)
                     if (region.parent) {
-                        region.parent.regions.push(region);
+                        if (region.parent.home === true && homeRegionsCids.includes(cid)) {
+                            region.home = true;
+                            region.parent.regions.unshift(region);
+                        } else {
+                            region.parent.regions.push(region);
+                        }
                     } else {
+                        // Parent can be absent, if tree is not full (topCidsFilter)
                         result.push(region);
                     }
-                } else if (cid === firstCountryCid) {
+                } else if (homeRegionsCids && !homeCountryCidFound && homeRegionsCids.includes(cid)) {
+                    region.home = homeCountryCidFound = true;
+                    console.log(region);
                     result.unshift(region);
                 } else {
                     result.push(region);
@@ -472,8 +486,8 @@ define([
                 }
             }
 
-            if (result.length === 1) {
-                result[0].opened(true);
+            if (result().length === 1) {
+                result()[0].opened(true);
             }
 
             //У изначально выбранных регионов делаем невыбираемыми другие регионы этой ветки
@@ -484,6 +498,82 @@ define([
             this.regionsHashByCid = hash;
 
             return result;
+        },
+
+        sortTree(tree) {
+            var sortBy = this.sortBy();
+            var sortOrder = this.sortOrder();
+            var field;
+
+            switch (sortBy) {
+                case 'sub':
+                    field = 'childLen';
+                    sortOrder = -sortOrder;
+                    break;
+                case 'photo':
+                    field = 'phc';
+                    sortOrder = -sortOrder;
+                    break;
+                case 'pic':
+                    field = 'pac';
+                    sortOrder = -sortOrder;
+                    break;
+                case 'comment':
+                    field = 'cc';
+                    sortOrder = -sortOrder;
+                    break;
+                case 'alphabet':
+                default:
+                    field = 'title_local';
+            }
+
+            return (function recursiveSort(arr) {
+                var arrRaw = arr();
+
+                if (arrRaw.length === 0) {
+                    return arr;
+                }
+
+                arr.sort(function (a, b) {
+                    // Home region always goes first, no matter what sorting is on
+                    if (a.home === true) {
+                        return -1;
+                    }
+                    if (b.home === true) {
+                        return 1;
+                    }
+
+                    var aval = a[field];
+                    var bval = b[field];
+
+                    if (!aval && bval) {
+                        return 1;
+                    }
+
+                    if (!bval && aval) {
+                        return -1;
+                    }
+
+                    if (aval === bval) {
+                        // If values are equal (exists or not)
+                        if (sortBy !== 'alphabet') {
+                            // If it is not alphabetical order, order by title
+                            return a.title_local > b.title_local ? 1 : -1;
+                        }
+
+                        // Otherwise don't sort
+                        return 0;
+                    }
+
+                    return aval > bval ? sortOrder : -sortOrder;
+                });
+
+                arrRaw.forEach(function (region) {
+                    recursiveSort(region.regions);
+                });
+
+                return arr;
+            }(tree));
         },
 
         /**
@@ -499,13 +589,13 @@ define([
             if (region && region.exists) {
                 region.opened(typeof expandSelf === 'boolean' ? expandSelf : (typeof cascadeExpand === 'boolean' ? cascadeExpand : !region.opened()));
             } else if (cascadeDir) {
-                region = { regions: this.regionsTree() };
+                region = { regions: this.regionsTree };
             }
 
             if (cascadeDir === 'up' && region.parent) {
                 nextRegions = [region.parent];
-            } else if (cascadeDir === 'down' && region.regions.length) {
-                nextRegions = region.regions;
+            } else if (cascadeDir === 'down' && region.regions().length) {
+                nextRegions = region.regions();
             }
             if (nextRegions) {
                 for (var i = nextRegions.length; i--;) {
@@ -522,6 +612,33 @@ define([
         },
         collapseAll: function (/*data, event*/) {
             this.nodeToggle(null, null, false, 'down');
+        },
+
+        handleSortChange: function () {
+            this.sortTree(this.regionsTree);
+
+            if (this.sortBy() === 'alphabet') {
+                Utils.removeLocalStorage('regionSelect.sortBy');
+            } else {
+                Utils.setLocalStorage('regionSelect.sortBy', this.sortBy());
+            }
+
+            Utils.setLocalStorage('regionSelect.sortOrder', this.sortOrder());
+        },
+        sortByAlphabet() {
+            this.sortBy('alphabet');
+        },
+        sortBySub() {
+            this.sortBy('sub');
+        },
+        sortByPhoto() {
+            this.sortBy('photo');
+        },
+        sortByPic() {
+            this.sortBy('pic');
+        },
+        sortByComment() {
+            this.sortBy('comment');
         }
     });
 });

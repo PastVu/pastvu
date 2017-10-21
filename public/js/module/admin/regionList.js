@@ -267,7 +267,7 @@ define([
             var that = this;
 
             noties.confirm({
-                message: 'Перерасчет статистики регионов займет 2-5 минут. Продолжить?',
+                message: 'Перерасчет статистики регионов займет ~5 минут. Продолжить?',
                 okText: 'Да, налью чаю',
                 okClass: 'btn-success',
                 onOk: function (confirmer) {

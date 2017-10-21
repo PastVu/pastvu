@@ -21,6 +21,19 @@
 
     .offsetwrap
         .regionsHead
+            = 'Сортировать по: '
+            .sortOption(data-bind="click:sortByAlphabet, css: {'selected':sortBy()==='alphabet'}") алфавиту
+            = ', количеству: '
+            = ' '
+            .sortOption(data-bind="click:sortByPhoto, css: {'selected':sortBy()==='photo'}") фотографий
+            = ', '
+            .sortOption(data-bind="click:sortByPic, css: {'selected':sortBy()==='pic'}") картин
+            = ', '
+            .sortOption(data-bind="click:sortByComment, css: {'selected':sortBy()==='comment'}") комментариев
+            = ', '
+            .sortOption(data-bind="click:sortBySub, css: {'selected':sortBy()==='sub'}") подрегионов
+    .offsetwrap
+        .regionsHead
             .headElem.interact(data-bind="click: expandAll")
                 span.glyphicon.glyphicon-plus
                 |  Раскрыть все
@@ -57,6 +70,12 @@
                     span.glyphicon.glyphicon-comment(style="vertical-align:text-top;")
                     span(data-bind="text: ' ' + $root.intl.num($data.cc)")
                 // /ko
+            //ko if: $data.home
+            .home(title="Домашний регион"): span.glyphicon.glyphicon-home
+            //ko if: !$data.opened()
+            hr.homeDivider
+            // /ko
+            // /ko
         //ko if: $data.childLen && $data.opened()
         //ko template: {name: 'treeNode', foreach: $data.regions}
         // /ko
