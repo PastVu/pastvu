@@ -64,9 +64,30 @@
 
 	.regionsHead {
 		position: relative;
-		margin: 10px 0 5px 0;
+		margin: 1px 0 5px 0;
 		.user-select(none);
 	}
+
+    .sortOption {
+        display: inline;
+        text-decoration-skip: ink;
+
+        &:not(.selected) {
+            color: #868585;
+            cursor: pointer;
+            text-decoration: underline #868585 dotted;
+
+            &:hover {
+                color: #606060;
+                text-decoration: underline #606060 solid;
+            }
+        }
+
+        &.selected {
+            color: #545c8a;
+
+        }
+    }
 
 	.headElem {
 		position: relative;
@@ -176,6 +197,21 @@
                 padding-left: 10px;
                 font-size: 11px;
                 color: #525252;
+            }
+
+            .homeDivider {
+                margin: 7px 22px 0;
+                padding: 0;
+                border: none;
+                border-bottom: 1px #d6d6d6 solid;
+            }
+
+            .home {
+                display: inline-block;
+                width: 22px;
+                padding: 2px 0;
+                color: @gray-light;
+                text-align: center;
             }
 
 			&.isparent {

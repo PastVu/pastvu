@@ -7,6 +7,8 @@
     h4.namehead
         span.glyphicon.glyphicon-globe
         span(data-bind="text: ' Region' + (options.max > 1 ? 's' : '') + ' select'")
+        abbr(style="margin-left:5px;vertical-align:middle;font-size:10px;", title="For each region specified number of public images and deleted comments")
+            span.glyphicon.glyphicon-info-sign
     .offsetwrap
         div Type the name of the region directly in the input or find it in the below tree
         //ko if: options.max > 1
@@ -21,14 +23,30 @@
 
     .offsetwrap
         .regionsHead
+            = 'Sort by: '
+            .sortOption(data-bind="click:sortByAlphabet, css: {'selected':sortBy()==='alphabet'}") alphabet
+            = ', number of: '
+            = ' '
+            .sortOption(data-bind="click:sortByPhoto, css: {'selected':sortBy()==='photo'}") photos
+            = ', '
+            .sortOption(data-bind="click:sortByPic, css: {'selected':sortBy()==='pic'}") pictures
+            = ', '
+            .sortOption(data-bind="click:sortByComment, css: {'selected':sortBy()==='comment'}") comments
+            = ', '
+            .sortOption(data-bind="click:sortBySub, css: {'selected':sortBy()==='sub'}") subregions
+    .offsetwrap
+        .regionsHead
             .headElem.interact(data-bind="click: expandAll")
                 span.glyphicon.glyphicon-plus
                 |  Expand all
             .headElem.interact(data-bind="click: collapseAll")
                 span.glyphicon.glyphicon-minus
                 |  Collapse all
-            abbr(style="margin-left:5px;vertical-align:middle;", title="For each region specified number of public images and deleted comments")
-                span.glyphicon.glyphicon-info-sign
+            //ko if: auth.loggedIn() && auth.iAm.regionHome.cid()
+            label.checkbox-inline(style="margin-left:10px;padding-left:10px;")
+                input(type="checkbox", data-bind="checked: pinHome", style="margin-left:-15px;")
+                | Pin home region
+            // /ko
     .tree
         ul(data-bind="template: {name: 'treeNode', foreach: regionsTree}")
     // /ko
@@ -40,7 +58,7 @@
             .chevron(data-bind="click: $data.collapseToggle, attr: {title: ($data.opened() ? 'Collapse' : 'Expand') + ' children regions'}")
                 span.glyphicon(data-bind="css: {'glyphicon-minus': $data.opened(), 'glyphicon-plus': !$data.opened()}")
             // /ko
-            .rname(data-bind="click: $data.clickNode, attr: {title: $data.selected() ? 'Снять выбор' : ($data.selectable() ? 'Select region' : '')}")
+            .rname(data-bind="click: $data.clickNode, attr: {title: $data.selected() ? 'Deselect region' : ($data.selectable() ? 'Select region' : '')}")
                 .name(data-bind="text: ' ' + $data.title_en, css: {'nameborder': $data.phc || $data.pac || $data.cc}")
                 //ko if: $data.phc
                 .section(title="Photos")
@@ -57,6 +75,17 @@
                     span.glyphicon.glyphicon-comment(style="vertical-align:text-top;")
                     span(data-bind="text: ' ' + $root.intl.num($data.cc)")
                 // /ko
+                //ko if: $data.childLen
+                .section(title="Subregions")
+                    span.glyphicon.glyphicon-play(style="vertical-align:text-top;")
+                    span(data-bind="text: ' ' + $root.intl.num($data.childLen)")
+                // /ko
+            //ko if: $data.home
+            .home(title="Home region"): span.glyphicon.glyphicon-home
+            //ko if: $parents[$data.level].pinHome() && !$data.opened()
+            hr.homeDivider
+            // /ko
+            // /ko
         //ko if: $data.childLen && $data.opened()
         //ko template: {name: 'treeNode', foreach: $data.regions}
         // /ko
