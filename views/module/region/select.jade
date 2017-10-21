@@ -7,6 +7,8 @@
     h4.namehead
         span.glyphicon.glyphicon-globe
         span(data-bind="text: ' Выбор регион' + (options.max > 1 ? 'ов' : 'а')")
+        abbr(style="margin-left:5px;vertical-align:middle;font-size:10px;", title="Для каждого региона указано кол-во публичный изображений и не удаленных комментариев")
+            span.glyphicon.glyphicon-info-sign
     .offsetwrap
         div Вводите имя региона непосредственно в поле выбора или найдите его вручную в дереве регионов ниже
         //ko if: options.max > 1
@@ -40,8 +42,11 @@
             .headElem.interact(data-bind="click: collapseAll")
                 span.glyphicon.glyphicon-minus
                 |  Свернуть все
-            abbr(style="margin-left:5px;vertical-align:middle;", title="Для каждого региона указано кол-во публичный изображений и не удаленных комментариев")
-                span.glyphicon.glyphicon-info-sign
+            //ko if: auth.loggedIn() && auth.iAm.regionHome.cid()
+            label.checkbox-inline(style="margin-left:10px;padding-left:10px;")
+                input(type="checkbox", data-bind="checked: pinHome", style="margin-left:-15px;")
+                | Прикрепить домашний регион
+            // /ko
     .tree
         ul(data-bind="template: {name: 'treeNode', foreach: regionsTree}")
     // /ko
@@ -72,7 +77,7 @@
                 // /ko
             //ko if: $data.home
             .home(title="Домашний регион"): span.glyphicon.glyphicon-home
-            //ko if: !$data.opened()
+            //ko if: $parents[$data.level].pinHome() && !$data.opened()
             hr.homeDivider
             // /ko
             // /ko

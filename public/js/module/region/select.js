@@ -50,6 +50,9 @@ define([
             this.sortBy = ko.observable(Utils.getLocalStorage('regionSelect.sortBy') || 'alphabet'); // alphabet, sub, photo, pic, comment
             this.sortOrder = ko.observable(Utils.getLocalStorage('regionSelect.sortOrder') || 1); // 1, -1
 
+            var pinHome = this.auth.loggedIn() && this.auth.iAm.regionHome.cid() ? Utils.getLocalStorage('regionSelect.pinHome') : false;
+            this.pinHome = ko.observable(typeof pinHome === 'boolean' ? pinHome : true);
+
             this.clickNode = this.clickNode.bind(this);
 
             if (!cache) {
@@ -68,6 +71,7 @@ define([
 
                 this.subscriptions.sortBy = this.sortBy.subscribe(this.handleSortChange, this);
                 this.subscriptions.sortOrder = this.sortOrder.subscribe(this.handleSortChange, this);
+                this.subscriptions.pinHome = this.pinHome.subscribe(this.handlePinChange, this);
 
                 // Создавать токены должны после отображения, чтобы появился скроллинг и правильно посчиталась ширина инпута для typehead
                 setTimeout(function () {
@@ -471,7 +475,6 @@ define([
                     }
                 } else if (homeRegionsCids && !homeCountryCidFound && homeRegionsCids.includes(cid)) {
                     region.home = homeCountryCidFound = true;
-                    console.log(region);
                     result.unshift(region);
                 } else {
                     result.push(region);
@@ -503,6 +506,7 @@ define([
         sortTree(tree) {
             var sortBy = this.sortBy();
             var sortOrder = this.sortOrder();
+            var pinHome = this.pinHome();
             var field;
 
             switch (sortBy) {
@@ -535,12 +539,14 @@ define([
                 }
 
                 arr.sort(function (a, b) {
-                    // Home region always goes first, no matter what sorting is on
-                    if (a.home === true) {
-                        return -1;
-                    }
-                    if (b.home === true) {
-                        return 1;
+                    if (pinHome) {
+                        // Home region always goes first, no matter what sorting is on
+                        if (a.home === true) {
+                            return -1;
+                        }
+                        if (b.home === true) {
+                            return 1;
+                        }
                     }
 
                     var aval = a[field];
@@ -612,6 +618,12 @@ define([
         },
         collapseAll: function (/*data, event*/) {
             this.nodeToggle(null, null, false, 'down');
+        },
+
+        handlePinChange: function (val) {
+            this.sortTree(this.regionsTree);
+
+            Utils.setLocalStorage('regionSelect.pinHome', val);
         },
 
         handleSortChange: function () {
