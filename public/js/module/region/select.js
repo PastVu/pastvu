@@ -50,7 +50,8 @@ define([
             this.sortBy = ko.observable(Utils.getLocalStorage('regionSelect.sortBy') || 'alphabet'); // alphabet, sub, photo, pic, comment
             this.sortOrder = ko.observable(Utils.getLocalStorage('regionSelect.sortOrder') || 1); // 1, -1
 
-            var pinHome = this.auth.loggedIn() && this.auth.iAm.regionHome.cid() ? Utils.getLocalStorage('regionSelect.pinHome') : false;
+            var pinHome = this.auth.loggedIn() && this.auth.iAm.regionHome.cid() && this.topCidsFilter.length === 0 ?
+                Utils.getLocalStorage('regionSelect.pinHome') : false;
             this.pinHome = ko.observable(typeof pinHome === 'boolean' ? pinHome : true);
 
             this.clickNode = this.clickNode.bind(this);

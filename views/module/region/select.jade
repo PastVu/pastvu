@@ -42,7 +42,7 @@
             .headElem.interact(data-bind="click: collapseAll")
                 span.glyphicon.glyphicon-minus
                 |  Collapse all
-            //ko if: auth.loggedIn() && auth.iAm.regionHome.cid()
+            //ko if: auth.loggedIn() && auth.iAm.regionHome.cid() && topCidsFilter.length === 0
             label.checkbox-inline(style="margin-left:10px;padding-left:10px;")
                 input(type="checkbox", data-bind="checked: pinHome", style="margin-left:-15px;")
                 | Pin home region
@@ -82,7 +82,7 @@
                 // /ko
             //ko if: $data.home
             .home(title="Home region"): span.glyphicon.glyphicon-home
-            //ko if: $parents[$data.level].pinHome() && !$data.opened()
+            //ko if: $parents[$data.level].topCidsFilter && $parents[$data.level].topCidsFilter.length === 0 && $parents[$data.level].pinHome() && !$data.opened()
             hr.homeDivider
             // /ko
             // /ko
