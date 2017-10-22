@@ -50,8 +50,8 @@ define([
             this.sortBy = ko.observable(Utils.getLocalStorage('regionSelect.sortBy') || 'alphabet'); // alphabet, sub, photo, pic, comment
             this.sortOrder = ko.observable(Utils.getLocalStorage('regionSelect.sortOrder') || 1); // 1, -1
 
-            var pinHome = this.auth.loggedIn() && this.auth.iAm.regionHome.cid() && this.topCidsFilter.length === 0 ?
-                Utils.getLocalStorage('regionSelect.pinHome') : false;
+            this.pinHomeAllowed = this.auth.loggedIn() && this.auth.iAm.regionHome.cid() && this.topCidsFilter.length === 0;
+            var pinHome = this.pinHomeAllowed ? Utils.getLocalStorage('regionSelect.pinHome') : false;
             this.pinHome = ko.observable(typeof pinHome === 'boolean' ? pinHome : true);
 
             this.clickNode = this.clickNode.bind(this);
@@ -164,7 +164,7 @@ define([
             delete this.topShadowBacking;
         },
         getRegions: function (cb, ctx) {
-            if (cache) {
+            if (cache && this.topCidsFilter.length === 0) {
                 cb.call(ctx, cache);
             } else {
                 socket.run('region.giveListPublic', undefined, true)
@@ -174,13 +174,15 @@ define([
                             return a.parents.length < b.parents.length ? -1 : a.parents.length > b.parents.length ? 1 : 0;
                         });
 
-                        cache = data;
+                        if (this.topCidsFilter.length === 0) {
+                            cache = data;
+                        }
                         cb.call(ctx, data);
 
                         setTimeout(function () {
                             cache = null;
                         }, 60000);
-                    });
+                    }.bind(this));
             }
         },
         //Возвращает массив выбранных регионов с переданными полями
@@ -410,7 +412,7 @@ define([
             var selectedRegions = [];
             var result = ko.observableArray();
 
-            var homeRegionsCids = this.auth.loggedIn() && this.auth.iAm.regionHome.parents().concat(this.auth.iAm.regionHome.cid()) || false;
+            var homeRegionsCids = this.pinHomeAllowed && this.auth.iAm.regionHome.parents().concat(this.auth.iAm.regionHome.cid()) || false;
             var homeCountryCidFound = false;
 
             function openRegionParents(region) {
