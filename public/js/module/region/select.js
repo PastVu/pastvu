@@ -42,7 +42,6 @@ define([
             }
 
             this.regionsTree = ko.observableArray();
-            this.regionsFlat = [];
             this.regionsTypehead = [];
             this.regionsHashByCid = {};
             this.regionsHashByTitle = {};
@@ -61,9 +60,8 @@ define([
                 this.show();
             }
 
-            this.getRegions(function (data) {
-                this.regionsFlat = data.regions;
-                this.regionsTree(this.sortTree(this.treeBuild(data.regions))());
+            this.getRegions(function (regions) {
+                this.regionsTree(this.sortTree(this.treeBuild(regions))());
 
                 if (!this.showing) {
                     // If data has been cached, show modal after data was prepared (no need to show loading)
@@ -164,25 +162,18 @@ define([
             delete this.topShadowBacking;
         },
         getRegions: function (cb, ctx) {
-            if (cache && this.topCidsFilter.length === 0) {
-                cb.call(ctx, cache);
+            if (cache) {
+                cb.call(ctx, JSON.parse(cache.regions));
             } else {
-                socket.run('region.giveListPublic', undefined, true)
+                socket.run('region.giveListPublicString', undefined, true)
                     .then(function (data) {
-                        //Сортируем массив по уровням
-                        data.regions.sort(function (a, b) {
-                            return a.parents.length < b.parents.length ? -1 : a.parents.length > b.parents.length ? 1 : 0;
-                        });
-
-                        if (this.topCidsFilter.length === 0) {
-                            cache = data;
-                        }
-                        cb.call(ctx, data);
+                        cache = data;
+                        cb.call(ctx, JSON.parse(data.regions));
 
                         setTimeout(function () {
                             cache = null;
                         }, 60000);
-                    }.bind(this));
+                    });
             }
         },
         //Возвращает массив выбранных регионов с переданными полями
@@ -423,6 +414,11 @@ define([
                     openRegionParents(parentRegion);
                 }
             }
+
+            // Сортируем массив по уровням
+            arr.sort(function (a, b) {
+                return a.parents.length < b.parents.length ? -1 : a.parents.length > b.parents.length ? 1 : 0;
+            });
 
             for (var i = 0, len = arr.length; i < len; i++) {
                 region = arr[i];
