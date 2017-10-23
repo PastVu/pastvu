@@ -32,7 +32,7 @@ let regionCacheHash = {}; // Hash-cache of regions { cid: { _id, cid, parents } 
 
 let regionCacheArrPublic = [];
 let regionCacheMapPublic = new Map();
-let regionCacheArrPublicPromise = Promise.resolve({ regions: regionCacheArrPublic });
+let regionCacheArrPublicPromise = Promise.resolve({ regions: regionCacheArrPublic, regionsStringified: JSON.stringify(regionCacheArrPublic) });
 let regionCacheArrAdmin = [];
 let regionCacheMapAdmin = new Map();
 let regionCacheArrAdminPromise = Promise.resolve({ regions: regionCacheArrAdmin });
@@ -105,7 +105,7 @@ async function fillCache() {
             }
         }
 
-        regionCacheArrPublicPromise = Promise.resolve({ regions: regionCacheArrPublic });
+        regionCacheArrPublicPromise = Promise.resolve({ regions: regionCacheArrPublic, regionsStringified: JSON.stringify(regionCacheArrPublic)});
         regionCacheArrAdminPromise = Promise.resolve({ regions: regionCacheArrAdmin });
 
         DEFAULT_HOME = regionCacheHash[config.regionHome] || regionCacheArrPublic[0];
@@ -1348,7 +1348,8 @@ async function giveListFull(data) {
     return { regions, stat: { common: regionsStatCommon, byLevel: regionsStatByLevel } };
 }
 
-export const giveListPublic = () => regionCacheArrPublicPromise;
+export const giveListPublic = () => regionCacheArrPublicPromise.then(data => ({ regions: data.regions }));
+export const giveListPublicString = () => regionCacheArrPublicPromise.then(data => ({ regions: data.regionsStringified }));
 
 // Returns an array of regions in which a given point falls
 // Determine regions path to geo by parents of the very last in path
@@ -2146,6 +2147,7 @@ remove.isPublic = true;
 recalcStatistics.isPublic = true;
 giveListFull.isPublic = true;
 giveListPublic.isPublic = true;
+giveListPublicString.isPublic = true;
 giveRegionsByGeo.isPublic = true;
 saveUserHomeRegion.isPublic = true;
 saveUserRegions.isPublic = true;
@@ -2156,6 +2158,7 @@ export default {
     recalcStatistics,
     giveListFull,
     giveListPublic,
+    giveListPublicString,
     giveRegionsByGeo,
     saveUserHomeRegion,
     saveUserRegions,
