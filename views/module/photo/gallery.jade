@@ -216,7 +216,7 @@
                 //ko if: $data.rs
                 .regions(data-bind="foreach: $data.rs", title=" ")
                     | <!--ko if: $index()-->, <!-- /ko -->
-                    a.shortRegion(data-bind="css: {where: !$data.cid}, attr: {href: '/ps?f='+(!$data.cid ? 'geo!0'+($parent.rs[$index()+1] ? '_r!'+$parent.rs[$index()+1].cid : '') : 'r!'+$data.cid), title: $data.title_local}, text: $data.title_local")
+                    a.shortRegion(data-bind="css: {where: !$data.cid}, attr: {href: ($parents[1].u ? '/u/'+$parents[1].u.login()+'/photo' : '/ps')+'?f='+(!$data.cid ? 'geo!0'+($parent.rs[$index()+1] ? '_r!'+$parent.rs[$index()+1].cid : '') : 'r!'+$data.cid), title: $data.title_local}, text: $data.title_local")
                 // /ko
             //ko if: $data.ccount || $data.changed
             .rightBlocks
