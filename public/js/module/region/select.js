@@ -7,6 +7,7 @@ define([
 ], function (_, $, Utils, socket, P, ko, koMapping, Cliche, globalVM, storage, noties, jade) {
     'use strict';
 
+    var collator = new Intl.Collator('ru-RU', { numeric: true, sensitivity: 'base' });
     var $window = $(window);
     var cache = null;
 
@@ -563,11 +564,15 @@ define([
                         // If values are equal (exists or not)
                         if (sortBy !== 'alphabet') {
                             // If it is not alphabetical order, order by title
-                            return a.title_local > b.title_local ? 1 : -1;
+                            return collator.compare(a.title_local, b.title_local);
                         }
 
                         // Otherwise don't sort
                         return 0;
+                    }
+
+                    if (sortBy === 'alphabet') {
+                        return collator.compare(aval, bval);
                     }
 
                     return aval > bval ? sortOrder : -sortOrder;

@@ -9,6 +9,7 @@ define([
 ], function (_, $, Utils, socket, P, ko, Cliche, globalVM, storage, noties, jade) {
     'use strict';
 
+    var collator = new Intl.Collator('ru-RU', { numeric: true, sensitivity: 'base' });
     var months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
     return Cliche.extend({
@@ -96,7 +97,7 @@ define([
 
             (function recursiveSort(arr) {
                 arr.sort(function (a, b) {
-                    return a.title_local < b.title_local ? -sort : sort;
+                    return sort * collator.compare(a.title_local, b.title_local);
                 });
 
                 arr = arr();
@@ -117,7 +118,11 @@ define([
 
             //Сортируем массим по уровням и названиям в пределах одного уровня
             arr.sort(function (a, b) {
-                return a.parents.length < b.parents.length || a.parents.length === b.parents.length && a.title_local < b.title_local ? -1 : 1;
+                if (a.parents.length === b.parents.length) {
+                    return collator.compare(a.title_local, b.title_local);
+                }
+
+                return a.parents.length < b.parents.length ? -1 : 1;
             });
 
             function incrementParentsChildLen(region, deepestLevel) {

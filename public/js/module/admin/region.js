@@ -10,6 +10,7 @@ define([
 ], function (_, $, Utils, socket, P, ko, koMapping, Cliche, globalVM, L, noties, statuses, renderer, jade) {
     'use strict';
 
+    var collator = new Intl.Collator('ru-RU', { numeric: true, sensitivity: 'base' });
     var regionDef = {
         cid: 0,
         parents: [],
@@ -294,6 +295,10 @@ define([
             } else {
                 this.bboxLBound = null;
             }
+
+            data.children.sort(function (a, b) {
+                return collator.compare(a.title, b.title);
+            });
 
             this.children(data.children || []);
             this.childLenArr(data.childLenArr || []);
