@@ -1,0 +1,39 @@
+.regfi(data-bind="with: repository[M!M]")
+    h4 Вставка GeoJSON with FeatureCollection
+    form.form-horizontal(action='', autocomplete="off", data-bind="event: {submit: send}")
+        .form-group
+            textarea#geoinput.form-control(wrap="soft", rows="8", placeholder="{ type: 'FeatureCollection', features: [\n    {type: 'Feature', properties: {name: 'RegionName', ...}, geometry: {\n        type: 'Polygon | MultiPolygon', coordinates: [[ [] ]]\n    }}\n    {type: 'Feature', properties: {name: 'RegionName', ...}, geometry: {\n        type: 'Polygon | MultiPolygon', coordinates: [[ [] ]]\n    }}\n] }", required="required")
+        .form-group
+            button.btn.btn-success(type="submit", data-bind="attr: {disabled: exe()}")
+                span.glyphicon.glyphicon-ok
+                |  Отправить
+    //ko if: exe()
+    .loading Обработка
+    // /ko
+    //ko if: response()
+    div(data-bind="html: 'Обработано <b>' + response().features.length + '</b> регионов за ' + response().s + 'сек'")
+    //ko foreach: response().features
+    .feature(data-bind="css: {add: $data.success && !$data.edit, edit: $data.edit, fail: $data.error}")
+        .status
+            span.glyphicon(data-bind="css: {'glyphicon-plus': $data.success, 'glyphicon-pencil': $data.edit, 'glyphicon-remove': $data.error}")
+        //ko if: $data.error
+        div(data-bind="text: $data.error")
+        // /ko
+        //ko if: $data.success
+        .region
+            a(data-bind="attr: {href: '/admin/region/' + $data.region.cid}, text: $data.region.cid + ' ' + $data.region.title_local", title="Открыть", target="_blank")
+            = "; "
+            div(style="display:inline-block;")
+                | Полигонов:
+                strong(data-bind="text: ' ' + $root.intl.num($data.region.polynum.exterior)")
+                //ko if: $data.region.polynum.interior
+                |  (+
+                strong(data-bind="text: $root.intl.num($data.region.polynum.interior)")
+                |  выколотых)
+                // /ko
+                | ; Вершин:
+                strong(data-bind="text: ' ' + ($root.intl.num($data.region.pointsnum - $data.region.polynum.exterior - $data.region.polynum.interior))")
+            div(data-bind="html: statString")
+        // /ko
+    // /ko
+    // /ko

@@ -67,12 +67,15 @@
                     span(data-bind="text: ' ' + $data")
                     // /ko
         // /ko
-        //ko if: !createMode()
+        //ko if: !createMode() && region.parents().length < maxRegionLevel
         .form-group
             label.col-xs-4.col-sm-3.col-lg-2.control-label Прямые потомки
             .col-xs-8.col-sm-9.col-lg-10(style="padding-top: 2px")
                 span.children(data-bind="css: {more: childrenExpand() === 1, expanded: childrenExpand() === 2}")
-                    a(data-bind="attr: {href: '/admin/region/create?parent=' + region.cid()}") [+Добавить]
+                    a(data-bind="attr: {href: '/admin/region/create?parent=' + region.cid()}", title="Добавить дочерний регион") [+1]
+                    //ko if: auth.iAm.login() === 'klimashkin'
+                    a(data-bind="click: addFeatures", href="javascript:void(0);", title="Добавить дочерние через FeatureCollection") [+FC]
+                    // /ko
                     //ko if: children().length
                     = ' | '
                     //ko foreach: children

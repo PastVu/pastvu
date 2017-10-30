@@ -5,9 +5,9 @@
  */
 define([
     'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
-    'leaflet', 'noties', 'm/photo/status',
+    'leaflet', 'noties', 'm/photo/status', 'renderer',
     'text!tpl/admin/region.jade', 'css!style/admin/region', 'css!style/leaflet/leaflet'
-], function (_, $, Utils, socket, P, ko, koMapping, Cliche, globalVM, L, noties, statuses, jade) {
+], function (_, $, Utils, socket, P, ko, koMapping, Cliche, globalVM, L, noties, statuses, renderer, jade) {
     'use strict';
 
     var regionDef = {
@@ -121,6 +121,7 @@ define([
 
             this.showGeo = ko.observable(false);
             this.statuses = statuses;
+            this.maxRegionLevel = 5;
 
             this.region = koMapping.fromJS(regionDef);
             this.haveParent = ko.observable('0');
@@ -208,6 +209,10 @@ define([
 
         },
         childrenCalc: function () {
+            if (this.region.parents().length >= this.maxRegionLevel) {
+                return;
+            }
+
             var $children = this.$dom.find('.children');
             var childrenExpand = this.childrenExpand();
 
@@ -307,7 +312,7 @@ define([
                     this.geoObj = JSON.parse(region.geo);
                 } catch (err) {
                     console.log(err);
-                    noties.error({ message: 'GeoJSON client parse error!\n' + err.message });
+                    noties.error({ message: 'GeoJSON client parse error!<br>' + err.message });
                     this.geoStringOrigin = null;
                     this.geoObj = null;
                     return false;
@@ -410,7 +415,7 @@ define([
                 center: [36, -25],
                 zoom: 3,
                 minZoom: 2,
-                maxZoom: 15,
+                maxZoom: 16,
                 trackResize: false
             });
             if (this.bboxLBound) {
@@ -895,6 +900,46 @@ define([
                     cb.call(ctx, false);
                 }
             });
-        }
+        },
+
+        addFeatures: function () {
+            if (!this.regfiVM) {
+                renderer(
+                    [
+                        {
+                            module: 'm/admin/regionFeatureInsert',
+                            options: {
+                                cid: this.region.cid(),
+                            },
+                            modal: {
+                                topic: 'Вставка FeatureCollection',
+                                initWidth: '950px',
+                                maxWidthRatio: 0.95,
+                                fullHeight: true,
+                                withScroll: true,
+                                offIcon: { text: 'Закрыть', click: this.closeFeatures, ctx: this },
+                                btns: [{ css: 'btn-primary', text: 'Закрыть', click: this.closeFeatures, ctx: this }]
+                            },
+                            callback: function (vm) {
+                                this.regfiVM = vm;
+                                this.childModules[vm.id] = vm;
+                            }.bind(this)
+                        }
+                    ],
+                    {
+                        parent: this,
+                        level: this.level + 3 //Чтобы не удалился модуль карты
+                    }
+                );
+            }
+        },
+
+        closeFeatures: function () {
+            if (this.regfiVM) {
+                this.routeHandler();
+                this.regfiVM.destroy();
+                delete this.regfiVM;
+            }
+        },
     });
 });

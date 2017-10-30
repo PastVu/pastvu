@@ -66,6 +66,7 @@ export default Utils.reflectKeys({
     REGION_NO_RELATIVES: null,
     REGION_GEOJSON_PARSE: null,
     REGION_GEOJSON_GEOMETRY: null,
+    REGION_MAX_LEVEL: null,
     REGION_MOVE_EXCEED_MAX_LEVEL: null,
     REGION_SAVED_BUT_INCL_PHOTO: null,
     REGION_SAVED_BUT_PARENT_EXTERNALITY: null,
