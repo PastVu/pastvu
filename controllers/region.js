@@ -105,7 +105,7 @@ async function fillCache() {
             }
         }
 
-        regionCacheArrPublicPromise = Promise.resolve({ regions: regionCacheArrPublic, regionsStringified: JSON.stringify(regionCacheArrPublic)});
+        regionCacheArrPublicPromise = Promise.resolve({ regions: regionCacheArrPublic, regionsStringified: JSON.stringify(regionCacheArrPublic) });
         regionCacheArrAdminPromise = Promise.resolve({ regions: regionCacheArrAdmin });
 
         DEFAULT_HOME = regionCacheHash[config.regionHome] || regionCacheArrPublic[0];
@@ -1370,9 +1370,9 @@ async function give(data) {
     if (childrenCids) {
         children = [];
         for (const cid of childrenCids) {
-            const { cdate, udate, title_local: title } = regionCacheHash[cid];
+            const { cdate, udate, title_local: title, childLen } = regionCacheHash[cid];
 
-            children.push({ cid, cdate, udate, title, childrenCount: _.size(regionsChildrenArrHash[cid]) || undefined, });
+            children.push({ cid, cdate, udate, title, childLen, childrenCount: _.size(regionsChildrenArrHash[cid]) || undefined, });
         }
 
         // Add public stat for each region

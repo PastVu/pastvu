@@ -85,7 +85,10 @@
                             a(data-bind="attr: {href: '/admin/region/' + $data.cid}, css: {'noPhotos': !$data.phc && !$data.pac && !$data.cc}")
                                 span(data-bind="text: $data.title")
                                 //ko if: $data.childrenCount
-                                span(data-bind="text: ' +' + $data.childrenCount", style="color:#5b6d82;font-size:10px;")
+                                span(data-bind="text: ' +' + $data.childrenCount", style="color:#5b6d82;font-size:10px;", title="Кол-во прямых потомков")
+                                // /ko
+                                //ko if: $data.childLen && $data.childrenCount !== $data.childLen
+                                span(data-bind="text: '(' + $data.childLen + ')'", style="color:#5b6d82;font-size:10px;", title="Кол-во всех потомков")
                                 // /ko
                             | <!--ko if: $index() < $parent.children().length - 1 -->,<!-- /ko -->
                             .tltp.tltp-top.tltp-animate-opacity.rytltp
