@@ -1,0 +1,39 @@
+.regfi(data-bind="with: repository[M!M]")
+    h4 Insert GeoJSON with FeatureCollection
+    form.form-horizontal(action='', autocomplete="off", data-bind="event: {submit: send}")
+        .form-group
+            textarea#geoinput.form-control(wrap="soft", rows="8", placeholder="{ type: 'FeatureCollection', features: [\n    {type: 'Feature', properties: {name: 'RegionName', ...}, geometry: {\n        type: 'Polygon | MultiPolygon', coordinates: [[ [] ]]\n    }}\n    {type: 'Feature', properties: {name: 'RegionName', ...}, geometry: {\n        type: 'Polygon | MultiPolygon', coordinates: [[ [] ]]\n    }}\n] }", required="required")
+        .form-group
+            button.btn.btn-success(type="submit", data-bind="attr: {disabled: exe()}")
+                span.glyphicon.glyphicon-ok
+                |  Send
+    //ko if: exe()
+    .loading Processing
+    // /ko
+    //ko if: response()
+    div(data-bind="html: 'Processed <b>' + response().features.length + '</b> regions in ' + response().s + 's'")
+    //ko foreach: response().features
+    .feature(data-bind="css: {add: $data.success && !$data.edit, edit: $data.edit, fail: $data.error}")
+        .status
+            span.glyphicon(data-bind="css: {'glyphicon-plus': $data.success, 'glyphicon-pencil': $data.edit, 'glyphicon-remove': $data.error}")
+        //ko if: $data.error
+        div(data-bind="text: $data.error")
+        // /ko
+        //ko if: $data.success
+        .region
+            a(data-bind="attr: {href: '/admin/region/' + $data.region.cid}, text: $data.region.cid + ' ' + $data.region.title_local", title="Open", target="_blank")
+            = "; "
+            div(style="display:inline-block;")
+                | Polygons:
+                strong(data-bind="text: ' ' + $root.intl.num($data.region.polynum.exterior)")
+                //ko if: $data.region.polynum.interior
+                |  (+
+                strong(data-bind="text: $root.intl.num($data.region.polynum.interior)")
+                |  holes)
+                // /ko
+                | ; Vertex:
+                strong(data-bind="text: ' ' + ($root.intl.num($data.region.pointsnum - $data.region.polynum.exterior - $data.region.polynum.interior))")
+            div(data-bind="html: statString")
+        // /ko
+    // /ko
+    // /ko

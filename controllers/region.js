@@ -105,7 +105,7 @@ async function fillCache() {
             }
         }
 
-        regionCacheArrPublicPromise = Promise.resolve({ regions: regionCacheArrPublic, regionsStringified: JSON.stringify(regionCacheArrPublic)});
+        regionCacheArrPublicPromise = Promise.resolve({ regions: regionCacheArrPublic, regionsStringified: JSON.stringify(regionCacheArrPublic) });
         regionCacheArrAdminPromise = Promise.resolve({ regions: regionCacheArrAdmin });
 
         DEFAULT_HOME = regionCacheHash[config.regionHome] || regionCacheArrPublic[0];
@@ -378,7 +378,7 @@ export const genObjsShortRegionsArr = function (objs, showlvls = ['r0', 'r1'], d
     let k;
 
     for (const obj of objs) {
-        for (j = maxRegionLevel; j--;) {
+        for (j = maxRegionLevel; j >= 0; j--) {
             level = 'r' + j;
             cid = obj[level];
             if (cid !== undefined) {
@@ -730,6 +730,117 @@ async function changeRegionParentExternality(region, oldParentsArray, childLenAr
     return { affectedPhotos, affectedComments, affectedUsers, affectedMods };
 }
 
+
+async function processFeatureCollection(data) {
+    const start = Date.now();
+    const { handshake: { usObj: iAm } } = this;
+
+    if (!iAm.isAdmin) {
+        throw new AuthorizationError();
+    }
+
+    if (!_.isObject(data) || typeof data.cid !== 'number' || data.cid < 1 || typeof data.featureString !== 'string') {
+        throw new BadParamsError();
+    }
+
+    // Find parent by cid
+    const parent = await Region.findOne({ cid: data.cid }, { _id: 0, cid: 1, parents: 1 }, { lean: true }).exec();
+
+    if (!parent) {
+        throw new NotFoundError(constantsError.NO_SUCH_REGION);
+    }
+
+    if (parent.parents.length > maxRegionLevel) {
+        throw new NoticeError(constantsError.REGION_MOVE_EXCEED_MAX_LEVEL);
+    }
+
+    let featureCollection;
+
+    try {
+        featureCollection = JSON.parse(data.featureString);
+    } catch (err) {
+        throw new BadParamsError({ code: constantsError.REGION_GEOJSON_PARSE, why: err.message });
+    }
+
+    if (!_.isObject(featureCollection) || featureCollection.type !== 'FeatureCollection') {
+        throw new BadParamsError();
+    }
+
+    const { features } = featureCollection;
+
+    if (!Array.isArray(features) || !features.length) {
+        throw new BadParamsError();
+    }
+
+    const result = { features: [] };
+
+    for (const feature of features) {
+        const featureResult = {};
+
+        result.features.push(featureResult);
+
+        if (!_.isObject(feature.geometry)) {
+            featureResult.error = "Feature doesn't contain geometry";
+            continue;
+        }
+
+        if (!_.isObject(feature.properties) || !feature.properties.name) {
+            featureResult.error = "Feature doesn't contain name property";
+            continue;
+        }
+
+        logger.info(`Working on child feature ${feature.properties.name}`);
+
+        try {
+            const existentRegion = await Region.findOne({
+                $and: [
+                    { parents: parent.cid },
+                    { parents: { $size: parent.parents.length + 1 } },
+                ],
+                $or: [
+                    { title_en: new RegExp('^' + feature.properties.name + '$', 'i') },
+                    { title_local: new RegExp('^' + feature.properties.name + '$', 'i') },
+                ],
+            }, { _id: 0, cid: 1, title_en: 1, title_local: 1 }, { lean: true }).exec();
+
+            const saveResult = await save.call(this, {
+                refillCache: false,
+                recalcStatsParent: false,
+
+                parent: data.cid,
+                cid: existentRegion ? existentRegion.cid : undefined,
+                title_en: existentRegion ? existentRegion.title_en : feature.properties.name,
+                title_local: existentRegion ? existentRegion.title_local : feature.properties.name,
+                geo: feature.geometry,
+            });
+
+            featureResult.success = true;
+            featureResult.edit = Boolean(existentRegion);
+            featureResult.stat = saveResult.resultStat;
+            featureResult.region = _.pick(saveResult.region, 'cid', 'title_local', 'polynum', 'pointsnum');
+        } catch (err) {
+            featureResult.error = err.message || err;
+        }
+    }
+
+    try {
+        // Update region stats for current and all parents
+        await recalcStats([parent.cid]);
+    } catch (error) {
+        logger.warn(`Failed to calculate region stats on region ${parent.cid} processFeatureCollection`, error);
+    }
+
+    try {
+        await fillCache(); // Refresh regions cache
+    } catch (err) {
+        throw new ApplicationError({ code: constantsError.REGION_SAVED_BUT_REFILL_CACHE, why: err.message });
+    }
+
+    result.s = Math.round((Date.now() - start) / 100) / 10;
+
+    return result;
+}
+
 /**
  * Save/Create region
  * @param data
@@ -779,11 +890,13 @@ async function save(data) {
         parentsArray = [];
     }
 
-    if (typeof data.geo === 'string') {
-        try {
-            data.geo = JSON.parse(data.geo);
-        } catch (err) {
-            throw new BadParamsError({ code: constantsError.REGION_GEOJSON_PARSE, why: err.message });
+    if (data.geo) {
+        if (typeof data.geo === 'string') {
+            try {
+                data.geo = JSON.parse(data.geo);
+            } catch (err) {
+                throw new BadParamsError({ code: constantsError.REGION_GEOJSON_PARSE, why: err.message });
+            }
         }
 
         if (data.geo.type === 'GeometryCollection') {
@@ -884,8 +997,6 @@ async function save(data) {
                 why: hints.reduce((acc, hint) => `${acc}${hint.message}${hint.line ? `, ${hint.line}` : ''}.<br>`, ''),
             });
         }
-    } else if (data.geo) {
-        delete data.geo;
     }
 
     let region;
@@ -1017,7 +1128,8 @@ async function save(data) {
 
     // If coordinates or parent changed, compute stats for current and parents
     if (data.geo || parentChange) {
-        const affected = _.union([region.cid], parentsArray, parentsArrayOld);
+        const { recalcStatsParent = true } = data;
+        const affected = recalcStatsParent ? _.union([region.cid], parentsArray, parentsArrayOld) : [region.cid];
 
         let recalcStatsResult;
         try {
@@ -1031,10 +1143,14 @@ async function save(data) {
         Object.assign(resultStat, recalcStatsResult);
     }
 
-    try {
-        await fillCache(); // Refresh regions cache
-    } catch (err) {
-        throw new ApplicationError({ code: constantsError.REGION_SAVED_BUT_REFILL_CACHE, why: err.message });
+    const { refillCache = true } = data;
+
+    if (refillCache) {
+        try {
+            await fillCache(); // Refresh regions cache
+        } catch (err) {
+            throw new ApplicationError({ code: constantsError.REGION_SAVED_BUT_REFILL_CACHE, why: err.message });
+        }
     }
 
     const [childLenArr, parentsSortedArr] = await getParentsAndChilds(region);
@@ -1257,9 +1373,9 @@ async function give(data) {
     if (childrenCids) {
         children = [];
         for (const cid of childrenCids) {
-            const { cdate, udate, title_en: title } = regionCacheHash[cid];
+            const { cdate, udate, title_en: title, childLen } = regionCacheHash[cid];
 
-            children.push({ cid, cdate, udate, title, childrenCount: _.size(regionsChildrenArrHash[cid]) || undefined, });
+            children.push({ cid, cdate, udate, title, childLen, childrenCount: _.size(regionsChildrenArrHash[cid]) || undefined, });
         }
 
         // Add public stat for each region
@@ -2155,6 +2271,7 @@ giveListPublicString.isPublic = true;
 giveRegionsByGeo.isPublic = true;
 saveUserHomeRegion.isPublic = true;
 saveUserRegions.isPublic = true;
+processFeatureCollection.isPublic = true;
 export default {
     give,
     save,
@@ -2166,6 +2283,7 @@ export default {
     giveRegionsByGeo,
     saveUserHomeRegion,
     saveUserRegions,
+    processFeatureCollection,
 
     setUserRegions,
     getObjRegionList,

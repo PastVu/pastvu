@@ -62,6 +62,7 @@ export default {
     REGION_PARENT_LOOP: 'Вы указали родителя, который уже имеет текущий регион в качестве родителя',
     REGION_GEOJSON_PARSE: 'Ошибка парсинга GeoJSON',
     REGION_GEOJSON_GEOMETRY: 'Неверная геометрия GeoJSON',
+    REGION_MAX_LEVEL: 'Превышение максимального уровня региона - 6',
     REGION_MOVE_EXCEED_MAX_LEVEL: 'После перемещения региона он или его потомки окажутся ниже максимального 6-го уровня',
     REGION_SAVED_BUT_INCL_PHOTO: 'Сохранено, но возникла ошибка во время пересчета входящих фотографий',
     REGION_SAVED_BUT_PARENT_EXTERNALITY: 'Сохранено, но возникла ошибка во время пересчета родительских зависимостей',

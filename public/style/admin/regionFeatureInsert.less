@@ -1,0 +1,65 @@
+@import "../_vars.less";
+@import "../bs/variables.less";
+
+.regfi {
+	position: relative;
+	padding: 0 3px;
+	color: @gray;
+
+    > .loading {
+        padding-top: 25px;
+        font-weight: bold;
+        text-align: center;
+        color: #888;
+        background: url(/img/misc/load.gif) 50% 15px no-repeat;
+    }
+
+    .feature {
+        display: flex;
+        border-width: 1px 1px 0 1px;
+        border-style: solid;
+
+        &.add {
+            border-color: @brand-success;
+
+            .status {
+                background-color: @brand-success;
+            }
+        }
+        &.edit {
+            border-color: @brand-warning;
+
+            .status {
+                background-color: @brand-warning;
+            }
+        }
+        &.fail {
+            border-color: @brand-danger;
+
+            .status {
+                background-color: @brand-danger;
+            }
+        }
+
+        &:last-child {
+            margin-bottom: 20px;
+            border-bottom-width: 1px;
+        }
+
+        &:not(:last-child) .status{
+            box-shadow: 0 1px 0 0 #e5e5e5;
+        }
+    }
+
+    .status {
+        display: flex;
+        flex: 0 0 30px;
+        align-items: center;
+        justify-content: center;
+        color: white;
+    }
+
+    .region {
+        padding: 4px 10px;
+    }
+}

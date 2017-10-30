@@ -67,12 +67,15 @@
                     span(data-bind="text: ' ' + $data")
                     // /ko
         // /ko
-        //ko if: !createMode()
+        //ko if: !createMode() && region.parents().length < maxRegionLevel
         .form-group
             label.col-xs-4.col-sm-3.col-lg-2.control-label Direct children
             .col-xs-8.col-sm-9.col-lg-10(style="padding-top: 2px")
                 span.children(data-bind="css: {more: childrenExpand() === 1, expanded: childrenExpand() === 2}")
-                    a(data-bind="attr: {href: '/admin/region/create?parent=' + region.cid()}") [+Add]
+                    a(data-bind="attr: {href: '/admin/region/create?parent=' + region.cid()}", title="Add child region") [+1]
+                    //ko if: auth.iAm.login() === 'klimashkin'
+                    a(data-bind="click: addFeatures", href="javascript:void(0);", title="Add child region using FeatureCollection") [+FC]
+                    // /ko
                     //ko if: children().length
                     = ' | '
                     //ko foreach: children
@@ -82,7 +85,10 @@
                             a(data-bind="attr: {href: '/admin/region/' + $data.cid}, css: {'noPhotos': !$data.phc && !$data.pac && !$data.cc}")
                                 span(data-bind="text: $data.title")
                                 //ko if: $data.childrenCount
-                                span(data-bind="text: ' +' + $data.childrenCount", style="color:#5b6d82;font-size:10px;")
+                                span(data-bind="text: ' +' + $data.childrenCount", style="color:#5b6d82;font-size:10px;", title="Number of direct descendants")
+                                // /ko
+                                //ko if: $data.childLen && $data.childrenCount !== $data.childLen
+                                span(data-bind="text: '(' + $data.childLen + ')'", style="color:#5b6d82;font-size:10px;", title="Number of all descendants")
                                 // /ko
                             | <!--ko if: $index() < $parent.children().length - 1 -->,<!-- /ko -->
                             .tltp.tltp-top.tltp-animate-opacity.rytltp
@@ -164,8 +170,6 @@
                         button.btn.btn-primary.no(type="button", data-bind="css: {active: !bboxAuto()}, click: bboxHomeToggle") Manual
                     //ko if: !bboxAuto()
                     input.form-control.input-sm.bbox(type="text", data-bind="bboxhomeInput: true, attr: {readonly: bboxAuto()}, css: {invalid: !bboxAuto() && !bboxhomeValid()}", placeholder="Not specified")
-                    // /ko
-                    input.form-control.input-sm.bbox(type="text", data-bind="bboxhomeInput: true, attr: {readonly: bboxAuto()}, css: {invalid: !bboxAuto() && !bboxhomeValid()}", placeholder="Specified")
                     // /ko
         .form-group
             label.col-xs-4.col-sm-3.col-lg-2.control-label GeoJSON
