@@ -375,7 +375,7 @@ export const genObjsShortRegionsArr = function (objs, showlvls = ['r0', 'r1'], d
     let k;
 
     for (const obj of objs) {
-        for (j = maxRegionLevel; j--;) {
+        for (j = maxRegionLevel; j >= 0; j--) {
             level = 'r' + j;
             cid = obj[level];
             if (cid !== undefined) {
