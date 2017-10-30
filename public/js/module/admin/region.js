@@ -296,9 +296,11 @@ define([
                 this.bboxLBound = null;
             }
 
-            data.children.sort(function (a, b) {
-                return collator.compare(a.title, b.title);
-            });
+            if (Array.isArray(data.children)) {
+                data.children.sort(function (a, b) {
+                    return collator.compare(a.title, b.title);
+                });
+            }
 
             this.children(data.children || []);
             this.childLenArr(data.childLenArr || []);
