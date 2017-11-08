@@ -1,17 +1,17 @@
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# WebStorm
+/.idea/
+
 # Node modules #
 ######################
 node_modules
 
-# Builded public #
+# Built public #
 ######################
 public-build
-
-# OS generated files #
-######################
-ehthumbs.db
-Icon?
-Thumbs.db
-*.gypi
 
 # Log files #
 ######################
@@ -23,12 +23,7 @@ logs/*.log.*
 ######################
 sitemap*.xml*
 
-# Temp Files #
-######################
-*~
-.*
-
-# Builded html from tpl #
+# Built html from tpl #
 ######################
 public/tpl/*.html
 public/tpl/**/*.html
@@ -40,11 +35,3 @@ public/style/**/*.css
 # Output from babel/transpile #
 ######################
 babel/output*.js
-
-# Except #
-######################
-!.npmrc
-!.gitignore
-!.eslintrc
-!.eslintignore
-!.editorconfig
