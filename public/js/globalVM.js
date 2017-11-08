@@ -2,7 +2,7 @@
 /**
  * globalVM
  */
-define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'intl', 'i18n', 'knockout', 'lib/PubSub'], function ($, Browser, Utils, _, P, intl, i18n, ko, ps) {
+define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'intl', 'i18n', 'knockout', 'lib/PubSub', 'moment'], function ($, Browser, Utils, _, P, intl, i18n, ko, ps, moment) {
     'use strict';
 
     window.G = {
@@ -16,6 +16,7 @@ define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'intl', 'i18n', 'k
         }
     };
 
+    window.moment = moment;
 
     // Отключает скроллинг body путем задания overflow:hidden и правого marging равного ширине скроллинга
     function bodyScrollOff($body) {

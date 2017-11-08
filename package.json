@@ -45,8 +45,8 @@
         "bluebird": "3.5.1",
         "underscore.string": "3.3.4",
         "yargs": "8.0.2",
-        "ms": "1.0.0",
-        "moment": "2.18.1",
+        "ms": "2.0.0",
+        "moment": "2.19.1",
         "useragent": "2.2.1",
         "lru-cache": "4.1.1",
         "semver": "5.4.1",
@@ -63,11 +63,10 @@
         "formidable": "1.1.1",
         "content-disposition": "0.5.2",
         "gm": "1.23.0",
-
         "geojson-rewind": "0.3.0",
         "@mapbox/geojson-area": "0.2.2",
         "@mapbox/geojsonhint": "2.0.1",
-        "@turf/intersect": "4.7.4",
+        "@turf/intersect": "5.0.0",
         "@turf/turf": "4.7.3"
     },
     "devDependencies": {
@@ -82,11 +81,8 @@
         "babel-plugin-transform-es2015-modules-commonjs": "6.26.0",
         "babel-plugin-transform-object-rest-spread": "6.26.0",
         "babel-plugin-transform-runtime": "6.23.0",
-
         "grunt-babel": "7.0.0",
-
         "gulp-util": "3.0.8",
-
         "requirejs": "2.3.5",
         "less-middleware": "2.2.1",
         "less": "2.7.3",
@@ -99,16 +95,14 @@
         "grunt-contrib-compress": "1.4.3",
         "grunt-contrib-requirejs": "1.0.0",
         "grunt-mkdir": "1.0.0",
-        "grunt-exec": "2.0.0",
+        "grunt-exec": "3.0.0",
         "jqueryui-amd": "0.0.2",
         "xmldom": "0.1.27",
-
         "osm-and-geojson": "0.1.2",
-
         "eslint": "3.19.0",
         "eslint-plugin-babel": "4.1.1"
     },
     "engines": {
-        "node": "^7.3.0"
+        "node": "^8.9.0"
     }
 }
