@@ -1,6 +1,6 @@
 /**
  * Babel configuration for nodejs server.
- * Node>=7.0 (v8 5.4; it's up to 54 here https://www.chromestatus.com/features)
+ * Node>=8.7 (v8 6.1; it's up to 61 here https://www.chromestatus.com/features)
  */
 
 module.exports = {
@@ -26,9 +26,5 @@ module.exports = {
         // Stage-3 preset
         'transform-async-generator-functions',
         ['transform-object-rest-spread', { useBuiltIns: true }], // useBuiltIns means Object.assign instead of babel extends helper
-
-        // ES2017
-        'syntax-trailing-function-commas',
-        'transform-async-to-generator'
     ]
 };
