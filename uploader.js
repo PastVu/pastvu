@@ -1,6 +1,7 @@
 import './commons/JExtensions';
 import fs from 'fs';
 import gm from 'gm';
+import mv from 'mv';
 import _ from 'lodash';
 import path from 'path';
 import http from 'http';
@@ -194,7 +195,11 @@ export function configure(startStamp) {
 
                 fileInfo.size = file.size;
                 fileInfo.path = path.join(incomeDir, fileInfo.file);
-                fs.renameSync(file.path, fileInfo.path); // Rename file to generated name
+                mv(file.path, fileInfo.path, { clobber: false }, err => {
+                    if (err) {
+                        logger.error('MV error:', err);
+                    }
+                });
             })
             .on('aborted', function () {
                 tmpFiles.forEach(function (file) {
