@@ -121,7 +121,7 @@ export default class Server {
                 .on('error', err => {
                     if (err.code === 'EADDRINUSE') {
                         this.logger.error(`${this.name} server address in use, retrying...`);
-                        setTimeout(function () {
+                        setTimeout(() => {
                             this.server.close();
                             this.listen();
                         }, 1000);
