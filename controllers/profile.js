@@ -1,5 +1,6 @@
 import fs from 'fs';
 import gm from 'gm';
+import mv from 'mv';
 import _ from 'lodash';
 import path from 'path';
 import mkdirp from 'mkdirp';
@@ -359,7 +360,15 @@ async function changeAvatar({ login, file, mime }) {
 
     await Promise.all([
         // Transfer file from incoming to private
-        fs.renameAsync(path.join(incomeDir, file), path.normalize(originPath)),
+        new Promise((resolve, reject) => {
+            mv(path.join(incomeDir, file), path.normalize(originPath), { clobber: false }, err => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        }),
         // Create folders inside public
         mkdirpAsync(path.join(publicDir, 'd/', dirPrefix)),
         mkdirpAsync(path.join(publicDir, 'h/', dirPrefix))
