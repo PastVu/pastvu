@@ -133,7 +133,7 @@ define([
                         }),
                         maxZoom: 20,
                         limitZoom: 19,
-                        maxAfter: 'google.scheme'
+                        //maxAfter: 'google.scheme'
                     },
                     {
                         id: 'mapnik',
@@ -145,9 +145,9 @@ define([
                         }),
                         maxZoom: 20,
                         limitZoom: 19,
-                        maxAfter: 'google.scheme'
+                        //maxAfter: 'google.scheme'
                     },
-                    {
+                    /*{
                         id: 'mapquest',
                         desc: 'Mapquest',
                         selected: ko.observable(false),
@@ -159,7 +159,7 @@ define([
                         maxZoom: 20,
                         limitZoom: 19,
                         maxAfter: 'google.scheme'
-                    }
+                    }*/
                 ])
             });
             if (P.settings.USE_GOOGLE_API()) {
@@ -239,7 +239,7 @@ define([
                             params: 'publicMap',
                             maxZoom: 20,
                             limitZoom: 19,
-                            maxAfter: 'google.scheme'
+                            //maxAfter: 'google.scheme'
                         },
                         {
                             id: 'pubhyb',
@@ -248,7 +248,7 @@ define([
                             params: 'publicMapHybrid',
                             maxZoom: 20,
                             limitZoom: 19,
-                            maxAfter: 'google.scheme'
+                            //maxAfter: 'google.scheme'
                         }
                     ])
                 });
