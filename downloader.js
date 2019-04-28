@@ -138,7 +138,7 @@ export async function configure(startStamp) {
                 const fileName = contentDisposition(keyData.fileName);
 
                 res.setHeader('Content-Disposition', fileName);
-                res.setHeader('Content-Type', keyData.mime || mimeMap.lookup(filePath));
+                res.setHeader('Content-Type', keyData.mime || mimeMap.getType(filePath));
 
                 if (size) {
                     res.setHeader('Content-Length', size);
@@ -176,7 +176,7 @@ export async function configure(startStamp) {
         // Set result from L1-L2 to L0 cache
         async function setL0(key, mime, file, ttl = config.protectedFileLinkTTL) {
             if (!mime) {
-                mime = mimeMap.lookup(file);
+                mime = mimeMap.getType(file);
             }
 
             // Set result to L0 lru-cache over remaining ttl, that was returned from redis
