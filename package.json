@@ -104,6 +104,6 @@
         "eslint-plugin-babel": "4.1.1"
     },
     "engines": {
-        "node": "^8.11.4"
+        "node": "8.16.0"
     }
 }
