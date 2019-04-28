@@ -6,7 +6,6 @@ import NotFoundError from '../app/errors/NotFound';
 import AuthenticationError from '../app/errors/Authentication';
 import { registerModel } from '../controllers/connection';
 
-const SALT_SEED = 20;
 const SALT_ROUNDS = 10;
 const MAX_LOGIN_ATTEMPTS = 10;
 const LOCK_TIME = ms('2m');
@@ -99,7 +98,7 @@ registerModel(db => {
 
         try {
             // Generate salt
-            const salt = await bcrypt.genSalt(SALT_ROUNDS, SALT_SEED);
+            const salt = await bcrypt.genSalt(SALT_ROUNDS);
             // Hash the password along with our new salt
             const hash = await bcrypt.hash(user.pass, salt);
 
