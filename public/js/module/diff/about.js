@@ -2,11 +2,11 @@
 /**
  * Модель О проекте
  */
-define(['underscore', 'Params', 'socket!', 'knockout', 'm/_moduleCliche', 'globalVM', 'text!tpl/diff/about.jade', 'css!style/diff/about'], function (_, P, socket, ko, Cliche, globalVM, jade) {
+define(['underscore', 'Params', 'socket!', 'knockout', 'm/_moduleCliche', 'globalVM', 'text!tpl/diff/about.pug', 'css!style/diff/about'], function (_, P, socket, ko, Cliche, globalVM, pug) {
     'use strict';
 
     return Cliche.extend({
-        jade: jade,
+        pug: pug,
         create: function () {
             this.show();
         },

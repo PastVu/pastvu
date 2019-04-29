@@ -106,7 +106,7 @@ module.exports = function (grunt) {
                     },
                     {
                         expand: true,
-                        src: ['views/app.jade', 'views/api/**', 'views/includes/**', 'views/mail/**', 'views/status/**', 'views/diff/**'],
+                        src: ['views/app.pug', 'views/api/**', 'views/includes/**', 'views/mail/**', 'views/status/**', 'views/diff/**'],
                         dest: targetDir
                     },
                     // {expand: true, cwd: 'public-build', src: ['**'], dest: targetDir + 'public'},
@@ -118,7 +118,7 @@ module.exports = function (grunt) {
                 ]
             }
         },
-        jade: {
+        pug: {
             compileTpls: {
                 options: {
                     data: {
@@ -126,10 +126,10 @@ module.exports = function (grunt) {
                     }
                 },
                 files: [
-                    { expand: true, cwd: 'views/module/', src: '**/*.jade', dest: 'public/tpl/' }
+                    { expand: true, cwd: 'views/module/', src: '**/*.pug', dest: 'public/tpl/' }
                 ]
             },
-            compileMainJades: {
+            compileMainPugs: {
                 options: {
                     data(dest/* , src */) {
                         const name = dest.replace(/.*\/(?:app)?(.*)\.html/i, '$1');
@@ -142,7 +142,7 @@ module.exports = function (grunt) {
                         expand: true,
                         cwd: targetDir + 'views/',
                         ext: '.html',
-                        src: 'status/404.jade',
+                        src: 'status/404.pug',
                         dest: targetDir + 'views/html/'
                     }
                 ]
@@ -178,7 +178,7 @@ module.exports = function (grunt) {
 
     grunt.loadNpmTasks('grunt-contrib-clean');
     grunt.loadNpmTasks('grunt-contrib-copy');
-    grunt.loadNpmTasks('grunt-contrib-jade');
+    grunt.loadNpmTasks('grunt-contrib-pug');
     grunt.loadNpmTasks('grunt-contrib-concat');
     grunt.loadNpmTasks('grunt-contrib-compress');
     grunt.loadNpmTasks('grunt-contrib-requirejs');
@@ -191,14 +191,14 @@ module.exports = function (grunt) {
     grunt.registerTask('default', [
         'mkdir:target',
         'clean:target',
-        'jade:compileTpls',
+        'pug:compileTpls',
         'exec:buildjs',
         'string-replace',
         'concat',
         'copy:main',
         'babel',
         'exec:movePublic',
-        'jade:compileMainJades',
+        'pug:compileMainPugs',
         'clean:publicTpl',
         'writeBuildParams',
         'exec:npm',

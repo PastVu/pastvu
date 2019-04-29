@@ -2,11 +2,11 @@
 /**
  * Модель содержимого страницы пользователя
  */
-define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/storage', 'model/User', 'text!tpl/user/userPage.jade', 'css!style/user/userPage', 'bs/affix'], function (_, Utils, P, renderer, ko, ko_mapping, Cliche, globalVM, storage, User, jade) {
+define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/storage', 'model/User', 'text!tpl/user/userPage.pug', 'css!style/user/userPage', 'bs/affix'], function (_, Utils, P, renderer, ko, ko_mapping, Cliche, globalVM, storage, User, pug) {
 	'use strict';
 
 	return Cliche.extend({
-		jade: jade,
+		pug: pug,
 		create: function () {
 			this.auth = globalVM.repository['m/common/auth'];
 			this.briefVM = null;

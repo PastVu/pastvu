@@ -69,7 +69,7 @@ export async function configure(startStamp) {
     app.disable('x-powered-by'); // Disable default X-Powered-By
     app.set('query parser', 'extended'); // Parse query with 'qs' module
     app.set('views', 'views');
-    app.set('view engine', 'jade');
+    app.set('view engine', 'pug');
 
     // If we need user ip through req.ips(), it will return array from X-Forwarded-For with specified length.
     // https://github.com/visionmedia/express/blob/master/History.md#430--2014-05-21
@@ -83,12 +83,12 @@ export async function configure(startStamp) {
     // Enable chache of temlates in production
     // It reduce rendering time (and correspondingly 'waiting' time of client request) dramatically
     if (env === 'development') {
-        app.disable('view cache'); // In dev disable this, so we able to edit jade templates without server reload
+        app.disable('view cache'); // In dev disable this, so we able to edit pug templates without server reload
     } else {
         app.enable('view cache');
     }
 
-    // Set an object which properties will be available from all jade-templates as global variables
+    // Set an object which properties will be available from all pug-templates as global variables
     Object.assign(app.locals, {
         pretty: false, // Adds whitespace to the resulting html to make it easier for a human to read
         compileDebug: false, // Include the function source in the compiled template for better error messages

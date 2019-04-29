@@ -1,7 +1,7 @@
 /**
  * Share dialog for social networks
  */
-define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'globalVM', 'knockout', 'm/_moduleCliche', 'text!tpl/common/share.jade', 'css!style/common/share'], function (_, $, Utils, socket, P, globalVM, ko, Cliche, jade) {
+define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'globalVM', 'knockout', 'm/_moduleCliche', 'text!tpl/common/share.pug', 'css!style/common/share'], function (_, $, Utils, socket, P, globalVM, ko, Cliche, pug) {
     'use strict';
 
     // https://www.iconfinder.com/icons/410527/facebook_social_icon#size=128
@@ -56,7 +56,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'globalVM', 'knock
     };
 
     return Cliche.extend({
-        jade: jade,
+        pug: pug,
         options: {
             title: '',
             desc: '',

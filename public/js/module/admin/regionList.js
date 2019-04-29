@@ -5,15 +5,15 @@
  */
 define([
     'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM',
-    'model/storage', 'noties', 'text!tpl/admin/regionList.jade', 'css!style/admin/regionList'
-], function (_, $, Utils, socket, P, ko, Cliche, globalVM, storage, noties, jade) {
+    'model/storage', 'noties', 'text!tpl/admin/regionList.pug', 'css!style/admin/regionList'
+], function (_, $, Utils, socket, P, ko, Cliche, globalVM, storage, noties, pug) {
     'use strict';
 
     var collator = new Intl.Collator('ru-RU', { numeric: true, sensitivity: 'base' });
     var months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
     return Cliche.extend({
-        jade: jade,
+        pug: pug,
         create: function () {
             this.auth = globalVM.repository['m/common/auth'];
             this.regions = ko.observableArray();

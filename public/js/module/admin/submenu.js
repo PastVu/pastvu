@@ -1,11 +1,11 @@
 /**
  * Модель левого подменю админки
  */
-define(['underscore', 'knockout', 'm/_moduleCliche', 'globalVM', 'text!tpl/admin/submenu.jade', 'css!style/admin/submenu'], function (_, ko, Cliche, globalVM, jade) {
+define(['underscore', 'knockout', 'm/_moduleCliche', 'globalVM', 'text!tpl/admin/submenu.pug', 'css!style/admin/submenu'], function (_, ko, Cliche, globalVM, pug) {
     'use strict';
 
     return Cliche.extend({
-        jade: jade,
+        pug: pug,
         create: function () {
             var self = this;
             this.auth = globalVM.repository['m/common/auth'];

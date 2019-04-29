@@ -2,13 +2,13 @@
 /**
  * Модель списка комментариев пользователя
  */
-define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/Photo', 'model/storage', 'text!tpl/user/comments.jade', 'css!style/user/comments'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, Photo, storage, jade) {
+define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/Photo', 'model/storage', 'text!tpl/user/comments.pug', 'css!style/user/comments'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, Photo, storage, pug) {
     'use strict';
 
     var imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
 
     return Cliche.extend({
-        jade: jade,
+        pug: pug,
         options: {
             userVM: null,
             type: 'photo' // Тип объекта по умолчанию (фото, новость и т.д.)

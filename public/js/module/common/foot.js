@@ -2,11 +2,11 @@
 /**
  * Модель управляет футером
  */
-define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'renderer', 'text!tpl/common/foot.jade', 'css!style/common/foot'], function (_, P, ko, Cliche, globalVM, renderer, jade) {
+define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'renderer', 'text!tpl/common/foot.pug', 'css!style/common/foot'], function (_, P, ko, Cliche, globalVM, renderer, pug) {
 	'use strict';
 
 	return Cliche.extend({
-		jade: jade,
+		pug: pug,
 		create: function () {
 			ko.applyBindings(globalVM, this.$dom[0]);
 

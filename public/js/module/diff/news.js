@@ -1,7 +1,7 @@
 /**
  * Модель новости
  */
-define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'model/Photo', 'model/storage', 'text!tpl/diff/news.jade', 'css!style/diff/news'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, Photo, storage, jade) {
+define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'model/Photo', 'model/storage', 'text!tpl/diff/news.pug', 'css!style/diff/news'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, Photo, storage, pug) {
     'use strict';
     var newsDefault = {
         pdate: new Date(),
@@ -14,7 +14,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
     };
 
     return Cliche.extend({
-        jade: jade,
+        pug: pug,
         create: function () {
             this.binded = false;
             this.auth = globalVM.repository['m/common/auth'];

@@ -3,9 +3,9 @@
  */
 define([
     'underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping',
-    'noties', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'lib/doT', 'text!tpl/comment/comments.jade',
-    'text!tpl/comment/cdot.jade', 'text!tpl/comment/cdotanonym.jade', 'text!tpl/comment/cdotauth.jade',
-    'text!tpl/comment/cdotdel.jade', 'text!tpl/comment/cdotadd.jade', 'css!style/comment/comments'
+    'noties', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'lib/doT', 'text!tpl/comment/comments.pug',
+    'text!tpl/comment/cdot.pug', 'text!tpl/comment/cdotanonym.pug', 'text!tpl/comment/cdotauth.pug',
+    'text!tpl/comment/cdotdel.pug', 'text!tpl/comment/cdotadd.pug', 'css!style/comment/comments'
 ], function (_, _s, Browser, Utils, socket, P, ko, koMapping,
              noties, Cliche, globalVM, renderer, moment, doT, html,
              doTComments, doTCommentAnonym, doTCommentAuth,
@@ -43,7 +43,7 @@ define([
     };
 
     return Cliche.extend({
-        jade: html,
+        pug: html,
         options: {
             type: 'photo', //Тип объекта по умолчанию (фото, новость и т.д.)
             count: 0, //Начальное кол-во комментариев
@@ -941,7 +941,7 @@ define([
                     that.usersRanks(data.users);
                     that.users = _.assign(data.users, that.users);
 
-                    require(['text!tpl/comment/cdotdelopen.jade'], function (doTCommentDelOpen) {
+                    require(['text!tpl/comment/cdotdelopen.pug'], function (doTCommentDelOpen) {
                         // Чтобы не загружать клиента, только при первом запросе удалённых
                         // реквайрим шаблон, компилим его и вешаем нужные события на блок комментариев
                         if (!tplCommentsDel) {

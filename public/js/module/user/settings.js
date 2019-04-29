@@ -4,14 +4,14 @@
 define([
     'underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
     'renderer', 'noties', 'm/photo/fields', 'model/Region', 'model/User', 'model/storage',
-    'text!tpl/user/settings.jade', 'css!style/user/settings', 'bs/collapse'
-], function (_, Utils, socket, P, ko, koMapping, Cliche, globalVM, renderer, noties, fields, Region, User, storage, jade) {
+    'text!tpl/user/settings.pug', 'css!style/user/settings', 'bs/collapse'
+], function (_, Utils, socket, P, ko, koMapping, Cliche, globalVM, renderer, noties, fields, Region, User, storage, pug) {
     function isYes(evt) {
         return !!evt.target.classList.contains('yes');
     }
 
     return Cliche.extend({
-        jade: jade,
+        pug: pug,
         options: {
             userVM: null
         },

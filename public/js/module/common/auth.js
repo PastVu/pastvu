@@ -1,4 +1,4 @@
-define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'model/storage', 'model/User', 'text!tpl/common/auth.jade', 'css!style/common/auth'], function (_, $, Utils, socket, P, ko, Cliche, globalVM, storage, User, jade) {
+define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'model/storage', 'model/User', 'text!tpl/common/auth.pug', 'css!style/common/auth'], function (_, $, Utils, socket, P, ko, Cliche, globalVM, storage, User, pug) {
     'use strict';
 
     //Обновляет куки сессии переданным объектом с сервера
@@ -7,7 +7,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
     }
 
     return Cliche.extend({
-        jade: jade,
+        pug: pug,
         create: function () {
             this.loggedIn = ko.observable(!!init.registered);
             this.processMe({ user: init.user });

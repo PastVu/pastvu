@@ -2,12 +2,12 @@
 /**
  * Модель управляет верхней панелью
  */
-define(['underscore', 'Params', 'socket!', 'jquery', 'knockout', 'm/_moduleCliche', 'globalVM', 'text!tpl/common/top.jade', 'css!style/common/top', 'm/common/auth'], function (_, P, socket, $, ko, Cliche, globalVM, jade) {
+define(['underscore', 'Params', 'socket!', 'jquery', 'knockout', 'm/_moduleCliche', 'globalVM', 'text!tpl/common/top.pug', 'css!style/common/top', 'm/common/auth'], function (_, P, socket, $, ko, Cliche, globalVM, pug) {
     'use strict';
     var langs = ['en', 'ru'];
 
     return Cliche.extend({
-        jade: jade,
+        pug: pug,
         create: function () {
             var self = this;
             this.auth = globalVM.repository['m/common/auth'];

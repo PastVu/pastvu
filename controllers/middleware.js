@@ -3,8 +3,8 @@ import path from 'path';
 import Utils from '../commons/Utils';
 
 // Middleware for checking requested html, usually for development.
-// If such jade exists - compile it, if not - pass request to the next handler
-export function jadeToHtml(seekPath) {
+// If such pug exists - compile it, if not - pass request to the next handler
+export function pugToHtml(seekPath) {
     const htmlRegExp = /\.html$/;
 
     return (req, res, next) => {
@@ -16,13 +16,13 @@ export function jadeToHtml(seekPath) {
 
         // Only handle the matching files
         if (htmlRegExp.test(pathname)) {
-            const jadePath = path.normalize(seekPath + (pathname.replace('.html', '.jade')));
+            const pugPath = path.normalize(seekPath + (pathname.replace('.html', '.pug')));
 
-            res.render(jadePath, {}, (err, renderedHTML) => {
+            res.render(pugPath, {}, (err, renderedHTML) => {
                 if (err || !renderedHTML) {
                     next();
                 } else {
-                    console.log(`${req.url} compiled from jade`);
+                    console.log(`${req.url} compiled from pug`);
                     res.status(200).send(renderedHTML);
                 }
             });

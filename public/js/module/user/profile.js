@@ -2,11 +2,11 @@
 /**
  * Модель профиля пользователя
  */
-define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/User', 'model/storage', 'moment', 'text!tpl/user/profile.jade', 'css!style/user/profile'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, User, storage, moment, jade) {
+define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/User', 'model/storage', 'moment', 'text!tpl/user/profile.pug', 'css!style/user/profile'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, User, storage, moment, pug) {
     'use strict';
 
     return Cliche.extend({
-        jade: jade,
+        pug: pug,
         options: {
             userVM: null
         },

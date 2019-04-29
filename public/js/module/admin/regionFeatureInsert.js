@@ -3,12 +3,12 @@
  */
 define([
     'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
-    'model/storage', 'noties', 'text!tpl/admin/regionFeatureInsert.jade', 'css!style/admin/regionFeatureInsert'
-], function (_, $, Utils, socket, P, ko, koMapping, Cliche, globalVM, storage, noties, jade) {
+    'model/storage', 'noties', 'text!tpl/admin/regionFeatureInsert.pug', 'css!style/admin/regionFeatureInsert'
+], function (_, $, Utils, socket, P, ko, koMapping, Cliche, globalVM, storage, noties, pug) {
     'use strict';
 
     return Cliche.extend({
-        jade: jade,
+        pug: pug,
         options: {
             cid: 0,
         },

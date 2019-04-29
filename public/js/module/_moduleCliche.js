@@ -8,7 +8,7 @@ define(['jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'renderer'], fu
     var repository = globalVM.repository;
 
     return Utils.Class.extend({
-        jade: '',
+        pug: '',
         childs: null,
         initialize: function (params) {
             if (params.global) {
@@ -31,7 +31,7 @@ define(['jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'renderer'], fu
             repository[this.id] = this;
 
             this.container = params.container;
-            this.$container = $(this.container).append(this.jade.replace(/M!M/g, "'" + this.id + "'"));
+            this.$container = $(this.container).append(this.pug.replace(/M!M/g, "'" + this.id + "'"));
             this.$dom = this.$container.children(':first');
 
             this.create();

@@ -3,8 +3,8 @@
  */
 define([
     'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
-    'model/storage', 'noties', 'text!tpl/region/select.jade', 'css!style/region/select', 'bs/ext/tokenfield'
-], function (_, $, Utils, socket, P, ko, koMapping, Cliche, globalVM, storage, noties, jade) {
+    'model/storage', 'noties', 'text!tpl/region/select.pug', 'css!style/region/select', 'bs/ext/tokenfield'
+], function (_, $, Utils, socket, P, ko, koMapping, Cliche, globalVM, storage, noties, pug) {
     'use strict';
 
     var collator = new Intl.Collator('ru-RU', { numeric: true, sensitivity: 'base' });
@@ -12,7 +12,7 @@ define([
     var cache = null;
 
     return Cliche.extend({
-        jade: jade,
+        pug: pug,
         options: {
             min: 1,
             max: 10,

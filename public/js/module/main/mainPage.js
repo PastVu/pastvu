@@ -1,11 +1,11 @@
 /**
  * Модель содержимого основной страницы
  */
-define(['underscore', 'Utils', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/Photo', 'text!tpl/main/mainPage.jade', 'css!style/main/mainPage'], function (_, Utils,P, ko, ko_mapping, Cliche, globalVM, Photo, jade) {
+define(['underscore', 'Utils', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/Photo', 'text!tpl/main/mainPage.pug', 'css!style/main/mainPage'], function (_, Utils,P, ko, ko_mapping, Cliche, globalVM, Photo, pug) {
 	'use strict';
 
 	return Cliche.extend({
-		jade: jade,
+		pug: pug,
 		create: function () {
 
 			this.childs = [

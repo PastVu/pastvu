@@ -2,11 +2,11 @@
 /**
  * Модель верхнего меню админки
  */
-define(['underscore', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'text!tpl/admin/menu.jade', 'css!style/admin/menu'], function (_, ko, ko_mapping, Cliche, globalVM, jade) {
+define(['underscore', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'text!tpl/admin/menu.pug', 'css!style/admin/menu'], function (_, ko, ko_mapping, Cliche, globalVM, pug) {
 	'use strict';
 
 	return Cliche.extend({
-		jade: jade,
+		pug: pug,
 		create: function () {
 			this.auth = globalVM.repository['m/common/auth'];
 

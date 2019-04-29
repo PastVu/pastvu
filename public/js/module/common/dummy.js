@@ -2,11 +2,11 @@
 /**
  * Заглушка
  */
-define(['jquery', 'Utils', 'Params', 'globalVM', 'knockout', 'm/_moduleCliche', 'text!tpl/dummy.jade', 'css!style/dummy'], function ($, Utils, P, globalVM, ko, Cliche, jade) {
+define(['jquery', 'Utils', 'Params', 'globalVM', 'knockout', 'm/_moduleCliche', 'text!tpl/dummy.pug', 'css!style/dummy'], function ($, Utils, P, globalVM, ko, Cliche, pug) {
     var child = [];
 
     return Cliche.extend({
-        jade: jade,
+        pug: pug,
         create: function () {
             this.dummytext = ko.observable('Заглушка');
         }

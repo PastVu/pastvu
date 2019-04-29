@@ -2,7 +2,7 @@ import fs from 'fs';
 import ms from 'ms';
 import _ from 'lodash';
 import path from 'path';
-import jade from 'jade';
+import pug from 'pug';
 import log4js from 'log4js';
 import moment from 'moment';
 import config from '../config';
@@ -29,15 +29,15 @@ let regTpl;
 export const ready = new Promise(async function (resolve, reject) {
     try {
         const [regData, recallData] = await Promise.all([
-            fs.readFileAsync(path.normalize('./views/mail/registration.jade'), 'utf-8'),
-            fs.readFileAsync(path.normalize('./views/mail/recall.jade'), 'utf-8')
+            fs.readFileAsync(path.normalize('./views/mail/registration.pug'), 'utf-8'),
+            fs.readFileAsync(path.normalize('./views/mail/recall.pug'), 'utf-8')
         ]);
 
-        regTpl = jade.compile(regData, { filename: path.normalize('./views/mail/registration.jade'), pretty: false });
-        recallTpl = jade.compile(recallData, { filename: path.normalize('./views/mail/recall.jade'), pretty: false });
+        regTpl = pug.compile(regData, { filename: path.normalize('./views/mail/registration.pug'), pretty: false });
+        recallTpl = pug.compile(recallData, { filename: path.normalize('./views/mail/recall.pug'), pretty: false });
         resolve();
     } catch (err) {
-        err.message = 'Auth jade read error: ' + err.message;
+        err.message = 'Auth pug read error: ' + err.message;
         reject(err);
     }
 });

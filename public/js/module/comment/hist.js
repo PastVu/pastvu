@@ -2,7 +2,7 @@
 /**
  * Модель истории комментария
  */
-define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/storage', 'lib/doT', 'text!tpl/comment/hist.jade', 'css!style/comment/hist'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, storage, doT, jade) {
+define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/storage', 'lib/doT', 'text!tpl/comment/hist.pug', 'css!style/comment/hist'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, storage, doT, pug) {
     'use strict';
     var tplHist,
         changeFragTexts = {
@@ -12,7 +12,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         };
 
     return Cliche.extend({
-        jade: jade,
+        pug: pug,
         options: {
             cid: 0,
             type: 'photo'

@@ -1,11 +1,11 @@
 /**
  * Выбор причины
  */
-define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'globalVM', 'knockout', 'm/_moduleCliche', 'text!tpl/common/reason.jade', 'css!style/common/reason'], function (_, $, Utils, socket, P, globalVM, ko, Cliche, jade) {
+define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'globalVM', 'knockout', 'm/_moduleCliche', 'text!tpl/common/reason.pug', 'css!style/common/reason'], function (_, $, Utils, socket, P, globalVM, ko, Cliche, pug) {
     'use strict';
 
     return Cliche.extend({
-        jade: jade,
+        pug: pug,
         options: {
             action: ''
         },

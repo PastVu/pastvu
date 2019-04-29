@@ -6,8 +6,8 @@
 define([
     'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
     'leaflet', 'noties', 'm/photo/status', 'renderer',
-    'text!tpl/admin/region.jade', 'css!style/admin/region', 'css!style/leaflet/leaflet'
-], function (_, $, Utils, socket, P, ko, koMapping, Cliche, globalVM, L, noties, statuses, renderer, jade) {
+    'text!tpl/admin/region.pug', 'css!style/admin/region', 'css!style/leaflet/leaflet'
+], function (_, $, Utils, socket, P, ko, koMapping, Cliche, globalVM, L, noties, statuses, renderer, pug) {
     'use strict';
 
     var collator = new Intl.Collator('ru-RU', { numeric: true, sensitivity: 'base' });
@@ -113,7 +113,7 @@ define([
     };
 
     return Cliche.extend({
-        jade: jade,
+        pug: pug,
         create: function () {
             this.destroy = _.wrap(this.destroy, this.localDestroy);
             this.auth = globalVM.repository['m/common/auth'];

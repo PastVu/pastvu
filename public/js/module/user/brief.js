@@ -4,8 +4,8 @@
  */
 define([
     'underscore', 'Params', 'knockout', 'socket!', 'm/_moduleCliche', 'globalVM', 'model/storage', 'model/User',
-    'noties', 'text!tpl/user/brief.jade', 'css!style/user/brief'
-], function (_, P, ko, socket, Cliche, globalVM, storage, User, noties, jade) {
+    'noties', 'text!tpl/user/brief.pug', 'css!style/user/brief'
+], function (_, P, ko, socket, Cliche, globalVM, storage, User, noties, pug) {
     'use strict';
 
     var mess = {
@@ -17,7 +17,7 @@ define([
     };
 
     return Cliche.extend({
-        jade: jade,
+        pug: pug,
         options: {
             userVM: null,
             userLogin: ''
