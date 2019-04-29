@@ -4,9 +4,9 @@
 define([
     'underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche',
     'globalVM', 'renderer', 'model/Photo', 'model/storage', 'm/photo/status', 'lib/jsuri',
-    'noties', 'text!tpl/photo/gallery.jade', 'css!style/photo/gallery'
+    'noties', 'text!tpl/photo/gallery.pug', 'css!style/photo/gallery'
 ], function (_, Browser, Utils, socket, P, ko, koMapping, Cliche, globalVM,
-             renderer, Photo, storage, statuses, Uri, noties, jade) {
+             renderer, Photo, storage, statuses, Uri, noties, pug) {
     'use strict';
     var $window = $(window);
     var imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
@@ -20,7 +20,7 @@ define([
     });
 
     return Cliche.extend({
-        jade: jade,
+        pug: pug,
         options: {
             addPossible: false,
             userVM: null,

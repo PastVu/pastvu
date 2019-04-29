@@ -3,8 +3,8 @@
  * Модель истории комментария
  */
 define(
-    ['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/storage', 'm/photo/fields', 'm/photo/status', 'lib/doT', 'text!tpl/photo/hist.jade', 'css!style/photo/hist'],
-    function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, storage, fields, statuses, doT, jade) {
+    ['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/storage', 'm/photo/fields', 'm/photo/status', 'lib/doT', 'text!tpl/photo/hist.pug', 'css!style/photo/hist'],
+    function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, storage, fields, statuses, doT, pug) {
         'use strict';
         var tplHist;
         var tplRegions;
@@ -14,7 +14,7 @@ define(
         var txtFields = ['title', 'geo', 'type', 'regions', 'y', 'desc', 'source', 'author', 'address', 'dir', 'watersignText'];
 
         return Cliche.extend({
-            jade: jade,
+            pug: pug,
             options: {
                 cid: 0,
                 scroll: 0,

@@ -5,12 +5,12 @@
  */
 define([
     'underscore', 'jquery', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer',
-    'text!tpl/admin/main.jade', 'css!style/admin/main'
-], function (_, $, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, jade) {
+    'text!tpl/admin/main.pug', 'css!style/admin/main'
+], function (_, $, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, pug) {
     'use strict';
 
     return Cliche.extend({
-        jade: jade,
+        pug: pug,
         options: {
             deferredWhenReady: null // Deffered wich will be resolved when map ready
         },

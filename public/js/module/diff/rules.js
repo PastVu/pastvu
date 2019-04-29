@@ -2,12 +2,12 @@
  * Модель Правил
  */
 define(
-    ['underscore', 'Params', 'socket!', 'knockout', 'm/_moduleCliche', 'globalVM', 'text!tpl/diff/rules.jade', 'css!style/diff/rules'],
-    function (_, P, socket, ko, Cliche, globalVM, jade) {
+    ['underscore', 'Params', 'socket!', 'knockout', 'm/_moduleCliche', 'globalVM', 'text!tpl/diff/rules.pug', 'css!style/diff/rules'],
+    function (_, P, socket, ko, Cliche, globalVM, pug) {
         'use strict';
 
         return Cliche.extend({
-            jade: jade,
+            pug: pug,
             create: function () {
                 this.show();
             },

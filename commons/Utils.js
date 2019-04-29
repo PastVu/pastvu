@@ -26,7 +26,7 @@ Utils.checkUserAgent = (function () {
         const semver = require('semver');
 
         // Cache for checked user-agents, to parse a unique user-agent only once
-        const cache = require('lru-cache')({ max: 1500 });
+        const cache = new (require('lru-cache'))({ max: 1500 });
 
         // If you are paranoid and always want your RegExp library to be up to date to match with agent,
         // this will async load the database from the https://raw.github.com/tobie/ua-parser/master/regexes.yaml
@@ -83,7 +83,7 @@ Utils.checkUserAgent = (function () {
 //FB 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)'
 //VK 'Mozilla/5.0 (compatible; vkShare; +http://vk.com/dev/Share)'
 Utils.getMyAgentParsed = (function () {
-    const cache = require('lru-cache')({ max: 500 });
+    const cache = new (require('lru-cache'))({ max: 500 });
 
     return function (userAgent) {
         if (!userAgent) {

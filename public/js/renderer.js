@@ -1,7 +1,7 @@
 /*global define:true*/
 
 define([
-    'jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'lib/doT', 'text!tpl/modal.jade'
+    'jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'lib/doT', 'text!tpl/modal.pug',
 ], function ($, Utils, _, ko, globalVM, doT, dotModal) {
     'use strict';
 

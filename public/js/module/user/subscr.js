@@ -1,12 +1,12 @@
 /**
  * Модель подписок пользователя
  */
-define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/Photo', 'model/storage', 'moment', 'text!tpl/user/subscr.jade', 'css!style/user/subscr'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, Photo, storage, moment, jade) {
+define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/Photo', 'model/storage', 'moment', 'text!tpl/user/subscr.pug', 'css!style/user/subscr'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, Photo, storage, moment, pug) {
     'use strict';
     var imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
 
     return Cliche.extend({
-        jade: jade,
+        pug: pug,
         options: {
             userVM: null,
             type: 'photo' // Тип объекта по умолчанию (фото, новость и т.д.)

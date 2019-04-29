@@ -6,8 +6,8 @@
 define([
     'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
     'noties', 'leaflet', 'lib/doT',
-    'text!tpl/admin/regionCheck.jade', 'css!style/admin/regionCheck', 'css!style/leaflet/leaflet'
-], function (_, $, Utils, socket, P, ko, koMapping, Cliche, globalVM, noties, L, doT, jade) {
+    'text!tpl/admin/regionCheck.pug', 'css!style/admin/regionCheck', 'css!style/leaflet/leaflet'
+], function (_, $, Utils, socket, P, ko, koMapping, Cliche, globalVM, noties, L, doT, pug) {
     'use strict';
 
     var $requestGoogle;
@@ -34,7 +34,7 @@ define([
     }
 
     return Cliche.extend({
-        jade: jade,
+        pug: pug,
         create: function () {
             this.auth = globalVM.repository['m/common/auth'];
             this.regions = ko.observableArray();

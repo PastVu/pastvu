@@ -126,7 +126,7 @@ async.waterfall([
 			app.disable('x-powered-by'); //Disable default X-Powered-By
 			app.set('etag', false); //Disable etag
 			app.set('views', 'views');
-			app.set('view engine', 'jade');
+			app.set('view engine', 'pug');
 			if (land === 'dev') {
 				app.disable('view cache'); //В дев выключаем только для того, чтобы можно было править шаблон без перезагрузки сервера
 			} else {

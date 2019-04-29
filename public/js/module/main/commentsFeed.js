@@ -3,8 +3,8 @@
  */
 define([
     'underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
-    'model/Photo', 'lib/doT', 'text!tpl/main/commentsFeed.jade', 'css!style/main/commentsFeed'
-], function (_, Utils, socket, P, ko, koMapping, Cliche, globalVM, Photo, doT, html) {
+    'model/Photo', 'lib/doT', 'text!tpl/main/commentsFeed.pug', 'css!style/main/commentsFeed'
+], function (_, Utils, socket, P, ko, koMapping, Cliche, globalVM, Photo, doT, pug) {
     'use strict';
 
     var tplComments;
@@ -12,7 +12,7 @@ define([
     var regexpNewLine = /\f|\r|\n|<br\/?>/gi;
 
     return Cliche.extend({
-        jade: html,
+        pug: pug,
         create: function () {
             this.auth = globalVM.repository['m/common/auth'];
             ko.applyBindings(globalVM, this.$dom[0]);

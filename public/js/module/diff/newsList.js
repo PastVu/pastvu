@@ -6,12 +6,12 @@
 define([
     'underscore', 'jquery', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
     'model/User', 'model/storage',
-    'text!tpl/diff/newsList.jade', 'css!style/diff/newsList'
-], function (_, $, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, User, storage, jade) {
+    'text!tpl/diff/newsList.pug', 'css!style/diff/newsList'
+], function (_, $, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, User, storage, pug) {
     'use strict';
 
     return Cliche.extend({
-        jade: jade,
+        pug: pug,
         options: {},
         create: function () {
             this.auth = globalVM.repository['m/common/auth'];

@@ -3,8 +3,8 @@
  */
 define([
     'underscore', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'noties',
-    'renderer', 'model/User', 'model/storage', 'text!tpl/user/manage.jade', 'css!style/user/manage', 'bs/collapse'
-], function (_, Utils, socket, P, ko, Cliche, globalVM, noties, renderer, User, storage, jade) {
+    'renderer', 'model/User', 'model/storage', 'text!tpl/user/manage.pug', 'css!style/user/manage', 'bs/collapse'
+], function (_, Utils, socket, P, ko, Cliche, globalVM, noties, renderer, User, storage, pug) {
     function isYes(evt) {
         return !!evt.target.classList.contains('yes');
     }
@@ -17,7 +17,7 @@ define([
     };
 
     return Cliche.extend({
-        jade: jade,
+        pug: pug,
         options: {
             userVM: null
         },

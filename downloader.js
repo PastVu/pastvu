@@ -5,7 +5,7 @@ import _ from 'lodash';
 import path from 'path';
 import http from 'http';
 import mimeMap from 'mime';
-import lru from 'lru-cache';
+import LRU from 'lru-cache';
 import log4js from 'log4js';
 import config from './config';
 import Utils from './commons/Utils';
@@ -138,7 +138,7 @@ export async function configure(startStamp) {
                 const fileName = contentDisposition(keyData.fileName);
 
                 res.setHeader('Content-Disposition', fileName);
-                res.setHeader('Content-Type', keyData.mime || mimeMap.lookup(filePath));
+                res.setHeader('Content-Type', keyData.mime || mimeMap.getType(filePath));
 
                 if (size) {
                     res.setHeader('Content-Length', size);
@@ -163,7 +163,7 @@ export async function configure(startStamp) {
         // Session key in client cookies
         const SESSION_COOKIE_KEY = 'past.sid';
         // Local cache to not pull redis more then once if request/core for the same file is arrived within TTL
-        const L0Cache = lru({ max: 2000, maxAge: config.protectedFileLinkTTL });
+        const L0Cache = new LRU({ max: 2000, maxAge: config.protectedFileLinkTTL });
         const hostnameRegexp = new RegExp(`^https?:\\/\\/(www\\.)?${config.client.hostname}`, 'i');
 
         (function countPrint() {
@@ -176,7 +176,7 @@ export async function configure(startStamp) {
         // Set result from L1-L2 to L0 cache
         async function setL0(key, mime, file, ttl = config.protectedFileLinkTTL) {
             if (!mime) {
-                mime = mimeMap.lookup(file);
+                mime = mimeMap.getType(file);
             }
 
             // Set result to L0 lru-cache over remaining ttl, that was returned from redis

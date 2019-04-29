@@ -3,7 +3,7 @@
 require([
     'domReady!', 'jquery', 'Browser', 'Utils', 'socket!', 'underscore', 'knockout', 'moment',
     'globalVM', 'Params', 'renderer', 'router', 'model/Photo', 'model/User', 'noties',
-    'text!tpl/appMain.jade', 'css!style/appMain', 'momentlang/ru', 'bs/transition', 'bs/popover',
+    'text!tpl/appMain.pug', 'css!style/appMain', 'momentlang/ru', 'bs/transition', 'bs/popover',
     'knockout.extends', 'noty', 'noty.layouts', 'noty.themes/pastvu', 'jquery-plugins/scrollto'
 ], function (domReady, $, Browser, Utils, socket, _, ko, moment, globalVM, P, renderer, router, Photo, User, noties, html) {
     'use strict';

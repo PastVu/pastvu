@@ -5,10 +5,10 @@
  */
 define([
     'underscore', 'jquery', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche',
-    'globalVM', 'model/User', 'model/storage', 'noties', 'text!tpl/admin/newsEdit.jade', 'css!style/admin/newsEdit',
+    'globalVM', 'model/User', 'model/storage', 'noties', 'text!tpl/admin/newsEdit.pug', 'css!style/admin/newsEdit',
     'jquery-plugins/redactor/redactor.min', 'jquery-plugins/redactor/lang/ru', 'css!style/jquery/redactor/redactor',
     'bs/ext/datetimepicker/datetimepicker'
-], function (_, $, Browser, Utils, socket, P, ko, koMapping, Cliche, globalVM, User, storage, noties, jade) {
+], function (_, $, Browser, Utils, socket, P, ko, koMapping, Cliche, globalVM, User, storage, noties, pug) {
     'use strict';
 
     var redactorOptions = {
@@ -21,7 +21,7 @@ define([
     };
 
     return Cliche.extend({
-        jade: jade,
+        pug: pug,
         options: {},
         create: function () {
             this.destroy = _.wrap(this.destroy, this.localDestroy);

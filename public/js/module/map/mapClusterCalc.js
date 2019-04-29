@@ -4,13 +4,13 @@
 define([
     'underscore', 'jquery', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM',
     'renderer', 'model/User', 'model/storage', 'leaflet', 'lib/leaflet/extends/L.neoMap', 'noties',
-    'text!tpl/map/mapClusterCalc.jade', 'css!style/map/mapClusterCalc', 'jquery-ui/draggable', 'jquery-ui/resizable',
+    'text!tpl/map/mapClusterCalc.pug', 'css!style/map/mapClusterCalc', 'jquery-ui/draggable', 'jquery-ui/resizable',
     'jquery-ui/effect-highlight', 'css!style/jquery/ui/core', 'css!style/jquery/ui/resizable', 'css!style/jquery/ui/theme'
-], function (_, $, Browser, Utils, socket, P, ko, Cliche, globalVM, renderer, User, storage, L, Map, noties, jade) {
+], function (_, $, Browser, Utils, socket, P, ko, Cliche, globalVM, renderer, User, storage, L, Map, noties, pug) {
     'use strict';
 
     return Cliche.extend({
-        jade: jade,
+        pug: pug,
         options: {
             deferredWhenReady: null // Deffered wich will be resolved when map ready
         },

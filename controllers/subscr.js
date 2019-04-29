@@ -1,7 +1,7 @@
 import fs from 'fs';
 import _ from 'lodash';
 import path from 'path';
-import jade from 'jade';
+import pug from 'pug';
 import log4js from 'log4js';
 import Utils from '../commons/Utils';
 import * as session from './_session';
@@ -24,7 +24,7 @@ import { UserNoty, UserObjectRel } from '../models/UserStates';
 const logger = log4js.getLogger('subscr.js');
 
 let noticeTpl;
-const noticeTplPath = path.normalize('./views/mail/notice.jade');
+const noticeTplPath = path.normalize('./views/mail/notice.pug');
 const sendFreq = 1500; // Conveyor step frequency in ms
 const sendPerStep = 10; // Amount of sending emails in conveyor step
 const subscrPerPage = 24;
@@ -543,7 +543,7 @@ export const ready = new Promise(async function (resolve, reject) {
     try {
         const data = await fs.readFileAsync(noticeTplPath, 'utf-8');
 
-        noticeTpl = jade.compile(data, { filename: noticeTplPath, pretty: false });
+        noticeTpl = pug.compile(data, { filename: noticeTplPath, pretty: false });
 
         await waitDb;
 
@@ -551,7 +551,7 @@ export const ready = new Promise(async function (resolve, reject) {
 
         notifierConveyor();
     } catch (err) {
-        err.message = 'Notice jade read error: ' + err.message;
+        err.message = 'Notice pug read error: ' + err.message;
         reject(err);
     }
 });

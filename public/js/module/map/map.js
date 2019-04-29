@@ -4,9 +4,9 @@
 define([
     'underscore', 'Browser', 'Utils', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'renderer',
     'model/User', 'model/storage', 'Locations', 'leaflet', 'lib/leaflet/extends/L.neoMap', 'm/map/marker',
-    'm/photo/status', 'text!tpl/map/map.jade', 'css!style/map/map', 'jquery-ui/draggable', 'jquery-ui/slider',
+    'm/photo/status', 'text!tpl/map/map.pug', 'css!style/map/map', 'jquery-ui/draggable', 'jquery-ui/slider',
     'jquery-ui/effect-highlight', 'css!style/jquery/ui/core', 'css!style/jquery/ui/theme', 'css!style/jquery/ui/slider'
-], function (_, Browser, Utils, P, ko, Cliche, globalVM, renderer, User, storage, Locations, L, Map, MarkerManager, statuses, jade) {
+], function (_, Browser, Utils, P, ko, Cliche, globalVM, renderer, User, storage, Locations, L, Map, MarkerManager, statuses, pug) {
     'use strict';
 
     var defaults = {
@@ -15,7 +15,7 @@ define([
     };
 
     return Cliche.extend({
-        jade: jade,
+        pug: pug,
         options: {
             isPainting: undefined,
             embedded: undefined, // Режим встроенной карты
