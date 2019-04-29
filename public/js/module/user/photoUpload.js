@@ -155,7 +155,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
             //Если фото с этим файлом уже создалось, то вызываем его удаление,
             //если нет, значит оно загружается, и отменяем запрос на загрузку
             if (this.fileUploaded.hasOwnProperty(file.ext.file)) {
-                socket.emit('photo.removeIncoming', { file: file.ext.file });
+                socket.binary(false).emit('photo.removeIncoming', { file: file.ext.file });
                 delete this.fileUploaded[file.ext.file];
             } else if (file.ext.jqXHR && file.ext.jqXHR.abort) {
                 file.ext.jqXHR.abort();

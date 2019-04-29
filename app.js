@@ -198,7 +198,7 @@ export async function configure(startStamp) {
 
     const httpServer = http.createServer(app);
     const io = socketIO(httpServer, {
-        wsEngine: 'uws',
+        wsEngine: 'ws',
         transports: ['websocket', 'polling'],
         path: '/socket.io',
         serveClient: false
