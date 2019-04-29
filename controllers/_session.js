@@ -150,7 +150,7 @@ function emitSocket({ socket, data, waitResponse = false, timeout = 10000 }) {
                 // reject(new TimeoutError({ timeout, data }));
             }, timeout);
 
-            socket.emit(...data, result => {
+            socket.binary(false).emit(...data, result => {
                 if (overdue) {
                     return;
                 }
@@ -166,7 +166,7 @@ function emitSocket({ socket, data, waitResponse = false, timeout = 10000 }) {
         });
     }
 
-    socket.emit(...data);
+    socket.binary(false).emit(...data);
 }
 
 // Send command to all session's sockets
@@ -560,7 +560,7 @@ export async function loginUser({ user }) {
     // Send user to all sockets of session, except current socket (auth-controller will send user there)
     _.forOwn(sessionNew.sockets, sock => {
         if (sock !== socket && _.isFunction(sock.emit)) {
-            sock.emit('youAre', { user: userPlain, registered: true });
+            sock.binary(false).emit('youAre', { user: userPlain, registered: true });
         }
     });
 
