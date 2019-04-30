@@ -4,7 +4,7 @@
 const fs = require('fs');
 const _ = require('lodash');
 const path = require('path');
-const gutil = require('gulp-util');
+const colors = require('ansi-colors');
 const babel = require('babel-core');
 const desc = `
   Tranforms script with Babel using application's config.
@@ -56,15 +56,15 @@ const outputSize = Buffer.byteLength(output.code, 'utf8');
 /* eslint no-console:0 */
 if (argv.out) {
     fs.writeFileSync(argv.out, output.code);
-    console.log(gutil.colors.green(`File "${argv.file}" transpiled into "${argv.out}"`));
+    console.log(colors.green(`File "${argv.file}" transpiled into "${argv.out}"`));
 } else {
     console.log(output.code);
     console.log('---------');
 }
 
 console.log(
-    `time: ${gutil.colors.yellow(`${end}ms`)},`,
-    `inputSize: ${gutil.colors.yellow(inputSize)}, outputSize: ${gutil.colors.yellow(outputSize)}\n`,
-    `config: ${gutil.colors.yellow(argv.config)}\n`,
-    `usedHelpers: ${_.map(output.metadata.usedHelpers, helper => gutil.colors.yellow(helper)).join(', ') || '—'}`
+    `time: ${colors.yellow(`${end}ms`)},`,
+    `inputSize: ${colors.yellow(inputSize)}, outputSize: ${colors.yellow(outputSize)}\n`,
+    `config: ${colors.yellow(argv.config)}\n`,
+    `usedHelpers: ${_.map(output.metadata.usedHelpers, helper => colors.yellow(helper)).join(', ') || '—'}`
 );
