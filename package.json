@@ -72,6 +72,7 @@
         "yargs": "8.0.2"
     },
     "devDependencies": {
+        "ansi-colors": "3.2.4",
         "babel-core": "6.26.0",
         "babel-eslint": "7.2.3",
         "babel-plugin-syntax-trailing-function-commas": "6.22.0",
@@ -84,7 +85,6 @@
         "babel-plugin-transform-object-rest-spread": "6.26.0",
         "babel-plugin-transform-runtime": "6.23.0",
         "grunt-babel": "7.0.0",
-        "gulp-util": "3.0.8",
         "requirejs": "2.3.6",
         "less-middleware": "3.1.0",
         "less": "3.9.0",
