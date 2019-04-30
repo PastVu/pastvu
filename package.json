@@ -69,7 +69,7 @@
         "underscore.string": "3.3.5",
         "useragent": "2.3.0",
         "yamlparser": "0.0.2",
-        "yargs": "8.0.2"
+        "yargs": "13.2.2"
     },
     "devDependencies": {
         "ansi-colors": "3.2.4",
