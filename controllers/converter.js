@@ -1,23 +1,22 @@
-import fs from 'fs';
+import { promises as fsAsync } from 'fs';
 import ms from 'ms';
 import gm from 'gm';
 import _ from 'lodash';
 import path from 'path';
+import util from 'util';
 import log4js from 'log4js';
-import mkdirp from 'mkdirp';
+import makeDir from 'make-dir';
 import moment from 'moment';
 import config from '../config';
-import Bluebird from 'bluebird';
 import constants from './constants';
 import Utils from '../commons/Utils';
-import { exec } from 'child_process';
+import childProcess from 'child_process';
 import { waitDb, dbEval } from './connection';
 import { Photo, PhotoConveyer, PhotoConveyerError, STPhotoConveyer } from '../models/Photo';
 import constantsError from '../app/errors/constants';
 import { ApplicationError, AuthorizationError } from '../app/errors';
 
-const execAsync = Bluebird.promisify(exec);
-const mkdirpAsync = Bluebird.promisify(mkdirp);
+const execAsync = util.promisify(childProcess.exec);
 const logger = log4js.getLogger('converter.js');
 const sleep = time => new Promise(resolve => setTimeout(resolve, time));
 
@@ -438,7 +437,7 @@ async function conveyorSubStep(photo, { isPublic = true, protectCover = false, w
             commands.push(`-quality ${variant.quality}`);
         }
 
-        await mkdirpAsync(dstDir);
+        await makeDir(dstDir);
 
         if (!variant.noTransforn) {
             if (variant.crop) {
@@ -577,7 +576,7 @@ export async function movePhotoFiles({ photo, copy = false, toProtected = false 
     const fileWebp = filePath + '.webp';
     const fileDir = filePath.substr(0, 5);
 
-    const method = copy ? Utils.copyFile : fs.renameAsync.bind(fs);
+    const method = copy ? Utils.copyFile : fsAsync.rename.bind(fsAsync);
     const sourceDir = toProtected ? publicDir : protectedDir;
     const targetDir = toProtected ? protectedDir : publicDir;
 
@@ -585,7 +584,7 @@ export async function movePhotoFiles({ photo, copy = false, toProtected = false 
         const source = path.join(sourceDir, key);
         const target = path.join(targetDir, key);
 
-        await mkdirpAsync(path.join(target, fileDir));
+        await makeDir(path.join(target, fileDir));
 
         return Promise.all([
             method(path.join(source, filePath), path.join(target, filePath)),
@@ -612,8 +611,8 @@ export function deletePhotoFiles({ photo, fromProtected = false, fromCovered = f
     const dir = fromProtected ? protectedDir : fromCovered ? coveredDir : publicDir;
 
     return Promise.all(imageVersionsKeys.map(key => Promise.all([
-        fs.unlinkAsync(path.join(dir, key, filePath)).catch(_.noop),
-        fs.unlinkAsync(path.join(dir, key, fileWebp)).catch(_.noop)
+        fsAsync.unlink(path.join(dir, key, filePath)).catch(_.noop),
+        fsAsync.unlink(path.join(dir, key, fileWebp)).catch(_.noop)
     ])));
 }
 

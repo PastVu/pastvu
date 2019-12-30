@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs, { promises as fsAsync } from 'fs';
 import path from 'path';
 import Utils from '../commons/Utils';
 
@@ -82,7 +82,7 @@ export function serveImages(storePath, { maxAge = 0 }) {
         let stat;
 
         try {
-            stat = await fs.statAsync(filePath + (acceptWebp ? '.webp' : ''));
+            stat = await fsAsync.stat(filePath + (acceptWebp ? '.webp' : ''));
             if (!stat.size) {
                 stat = null;
             } else if (acceptWebp) {
@@ -99,7 +99,7 @@ export function serveImages(storePath, { maxAge = 0 }) {
 
         if (!stat) {
             try {
-                stat = await fs.statAsync(filePath);
+                stat = await fsAsync.stat(filePath);
             } catch (err) {
                 return next();
             }

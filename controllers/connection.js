@@ -1,4 +1,5 @@
 import ms from 'ms';
+import util from 'util';
 import log4js from 'log4js';
 import { ApplicationError } from '../app/errors';
 import constantsError from '../app/errors/constants';
@@ -118,6 +119,12 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
         const { maxReconnectTime, ...config } = redis;
         redis = require('redis');
 
+        // Create promisified methods
+        redis.RedisClient.prototype.getAsync = util.promisify(redis.RedisClient.prototype.get)/*.bind(dbRedis)*/;
+        redis.RedisClient.prototype.setAsync = util.promisify(redis.RedisClient.prototype.set)/*.bind(dbRedis)*/;
+        redis.RedisClient.prototype.evalAsync = util.promisify(redis.RedisClient.prototype.eval)/*.bind(dbRedis)*/;
+        redis.Multi.prototype.execAsync = util.promisify(redis.Multi.prototype.exec)/*.bind(redis.Multi.prototype)*/;
+
         connectionPromises.push(new Promise((resolve, reject) => {
             config.retry_strategy = function (options) {
                 // End reconnecting after a specific timeout and flush all commands with a individual error
@@ -153,6 +160,7 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
                         `Time to stop trying ${(maxReconnectTime - params.total_retry_time) / 1000}s`
                     );
                 });
+
         }));
     }
 

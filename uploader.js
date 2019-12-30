@@ -1,11 +1,11 @@
 import './commons/JExtensions';
-import fs from 'fs';
+import fs, { promises as fsAsync } from 'fs';
 import gm from 'gm';
 import mv from 'mv';
 import _ from 'lodash';
 import path from 'path';
 import http from 'http';
-import mkdirp from 'mkdirp';
+import makeDir from 'make-dir';
 import log4js from 'log4js';
 import config from './config';
 import formidable from 'formidable';
@@ -60,7 +60,7 @@ export function configure(startStamp) {
         }
         fileNameDir(dir, depth) {
             const result = this.file.substr(0, depth || 1).replace(/(.)/gi, '$1/');
-            mkdirp.sync(path.join(dir, result)); // Directory creation
+            makeDir.sync(path.join(dir, result)); // Directory creation
             return result;
         }
     }
@@ -225,7 +225,7 @@ export function configure(startStamp) {
                     await validateFunc(fileInfo);
 
                     if (fileInfo.error) {
-                        await fs.unlinkAsync(fileInfo.path);
+                        await fsAsync.unlink(fileInfo.path);
                     }
                 }
 
