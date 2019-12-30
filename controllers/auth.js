@@ -1,4 +1,4 @@
-import fs from 'fs';
+import { promises as fsAsync } from 'fs';
 import ms from 'ms';
 import _ from 'lodash';
 import path from 'path';
@@ -29,8 +29,8 @@ let regTpl;
 export const ready = new Promise(async function (resolve, reject) {
     try {
         const [regData, recallData] = await Promise.all([
-            fs.readFileAsync(path.normalize('./views/mail/registration.pug'), 'utf-8'),
-            fs.readFileAsync(path.normalize('./views/mail/recall.pug'), 'utf-8')
+            fsAsync.readFile(path.normalize('./views/mail/registration.pug'), 'utf-8'),
+            fsAsync.readFile(path.normalize('./views/mail/recall.pug'), 'utf-8')
         ]);
 
         regTpl = pug.compile(regData, { filename: path.normalize('./views/mail/registration.pug'), pretty: false });

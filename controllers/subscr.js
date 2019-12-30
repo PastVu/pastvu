@@ -1,4 +1,4 @@
-import fs from 'fs';
+import { promises as fsAsync } from 'fs';
 import _ from 'lodash';
 import path from 'path';
 import pug from 'pug';
@@ -541,7 +541,7 @@ async function giveUserSubscriptions({ login, page = 1, type = 'photo' }) {
 
 export const ready = new Promise(async function (resolve, reject) {
     try {
-        const data = await fs.readFileAsync(noticeTplPath, 'utf-8');
+        const data = await fsAsync.readFile(noticeTplPath, 'utf-8');
 
         noticeTpl = pug.compile(data, { filename: noticeTplPath, pretty: false });
 

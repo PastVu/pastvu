@@ -3,7 +3,7 @@ import _ from 'lodash';
 import path from 'path';
 import zlib from 'zlib';
 import log4js from 'log4js';
-import mkdirp from 'mkdirp';
+import makeDir from 'make-dir';
 import config from './config';
 import { times, hhmmssms } from './commons/time';
 import { ready as regionsReady, getObjRegionList, getRegionsPublic } from './controllers/region';
@@ -52,7 +52,7 @@ const schedule = (function () {
 }());
 
 export async function configure(startStamp) {
-    mkdirp.sync(sitemapPathAbs);
+    makeDir.sync(sitemapPathAbs);
 
     await connectDb({ mongo: { uri: config.mongo.connection, poolSize: config.mongo.pool }, logger });
     await regionsReady;

@@ -11,7 +11,7 @@ var express = require('express'),
 	argv = require('optimist').argv,
 	_ = require('lodash'),
 
-	mkdirp = require('mkdirp'),
+    makeDir = require('make-dir'),
 	mongoose = require('mongoose'),
 	ms = require('ms'), // Tiny milisecond conversion utility
 	Utils,
@@ -68,7 +68,7 @@ var confDefault = JSON.parse(JSON.minify(fs.readFileSync(__dirname + '/config.js
  * Вызов логера
  */
 console.log('\n');
-mkdirp.sync(logPath);
+makeDir.sync(logPath);
 log4js.configure('./log4js.json', {cwd: logPath});
 if (land === 'dev') {
 	//В dev выводим все логи также в консоль
