@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Entry point to application. It's purpuse - to run script with some common things and transformation in development
+ * Entry point to application. Its purpose is to run script with some common things and transformation in development
  * This file is not being transformed by babel
  */
 
@@ -23,7 +23,6 @@ if (require.main !== module) { // If run.js is required by another module (for e
     const fs = require('fs');
     const _ = require('lodash');
     const util = require('util');
-    const posix = require('posix');
     const redis = require('redis');
     const mkdirp = require('mkdirp');
     const log4js = require('log4js');
@@ -63,7 +62,6 @@ if (require.main !== module) { // If run.js is required by another module (for e
 
     const appName = path.parse(argv.script).name;
     const logger = log4js.getLogger(appName);
-    const nofileLimits = posix.getrlimit('nofile');
 
     // Handling uncaught exceptions
     process.on('uncaughtException', function (err) {
@@ -78,7 +76,6 @@ if (require.main !== module) { // If run.js is required by another module (for e
     );
     logger.info(`Platform: ${process.platform}, architecture: ${process.arch} with ${os.cpus().length} cpu cores`);
     logger.info(`Node.js [${process.versions.node}] with v8 [${process.versions.v8}] on pid: ${process.pid}`);
-    logger.info(`Posix file descriptor limits: soft=${nofileLimits.soft}, hard=${nofileLimits.hard}`);
     if (argv.logConfig) {
         logger.info(`Configuration:\n`, util.inspect(
             // Do deep clone of config and shade password fields
