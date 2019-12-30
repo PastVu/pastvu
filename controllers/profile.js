@@ -3,10 +3,10 @@ import gm from 'gm';
 import mv from 'mv';
 import _ from 'lodash';
 import path from 'path';
-import mkdirp from 'mkdirp';
+import util from 'util';
+import makeDir from 'make-dir';
 import config from '../config';
-import Bluebird from 'bluebird';
-import { exec } from 'child_process';
+import childProcess from 'child_process';
 import Utils from '../commons/Utils';
 import * as session from './_session';
 import constants from './constants.js';
@@ -21,8 +21,7 @@ import { User } from '../models/User';
 const incomeDir = path.join(config.storePath, 'incoming/');
 const privateDir = path.join(config.storePath, 'private/avatars/');
 const publicDir = path.join(config.storePath, 'public/avatars/');
-const mkdirpAsync = Bluebird.promisify(mkdirp);
-const execAsync = Bluebird.promisify(exec);
+const execAsync = util.promisify(childProcess.exec);
 const emailRegexp = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@(([[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 
 const getUserByLogin = async function (login) {
@@ -370,8 +369,8 @@ async function changeAvatar({ login, file, mime }) {
             });
         }),
         // Create folders inside public
-        mkdirpAsync(path.join(publicDir, 'd/', dirPrefix)),
-        mkdirpAsync(path.join(publicDir, 'h/', dirPrefix))
+        makeDir(path.join(publicDir, 'd/', dirPrefix)),
+        makeDir(path.join(publicDir, 'h/', dirPrefix))
     ]);
 
     await Promise.all([

@@ -1,5 +1,4 @@
 import ms from 'ms';
-import Bluebird from 'bluebird';
 import { logIt } from './apilog.js';
 import Utils from '../commons/Utils';
 
@@ -31,22 +30,22 @@ const errors = {
 var getPhotoRequest = (function () {
     var noselect = { frags: 0, album: 0, adate: 0, stdate: 0, sdate: 0, ucdate: 0 };
 
-    return Bluebird.method(function (data) {
+    return data => new Promise((resolve, reject) => {
         var cid = Number(data.cid);
 
         if (!cid || cid < 0) {
             throw { code: 21 };
         }
 
-        return core.request('photo', 'givePhoto', [{}, { cid: cid, countView: true, noselect: noselect }])
+        core.request('photo', 'givePhoto', [{}, { cid, countView: true, noselect }])
             .spread(function (photo) {
                 if (photo.ldate) {
                     photo.ldate = new Date(photo.ldate).getTime();
                 }
-                return [photo];
+                resolve([photo]);
             })
             .catch(function () {
-                throw { code: 101 };
+                reject({ code: 101 });
             });
     });
 }());
@@ -56,11 +55,11 @@ var getPhotoBoundsRequest = (function () {
     var maxZoom = 20;
     var areaLimit = [0, 0, 0, 34530, 8425, 2085, 519, 130, 33, 8.12, 2.02, 0.507, 0.127, 0.0317, 0.008, 0.00199, 0.000495, 0.000125, 0.000125, 0.000125, 0.000125];
 
-    return Bluebird.method(function (data) {
+    return data => new Promise((resolve, reject) => {
         var zoom = Number(data.z);
 
         if (!zoom || zoom < minZoom || zoom > maxZoom || !Array.isArray(data.bounds) || !data.bounds.length || data.bounds.length > 4) {
-            throw { code: 21 };
+            reject({ code: 21 });
         }
 
         var bounds = [];
@@ -70,7 +69,7 @@ var getPhotoBoundsRequest = (function () {
         for (var i = 0; i < data.bounds.length; i++) {
             bound = data.bounds[i];
             if (!Utils.geo.checkbbox(bound)) {
-                throw { code: 21 };
+                reject({ code: 21 });
             }
             area += (bound[2] - bound[0]) * (bound[3] - bound[1]);
             bounds.push([
@@ -80,19 +79,19 @@ var getPhotoBoundsRequest = (function () {
         }
 
         if (area > areaLimit[zoom]) {
-            throw { code: 31 };
+            reject({ code: 31 });
         }
 
         data.bounds = bounds;
-        return core.request('photo', 'getBounds', [data], true, true)
+        core.request('photo', 'getBounds', [data], true, true)
             .spread(function (photos, clusters) {
-                return ['{"photos":' + (photos || '[]') + ',"clusters":' + (clusters || '[]') + '}', true];
+                resolve(['{"photos":' + (photos || '[]') + ',"clusters":' + (clusters || '[]') + '}', true]);
             });
     });
 }());
 
 var getPhotoNearRequest = (function () {
-    return Bluebird.method(function (data) {
+    return async data => {
         if (!data || !Utils.geo.checkLatLng(data.geo)) {
             throw { code: 21 };
         }
@@ -109,32 +108,32 @@ var getPhotoNearRequest = (function () {
             data.distance = Math.abs(Number(data.distance));
         }
 
-        return core.request('photo', 'giveNearestPhotos', [data], true)
-            .then(function (photos) {
-                return [photos, true];
-            })
-            .catch(function () {
-                throw { code: 101 };
-            });
-    });
+        try {
+            const photos = await core.request('photo', 'giveNearestPhotos', [data], true);
+
+            return [photos, true];
+        } catch (err) {
+            throw { code: 101 };
+        }
+    };
 }());
 
 var getObjCommentsRequest = (function () {
-    return Bluebird.method(function (data) {
-        var cid = Number(data.cid);
+    return async data => {
+        const cid = Number(data.cid);
 
         if (!cid || cid < 0) {
             throw { code: 21 };
         }
 
-        return core.request('comment', 'getCommentsObjAnonym', [{}, { type: 'photo', cid: cid }], true)
-            .then(function (commentsTree) {
-                return [commentsTree, true];
-            })
-            .catch(function () {
-                throw { code: 101 };
-            });
-    });
+        try {
+            const commentsTree = await core.request('comment', 'getCommentsObjAnonym', [{}, { type: 'photo', cid }], true);
+
+            return [commentsTree, true];
+        } catch (err) {
+            throw { code: 101 };
+        }
+    };
 }());
 
 var methodMap = {

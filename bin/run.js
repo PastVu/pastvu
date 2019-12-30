@@ -20,13 +20,10 @@ if (require.main !== module) { // If run.js is required by another module (for e
 } else {
     // If run.js was invoked directly
     const os = require('os');
-    const fs = require('fs');
     const _ = require('lodash');
     const util = require('util');
-    const redis = require('redis');
-    const mkdirp = require('mkdirp');
+    const makeDir = require('make-dir');
     const log4js = require('log4js');
-    const Bluebird = require('bluebird');
 
     const argv = require('yargs')
         .help('help') // --help to get help
@@ -54,7 +51,7 @@ if (require.main !== module) { // If run.js is required by another module (for e
         babelHook();
     }
 
-    mkdirp.sync(logPath);
+    makeDir.sync(logPath);
     log4js.configure('./log4js.json', { cwd: logPath });
     if (env === 'development') {
         log4js.addAppender(log4js.appenders.stdout()); // In dev write all logs also to the terminal
@@ -83,20 +80,6 @@ if (require.main !== module) { // If run.js is required by another module (for e
             { depth: null, colors: env === 'development' }
         ));
     }
-
-    // Enable verbose stack trace of Bluebird promises (not in production)
-    if (env !== 'production') {
-        logger.info('Bluebird long stack traces are enabled');
-        Bluebird.config({
-            // Enable warnings.
-            warnings: true,
-            // Enable long stack traces.
-            longStackTraces: true
-        });
-    }
-    Bluebird.promisifyAll(fs);
-    Bluebird.promisifyAll(redis.RedisClient.prototype);
-    Bluebird.promisifyAll(redis.Multi.prototype);
 
     const requiredModule = requireModule(argv.script);
 

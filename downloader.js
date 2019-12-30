@@ -1,5 +1,5 @@
 import './commons/JExtensions';
-import fs from 'fs';
+import fs, { promises as fsAsync } from 'fs';
 import ms from 'ms';
 import _ from 'lodash';
 import path from 'path';
@@ -77,13 +77,11 @@ export async function configure(startStamp) {
         });
     };
 
-    // Manual promise for exists because fs.existsAsync can't be promisyfied by bluebird,
+    // Manual promise for exists because fs.exists is deprecated,
     // because fs.exists doesn't call back with error as first argument
     const exists = function (path) {
         return new Promise(function (resolve) {
-            fs.exists(path, function (exists) {
-                resolve(exists);
-            });
+            resolve(fs.existsSync(path));
         });
     };
 
@@ -134,7 +132,7 @@ export async function configure(startStamp) {
                     return responseCode(404, res);
                 }
 
-                const size = keyData.size || (await fs.statAsync(filePath)).size;
+                const size = keyData.size || (await fsAsync.stat(filePath)).size;
                 const fileName = contentDisposition(keyData.fileName);
 
                 res.setHeader('Content-Disposition', fileName);

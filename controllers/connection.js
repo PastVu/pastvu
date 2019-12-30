@@ -1,4 +1,5 @@
 import ms from 'ms';
+import util from 'util';
 import log4js from 'log4js';
 import { ApplicationError } from '../app/errors';
 import constantsError from '../app/errors/constants';
@@ -153,6 +154,11 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
                         `Time to stop trying ${(maxReconnectTime - params.total_retry_time) / 1000}s`
                     );
                 });
+
+            // Create promisified methods
+            dbRedis.getAsync = util.promisify(dbRedis.get).bind(dbRedis);
+            dbRedis.setAsync = util.promisify(dbRedis.set).bind(dbRedis);
+            dbRedis.evalAsync = util.promisify(dbRedis.eval).bind(dbRedis);
         }));
     }
 
