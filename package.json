@@ -95,7 +95,7 @@
         "jqueryui-amd": "0.0.2",
         "xmldom": "0.2.1",
         "osm-and-geojson": "0.1.2",
-        "eslint": "3.19.0",
+        "eslint": "4.18.2",
         "eslint-plugin-babel": "4.1.1"
     },
     "engines": {
