@@ -3,7 +3,6 @@ import constants from './constants';
 import ApplicationError from './Application';
 
 export default class BadParamsError extends ApplicationError {
-
     constructor(data, rid) {
         if (typeof data === 'string') {
             data = { code: data };
@@ -11,12 +10,11 @@ export default class BadParamsError extends ApplicationError {
 
         _.defaults(data, {
             code: constants.BAD_PARAMS,
-            statusCode: 400
+            statusCode: 400,
         });
 
         super(data, rid);
     }
-
 }
 
 BadParamsError.prototype.name = 'BadParamsError';

@@ -19,7 +19,7 @@ const FragmentSchema = new Schema({
     w: { type: Number }, // Width percent
     h: { type: Number },  // Height percent
 
-    del: { type: Boolean } // Flag that fragment's comment has been deleted
+    del: { type: Boolean }, // Flag that fragment's comment has been deleted
 });
 
 const PhotoSchema = new Schema({
@@ -110,7 +110,7 @@ const PhotoSchema = new Schema({
     cdcount: { type: Number }, // Number of deleted comments
     frags: [FragmentSchema], // Array of comment's fragments
 
-    nocomments: { type: Boolean } // Prohibit commentation
+    nocomments: { type: Boolean }, // Prohibit commentation
 });
 
 // In the main collection if photo do indexing to select on the map by year
@@ -133,12 +133,12 @@ const PhotoHistSchema = new Schema(
         roleregion: { type: Number }, // Регион реализуемой роли
         reason: {
             cid: { type: Number },
-            desc: { type: String }
+            desc: { type: String },
         },
         values: { type: Schema.Types.Mixed },  // Значения полей, установленные в этот stamp
         add: { type: [String] }, // Список добавившихся полей
         del: { type: [String] }, // Список удаленных полей
-        diff: { type: Schema.Types.Mixed } // Diff для некоторых полей, изменившихся в этой записи
+        diff: { type: Schema.Types.Mixed }, // Diff для некоторых полей, изменившихся в этой записи
     },
     { collection: 'photos_history', strict: true, versionKey: false }
 );
@@ -150,7 +150,7 @@ const PhotoMapSchema = new Schema(
         dir: { type: String },
         title: { type: String, 'default': '' },
         year: { type: Number, 'default': constants.photo.years[constants.photo.type.PHOTO].max },
-        year2: { type: Number, 'default': constants.photo.years[constants.photo.type.PHOTO].max }
+        year2: { type: Number, 'default': constants.photo.years[constants.photo.type.PHOTO].max },
     },
     { collection: 'photos_map', strict: true }
 );
@@ -162,7 +162,7 @@ const PaintingMapSchema = new Schema(
         dir: { type: String },
         title: { type: String, 'default': '' },
         year: { type: Number, 'default': constants.photo.years[constants.photo.type.PAINTING].max },
-        year2: { type: Number, 'default': constants.photo.years[constants.photo.type.PAINTING].max }
+        year2: { type: Number, 'default': constants.photo.years[constants.photo.type.PAINTING].max },
     },
     { collection: 'paintings_map', strict: true }
 );
@@ -174,13 +174,14 @@ const PhotoConveyerSchema = new Schema(
         added: { type: Date, 'default': Date.now, required: true },
         protect: { type: Boolean }, // Protect files in public folder by covering it with 'not available' caption
         webpOnly: { type: Boolean },
-        converting: { type: Boolean }
+        converting: { type: Boolean },
     },
     {
         collection: 'photos_conveyer',
-        strict: true
+        strict: true,
     }
 );
+
 PhotoConveyerSchema.index({ priority: 1, added: 1 });
 
 // Errors in convertation
@@ -189,7 +190,7 @@ const PhotoConveyerErrorSchema = new Schema(
         cid: { type: String, index: true },
         added: { type: Date },
         stamp: { type: Date, 'default': Date.now },
-        error: { type: String }
+        error: { type: String },
     },
     { collection: 'photos_conveyer_errors', strict: true }
 );
@@ -199,7 +200,7 @@ const STPhotoConveyerSchema = new Schema(
     {
         stamp: { type: Date, 'default': Date.now, required: true, index: true },
         clength: { type: Number }, // Maximum conveyer length at stamp time
-        converted: { type: Number } // Converted photos at stamp time
+        converted: { type: Number }, // Converted photos at stamp time
     },
     { strict: true }
 );
@@ -209,6 +210,7 @@ PhotoSchema.pre('save', function (next) {
         // Fill aggregated year field. '—' here is em (long) dash '&mdash;' (not hyphen or minus)
         if (_.isNumber(this.year) && _.isNumber(this.year2) && this.year && this.year2) {
             let y = String(Math.abs(this.year));
+
             if (this.year < 0) {
                 y += ' BC';
             } else if (this.year < 1000) {

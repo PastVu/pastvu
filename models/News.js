@@ -16,7 +16,7 @@ registerModel(db => {
             txt: { type: String, required: true }, // Full text
 
             nocomments: { type: Boolean }, // Prohibit commenting
-            ccount: { type: Number } // Number of comments
+            ccount: { type: Number }, // Number of comments
         },
         { strict: true }
     ));

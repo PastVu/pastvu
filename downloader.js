@@ -21,8 +21,8 @@ export async function configure(startStamp) {
         storePath,
         listen: {
             hostname,
-            dport: listenport
-        }
+            dport: listenport,
+        },
     } = config;
 
     const status404Text = http.STATUS_CODES[404];
@@ -61,17 +61,18 @@ export async function configure(startStamp) {
 
         file.pipe(response);
 
-        file.on('error', function (err) {
+        file.on('error', err => {
             if (onError) {
                 return onError(err);
             }
+
             response.statusCode = 500;
             response.end('Server Error');
             logger.error(err);
         });
 
         // Handle unexpected client disconnection to close file read stream and release memory
-        response.on('close', function () {
+        response.on('close', () => {
             file.destroy();
         });
     };
@@ -79,7 +80,7 @@ export async function configure(startStamp) {
     // Manual promise for exists because fs.exists is deprecated,
     // because fs.exists doesn't call back with error as first argument
     const exists = function (path) {
-        return new Promise(function (resolve) {
+        return new Promise(resolve => {
             resolve(fs.existsSync(path));
         });
     };
@@ -128,6 +129,7 @@ export async function configure(startStamp) {
 
                 if (!fileAvailable) {
                     logger.warn('File not available', keyEntry);
+
                     return responseCode(404, res);
                 }
 
@@ -167,6 +169,7 @@ export async function configure(startStamp) {
             if (counters.all) {
                 logger.info(`Protection serve stat: ${counters.ok} ok, ${counters.fail} fail, ${counters.all} total`);
             }
+
             setTimeout(countPrint, ms('5m'));
         }());
 
@@ -223,6 +226,7 @@ export async function configure(startStamp) {
 
         return async function handleProtectedRequest(req, res) {
             counters.all++;
+
             const { headers = {}, url = '' } = req;
             const [, filePath] = url.match(protectedServePattern) || [];
 
@@ -254,12 +258,14 @@ export async function configure(startStamp) {
                 counters.ok++;
             } catch (error) {
                 counters.fail++;
+
                 let { referer = '' } = req.headers;
                 let { details: { sid = '' } = {} } = error;
 
                 if (referer) {
                     referer = ` to ${referer.replace(hostnameRegexp, '') || '/'}`;
                 }
+
                 if (sid) {
                     sid = ` for ${sid}`;
                 }
@@ -282,7 +288,7 @@ export async function configure(startStamp) {
     await connectDb({
         redis: config.redis,
         mongo: { uri: config.mongo.connection, poolSize: config.mongo.pool },
-        logger
+        logger,
     });
 
     // Connect to core, without waiting
@@ -294,6 +300,7 @@ export async function configure(startStamp) {
             if (protectedServePattern.test(req.url)) {
                 return protectedHandler(req, res);
             }
+
             if (originDownloadPattern.test(req.url)) {
                 return originDownloadHandler(req, res);
             }
@@ -301,7 +308,7 @@ export async function configure(startStamp) {
             res.statusCode = 404;
             res.end(status404Text);
         })
-        .listen(listenport, hostname, function () {
+        .listen(listenport, hostname, () => {
             logger.info(
                 `Downloader server started up in ${(Date.now() - startStamp) / 1000}s`,
                 `and listening [${hostname || '*'}:${listenport}]\n`

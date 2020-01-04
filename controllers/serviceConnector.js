@@ -17,6 +17,7 @@ class ClientSocket {
         const result = (this.buffer + data).split('\0');
 
         this.buffer = result.pop() || '';
+
         return result;
     }
 
@@ -24,6 +25,7 @@ class ClientSocket {
         if (!msg) {
             return;
         }
+
         try {
             return JSON.parse(msg);
         } catch (error) {
@@ -42,7 +44,8 @@ class ClientSocket {
         const callPromise = handleServiceRequest({ sid, methodName: method, params });
 
         if (!descriptor) {
-            callPromise.catch(error => this.logger.warn(`Service didn't request response, but call error occured`, error));
+            callPromise.catch(error => this.logger.warn('Service didn\'t request response, but call error occured', error));
+
             return;
         }
 
@@ -89,6 +92,7 @@ export default class Server {
 
         this.server = net.createServer(socket => {
             const clientSocket = new ClientSocket(this.server, socket);
+
             this.clientSockets = [...this.clientSockets, clientSocket];
 
             socket
@@ -99,6 +103,7 @@ export default class Server {
                     if (hadError) {
                         socket.destroy();
                     }
+
                     this.clientSockets = this.clientSockets.filter(item => item !== clientSocket);
 
                     this.logger.info(`${this.name} client disconnected. Total clients: ${this.clientSockets.length}`);
@@ -106,7 +111,6 @@ export default class Server {
 
             this.logger.info(`${this.name} client connected. Total clients: ${this.clientSockets.length}`);
         });
-
     }
 
     listen() {

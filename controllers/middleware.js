@@ -1,6 +1,6 @@
+import _ from 'lodash';
 import fs, { promises as fsAsync } from 'fs';
 import path from 'path';
-import Utils from '../commons/Utils';
 
 // Middleware for checking requested html, usually for development.
 // If such pug exists - compile it, if not - pass request to the next handler
@@ -16,7 +16,7 @@ export function pugToHtml(seekPath) {
 
         // Only handle the matching files
         if (htmlRegExp.test(pathname)) {
-            const pugPath = path.normalize(seekPath + (pathname.replace('.html', '.pug')));
+            const pugPath = path.normalize(seekPath + pathname.replace('.html', '.pug'));
 
             res.render(pugPath, {}, (err, renderedHTML) => {
                 if (err || !renderedHTML) {
@@ -44,6 +44,7 @@ export function cors(originRoot) {
             res.setHeader('Access-Control-Allow-Methods', 'POST, GET, PUT, DELETE, OPTIONS');
             res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
         }
+
         next();
     };
 }
@@ -55,7 +56,7 @@ export function responseHeaderHook() {
         const writeHeadOriginal = res.writeHead;
 
         if (!next) {
-            next = Utils.dummyFn;
+            next = _.noop;
         }
 
         res.writeHead = function (...args) {
@@ -73,8 +74,8 @@ export function serveImages(storePath, { maxAge = 0 }) {
     return async function (req, res, next) {
         const {
             headers: {
-                accept = ''
-            } = {}
+                accept = '',
+            } = {},
         } = req;
 
         let acceptWebp = accept.includes('image/webp');
@@ -83,6 +84,7 @@ export function serveImages(storePath, { maxAge = 0 }) {
 
         try {
             stat = await fsAsync.stat(filePath + (acceptWebp ? '.webp' : ''));
+
             if (!stat.size) {
                 stat = null;
             } else if (acceptWebp) {

@@ -1,5 +1,5 @@
 #! /usr/bin/env node
-'use strict'; // eslint-disable-line
+'use strict';
 
 const fs = require('fs');
 const _ = require('lodash');
@@ -20,19 +20,19 @@ const argv = require('yargs')
             describe: 'Config for transformation. Default is config for server',
             default: path.join(__dirname, 'server.config.js'),
             alias: 'config',
-            type: 'string'
+            type: 'string',
         },
         'f': {
             describe: 'File to transform',
             demand: true,
             alias: 'file',
-            type: 'string'
+            type: 'string',
         },
         'o': {
             describe: 'File to save transformed script into',
             alias: 'out',
-            type: 'string'
-        }
+            type: 'string',
+        },
     })
     .check(argv => {
         if (!fs.existsSync(argv.file)) {

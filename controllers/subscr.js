@@ -28,12 +28,12 @@ const noticeTplPath = path.normalize('./views/mail/notice.pug');
 const sendFreq = 1500; // Conveyor step frequency in ms
 const sendPerStep = 10; // Amount of sending emails in conveyor step
 const subscrPerPage = 24;
-const sortNotice = (a, b) => a.brief.newest < b.brief.newest ? 1 : (a.brief.newest > b.brief.newest ? -1 : 0);
+const sortNotice = (a, b) => a.brief.newest < b.brief.newest ? 1 : a.brief.newest > b.brief.newest ? -1 : 0;
 const sortSubscr = ({ ccount_new: aCount = 0, sbscr_create: aDate }, { ccount_new: bCount = 0, sbscr_create: bDate }) =>
     aCount < bCount ? 1 : aCount > bCount ? -1 : aDate < bDate ? 1 : aDate > bDate ? -1 : 0;
 const declension = {
     comment: [' новый комментарий', ' новых комментария', ' новых комментариев'],
-    commentUnread: [' непрочитанный', ' непрочитанных', ' непрочитанных']
+    commentUnread: [' непрочитанный', ' непрочитанных', ' непрочитанных'],
 };
 
 // Subscribe to/unsubscribe from object (external, for current user by object cid)
@@ -43,6 +43,7 @@ async function subscribeUser({ cid, type = 'photo', subscribe }) {
     if (!iAm.registered) {
         throw new AuthorizationError();
     }
+
     cid = Number(cid);
 
     if (!cid || cid < 1) {
@@ -211,7 +212,7 @@ async function scheduleUserNotice(users) {
         User.find({ _id: { $in: users } }, { _id: 1, 'settings.subscr_throttle': 1 }, { lean: true }).exec(),
         // Find noty of users, even scheduled
         // (if we won't, we can't understand which is planed already, and wich is planning for the first time)
-        UserNoty.find({ user: { $in: users } }, { _id: 0 }, { lean: true }).exec()
+        UserNoty.find({ user: { $in: users } }, { _id: 0 }, { lean: true }).exec(),
     ]);
 
     const usersNotyHash = {};
@@ -243,6 +244,7 @@ async function scheduleUserNotice(users) {
             } else {
                 nextnoty = nearestNoticeTimeStamp;
             }
+
             usersNotyHash[user] = nextnoty;
         }
     }
@@ -273,15 +275,18 @@ const notifierConveyor = (function () {
             // Hack fo checking user localization. Do not notify if user's language different from this node instanse
             // Determine user language by language in last session
             const usersNotyWithCurrentLang = [];
+
             for (const noty of usersNoty) {
                 const sessions = await Session.find(
                     { user: noty.user }, { _id: 0, 'data.lang': 1 },
                     { lean: true, limit: 1, sort: { stamp: -1 } }
                 ).exec();
+
                 if (_.get(sessions, '[0].data.lang', 'ru') === config.lang) {
                     usersNotyWithCurrentLang.push(noty);
                 }
             }
+
             usersNoty = usersNotyWithCurrentLang;
 
             if (_.isEmpty(usersNoty)) {
@@ -293,6 +298,7 @@ const notifierConveyor = (function () {
 
             await Promise.all(usersNoty.map(({ user }) => {
                 userIds.push(user);
+
                 return sendUserNotice(user).catch(err => logger.error('sendUserNotice', err));
             }));
 
@@ -374,7 +380,7 @@ async function sendUserNotice(userId) {
         objsIdPhotos.length ? Photo.find( // User will receive notifications for statuses >= PUBLIC
             { _id: { $in: objsIdPhotos }, ccount: { $gt: 0 } },
             { _id: 1, cid: 1, title: 1, ccount: 1 }, { lean: true }
-        ).exec().then(photos => userObjectRelController.getNewCommentsBrief(photos, relHash, userId)) : undefined
+        ).exec().then(photos => userObjectRelController.getNewCommentsBrief(photos, relHash, userId)) : undefined,
     ]);
 
     if (_.isEmpty(news) && _.isEmpty(photos)) {
@@ -397,6 +403,7 @@ async function sendUserNotice(userId) {
             totalNewestComments += newest;
 
             obj.briefFormat = { newest: newest + Utils.format.wordEndOfNum(newest, declension.comment) };
+
             if (newest !== unread) {
                 obj.briefFormat.unread = unread + Utils.format.wordEndOfNum(unread, declension.commentUnread);
             }
@@ -427,11 +434,11 @@ async function sendUserNotice(userId) {
                 news: newsResult,
                 photos: photosResult,
                 username: String(user.disp),
-                greeting: 'Уведомление о событиях на PastVu'
+                greeting: 'Уведомление о событиях на PastVu',
             }),
             text: totalNewestComments +
             (totalNewestComments === 1 ? ' новый коментарий' : ' новых ' +
-            (totalNewestComments < 5 ? 'комментария' : 'комментариев'))
+            (totalNewestComments < 5 ? 'комментария' : 'комментариев')),
         });
     }
 
@@ -441,14 +448,16 @@ async function sendUserNotice(userId) {
 // Return paged list of user's subscriptions
 const photosFields = {
     _id: 1, cid: 1, s: 1, user: 1, title: 1, ccount: 1, file: 1, mime: 1,
-    ...regionController.regionsAllSelectHash
+    ...regionController.regionsAllSelectHash,
 };
+
 async function giveUserSubscriptions({ login, page = 1, type = 'photo' }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!login) {
         throw new BadParamsError();
     }
+
     if (!iAm.registered || iAm.user.login !== login && !iAm.isAdmin) {
         throw new AuthorizationError();
     }
@@ -460,6 +469,7 @@ async function giveUserSubscriptions({ login, page = 1, type = 'photo' }) {
     }
 
     page = (Math.abs(Number(page)) || 1) - 1;
+
     const skip = page * subscrPerPage;
 
     const rels = await UserObjectRel.find(
@@ -498,7 +508,7 @@ async function giveUserSubscriptions({ login, page = 1, type = 'photo' }) {
         // Take time of next scheduled notification
         await UserNoty.findOne(
             { user: userId, nextnoty: { $exists: true } }, { _id: 0, nextnoty: 1 }, { lean: true }
-        ).exec() || undefined
+        ).exec() || undefined,
         // ( await xxx || undefined ) needed for 'null' to be replaced with default value '{}' in desctruction
         // https://github.com/Automattic/mongoose/issues/3457
     ]);
@@ -518,6 +528,7 @@ async function giveUserSubscriptions({ login, page = 1, type = 'photo' }) {
         if (rel.ccount_new) {
             obj.ccount_new = rel.ccount_new;
         }
+
         if (rel.sbscr_noty) {
             obj.sbscr_noty = true;
         }
@@ -537,11 +548,11 @@ async function giveUserSubscriptions({ login, page = 1, type = 'photo' }) {
         countPhoto,
         subscr: objs,
         page: page + 1,
-        perPage: subscrPerPage
+        perPage: subscrPerPage,
     };
 }
 
-export const ready = new Promise(async function (resolve, reject) {
+export const ready = (async () => {
     try {
         const data = await fsAsync.readFile(noticeTplPath, 'utf-8');
 
@@ -549,21 +560,20 @@ export const ready = new Promise(async function (resolve, reject) {
 
         await waitDb;
 
-        resolve();
-
         notifierConveyor();
     } catch (err) {
         err.message = 'Notice pug read error: ' + err.message;
-        reject(err);
+        throw err;
     }
-});
+})();
 
 subscribeUser.isPublic = true;
 giveUserSubscriptions.isPublic = true;
+
 export default {
     subscribeUser,
     giveUserSubscriptions,
 
     subscribeUserByIds,
-    unSubscribeObj
+    unSubscribeObj,
 };

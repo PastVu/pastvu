@@ -3,12 +3,12 @@ import { ActionLog } from '../models/ActionLog';
 export const OBJTYPES = {
     USER: 1,
     PHOTO: 2,
-    COMMENT: 3
+    COMMENT: 3,
 };
 export const TYPES = {
     CREATE: 1,
     RESTORE: 8,
-    REMOVE: 9
+    REMOVE: 9,
 };
 
 export async function logIt(user, obj, objtype, type, stamp, reason, roleregion, addinfo) {
@@ -21,7 +21,7 @@ export async function logIt(user, obj, objtype, type, stamp, reason, roleregion,
         reason,
         role: user.role,
         roleregion,
-        addinfo
+        addinfo,
     });
 
     return action.save();

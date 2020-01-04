@@ -32,7 +32,10 @@ let regionCacheHash = {}; // Hash-cache of regions { cid: { _id, cid, parents } 
 
 let regionCacheArrPublic = [];
 let regionCacheMapPublic = new Map();
-let regionCacheArrPublicPromise = Promise.resolve({ regions: regionCacheArrPublic, regionsStringified: JSON.stringify(regionCacheArrPublic) });
+let regionCacheArrPublicPromise = Promise.resolve({
+    regions: regionCacheArrPublic,
+    regionsStringified: JSON.stringify(regionCacheArrPublic),
+});
 let regionCacheArrAdmin = [];
 let regionCacheMapAdmin = new Map();
 let regionCacheArrAdminPromise = Promise.resolve({ regions: regionCacheArrAdmin });
@@ -49,13 +52,14 @@ export const ready = waitDb.then(fillCache);
 async function fillCache() {
     try {
         const start = Date.now();
+
         regionCacheArr = await Region.find(
             {},
             {
                 _id: 1, cid: 1, parents: 1,
                 cdate: 1, udate: 1, gdate: 1,
                 title_en: 1, title_local: 1,
-                photostat: 1, paintstat: 1, cstat: 1
+                photostat: 1, paintstat: 1, cstat: 1,
             },
             { lean: true, sort: { cid: 1 } }
         ).exec();
@@ -76,6 +80,7 @@ async function fillCache() {
             const { cid, parents } = region;
 
             region.childLen = 0;
+
             if (parents && parents.length) {
                 for (const parentCid of parents) {
                     regionCacheHash[parentCid].childLen++;
@@ -105,7 +110,10 @@ async function fillCache() {
             }
         }
 
-        regionCacheArrPublicPromise = Promise.resolve({ regions: regionCacheArrPublic, regionsStringified: JSON.stringify(regionCacheArrPublic) });
+        regionCacheArrPublicPromise = Promise.resolve({
+            regions: regionCacheArrPublic,
+            regionsStringified: JSON.stringify(regionCacheArrPublic),
+        });
         regionCacheArrAdminPromise = Promise.resolve({ regions: regionCacheArrAdmin });
 
         DEFAULT_HOME = regionCacheHash[config.regionHome] || regionCacheArrPublic[0];
@@ -123,7 +131,7 @@ function fillPublicAndAdminMaps(region) {
 
     Object.assign(regionPublic, {
         parents, title_en, title_local, childLen,
-        phc: photostat.s5, pac: paintstat.s5, cc: cstat.all - cstat.del
+        phc: photostat.s5, pac: paintstat.s5, cc: cstat.all - cstat.del,
     });
 
     Object.assign(regionAdmin, {
@@ -136,7 +144,7 @@ function fillPublicAndAdminMaps(region) {
         pco: photostat.own + paintstat.own,
         pcog: photostat.owngeo + paintstat.owngeo,
         cc: cstat.all,
-        ccd: cstat.del
+        ccd: cstat.del,
     });
 
     if (!regionCacheMapAdmin.has(cid)) {
@@ -194,7 +202,8 @@ export const getRegionsArrFromHash = (hash, cids) => {
 };
 export const fillRegionsHash = (hash, fileds) => {
     if (fileds) {
-        for (const i in hash) {
+        // hash is a null prototype object
+        for (const i in hash) { // eslint-disable-line guard-for-in
             const region = regionCacheHash[i];
 
             hash[i] = {};
@@ -204,7 +213,8 @@ export const fillRegionsHash = (hash, fileds) => {
             }
         }
     } else {
-        for (const i in hash) {
+        // hash is a null prototype object
+        for (const i in hash) { // eslint-disable-line guard-for-in
             hash[i] = regionCacheHash[i];
         }
     }
@@ -316,7 +326,11 @@ export const getShortRegionsParams = (function () {
         let result;
         const regionLevels = new Array(maxRegionLevel + 1);
 
-        for (const cid in rhash) {
+        console.log('!!!', typeof rhash);
+        console.log(rhash);
+
+        // rhash is a null prototype object
+        for (const cid in rhash) { // eslint-disable-line guard-for-in
             const region = rhash[cid];
             const regionParents = region.parents;
             let regionLevelHash = regionLevels[regionParents.length];
@@ -324,16 +338,20 @@ export const getShortRegionsParams = (function () {
             if (regionLevelHash === undefined) {
                 regionLevelHash = regionLevels[regionParents.length] = {};
             }
+
             regionLevelHash[cid] = true;
 
             for (i = 0; i < regionParents.length; i++) {
                 regionLevelHash = regionLevels[i];
+
                 if (regionLevelHash === undefined) {
                     regionLevelHash = regionLevels[i] = {};
                 }
+
                 regionLevelHash[regionParents[i]] = true;
             }
         }
+
         // Maximum level is on which several regions or undefined (ie any number of regions)
         for (i = 0; i < regionLevels.length; i++) {
             if (!regionLevels[i] || Object.keys(regionLevels[i]).length > 1) {
@@ -350,6 +368,7 @@ export const getShortRegionsParams = (function () {
                         result.sel['r' + j] = 1;
                     }
                 }
+
                 break;
             }
         }
@@ -378,6 +397,7 @@ export const genObjsShortRegionsArr = function (objs, showlvls = ['r0', 'r1'], d
         for (j = maxRegionLevel; j >= 0; j--) {
             level = 'r' + j;
             cid = obj[level];
+
             if (cid !== undefined) {
                 shortRegionsHash[cid] = true;
                 obj.rs = [cid];
@@ -385,12 +405,14 @@ export const genObjsShortRegionsArr = function (objs, showlvls = ['r0', 'r1'], d
                 for (k = showlvls.length; k--;) {
                     if (showlvls[k] !== level) {
                         cid = obj[showlvls[k]];
+
                         if (cid !== undefined) {
                             shortRegionsHash[cid] = true;
                             obj.rs.push(cid);
                         }
                     }
                 }
+
                 break;
             }
         }
@@ -404,12 +426,14 @@ export const genObjsShortRegionsArr = function (objs, showlvls = ['r0', 'r1'], d
             } else {
                 obj.rs.unshift(0);
             }
+
             shortRegionsHash['0'] = true;
         }
 
         // If transfered flag that removal of field 'rn' is needed, do it
         if (dropRegionsFields === true) {
             obj.geo = undefined;
+
             for (j = 0; j <= maxRegionLevel; j++) {
                 obj['r' + j] = undefined;
             }
@@ -437,7 +461,7 @@ async function calcRegionIncludes(cidOrRegion) {
 
     if (!region) {
         throw new NotFoundError({
-            code: constantsError.NO_SUCH_REGION, what: `Cant find region ${cidOrRegion} for calcRegionIncludes`
+            code: constantsError.NO_SUCH_REGION, what: `Cant find region ${cidOrRegion} for calcRegionIncludes`,
         });
     }
 
@@ -447,14 +471,14 @@ async function calcRegionIncludes(cidOrRegion) {
     const unsetObject = { $unset: { [level]: 1 } };
     const [{ n: photosCountBefore = 0 }, { n: commentsCountBefore = 0 }] = await Promise.all([
         Photo.update({ geo: { $exists: true }, [level]: region.cid }, unsetObject, { multi: true }).exec(),
-        Comment.update({ geo: { $exists: true }, [level]: region.cid }, unsetObject, { multi: true }).exec()
+        Comment.update({ geo: { $exists: true }, [level]: region.cid }, unsetObject, { multi: true }).exec(),
     ]);
 
     // Then assign to region on located in it polygon objects
     const setObject = { $set: { [level]: region.cid } };
     const [{ n: photosCountAfter = 0 }, { n: commentsCountAfter = 0 }] = await Promise.all([
         Photo.update({ geo: { $geoWithin: { $geometry: region.geo } } }, setObject, { multi: true }).exec(),
-        Comment.update({ geo: { $geoWithin: { $geometry: region.geo } } }, setObject, { multi: true }).exec()
+        Comment.update({ geo: { $geoWithin: { $geometry: region.geo } } }, setObject, { multi: true }).exec(),
     ]);
 
     return { cid: region.cid, photosCountBefore, commentsCountBefore, photosCountAfter, commentsCountAfter };
@@ -470,6 +494,7 @@ export async function calcRegionsIncludes(cids) {
     if (!iAm.isAdmin) {
         throw new AuthorizationError();
     }
+
     if (!Array.isArray(cids)) {
         throw new BadParamsError();
     }
@@ -534,7 +559,7 @@ async function getParentsAndChilds(region) {
     return Promise.all([
         getChildsLenByLevel(region),
         // If parents regions exist - populate them
-        level ? getOrderedRegionList(region.parents) : null
+        level ? getOrderedRegionList(region.parents) : null,
     ]);
 }
 
@@ -547,7 +572,7 @@ async function changeRegionParentExternality(region, oldParentsArray, childLenAr
     function updateObjects(query, update) {
         return Promise.all([
             Photo.update(query, update, { multi: true }).exec(),
-            Comment.update(query, update, { multi: true }).exec()
+            Comment.update(query, update, { multi: true }).exec(),
         ]);
     }
 
@@ -566,6 +591,7 @@ async function changeRegionParentExternality(region, oldParentsArray, childLenAr
         if (levelDiff > 1) {
             queryObj = { ['r' + levelWas]: region.cid };
             setObj = { $unset: {} };
+
             for (i = levelNew; i < levelWas; i++) {
                 setObj.$unset['r' + i] = 1;
             }
@@ -575,12 +601,14 @@ async function changeRegionParentExternality(region, oldParentsArray, childLenAr
 
         // Sequentally rename to upper level, begining from top moved
         queryObj = { ['r' + levelWas]: region.cid };
+
         for (i = levelWas; i <= levelWas + childLen; i++) {
-            if (i === (levelWas + 1)) {
+            if (i === levelWas + 1) {
                 // Photos, which belongs to children of moving region,
                 // must be selected as belonging to new level, because they were moved on first dtep
                 queryObj = { ['r' + levelNew]: region.cid };
             }
+
             setObj = { $rename: { ['r' + i]: 'r' + (i - levelDiff) } };
 
             await updateObjects(queryObj, setObj);
@@ -594,6 +622,7 @@ async function changeRegionParentExternality(region, oldParentsArray, childLenAr
 
         for (let i = levelWas + childLen; i >= levelWas; i--) {
             const setObj = { $rename: { [`r${i}`]: `r${i + levelDiff}` } };
+
             await updateObjects(queryObj, setObj);
         }
     }
@@ -616,13 +645,14 @@ async function changeRegionParentExternality(region, oldParentsArray, childLenAr
             // Find _ids of new parent regions
             Region.find({ cid: { $in: region.parents } }, { _id: 1 }, { lean: true }).exec(),
             // Find _ids of all children regions of moving region
-            Region.find({ parents: region.cid }, { _id: 1 }, { lean: true }).exec()
+            Region.find({ parents: region.cid }, { _id: 1 }, { lean: true }).exec(),
         ]);
 
         // Array of _id of parents regions
         const parentRegionsIds = _.map(parentRegions, '_id');
         // Array of _ids of regions of moving branch (ie region itself and its children)
         const movingRegionsIds = _.map(childRegions, '_id');
+
         movingRegionsIds.unshift(region._id);
 
         const [{ n: affectedUsers = 0 }, { n: affectedMods = 0 }] = await Promise.all([
@@ -631,17 +661,17 @@ async function changeRegionParentExternality(region, oldParentsArray, childLenAr
             User.update({
                 $and: [
                     { regions: { $in: parentRegionsIds } },
-                    { regions: { $in: movingRegionsIds } }
-                ]
+                    { regions: { $in: movingRegionsIds } },
+                ],
             }, { $pull: { regions: { $in: movingRegionsIds } } }, { multi: true }).exec(),
 
             // Tha same with moderated regions
             User.update({
                 $and: [
                     { mod_regions: { $in: parentRegionsIds } },
-                    { mod_regions: { $in: movingRegionsIds } }
-                ]
-            }, { $pull: { mod_regions: { $in: movingRegionsIds } } }, { multi: true }).exec()
+                    { mod_regions: { $in: movingRegionsIds } },
+                ],
+            }, { $pull: { mod_regions: { $in: movingRegionsIds } } }, { multi: true }).exec(),
         ]);
 
         return { affectedUsers, affectedMods };
@@ -650,14 +680,14 @@ async function changeRegionParentExternality(region, oldParentsArray, childLenAr
     // Calculate number of photos belongs to the region
     const countQuery = { ['r' + levelWas]: region.cid };
     const [affectedPhotos, affectedComments] = await Promise.all([
-        Photo.count(countQuery).exec(), Comment.count(countQuery).exec()
+        Photo.count(countQuery).exec(), Comment.count(countQuery).exec(),
     ]);
 
     let affectedUsers;
     let affectedMods;
     let regionsDiff; // Array of cids of adding/removing regions
 
-    if (!levelNew || (levelNew < levelWas && _.isEqual(oldParentsArray.slice(0, levelNew), region.parents))) {
+    if (!levelNew || levelNew < levelWas && _.isEqual(oldParentsArray.slice(0, levelNew), region.parents)) {
         // Move region UP
         regionsDiff = _.difference(oldParentsArray, region.parents);
 
@@ -855,6 +885,7 @@ async function save(data) {
 
     data.title_en = data.title_en.trim();
     data.title_local = data.title_local.trim();
+
     if (!data.title_en || !data.title_local) {
         throw new BadParamsError();
     }
@@ -1032,7 +1063,7 @@ async function save(data) {
 
         if (parentChange) {
             if (parentsArray.length > region.parents.length &&
-                (parentsArray.length + childLenArray.length > maxRegionLevel)) {
+                parentsArray.length + childLenArray.length > maxRegionLevel) {
                 throw new NoticeError(constantsError.REGION_MOVE_EXCEED_MAX_LEVEL);
             }
 
@@ -1129,6 +1160,7 @@ async function save(data) {
         const affected = recalcStatsParent ? _.union([region.cid], parentsArray, parentsArrayOld) : [region.cid];
 
         let recalcStatsResult;
+
         try {
             // Update region stats for current and all parents
             recalcStatsResult = await recalcStats(affected);
@@ -1161,9 +1193,11 @@ async function save(data) {
     } else {
         delete region.geo;
     }
+
     if (region.center) {
         region.center.reverse();
     }
+
     if (region.bbox !== undefined) {
         if (Utils.geo.checkbbox(region.bbox)) {
             region.bbox = Utils.geo.bboxReverse(region.bbox);
@@ -1171,6 +1205,7 @@ async function save(data) {
             delete region.bbox;
         }
     }
+
     if (region.bboxhome !== undefined) {
         if (Utils.geo.checkbbox(region.bboxhome)) {
             region.bboxhome = Utils.geo.bboxReverse(region.bboxhome);
@@ -1180,11 +1215,9 @@ async function save(data) {
     }
 
     // Update online users whose current region saved as home region or filtered by default of moderated
-    _session.regetUsers(function (usObj) {
-        return usObj.rhash && usObj.rhash[region.cid] ||
+    _session.regetUsers(usObj => usObj.rhash && usObj.rhash[region.cid] ||
             usObj.mod_rhash && usObj.mod_rhash[region.cid] ||
-            usObj.user.regionHome && usObj.user.regionHome.cid === region.cid;
-    }, true);
+            usObj.user.regionHome && usObj.user.regionHome.cid === region.cid, true);
 
     return { childLenArr, region, resultStat };
 }
@@ -1225,10 +1258,10 @@ async function remove(data) {
         // If region has no parent (we removing whole country) - select any another country
         Region.findOne(
             removingLevel ?
-            { cid: parents[parents.length - 1] } :
-            { cid: { $ne: regionToRemove.cid }, parents: { $size: 0 } },
+                { cid: parents[parents.length - 1] } :
+                { cid: { $ne: regionToRemove.cid }, parents: { $size: 0 } },
             { _id: 1, cid: 1, title_en: 1 }, { lean: true }
-        ).exec()
+        ).exec(),
     ]);
 
     if (_.isEmpty(parentRegion)) {
@@ -1243,6 +1276,7 @@ async function remove(data) {
 
     // _ids of all removing regions
     const removingRegionsIds = childRegions ? _.map(childRegions, '_id') : [];
+
     removingRegionsIds.push(regionToRemove._id);
 
     // Replace home regions
@@ -1264,6 +1298,7 @@ async function remove(data) {
     if (removingLevel === 0) {
         // If we remove country, assign all its photos to Open sea
         objectsUpdateQuery.$set = { r0: 1000000 };
+
         for (let i = 1; i <= maxRegionLevel; i++) {
             objectsUpdateQuery.$unset['r' + i] = 1;
         }
@@ -1281,11 +1316,12 @@ async function remove(data) {
         // Remove child regions
         Region.remove({ parents: regionToRemove.cid }).exec(),
         // Remove this regions
-        regionToRemove.remove()
+        regionToRemove.remove(),
     ]);
 
     // If removing region has parent, recalc parents stat
     let recalcStatsResult = {};
+
     if (removingLevel) {
         try {
             // Update region stats for current and all parents
@@ -1311,7 +1347,7 @@ async function remove(data) {
         homeAffectedUsers,
         homeReplacedWith: parentRegion,
         ...modsResult,
-        ...recalcStatsResult
+        ...recalcStatsResult,
     };
 }
 
@@ -1369,10 +1405,11 @@ async function give(data) {
 
     if (childrenCids) {
         children = [];
+
         for (const cid of childrenCids) {
             const { cdate, udate, title_local: title, childLen } = regionCacheHash[cid];
 
-            children.push({ cid, cdate, udate, title, childLen, childrenCount: _.size(regionsChildrenArrHash[cid]) || undefined, });
+            children.push({ cid, cdate, udate, title, childLen, childrenCount: _.size(regionsChildrenArrHash[cid]) || undefined });
         }
 
         // Add public stat for each region
@@ -1429,7 +1466,7 @@ function getRegionsStatByLevel() {
         // Sort by parent ascending
         { $sort: { _id: 1 } },
         // Retain only the necessary fields
-        { $project: { regionsCount: 1, pointsCount: 1, _id: 0 } }
+        { $project: { regionsCount: 1, pointsCount: 1, _id: 0 } },
     ]).exec();
 }
 
@@ -1446,7 +1483,7 @@ async function giveListFull(data) {
 
     const [{ regions }, regionsStatByLevel] = await Promise.all([
         regionCacheArrAdminPromise,
-        getRegionsStatByLevel()
+        getRegionsStatByLevel(),
     ]);
 
     if (!regions) {
@@ -1475,6 +1512,7 @@ const getRegionsByGeoPoint = (function () {
         if (!a.parents || !a.parents.length) {
             return 1;
         }
+
         if (!b.parents || !b.parents.length) {
             return -1;
         }
@@ -1502,6 +1540,7 @@ const getRegionsByGeoPoint = (function () {
 
                 for (const cid of region.parents) {
                     const region = parentRegionsMap.get(cid);
+
                     if (region) {
                         result.push(parentRegionsMap.get(cid));
                     }
@@ -1521,9 +1560,11 @@ async function giveRegionsByGeo({ geo }) {
     if (!iAm.registered) {
         throw new AuthorizationError();
     }
+
     if (!Utils.geo.checkLatLng(geo)) {
         throw new BadParamsError();
     }
+
     geo.reverse();
 
     const regions = await this.call(
@@ -1605,7 +1646,7 @@ export const setObjRegionsByRegionCid = (obj, cid, returnArrFields) => {
 
     // If parents exists, assign them
     if (region.parents) {
-        region.parents.forEach(function (cid) {
+        region.parents.forEach(cid => {
             const region = regionCacheHash[cid];
 
             if (region) {
@@ -1647,9 +1688,11 @@ async function updateObjsRegions({ model, criteria = {}, regions = [], additiona
     if (Object.keys($set).length) {
         $update.$set = $set;
     }
+
     if (Object.keys($unset).length) {
         $update.$unset = $unset;
     }
+
     if (additionalUpdate) {
         _.merge($update, additionalUpdate);
     }
@@ -1733,7 +1776,7 @@ async function saveUserHomeRegion({ login, cid }) {
         Region.findOne(
             { cid },
             { _id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1, center: 1, bbox: 1, bboxhome: 1 }
-        ).exec()
+        ).exec(),
     ]);
 
     if (!user || !region) {
@@ -1768,9 +1811,11 @@ async function saveUserRegions({ login, regions }) {
     if (!itsMe && !iAm.isAdmin) {
         throw new AuthorizationError();
     }
+
     if (!login || !Array.isArray(regions)) {
         throw new BadParamsError();
     }
+
     if (regions.length > 10) {
         throw new BadParamsError(constantsError.REGION_SELECT_LIMIT);
     }
@@ -1850,6 +1895,7 @@ export const buildQuery = (regions, rs, regionsToExclude, insensitiveForRsCidsSe
             }
 
             let includedRegion;
+
             for (const parentCid of reRegion.parents) {
                 includedRegion = rhash[parentCid];
 
@@ -1891,11 +1937,13 @@ export const buildQuery = (regions, rs, regionsToExclude, insensitiveForRsCidsSe
             const $or = [];
             const [rcidsSensitive, rcidsInsensitive] = rCids.reduce((result, cid) => {
                 result[insensitiveForRsCidsSet.has(cid) ? 1 : 0].push(cid);
+
                 return result;
             }, [[], []]);
 
             if (rcidsSensitive.length) {
                 const obj = {};
+
                 if (rcidsSensitive.length === 1 && !reRegions) {
                     obj['r' + level] = rcidsSensitive[0];
                 } else {
@@ -1905,11 +1953,13 @@ export const buildQuery = (regions, rs, regionsToExclude, insensitiveForRsCidsSe
                 if (filterBySublevelExistence) {
                     obj[`r${level + 1}`] = { $exists: subRegions };
                 }
+
                 $or.push(obj);
             }
 
             if (rcidsInsensitive.length) {
                 const obj = {};
+
                 if (rcidsInsensitive.length === 1 && !reRegions) {
                     obj['r' + level] = rcidsInsensitive[0];
                 } else {
@@ -2052,6 +2102,7 @@ function regionStatQueueDrain(limit) {
 
     if (statsIsBeingRecalc) {
         scheduleRegionStatQueueDrain();
+
         return;
     }
 
@@ -2077,6 +2128,7 @@ function regionStatQueueDrain(limit) {
 
         // Get photos cids array
         const photoCids = stats.map(stat => stat.cid);
+
         // Fill set of photos cids that are going to be drained
         drainingPhotoCidsSet = new Set(photoCids);
 
@@ -2091,6 +2143,7 @@ function regionStatQueueDrain(limit) {
             logger.warn(`Stat queue length ${stats.length} is not equal to number of photos ${photos.length}`);
 
             await removeDrainedRegionStat();
+
             return;
         }
 
@@ -2110,13 +2163,14 @@ function regionStatQueueDrain(limit) {
             // If regions exists for current photo (actual state), increment stat of each regions by current values
             if (regions.length) {
                 $incRegionPhotoStat({ regionsMap, state: {
-                    s: photo.s, type: photo.type, geo: photo.geo, regions, cc: photo.ccount, ccd: photo.cdcount
+                    s: photo.s, type: photo.type, geo: photo.geo, regions, cc: photo.ccount, ccd: photo.cdcount,
                 } });
             }
         }
 
         // Get only valuable deltas for each region, and update it in db and regions cache
         const updatePromises = [];
+
         for (const [cid, inc] of regionsMap.entries()) {
             let count = 0;
             const $inc = _.transform(inc, (result, value, key) => {
@@ -2211,7 +2265,7 @@ export async function putPhotoToRegionStatQueue(oldPhoto, newPhoto) {
 
     await RegionStatQueue.update({ cid }, { [updateMethod]: {
         stamp: new Date(), cid,
-        state: { s, type, geo: _.isEmpty(geo) ? undefined : geo, regions: regionCids, cc, ccd }
+        state: { s, type, geo: _.isEmpty(geo) ? undefined : geo, regions: regionCids, cc, ccd },
     } }, { upsert: true }).exec();
 }
 
@@ -2252,7 +2306,7 @@ async function recalcStatistics({ cids = [] }) {
     try {
         return recalcStats(cids, true);
     } catch (error) {
-        logger.warn(`Failed to calculate recalcStatistics`, error);
+        logger.warn('Failed to calculate recalcStatistics', error);
         throw new ApplicationError({ message: error.message });
     }
 }
@@ -2268,6 +2322,7 @@ giveRegionsByGeo.isPublic = true;
 saveUserHomeRegion.isPublic = true;
 saveUserRegions.isPublic = true;
 processFeatureCollection.isPublic = true;
+
 export default {
     give,
     save,
@@ -2285,5 +2340,5 @@ export default {
     getObjRegionList,
     updateObjsRegions,
     setObjRegionsByGeo,
-    getRegionsByGeoPoint
+    getRegionsByGeoPoint,
 };

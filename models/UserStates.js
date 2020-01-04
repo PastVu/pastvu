@@ -18,10 +18,11 @@ registerModel(db => {
             ccount_new: { type: Number }, // Number of new comments
             sbscr_create: { type: Date }, // Time of subscription create
             sbscr_noty_change: { type: Date }, // Change time of sbscr_noty
-            sbscr_noty: { type: Boolean } // Flag that notification send needed
+            sbscr_noty: { type: Boolean }, // Flag that notification send needed
         },
         { strict: true, collection: 'users_objects_rel' }
     );
+
     // Compound index for request by user and object
     UserObjectRelSchema.index({ obj: 1, user: 1 });
     // Compound index for request user subscriptions
@@ -32,7 +33,7 @@ registerModel(db => {
         {
             user: { type: Schema.Types.ObjectId, ref: 'User', index: true },
             lastnoty: { type: Date }, // Previous send
-            nextnoty: { type: Date, index: true } // Next send. Indexed for sort
+            nextnoty: { type: Date, index: true }, // Next send. Indexed for sort
         },
         { strict: true, collection: 'users_noty' }
     );
@@ -41,7 +42,7 @@ registerModel(db => {
     const UserSelfPublishedPhotosSchema = new Schema(
         {
             user: { type: Schema.Types.ObjectId, ref: 'User', index: { unique: true } },
-            photos: [Schema.Types.ObjectId] // Array of photo that user selfpublished
+            photos: [Schema.Types.ObjectId], // Array of photo that user selfpublished
         },
         { strict: true, collection: 'users_selfpublished_photos' }
     );

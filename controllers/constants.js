@@ -1,16 +1,16 @@
 export default {
     region: {
-        maxLevel: 5 // 6 levels of regions: 0..5
+        maxLevel: 5, // 6 levels of regions: 0..5
     },
 
     photo: {
         type: {
             PHOTO: 1,
-            PAINTING: 2
+            PAINTING: 2,
         },
         years: {
             1: { min: 1826, max: 2000 },
-            2: { min: -100, max: 1980 }
+            2: { min: -100, max: 1980 },
         },
 
         status: {
@@ -21,7 +21,7 @@ export default {
             REJECT: 4, // Rejected
             PUBLIC: 5, // Published
             DEACTIVATE: 7, // Deactivated
-            REMOVE: 9 // Removed
+            REMOVE: 9, // Removed
         },
 
         historyFields: [
@@ -29,16 +29,16 @@ export default {
             'file', 'type', 'format', 'sign', 'size', 'w', 'h', 'ws', 'hs',
             'title', 'desc', 'source', 'author', 'address', 'year', 'year2', 'y', 'dir',
             'watersignText',
-            'nocomments'
+            'nocomments',
         ],
         historyFieldsDiff: [
-            'title', 'desc', 'source', 'author', 'address', 'y'
+            'title', 'desc', 'source', 'author', 'address', 'y',
         ],
         parsingFields: [
-            'desc', 'source', 'author'
+            'desc', 'source', 'author',
         ],
 
         watersignLength: 65,
-        watersignPattern: /[\w.,:;()[\]\\|/№§©®℗℠™•?!@#$%^&*+\-={}"'<>~` ]/g
-    }
+        watersignPattern: /[\w.,:;()[\]\\|/№§©®℗℠™•?!@#$%^&*+\-={}"'<>~` ]/g,
+    },
 };

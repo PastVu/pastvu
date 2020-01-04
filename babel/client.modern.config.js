@@ -16,7 +16,7 @@ module.exports = {
         'es7.functionBind',
         'es7.objectRestSpread',
         'es7.trailingFunctionCommas',
-        'optimisation.modules.system'
+        'optimisation.modules.system',
         // 'runtime',
     ],
     blacklist: [
@@ -37,7 +37,7 @@ module.exports = {
         'es6.properties.shorthand', // Enabled in V8 4.2 (Node 4)
         // 'es6.regex.sticky', // Proposed
         // 'es6.regex.unicode', // Proposed
-        'es6.spec.templateLiterals' // Enabled in V8 4.1 (Node 4)
+        'es6.spec.templateLiterals', // Enabled in V8 4.1 (Node 4)
         // 'es6.spread', // Will be enabled in V8 4.6 (Node 5)
         // 'es6.tailCall', // In development
 
@@ -49,5 +49,5 @@ module.exports = {
         // 'spec.functionName',
         // 'strict',
         // 'validation.react'
-    ]
+    ],
 };

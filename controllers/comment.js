@@ -17,7 +17,7 @@ import {
     BadParamsError,
     InputError,
     NotFoundError,
-    NoticeError
+    NoticeError,
 } from '../app/errors';
 
 import { News } from '../models/News';
@@ -48,8 +48,8 @@ const permissions = {
     },
     canEdit(comment, type, obj, usObj) {
         return permissions.canReply(type, obj, usObj) &&
-            comment.user.equals(usObj.user._id) && comment.stamp > (Date.now() - dayMS);
-    }
+            comment.user.equals(usObj.user._id) && comment.stamp > Date.now() - dayMS;
+    },
 };
 
 function commentsTreeBuildAnonym(comments, usersHash) {
@@ -81,9 +81,11 @@ function commentsTreeBuildAnonym(comments, usersHash) {
 
         if (comment.level > 0) {
             const commentParent = hash[comment.parent];
+
             if (commentParent.comments === undefined) {
                 commentParent.comments = [];
             }
+
             commentParent.comments.push(comment);
         } else {
             tree.push(comment);
@@ -119,6 +121,7 @@ async function commentsTreeBuildAuth(myId, comments, previousViewStamp, canReply
         if (comment.level === undefined) {
             comment.level = 0;
         }
+
         if (comment.level > 0) {
             const commentParent = commentsHash[comment.parent];
 
@@ -137,7 +140,9 @@ async function commentsTreeBuildAuth(myId, comments, previousViewStamp, canReply
                     if (commentParent.delRoot.delSave === true) {
                         continue; // If root removed parent has already saved, drop current
                     }
+
                     comment.delRoot = commentParent.delRoot; // Save link to parent's root
+
                     if (commentIsMine) {
                         // If it's own current, indicate that root must be saved and drop current
                         comment.delRoot.delSave = true;
@@ -148,6 +153,7 @@ async function commentsTreeBuildAuth(myId, comments, previousViewStamp, canReply
                     comment.delRoot.delSave = true;
                 }
             }
+
             if (commentParent.comments === undefined) {
                 if (canReply && commentParent.del === undefined && !commentIsDeleted && commentParent.can.del === true) {
                     // If under not removed parent comment we find first child not removed comment,
@@ -155,6 +161,7 @@ async function commentsTreeBuildAuth(myId, comments, previousViewStamp, canReply
                     // because user can't remove his own comments with replies
                     delete commentParent.can.del;
                 }
+
                 commentParent.comments = [];
             }
         } else if (commentIsDeleted && commentIsMine) {
@@ -164,18 +171,22 @@ async function commentsTreeBuildAuth(myId, comments, previousViewStamp, canReply
 
         if (!commentIsDeleted) {
             countTotal++;
+
             if (canReply) {
                 comment.can = {};
+
                 if (commentIsMine && comment.stamp > dayAgo) {
                     // User can remove its own comment (without replies) or edit its own during twenty-four hours
                     comment.can.edit = comment.can.del = true;
                 }
             }
+
             if (previousViewStamp && !commentIsMine && comment.stamp > previousViewStamp) {
                 comment.isnew = true;
                 countNew++;
             }
         }
+
         commentsHash[comment.cid] = comment;
         commentsArr.push(comment);
     }
@@ -201,6 +212,7 @@ async function commentsTreeBuildAuth(myId, comments, previousViewStamp, canReply
         }
 
         comment.user = usersById[comment.user].login;
+
         if (comment.lastChanged !== undefined) {
             comment.lastChanged = comment.lastChanged.getTime();
         }
@@ -227,15 +239,19 @@ async function commentsTreeBuildCanModerate(myId, comments, previousViewStamp) {
         if (comment.level === undefined) {
             comment.level = 0;
         }
+
         if (comment.level > 0) {
             const commentParent = commentsMap.get(comment.parent);
+
             if (commentParent === undefined || commentParent.del !== undefined) {
                 // If parent removed or doesn't exists (eg parent of parent is removed), drop comment
                 continue;
             }
+
             if (commentParent.comments === undefined) {
                 commentParent.comments = [];
             }
+
             commentParent.comments.push(comment);
         } else {
             commentsTree.push(comment);
@@ -246,6 +262,7 @@ async function commentsTreeBuildCanModerate(myId, comments, previousViewStamp) {
         commentsMap.set(comment.cid, comment);
 
         comment.stamp = comment.stamp.getTime(); // Serve time in ms
+
         if (comment.lastChanged !== undefined) {
             comment.lastChanged = comment.lastChanged.getTime();
         }
@@ -312,9 +329,11 @@ async function commentsTreeBuildDel(comment, childs, checkMyId) {
 
         child.user = String(child.user);
         usersSet.add(child.user);
+
         if (checkMyId && child.user === checkMyId) {
             canSee = true;
         }
+
         child.del = { origin: child.del.origin || undefined };
         child.stamp = child.stamp.getTime();
         child.lastChanged = child.lastChanged.getTime();
@@ -322,6 +341,7 @@ async function commentsTreeBuildDel(comment, childs, checkMyId) {
         if (commentParent.comments === undefined) {
             commentParent.comments = [];
         }
+
         commentParent.comments.push(child);
         commentsMap.set(child.cid, child);
     }
@@ -391,6 +411,7 @@ async function getCommentsObjAnonym({ cid, type = 'photo' }) {
 
     for (const comment of comments) {
         const userId = String(comment.user);
+
         usersSet.add(userId);
     }
 
@@ -433,7 +454,7 @@ async function getCommentsObjAuth({ cid, type = 'photo' }) {
         ).exec(),
         // Get last user's view time of comments and object and replace it with current time
         // with notification reset if it scheduled
-        userObjectRelController.setCommentView(obj._id, iAm.user._id, type)
+        userObjectRelController.setCommentView(obj._id, iAm.user._id, type),
     ]);
 
     let previousViewStamp;
@@ -442,6 +463,7 @@ async function getCommentsObjAuth({ cid, type = 'photo' }) {
         if (relBeforeUpdate.comments) {
             previousViewStamp = relBeforeUpdate.comments.getTime();
         }
+
         if (relBeforeUpdate.sbscr_noty) {
             // Если было заготовлено уведомление,
             // просим менеджер подписок проверить есть ли уведомления по другим объектам
@@ -463,7 +485,7 @@ async function getCommentsObjAuth({ cid, type = 'photo' }) {
         commentsTreeBuildAuth(String(iAm.user._id), comments, previousViewStamp, !obj.nocomments)
     );
 
-    return ({ comments: tree, users, countTotal, countNew, canModerate, canReply });
+    return { comments: tree, users, countTotal, countNew, canModerate, canReply };
 }
 
 // Select comments for object
@@ -508,13 +530,13 @@ async function giveDelTree({ cid, type = 'photo' }) {
     const [obj, childs] = await Promise.all([
         // Find the object that owns a comment
         type === 'news' ? News.findOne({ _id: objId }, { _id: 1, nocomments: 1 }).exec() :
-            this.call('photo.find', { query: { _id: objId } }),
+        this.call('photo.find', { query: { _id: objId } }),
         // Take all removed comments, created after requested and below it
         commentModel.find(
             { obj: objId, del: { $exists: true }, stamp: { $gte: comment.stamp }, level: { $gt: comment.level || 0 } },
             { _id: 0, obj: 0, hist: 0, 'del.reason': 0, geo: 0, r0: 0, r1: 0, r2: 0, r3: 0, r4: 0, r5: 0, __v: 0 },
             { lean: true, sort: { stamp: 1 } }
-        ).exec()
+        ).exec(),
     ]);
 
     if (!obj) {
@@ -536,8 +558,9 @@ const photosFieldsForReguser = {
     mime: 1,
     user: 1,
     ...photosFields,
-    ...regionController.regionsAllSelectHash
+    ...regionController.regionsAllSelectHash,
 };
+
 async function giveForUser({ login, page = 1, type = 'photo' }) {
     const { handshake: { usObj: iAm } } = this;
 
@@ -562,7 +585,7 @@ async function giveForUser({ login, page = 1, type = 'photo' }) {
     const [comments, countNews, countPhoto] = await Promise.all([
         commentModel.find(type === 'news' ? queryNews : queryPhotos, fields, options).exec(),
         CommentN.count(queryNews).exec(),
-        Comment.count(queryPhotos).exec()
+        Comment.count(queryPhotos).exec(),
     ]);
 
     if (_.isEmpty(comments)) {
@@ -627,16 +650,16 @@ async function giveForUser({ login, page = 1, type = 'photo' }) {
         page: page + 1,
         perPage: commentsUserPerPage,
         comments: commentsArrResult,
-        objs: objFormattedHashCid
+        objs: objFormattedHashCid,
     };
 }
 
 // Take comments
 const getComments = (function () {
     const commentSelect = { _id: 0, cid: 1, obj: 1, user: 1, txt: 1 };
-    const photosSelectAllRegions = Object.assign(
-        { _id: 1, cid: 1, file: 1, title: 1, geo: 1 }, regionController.regionsAllSelectHash
-    );
+    const photosSelectAllRegions = {
+        _id: 1, cid: 1, file: 1, title: 1, geo: 1, ...regionController.regionsAllSelectHash,
+    };
 
     return async function (iAm, query, data) {
         const skip = Math.abs(Number(data.skip)) || 0;
@@ -669,11 +692,11 @@ const getComments = (function () {
             Photo.find(
                 { _id: { $in: photosArr } },
                 iAm && iAm.rshortsel ?
-                    Object.assign({ _id: 1, cid: 1, file: 1, title: 1, geo: 1 }, iAm.rshortsel) :
+                    { _id: 1, cid: 1, file: 1, title: 1, geo: 1, ...iAm.rshortsel } :
                     photosSelectAllRegions,
                 { lean: true }
             ).exec(),
-            User.find({ _id: { $in: usersArr } }, { _id: 1, login: 1, disp: 1 }, { lean: true }).exec()
+            User.find({ _id: { $in: usersArr } }, { _id: 1, login: 1, disp: 1 }, { lean: true }).exec(),
         ]);
 
         const shortRegionsHash = regionController.genObjsShortRegionsArr(photos, iAm && iAm.rshortlvls || undefined);
@@ -714,7 +737,8 @@ const giveForFeed = (function () {
             return globalFeed();
         }
 
-        const query = Object.assign({ s: 5, del: null }, iAm.rquery, iAm.photoFilterQuery);
+        const query = { s: 5, del: null, ...iAm.rquery, ...iAm.photoFilterQuery };
+
         return getComments(iAm, query, params);
     };
 }());
@@ -730,6 +754,7 @@ async function create(data) {
     if (!_.isObject(data) || !Number(data.obj) || !data.txt || data.level > 9) {
         throw new BadParamsError();
     }
+
     if (data.txt.length > commentMaxLength) {
         throw new InputError(constantsError.COMMENT_TOO_LONG);
     }
@@ -741,22 +766,25 @@ async function create(data) {
 
     const [obj, parent] = await Promise.all([
         data.type === 'news' ? News.findOne({ cid: objCid }, { _id: 1, ccount: 1, nocomments: 1 }).exec() :
-            this.call('photo.find', { query: { cid: objCid } }),
+        this.call('photo.find', { query: { cid: objCid } }),
         data.parent ? CommentModel.findOne({ cid: data.parent }, { _id: 0, level: 1, del: 1 }, { lean: true }).exec() :
-            null
+        null,
     ]);
 
     if (!obj) {
         throw new NotFoundError(constantsError.COMMENT_NO_OBJECT);
     }
+
     if (!permissions.canReply(data.type, obj, iAm)) {
         throw obj.nocomments ? new NoticeError(constantsError.COMMENT_NOT_ALLOWED) : new AuthorizationError();
     }
+
     if (data.parent && (!parent || parent.del || parent.level >= 9 || data.level !== (parent.level || 0) + 1)) {
         throw new NoticeError(constantsError.COMMENT_WRONG_PARENT);
     }
 
     const { next: cid } = await Counter.increment('comment');
+
     if (!cid) {
         throw new ApplicationError(constantsError.COUNTER_ERROR);
     }
@@ -771,14 +799,17 @@ async function create(data) {
         if (obj.geo) {
             comment.geo = obj.geo;
         }
+
         for (let i = 0; i <= maxRegionLevel; i++) {
             comment['r' + i] = obj['r' + i] || undefined;
         }
     }
+
     if (data.parent) {
         comment.parent = data.parent;
         comment.level = data.level;
     }
+
     if (fragAdded) {
         comment.frag = true;
     }
@@ -786,16 +817,18 @@ async function create(data) {
     await new CommentModel(comment).save();
 
     let frag;
+
     if (fragAdded) {
         if (!obj.frags) {
             obj.frags = [];
         }
+
         frag = {
             cid,
             l: Utils.math.toPrecision(Number(data.fragObj.l) || 0, 2),
             t: Utils.math.toPrecision(Number(data.fragObj.t) || 0, 2),
             w: Utils.math.toPrecision(Number(data.fragObj.w) || 20, 2),
-            h: Utils.math.toPrecision(Number(data.fragObj.h) || 15, 2)
+            h: Utils.math.toPrecision(Number(data.fragObj.h) || 15, 2),
         };
         obj.frags.push(frag);
     }
@@ -805,6 +838,7 @@ async function create(data) {
     }
 
     obj.ccount = (obj.ccount || 0) + 1;
+
     const promises = [obj.save()];
 
     iAm.user.ccount += 1;
@@ -837,7 +871,8 @@ async function remove(data) {
     if (!iAm.registered) {
         throw new AuthorizationError();
     }
-    if (!_.isObject(data) || !Number(data.cid) || !data.reason || (!Number(data.reason.cid) && !data.reason.desc)) {
+
+    if (!_.isObject(data) || !Number(data.cid) || !data.reason || !Number(data.reason.cid) && !data.reason.desc) {
         throw new BadParamsError();
     }
 
@@ -899,6 +934,7 @@ async function remove(data) {
 
     // Find directly descendants of removing comment by filling commentsSet
     commentsSet.add(cid);
+
     for (const child of children) {
         child.user = String(child.user);
 
@@ -923,6 +959,7 @@ async function remove(data) {
     if (Number(data.reason.cid)) {
         delInfo.reason.cid = Number(data.reason.cid);
     }
+
     if (data.reason.desc) {
         delInfo.reason.desc = Utils.inputIncomingParse(data.reason.desc).result;
     }
@@ -958,6 +995,7 @@ async function remove(data) {
 
     obj.ccount = (obj.ccount || 0) - countCommentsRemoved;
     obj.cdcount = (obj.cdcount || 0) + countCommentsRemoved;
+
     const promises = [obj.save()];
 
     for (const [userId, count] of usersCountMap) {
@@ -982,6 +1020,7 @@ async function remove(data) {
         obj.frags = obj.frags.toObject();
 
         frags = [];
+
         for (frag of obj.frags) {
             if (!frag.del) {
                 frags.push(frag);
@@ -1008,7 +1047,7 @@ async function remove(data) {
         stamp: delInfo.stamp.getTime(),
         countUsers: usersCountMap.size,
         countComments: countCommentsRemoved,
-        myCountComments: usersCountMap.get(String(iAm.user._id)) || 0 // Number of my removed comments
+        myCountComments: usersCountMap.get(String(iAm.user._id)) || 0, // Number of my removed comments
     };
 }
 
@@ -1045,6 +1084,7 @@ async function restore({ cid, type }) {
     }
 
     const canModerate = permissions.canModerate(type, obj, iAm);
+
     if (!canModerate) {
         throw new AuthorizationError();
     }
@@ -1067,6 +1107,7 @@ async function restore({ cid, type }) {
     commentsForRelArr.push(comment);
 
     const childsCids = [];
+
     // Loop by children for restoring comment
     for (const child of children) {
         child.user = String(child.user);
@@ -1080,8 +1121,9 @@ async function restore({ cid, type }) {
 
     const hist = [
         Object.assign(_.omit(comment.del, 'origin'), { del: { reason: comment.del.reason } }),
-        { user: iAm.user._id, stamp, restore: true, role: iAm.user.role }
+        { user: iAm.user._id, stamp, restore: true, role: iAm.user.role },
     ];
+
     if (iAm.isModerator && _.isNumber(canModerate)) {
         hist[1].roleregion = canModerate;
     }
@@ -1093,7 +1135,7 @@ async function restore({ cid, type }) {
     if (childsCids.length) {
         const histChilds = [
             Object.assign(_.omit(comment.del, 'reason'), { del: { origin: cid } }),
-            { user: iAm.user._id, stamp, restore: true, role: iAm.user.role }
+            { user: iAm.user._id, stamp, restore: true, role: iAm.user.role },
         ];
 
         if (iAm.isModerator && _.isNumber(canModerate)) {
@@ -1103,7 +1145,7 @@ async function restore({ cid, type }) {
         await commentModel.update({ obj: obj._id, 'del.origin': cid }, {
             $set: { lastChanged: stamp },
             $unset: { del: 1 },
-            $push: { hist: { $each: histChilds } }
+            $push: { hist: { $each: histChilds } },
         }, { multi: true }).exec();
     }
 
@@ -1151,6 +1193,7 @@ async function restore({ cid, type }) {
         obj.frags = obj.frags.toObject();
 
         frags = [];
+
         for (frag of obj.frags) {
             if (!frag.del) {
                 frags.push(frag);
@@ -1176,7 +1219,7 @@ async function restore({ cid, type }) {
         stamp: stamp.getTime(),
         countUsers: usersCountMap.size,
         countComments: countCommentsRestored,
-        myCountComments: usersCountMap.has(String(iAm.user._id))
+        myCountComments: usersCountMap.has(String(iAm.user._id)),
     };
 }
 
@@ -1200,10 +1243,10 @@ async function update(data) {
 
     const [obj, comment] = await Promise.all(data.type === 'news' ? [
         News.findOne({ cid: data.obj }, { cid: 1, frags: 1, nocomments: 1 }).exec(),
-        CommentN.findOne({ cid }).exec()
+        CommentN.findOne({ cid }).exec(),
     ] : [
         this.call('photo.find', { query: { cid: data.obj } }),
-        Comment.findOne({ cid }).exec()
+        Comment.findOne({ cid }).exec(),
     ]);
 
     if (!comment || !obj || data.obj !== obj.cid) {
@@ -1215,9 +1258,11 @@ async function update(data) {
     // Ability to edit as regular user, if it' own comment younger than day
     const canEdit = permissions.canEdit(comment, data.type, obj, iAm);
     let canModerate;
+
     if (!canEdit) {
         // В противном случае нужны права модератора/администратора
         canModerate = permissions.canModerate(data.type, obj, iAm);
+
         if (!canModerate) {
             throw obj.nocomments ? new NoticeError(constantsError.COMMENT_NOT_ALLOWED) : new AuthorizationError();
         }
@@ -1235,7 +1280,7 @@ async function update(data) {
         l: Utils.math.toPrecision(Number(data.fragObj.l) || 0, 2),
         t: Utils.math.toPrecision(Number(data.fragObj.t) || 0, 2),
         w: Utils.math.toPrecision(Number(data.fragObj.w) || 20, 2),
-        h: Utils.math.toPrecision(Number(data.fragObj.h) || 15, 2)
+        h: Utils.math.toPrecision(Number(data.fragObj.h) || 15, 2),
     };
 
     if (fragRecieved) {
@@ -1276,6 +1321,7 @@ async function update(data) {
         if (canModerate && iAm.user.role) {
             // If moderator/administrator role was used for editing, save it on the moment of editing
             hist.role = iAm.user.role;
+
             if (iAm.isModerator && _.isNumber(canModerate)) {
                 hist.roleregion = canModerate; // In case of moderator 'permissions.canModerate' returns role cid
             }
@@ -1350,7 +1396,7 @@ async function giveHist({ cid, type = 'photo' }) {
             stamp: comment.del.stamp,
             del: _.pick(comment.del, 'reason', 'origin'),
             role: comment.del.role,
-            roleregion: comment.del.roleregion
+            roleregion: comment.del.roleregion,
         });
     }
 
@@ -1366,6 +1412,7 @@ async function giveHist({ cid, type = 'photo' }) {
             if (histDel && histDel.reason && histDel.reason.cid) {
                 histDel.reason.title = giveReasonTitle({ cid: histDel.reason.cid });
             }
+
             result.push(hist);
         } else {
             if (hist.txt) {
@@ -1392,6 +1439,7 @@ async function giveHist({ cid, type = 'photo' }) {
         // then need to append current text of comment in this last record of text change
         if (i === hists.length - 1 && lastTxtIndex > 0) {
             lastTxtObj.txt = comment.txt;
+
             if (!lastTxtObj.frag) {
                 result.splice(lastTxtIndex, 0, lastTxtObj);
             }
@@ -1428,6 +1476,7 @@ async function setNoComments({ cid, type = 'photo', val: nocomments }) {
     }
 
     let oldPhotoObj;
+
     if (type === 'photo') {
         oldPhotoObj = obj.toObject();
         obj.cdate = new Date();
@@ -1469,6 +1518,7 @@ export async function changeObjCommentsVisibility({ obj, hide }) {
     const usersCountMap = _.transform(comments, (result, comment) => {
         if (comment.del === undefined) {
             const userId = String(comment.user);
+
             result.set(userId, (result.get(userId) || 0) + 1);
         }
     }, new Map());
@@ -1525,5 +1575,5 @@ export default {
 
     changeObjCommentsStatus,
     changeObjCommentsVisibility,
-    changePhotoCommentsType
+    changePhotoCommentsType,
 };

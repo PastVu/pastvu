@@ -39,11 +39,11 @@ const {
         historyFields,
         historyFieldsDiff,
         watersignLength,
-        watersignPattern
+        watersignPattern,
     },
     region: {
-        maxLevel: maxRegionLevel
-    }
+        maxLevel: maxRegionLevel,
+    },
 } = constants;
 
 const typesSet = new Set(_.values(constants.photo.type));
@@ -61,8 +61,9 @@ const userGalleryBySelfDefaultStatuses = [status.NEW, status.REVISION, status.RE
 const userGalleryByModeratorDefaultStatuses = [status.NEW, status.REVISION, status.READY, status.PUBLIC];
 
 const parsingFieldsSet = new Set(parsingFields);
-const historyFieldsDiffHash = historyFieldsDiff.reduce(function (result, field) {
+const historyFieldsDiffHash = historyFieldsDiff.reduce((result, field) => {
     result[field] = field;
+
     return result;
 }, {});
 
@@ -75,7 +76,7 @@ const compactFields = {
     year: 1,
     ccount: 1,
     conv: 1,
-    convqueue: 1
+    convqueue: 1,
 };
 const compactFieldsForReg = {
     ...compactFields,
@@ -83,7 +84,7 @@ const compactFieldsForReg = {
     _id: 1, // To calculate new comments
     user: 1, //  To understand if photo is mine
     ucdate: 1, // For checking of changes
-    mime: 1 // For serving protected files
+    mime: 1, // For serving protected files
 };
 const compactFieldsWithRegions = { geo: 1, ...compactFields, ...regionController.regionsAllSelectHash };
 const compactFieldsForRegWithRegions = { geo: 1, ...compactFieldsForReg, ...regionController.regionsAllSelectHash };
@@ -102,6 +103,7 @@ export const permissions = {
             // If photo belongs one of the moderated regions, means user can moderate it
             // In this case return region's number
             const rhash = usObj.mod_rhash;
+
             for (let i = 0; i <= maxRegionLevel; i++) {
                 const photoRegion = photo['r' + i];
 
@@ -157,15 +159,15 @@ export const permissions = {
 
             if ((s === status.PUBLIC || can.protected) && (
                 // If setted individual that photo has now watersing
-            photo.watersignIndividual && photo.watersignOption === false ||
+                photo.watersignIndividual && photo.watersignOption === false ||
                 // If no individual watersign option and setted by profile that photo has no watersing
-            !photo.watersignIndividual && userSettings.photo_watermark_add_sign === false ||
+                !photo.watersignIndividual && userSettings.photo_watermark_add_sign === false ||
                 // If individually setted allow to download origin
-            photo.disallowDownloadOriginIndividual && !photo.disallowDownloadOrigin ||
+                photo.disallowDownloadOriginIndividual && !photo.disallowDownloadOrigin ||
                 // If no individual downloading setting and setted by profile that photo has no watersing
                 // or by profile allowed to download origin
-            !photo.disallowDownloadOriginIndividual &&
-            (userSettings.photo_watermark_add_sign === false || !userSettings.photo_disallow_download_origin))) {
+                !photo.disallowDownloadOriginIndividual &&
+                (userSettings.photo_watermark_add_sign === false || !userSettings.photo_disallow_download_origin))) {
                 // Let download origin
                 can.download = true;
             } else if (ownPhoto || isAdmin) {
@@ -195,7 +197,8 @@ export const permissions = {
             // Send to convert can only admin
             can.convert = isAdmin || undefined;
             // Any registered user can comment public or deactivated photo. Moderator - also removed photos (except owns)
-            can.comment = s === status.PUBLIC || s === status.DEACTIVATE || s === status.REMOVE && (isAdmin || canModerate && !ownPhoto) || undefined;
+            can.comment = s === status.PUBLIC || s === status.DEACTIVATE ||
+                s === status.REMOVE && (isAdmin || canModerate && !ownPhoto) || undefined;
 
             // Change watermark sign and download setting can administrator and owner/moderator
             // if photo is not removed and administrator didn't prohibit it for this photo or entire owner
@@ -251,8 +254,8 @@ export const permissions = {
             if (s !== status.PUBLIC) {
                 return ownPhoto || isAdmin || canModerate && s !== status.REMOVE || false;
             }
-        }
-    }
+        },
+    },
 };
 
 /**
@@ -324,7 +327,7 @@ async function getBounds(data) {
     // Determine whether fetch by years needed
     const hasYears = _.isNumber(year) && _.isNumber(year2) &&
         year >= years.min && year2 <= years.max && year2 >= year &&
-        (year2 - year < (isPainting ? paintRange : photoRange));
+        year2 - year < (isPainting ? paintRange : photoRange);
     let clusters;
     let photos;
 
@@ -361,7 +364,9 @@ async function give(params) {
     if (!_.isEmpty(noselect)) {
         Object.assign(fieldNoSelect, noselect);
     }
+
     _.defaults(fieldNoSelect, { __v: 0, path: 0, format: 0, sign: 0, signs: 0, sdate: 0, converted: 0 }); // But we need 'mime' for _pr
+
     if (fieldNoSelect.frags === undefined) {
         fieldNoSelect['frags._id'] = 0;
     }
@@ -412,7 +417,7 @@ async function give(params) {
         avatar: owner.avatar,
         disp: owner.disp,
         ranks: owner.ranks || [],
-        sex: owner.sex
+        sex: owner.sex,
     };
 
     if (shouldBeEdit) {
@@ -449,6 +454,7 @@ async function give(params) {
     if (regions.length) {
         photo.regions = regions;
     }
+
     if (photo.geo) {
         photo.geo = photo.geo.reverse();
     }
@@ -546,6 +552,7 @@ async function create({ files }) {
     if (!iAm.registered) {
         throw new AuthorizationError();
     }
+
     if (!Array.isArray(files) && !_.isObject(files)) {
         throw new BadParamsError();
     }
@@ -561,6 +568,7 @@ async function create({ files }) {
     if (!canCreate || !files.length) {
         return { message: 'Nothing to save', cids };
     }
+
     if (files.length > canCreate) {
         files = files.slice(0, canCreate);
     }
@@ -602,7 +610,7 @@ async function create({ files }) {
             title: item.name ? item.name.replace(/(.*)\.[^.]+$/, '$1') : undefined, // Cut off file extension
             frags: undefined,
             watersignText: getUserWaterSign(user),
-            convqueue: true
+            convqueue: true,
             // geo: [_.random(36546649, 38456140) / 1000000, _.random(55465922, 56103812) / 1000000],
             // dir: dirs[_.random(0, dirs.length - 1)],
         });
@@ -636,8 +644,8 @@ async function photoToMap({ photo, geoPhotoOld, yearPhotoOld, paintingMap }) {
             file: photo.file,
             title: photo.title,
             year: photo.year,
-            year2: photo.year2 || photo.year
-        }
+            year2: photo.year2 || photo.year,
+        },
     };
 
     if (_.isString(photo.dir) && photo.dir.length) {
@@ -648,16 +656,17 @@ async function photoToMap({ photo, geoPhotoOld, yearPhotoOld, paintingMap }) {
 
     await Promise.all([
         MapModel.update({ cid: photo.cid }, $update, { upsert: true }).exec(),
-        this.call('cluster.clusterPhoto', { photo, geoPhotoOld, yearPhotoOld, isPainting: paintingMap }) // Send to clusterization
+        this.call('cluster.clusterPhoto', { photo, geoPhotoOld, yearPhotoOld, isPainting: paintingMap }), // Send to clusterization
     ]);
 }
 
 // Remove photo from map
 function photoFromMap({ photo, paintingMap }) {
     const MapModel = paintingMap ? PaintingMap : PhotoMap;
+
     return Promise.all([
         this.call('cluster.declusterPhoto', { photo, isPainting: paintingMap }),
-        MapModel.remove({ cid: photo.cid }).exec()
+        MapModel.remove({ cid: photo.cid }).exec(),
     ]);
 }
 
@@ -688,6 +697,7 @@ function getPhotoChangedFields(oldPhoto, newPhoto, parsedFileds) {
                     newValues.regions.push(region);
                 }
             }
+
             break;
         }
     }
@@ -701,6 +711,7 @@ function getPhotoChangedFields(oldPhoto, newPhoto, parsedFileds) {
             if (!oldValue && _.isString(oldValue)) {
                 oldValue = undefined;
             }
+
             if (!newValue && _.isString(newValue)) {
                 newValue = undefined;
             }
@@ -713,13 +724,14 @@ function getPhotoChangedFields(oldPhoto, newPhoto, parsedFileds) {
                     // Some fields (descripton, author etc) are parsed for markup,
                     // difference with last version must be calculated with 'plain'
                     parsingFieldsSet.has(field) ? parsedFileds[field] ? parsedFileds[field].plain :
-                        Utils.txtHtmlToPlain(newValue) : newValue
+                    Utils.txtHtmlToPlain(newValue) : newValue
                 );
             }
 
             if (oldValue !== undefined) {
                 oldValues[field] = oldValue;
             }
+
             if (newValue !== undefined) {
                 newValues[field] = newValue;
             }
@@ -763,7 +775,7 @@ async function saveHistory({ oldPhotoObj, photo, canModerate, reason, parsedFile
             stamp: photo.ldate.getTime(),
             values: {},
             add: undefined,
-            del: undefined
+            del: undefined,
         }];
     }
 
@@ -799,6 +811,7 @@ async function saveHistory({ oldPhotoObj, photo, canModerate, reason, parsedFile
             if (!histories[0].values) {
                 histories[0].values = {};
             }
+
             histories[0].values[field] = value;
         }
 
@@ -811,9 +824,11 @@ async function saveHistory({ oldPhotoObj, photo, canModerate, reason, parsedFile
     if (!_.isEmpty(values)) {
         newEntry.values = values;
     }
+
     if (!_.isEmpty(changes.diff)) {
         newEntry.diff = changes.diff;
     }
+
     newEntry.add = add.length ? add : undefined; // undefined temporary doesn't work, https://github.com/Automattic/mongoose/issues/4037
     newEntry.del = del.length ? del : undefined;
 
@@ -824,6 +839,7 @@ async function saveHistory({ oldPhotoObj, photo, canModerate, reason, parsedFile
         if (reasonCid >= 0) {
             newEntry.reason.cid = reasonCid;
         }
+
         if (_.isString(reason.desc) && reason.desc.length) {
             newEntry.reason.desc = Utils.inputIncomingParse(reason.desc).result;
         }
@@ -904,7 +920,7 @@ async function update({ photo, oldPhotoObj, stamp }) {
 
     const [, rel] = await Promise.all([
         photo.save(),
-        userObjectRelController.setObjectView(photo._id, iAm.user._id, 'photo', stamp)
+        userObjectRelController.setObjectView(photo._id, iAm.user._id, 'photo', stamp),
     ]);
 
     if (oldPhotoObj) {
@@ -924,6 +940,7 @@ function userPCountUpdate(user, newDelta = 0, publicDelta = 0, inactiveDelta = 0
         ownerObj.user.pfcount = ownerObj.user.pfcount + newDelta;
         ownerObj.user.pcount = ownerObj.user.pcount + publicDelta;
         ownerObj.user.pdcount = ownerObj.user.pdcount + inactiveDelta;
+
         return session.saveEmitUser({ usObj: ownerObj, wait: true });
     }
 
@@ -931,8 +948,8 @@ function userPCountUpdate(user, newDelta = 0, publicDelta = 0, inactiveDelta = 0
         $inc: {
             pfcount: newDelta || 0,
             pcount: publicDelta || 0,
-            pdcount: inactiveDelta || 0
-        }
+            pdcount: inactiveDelta || 0,
+        },
     }).exec();
 }
 
@@ -950,6 +967,7 @@ const putProtectedFileAccessCache = async function ({ file, mime = '', ttl = pro
 
     const { handshake: { session } } = this;
     const [fileUri] = file.split('?');
+
     return dbRedis.setAsync(`pr:${session.key}:${fileUri}`, `${fileUri}:${mime}`, 'EX', ttl)
         .catch(error => {
             throw new ApplicationError({ code: constantsError.REDIS, trace: false, message: error.message });
@@ -971,6 +989,7 @@ const putProtectedFilesAccessCache = async function ({ photos = [], ttl = protec
 
     for (const { file, mime = '' } of photos) {
         const [fileUri] = file.split('?');
+
         multi.set(`pr:${session.key}:${fileUri}`, `${fileUri}:${mime}`, 'EX', ttl);
     }
 
@@ -1000,6 +1019,7 @@ const fillPhotosProtection = async function ({ photos = [], theyAreMine, setMyFl
 
         // Undefined - will take public(/_p/), true - protected(/_pr/), false - covered(/_prn/)
         photo.protected = permissions.can.protected(photo.s, isMine, permissions.canModerate(photo, iAm), isAdmin);
+
         if (photo.protected) {
             protectedPhotos.push(photo);
         }
@@ -1012,6 +1032,7 @@ const fillPhotosProtection = async function ({ photos = [], theyAreMine, setMyFl
                     `${this.ridMark} Putting link to redis for protected photos file failed. Serve public.`,
                     err
                 );
+
                 for (const photo of protectedPhotos) {
                     photo.protected = false;
                 }
@@ -1023,14 +1044,15 @@ async function changePhotoInNotpablicCache({ photo, add = true }) {
     if (!dbRedis.connected) {
         throw new ApplicationError({ code: constantsError.REDIS_NO_CONNECTION, trace: false });
     }
+
     const multi = dbRedis.multi();
 
     if (add) {
         // Put information about new not public photo to redis cache
-        multi.incr(`notpublic:count`).set(`notpublic:${photo.path}`, `${photo.cid}`);
+        multi.incr('notpublic:count').set(`notpublic:${photo.path}`, `${photo.cid}`);
     } else {
         // Remove information about not public photo from redis cache
-        multi.decr(`notpublic:count`).del(`notpublic:${photo.path}`);
+        multi.decr('notpublic:count').del(`notpublic:${photo.path}`);
     }
 
     return multi.execAsync()
@@ -1084,7 +1106,7 @@ const changePublicExternality = async function ({ photo, makePublic }) {
         userPCountUpdate(photo.user, 0, makePublic ? 1 : -1, makePublic ? -1 : 1),
         // If photo has coordinates, means that need to do something with map
         Utils.geo.check(photo.geo) ? this.call(makePublic ? 'photo.photoToMap' : 'photo.photoFromMap', {
-            photo, paintingMap: photo.type === constants.photo.type.PAINTING
+            photo, paintingMap: photo.type === constants.photo.type.PAINTING,
         }) : null,
         this.call('photo.changeFileProtection', { photo, protect: !makePublic }),
     ]);
@@ -1125,7 +1147,7 @@ async function ready(data) {
 
     // Save previous status to history
     await this.call('photo.saveHistory', {
-        oldPhotoObj, photo, canModerate: User.isEqual(oldPhotoObj.user, iAm.user) ? false : canModerate
+        oldPhotoObj, photo, canModerate: User.isEqual(oldPhotoObj.user, iAm.user) ? false : canModerate,
     });
 
     // Reselect the data to display
@@ -1229,7 +1251,7 @@ async function approve(data) {
         this.call(
             'subscr.subscribeUserByIds',
             { user: photo.user, objId: photo._id, setCommentView: true, type: 'photo' }
-        )
+        ),
     ]);
 
     // Add photo to map
@@ -1302,6 +1324,7 @@ function removeIncoming({ file }) {
     if (!file) {
         throw new BadParamsError();
     }
+
     if (!iAm.registered) {
         throw new AuthorizationError();
     }
@@ -1390,7 +1413,7 @@ export async function giveForPage({ cid, forEdit }) {
 async function givePrevNextCids({ cid }) {
     const [prev, next] = await Promise.all([
         Photo.findOne({ cid: { $lt: cid }, s: 5 }, { _id: 0, cid: 1 }, { lean: true }).sort({ cid: -1 }).exec(),
-        Photo.findOne({ cid: { $gt: cid }, s: 5 }, { _id: 0, cid: 1 }, { lean: true }).sort({ cid: 1 }).exec()
+        Photo.findOne({ cid: { $gt: cid }, s: 5 }, { _id: 0, cid: 1 }, { lean: true }).sort({ cid: 1 }).exec(),
     ]);
 
     return { prev: prev && prev.cid, next: next && next.cid };
@@ -1419,13 +1442,16 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40, random = fa
             if (filter.geo[0] === '0') {
                 query.geo = null;
             }
+
             if (filter.geo[0] === '1') {
                 query.geo = { $size: 2 };
             }
         }
+
         if (userId) {
             query.user = userId;
         }
+
         if (customQuery) {
             Object.assign(query, customQuery);
         }
@@ -1436,16 +1462,17 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40, random = fa
         // console.log(JSON.stringify(query, null, '\t'));
         if (random) {
             const countQuery = { ...query };
+
             delete countQuery.r2d; // Don't need to to consider random field in counting
 
             [photos, count] = await Promise.all([
                 Photo.find(query, fieldsSelect, { lean: true, limit }).exec(),
-                Photo.count(countQuery).exec()
+                Photo.count(countQuery).exec(),
             ]);
         } else {
             [photos, count] = await Promise.all([
                 Photo.find(query, fieldsSelect, { lean: true, skip, limit, sort: { sdate: -1 } }).exec(),
-                Photo.count(query).exec()
+                Photo.count(query).exec(),
             ]);
         }
 
@@ -1457,6 +1484,7 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40, random = fa
 
                 // Check if user should get protected files
                 const itsMineGallery = userId && User.isEqual(iAm.user._id, userId) || undefined;
+
                 await this.call('photo.fillPhotosProtection', { photos, theyAreMine: itsMineGallery, setMyFlag: !userId });
 
                 for (const photo of photos) {
@@ -1469,6 +1497,7 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40, random = fa
 
             // For each photo fill short regions and hash of this regions
             const shortRegionsParams = regionController.getShortRegionsParams(buildQueryResult.rhash);
+
             shortRegionsHash = regionController.genObjsShortRegionsArr(photos, shortRegionsParams.lvls, true);
         }
     }
@@ -1492,6 +1521,7 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40, random = fa
             }
         }
     }
+
     if (buildQueryResult.rearr && buildQueryResult.rearr.length) {
         for (const region of buildQueryResult.rearr) {
             re.push(region.cid);
@@ -1519,8 +1549,8 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40, random = fa
             s: buildQueryResult.s,
             y: buildQueryResult.y,
             c: buildQueryResult.c,
-            geo: filter.geo
-        }
+            geo: filter.geo,
+        },
     };
 }
 
@@ -1575,13 +1605,16 @@ export function parseFilter(filterString) {
                     result.r = 0;
                 } else {
                     filterVal = filterVal.split(delimeterVal).map(Number);
+
                     if (Array.isArray(filterVal) && filterVal.length && filterVal.length <= 10) {
                         result.r = [];
+
                         for (filterValItem of filterVal) {
                             if (filterValItem) {
                                 result.r.push(filterValItem);
                             }
                         }
+
                         if (!result.r.length) {
                             delete result.r;
                         }
@@ -1590,31 +1623,38 @@ export function parseFilter(filterString) {
             } else if (filterParam === 'rp') {
                 // Regions phantom. Inactive filter regions
                 filterVal = filterVal.split(delimeterVal).map(Number);
+
                 if (Array.isArray(filterVal) && filterVal.length && filterVal.length <= 10) {
                     result.rp = [];
+
                     for (filterValItem of filterVal) {
                         if (filterValItem) {
                             result.rp.push(filterValItem);
                         }
                     }
+
                     if (!result.rp.length) {
                         delete result.rp;
                     }
                 }
             } else if (filterParam === 'rs') {
                 filterVal = filterVal.split(delimeterVal);
+
                 if (Array.isArray(filterVal) && filterVal.length === 1) {
                     result.rs = filterVal;
                 }
             } else if (filterParam === 're') {
                 filterVal = filterVal.split(delimeterVal).map(Number);
+
                 if (Array.isArray(filterVal) && filterVal.length && filterVal.length <= 10) {
                     result.re = [];
+
                     for (filterValItem of filterVal) {
                         if (filterValItem) {
                             result.re.push(filterValItem);
                         }
                     }
+
                     if (!result.re.length) {
                         delete result.re;
                     }
@@ -1622,6 +1662,7 @@ export function parseFilter(filterString) {
             } else if (filterParam === 'y') {
                 //constants.photo.years[constants.photo.type.PAINTING].max
                 filterVal = filterVal.split(delimeterVal);
+
                 if (Array.isArray(filterVal) && filterVal.length === 2) {
                     const year = Number(filterVal[0]);
                     const year2 = Number(filterVal[1]);
@@ -1632,51 +1673,59 @@ export function parseFilter(filterString) {
                         result.y = [year, year2];
                     }
                 }
-
             } else if (filterParam === 's') {
                 filterVal = filterVal.split(delimeterVal);
+
                 if (Array.isArray(filterVal) && filterVal.length) {
                     if (filterVal.length === 1 && filterVal[0] === 'all') {
                         result.s = allStatuses;
                     } else {
                         result.s = [];
+
                         for (filterValItem of filterVal) {
                             if (filterValItem) {
                                 filterValItem = Number(filterValItem);
+
                                 if (allStatusesSet.has(filterValItem)) { // 0 must be included, that is why check for NaN
                                     result.s.push(filterValItem);
                                 }
                             }
                         }
+
                         if (!result.s.length) {
                             delete result.s;
                         }
                     }
-
                 }
             } else if (filterParam === 't') {
                 filterVal = filterVal.split(delimeterVal);
+
                 if (Array.isArray(filterVal) && filterVal.length) {
                     result.t = [];
+
                     for (filterValItem of filterVal) {
                         if (filterValItem) {
                             filterValItem = Number(filterValItem);
+
                             if (typesSet.has(filterValItem)) {
                                 result.t.push(filterValItem);
                             }
                         }
                     }
+
                     if (!result.t.length) {
                         delete result.t;
                     }
                 }
             } else if (filterParam === 'geo') {
                 filterVal = filterVal.split(delimeterVal);
+
                 if (Array.isArray(filterVal) && filterVal.length === 1) {
                     result.geo = filterVal;
                 }
             } else if (filterParam === 'c') {
                 filterVal = filterVal.split(delimeterVal);
+
                 if (Array.isArray(filterVal) && (filterVal.length === 1 || filterVal.length === 2)) {
                     filterVal = filterVal.map(Number).sort();
 
@@ -1737,6 +1786,7 @@ async function giveUserGallery({ login, filter, skip, limit }) {
         if (filter.r === undefined && iAm.user.regions && iAm.user.regions.length && iAm.user.settings) {
             filter.r = 0;
         }
+
         // The same with types
         if (filter.t === undefined && iAm.photoFilterTypes.length) {
             filter.t = null;
@@ -1755,6 +1805,7 @@ async function giveForApprove(data) {
     if (!iAm.registered || iAm.user.role < 5) {
         throw new AuthorizationError();
     }
+
     if (iAm.isModerator) {
         Object.assign(query, iAm.mod_rquery);
     }
@@ -1763,7 +1814,7 @@ async function giveForApprove(data) {
         lean: true,
         sort: { sdate: -1 },
         skip: data.skip || 0,
-        limit: Math.min(data.limit || 20, 100)
+        limit: Math.min(data.limit || 20, 100),
     }).exec();
 
     const shortRegionsHash = regionController.genObjsShortRegionsArr(photos, iAm.mod_rshortlvls, true);
@@ -1777,6 +1828,7 @@ async function giveForApprove(data) {
         if (User.isEqual(photo.user, myUser)) {
             photo.my = true;
         }
+
         photo._id = undefined;
         photo.user = undefined;
         photo.ucdate = undefined;
@@ -1793,12 +1845,13 @@ const userPhotosAroundFields = {
     file: 1,
     s: 1,
     title: 1,
-    mime: 1
+    mime: 1,
 };
 const userPhotosAroundFieldsForModWithRegions = {
     ...userPhotosAroundFields,
-    ...regionController.regionsAllSelectHash
+    ...regionController.regionsAllSelectHash,
 };
+
 async function giveUserPhotosAround({ cid, limitL, limitR }) {
     const { handshake: { usObj: iAm } } = this;
 
@@ -1806,7 +1859,7 @@ async function giveUserPhotosAround({ cid, limitL, limitR }) {
     limitL = Math.min(Math.abs(Number(limitL)), 100);
     limitR = Math.min(Math.abs(Number(limitR)), 100);
 
-    if (!cid || (!limitL && !limitR)) {
+    if (!cid || !limitL && !limitR) {
         throw new BadParamsError();
     }
 
@@ -1833,10 +1886,12 @@ async function giveUserPhotosAround({ cid, limitL, limitR }) {
 
     // Check if user should get protected files (only owner and moderators can)
     const theyAreMine = iAm.registered && User.isEqual(iAm.user._id, photo.user);
+
     if (iAm.registered && iAm.user.role >= 5 || theyAreMine) {
         if (left.length) {
             await this.call('photo.fillPhotosProtection', { photos: left, theyAreMine });
         }
+
         if (right.length) {
             await this.call('photo.fillPhotosProtection', { photos: right, theyAreMine });
         }
@@ -1854,6 +1909,7 @@ async function giveNearestPhotos({ geo, type, year, year2, except, distance, lim
     geo.reverse();
 
     type = typesSet.has(type) ? type : constants.photo.type.PHOTO;
+
     const isPainting = type === constants.photo.type.PAINTING;
 
     const query = { geo: { $near: geo }, s: status.PUBLIC, type };
@@ -1864,6 +1920,7 @@ async function giveNearestPhotos({ geo, type, year, year2, except, distance, lim
     if (_.isNumber(year) && year > years.min && year < years.max) {
         query.year = { $gte: year };
     }
+
     if (_.isNumber(year2) && year2 > years.min && year2 < years.max) {
         if (year === year2) {
             query.year = year;
@@ -1903,7 +1960,7 @@ async function giveNearestPhotos({ geo, type, year, year2, except, distance, lim
 async function giveUserPhotosPrivate({ login, startTime, endTime }) {
     const { handshake: { usObj: iAm } } = this;
 
-    if (!iAm.registered || (iAm.user.role < 5 && iAm.user.login !== login)) {
+    if (!iAm.registered || iAm.user.role < 5 && iAm.user.login !== login) {
         throw new AuthorizationError();
     }
 
@@ -1926,6 +1983,7 @@ async function giveUserPhotosPrivate({ login, startTime, endTime }) {
         if (_.isNumber(startTime) && startTime > 0) {
             query.sdate.$gte = new Date(startTime);
         }
+
         if (_.isNumber(endTime) && endTime > 0) {
             query.sdate.$lte = new Date(endTime);
         }
@@ -1941,8 +1999,8 @@ async function giveFresh({ login, after, skip, limit }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!iAm.registered ||
-        (!login && iAm.user.role < 5) ||
-        (login && iAm.user.role < 5 && iAm.user.login !== login)) {
+        !login && iAm.user.role < 5 ||
+        login && iAm.user.role < 5 && iAm.user.login !== login) {
         throw new AuthorizationError();
     }
 
@@ -1954,9 +2012,11 @@ async function giveFresh({ login, after, skip, limit }) {
     if (asModerator) {
         Object.assign(query, iAm.mod_rquery);
     }
+
     if (userId) {
         query.user = userId;
     }
+
     if (after) {
         query.ldate = { $gt: new Date(after) };
     }
@@ -1990,7 +2050,7 @@ async function giveCan({ cid }) {
     const photo = await this.call('photo.find', {
         query: { cid },
         options: { lean: true },
-        populateUser: Boolean(iAm.registered)
+        populateUser: Boolean(iAm.registered),
     });
 
     return { can: permissions.getCan(photo, iAm) };
@@ -2016,7 +2076,7 @@ async function giveCanProtected({ cid }) {
 
     return {
         result: permissions.can.protected(photo.s, isMine, permissions.canModerate(photo, iAm), iAm.isAdmin),
-        mime: photo.mime
+        mime: photo.mime,
     };
 }
 
@@ -2028,6 +2088,7 @@ function photoCheckPublicRequired(photo) {
     if (_.isEmpty(photo.title)) {
         throw new InputError(constantsError.PHOTO_NEED_TITLE);
     }
+
     const isPainting = photo.type === constants.photo.type.PAINTING;
     const years = isPainting ? paintYears : photoYears;
 
@@ -2085,7 +2146,7 @@ function photoValidate(newValues, oldValues, can) {
     } else {
         Object.assign(result, yearsValidate({
             isPainting, maxDelta: isPainting ? 200 : 50,
-            year: newValues.year, year2: newValues.year2
+            year: newValues.year, year2: newValues.year2,
         }));
     }
 
@@ -2148,6 +2209,7 @@ function photoValidate(newValues, oldValues, can) {
                     .match(watersignPattern).join('')
                     .trim().replace(/ {2,}/g, ' ').substr(0, watersignLength);
             }
+
             if (newValues.watersignCustom === null ||
                 _.isString(newValues.watersignCustom) && newValues.watersignCustom.length) {
                 result.watersignCustom = newValues.watersignCustom;
@@ -2251,6 +2313,7 @@ async function save(data) {
                 changes.region,
                 ['cid', 'parents', 'title_en', 'title_local']
             );
+
             // If false was returned, means such region doesn't exists
             if (!newRegions) {
                 throw new NotFoundError(constantsError.NO_SUCH_REGION);
@@ -2276,10 +2339,10 @@ async function save(data) {
 
     // If photo watersign setting has been changed, send it to reconvert
     let reconvert = false;
+
     if (newValues.hasOwnProperty('watersignIndividual') ||
         newValues.hasOwnProperty('watersignOption') && newValues.watersignOption !== oldPhotoObj.watersignOption ||
         newValues.hasOwnProperty('watersignCustom') && newValues.watersignCustom !== oldPhotoObj.watersignCustom) {
-
         reconvert = true;
         photo.convqueue = true;
 
@@ -2292,6 +2355,7 @@ async function save(data) {
     }
 
     let saveHistory = false;
+
     if (photo.s !== status.NEW) {
         photo.cdate = new Date();
 
@@ -2321,9 +2385,8 @@ async function save(data) {
             // If coordinates has been nullified and photo is public, means it was on map, and we should remove it from map.
             // We must do it before coordinates removal, because clusterization looks on it
             await this.call('photo.photoFromMap', {
-                photo: oldPhotoObj, paintingMap: oldPhotoObj.type === constants.photo.type.PAINTING
+                photo: oldPhotoObj, paintingMap: oldPhotoObj.type === constants.photo.type.PAINTING,
             });
-
         } else if (!_.isEmpty(photo.geo)) {
             // Old values of changing properties
             const oldValues = _.transform(newValues, (result, val, key) => {
@@ -2334,9 +2397,10 @@ async function save(data) {
                 if (oldValues.type) {
                     // If type has been changed, delete object from previous type map
                     await this.call('photo.photoFromMap', {
-                        photo: oldPhotoObj, paintingMap: oldPhotoObj.type === constants.photo.type.PAINTING
+                        photo: oldPhotoObj, paintingMap: oldPhotoObj.type === constants.photo.type.PAINTING,
                     });
                 }
+
                 // If coordinates have been added/changed or cluster's poster might be changed, then recalculate map.
                 // Coordinates must be get exactly from 'photo.geo', not from 'newGeo',
                 // because 'newGeo' can be 'undefined' and this case could mean, that coordinates haven't been changed,
@@ -2346,7 +2410,7 @@ async function save(data) {
                     paintingMap: photo.type === constants.photo.type.PAINTING,
                     // If type was changed, no need to recalc old coordinates or year
                     geoPhotoOld: oldValues.type ? undefined : oldGeo,
-                    yearPhotoOld: oldValues.type ? undefined : oldPhotoObj.year
+                    yearPhotoOld: oldValues.type ? undefined : oldPhotoObj.year,
                 });
             }
         }
@@ -2364,7 +2428,7 @@ async function save(data) {
         }
 
         await this.call('region.updateObjsRegions', {
-            model: Comment, criteria: { obj: photo._id }, regions: newRegions, additionalUpdate: commentAdditionUpdate
+            model: Comment, criteria: { obj: photo._id }, regions: newRegions, additionalUpdate: commentAdditionUpdate,
         });
     }
 
@@ -2410,6 +2474,7 @@ async function convert({ cids = [] }) {
     if (!iAm.isAdmin) {
         throw new AuthorizationError();
     }
+
     if (!Array.isArray(cids)) {
         throw new BadParamsError();
     }
@@ -2446,9 +2511,11 @@ function convertAll({ min, max, r, s }) {
     if (_.isNumber(min) && min > 0) {
         params.min = min;
     }
+
     if (_.isNumber(max) && max > 0 && (!params.min || max >= params.min)) {
         params.max = max;
     }
+
     if (_.isNumber(r) && r > 0) {
         const region = regionController.getRegionFromCache(r);
 
@@ -2456,6 +2523,7 @@ function convertAll({ min, max, r, s }) {
             params.region = { level: _.size(region.parents), cid: region.cid };
         }
     }
+
     if (Array.isArray(s) && s.every(s => allStatusesSet.has(s))) {
         params.statuses = s;
     }
@@ -2465,21 +2533,25 @@ function convertAll({ min, max, r, s }) {
 
 // Sends user's photo for convert
 const usersWhoConvertingNonIndividualPhotos = new Set();
+
 async function convertByUser({ login, resetIndividual, r }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!login) {
         throw new BadParamsError();
     }
+
     if (!iAm.registered || iAm.user.login !== login && !iAm.isAdmin) {
         throw new AuthorizationError();
     }
+
     if (usersWhoConvertingNonIndividualPhotos.has(login)) {
         throw new NoticeError(constantsError.PHOTO_CONVERT_PROCEEDING);
     }
 
     const stampStart = new Date();
     let region;
+
     if (_.isNumber(r) && r > 0) {
         region = regionController.getRegionFromCache(r);
 
@@ -2491,6 +2563,7 @@ async function convertByUser({ login, resetIndividual, r }) {
     const historyCalls = [];
 
     const user = await User.findOne({ login }, { login: 1, watersignCustom: 1, settings: 1 }, { lean: true }).exec();
+
     if (!user) {
         throw new NotFoundError(constantsError.NO_SUCH_USER);
     }
@@ -2530,7 +2603,6 @@ async function convertByUser({ login, resetIndividual, r }) {
 
     try {
         for (const photoOld of photos) {
-
             if (photoOld.s === status.NEW || watersignText === photoOld.watersignText) {
                 // New photo has no history yet, so don't need to write history row about watersign
                 // If watersignText did not really changed, do not save history, only reconvert
@@ -2538,6 +2610,7 @@ async function convertByUser({ login, resetIndividual, r }) {
             }
 
             const photo = _.clone(photoOld);
+
             photo.cdate = stamp;
             photo.watersignText = watersignText;
 
@@ -2564,6 +2637,7 @@ async function convertByUser({ login, resetIndividual, r }) {
         // New photos don't have to update cdate and ucdate
         const updateNew = _.cloneDeep(update);
         const queryNew = _.clone(query);
+
         queryNew.s = status.NEW;
 
         query.s = { $ne: status.NEW };
@@ -2582,14 +2656,14 @@ async function convertByUser({ login, resetIndividual, r }) {
         await Promise.all([
             Photo.update(query, update, { multi: true }).exec(),
             Photo.update(queryNew, updateNew, { multi: true }).exec(),
-            Promise.all(historyCalls.map(hist => this.call('photo.saveHistory', hist)))
+            Promise.all(historyCalls.map(hist => this.call('photo.saveHistory', hist))),
         ]);
 
         const conveyorResult = await converter.addPhotosAll({
             login,
             priority: 2,
             region,
-            onlyWithoutTextApplied: true
+            onlyWithoutTextApplied: true,
         });
 
         return { updated: count, conveyorAdded: conveyorResult.conveyorAdded, time: Date.now() - stampStart };
@@ -2609,6 +2683,7 @@ async function resetIndividualDownloadOrigin({ login, r }) {
     if (!login) {
         throw new BadParamsError();
     }
+
     if (!iAm.registered || iAm.user.login !== login && !iAm.isAdmin) {
         throw new AuthorizationError();
     }
@@ -2625,6 +2700,7 @@ async function resetIndividualDownloadOrigin({ login, r }) {
     }
 
     const user = await User.findOne({ login }, { login: 1, settings: 1 }, { lean: true }).exec();
+
     if (!user) {
         throw new NotFoundError(constantsError.NO_SUCH_USER);
     }
@@ -2686,6 +2762,7 @@ export function buildPhotosQuery(filter, forUserId, iAm, random) {
     let r = filter.r;
     let regionExludeAll; // Array if excluded regions objects, to return it to user
     let regionExludeCids; // Array if excluded regions cids, can be undefined whils regionExludeAll is not, if rdis is active
+
     // Excluding regions only available if some regions are specified
     // So ignore showing children option and excluded regions list if regions are not specified
     if (Array.isArray(r) && r.length) {
@@ -2699,6 +2776,7 @@ export function buildPhotosQuery(filter, forUserId, iAm, random) {
         regionExludeAll = regionController.getRegionsArrPublicFromCache(regionExludeCids).sort((a, b) =>
             a.parents.length < b.parents.length || a.parents.length === b.parents.length && a.cid < b.cid ? -1 : 1
         );
+
         if (regionExludeAll.length !== regionExludeCids) {
             if (!regionExludeAll.length) {
                 regionExludeAll = regionExludeCids = undefined;
@@ -2731,6 +2809,7 @@ export function buildPhotosQuery(filter, forUserId, iAm, random) {
 
         if (regionsArr.length) {
             const regionQuery = regionController.buildQuery(regionsArr, rs, regionExludeAll);
+
             rqueryPub = rqueryMod = regionQuery.rquery;
             regionsHash = regionQuery.rhash;
         } else {
@@ -2744,6 +2823,7 @@ export function buildPhotosQuery(filter, forUserId, iAm, random) {
         regionsCids = _.map(iAm.user.regions, 'cid');
         regionsArr = regionsArrAll = regionController.getRegionsArrPublicFromCache(regionsCids);
     }
+
     if (regionsCids.length) {
         regionsCids = regionsCids.map(Number);
     }
@@ -2807,6 +2887,7 @@ export function buildPhotosQuery(filter, forUserId, iAm, random) {
                     // Then exclude ecluded regions that are children of moderation
                     if (regionsMod.length) {
                         const regionQuery = regionController.buildQuery(regionsMod, null, regionExludeAll);
+
                         rqueryMod = regionQuery.rquery;
                         queryMod = {};
                     }
@@ -2838,6 +2919,7 @@ export function buildPhotosQuery(filter, forUserId, iAm, random) {
                             }
                         }
                     }
+
                     if (contained) {
                         regionsMod.push(region);
                     } else {
@@ -2848,6 +2930,7 @@ export function buildPhotosQuery(filter, forUserId, iAm, random) {
                 if (regionsPub.length) {
                     const regionQuery = regionController.buildQuery(regionsPub, rs, regionExludeAll);
                     const regionsExcludeHash = regionQuery.rehash || {};
+
                     rqueryPub = regionQuery.rquery;
                     queryPub = {};
 
@@ -2888,6 +2971,7 @@ export function buildPhotosQuery(filter, forUserId, iAm, random) {
                 // they don't need to consider rs and re, they affected by that options
                 if (regionsMod.length) {
                     const regionQuery = regionController.buildQuery(regionsMod, rs, regionExludeAll, regionsModUnderSelectedPubCidsSet);
+
                     rqueryMod = regionQuery.rquery;
                     queryMod = {};
                 }
@@ -2904,6 +2988,7 @@ export function buildPhotosQuery(filter, forUserId, iAm, random) {
             // for query of excluded regions, like {r1: {$ne: 3}, r2: {$nin: [7, 9]}}
             if (!rqueryPub && r === 0 && regionExludeCids) {
                 const reQuery = regionController.buildGlobalReQuery(regionExludeAll);
+
                 rqueryPub = reQuery.rquery;
             }
 
@@ -2928,6 +3013,7 @@ export function buildPhotosQuery(filter, forUserId, iAm, random) {
                 // User is not selecting all statuses, specify list
                 queryMod.s = statusesClosed.length > 1 ? { $in: statusesClosed } : statusesClosed[0];
             }
+
             result.s.push(...statusesClosed);
         }
 
@@ -2935,6 +3021,7 @@ export function buildPhotosQuery(filter, forUserId, iAm, random) {
         // for query of excluded regions, like {r1: {$ne: 3}, r2: {$nin: [7, 9]}}
         if (!rqueryMod && r === 0 && regionExludeCids) {
             const reQuery = regionController.buildGlobalReQuery(regionExludeAll);
+
             rqueryMod = reQuery.rquery;
         }
 
@@ -3066,9 +3153,13 @@ async function giveObjHist({ cid, fetchId, showDiff }) {
             // If selected diff-view and diff exists for this entry, assign diff value
             if (history.diff) {
                 haveDiff = true;
+
                 for (j in history.diff) {
-                    values[j] = history.diff[j];
+                    if (history.diff.hasOwnProperty(j)) {
+                        values[j] = history.diff[j];
+                    }
                 }
+
                 delete history.diff;
             }
 
@@ -3160,9 +3251,9 @@ async function getDownloadKey({ cid }) {
     // We keep only size of origin file, size with watermark must be calculated by downloader.js
     const size = origin ? photo.size : null;
 
-    await (new Download({
-        key, data: { fileName, path, size, mime: photo.mime || 'image/jpeg', login: iAm.user.login, cid, origin }
-    }).save());
+    await new Download({
+        key, data: { fileName, path, size, mime: photo.mime || 'image/jpeg', login: iAm.user.login, cid, origin },
+    }).save();
 
     return { key, origin };
 }
@@ -3247,7 +3338,7 @@ export default {
     changePublicExternality,
     fillPhotosProtection,
     putProtectedFileAccessCache,
-    putProtectedFilesAccessCache
+    putProtectedFilesAccessCache,
 };
 
 // Resets the view statistics for the day and week
@@ -3262,6 +3353,7 @@ const planResetDisplayStat = (function () {
 
         try {
             logger.info(`Resetting day ${needWeek ? 'and week ' : ''}display statistics...`);
+
             const { n: count = 0 } = await Photo.update(
                 { s: { $in: [status.PUBLIC, status.DEACTIVATE, status.REMOVE] } }, { $set: setQuery }, { multi: true }
             ).exec();
@@ -3284,7 +3376,7 @@ const planResetDisplayStat = (function () {
 async function resetPhotosAnticache() {
     const photos = await Photo.find({
         converted: { $gte: new Date(Date.now() - ms('7d')), $lte: new Date(Date.now() - config.photoCacheTime) },
-        $where: `this.file !== this.path`
+        $where: 'this.file !== this.path',
     }, { _id: 0, cid: 1, path: 1 }, { lean: true }).exec();
 
     // For each of found photo set file equals path, don't wait execution
@@ -3306,7 +3398,7 @@ async function syncUnpublishedPhotosWithRedis() {
     try {
         let [actualCount = 0, redisCount] = await Promise.all([
             Photo.count({ s: { $ne: status.PUBLIC } }).exec(),
-            dbRedis.getAsync('notpublic:count')
+            dbRedis.getAsync('notpublic:count'),
         ]);
 
         redisCount = Number(redisCount) || 0;
@@ -3319,12 +3411,12 @@ async function syncUnpublishedPhotosWithRedis() {
                 Photo.find({ s: { $ne: status.PUBLIC } }, { _id: 0, cid: 1, path: 1 }, { lean: true }).exec(),
 
                 // Remove all 'notpublic:' keys fro redis, by evaluating lua script
-                dbRedis.evalAsync('for _,k in ipairs(redis.call("keys","notpublic:*")) do redis.call("del",k) end', 0)
+                dbRedis.evalAsync('for _,k in ipairs(redis.call("keys","notpublic:*")) do redis.call("del",k) end', 0),
             ]);
 
             // Set count first to avoid race condition,
             // if this counter is incremented from somewhare while we adding keys
-            dbRedis.set(`notpublic:count`, photos.length);
+            dbRedis.set('notpublic:count', photos.length);
 
             let multi;
             const finalCounter = photos.length - 1;
@@ -3335,6 +3427,7 @@ async function syncUnpublishedPhotosWithRedis() {
                     if (multi) {
                         await multi.execAsync();
                     }
+
                     if (i !== finalCounter) {
                         multi = dbRedis.multi();
                     }

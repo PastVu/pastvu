@@ -6,16 +6,17 @@ mongoose.Query.prototype.paginate = function paginate(page, limit, cb) {
 
     let query = this;
     const model = this.model;
-    const skipFrom = (page * limit) - limit;
+    const skipFrom = page * limit - limit;
 
     query = query.skip(skipFrom).limit(limit);
 
     if (cb) {
-        query.exec(function (err, docs) {
+        query.exec((err, docs) => {
             if (err) {
                 cb(err, null, null);
             } else {
-                model.count(query._conditions, function (err, total) {
+                // eslint-disable-next-line no-underscore-dangle
+                model.count(query._conditions, (err, total) => {
                     if (err) {
                         cb(err, null, null);
                     } else {

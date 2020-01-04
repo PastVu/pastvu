@@ -12,26 +12,26 @@ module.exports = {
         hostname: '',
         port: 3000, // Application app.js will listen this port
         uport: 3001, // Application uploader.js will listen this port
-        dport: 3002 // Application downloader.js will listen this port
+        dport: 3002, // Application downloader.js will listen this port
     },
 
     // Core will listen this
     core: {
         hostname: '',
-        port: 3010
+        port: 3010,
     },
 
     // Api server will listen this
     api: {
         hostname: '',
-        port: 3011
+        port: 3011,
     },
 
     // Address for user
     client: {
         protocol: 'http',
         hostname: '127.0.0.1', // Hostname for users, i.e. site entry point
-        port: ':3000' // Port for users
+        port: ':3000', // Port for users
     },
 
     storePath: '', // Store folder with static user content (avatars, photos, etc)
@@ -43,7 +43,7 @@ module.exports = {
     serveLog: true, // Tell app.js serve out its logs folder (path: "logPath")
     serveLogAuth: {
         user: 'pastvu',
-        pass: 'pastvu'
+        pass: 'pastvu',
     },
 
     // Serve out webapi method with http, for mobile clients for example
@@ -61,17 +61,17 @@ module.exports = {
     mongo: {
         connection: 'mongodb://localhost:27017/pastvu',
         pool: 5, // Number of concurrent connections to DB
-        poolDownloader: 2 // Number of concurrent connections to DB of downloader.js
+        poolDownloader: 2, // Number of concurrent connections to DB of downloader.js
     },
     mongo_api: {
         con: 'mongodb://localhost:27017/pastvu',
-        pool: 2
+        pool: 2,
     },
     redis: {
         host: 'localhost',
         port: '6379',
         retry_unfulfilled_commands: false,
-        maxReconnectTime: ms('30s')
+        maxReconnectTime: ms('30s'),
     },
 
     // Lifetime of link to file of protected photo for user, that has right to see this photo
@@ -91,5 +91,5 @@ module.exports = {
     sitemapPath: './sitemap', // Folder for generating sitemap
     // Interval between sitemap complete regeneration. First run - next interval after last midnight
     sitemapInterval: ms('12h'),
-    sitemapGenerateOnStart: false // First run must be on server start
+    sitemapGenerateOnStart: false, // First run must be on server start
 };

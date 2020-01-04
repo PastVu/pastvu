@@ -14,7 +14,7 @@ export let dbEval = null;
 export let dbNative = null;
 export let dbRedis = null;
 
-export const waitDb = new Promise(function (resolve, reject) {
+export const waitDb = new Promise((resolve, reject) => {
     getDBResolve = resolve;
     getDBReject = reject;
 });
@@ -24,6 +24,7 @@ export const registerModel = modelPromise => {
     } else {
         modelPromises.push(modelPromise);
     }
+
     return waitDb;
 };
 
@@ -56,9 +57,9 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
                         keepAlive: 0, // Enable keep alive connection
                         autoReconnect: true,
                         socketTimeoutMS: 0,
-                        connectTimeoutMS: ms('5m')
-                    }
-                }
+                        connectTimeoutMS: ms('5m'),
+                    },
+                },
             });
 
             async function openHandler() {
@@ -75,16 +76,16 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
                 // Full list of events can be found here
                 // https://github.com/Automattic/mongoose/blob/master/lib/connection.js#L33
                 db.removeListener('error', errFirstHandler);
-                db.on('error', function (err) {
+                db.on('error', err => {
                     logger.error(`MongoDB connection error to ${uri}`, err);
                 });
-                db.on('disconnected', function () {
+                db.on('disconnected', () => {
                     logger.error('MongoDB disconnected!');
                 });
-                db.on('close', function () {
+                db.on('close', () => {
                     logger.error('MongoDB connection closed and onClose executed on all of this connections models!');
                 });
-                db.on('reconnected', function () {
+                db.on('reconnected', () => {
                     logger.info('MongoDB reconnected at ' + uri);
                 });
 
@@ -117,6 +118,7 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
 
     if (redis) {
         const { maxReconnectTime, ...config } = redis;
+
         redis = require('redis');
 
         // Create promisified methods
@@ -132,6 +134,7 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
                     const error = new ApplicationError(constantsError.REDIS_MAX_CONNECTION_ATTEMPS);
 
                     reject(error); // Reject if it's first time, not doesn't matter in loosing connections in runtime
+
                     return error; // If it's runtime disconnection, this error will be thrown back to every redis call
                 }
 
@@ -143,6 +146,7 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
                 .on('ready', function readyHandler() {
                     const server = dbRedis.server_info;
                     const uri = `${config.host}:${server.tcp_port}`;
+
                     logger.info(
                         `Redis[${server.redis_version}, gcc ${server.gcc_version}, x${server.arch_bits},`,
                         `pid ${server.process_id}] connected at ${uri}`
@@ -155,12 +159,12 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
                 })
                 .on('reconnecting', params => {
                     const uri = `${config.host}:${config.port}`;
+
                     logger.warn(
                         `Redis ${params.attempt} reconnection attemp at ${uri}.`,
                         `Time to stop trying ${(maxReconnectTime - params.total_retry_time) / 1000}s`
                     );
                 });
-
         }));
     }
 

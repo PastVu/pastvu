@@ -8,7 +8,6 @@ import ApplicationError from './Application';
  * By default stack will not be printed (trace: false)
  */
 export default class AuthenticationError extends ApplicationError {
-
     constructor(data = {}, rid) {
         if (typeof data === 'string') {
             data = { code: data };
@@ -17,12 +16,11 @@ export default class AuthenticationError extends ApplicationError {
         _.defaults(data, {
             code: constants.AUTHENTICATION,
             statusCode: 401,
-            trace: false
+            trace: false,
         });
 
         super(data, rid);
     }
-
 }
 
 AuthenticationError.prototype.name = 'AuthenticationError';

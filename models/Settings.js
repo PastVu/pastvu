@@ -7,6 +7,6 @@ registerModel(db => {
     Settings = db.model('Settings', new Schema({
         key: { type: String, uppercase: true, index: { unique: true } },
         val: { type: Schema.Types.Mixed, 'default': false },
-        desc: { type: String, 'default': '' }
+        desc: { type: String, 'default': '' },
     }));
 });

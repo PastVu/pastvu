@@ -44,11 +44,12 @@ export default class Plug extends EventEmitter {
                 .once('connect', resolve)
                 .on('error', error => {
                     if (error.code === 'ECONNREFUSED' || error.code === 'ECONNRESET') {
-                        this.logger.warn(`Can't connect to Core. Retrying...`);
+                        this.logger.warn('Can\'t connect to Core. Retrying...');
                     } else {
                         this.logger.error('Core connnection error. Retrying...:', error);
                         this.emit('error', error);
                     }
+
                     setTimeout(() => this.connect(), 1000);
                 })
                 .on('close', hadError => {
@@ -69,7 +70,7 @@ export default class Plug extends EventEmitter {
     request(data) {
         return new Promise((resolve, reject) => {
             if (!this.connected) {
-                return reject({ code: 99 });
+                return reject({ code: 99 }); // eslint-disable-line prefer-promise-reject-errors
             }
 
             const msg = { descriptor: this.promiseDescriptorNext++, ...data };
@@ -84,6 +85,7 @@ export default class Plug extends EventEmitter {
         const result = (this.buffer + data).split('\0');
 
         this.buffer = result.pop() || '';
+
         return result;
     }
 
@@ -91,6 +93,7 @@ export default class Plug extends EventEmitter {
         if (!msg) {
             return;
         }
+
         try {
             return JSON.parse(msg);
         } catch (error) {

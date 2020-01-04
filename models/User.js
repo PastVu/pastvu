@@ -18,8 +18,8 @@ export const AnonymScheme = {
     settings: { type: Schema.Types.Mixed },
     regionHome: { type: Schema.Types.ObjectId, ref: 'Region' }, // Home region
     regions: [ // Regions for default filtering of content
-        { type: Schema.Types.ObjectId, ref: 'Region' }
-    ]
+        { type: Schema.Types.ObjectId, ref: 'Region' },
+    ],
 };
 
 registerModel(db => {
@@ -31,7 +31,7 @@ registerModel(db => {
             required: true,
             index: { unique: true },
             lowercase: true,
-            validate: [/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@(([[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/, 'incorrect email']
+            validate: [/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@(([[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/, 'incorrect email'],
         },
 
         pass: { type: String, required: true },
@@ -45,10 +45,10 @@ registerModel(db => {
 
         regionHome: { type: Schema.Types.ObjectId, ref: 'Region' }, // Home region
         regions: [ // Regions for default filtering of content
-            { type: Schema.Types.ObjectId, ref: 'Region' }
+            { type: Schema.Types.ObjectId, ref: 'Region' },
         ],
         mod_regions: [ // Regions in which user is moderator
-            { type: Schema.Types.ObjectId, ref: 'Region' }
+            { type: Schema.Types.ObjectId, ref: 'Region' },
         ],
 
         watersignCustom: { type: String }, // User custom text on watermark
@@ -84,7 +84,7 @@ registerModel(db => {
         active: { type: Boolean, 'default': false },
         activatedate: { type: Date },
 
-        nowaterchange: { type: Boolean } // Prohibit user to change his own default watersign setting and watersign of his own photos
+        nowaterchange: { type: Boolean }, // Prohibit user to change his own default watersign setting and watersign of his own photos
     });
 
     // Before every save generate hash and salt with Blowfish, if password changed
@@ -141,8 +141,8 @@ registerModel(db => {
         const user = await this.findOne({
             $or: [
                 { login: new RegExp('^' + login + '$', 'i') },
-                { email: login.toLowerCase() }
-            ], active: true, pass: { $ne: 'init' }
+                { email: login.toLowerCase() },
+            ], active: true, pass: { $ne: 'init' },
         });
 
         // Make sure the user exists
@@ -179,15 +179,15 @@ registerModel(db => {
         throw new AuthenticationError(constants.AUTHENTICATION_PASS_WRONG);
     };
 
-    UserScheme.path('sex').validate(function (sex) {
-        return sexes.indexOf(sex) !== -1;
-    }, 'Incorrect sex');
+    UserScheme.path('sex').validate(sex => sexes.indexOf(sex) !== -1, 'Incorrect sex');
 
     UserScheme.path('pass').set(function (pass) {
         pass = pass.toString();
+
         if (pass.length === 0) {
             return this.pass;
         }
+
         return pass;
     });
 
@@ -195,11 +195,12 @@ registerModel(db => {
         if (!login) {
             cb(null, 'Login is not specified');
         }
+
         this.findOne({ login: new RegExp('^' + login + '$', 'i'), active: true }).select({
             _id: 0,
             pass: 0,
             activatedate: 0,
-            rules: 0
+            rules: 0,
         }).exec(cb);
     };
 
@@ -211,6 +212,7 @@ registerModel(db => {
         if (!login) {
             cb(null, 'Login is not specified');
         }
+
         this.findOne({ login: new RegExp('^' + login + '$', 'i'), active: true }).exec(cb);
     };
 
@@ -218,16 +220,17 @@ registerModel(db => {
         if (!login) {
             cb(null, 'Login is not specified');
         }
+
         this.findOne({
             $and: [
                 {
                     $or: [
                         { login: new RegExp('^' + login + '$', 'i') },
-                        { email: login.toLowerCase() }
-                    ]
+                        { email: login.toLowerCase() },
+                    ],
                 },
-                { active: true }
-            ]
+                { active: true },
+            ],
         }).exec(cb);
     };
 
@@ -274,8 +277,7 @@ registerModel(db => {
         {
             created: { type: Date, 'default': Date.now, index: { expires: '2d' } },
             key: { type: String, index: { unique: true } },
-            user: { type: Schema.Types.ObjectId, ref: 'User', index: true }
+            user: { type: Schema.Types.ObjectId, ref: 'User', index: true },
         }
     ));
-
 });

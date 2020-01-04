@@ -7,7 +7,6 @@ import ApplicationError from './Application';
  * Params: timeout number(ms) or object with timeout number property and additional data (can override code, message)
  */
 export default class AuthorizationError extends ApplicationError {
-
     constructor(data = {}, rid) {
         if (typeof data === 'string') {
             data = { code: data };
@@ -15,12 +14,11 @@ export default class AuthorizationError extends ApplicationError {
 
         _.defaults(data, {
             code: constants.DENY,
-            statusCode: 403
+            statusCode: 403,
         });
 
         super(data, rid);
     }
-
 }
 
 AuthorizationError.prototype.name = 'AuthorizationError';

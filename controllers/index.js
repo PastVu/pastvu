@@ -36,11 +36,12 @@ const giveRatings = (function () {
         { $match: { stamp: { $gt }, s: 5, del: null } },
         { $group: { _id: '$obj', ccount: { $sum: 1 } } },
         { $sort: { ccount: -1 } },
-        { $limit: limit }
+        { $limit: limit },
     ]).exec().then(photos => {
         const countHash = {};
         const ids = photos.map(photo => {
             countHash[photo._id] = photo.ccount;
+
             return photo._id;
         });
 
@@ -53,11 +54,12 @@ const giveRatings = (function () {
         { $match: { stamp: { $gt }, s: 5, del: null } },
         { $group: { _id: '$user', ccount: { $sum: 1 } } },
         { $sort: { ccount: -1 } },
-        { $limit: limit }
+        { $limit: limit },
     ]).exec().then(users => {
         const countHash = {};
         const ids = users.map(user => {
             countHash[user._id] = user.ccount;
+
             return user._id;
         });
 
@@ -72,11 +74,12 @@ const giveRatings = (function () {
         { $match: { adate: { $gt }, s: 5 } },
         { $group: { _id: '$user', pcount: { $sum: 1 } } },
         { $sort: { pcount: -1 } },
-        { $limit: limit }
+        { $limit: limit },
     ]).exec().then(users => {
         const countHash = {};
         const ids = users.map(user => {
             countHash[user._id] = user.pcount;
+
             return user._id;
         });
 
@@ -87,7 +90,7 @@ const giveRatings = (function () {
             }).sort(sortPcount));
     });
 
-    return Utils.memoizePromise(async function () {
+    return Utils.memoizePromise(async () => {
         const [pday, pweek, pall, pcday, pcweek, pcall, ucday, ucweek, ucall, upday, upweek, upall] = await Promise.all([
             // Photo by views count
             Photo.find(
@@ -128,11 +131,10 @@ const giveRatings = (function () {
             User.find(
                 { pcount: { $gt: 0 } }, { _id: 0, login: 1, avatar: 1, disp: 1, pcount: 1 },
                 { lean: true, limit, sort: { pcount: -1 } }
-            ).exec().then(users => _.forEach(users, user => user.online = session.usLogin[user.login] !== undefined))
+            ).exec().then(users => _.forEach(users, user => user.online = session.usLogin[user.login] !== undefined)),
         ]);
 
         return { pday, pweek, pall, pcday, pcweek, pcall, ucday, ucweek, ucall, upday, upweek, upall };
-
     }, memoizeInterval);
 }());
 
@@ -149,23 +151,23 @@ const giveStats = (function () {
                 popYear: { $first: '$_id' },
                 popYearCount: { $first: '$count' },
                 unpopYear: { $last: '$_id' },
-                unpopYearCount: { $last: '$count' }
-            }
+                unpopYearCount: { $last: '$count' },
+            },
         },
         {
             $project: {
                 _id: 0,
                 pop: { year: '$popYear', count: '$popYearCount' },
-                unpop: { year: '$unpopYear', count: '$unpopYearCount' }
-            }
-        }
+                unpop: { year: '$unpopYear', count: '$unpopYearCount' },
+            },
+        },
     ];
 
-    return Utils.memoizePromise(async function () {
+    return Utils.memoizePromise(async () => {
         const [
             [photoYear],
             pallCount, userCount, pdayCount, pweekCount, callCount,
-            cnallCount, cdayCount, cndayCount, cweekCount, cnweekCount
+            cnallCount, cdayCount, cndayCount, cweekCount, cnweekCount,
         ] = await Promise.all([
             Photo.aggregate(aggregateParams).exec(),
 
@@ -180,7 +182,7 @@ const giveStats = (function () {
             Comment.count({ s: 5, stamp: { $gt: dayStart }, del: null }).exec(),
             CommentN.count({ stamp: { $gt: dayStart }, del: null }).exec(),
             Comment.count({ s: 5, stamp: { $gt: weekStart }, del: null }).exec(),
-            CommentN.count({ stamp: { $gt: weekStart }, del: null }).exec()
+            CommentN.count({ stamp: { $gt: weekStart }, del: null }).exec(),
         ]);
 
         return {
@@ -188,8 +190,8 @@ const giveStats = (function () {
                 photoYear, pallCount, userCount, pdayCount, pweekCount,
                 callCount: callCount + cnallCount,
                 cdayCount: cdayCount + cndayCount,
-                cweekCount: cweekCount + cnweekCount
-            }
+                cweekCount: cweekCount + cnweekCount,
+            },
         };
     }, memoizeInterval);
 }());
@@ -198,13 +200,13 @@ const giveStats = (function () {
 const giveOnlineStats = (function () {
     const memoizeInterval = ms('5s');
 
-    return Utils.memoizePromise(function () {
+    return Utils.memoizePromise(() => {
         const usersCount = _.size(session.usLogin);
         const anonymCount = _.reduce(session.sessConnected, (result, session) => session.user ? result : result + 1, 0);
 
         return Promise.resolve({
             onall: anonymCount + usersCount,
-            onreg: usersCount
+            onreg: usersCount,
         });
     }, memoizeInterval);
 }());
@@ -223,14 +225,14 @@ const giveIndexNews = (function () {
         const select = { _id: 0, user: 0, cdate: 0, tdate: 0, nocomments: 0 };
         const options = { lean: true, limit: 3, sort: { pdate: -1 } };
 
-        return Utils.memoizePromise(function () {
+        return Utils.memoizePromise(() => {
             const now = new Date();
 
             return News.find({
                 pdate: { $lte: now }, $or: [
                     { tdate: { $gt: now } },
-                    { tdate: { $exists: false } }
-                ]
+                    { tdate: { $exists: false } },
+                ],
             }, select, options).exec();
         }, ms('1m'));
     }());
@@ -246,8 +248,8 @@ const giveIndexNews = (function () {
                 pdate: { $lte: now },
                 $or: [
                     { tdate: { $gt: now } },
-                    { tdate: { $exists: false } }
-                ]
+                    { tdate: { $exists: false } },
+                ],
             }, select, options).exec();
 
             if (news.length) {
@@ -328,6 +330,7 @@ async function giveNewsPublic({ cid } = {}) {
     }
 
     delete news._id;
+
     return { news };
 }
 
@@ -337,7 +340,7 @@ const giveAbout = (function () {
     const select = { _id: 0, login: 1, avatar: 1 };
     const options = { lean: true };
 
-    return Utils.memoizePromise(async function () {
+    return Utils.memoizePromise(async () => {
         const users = await User.find(query, select, options).exec();
 
         return _.transform(users, (result, user) => result[user.login] = user.avatar || '/img/caps/avatar.png', {});
@@ -359,5 +362,5 @@ export default {
     giveNewsPublic,
     giveRatings,
     giveIndexStats,
-    giveAbout
+    giveAbout,
 };

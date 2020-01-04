@@ -17,16 +17,16 @@ registerModel(db => {
 
             reason: {
                 key: { type: Number }, // Key of reason from reference
-                desc: { type: String } // Manual description
+                desc: { type: String }, // Manual description
             },
             role: { type: Number }, // Role of subject at action time, if it was used to perform action
             roleregion: { type: Number }, // Region of role
 
-            addinfo: { type: Schema.Types.Mixed } // Additional info, it structure depends on action and object types
+            addinfo: { type: Schema.Types.Mixed }, // Additional info, it structure depends on action and object types
         },
         {
             strict: true,
-            collection: 'actionlog'
+            collection: 'actionlog',
         }
     );
 

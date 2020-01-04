@@ -11,6 +11,7 @@ const babelHook = () => {
     // Use require-hook babel in development
     const babelConfig = require('../babel/server.config');
     const babelFiles = require('../babel/server.files');
+
     require('@babel/register')({ sourceMap: 'inline', ...babelFiles, ...babelConfig });
 };
 
@@ -30,16 +31,16 @@ if (require.main !== module) { // If run.js is required by another module (for e
         .options('s', {
             'alias': 'script',
             'default': 'app.js',
-            describe: 'Path to script to start'
+            describe: 'Path to script to start',
         })
         .options('c', {
             alias: 'config',
-            describe: 'Alternative path to config file'
+            describe: 'Alternative path to config file',
         })
         .options('lc', {
             alias: 'logConfig',
             describe: 'Log config',
-            'default': true
+            'default': true,
         })
         .argv;
 
@@ -53,6 +54,7 @@ if (require.main !== module) { // If run.js is required by another module (for e
 
     makeDir.sync(logPath);
     log4js.configure('./log4js.json', { cwd: logPath });
+
     if (env === 'development') {
         log4js.addAppender(log4js.appenders.stdout()); // In dev write all logs also to the terminal
     }
@@ -61,7 +63,7 @@ if (require.main !== module) { // If run.js is required by another module (for e
     const logger = log4js.getLogger(appName);
 
     // Handling uncaught exceptions
-    process.on('uncaughtException', function (err) {
+    process.on('uncaughtException', err => {
         logger.fatal('PROCESS uncaughtException: ' + (err && (err.message || err)));
         logger.trace(err && (err.stack || err));
     });
@@ -73,8 +75,9 @@ if (require.main !== module) { // If run.js is required by another module (for e
     );
     logger.info(`Platform: ${process.platform}, architecture: ${process.arch} with ${os.cpus().length} cpu cores`);
     logger.info(`Node.js [${process.versions.node}] with v8 [${process.versions.v8}] on pid: ${process.pid}`);
+
     if (argv.logConfig) {
-        logger.info(`Configuration:\n`, util.inspect(
+        logger.info('Configuration:\n', util.inspect(
             // Do deep clone of config and shade password fields
             _.cloneDeep(config, (val, key) => key === 'pass' ? '######' : undefined),
             { depth: null, colors: env === 'development' }
@@ -84,7 +87,6 @@ if (require.main !== module) { // If run.js is required by another module (for e
     const requiredModule = requireModule(argv.script);
 
     if (typeof requiredModule.configure === 'function') {
-
         // Wrap configuration within try to catch error and exit
         try {
             const result = requiredModule.configure(startStamp);
