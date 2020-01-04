@@ -11,7 +11,7 @@ const babelHook = () => {
     // Use require-hook babel in development
     const babelConfig = require('../babel/server.config');
     const babelFiles = require('../babel/server.files');
-    require('babel-register')(Object.assign({ sourceMap: 'inline' }, babelFiles, babelConfig));
+    require('@babel/register')({ sourceMap: 'inline', ...babelFiles, ...babelConfig });
 };
 
 if (require.main !== module) { // If run.js is required by another module (for example gruntfile)

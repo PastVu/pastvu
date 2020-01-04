@@ -3,12 +3,13 @@
  */
 module.exports = {
     only: [ // May be array of regexp, or github.com/isaacs/node-glob
-        '@(app|downloader|uploader|sitemap).js',
-        'controllers/!(systemjs|api|apilog).js',
+        /(app|downloader|uploader|sitemap).js/,
+        /controllers\/(?!systemjs|api|apilog).js/,
         'commons/time.js',
-        'models/*.js',
-        'app/*.js',
-        'app/webapi/*.js',
-        'app/errors/*.js'
+        /models\/.+\.js$/,
+        /app\/.+\.js$/,
+    ],
+    ignore: [
+        /node_modules/,
     ]
 };

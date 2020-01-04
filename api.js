@@ -23,11 +23,6 @@ var express = require('express'),
 global.appVar = {}; //Глоблальный объект для хранения глобальных переменных приложения
 global.appVar.maxRegionLevel = 5; //6 уровней регионов: 0..5
 
-/**
- * Включаем "наши" расширения js
- */
-require('./commons/JExtensions.js');
-
 var interfaces = os.networkInterfaces();
 var addresses = [];
 for (var k in interfaces) {

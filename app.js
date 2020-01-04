@@ -1,4 +1,3 @@
-import './commons/JExtensions';
 import ms from 'ms';
 import http from 'http';
 import path from 'path';

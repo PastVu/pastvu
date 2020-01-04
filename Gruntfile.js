@@ -8,7 +8,6 @@ module.exports = function (grunt) {
     const upperDir = path.normalize(path.resolve('../') + '/');
     const targetDir = path.normalize(upperDir + 'appBuild/');
     const babelConfig = require('./babel/server.config');
-    const babelFiles = require('./babel/server.files');
     const hash = Utils.randomString(5);
 
     grunt.file.defaultEncoding = 'utf8';
@@ -149,12 +148,20 @@ module.exports = function (grunt) {
             }
         },
         babel: {
-            options: Object.assign({}, babelConfig),
+            options: {...babelConfig},
             dist: {
                 files: [
                     {
                         expand: true,
-                        src: babelFiles.only,
+                        src: [ // May be array of regexp, or github.com/isaacs/node-glob
+                            '@(app|downloader|uploader|sitemap).js',
+                            'controllers/!(systemjs|api|apilog).js',
+                            'commons/time.js',
+                            'models/*.js',
+                            'app/*.js',
+                            'app/webapi/*.js',
+                            'app/errors/*.js'
+                        ],
                         dest: targetDir
                     }
                 ]
