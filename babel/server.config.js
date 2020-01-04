@@ -1,30 +1,24 @@
 /**
  * Babel configuration for nodejs server.
- * Node>=8.7 (v8 6.1; it's up to 61 here https://www.chromestatus.com/features)
+ * Node>=12.11 (v8 7.7; it's up to 77 here https://www.chromestatus.com/features)
  */
 
 module.exports = {
     comments: false,
     plugins: [
         // Modules are standardized, but there are no native loaders for them
-        'transform-es2015-modules-commonjs',
-
-        // Externalise references to helpers, automatically polyfilling your code without polluting globals
-        ['transform-runtime', {
-            // And say not to replace standart library calls with core-js calls,
-            // But we still need helpers (like async-to-generator) to not embed them to each file, but import from helpers
-            polyfill: false, regenerator: false, helpers: true
-        }],
+        // Temporarily allow top level this for diff_match_patch.js
+        ['@babel/plugin-transform-modules-commonjs', { allowTopLevelThis: true }],
 
         // Stage-1 preset
-        'transform-class-constructor-call',
-        'transform-export-extensions',
+        '@babel/plugin-proposal-export-default-from',
 
         // Stage-2 preset
-        'transform-class-properties',
+        '@babel/plugin-proposal-export-namespace-from',
 
-        // Stage-3 preset
-        'transform-async-generator-functions',
-        ['transform-object-rest-spread', { useBuiltIns: true }], // useBuiltIns means Object.assign instead of babel extends helper
-    ]
+        // Optional Chaining Operator: 'user.address?.street'
+        ['@babel/plugin-proposal-optional-chaining', { loose: true }],
+        // Nullish coalescing: x ?? y
+        ['@babel/plugin-proposal-nullish-coalescing-operator', { loose: true }],
+    ],
 };

@@ -1,4 +1,3 @@
-import './commons/JExtensions';
 import fs, { promises as fsAsync } from 'fs';
 import gm from 'gm';
 import mv from 'mv';

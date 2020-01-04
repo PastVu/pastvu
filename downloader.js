@@ -1,4 +1,3 @@
-import './commons/JExtensions';
 import fs, { promises as fsAsync } from 'fs';
 import ms from 'ms';
 import _ from 'lodash';

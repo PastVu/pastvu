@@ -5,7 +5,7 @@ const fs = require('fs');
 const _ = require('lodash');
 const path = require('path');
 const colors = require('ansi-colors');
-const babel = require('babel-core');
+const babel = require('@babel/core');
 const desc = `
   Tranforms script with Babel using application's config.
   Usage: $0 <file> [options]
