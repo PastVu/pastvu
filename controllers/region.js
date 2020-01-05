@@ -329,9 +329,6 @@ export const getShortRegionsParams = (function () {
         let result;
         const regionLevels = new Array(maxRegionLevel + 1);
 
-        console.log('!!!', typeof rhash);
-        console.log(rhash);
-
         // rhash is a null prototype object
         for (const cid in rhash) { // eslint-disable-line guard-for-in
             const region = rhash[cid];

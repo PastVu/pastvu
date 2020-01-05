@@ -240,6 +240,8 @@ export async function configure(startStamp) {
     if (manualGC) {
         // Call the garbage collector after a certain time
         logger.info(`Manual garbage collection every ${manualGarbageCollect / 1000}s`);
+    } else {
+        logger.info('Automatic garbage collection');
     }
 
     const scheduleMemInfo = (function () {
