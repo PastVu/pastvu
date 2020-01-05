@@ -10,7 +10,6 @@ const FIREFOX_ERROR_INFO = /@(.+?):(\d+):(\d+)$/;
  * PastVu main error type
  */
 export default class ApplicationError extends Error {
-
     constructor(data = {}, rid) {
         if (typeof data === 'string') {
             data = { code: data };
@@ -43,6 +42,7 @@ export default class ApplicationError extends Error {
             if (stack) {
                 // Skipping first line in stack (it's the line where we have create our `new Error`)
                 stack = stack.split('\n').slice(1);
+
                 // Trying to get file name, line number and column number from the first line in stack
                 const [, fileName, lineNumber, columnNumber] = FIREFOX_ERROR_INFO.exec(stack[0] || '') || [];
 
@@ -58,12 +58,13 @@ export default class ApplicationError extends Error {
         const result = {
             type: this.name,
             code: this.code,
-            message: this.message
+            message: this.message,
         };
 
         if (!_.isEmpty(this.rid)) {
             result.rid = this.rid;
         }
+
         if (!_.isEmpty(this.details)) {
             result.details = this.details;
         }
@@ -75,7 +76,6 @@ export default class ApplicationError extends Error {
     setLogged() {
         this.logged = true;
     }
-
 }
 
 // Needed if we want to take name from error instance.

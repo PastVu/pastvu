@@ -5,34 +5,37 @@ module.exports = {
     'env': {
         'amd': true,
         'es6': true,
-        'jest': true,
         'node': true,
-        'jquery': true,
         'browser': true,
         'serviceworker': true,
     },
 
     'parserOptions': {
-        'ecmaVersion': 2017,
+        'ecmaVersion': 2020,
         'sourceType': 'module',
         'ecmaFeatures': {
             'objectLiteralDuplicateProperties': false
-        }
+        },
+        'codeFrame': true, // Show the code frame in the reporter
     },
 
     'globals': {
-        'analytics': true,
-        'init': true,
-        'ga': true
+        '__DEV__': 'readonly',
     },
 
     'plugins': [
         'babel',
     ],
 
+    // Warn about unused eslint-disable and eslint-disable-line comments
+    "reportUnusedDisableDirectives": true,
+
+    'settings': {
+    },
+
     'rules': {
         // babel inserts `'use strict';` for us
-        'strict': [2, 'never'],
+        'strict': [0, 'never'],
 
         /** ES6 section http://eslint.org/docs/rules/#ecmascript-6 */
         // enforces no braces where they can be omitted
@@ -42,7 +45,7 @@ module.exports = {
         // require space before/after arrow function's arrow
         'arrow-spacing': [2, { 'before': true, 'after': true }],
         // require trailing commas in multiline object literals
-        'comma-dangle': [0, {
+        'comma-dangle': [2, {
             'arrays': 'always-multiline',
             'objects': 'always-multiline',
             'imports': 'always-multiline',
@@ -52,17 +55,21 @@ module.exports = {
         // verify super() callings in constructors
         'constructor-super': 0,
         // enforce the spacing around the * in generator functions
-        'generator-star-spacing': [2, {'before': false, 'after': true}],
+        'generator-star-spacing': [2, {
+            'before': false,
+            'after': true,
+            'method': { 'before': true, 'after': true },
+        }],
         // disallow modifying variables of class declarations
-        'no-class-assign': 0,
+        'no-class-assign': 2,
         // disallow arrow functions where they could be confused with comparisons
         'no-confusing-arrow': 0,
         // disallow modifying variables that are declared using const
         'no-const-assign': 2,
         // disallow duplicate class members
         'no-dupe-class-members': 2,
-        // disallow importing from the same path more than once
-        'no-duplicate-imports': 2,
+        // disallow importing from the same path more than once. Use 'import/no-duplicates' instead of this
+        'no-duplicate-imports': 0,
         // disallow symbol constructor
         'no-new-symbol': 2,
         // disallow specific globals
@@ -74,7 +81,7 @@ module.exports = {
         // Require let or const instead of var
         'no-var': 2,
         // disallow unnecessary computed property keys in object literals
-        'no-useless-computed-key': 2,
+        'no-useless-computed-key': [2, { enforceForClassMembers: true }],
         // disallow unnecessary constructor
         'no-useless-constructor': 2,
         // disallow renaming import, export, and destructured assignments to the same name
@@ -82,7 +89,7 @@ module.exports = {
         // require method and property shorthand syntax for object literals
         'object-shorthand': [2, 'always', { 'avoidQuotes': true }],
         // suggest using arrow functions as callbacks
-        'prefer-arrow-callback': [0, { 'allowNamedFunctions': true }],
+        'prefer-arrow-callback': [2, { 'allowNamedFunctions': true }],
         // suggest using of const declaration for variables that are never modified after declared
         // destructuring:all means if some variable within destructuring is modified later(let),
         // even if others never(const), whole destructuring can be defined as let
@@ -125,17 +132,23 @@ module.exports = {
         // require return statements to either always or never specify values
         'consistent-return': 0,
         // specify curly brace conventions for all control statements
-        'curly': [2, 'multi-line'],
+        'curly': [2, 'all'],
         // require default case in switch statements
-        'default-case': 2,
+        'default-case': 0,
+        // enforce default parameters to be last
+        'default-param-last': 0,
         // encourages use of dot notation whenever possible
         'dot-notation': 2,
         // enforces consistent newlines before or after dots
         'dot-location': [2, 'property'],
         // require the use of === and !==
         'eqeqeq': 2,
+        // require grouped accessor pairs in object literals and classes
+        'grouped-accessor-pairs': [2, 'setBeforeGet'],
         // make sure for-in loops have an if statement
-        'guard-for-in': 0,
+        'guard-for-in': 2,
+        // enforce a maximum number of classes per file
+        'max-classes-per-file': 0,
         // Blacklist certain identifiers to prevent them being used
         'id-blacklist': 0,
         // disallow the use of alert, confirm, and prompt
@@ -144,10 +157,14 @@ module.exports = {
         'no-caller': 2,
         // disallow lexical declarations in case/default clauses
         'no-case-declarations': 0,
+        // disallow returning value from constructor
+        'no-constructor-return': 2,
         // disallow division operators explicitly at beginning of regular expression
         'no-div-regex': 2,
         // disallow else after a return in an if
-        'no-else-return': 2,
+        'no-else-return': [2, { 'allowElseIf': false }],
+        // disallow empty functions
+        'no-empty-function': [2, { allow: ['arrowFunctions'] }],
         // disallow Unnecessary Labels
         'no-extra-label': 2,
         // disallow comparisons to null without a type-checking operator
@@ -178,8 +195,10 @@ module.exports = {
         'no-lone-blocks': 2,
         // disallow creation of functions within loops
         'no-loop-func': 0,
+        // disallow magic numbers
+        'no-magic-numbers': 0,
         // disallow use of multiple spaces
-        'no-multi-spaces': 2,
+        'no-multi-spaces': [2, {'ignoreEOLComments': true}],
         // disallow use of multiline strings
         'no-multi-str': 2,
         // disallow use of new operator when not part of the assignment or comparison
@@ -202,6 +221,10 @@ module.exports = {
         'no-proto': 2,
         // disallow declaring the same variable more then once
         'no-redeclare': [2, { 'builtinGlobals': true }],
+        // disallow certain properties on certain objects
+        'no-restricted-properties': [0, [
+            { 'object': '_', 'property': 'chain' },
+        ]],
         // disallow use of assignment in return statement
         'no-return-assign': 0,
         // disallow unnecessary return await
@@ -212,33 +235,41 @@ module.exports = {
         'no-self-compare': 2,
         // disallow use of comma operator
         'no-sequences': 2,
-        // TODO: restrict what can be thrown as an exception
-        'no-throw-literal': 0,
+        // restrict what can be thrown as an exception
+        'no-throw-literal': 2,
         // disallow unmodified conditions of loops
         // http://eslint.org/docs/rules/no-unmodified-loop-condition
         'no-unmodified-loop-condition': 2,
         // disallow usage of expressions in statement position
-        'no-unused-expressions': 2,
+        'no-unused-expressions': 0,
         // disallow unused labels
         'no-unused-labels': 2,
         // disallow unnecessary .call() and .apply()
         'no-useless-call': 0,
+        // disallow unnecessary catch clauses
+        'no-useless-catch': 2,
         // Disallow unnecessary escape usage
         'no-useless-escape': 2,
         // Disallow redundant return statements
         'no-useless-return': 0,
         // disallow use of void operator
         'no-void': 2,
-        // disallow usage of configurable warning terms in comments: e.g. 'todo'
+        // disallow usage of configurable warning terms in comments: e.g.
         'no-warning-comments': [0, { 'terms': ['todo', 'fixme', 'xxx'], 'location': 'start' }],
         // disallow use of the with statement
         'no-with': 2,
+        // enforce using named capture group in regular expression
+        'prefer-named-capture-group': 0,
         // require using Error objects as Promise rejection reasons
         'prefer-promise-reject-errors': 2,
+        // disallow use of the RegExp constructor in favor of regular expression literals
+        'prefer-regex-literals': 2,
         // require use of the second argument for parseInt()
         'radix': 2,
         // disallow async functions which have no await expression
         'require-await': 0,
+        // enforce the use of u flag on RegExp
+        'require-unicode-regexp': 0,
         // requires to declare all vars on top of their containing scope
         'vars-on-top': 0,
         // require immediate function invocation to be wrapped in parentheses
@@ -251,8 +282,6 @@ module.exports = {
         /** Variables section http://eslint.org/docs/rules/#variables **/
         // enforce or disallow variable initializations at definition
         'init-declarations': 0,
-        // disallow the catch clause parameter name being the same as a variable in the outer scope
-        'no-catch-shadow': 2,
         // disallow deletion of variables
         'no-delete-var': 2,
         // disallow var and named functions in global scope
@@ -260,11 +289,11 @@ module.exports = {
         // disallow labels that share a name with a variable
         'no-label-var': 2,
         // disallow self assignment
-        'no-self-assign': 2,
+        'no-self-assign': [2, { 'props': true }],
         // disallow shadowing of names such as arguments
         'no-shadow-restricted-names': 2,
         // disallow declaration of variables already declared in the outer scope
-        'no-shadow': [0, { 'builtinGlobals': false, 'hoist': 'functions', 'allow': [] }],
+        'no-shadow': [0, { 'builtinGlobals': true, 'hoist': 'functions', 'allow': [] }],
         // disallow use of undefined when initializing variables
         'no-undef-init': 0,
         // disallow use of undeclared variables unless mentioned in a /*global */ block
@@ -272,12 +301,18 @@ module.exports = {
         // disallow use of undefined variable
         'no-undefined': 0,
         // disallow declaration of variables that are not used in the code
-        'no-unused-vars': [2, { 'vars': 'all', 'args': 'after-used' }],
+        'no-unused-vars': [2, { 'vars': 'all', 'args': 'after-used', 'ignoreRestSiblings': true }],
         // disallow use of variables before they are defined
         'no-use-before-define': [2, { 'functions': false, 'classes': true }],
 
 
         /** Possible Errors section http://eslint.org/docs/rules/#possible-errors **/
+        // enforce “for” loop update clause moving the counter in the right direction.
+        'for-direction': 2,
+        // enforce return statements in getters
+        'getter-return': 2,
+        // disallow using an async function as a Promise executor
+        'no-async-promise-executor': 2,
         // disallow await inside of loops
         'no-await-in-loop': 0,
         // disallow comparing against -0. Use Object.is(x, -0)
@@ -294,6 +329,8 @@ module.exports = {
         'no-debugger': 0,
         // disallow duplicate arguments in functions
         'no-dupe-args': 2,
+        // disallow duplicate conditions in if-else-if chains
+        'no-dupe-else-if': 2,
         // Creating objects with duplicate keys in objects can cause unexpected behavior in your application
         'no-dupe-keys': 2,
         // disallow a duplicate case label.
@@ -301,29 +338,43 @@ module.exports = {
         // disallow the use of empty character classes in regular expressions
         'no-empty-character-class': 2,
         // disallow empty statements
-        'no-empty': 2,
+        'no-empty': [2, { allowEmptyCatch: true }],
         // disallow assigning to the exception in a catch block
         'no-ex-assign': 2,
         // disallow double-negation boolean casts in a boolean context
         'no-extra-boolean-cast': 2,
-        // disallow unnecessary parentheses. TODO: make 'all'
-        'no-extra-parens': [2, 'functions'],
+        // disallow unnecessary parentheses.
+        // if you are not sure about operator precedence, visit that page
+        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence#Table
+        'no-extra-parens': [2, 'all', {
+            'conditionalAssign': false,
+            'returnAssign': false,
+            'nestedBinaryExpressions': true, // No parens around (a && b)
+            'enforceForArrowConditionals': true, // No parens around arrow return expression a => (a ? b : c)
+            'enforceForNewInMemberExpressions': true, // No parens around 'new' expressions in member expressions
+        }],
         // disallow unnecessary semicolons
         'no-extra-semi': 2,
         // disallow overwriting functions written as function declarations
         'no-func-assign': 2,
+        // disallow assigning to imported bindings
+        'no-import-assign': 2,
         // disallow function or variable declarations in nested blocks
         'no-inner-declarations': 2,
         // disallow invalid regular expression strings in the RegExp constructor
         'no-invalid-regexp': 2,
         // disallow irregular whitespace outside of strings and comments
         'no-irregular-whitespace': 2,
+        // disallow characters which are made with multiple code points in character class syntax
+        'no-misleading-character-class': 0,
         // disallow the use of object properties of the global object (Math and JSON) as functions
         'no-obj-calls': 2,
         // disallow use of Object.prototypes builtins directly
         'no-prototype-builtins': 0,
         // disallow multiple spaces in a regular expression literal
         'no-regex-spaces': 2,
+        // disallow returning values from setters
+        'no-setter-return': 2,
         // disallow sparse arrays
         'no-sparse-arrays': 2,
         // Disallow template literal placeholder syntax in regular strings
@@ -333,9 +384,11 @@ module.exports = {
         // disallow control flow statements in finally blocks
         'no-unsafe-finally': 2,
         // disallow negating the left operand of relational operators
-        'no-unsafe-negation': 2,
+        'no-unsafe-negation': [2, { enforceForOrderingRelations: true }],
+        // disallow assignments that can lead to race conditions due to usage of await or yield.
+        'require-atomic-updates': 0,
         // disallow comparisons with the value NaN
-        'use-isnan': 2,
+        'use-isnan': [2, { enforceForSwitchCase: true, enforceForIndexOf: true }],
         // ensure JSDoc comments are valid
         'valid-jsdoc': 0,
         // ensure that the results of typeof are compared against a valid string
@@ -343,21 +396,19 @@ module.exports = {
         // Avoid code that looks like two expressions but is actually one
         'no-unexpected-multiline': 2,
 
-        // disallow certain properties on certain objects
-        // 'no-restricted-properties': [2, [
-        //   { 'object': '_', 'property': 'chain' },
-        // ]],
-
-
         /** Stylistic Issues section http://eslint.org/docs/rules/#stylistic-issues **/
+        // enforce linebreaks after opening and before closing array brackets
+        'array-bracket-newline': [2, 'consistent'],
         // enforce spacing inside array brackets
         'array-bracket-spacing': [2, 'never'],
+        // enforce line breaks after each array element
+        'array-element-newline': 0,
         // enforce consistent spacing inside single-line blocks
         'block-spacing': [2, 'never'],
         // enforce one true brace style
-        'brace-style': [2, '1tbs', { 'allowSingleLine': true }],
+        'brace-style': [2, '1tbs', { 'allowSingleLine': false }],
         // require camel case names
-        'camelcase': [2, { 'properties': 'never' }],
+        'camelcase': [0, { 'properties': 'never', 'ignoreDestructuring': true, allow: [] }],
         // enforce or disallow capitalization of the first letter of a comment
         'capitalized-comments': [0, 'always', {'ignoreInlineComments': true, 'ignoreConsecutiveComments': true}],
         // enforce spacing before and after comma
@@ -365,33 +416,49 @@ module.exports = {
         // enforce one true comma style
         'comma-style': [2, 'last'],
         // disallow padding inside computed properties
-        'computed-property-spacing': [2, 'never'],
+        'computed-property-spacing': [2, 'never', { 'enforceForClassMembers': true }],
         // enforces consistent naming when capturing the current execution context
         'consistent-this': 0,
         // enforce newline at the end of file, with no multiple empty lines
-        'eol-last': 0,
+        'eol-last': 2,
         // require or disallow spacing between function identifiers and their invocations
         'func-call-spacing': 2,
         // require function names to match the name of the variable or property to which they are assigned
-        'func-name-matching': 0,
+        'func-name-matching': [2, 'always', { 'considerPropertyDescriptor': true, 'includeCommonJSModuleExports': false }],
         // require function expressions to have a name
         'func-names': 0,
         // enforces use of function declarations or expressions
         'func-style': 0,
-        // this option enforces minimum and maximum identifier lengths
-        // (variable names, property names etc.)
+        // enforce line breaks between arguments of a function call
+        'function-call-argument-newline': [0, 'consistent'],
+        // enforce consistent line breaks inside function parentheses.
+        // currently conflicts with max-len and if argument is a function with argument on first line
+        'function-paren-newline': [0, 'multiline'],
+        // enforces minimum and maximum identifier lengths (variable names, property names etc.)
         'id-length': 0,
-        // this option sets a specific tab width for your code
+        // enforce consistent indentation
         'indent': [2, 4, {
-            'SwitchCase': 1,
-            'VariableDeclarator': {'var': 2, 'let': 2, 'const': 3},
-            'outerIIFEBody': 1,
-            'MemberExpression': 1,
-            'FunctionDeclaration': {'parameters': 'first', 'body': 1},
-            'FunctionExpression': {'parameters': 'first', 'body': 1},
-            'CallExpression': {'arguments': 1},
-            'ArrayExpression': 1,
-            'ObjectExpression': 1,
+            // Folowing numbers are multiplier of origin indent level (2 spaces in our case)
+            'SwitchCase': 1, // Enforces indentation level for case clauses in switch statements
+            'VariableDeclarator': 'first', // Enforces indentation level for variable declarators
+            'outerIIFEBody': 1, // Enforces indentation level for file-level IIFEs
+            'MemberExpression': 1, // Enforces indentation level for multi-line property chains
+            'FunctionDeclaration': {
+                'parameters': 'first', // Enforces indentation level for parameters in a function declaration
+                'body': 1, // Enforces indentation level for the body of a function declaration
+            },
+            'FunctionExpression': {
+                'parameters': 'first', // Enforces indentation level for parameters in a function expression
+                'body': 1, // Enforces indentation level for the body of a function expression
+            },
+            'CallExpression': {
+                'arguments': 1, // Enforces indentation level for arguments in a call expression
+            },
+            'ArrayExpression': 1, // Enforces indentation level for elements in arrays
+            'ObjectExpression': 1, // Enforces indentation level for elements in objects
+            'ImportDeclaration': 1, // Enforces indentation level for import statements
+            'flatTernaryExpressions': true, // Equires no indentation for ternary expressions which are nested in other ternary
+            'ignoreComments': false,
         }],
         // enforces spacing between keys and values in object literal properties
         'key-spacing': [2, { 'beforeColon': false, 'afterColon': true }],
@@ -407,39 +474,59 @@ module.exports = {
         }],
         // enforce position of line comments
         'line-comment-position': 0,
-        // enforces empty lines around comments
-        'lines-around-comment': 0,
-        // require or disallow newlines around directives
-        'lines-around-directive': [0, 'always'],
         // disallow mixed 'LF' and 'CRLF' as linebreaks
         'linebreak-style': 0,
+        // enforces empty lines around comments
+        'lines-around-comment': [2, {
+            'beforeBlockComment': true,
+            'afterBlockComment': false,
+            'beforeLineComment': false,
+            'afterLineComment': false,
+            'allowBlockStart': true,
+            'allowBlockEnd': true,
+            'allowClassStart': true,
+            'allowClassEnd': true,
+            'allowObjectStart': true,
+            'allowObjectEnd': true,
+            'allowArrayEnd': true,
+            'applyDefaultIgnorePatterns': true,
+        }],
+        // require or disallow an empty line between class members
+        'lines-between-class-members': [2, 'always', {'exceptAfterSingleLine': true}],
         // specify the maximum depth that blocks can be nested
         'max-depth': [0, 4],
-        // TODO: specify the maximum length of a line in your program
-        'max-len': [0, {
+        // maximum length of a line in your program
+        'max-len': [2, {
             'code': 140, // The character count to use whenever a tab character is encountered
-            'tabWidth': 4, // The character count to use whenever a tab character is encountered
+            'comments': 140, // Maximum line length for comments; defaults to value of code
+            'tabWidth': 2, // The character count to use whenever a tab character is encountered
             'ignoreUrls': true, // Ignores lines that contain a URL
-            'ignoreTrailingComments': true, // Ignores comments that are trailing source
+            'ignoreStrings': true, // Ignores lines that contain a double-quoted or single-quoted string
+            'ignoreComments': false, // Ignores all trailing comments and comments on their own line
+            'ignoreTrailingComments': true, // Ignores only trailing comments
             'ignoreTemplateLiterals': true, // Ignores lines that contain a template literal
             'ignoreRegExpLiterals': true, // Ignores lines that contain a RegExp literal
         }],
-        // TODO: enforce a maximum file length
+        // enforce a maximum file length
         'max-lines': [0, { 'max': 300, 'skipBlankLines': true, 'skipComments': true }],
+        // enforce a maximum number of line of code in a function
+        'max-lines-per-function': [0, { 'max': 50, 'skipBlankLines': true, 'skipComments': true }],
         // specify the maximum depth callbacks can be nested
         'max-nested-callbacks': 0,
         // limits the number of parameters that can be used in the function declaration.
         'max-params': [0, 3],
         // specify the maximum number of statement allowed in a function
         'max-statements': [0, 10],
+        // enforce a maximum number of statements allowed per line
+        'max-statements-per-lines': 0,
+        // enforce a particular style for multiline comments
+        'multiline-comment-style': 0,
+        // enforce newlines between operands of ternary expressions
+        'multiline-ternary': [0, 'always-multiline'],
         // require a capital letter for constructors
-        'new-cap': [2, { 'newIsCap': true, 'capIsNew': false }],
+        'new-cap': [2, { 'newIsCap': true, 'capIsNew': false, 'newIsCapExceptions': ['diff_match_patch'] }],
         // disallow the omission of parentheses when invoking a constructor with no arguments
         'new-parens': 2,
-        // allow/disallow an empty newline after var statement
-        'newline-after-var': 0,
-        // require newline before return statement
-        'newline-before-return': 0,
         // enforces new line after each method call in the chain to make it more readable and easy to maintain
         'newline-per-chained-call': [0, { 'ignoreChainWithDepth': 3 }],
         // disallow use of the Array constructor
@@ -473,7 +560,15 @@ module.exports = {
         // disallow trailing whitespace at the end of lines
         'no-trailing-spaces': 2,
         // disallow dangling underscores in identifiers
-        'no-underscore-dangle': [0, { 'allow': ['__REACT_PERF__'] }],
+        'no-underscore-dangle': [2, { 'enforceInMethodNames': false, 'allow': [
+            '__DEV__',
+            '_bsontype',
+            '_parsedUrl',
+            '_nojs',
+            '_id',
+            '__v',
+            '_s',
+        ] }],
         // disallow the use of Boolean literals in conditional expressions
         // also, prefer `a || b` over `a ? a : b`
         'no-unneeded-ternary': [2, { 'defaultAssignment': false }],
@@ -482,10 +577,9 @@ module.exports = {
         // enforce the location of single-line statements
         'nonblock-statement-body-position': [2, 'beside'],
         // enforce consistent line breaks inside braces
-        'object-curly-newline': [0, { 'multiline': true }],
-        // TODO: require padding inside curly braces
+        'object-curly-newline': [2, { 'consistent': true }],
         // Enforce using the eslint-plugin-babel
-        'object-curly-spacing': [2, 'always'],
+        // 'object-curly-spacing': [0, 'never'],
         // enforce placing object properties on separate lines
         'object-property-newline': 0,
         // allow just one var statement per function
@@ -495,19 +589,45 @@ module.exports = {
         // require assignment operator shorthand where possible or prohibit it entirely
         'operator-assignment': 0,
         // enforce operators to be placed before or after line breaks
-        'operator-linebreak': 0,
+        'operator-linebreak': [2, 'after', {overrides: {'|>': 'before'}}],
         // enforce padding within blocks
-        'padded-blocks': [0, 'never'],
+        'padded-blocks': [2, {'blocks': 'never', 'classes': 'never', 'switches': 'never'}, {allowSingleLineBlocks: false}],
+        // require or disallow padding lines between statements
+        'padding-line-between-statements': [2,
+            // Always require blank lines after directive (like 'use-strict'), except between directives
+            {blankLine: 'always', prev: 'directive', next: '*'},
+            {blankLine: 'any',    prev: 'directive', next: 'directive'},
+            // Always require blank lines after import, except between imports
+            {blankLine: 'always', prev: 'import', next: '*'},
+            {blankLine: 'any',    prev: 'import', next: 'import'},
+            // Always require blank lines before and after every sequence of variable declarations and export
+            {blankLine: 'always', prev: '*', next: ['const', 'let', 'var', 'export']},
+            {blankLine: 'always', prev: ['const', 'let', 'var', 'export'], next: '*'},
+            {blankLine: 'any',    prev: ['const', 'let', 'var', 'export'], next: ['const', 'let', 'var', 'export']},
+            // Always require blank lines before and after class declaration, if, do/while, switch, try, iife
+            {blankLine: 'always', prev: '*', next: ['if', 'class', 'for', 'do', 'while', 'switch', 'try', 'iife']},
+            {blankLine: 'always', prev: ['if', 'class', 'for', 'do', 'while', 'switch', 'try', 'iife'], next: '*'},
+            // Always require blank lines before return statements
+            {blankLine: 'always', prev: '*', next: 'return'},
+        ],
+        // disallow the use of Math.pow in favor of the ** operator
+        'prefer-exponentiation-operator': 0,
+        // disallow using Object.assign with an object literal as the first argument and prefer the use of object spread instead
+        'prefer-object-spread': 2,
         // require quotes around object literal property names
         'quote-props': [2, 'as-needed', { 'keywords': false, 'unnecessary': false, 'numbers': false }],
         // specify whether double or single quotes should be used
-        'quotes': [2, 'single', { 'avoidEscape': true, 'allowTemplateLiterals': true }],
+        'quotes': [2, 'single', 'avoid-escape'],
         // require identifiers to match the provided regular expression
         'id-match': 0,
+        // enforce the location of arrow function bodies
+        'implicit-arrow-linebreak': 0,
         // enforce spacing before and after semicolons
         'semi-spacing': [2, { 'before': false, 'after': true }],
+        // enforce location of semicolons
+        'semi-style': [2, 'last'],
         // require use of semicolons where they are valid instead of ASI
-        'semi': [2, "always"],
+        'semi': [2, 'always', {'omitLastInOneLineBlock': false}],
         // requires object keys to be sorted
         'sort-keys': 0,
         // sort variables within the same declaration block
@@ -527,6 +647,8 @@ module.exports = {
             'exceptions': ['-', '+'],
             'markers': ['=', '!'],           // space here to support sprockets directives
         }],
+        // enforce spacing around colons of switch statements
+        'switch-colon-spacing': [2, {'after': true, 'before': false}],
         // require or disallow spacing between template tags and their literals
         'template-tag-spacing': [2, 'never'],
         // files must not begin with the Unicode Byte Order Mark (BOM)
@@ -537,7 +659,10 @@ module.exports = {
         /* https://github.com/babel/eslint-plugin-babel */
         // Turn them on as they're needed
         'babel/new-cap': 0,
-        'babel/object-curly-spacing': 0,
+        'babel/camelcase': [2, { properties: 'never', ignoreDestructuring: true }], // Stop complaining about optional chaining (var foo = bar?.a_b;)
+        'babel/object-curly-spacing': [2, 'always'],
         'babel/no-invalid-this': 0,
+        'babel/semi': 2,
+        'babel/no-unused-expressions': 2, // Stop complaining about optional chaining
     }
 };

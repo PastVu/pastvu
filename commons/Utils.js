@@ -1,12 +1,12 @@
-var fs = require('fs');
-var path = require('path');
-var config = require('../config');
-var Utils = Object.create(null);
-var _ = require('lodash');
-var _s = require('underscore.string');
-var useragent = require('useragent');
-var DMP = require('./diff_match_patch.js');
-var regexpUrl = require('./regex-weburl');
+const fs = require('fs');
+const path = require('path');
+const config = require('../config');
+const Utils = Object.create(null);
+const _ = require('lodash');
+const _s = require('underscore.string');
+const useragent = require('useragent');
+const DMP = require('./diff_match_patch.js');
+const regexpUrl = require('./regex-weburl');
 
 Utils.isEven = function (n) {
     return n % 2 === 0;
@@ -54,7 +54,7 @@ Utils.checkUserAgent = (function () {
                 const version = Number(agent.major) || 0;
 
                 // Check version match with semver, so we should have semver string guaranteed
-                const versionString = `${version}.${(Number(agent.minor) || 0)}.${(Number(agent.patch) || 0)}`;
+                const versionString = `${version}.${Number(agent.minor) || 0}.${Number(agent.patch) || 0}`;
 
                 // Check for bad browser
                 const browser = badbrowserList[family];
@@ -66,12 +66,14 @@ Utils.checkUserAgent = (function () {
                     badbrowser: isBadbrowser,
                     polyfills: isBadbrowser ? {} : _.transform(polyfillFreelist, (result, browsers, polyfill) => {
                         const browser = browsers[family];
+
                         result[polyfill] = !browser || !semver.satisfies(versionString, browser);
-                    })
+                    }),
                 };
 
                 cache.set(userAgent, result);
             }
+
             return result;
         };
     };
@@ -90,11 +92,13 @@ Utils.getMyAgentParsed = (function () {
             return {};
         }
 
-        var result = cache.peek(userAgent);
+        let result = cache.peek(userAgent);
+
         if (result === undefined) {
             result = useragent.parse(userAgent);
             cache.set(userAgent, result);
         }
+
         return result;
     };
 }());
@@ -120,9 +124,6 @@ Utils.isObjectEmpty = function (obj) {
 
 Utils.getObjectPropertyLength = function (obj) {
     return Object.keys(obj).length;
-};
-
-Utils.dummyFn = function () {
 };
 
 Utils.randomString = (function () {
@@ -151,19 +152,21 @@ Utils.randomString = (function () {
 //Преобразование путей для express. http://stackoverflow.com/questions/16577396/express-optional-trailing-slash-for-top-level-path
 // '/dev' - везьмет и со слешом в конце и без. Чтобы взял и дочерние, добавляем /:p?*, где p - переменная с дальнейшим путем в request
 Utils.pathForExpress = function (paths) {
-    var result,
-        i,
-        processPath = function (path) {
-            if (path.substr(-2, 2) === '/*') {
-                return path.substr(0, path.length - 1) + ':p?*';
-            }
-            return path;
-        };
+    let result;
+    let i;
+    const processPath = function (path) {
+        if (path.substr(-2, 2) === '/*') {
+            return path.substr(0, path.length - 1) + ':p?*';
+        }
+
+        return path;
+    };
 
     if (!Array.isArray(paths)) {
         result = processPath(paths);
     } else {
         result = [];
+
         for (i = 0; i < paths.length; i++) {
             result.unshift(processPath(paths[i]));
         }
@@ -173,55 +176,18 @@ Utils.pathForExpress = function (paths) {
 };
 
 /**
- * Асинхронный memoize с опциональным временем жизни
- * @param memoizedFunc Функция, результат которой будет запомнен
- * @param ttl Время жизни в ms
- * @returns {Function}
- */
-Utils.memoizeAsync = function (memoizedFunc, ttl) {
-    var cache;
-    var waitings = []; // Массив коллбеков, которые будут наполняться пока функция работает и вызванны, после её завершения
-
-    function memoizeHandler() {
-        cache = arguments;
-        for (var i = waitings.length; i--;) {
-            waitings[i].apply(null, arguments);
-        }
-        waitings = [];
-        if (typeof ttl === 'number' && ttl > 0) {
-            setTimeout(function () {
-                cache = undefined;
-            }, ttl);
-        }
-    }
-
-    return function (cb) {
-        if (cache !== undefined) {
-            cb.apply(null, cache);
-        } else {
-            // Сначала кладем, а потом проверяем на то что положили первый,
-            // чтобы корректно вызвалось, когда memoizedFunc выполнится мгновенно
-            waitings.push(cb);
-            if (waitings.length === 1) {
-                memoizedFunc(memoizeHandler);
-            }
-        }
-    };
-};
-
-/**
  * Promise-memoize с опциональным временем жизни
  * @param func Функция, возвращаемый promise которой будет запомнен
  * @param ttl Время жизни в ms
  */
 Utils.memoizePromise = function (func, ttl) {
-    var memoizedPromise;
+    let memoizedPromise;
 
     function resetPromise() {
         memoizedPromise = func();
 
         if (typeof ttl === 'number' && ttl > 0) {
-            setTimeout(function () {
+            setTimeout(() => {
                 memoizedPromise = undefined;
             }, ttl);
         }
@@ -290,16 +256,6 @@ Utils.reflectKeys = function (obj) {
     });
 };
 
-Utils.linkifyMailString = function (inputText, className) {
-    var replacedText, replacePattern;
-    className = className ? ' class="' + className + '"' : '';
-
-    //Change email addresses to mailto:: links.
-    replacePattern = /(\w+@[a-zA-Z_]+?\.[a-zA-Z]{2,6})/gim;
-    replacedText = replacedText.replace(replacePattern, '<a href="mailto:$1"' + className + '>$1</a>');
-
-    return replacedText;
-};
 
 Utils.linkifyUrlString = function (text, target, className) {
     'use strict';
@@ -315,21 +271,27 @@ Utils.linkifyUrlString = function (text, target, className) {
 
     //Starting with http://, https://, or ftp://
     matches = _.uniq(text.match(regexpUrl));
+
     for (let i = 0; i < matches.length; i++) {
         try { // Do nothing if URI malformed (decodeURI fails)
             const url = decodeURI(matches[i]);
+
             text = text.replace(matches[i], `<a href="${url}" rel="nofollow noopener"${target}${className}>${url}</a>`);
         } catch (err) {}
     }
 
     //Starting with "www." (without // before it, or it'd re-link the ones done above).
-    const matchPattern = /(^|[^\/])(www\.[\S]+(\b|$))/gim;
+    const matchPattern = /(^|[^/])(www\.[\S]+(\b|$))/gim;
+
     matches = _.uniq(text.match(matchPattern));
+
     for (let i = 0; i < matches.length; i++) {
         try {
             matches[i] = _s.trim(matches[i]); //Так как в результат match попадут и переносы и пробелы (^|[^\/]), то надо их удалить
+
             const url = decodeURI(matches[i]);
-            text = text.replace(matches[i], `<a href="http://${url}" rel="nofollow noopener"${target}${className}>${url}<\/a>`);
+
+            text = text.replace(matches[i], `<a href="http://${url}" rel="nofollow noopener"${target}${className}>${url}</a>`);
         } catch (err) {}
     }
 
@@ -340,13 +302,11 @@ Utils.inputIncomingParse = (function () {
     'use strict';
 
     const host = config.client.host;
-    const reversedEscapeChars = { "<": "lt", ">": "gt", '"': "quot", "&": "amp", "'": "#39" };
+    const reversedEscapeChars = { '<': 'lt', '>': 'gt', '"': 'quot', '&': 'amp', "'": '#39' };
 
     function escape(txt) {
         //Паттерн из _s.escapeHTML(result); исключая амперсант
-        return txt.replace(/[<>"']/g, function (m) {
-            return `&${reversedEscapeChars[m]};`;
-        });
+        return txt.replace(/[<>"']/g, m => `&${reversedEscapeChars[m]};`);
     }
 
     return function (txt) {
@@ -364,7 +324,7 @@ Utils.inputIncomingParse = (function () {
 
         // Replace links to protected/covered photos with regular link
         // For example, /_pr/a/b/c/abc.jpg -> /_p/a/b/c/abc.jpg
-        result = result.replace(/\/_prn?\/([\/a-z0-9]{26,40}\.(?:jpe?g|png))/gi, '/_p/$1');
+        result = result.replace(/\/_prn?\/([/a-z0-9]{26,40}\.(?:jpe?g|png))/gi, '/_p/$1');
 
         const plain = result;
 
@@ -372,11 +332,12 @@ Utils.inputIncomingParse = (function () {
 
         //Оборачиваем внутренние ссылкы в линк
         //Например, <a target="_blank" class="innerLink" href="/u/klimashkin/photo">/u/klimashkin/photo</a>
+        // eslint-disable-next-line prefer-regex-literals
         result = result.replace(new RegExp('(^|\\s|\\()(/[-A-Z0-9+&@#\\/%?=~_|!:,.;]*[-A-Z0-9+&@#\\/%=~_|])', 'gim'), '$1<a target="_blank" class="innerLink" href="$2">$2</a>');
 
         //Заменяем диез-ссылку фото #xxx на линк
         //Например, #123456 -> <a target="_blank" class="sharpPhoto" href="/p/123456">#123456</a>
-        result = result.replace(/(^|\s|\()#(\d{1,8})(?=[\s\)\.,]|$)/g, '$1<a target="_blank" class="sharpPhoto" href="/p/$2">#$2</a>');
+        result = result.replace(/(^|\s|\()#(\d{1,8})(?=[\s).,]|$)/g, '$1<a target="_blank" class="sharpPhoto" href="/p/$2">#$2</a>');
 
         result = Utils.linkifyUrlString(result, '_blank'); //Оборачиваем остальные url в ahref
         result = result.replace(/\n{3,}/g, '<br><br>').replace(/\n/g, '<br>'); //Заменяем переносы на <br>
@@ -388,29 +349,33 @@ Utils.inputIncomingParse = (function () {
 
 Utils.txtHtmlToPlain = function (txt, brShrink) {
     'use strict';
-    var result = txt;
 
-    result = result.replace(/<br\s*[\/]?>/gi, brShrink ? ' ' : '\n'); // Заменяем <br> на \n или ничего
+    let result = txt;
+
+    result = result.replace(/<br\s*[/]?>/gi, brShrink ? ' ' : '\n'); // Заменяем <br> на \n или ничего
     result = _s.stripTags(result); // Убираем обрамляющие тэги ahref
     result = _s.unescapeHTML(result); // Возвращаем эскейпленные
+
     return result;
 };
 Utils.txtdiff = (function () {
     'use strict';
-    var dmp = new DMP.diff_match_patch();
+
+    const dmp = new DMP.diff_match_patch();
 
     return function (text1, text2) {
-        var result = '',
-            pattern_para = /\n/g,
-            diffs = dmp.diff_main(text1, text2),
-            operationType,
-            text;
+        let result = '';
+        const patternPara = /\n/g;
+        const diffs = dmp.diff_main(text1, text2);
+        let operationType;
+        let text;
 
         dmp.diff_cleanupSemantic(diffs);
 
-        for (var x = 0; x < diffs.length; x++) {
+        for (let x = 0; x < diffs.length; x++) {
             operationType = diffs[x][0];    // Operation (insert, delete, equal)
-            text = _s.escapeHTML(diffs[x][1]).replace(pattern_para, '&para;<br>');
+            text = _s.escapeHTML(diffs[x][1]).replace(patternPara, '&para;<br>');
+
             switch (operationType) {
                 case DMP.DIFF_INSERT:
                     result += '<span class="diffIns">' + text + '</span>';
@@ -422,14 +387,16 @@ Utils.txtdiff = (function () {
                     result += '<span class="diffEq">' + text + '</span>';
             }
         }
+
         return result;
     };
 }());
 
 Utils.calcGeoJSONPointsNum = function (arr) {
     'use strict';
-    var result = 0,
-        i;
+
+    let result = 0;
+    let i;
 
     if (Array.isArray(arr[0])) {
         for (i = arr.length; i--;) {
@@ -438,16 +405,19 @@ Utils.calcGeoJSONPointsNum = function (arr) {
     } else {
         result = 1;
     }
+
     return result;
 };
 Utils.calcGeoJSONPolygonsNum = function (geometry) {
     'use strict';
-    var result,
-        res,
-        i;
+
+    let result;
+    let res;
+    let i;
 
     if (geometry.type === 'MultiPolygon') {
         result = { exterior: 0, interior: 0 };
+
         for (i = geometry.coordinates.length; i--;) {
             res = polyNum(geometry.coordinates[i]);
             result.exterior += res.exterior;
@@ -466,6 +436,7 @@ Utils.calcGeoJSONPolygonsNum = function (geometry) {
 
 Utils.calcGeoJSONPointsNumReduce = function (previousValue, currentValue) {
     'use strict';
+
     return previousValue + (Array.isArray(currentValue[0]) ? currentValue.reduce(Utils.calcGeoJSONPointsNumReduce, 0) : 1);
 };
 
@@ -475,15 +446,16 @@ Utils.copyFile = (source, target) => new Promise((resolve, reject) => {
     let isDone = false;
     const rd = fs.createReadStream(source);
 
-    rd.on('error', function (err) {
+    rd.on('error', err => {
         done(err);
     });
 
     const wr = fs.createWriteStream(target);
-    wr.on('error', function (err) {
+
+    wr.on('error', err => {
         done(err);
     });
-    wr.on('close', function () {
+    wr.on('close', () => {
         done();
     });
 
@@ -493,6 +465,7 @@ Utils.copyFile = (source, target) => new Promise((resolve, reject) => {
         if (isDone) {
             return;
         }
+
         isDone = true;
 
         if (err) {
@@ -503,29 +476,9 @@ Utils.copyFile = (source, target) => new Promise((resolve, reject) => {
     }
 });
 
-//Экстракт данных из курсора MongoDB-native
-Utils.cursorExtract = function (err, cursor) {
-    if (err || !cursor) {
-        this(err || { message: 'Create cursor error', error: true });
-        return;
-    }
-    cursor.toArray(this);
-};
-//Экстракт всех входящих параметров-курсоров MongoDB-native
-Utils.cursorsExtract = function cursorsExtract(err) {
-    if (err) {
-        this({ message: err && err.message, error: true });
-        return;
-    }
-
-    for (var i = 1; i < arguments.length; i++) {
-        arguments[i].toArray(this.parallel());
-    }
-};
-
 // Находит свойства объекта a, значения которых не совпадают с такими свойствами объекта b
 Utils.diff = function (a, b) {
-    return _.transform(a, function (result, val, key) {
+    return _.transform(a, (result, val, key) => {
         if (!_.isEqual(val, b[key])) {
             result[key] = val;
         }
@@ -535,7 +488,7 @@ Utils.diff = function (a, b) {
 Utils.math = (function () {
     'use strict';
 
-    var defDivider = 1e6;
+    const defDivider = 1e6;
 
     /**
      * Обрезание числа с плавающей запятой до указанного количества знаков после запятой
@@ -545,7 +498,8 @@ Utils.math = (function () {
      * @return {number}
      */
     function toPrecision(number, precision) {
-        var divider = precision ? Math.pow(10, precision) : defDivider;
+        const divider = precision ? Math.pow(10, precision) : defDivider;
+
         return ~~(number * divider) / divider;
     }
 
@@ -556,19 +510,20 @@ Utils.math = (function () {
      * @return {number}
      */
     function toPrecisionRound(number, precision) {
-        var divider = precision ? Math.pow(10, precision) : defDivider;
+        const divider = precision ? Math.pow(10, precision) : defDivider;
+
         return Math.round(number * divider) / divider;
     }
 
     return {
-        toPrecision: toPrecision,
-        toPrecisionRound: toPrecisionRound,
-        toPrecision6: function (number) {
+        toPrecision,
+        toPrecisionRound,
+        toPrecision6(number) {
             return toPrecision(number, 6);
         },
-        toPrecisionRound6: function (number) {
+        toPrecisionRound6(number) {
             return toPrecisionRound(number, 6);
-        }
+        },
     };
 }());
 
@@ -579,12 +534,13 @@ Utils.geo = (function () {
     //На вход подаётся массив точек [lng, lat]
     //http://stackoverflow.com/a/10129983/1309851
     function polyCentroid(points) {
-        var pointsLen = points.length,
-            i = 0, j = pointsLen - 1,
-            f,
-            x = 0, y = 0,
-            area = 0,
-            p1, p2;
+        const pointsLen = points.length;
+        let i = 0; let j = pointsLen - 1;
+        let f;
+        let x = 0; let y = 0;
+        let area = 0;
+        let p1; let
+            p2;
 
         for (i; i < pointsLen; j = i++) {
             p1 = points[i];
@@ -596,8 +552,10 @@ Utils.geo = (function () {
             area += p1[1] * p2[0];
             area -= p1[0] * p2[1];
         }
+
         area /= 2;
         f = area * 6;
+
         return [x / f, y / f];
     }
 
@@ -609,14 +567,14 @@ Utils.geo = (function () {
      * TODO: sphere, now we just move coordinates by 180 for lng and 90 for lat
      */
     function polyArea(points, signed) {
-        var area = 0;
-        var isSigned = signed || false;
+        let area = 0;
+        const isSigned = signed || false;
 
         if (!_.isEqual(_.head(points), _.last(points))) {
             points = points.concat(points[0]);
         }
 
-        for (var i = 0, l = points.length; i < l; i++) {
+        for (let i = 0, l = points.length; i < l; i++) {
             area += (points[i][0] + 180) * (points[i + 1][1] + 90) - (points[i][1] + 90) * (points[i + 1][0] + 180);
         }
 
@@ -639,7 +597,8 @@ Utils.geo = (function () {
     // The input is polygon geometry object {type, coordinates}
     // Return [WestLng, SouthLat, EastLng, NorthLat]
     function polyBBOX(geometry) {
-        var i, resultbbox, polybbox, multipolycoords;
+        let i; let resultbbox; let polybbox; let
+            multipolycoords;
 
         if (geometry.type === 'Polygon') {
             resultbbox = getbbox(geometry.coordinates[0]);
@@ -655,25 +614,24 @@ Utils.geo = (function () {
                 multipolycoords.push([polybbox[2], polybbox[3]]); // NorthEast
                 multipolycoords.push([polybbox[0], polybbox[3]]); // SouthEast
             }
-            multipolycoords.sort(function (a, b) {
-                return a[0] < b[0] ? -1 : (a[0] > b[0] ? 1 : 0);
-            });
+
+            multipolycoords.sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0);
             multipolycoords.push(multipolycoords[0]);
             resultbbox = getbbox(multipolycoords);
         }
 
         function getbbox(points) {
-            var pointsLen = points.length,
-                i = 0, j = pointsLen - 1,
-                x1 = points[j][0], x2,
-                y1 = points[j][1], y2,
-                p1, p2,
-                bbox;
+            const pointsLen = points.length;
+            let i = 0; let j = pointsLen - 1;
+            let x1 = points[j][0]; let x2;
+            const y1 = points[j][1]; let y2;
+            let p1; let p2;
 
             if (x1 === -180) {
                 x1 = 180;
             }
-            bbox = [x1, y1, x1, y1];
+
+            const bbox = [x1, y1, x1, y1];
 
             for (i; i < pointsLen - 1; j = i++) {
                 p1 = points[j]; //prev
@@ -685,6 +643,7 @@ Utils.geo = (function () {
                 if (x1 === -180) {
                     x1 = 180;
                 }
+
                 if (x2 === -180) {
                     x2 = 180;
                 }
@@ -695,12 +654,10 @@ Utils.geo = (function () {
                     } else if (x2 < x1 && x2 < bbox[0] && Math.abs(x2 - bbox[0]) <= 180) {
                         bbox[0] = x2;
                     }
-                } else {
-                    if (x2 < 0 && x1 > 0 && (x2 > bbox[2] || bbox[2] > 0)) {
-                        bbox[2] = x2;
-                    } else if (x2 > 0 && x1 < 0 && (x2 < bbox[0] || bbox[0] < 0)) {
-                        bbox[0] = x2;
-                    }
+                } else if (x2 < 0 && x1 > 0 && (x2 > bbox[2] || bbox[2] > 0)) {
+                    bbox[2] = x2;
+                } else if (x2 > 0 && x1 < 0 && (x2 < bbox[0] || bbox[0] < 0)) {
+                    bbox[0] = x2;
                 }
 
                 if (y2 < bbox[1]) {
@@ -709,6 +666,7 @@ Utils.geo = (function () {
                     bbox[3] = y2;
                 }
             }
+
             return bbox;
         }
 
@@ -724,13 +682,14 @@ Utils.geo = (function () {
      * @return {Number}
      */
     function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
-        var R = 6371, // Mean radius of the earth in km
-            dLat = deg2rad(lat2 - lat1), // deg2rad below
-            dLon = deg2rad(lon2 - lon1),
-            a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2),
-            c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)),
-            d = R * c; // Distance in km
+        const R = 6371; // Mean radius of the earth in km
+        const dLat = deg2rad(lat2 - lat1); // deg2rad below
+        const dLon = deg2rad(lon2 - lon1);
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const d = R * c; // Distance in km
+
         return d;
     }
 
@@ -739,16 +698,18 @@ Utils.geo = (function () {
     }
 
     function geoToPrecision(geo, precision) {
-        _.forEach(geo, function (item, index, array) {
+        _.forEach(geo, (item, index, array) => {
             array[index] = Utils.math.toPrecision(item, precision || 6);
         });
+
         return geo;
     }
 
     function geoToPrecisionRound(geo, precision) {
-        _.forEach(geo, function (item, index, array) {
+        _.forEach(geo, (item, index, array) => {
             array[index] = Utils.math.toPrecisionRound(item, precision || 6);
         });
+
         return geo;
     }
 
@@ -780,9 +741,9 @@ Utils.geo = (function () {
     }
 
     //Проверка на валидность bbox [bottomlat, leftlng, toplat, rightlng]
-    function checkbboxLatLng(bbox) {
-        return Array.isArray(bbox) && bbox.length === 4 && checkLatLng([bbox[0], bbox[1]]) && checkLatLng([bbox[2], bbox[3]]) && bbox[0] < bbox[2];
-    }
+    const checkbboxLatLng = bbox =>
+        Array.isArray(bbox) && bbox.length === 4 && checkLatLng([bbox[0], bbox[1]]) && checkLatLng([bbox[2], bbox[3]]) && bbox[0] < bbox[2];
+
 
     //Переставляет местами lat и lng в bbox
     function bboxReverse(bbox) {
@@ -790,38 +751,23 @@ Utils.geo = (function () {
     }
 
     return {
-        deg2rad: deg2rad,
-        geoToPrecision: geoToPrecision,
-        geoToPrecisionRound: geoToPrecisionRound,
-        getDistanceFromLatLonInKm: getDistanceFromLatLonInKm,
-        polyCentroid: polyCentroid,
-        polyBBOX: polyBBOX,
-        polyArea: polyArea,
-        sortPolygonSegmentsByArea: sortPolygonSegmentsByArea,
-        spinLng: spinLng,
-        latlngToArr: latlngToArr,
-        check: check,
-        checkLatLng: checkLatLng,
-        checkbbox: checkbbox,
-        checkbboxLatLng: checkbboxLatLng,
-        bboxReverse: bboxReverse
+        deg2rad,
+        geoToPrecision,
+        geoToPrecisionRound,
+        getDistanceFromLatLonInKm,
+        polyCentroid,
+        polyBBOX,
+        polyArea,
+        sortPolygonSegmentsByArea,
+        spinLng,
+        latlngToArr,
+        check,
+        checkLatLng,
+        checkbbox,
+        checkbboxLatLng,
+        bboxReverse,
     };
 }());
-
-Utils.presentDateStart = function () {
-    var present_date = new Date();
-    present_date.setHours(0);
-    present_date.setMinutes(0);
-    present_date.setSeconds(0);
-    present_date.setMilliseconds(0);
-    return present_date;
-};
-
-Utils.tomorrowDateStart = function () {
-    var date = Utils.presentDateStart();
-    date.setDate(date.getDate() + 1);
-    return date;
-};
 
 /**
  * Adds left zero to number and rteturn string in format xx (01, 23 etc)
@@ -832,27 +778,29 @@ Utils.addLeftZero = function (num) {
     if (!num) {
         num = 0;
     }
-    var str = '0' + num;
+
+    const str = '0' + num;
+
     return str.substr(str.length - 2, 2);
 };
 
-var times = (function () {
-    var msDay = 864e5;
-    var times = {
-        msDay: msDay, // Кол-во миллисекунд в дне
+const times = (function () {
+    const msDay = 864e5;
+    const times = {
+        msDay, // Кол-во миллисекунд в дне
         msWeek: 6048e5, // Кол-во миллисекунд в неделе
         msYear: 0, // Кол-во миллисекунд в текущем году, вычисляется
 
         midnight: null, // Миллисекунды полуночи текущего дня
         midnightWeekAgo: null, // Миллисекунды полуночи семи дней назад
         yearStart: null, // Миллисекунды начала текущего года
-        yearDays: null // Кол-во дней в текущем году
+        yearDays: null, // Кол-во дней в текущем году
     };
 
     // Считаем переменные времен
     (function timesRecalc() {
-        var current = new Date();
-        var currentYear = current.getFullYear();
+        const current = new Date();
+        const currentYear = current.getFullYear();
 
         times.midnight = new Date().setHours(0, 0, 0, 0);
         times.midnightWeekAgo = times.midnight - times.msWeek;
@@ -890,9 +838,9 @@ Utils.hh_mm_ss = function (ms, utc, delimeter) {
         delimeter = ':';
     }
 
-    var hours = ms[utc ? 'getUTCHours' : 'getHours']();
-    var minutes = ms[utc ? 'getUTCMinutes' : 'getMinutes']();
-    var seconds = ms[utc ? 'getUTCSeconds' : 'getSeconds']();
+    const hours = ms[utc ? 'getUTCHours' : 'getHours']();
+    const minutes = ms[utc ? 'getUTCMinutes' : 'getMinutes']();
+    const seconds = ms[utc ? 'getUTCSeconds' : 'getSeconds']();
 
     return (hours > 9 ? hours : '0' + hours) +
         delimeter + (minutes > 9 ? minutes : '0' + minutes) +
@@ -906,12 +854,15 @@ Utils.format = (function () {
         if (typeof bytes !== 'number') {
             return '';
         }
+
         if (bytes >= 1000000000) {
             return (bytes / 1000000000).toFixed(2) + 'GB';
         }
+
         if (bytes >= 1000000) {
             return (bytes / 1000000).toFixed(2) + 'MB';
         }
+
         return (bytes / 1000).toFixed(2) + 'KB';
     }
 
@@ -919,15 +870,19 @@ Utils.format = (function () {
         if (typeof bits !== 'number') {
             return '';
         }
+
         if (bits >= 1000000000) {
             return (bits / 1000000000).toFixed(2) + ' Gbit/s';
         }
+
         if (bits >= 1000000) {
             return (bits / 1000000).toFixed(2) + ' Mbit/s';
         }
+
         if (bits >= 1000) {
             return (bits / 1000).toFixed(2) + ' kbit/s';
         }
+
         return bits.toFixed(2) + ' bit/s';
     }
 
@@ -936,11 +891,11 @@ Utils.format = (function () {
             return '0:' + (secs > 9 ? secs : '0' + secs);
         }
 
-        var hours = (secs / (60 * 60)) >> 0,
-            divisor_for_minutes = secs % (60 * 60),
-            minutes = (divisor_for_minutes / 60) >> 0,
-            divisor_for_seconds = divisor_for_minutes % 60,
-            seconds = Math.ceil(divisor_for_seconds);
+        const hours = secs / (60 * 60) >> 0;
+        const divisorForMinutes = secs % (60 * 60);
+        const minutes = divisorForMinutes / 60 >> 0;
+        const divisorForSeconds = divisorForMinutes % 60;
+        const seconds = Math.ceil(divisorForSeconds);
 
         return (hours > 0 ? hours + ':' + (minutes > 9 ? minutes : '0' + minutes) : minutes) + ':' + (seconds > 9 ? seconds : '0' + seconds);
     }
@@ -949,28 +904,28 @@ Utils.format = (function () {
         return (floatValue * 100).toFixed(2) + ' %';
     }
 
-    var wordEndOfNumCases = [2, 0, 1, 1, 1, 2];
+    const wordEndOfNumCases = [2, 0, 1, 1, 1, 2];
 
     function declOfNum(number, titles) {
-        return titles[(number % 100 > 4 && number % 100 < 20) ? 2 : wordEndOfNumCases[(number % 10 < 5) ? number % 10 : 5]];
+        return titles[number % 100 > 4 && number % 100 < 20 ? 2 : wordEndOfNumCases[number % 10 < 5 ? number % 10 : 5]];
     }
 
     return {
         fileSize: formatFileSize,
         bitrate: formatBitrate,
-        secondsToTime: secondsToTime,
+        secondsToTime,
         percentage: formatPercentage,
-        wordEndOfNum: declOfNum
+        wordEndOfNum: declOfNum,
     };
 }());
 
-Utils.filesListProcess = function filesRecursive(files, dirCutOff, prefixAdd, filter) {
+Utils.filesListProcess = function filesListProcess(files, dirCutOff, prefixAdd, filter) {
     'use strict';
 
-    var result = [],
-        file,
-        dirCutOffLen = dirCutOff && dirCutOff.length,
-        i = files.length;
+    let result = [];
+    let file;
+    const dirCutOffLen = dirCutOff && dirCutOff.length;
+    let i = files.length;
 
     while (i--) {
         file = files[i];
@@ -978,9 +933,11 @@ Utils.filesListProcess = function filesRecursive(files, dirCutOff, prefixAdd, fi
         if (dirCutOffLen && file.indexOf(dirCutOff) === 0) {
             file = file.substr(dirCutOffLen);
         }
+
         if (prefixAdd) {
             file = prefixAdd + file;
         }
+
         result.unshift(file);
     }
 
@@ -995,40 +952,38 @@ Utils.filesListProcess = function filesRecursive(files, dirCutOff, prefixAdd, fi
  * List on files in folder recursive (in parallel mode)
  * @param dir Folder to search files
  */
-Utils.walkParallel = function (dir/*, noDir, excludeFolders, done*/) {
-    var done = arguments[arguments.length - 1],
-        noDir = arguments.length > 2 && arguments[1],
-        excludeFolders = arguments.length > 3 && arguments[2],
-        checkDirsExcluding = Array.isArray(excludeFolders) && excludeFolders.length,
-        results = [];
+Utils.walkParallel = function ({ dir, noDir, excludeFolders, onDone }) {
+    const checkDirsExcluding = Array.isArray(excludeFolders) && excludeFolders.length;
+    let results = [];
 
-    fs.readdir(dir, function (err, list) {
+    fs.readdir(dir, (err, list) => {
         if (err) {
-            return done(err);
+            return onDone(err);
         }
-        var pending = list.length,
-            checkEnd = function () {
-                if (!--pending) {
-                    done(null, results);
-                }
-            };
+
+        let pending = list.length;
+        const checkEnd = function () {
+            if (!--pending) {
+                onDone(null, results);
+            }
+        };
 
         if (!pending) {
-            return done(null, results);
+            return onDone(null, results);
         }
 
-        list.forEach(function (file) {
-            var fileFull = path.join(dir, file);
+        list.forEach(file => {
+            const fileFull = path.join(dir, file);
 
-            fs.stat(fileFull, function (err, stat) {
+            fs.stat(fileFull, (err, stat) => {
                 if (stat && stat.isDirectory()) {
                     if (checkDirsExcluding && ~excludeFolders.indexOf(file)) {
                         checkEnd();
                     } else {
-                        Utils.walkParallel(fileFull, noDir, excludeFolders, function (err, res) {
+                        Utils.walkParallel({ dir: fileFull, noDir, excludeFolders, onDone: (err, res) => {
                             results = results.concat(res);
                             checkEnd();
-                        });
+                        } });
                     }
                 } else {
                     results.push((noDir ? file : fileFull).split(path.sep).join('/'));
@@ -1045,21 +1000,26 @@ Utils.walkParallel = function (dir/*, noDir, excludeFolders, done*/) {
  * @param done Callback function with params (err, resultArr)
  */
 Utils.walkSerial = function (dir, done) {
-    var results = [];
-    fs.readdir(dir, function (err, list) {
+    let results = [];
+
+    fs.readdir(dir, (err, list) => {
         if (err) {
             return done(err);
         }
-        var i = 0;
+
+        let i = 0;
+
         (function next() {
-            var file = list[i++];
+            let file = list[i++];
+
             if (!file) {
                 return done(null, results);
             }
+
             file = path.join(dir, file);
-            fs.stat(file, function (err, stat) {
+            fs.stat(file, (err, stat) => {
                 if (stat && stat.isDirectory()) {
-                    Utils.walkSerial(file, function (err, res) {
+                    Utils.walkSerial(file, (err, res) => {
                         results = results.concat(res);
                         next();
                     });
@@ -1068,19 +1028,19 @@ Utils.walkSerial = function (dir, done) {
                     next();
                 }
             });
-        })();
+        }());
     });
 };
 
 /**
  * Example walkParallel
  */
-/*walkParallel('./public/style', function(err, results) {
+/*walkParallel({dir: './public/style', onDone: function(err, results) {
  if (err) {
  throw err;
  }
  console.log(results);
- });*/
+ }});*/
 
 Object.freeze(Utils);
 module.exports = Utils;

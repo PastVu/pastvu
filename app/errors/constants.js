@@ -93,5 +93,5 @@ export default Utils.reflectKeys({
 
     MAIL_SEND: null,
     MAIL_WRONG: null,
-    MAIL_IN_USE: null
+    MAIL_IN_USE: null,
 });

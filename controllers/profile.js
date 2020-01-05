@@ -47,6 +47,7 @@ async function giveUser({ login }) {
     const itsMe = iAm.registered && iAm.user.login === login;
 
     let user;
+
     if (userObj) {
         user = session.getPlainUser(userObj.user);
         user.online = Boolean(userObj);
@@ -57,10 +58,10 @@ async function giveUser({ login }) {
         ).populate([
             {
                 path: 'regionHome',
-                select: { _id: 0, cid: 1, parents: 1, title_en: 1, title_local: 1, center: 1, bbox: 1, bboxhome: 1 }
+                select: { _id: 0, cid: 1, parents: 1, title_en: 1, title_local: 1, center: 1, bbox: 1, bboxhome: 1 },
             },
             { path: 'regions', select: { _id: 0, cid: 1, title_en: 1, title_local: 1 } },
-            { path: 'mod_regions', select: { _id: 0, cid: 1, title_en: 1, title_local: 1 } }
+            { path: 'mod_regions', select: { _id: 0, cid: 1, title_en: 1, title_local: 1 } },
         ]).exec();
 
         // If login in another case, do redirect to the right one
@@ -87,6 +88,7 @@ async function saveUser({ login, ...data }) {
     if (!login) {
         throw new BadParamsError();
     }
+
     if (!iAm.registered || iAm.user.login !== login && !iAm.isAdmin) {
         throw new AuthorizationError();
     }
@@ -146,8 +148,8 @@ async function changeSetting({ login, key, val }) {
     const vars = userSettingsVars[key];
 
     const valid = defSetting !== undefined && Array.isArray(vars) && (
-            Array.isArray(defSetting) && Array.isArray(val) && val.every(item => vars.includes(item)) || vars.includes(val)
-        );
+        Array.isArray(defSetting) && Array.isArray(val) && val.every(item => vars.includes(item)) || vars.includes(val)
+    );
 
     // If this setting does not exist or its value is not allowed - throw error
     if (!valid) {
@@ -220,7 +222,8 @@ async function changeDispName({ login, showName }) {
     if (showName) {
         const f = user.firstName || '';
         const l = user.lastName || '';
-        user.disp = (f + (f && l ? ' ' : '') + l) || user.login;
+
+        user.disp = f + (f && l ? ' ' : '') + l || user.login;
     } else {
         user.disp = user.login;
     }
@@ -243,6 +246,7 @@ async function setWatersignCustom({ login, watersign }) {
     if (itsMe && iAm.user.nowaterchange || !itsMe && !iAm.isAdmin) {
         throw new AuthorizationError();
     }
+
     if (!login) {
         throw new BadParamsError();
     }
@@ -284,7 +288,7 @@ async function setWatersignCustom({ login, watersign }) {
 
     return {
         watersignCustom: user.watersignCustom,
-        photo_watermark_add_sign: user.settings && user.settings.photo_watermark_add_sign
+        photo_watermark_add_sign: user.settings && user.settings.photo_watermark_add_sign,
     };
 }
 
@@ -303,6 +307,7 @@ async function changeEmail({ login, email, pass }) {
     }
 
     email = email.toLowerCase();
+
     if (!email.match(emailRegexp)) {
         throw new InputError(constantsError.MAIL_WRONG);
     }
@@ -314,6 +319,7 @@ async function changeEmail({ login, email, pass }) {
         if (existsEmailUser.login === login) {
             return { email };
         }
+
         throw new InputError(constantsError.MAIL_IN_USE);
     }
 
@@ -340,7 +346,7 @@ async function changeEmail({ login, email, pass }) {
 async function changeAvatar({ login, file, mime }) {
     const { handshake: { usObj: iAm } } = this;
 
-    if (!login || !file || !new RegExp('^[a-z0-9]{10}\\.(jpe?g|png)$', '').test(file)) {
+    if (!login || !file || !/^[a-z0-9]{10}\.(jpe?g|png)$/.test(file)) {
         throw new BadParamsError();
     }
 
@@ -370,7 +376,7 @@ async function changeAvatar({ login, file, mime }) {
         }),
         // Create folders inside public
         makeDir(path.join(publicDir, 'd/', dirPrefix)),
-        makeDir(path.join(publicDir, 'h/', dirPrefix))
+        makeDir(path.join(publicDir, 'h/', dirPrefix)),
     ]);
 
     await Promise.all([
@@ -395,7 +401,7 @@ async function changeAvatar({ login, file, mime }) {
         execAsync(
             `cwebp -preset photo -m 5 -resize 50 50 ${lossless ? '-lossless ' : ''}${originPath} ` +
             `-o ${publicDir}h/${fullfile}.webp`
-        )
+        ),
     ]);
 
     const currentAvatar = user.avatar;
@@ -463,6 +469,7 @@ async function setUserWatermarkChange({ login, nowaterchange }) {
     if (!iAm.isAdmin) {
         throw new AuthorizationError();
     }
+
     if (!login) {
         throw new BadParamsError();
     }
@@ -470,6 +477,7 @@ async function setUserWatermarkChange({ login, nowaterchange }) {
     const { usObjOnline, user } = await getUserByLogin(login);
 
     let changed;
+
     if (nowaterchange) {
         if (!user.nowaterchange) {
             user.nowaterchange = changed = true;
@@ -581,7 +589,7 @@ async function saveUserRules({ login, rules }) {
     return {
         saved: true,
         rules: user.rules,
-        info: { canPhotoNew: photoController.getNewPhotosLimit(user) }
+        info: { canPhotoNew: photoController.getNewPhotosLimit(user) },
     };
 }
 
@@ -597,6 +605,7 @@ delAvatar.isPublic = true;
 saveUserRanks.isPublic = true;
 giveUserRules.isPublic = true;
 saveUserRules.isPublic = true;
+
 export default {
     giveUser,
     saveUser,
@@ -609,5 +618,5 @@ export default {
     delAvatar,
     saveUserRanks,
     giveUserRules,
-    saveUserRules
+    saveUserRules,
 };

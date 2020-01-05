@@ -21,8 +21,10 @@ const schedule = (function () {
     async function run() {
         const start = Date.now();
 
-        logger.info(`Starting to generate sitemap`);
+        logger.info('Starting to generate sitemap');
+
         const totalPhotos = await generateSitemap();
+
         logger.info(`Done in ${(Date.now() - start) / 1000}s, ${totalPhotos} photos have been added to to sitemap`);
 
         schedule();
@@ -36,14 +38,16 @@ const schedule = (function () {
         } else {
             // Next run must be next interval after last midnight
             const a = (Date.now() - times.midnight) / sitemapInterval;
+
             timeout = Math.ceil(
                 a > 1 ? sitemapInterval - sitemapInterval * (a - Math.floor(a)) : sitemapInterval - sitemapInterval * a
             );
         }
 
         const next = new Date(Date.now() + timeout);
+
         logger.info(
-            `Next sitemap generation has been scheduled on ` +
+            'Next sitemap generation has been scheduled on ' +
             `${next.getFullYear()}-${next.getMonth() + 1}-${next.getDate()} ${hhmmssms(next)}`
         );
 
@@ -121,6 +125,7 @@ async function generateSitemap() {
     start = Date.now();
     fileName = `sitemap${counter}.xml.gz`;
     filePath = path.join(sitemapPathAbs, `sitemap${counter}.xml.gz`);
+
     const regionsCount = await generateRegionsSitemap(filePath);
 
     if (regionsCount) {
@@ -142,7 +147,7 @@ async function generatePhotoSitemap(fileName, cidFrom, limit) {
         { s: 5, cid: { $gt: cidFrom } },
         {
             _id: 0, cid: 1, file: 1, title: 1,
-            adate: 1, cdate: 1, ucdate: 1, r0: 1, r1: 1, r2: 1, r3: 1, r4: 1, r5: 1
+            adate: 1, cdate: 1, ucdate: 1, r0: 1, r1: 1, r2: 1, r3: 1, r4: 1, r5: 1,
         },
         { lean: true, limit, sort: { cid: 1 } }
     ).exec();

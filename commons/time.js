@@ -10,7 +10,7 @@ export const times = (function () {
         midnight: null, // Milliseconds of midnight of current day
         midnightWeekAgo: null, // Milliseconds of midnight of seven days ago
         yearStart: null, // Milliseconds of surrent year begining
-        yearDays: null // Number of days in current year
+        yearDays: null, // Number of days in current year
     };
 
     // Calculate time values

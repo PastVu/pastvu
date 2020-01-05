@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-'use strict'; // eslint-disable-line strict
+'use strict';
 
 require('./bin/run');
 
@@ -19,7 +19,7 @@ const lessCompileOptions = {
     silent: false,
     path: 'public/style/',
     color: true,
-    strictImports: true
+    strictImports: true,
 };
 
 const requireBuildConfig = {
@@ -32,7 +32,7 @@ const requireBuildConfig = {
         toplevel: false,
         ascii_only: false,
         beautify: false,
-        no_mangle: false
+        no_mangle: false,
     },
     // If using UglifyJS for script optimization, these config options can be
     // used to pass configuration values to UglifyJS.
@@ -42,7 +42,7 @@ const requireBuildConfig = {
     uglify2: {
         output: {
             beautify: false,
-            max_line_len: 255000
+            max_line_len: 255000,
         },
         compress: {
             sequences: true,
@@ -51,11 +51,11 @@ const requireBuildConfig = {
             join_vars: true,
             screw_ie8: true,
             global_defs: {
-                DEBUG: false
-            }
+                DEBUG: false,
+            },
         },
         warnings: false,
-        mangle: true
+        mangle: true,
     },
     skipDirOptimize: false, //Оптимизировать только модули (modules array), не трогая остальные js
     optimizeCss: 'none', //Не трогаем css
@@ -75,12 +75,12 @@ const requireBuildConfig = {
                 'noty', 'noty.layouts', 'noty.themes/pastvu',
                 'Browser', 'Utils', 'socket', 'router', 'Params', 'globalVM',
                 'm/_moduleCliche', 'renderer',
-                'model/Photo', 'model/User', 'model/storage', 'intl'
-            ]
+                'model/Photo', 'model/User', 'model/storage', 'intl',
+            ],
         },
 
         {
-            name: '_mainConfig' //Компилируем конфигурацию, чтобы включить туда общую зависимость 'lib/JSExtensions'
+            name: '_mainConfig', //Компилируем конфигурацию, чтобы включить туда общую зависимость 'lib/JSExtensions'
         },
         {
             name: 'module/appMain',
@@ -93,77 +93,76 @@ const requireBuildConfig = {
                 'm/diff/newsList', 'm/diff/news',
                 'm/comment/comments',
                 'm/user/brief', 'm/user/profile', 'm/user/userPage',
-                'errors/Application', 'errors/Timeout'
+                'errors/Application', 'errors/Timeout',
             ],
-            exclude: ['lib/require/plugins/require-css/normalize'] // normalize надо исключать, т.к. он почему-то попадает в сборку https://github.com/guybedford/require-css#basic-usage
+            exclude: ['lib/require/plugins/require-css/normalize'], // normalize надо исключать, т.к. он почему-то попадает в сборку https://github.com/guybedford/require-css#basic-usage
         },
         {
             name: 'm/diff/about',
-            exclude: ['commonExcludes']
+            exclude: ['commonExcludes'],
         },
         {
             name: 'm/diff/rules',
-            exclude: ['commonExcludes']
+            exclude: ['commonExcludes'],
         },
         {
             name: 'm/user/comments',
-            exclude: ['commonExcludes']
+            exclude: ['commonExcludes'],
         },
         {
             name: 'm/user/photoUpload',
-            exclude: ['commonExcludes']
+            exclude: ['commonExcludes'],
         },
         {
             name: 'm/comment/hist',
-            exclude: ['commonExcludes']
+            exclude: ['commonExcludes'],
         },
         {
             name: 'm/photo/hist',
-            exclude: ['commonExcludes']
+            exclude: ['commonExcludes'],
         },
         {
             name: 'm/common/share',
-            exclude: ['commonExcludes']
+            exclude: ['commonExcludes'],
         },
         {
             name: 'm/user/subscr',
-            exclude: ['commonExcludes']
+            exclude: ['commonExcludes'],
         },
         {
             name: 'm/user/settings',
-            exclude: ['commonExcludes', 'bs/collapse']
+            exclude: ['commonExcludes', 'bs/collapse'],
         },
         {
             name: 'm/user/manage',
-            exclude: ['commonExcludes', 'bs/collapse']
+            exclude: ['commonExcludes', 'bs/collapse'],
         },
         {
             name: 'm/region/select',
-            exclude: ['commonExcludes']
+            exclude: ['commonExcludes'],
         },
         {
             name: 'm/common/reason',
-            exclude: ['commonExcludes']
-        }
-    ]
+            exclude: ['commonExcludes'],
+        },
+    ],
 };
 let lessFiles = [];
 
 step(
     // Ищем less-файлы для компиляции и создаем плоский массив
     function searchLess() {
-        const _this = this;
-
-        Utils.walkParallel(path.normalize('./' + requireBuildConfig.appDir + 'style'), null, ['bs', 'fonts'], function (e, files) {
+        Utils.walkParallel({ dir: path.normalize('./' + requireBuildConfig.appDir + 'style'), excludeFolders: ['bs', 'fonts'], onDone: (e, files) => {
             if (e) {
                 console.dir(e);
                 process.exit(1);
             }
+
             lessFiles = Utils.filesListProcess(files, requireBuildConfig.appDir + 'style/', '', function getOnlyLess(element) {
                 return ~element.indexOf('.less');
             });
-            _this();
-        });
+            this();
+        } });
     },
 
     //Компилируем less
@@ -174,35 +173,33 @@ step(
     // Собираем require
     function requireBuild() {
         console.log('~~~ Start r.js build ~~~');
-        const _this = this;
-        requirejs.optimize(requireBuildConfig, function (/*buildResponse*/) {
+        requirejs.optimize(requireBuildConfig, (/*buildResponse*/) => {
             //buildResponse is just a text output of the modules
             //included. Load the built file for the contents.
             //Use requireBuildConfig.out to get the optimized file contents.
             //var contents = fs.readFileSync(requireBuildConfig.out, 'utf8');
             console.dir('Require build finished');
-            _this();
+            this();
         });
     },
 
     //Удаляем less из собранной директории
     function removeLessFromBuild() {
-        const _this = this;
-
         console.dir('Removing Less from build');
-        Utils.walkParallel(path.normalize(requireBuildConfig.dir + '/style'), function (e, files) {
+        Utils.walkParallel({ dir: path.normalize(requireBuildConfig.dir + '/style'), onDone: (e, files) => {
             if (e) {
                 console.dir(e);
                 process.exit(1);
             }
+
             lessFiles = Utils.filesListProcess(files, null, '', function getOnlyLess(element) {
                 return ~element.indexOf('.less');
             });
-            lessFiles.forEach(function (item) {
+            lessFiles.forEach(item => {
                 fs.unlinkSync(item);
             });
-            _this();
-        });
+            this();
+        } });
     },
 
     function finish(e) {
@@ -210,6 +207,7 @@ step(
             console.dir(e);
             process.exit(1);
         }
+
         console.dir('Build complete. Ok in ' + (Date.now() - start) / 1000 + 's');
 
         process.exit(0);
@@ -249,8 +247,8 @@ function lessCompile(files, done) {
             filename: path.basename(input),
             strictImports: lessCompileOptions.strictImports,
             compress: lessCompileOptions.compress,
-            yuicompress: lessCompileOptions.yuicompress
-        }).then(function (result) {
+            yuicompress: lessCompileOptions.yuicompress,
+        }).then(result => {
             try {
                 const css = result.css;
 
@@ -259,12 +257,13 @@ function lessCompile(files, done) {
                     fs.writeSync(fd, css, 0, 'utf8');
                     fs.closeSync(fd);
                 }
+
                 next();
             } catch (err) {
                 console.error(err, lessCompileOptions);
                 process.exit(1);
             }
-        }, function (err) {
+        }, err => {
             less.writeError(err, lessCompileOptions);
             process.exit(1);
         });

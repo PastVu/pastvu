@@ -2,8 +2,11 @@
 .git/**
 .idea/**
 
+
 # App specific
 babel/output.js
 logs/**
 misc/**
 views/**
+public/**
+basepatch/**

@@ -60,8 +60,9 @@ async function fillUserRanks() {
 getClientParams.isPublic = true;
 getUserSettingsVars.isPublic = true;
 getUserRanks.isPublic = true;
+
 export default {
     getClientParams,
     getUserSettingsVars,
-    getUserRanks
+    getUserRanks,
 };

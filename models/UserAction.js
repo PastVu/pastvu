@@ -8,7 +8,7 @@ registerModel(db => {
         {
             key: { type: String, index: { unique: true } },
             reasons: [Number],
-            reason_text: { type: String }
+            reason_text: { type: String },
         },
         { collection: 'user_actions', strict: true }
     ));

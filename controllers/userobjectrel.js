@@ -67,9 +67,11 @@ export async function fillObjectByRels(objs, userId, type = 'photo', rels) {
                     obj.changed = true;
                 }
             }
+
             if (rel.subscr) {
                 obj.subscr = true;
             }
+
             if (rel.ccount_new) {
                 obj.ccount_new = rel.ccount_new;
             }
@@ -175,13 +177,14 @@ export async function onCommentsRemove(objId, comments, type = 'photo') {
             if (comment.stamp > commentsView && !rel.user.equals(comment.user)) {
                 result++;
             }
+
             return result;
         }, 0);
 
         if (newDeltaCount) {
             if (newDeltaCount > rel.ccount_new) {
                 logger.warn(
-                    `Try to decrease more new comments count due to comments removal,`,
+                    'Try to decrease more new comments count due to comments removal,',
                     `then they where calculated, objId: ${objId}, rel: ${rel._id}`
                 );
                 newDeltaCount = rel.ccount_new;
@@ -239,6 +242,7 @@ export async function onCommentsRestore(objId, comments, type = 'photo') {
             if (comment.stamp > commentsView && !rel.user.equals(comment.user)) {
                 result++;
             }
+
             return result;
         }, 0);
 

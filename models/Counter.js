@@ -6,14 +6,14 @@ export let Counter = null;
 registerModel(db => {
     const CounterSchema = new Schema({
         _id: String,
-        next: { type: Number, 'default': 1 }
+        next: { type: Number, 'default': 1 },
     });
 
     CounterSchema.statics.increment = function (counter) {
         return this.findByIdAndUpdate(counter, { $inc: { next: 1 } }, {
             new: true,
             upsert: true,
-            select: { next: 1 }
+            select: { next: 1 },
         }).exec();
     };
 
@@ -21,7 +21,7 @@ registerModel(db => {
         return this.findByIdAndUpdate(counter, { $inc: { next: num } }, {
             new: true,
             upsert: true,
-            select: { next: 1 }
+            select: { next: 1 },
         }).exec();
     };
 

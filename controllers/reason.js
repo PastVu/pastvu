@@ -16,6 +16,7 @@ async function periodicFetchReasons() {
     } else {
         reasonsHash = rsns.reduce((result, reason) => {
             result[reason.cid] = reason;
+
             return result;
         }, {});
     }
@@ -30,6 +31,7 @@ async function periodicFetchReasons() {
  */
 export const getReasonHashFromCache = cids => _.transform(cids, (result, cid) => {
     const reason = reasonsHash[cid];
+
     if (reason !== undefined) {
         result[reason.cid] = reason;
     }
@@ -46,9 +48,7 @@ async function giveActionReasons({ action: key }) {
         return;
     }
 
-    const reasons = action.reasons.map(function (cid) {
-        return reasonsHash[cid];
-    });
+    const reasons = action.reasons.map(cid => reasonsHash[cid]);
 
     return { reasons, reason_text: action.reason_text };
 }
@@ -61,6 +61,7 @@ export const giveReasonTitle = function ({ cid }) {
 waitDb.then(periodicFetchReasons);
 
 giveActionReasons.isPublic = true;
+
 export default {
-    giveActionReasons
+    giveActionReasons,
 };

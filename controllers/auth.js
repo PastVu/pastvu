@@ -26,21 +26,20 @@ const logger = log4js.getLogger('auth.js');
 let recallTpl;
 let regTpl;
 
-export const ready = new Promise(async function (resolve, reject) {
+export const ready = (async () => {
     try {
         const [regData, recallData] = await Promise.all([
             fsAsync.readFile(path.normalize('./views/mail/registration.pug'), 'utf-8'),
-            fsAsync.readFile(path.normalize('./views/mail/recall.pug'), 'utf-8')
+            fsAsync.readFile(path.normalize('./views/mail/recall.pug'), 'utf-8'),
         ]);
 
         regTpl = pug.compile(regData, { filename: path.normalize('./views/mail/registration.pug'), pretty: false });
         recallTpl = pug.compile(recallData, { filename: path.normalize('./views/mail/recall.pug'), pretty: false });
-        resolve();
     } catch (err) {
         err.message = 'Auth pug read error: ' + err.message;
-        reject(err);
+        throw err;
     }
-});
+})();
 
 // Users login
 async function login({ login, pass }) {
@@ -49,6 +48,7 @@ async function login({ login, pass }) {
     if (!login) {
         throw new InputError(constants.INPUT_LOGIN_REQUIRED);
     }
+
     if (!pass) {
         throw new InputError(constants.INPUT_PASS_REQUIRED);
     }
@@ -101,6 +101,7 @@ async function register({ login, email, pass, pass2 }) {
     if (!pass) {
         throw new InputError(constants.INPUT_PASS_REQUIRED);
     }
+
     if (pass !== pass2) {
         throw new AuthenticationError(constants.AUTHENTICATION_PASSWORDS_DONT_MATCH);
     }
@@ -111,6 +112,7 @@ async function register({ login, email, pass, pass2 }) {
         if (user.login.toLowerCase() === login.toLowerCase()) {
             throw new AuthenticationError(constants.AUTHENTICATION_USER_EXISTS);
         }
+
         if (user.email === email) {
             throw new AuthenticationError(constants.AUTHENTICATION_EMAIL_EXISTS);
         }
@@ -135,8 +137,8 @@ async function register({ login, email, pass, pass2 }) {
         regionHome: regionHome || undefined, // Take home default home region from config
         settings: {
             // Empty settings objects will not be saved, so fill it with one of settings
-            subscr_auto_reply: userSettingsDef.subscr_auto_reply || true
-        }
+            subscr_auto_reply: userSettingsDef.subscr_auto_reply || true,
+        },
     });
 
     await user.save();
@@ -149,7 +151,7 @@ async function register({ login, email, pass, pass2 }) {
         sendMail({
             sender: 'noreply',
             receiver: { alias: login, email },
-            subject: 'Confirmation of registration',
+            subject: 'Registraion Confirmation',
             head: true,
             body: regTpl({
                 email,
@@ -157,12 +159,11 @@ async function register({ login, email, pass, pass2 }) {
                 config,
                 confirmKey,
                 username: login,
-                greeting: 'Thank you for registering on the PastVu project!',
-                linkvalid: `${human2d} (till ${moment.utc().add(ms2d).format('LLL')})`
+                greeting: 'Thank you for the registering on PastVu!',
+                linkvalid: `${human2d} (till ${moment.utc().add(ms2d).format('LLL')})`,
             }),
-            text: `Click the following link: ${config.client.origin}/confirm/${confirmKey}`
+            text: `Click the following link: ${config.client.origin}/confirm/${confirmKey}`,
         });
-
     } catch (err) {
         await User.remove({ login }).exec();
 
@@ -172,7 +173,7 @@ async function register({ login, email, pass, pass2 }) {
 
     return {
         message: 'Account has been successfully created. To confirm registration, ' +
-        'follow the instructions sent to Your e-mail'
+        'follow the instructions sent to Your e-mail',
     };
 }
 
@@ -185,7 +186,7 @@ async function recall({ login }) {
     }
 
     const user = await User.findOne({
-        $or: [{ login: new RegExp(`^${login}$`, 'i') }, { email: login.toLowerCase() }]
+        $or: [{ login: new RegExp(`^${login}$`, 'i') }, { email: login.toLowerCase() }],
     }, null, { lean: true }).exec();
 
     if (!user) {
@@ -198,6 +199,7 @@ async function recall({ login }) {
     }
 
     const confirmKey = Utils.randomString(8);
+
     await UserConfirm.remove({ user: user._id }).exec();
 
     await new UserConfirm({ key: confirmKey, user: user._id }).save();
@@ -211,13 +213,13 @@ async function recall({ login }) {
             config,
             confirmKey,
             username: user.disp,
-            linkvalid: `${human2d} (till ${moment.utc().add(ms2d).format('LLL')})`
+            linkvalid: `${human2d} (till ${moment.utc().add(ms2d).format('LLL')})`,
         }),
-        text: `Click the following link: ${config.client.origin}/confirm/${confirmKey}`
+        text: `Click the following link: ${config.client.origin}/confirm/${confirmKey}`,
     });
 
     return {
-        message: 'The data is successfully sent. To restore password, follow the instructions sent to Your e-mail'
+        message: 'The data has been successfully sent. To restore the password, follow the instructions sent to Your e-mail',
     };
 }
 
@@ -228,9 +230,11 @@ async function passChangeRecall({ key, pass, pass2 }) {
     if (!_.isString(key) || key.length !== 8) {
         throw new BadParamsError();
     }
+
     if (!_.isString(pass) || !pass) {
         throw new InputError(constants.INPUT_PASS_REQUIRED);
     }
+
     if (pass !== pass2) {
         throw new AuthenticationError(constants.AUTHENTICATION_PASSWORDS_DONT_MATCH);
     }
@@ -245,6 +249,7 @@ async function passChangeRecall({ key, pass, pass2 }) {
     // If anonym - in user's model in confirm
     // (it the same user, but different objects)
     const user = iAm.registered && iAm.user.login === confirm.user.login ? iAm.user : confirm.user;
+
     user.pass = pass;
 
     // If inactive user is restoring password - activate him
@@ -265,9 +270,11 @@ async function passChange({ login, pass, passNew, passNew2 }) {
     if (!iAm.registered || iAm.user.login !== login) {
         throw new AuthorizationError();
     }
+
     if (!pass || !passNew || !passNew2) {
         throw new InputError(constants.INPUT_PASS_REQUIRED);
     }
+
     if (passNew !== passNew2) {
         throw new AuthenticationError(constants.AUTHENTICATION_PASSWORDS_DONT_MATCH);
     }
@@ -304,10 +311,12 @@ async function checkConfirm({ key }) {
         await Promise.all([user.save(), confirm.remove()]);
 
         return {
-            message: 'Thank you! Your registration is confirmed. Now you can login using your username and password',
-            type: 'noty'
+            message: 'Thank you! Your registration is confirmed. Now you can log in using your username and password',
+            type: 'noty',
         };
-    } else if (key.length === 8) { // Confirm password change
+    }
+
+    if (key.length === 8) { // Confirm password change
         const avatar = user.avatar ? '/_a/h/' + user.avatar : '/img/caps/avatarth.png';
 
         return { message: 'Pass change', type: 'authPassChange', login: user.login, disp: user.disp, avatar };
@@ -318,7 +327,7 @@ function whoAmI() {
     const { socket, handshake: { usObj: iAm } } = this;
     const result = {
         user: session.getPlainUser(iAm.user),
-        registered: iAm.registered
+        registered: iAm.registered,
     };
 
     this.call('session.emitSocket', { socket, data: ['youAre', result] });
@@ -332,6 +341,7 @@ passChangeRecall.isPublic = true;
 passChange.isPublic = true;
 checkConfirm.isPublic = true;
 whoAmI.isPublic = true;
+
 export default {
     login,
     logout,
@@ -340,5 +350,5 @@ export default {
     passChangeRecall,
     passChange,
     checkConfirm,
-    whoAmI
+    whoAmI,
 };

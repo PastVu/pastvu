@@ -29,6 +29,7 @@ const getMethodLogger = (function () {
  */
 const inspect = (function () {
     const inspectOptions = { depth: null, colors: config.env === 'development' };
+
     return obj => util.inspect(obj, inspectOptions);
 }());
 
@@ -76,9 +77,10 @@ export default async function callMethod(methodName, params = {}, isPublic = fal
                 logger.error(_.compact([
                     `${this.ridMark} Error calling method "${methodName}" with params: ${inspect(params)}`,
                     `${inspect(error.toJSON())}`,
-                    error.trace ? error.stack : undefined
+                    error.trace ? error.stack : undefined,
                 ]).join('\n'));
             }
+
             throw error;
         }
 
@@ -93,4 +95,4 @@ export default async function callMethod(methodName, params = {}, isPublic = fal
 
         throw error;
     }
-};
+}

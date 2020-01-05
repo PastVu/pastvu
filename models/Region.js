@@ -73,11 +73,11 @@ registerModel(db => {
         {
             cid: { type: Number, index: { unique: true } },
             stamp: { type: Date, 'default': Date.now, required: true, index: true }, // Creation time
-            state: { type: Schema.Types.Mixed, 'default': {} } // Object state on first state set
+            state: { type: Schema.Types.Mixed, 'default': {} }, // Object state on first state set
         },
         {
             collection: 'region_stat_queue',
-            strict: true
+            strict: true,
         }
     );
 

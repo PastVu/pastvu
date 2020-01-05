@@ -13,6 +13,7 @@ function saveOrCreateNews(data) {
     if (!iAm.isAdmin) {
         throw new AuthorizationError();
     }
+
     if (!data.txt) {
         throw new BadParamsError();
     }
@@ -143,7 +144,7 @@ function getOnlineStat() {
         cusSid: _.size(sessionController.usSid),
         csessConnected: _.size(sessionController.sessConnected),
         csessWaitingConnect: _.size(sessionController.sessWaitingConnect),
-        csessWaitingSelect: _.size(sessionController.sessWaitingSelect)
+        csessWaitingSelect: _.size(sessionController.sessWaitingSelect),
     });
 }
 
@@ -176,15 +177,14 @@ async function saveUserCredentials({ login, role, regions }) {
         if (user.role < 11 && role === 11) {
             throw new NoticeError(constantsError.ADMIN_SUPER_CANT_BE_ASSIGNED);
         }
+
         if (iAm.user.role === 10 && user.role < 10 && role > 9) {
             throw new NoticeError(constantsError.ADMIN_ONLY_SUPER_CAN_ASSIGN);
         }
     }
 
     if (role === 5 && regions) {
-        const existsRegions = user.mod_regions.map(function (item) {
-            return item.cid;
-        });
+        const existsRegions = user.mod_regions.map(item => item.cid);
 
         if (!_.isEqual(regions, existsRegions)) {
             await this.call('region.setUserRegions', { login, regions, field: 'mod_regions' });
@@ -219,5 +219,5 @@ saveUserCredentials.isPublic = true;
 export default {
     getOnlineStat,
     saveOrCreateNews,
-    saveUserCredentials
+    saveUserCredentials,
 };

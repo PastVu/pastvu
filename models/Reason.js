@@ -13,8 +13,8 @@ registerModel(db => {
                 min: { type: Number },
                 max: { type: Number },
                 label: { type: String },
-                placeholder: { type: String }
-            }
+                placeholder: { type: String },
+            },
         },
         { collection: 'reasons', strict: true }
     ));

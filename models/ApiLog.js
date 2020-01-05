@@ -19,7 +19,7 @@ registerModel(db => {
 
             status: { type: Number }, // Response http code
             err_code: { type: Number }, // Possible error code
-            err_msg: { type: String } // Possible error string
+            err_msg: { type: String }, // Possible error string
         },
         { strict: true, collection: 'apilog' }
     ));

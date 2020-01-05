@@ -1,6 +1,6 @@
 /* eslint no-var: 0, object-shorthand: [2, 'never'] */
 /*
- global print:true, linkifyUrlString: true, toPrecision: true, toPrecision6: true, toPrecisionRound:true,
+ global linkifyUrlString: true, toPrecision: true, toPrecision6: true, toPrecisionRound:true,
  geoToPrecision:true, spinLng:true, regionClearPhotoTitle:true,
  regionsAssignPhotos:true, regionsAssignComments:true, calcPhotoStats:true,, calcUserStats:true, calcRegionStats:true
  */
@@ -17,16 +17,17 @@ const connection = require('./connection');
 const waitDb = connection.waitDb;
 const logger = log4js.getLogger('systemjs.js');
 
-waitDb.then(function (db) {
+waitDb.then(db => {
     // Save function to db.system.js
     function saveSystemJSFunc(func) {
         if (!func || !func.name) {
             logger.error('saveSystemJSFunc: function name is not defined');
         }
+
         db.db.collection('system.js').save(
             {
                 _id: func.name,
-                value: new mongoose.mongo.Code(func.toString())
+                value: new mongoose.mongo.Code(func.toString()),
             },
             function saveCallback(err) {
                 if (err) {
@@ -47,10 +48,11 @@ waitDb.then(function (db) {
         var counter = 0;
 
         print('Start to archive ' + fullcount + ' expired sessions');
-        db.sessions.find(query).forEach(function (session) {
+        db.sessions.find(query).forEach(session => {
             counter++;
             resultKeys.push(session.key);
             session.archived = archiveDate;
+
             if (insertBulk.push(session) >= castBulkBy || counter >= fullcount) {
                 db.sessions_archive.insert(insertBulk, { ordered: false });
                 insertBulk = [];
@@ -70,9 +72,10 @@ waitDb.then(function (db) {
         if (zooms) {
             clusterparamsQuery.z = { $in: zooms };
         }
+
         clusterZooms = db.clusterparams.find(clusterparamsQuery, { _id: 0 }).sort({ z: 1 }).toArray();
 
-        logByNPhotos = logByNPhotos || ((photosAllCount / 20) >> 0);
+        logByNPhotos = logByNPhotos || photosAllCount / 20 >> 0;
         print('Start to clusterize ' + photosAllCount + ' photos with log for every ' + logByNPhotos + '. Gravity: ' + withGravity);
 
         while (++clusterZoomsCounter < clusterZooms.length) {
@@ -103,7 +106,7 @@ waitDb.then(function (db) {
             var clustersCounterInner;
 
             var sorterByCount = function (a, b) {
-                return a.c === b.c ? 0 : (a.c < b.c ? 1 : -1);
+                return a.c === b.c ? 0 : a.c < b.c ? 1 : -1;
             };
 
             clusterZoom.wHalf = toPrecisionRound(clusterZoom.w / 2);
@@ -112,7 +115,7 @@ waitDb.then(function (db) {
             useGravity = withGravity && clusterZoom.z > 11;
             clustersArr.push([]);
 
-            photos.forEach(function (photo) {
+            photos.forEach(photo => {
                 photoCounter++;
                 geoPhoto = photo.geo;
                 geoPhotoCorrection[0] = geoPhoto[0] < 0 ? -1 : 0;
@@ -120,10 +123,11 @@ waitDb.then(function (db) {
 
                 g = [
                     Math.round(divider * (clusterZoom.w * ((geoPhoto[0] / clusterZoom.w >> 0) + geoPhotoCorrection[0]))) / divider,
-                    Math.round(divider * (clusterZoom.h * ((geoPhoto[1] / clusterZoom.h >> 0) + geoPhotoCorrection[1]))) / divider
+                    Math.round(divider * (clusterZoom.h * ((geoPhoto[1] / clusterZoom.h >> 0) + geoPhotoCorrection[1]))) / divider,
                 ];
                 clustCoordId = g[0] + '@' + g[1];
                 cluster = clusters[clustCoordId];
+
                 if (cluster === undefined) {
                     clustersCount++;
                     clusters[clustCoordId] = cluster = {
@@ -132,15 +136,18 @@ waitDb.then(function (db) {
                         geo: [g[0] + clusterZoom.wHalf, g[1] - clusterZoom.hHalf],
                         c: 0,
                         y: {},
-                        p: null
+                        p: null,
                     };
+
                     if (clustersArr[clustersArrLastIndex].push(cluster) > 249) {
                         clustersArr.push([]);
                         clustersArrLastIndex++;
                     }
                 }
+
                 cluster.c += 1;
                 cluster.y[photo.year] = 1 + (cluster.y[photo.year] | 0);
+
                 if (useGravity) {
                     cluster.geo[0] += geoPhoto[0];
                     cluster.geo[1] += geoPhoto[1];
@@ -158,24 +165,30 @@ waitDb.then(function (db) {
             db.clusters.remove({ z: clusterZoom.z });
 
             clustersCounter = clustersArr.length;
+
             while (clustersCounter) {
                 clustersArrInner = clustersArr[--clustersCounter];
                 clustersArrInner.sort(sorterByCount);
 
                 clustersCounterInner = clustersArrInner.length;
+
                 if (clustersCounterInner > 0) {
                     while (clustersCounterInner) {
                         cluster = clustersArrInner[--clustersCounterInner];
+
                         if (useGravity) {
                             cluster.geo[0] = Math.round(divider * (cluster.geo[0] / (cluster.c + 1))) / divider;
                             cluster.geo[1] = Math.round(divider * (cluster.geo[1] / (cluster.c + 1))) / divider;
                         }
+
                         if (cluster.geo[0] < -180 || cluster.geo[0] > 180) {
                             spinLng(cluster.geo);
                         }
+
                         if (cluster.g[0] < -180 || cluster.g[0] > 180) {
                             spinLng(cluster.g);
                         }
+
                         cluster.p = db.photos.findOne({ s: 5, geo: { $near: cluster.geo } }, {
                             _id: 0,
                             cid: 1,
@@ -184,10 +197,11 @@ waitDb.then(function (db) {
                             dir: 1,
                             title: 1,
                             year: 1,
-                            year2: 1
+                            year2: 1,
                         });
                     }
                 }
+
                 db.clusters.insert(clustersArrInner);
                 clustersInserted += clustersArrInner.length;
                 print(
@@ -203,7 +217,7 @@ waitDb.then(function (db) {
         return {
             message: 'Ok in ' + (Date.now() - startFullTime) / 1000 + 's',
             photos: photosAllCount,
-            clusters: db.clusters.count()
+            clusters: db.clusters.count(),
         };
     });
 
@@ -223,10 +237,10 @@ waitDb.then(function (db) {
                 dir: 1,
                 title: 1,
                 year: 1,
-                year2: 1
+                year2: 1,
             })
             .sort({ cid: 1 })
-            .forEach(function (photo) {
+            .forEach(photo => {
                 db.photos_map.insert({
                     cid: photo.cid,
                     geo: photo.geo,
@@ -234,7 +248,7 @@ waitDb.then(function (db) {
                     dir: photo.dir || '',
                     title: photo.title || '',
                     year: photo.year || 2000,
-                    year2: photo.year2 || photo.year || 2000
+                    year2: photo.year2 || photo.year || 2000,
                 });
             });
 
@@ -250,10 +264,10 @@ waitDb.then(function (db) {
                 dir: 1,
                 title: 1,
                 year: 1,
-                year2: 1
+                year2: 1,
             })
             .sort({ cid: 1 })
-            .forEach(function (photo) {
+            .forEach(photo => {
                 db.paintings_map.insert({
                     cid: photo.cid,
                     geo: photo.geo,
@@ -261,11 +275,11 @@ waitDb.then(function (db) {
                     dir: photo.dir || '',
                     title: photo.title || '',
                     year: photo.year || 1980,
-                    year2: photo.year2 || photo.year || 1980
+                    year2: photo.year2 || photo.year || 1980,
                 });
             });
 
-        return { message: (db.photos_map.count() + db.paintings_map.count()) + ' photos to map added in ' + (Date.now() - startTime) / 1000 + 's' };
+        return { message: db.photos_map.count() + db.paintings_map.count() + ' photos to map added in ' + (Date.now() - startTime) / 1000 + 's' };
     });
 
     saveSystemJSFunc(function convertPhotosAll(params) {
@@ -277,22 +291,28 @@ waitDb.then(function (db) {
 
         if (params.login) {
             var user = db.users.findOne({ login: params.login });
+
             if (user) {
                 query.user = user._id;
             }
         }
+
         if (params.min) {
             query.cid = { $gte: params.min };
         }
+
         if (params.max) {
             if (!query.cid) {
                 query.cid = {};
             }
+
             query.cid.$lte = params.max;
         }
+
         if (params.region) {
             query['r' + params.region.level] = params.region.cid;
         }
+
         if (params.hasOwnProperty('individual')) {
             if (params.individual) {
                 query.watersignIndividual = true;
@@ -300,15 +320,17 @@ waitDb.then(function (db) {
                 query.$or = [{ watersignIndividual: null }, { watersignIndividual: false }];
             }
         }
+
         if (params.onlyWithoutTextApplied) {
             query.watersignTextApplied = null;
         }
+
         if (params.statuses && params.statuses.length) {
             query.s = { $in: params.statuses };
         }
 
         print('Start to fill conveyer for ' + (query.user ? query.user + ' user for ' : '') + db.photos.count(query) + ' photos');
-        db.photos.find(query, selectFields).sort({ cid: 1 }).forEach(function (photo) {
+        db.photos.find(query, selectFields).sort({ cid: 1 }).forEach(photo => {
             var row;
 
             if (!db.photos_conveyer.findOne({ cid: photo.cid })) {
@@ -321,13 +343,14 @@ waitDb.then(function (db) {
                 conveyer.push(row);
             }
         });
+
         if (conveyer.length) {
             db.photos_conveyer.insert(conveyer);
         }
 
         return {
             time: (Date.now() - startTime) / 1000,
-            conveyorAdded: conveyer.length
+            conveyorAdded: conveyer.length,
         };
     });
 
@@ -361,17 +384,18 @@ waitDb.then(function (db) {
         // For each level starting from maximum
         for (var level = maxRegionLevel; level >= 0; level--) {
             var regionsCounter = 0;
+
             query.parents = { $size: level };
 
             print('Starting objects assignment to ' + db.regions.count(query) + ' regions at ' + level + 'th level...');
-            db.regions.find(query, { _id: 0, cid: 1, parents: 1, geo: 1, title_en: 1 }).forEach(function (region) {
+            db.regions.find(query, { _id: 0, cid: 1, parents: 1, geo: 1, title_en: 1 }).forEach(region => {
                 var startTime = Date.now();
                 var query = { geo: { $geoWithin: { $geometry: region.geo } } };
                 var $update = { $set: { ['r' + level]: region.cid } };
                 var hasChildren = parentRegionsSet.has(region.cid);
                 var i;
 
-                region.parents.forEach(function (cid, index) {
+                region.parents.forEach((cid, index) => {
                     $update.$set['r' + index] = cid;
                 });
 
@@ -386,17 +410,20 @@ waitDb.then(function (db) {
                     if (level < maxRegionLevel) {
                         $update.$unset = {};
                     }
+
                     for (i = level + 1; i <= maxRegionLevel; i++) {
                         $update.$unset['r' + i] = 1;
                     }
+
                     if (region.parents) {
-                        region.parents.forEach(function (cid) {
+                        region.parents.forEach(cid => {
                             parentRegionsSet.add(cid);
                         });
                     }
                 }
 
                 var updated = db.photos.update(query, $update, { multi: true });
+
                 modifiedCounter += updated.nModified;
 
                 print('[r' + level + '.' + ++regionsCounter + '] Modified ' + updated.nModified + ' (matched ' + updated.nMatched + ') photos in ' + region.cid + ' ' + region.title_en + ' region ' + (hasChildren ? '(has children) ' : '') + 'in ' + (Date.now() - startTime) / 1000 + 's');
@@ -423,6 +450,7 @@ waitDb.then(function (db) {
         if (!cids) {
             return;
         }
+
         var startTime = Date.now();
         var maxRegionLevel = 5;
 
@@ -444,7 +472,7 @@ waitDb.then(function (db) {
         var count = db.photos.count(query);
 
         print('Starting iteration over ' + db.photos.count(query) + ' photos..');
-        db.photos.find(query, fields).sort({ cid: 1 }).forEach(function (photo) {
+        db.photos.find(query, fields).sort({ cid: 1 }).forEach(photo => {
             var regions = db.regions.find(
                 { geo: { $nearSphere: { $geometry: { type: 'Point', coordinates: photo.geo }, $maxDistance: 1 } } },
                 regionFields
@@ -479,6 +507,7 @@ waitDb.then(function (db) {
             if (setCounter > 0) {
                 $update.$set = $set;
             }
+
             if (unsetCounter > 0) {
                 $update.$unset = $unset;
             }
@@ -507,7 +536,7 @@ waitDb.then(function (db) {
         print('Assign regions to comments for ' + db.photos.count({ s: { $gte: 5 } }) + ' published photos');
         db.photos.find(
             { s: { $gte: 5 } }, { _id: 1, geo: 1, r0: 1, r1: 1, r2: 1, r3: 1, r4: 1, r5: 1 }
-        ).forEach(function (photo) {
+        ).forEach(photo => {
             var r;
             var $set = {};
             var $unset = {};
@@ -517,6 +546,7 @@ waitDb.then(function (db) {
 
             for (var i = 0; i <= maxRegionLevel; i++) {
                 r = 'r' + i;
+
                 if (photo[r]) {
                     $set[r] = photo[r];
                     setCounter++;
@@ -533,9 +563,11 @@ waitDb.then(function (db) {
                 $unset.geo = 1;
                 unsetCounter++;
             }
+
             if (setCounter > 0) {
                 $update.$set = $set;
             }
+
             if (unsetCounter > 0) {
                 $update.$unset = $unset;
             }
@@ -549,7 +581,7 @@ waitDb.then(function (db) {
             if (photoCounter % 1000 === 0) {
                 print(
                     'Assigned comments for ' + photoCounter + ' published photos. ' +
-                    'Cumulative time: ' + ((Date.now() - startTime) / 1000) + 'ms'
+                    'Cumulative time: ' + (Date.now() - startTime) / 1000 + 'ms'
                 );
             }
         });
@@ -566,20 +598,20 @@ waitDb.then(function (db) {
         if (!withManual) {
             query.$or = [
                 { centerAuto: true },
-                { centerAuto: null }
+                { centerAuto: null },
             ];
         }
 
         print('Start to calc center for ' + db.regions.count(query) + ' regions..\n');
-        db.regions.find(query, { _id: 0, cid: 1, geo: 1, bbox: 1 }).forEach(function (region) {
+        db.regions.find(query, { _id: 0, cid: 1, geo: 1, bbox: 1 }).forEach(region => {
             if (region.geo && (region.geo.type === 'MultiPolygon' || region.geo.type === 'Polygon')) {
                 db.regions.update({ cid: region.cid }, {
                     $set: {
                         center: geoToPrecision(region.geo.type === 'MultiPolygon' ?
                             [(region.bbox[0] + region.bbox[2]) / 2, (region.bbox[1] + region.bbox[3]) / 2] :
                             polyCentroid(region.geo.coordinates[0])),
-                        centerAuto: true
-                    }
+                        centerAuto: true,
+                    },
                 });
             } else {
                 print('Error with ' + region.cid + ' region');
@@ -607,8 +639,10 @@ waitDb.then(function (db) {
                 area += p1[1] * p2[0];
                 area -= p1[0] * p2[1];
             }
+
             area /= 2;
             f = area * 6;
+
             return [x / f, y / f];
         }
 
@@ -621,7 +655,7 @@ waitDb.then(function (db) {
         var query = { cid: { $ne: 1000000 } };
 
         print('Start to calc bbox for ' + db.regions.count(query) + ' regions..\n');
-        db.regions.find(query, { _id: 0, cid: 1, geo: 1 }).forEach(function (region) {
+        db.regions.find(query, { _id: 0, cid: 1, geo: 1 }).forEach(region => {
             if (region.geo && (region.geo.type === 'MultiPolygon' || region.geo.type === 'Polygon')) {
                 db.regions.update({ cid: region.cid }, { $set: { bbox: polyBBOX(region.geo).map(toPrecision6) } });
             } else {
@@ -649,9 +683,8 @@ waitDb.then(function (db) {
                     multipolycoords.push([polybbox[2], polybbox[3]]); //NorthEast
                     multipolycoords.push([polybbox[0], polybbox[3]]); //SouthEast
                 }
-                multipolycoords.sort(function (a, b) {
-                    return a[0] < b[0] ? -1 : (a[0] > b[0] ? 1 : 0);
-                });
+
+                multipolycoords.sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0);
                 multipolycoords.push(multipolycoords[0]);
                 resultbbox = getbbox(multipolycoords);
             }
@@ -670,6 +703,7 @@ waitDb.then(function (db) {
                 if (x1 === -180) {
                     x1 = 180;
                 }
+
                 bbox = [x1, y1, x1, y1];
 
                 for (var i = 0; i < pointsLen - 1; j = i++) {
@@ -682,6 +716,7 @@ waitDb.then(function (db) {
                     if (x1 === -180) {
                         x1 = 180;
                     }
+
                     if (x2 === -180) {
                         x2 = 180;
                     }
@@ -704,6 +739,7 @@ waitDb.then(function (db) {
                         bbox[3] = y2;
                     }
                 }
+
                 return bbox;
             }
 
@@ -727,7 +763,7 @@ waitDb.then(function (db) {
         }
 
         print('Start to calculate points number for ' + db.regions.count(query) + ' regions..\n');
-        db.regions.find(query, { cid: 1, geo: 1, title_en: 1 }).sort({ cid: 1 }).forEach(function (region) {
+        db.regions.find(query, { cid: 1, geo: 1, title_en: 1 }).sort({ cid: 1 }).forEach(region => {
             var startTime = Date.now();
             var count;
 
@@ -737,6 +773,7 @@ waitDb.then(function (db) {
         });
 
         print('\n');
+
         return { message: 'All calculated in ' + (Date.now() - startTime) / 1000 + 's' };
     });
 
@@ -750,7 +787,7 @@ waitDb.then(function (db) {
         }
 
         print('Start to calculate polynum for ' + db.regions.count(query) + ' regions..\n');
-        db.regions.find(query, { cid: 1, geo: 1, title_en: 1 }).sort({ cid: 1 }).forEach(function (region) {
+        db.regions.find(query, { cid: 1, geo: 1, title_en: 1 }).sort({ cid: 1 }).forEach(region => {
             var polynum;
 
             if (region.geo.type === 'Polygon' || region.geo.type === 'MultiPolygon') {
@@ -768,6 +805,7 @@ waitDb.then(function (db) {
 
             if (geometry.type === 'MultiPolygon') {
                 result = { exterior: 0, interior: 0 };
+
                 for (var i = 0, len = geometry.coordinates.length; i < len; i++) {
                     res = polyNum(geometry.coordinates[i]);
                     result.exterior += res.exterior;
@@ -785,6 +823,7 @@ waitDb.then(function (db) {
         }
 
         print('\n');
+
         return { message: 'All calculated in ' + (Date.now() - startTime) / 1000 + 's' };
     });
 
@@ -796,14 +835,13 @@ waitDb.then(function (db) {
 
         var startTime = Date.now();
         var count = 0;
-        var regRxp = new RegExp('^(\\s*(?:' + (Array.isArray(regionString) ? regionString.filter(function (item) {
-            return !!item;
-        }).join('|') : regionString) + ')\\s*[\\.,-:]\\s*)(.+)$', 'i');
+        var regRxp = new RegExp('^(\\s*(?:' + (Array.isArray(regionString) ? regionString.filter(item => !!item).join('|') : regionString) + ')\\s*[\\.,-:]\\s*)(.+)$', 'i');
 
-        db.photos.find({ title: regRxp }, { title: 1 }).forEach(function (photo) {
+        db.photos.find({ title: regRxp }, { title: 1 }).forEach(photo => {
             count++;
             db.photos.update({ _id: photo._id }, { $set: { title: photo.title.replace(regRxp, '$2') } });
         });
+
         return { count: count, message: 'In ' + (Date.now() - startTime) / 1000 + 's' };
     });
 
@@ -814,14 +852,15 @@ waitDb.then(function (db) {
         var renamedCounter = 0;
 
         print('Start for ' + db.regions.count() + ' regions..\n');
-        db.regions.find({}, { _id: 0, title_en: 1, title_local: 1 }).sort({ cid: 1 }).forEach(function (region) {
+        db.regions.find({}, { _id: 0, title_en: 1, title_local: 1 }).sort({ cid: 1 }).forEach(region => {
             renamedCounter += regionClearPhotoTitle([region.title_en, region.title_local]).count;
 
             counter++;
+
             if (counter % 100 === 0) {
                 print(
                     'Done ' + counter + ' regions. Renamed ' + renamedCounter + ' photo titles. ' +
-                    'Cumulative time: ' + ((Date.now() - startTime) / 1000) + 's'
+                    'Cumulative time: ' + (Date.now() - startTime) / 1000 + 's'
                 );
             }
         });
@@ -849,6 +888,7 @@ waitDb.then(function (db) {
         var ccount;
 
         print('Start to calc for ' + userCounter + ' users');
+
         while (userCounter--) {
             user = users[userCounter];
             $set = {};
@@ -865,16 +905,19 @@ waitDb.then(function (db) {
             } else {
                 $unset.pcount = 1;
             }
+
             if (pfcount > 0) {
                 $set.pfcount = pfcount;
             } else {
                 $unset.pfcount = 1;
             }
+
             if (pdcount > 0) {
                 $set.pdcount = pdcount;
             } else {
                 $unset.pdcount = 1;
             }
+
             if (ccount > 0) {
                 $set.ccount = ccount;
             } else {
@@ -885,6 +928,7 @@ waitDb.then(function (db) {
             if (Object.keys($set).length) {
                 $update.$set = $set;
             }
+
             if (Object.keys($unset).length) {
                 $update.$unset = $unset;
             }
@@ -904,12 +948,13 @@ waitDb.then(function (db) {
         if (userId) {
             query.user = userId;
         }
+
         if (objId) {
             query.obj = objId;
         }
 
         print('0s Start to calc for ' + db.users_objects_rel.count(query) + ' rels');
-        db.users_objects_rel.find(query).sort({ user: 1 }).forEach(function (rel) {
+        db.users_objects_rel.find(query).sort({ user: 1 }).forEach(rel => {
             counter += 1;
 
             var commentCollection = rel.type === 'news' ? db.commentsn : db.comments;
@@ -920,11 +965,12 @@ waitDb.then(function (db) {
                 if (!rel.ccount_new) {
                     rel.ccount_new = 0;
                 }
+
                 ccountNew = commentCollection.count({
                     obj: rel.obj,
                     del: null,
                     stamp: { $gt: rel.comments },
-                    user: { $ne: rel.user }
+                    user: { $ne: rel.user },
                 });
 
                 if (ccountNew !== rel.ccount_new) {
@@ -939,6 +985,7 @@ waitDb.then(function (db) {
             if (!Object.keys($update.$set).length) {
                 delete $update.$set;
             }
+
             if (!Object.keys($update.$unset).length) {
                 delete $update.$unset;
             }
@@ -949,12 +996,12 @@ waitDb.then(function (db) {
             }
 
             if (counter % 50000 === 0 && counter) {
-                print(((Date.now() - startTime) / 1000) + 's Calculated ' + counter + ' rels. Updated: ' + counterUpdated);
+                print((Date.now() - startTime) / 1000 + 's Calculated ' + counter + ' rels. Updated: ' + counterUpdated);
             }
         });
 
         return {
-            message: ((Date.now() - startTime) / 1000) + 's ' + counter + ' rels statistics were calculated. Updated: ' + counterUpdated
+            message: (Date.now() - startTime) / 1000 + 's ' + counter + ' rels statistics were calculated. Updated: ' + counterUpdated,
         };
     });
 
@@ -971,6 +1018,7 @@ waitDb.then(function (db) {
         var cdcount;
 
         print('Start to calc for ' + counter + ' photos');
+
         while (counter--) {
             photo = photos[counter];
             $set = {};
@@ -995,6 +1043,7 @@ waitDb.then(function (db) {
             if (Object.keys($set).length) {
                 $update.$set = $set;
             }
+
             if (Object.keys($unset).length) {
                 $update.$unset = $unset;
             }
@@ -1002,8 +1051,9 @@ waitDb.then(function (db) {
             db.photos.update({ _id: photo._id }, $update, { upsert: false });
 
             photoCounter++;
+
             if (photoCounter % 1000 === 0) {
-                print('Calculated stats for ' + photoCounter + ' photos. Cumulative time: ' + ((Date.now() - startTime) / 1000) + 'ms');
+                print('Calculated stats for ' + photoCounter + ' photos. Cumulative time: ' + (Date.now() - startTime) / 1000 + 'ms');
             }
         }
 
@@ -1021,6 +1071,7 @@ waitDb.then(function (db) {
         }
 
         const queueLength = db.region_stat_queue.count({});
+
         if (queueLength) {
             print('Heads up, removing ' + queueLength + ' queue items');
 
@@ -1030,11 +1081,14 @@ waitDb.then(function (db) {
 
         var changeCounter = 0;
         var changeRegionCounter = 0;
+
         function countChangingValues(current, upcoming) {
             var changedSomething = false;
+
             if (!current) {
                 current = {};
             }
+
             for (var key in upcoming) {
                 if (upcoming[key] !== current[key]) {
                     changeCounter++;
@@ -1046,8 +1100,9 @@ waitDb.then(function (db) {
         }
 
         var count = db.regions.count(query);
+
         print('Starting stat calculation for ' + count + ' regions');
-        db.regions.find(query, fields).sort({ cid: 1 }).forEach(function (region) {
+        db.regions.find(query, fields).sort({ cid: 1 }).forEach(region => {
             var level = region.parents && region.parents.length || 0;
             var regionHasChildren = db.regions.count({ parents: region.cid }) > 0;
 
@@ -1058,16 +1113,16 @@ waitDb.then(function (db) {
             var $update = {
                 photostat: {
                     all: 0, geo: 0, own: 0, owngeo: 0,
-                    s0: 0, s1: 0, s2: 0, s3: 0, s4: 0, s5: 0, s7: 0, s9: 0
+                    s0: 0, s1: 0, s2: 0, s3: 0, s4: 0, s5: 0, s7: 0, s9: 0,
                 },
                 paintstat: {
                     all: 0, geo: 0, own: 0, owngeo: 0,
-                    s0: 0, s1: 0, s2: 0, s3: 0, s4: 0, s5: 0, s7: 0, s9: 0
+                    s0: 0, s1: 0, s2: 0, s3: 0, s4: 0, s5: 0, s7: 0, s9: 0,
                 },
                 cstat: {
                     all: 0, del: 0,
-                    s5: 0, s7: 0, s9: 0
-                }
+                    s5: 0, s7: 0, s9: 0,
+                },
             };
 
             queryC['r' + level] = region.cid;
@@ -1084,28 +1139,24 @@ waitDb.then(function (db) {
                 { $group: {
                     _id: '$_id.type',
                     statuses: { $push: { s: '$_id.status', count: '$scount' } },
-                    count: { $sum: '$scount' }
+                    count: { $sum: '$scount' },
                 } },
                 { $project: { type: '$_id', statuses: 1, count: 1 } },
-                { $sort: { type: 1 } }
+                { $sort: { type: 1 } },
             ]).toArray();
 
             var photos;
             var paintings;
 
             if (statusesForTypes) {
-                photos = statusesForTypes.find(function (stat) {
-                    return stat.type === 1;
-                });
+                photos = statusesForTypes.find(stat => stat.type === 1);
 
-                paintings = statusesForTypes.find(function (stat) {
-                    return stat.type === 2;
-                });
+                paintings = statusesForTypes.find(stat => stat.type === 2);
             }
 
             if (photos) {
                 $update.photostat.all = photos.count;
-                photos.statuses.forEach(function (status) {
+                photos.statuses.forEach(status => {
                     $update.photostat['s' + status.s] = status.count;
                 });
                 $update.photostat.geo = db.photos.count((queryPhoto.geo = { $exists: true }, queryPhoto));
@@ -1121,7 +1172,7 @@ waitDb.then(function (db) {
 
             if (paintings) {
                 $update.paintstat.all = paintings.count;
-                paintings.statuses.forEach(function (status) {
+                paintings.statuses.forEach(status => {
                     $update.paintstat['s' + status.s] = status.count;
                 });
                 $update.paintstat.geo = db.photos.count((queryPaint.geo = { $exists: true }, queryPaint));
@@ -1156,19 +1207,20 @@ waitDb.then(function (db) {
             doneCounter++;
 
             if (doneCounter % 100 === 0) {
-                print('Calculated stats for ' + doneCounter + ' region. Cumulative time: ' + ((Date.now() - startTime) / 1000) + 's');
+                print('Calculated stats for ' + doneCounter + ' region. Cumulative time: ' + (Date.now() - startTime) / 1000 + 's');
             }
         });
 
         return {
             valuesChanged: changeCounter,
             regionChanged: changeRegionCounter,
-            message: 'Regions statistics were calculated for ' + doneCounter + ' regions in ' + (Date.now() - startTime) / 1000 + 's'
+            message: 'Regions statistics were calculated for ' + doneCounter + ' regions in ' + (Date.now() - startTime) / 1000 + 's',
         };
     });
 
     saveSystemJSFunc(function toPrecision(number, precision) {
         var divider = Math.pow(10, precision || 6);
+
         return ~~(number * divider) / divider;
     });
     saveSystemJSFunc(function toPrecision6(number) {
@@ -1177,20 +1229,23 @@ waitDb.then(function (db) {
 
     saveSystemJSFunc(function toPrecisionRound(number, precision) {
         var divider = Math.pow(10, precision || 6);
+
         return Math.round(number * divider) / divider;
     });
 
     saveSystemJSFunc(function geoToPrecision(geo, precision) {
-        geo.forEach(function (item, index, array) {
+        geo.forEach((item, index, array) => {
             array[index] = toPrecision(item, precision || 6);
         });
+
         return geo;
     });
 
     saveSystemJSFunc(function geoToPrecisionRound(geo, precision) {
-        geo.forEach(function (item, index, array) {
+        geo.forEach((item, index, array) => {
             array[index] = toPrecisionRound(item, precision || 6);
         });
+
         return geo;
     });
 
@@ -1240,6 +1295,7 @@ waitDb.then(function (db) {
 
         //www.oldmos.ru/photo/view/22382 ->> <a target="_blank" href="/p/22382">#22382</a>
         result = result.replace(
+            // eslint-disable-next-line prefer-regex-literals
             new RegExp('(\\b)(?:https?://)?(?:www.)?oldmos.ru/photo/view/(\\d{1,8})/?(?=[\\s\\)\\.,;>]|$)', 'gi'),
             '$1<a target="_blank" class="sharpPhoto" href="/p/$2">#$2</a>'
         );
@@ -1252,6 +1308,7 @@ waitDb.then(function (db) {
         result = linkifyUrlString(result, '_blank'); //Оборачиваем url в ahref
         result = result.replace(/\n{3,}/g, '<br><br>').replace(/\n/g, '<br>'); //Заменяем переносы на <br>
         result = result.replace(/\s+/g, ' '); //Очищаем лишние пробелы
+
         return result;
 
         function spbReplace(inputText) {
@@ -1260,8 +1317,10 @@ waitDb.then(function (db) {
 
             if (matches && matches.length > 0) {
                 var i = matches.length;
+
                 while (i--) {
                     shifted = parseInt(matches[i].substr(matches[0].lastIndexOf('/') + 1), 10) + spbPhotoShift;
+
                     if (!isNaN(shifted)) {
                         inputText = inputText.replace(
                             matches[i],

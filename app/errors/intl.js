@@ -89,5 +89,5 @@ export default {
 
     MAIL_SEND: 'Error sending mail',
     MAIL_WRONG: 'Wrong email, check it one more time',
-    MAIL_IN_USE: 'This email is already in use by another user'
+    MAIL_IN_USE: 'This email is already in use by another user',
 };

@@ -19,6 +19,7 @@ const loggerLong = log4js.getLogger('requestLong');
  */
 const inspect = (function () {
     const inspectOptions = { depth: null, colors: config.env === 'development' };
+
     return obj => util.inspect(obj, inspectOptions);
 }());
 
@@ -39,6 +40,7 @@ const genRequestContext = function ({ handshake, socket } = {}) {
 
     if (handshake && handshake.usObj) {
         const { usObj, session } = handshake;
+
         ridMark = getUserIdForRidMark(rid, usObj, session);
     } else {
         ridMark = `[RID-${rid}]`;
@@ -51,7 +53,7 @@ function addUserIdToRidMark(usObj, session) {
     this.ridMark = getUserIdForRidMark(this.rid, usObj, session);
 }
 function getUserIdForRidMark(rid, usObj, session) {
-    return `[RID-${rid} S-${session.key}${usObj.registered ? ` U-${usObj.user.login}` : ``}]`;
+    return `[RID-${rid} S-${session.key}${usObj.registered ? ` U-${usObj.user.login}` : ''}]`;
 }
 
 const logTrace = function (context, elapsedTotal, methodName) {
@@ -62,13 +64,14 @@ const logTrace = function (context, elapsedTotal, methodName) {
     const elapsedByType = { webapi: 0, rpc: 0 };
     const message = util.format(
         'Trace:',
-        _.reduce(context.trace, function (result, record) {
+        _.reduce(context.trace, (result, record) => {
             elapsedByType[record.type] += record.ms;
+
             return result + '\n' + record.ms + 'ms, ' + record.type + ', ' + record.method;
         }, ''),
         '\nTotal wait time by layer type:',
         elapsedTotal + 'ms request  ',
-        _.reduce(elapsedByType, function (result, elapsed, type) {
+        _.reduce(elapsedByType, (result, elapsed, type) => {
             if (elapsed > 0) {
                 result += elapsed + 'ms ' + type + '  ';
             }
@@ -144,7 +147,7 @@ export const handleHTTPRequest = async function (req, res, next) {
 
     req.handshake = context.handshake = {
         host: req.headers.host,
-        context
+        context,
     };
 
     // Hook when response sending, executes after all route's handlers
@@ -173,6 +176,7 @@ export const handleHTTPRequest = async function (req, res, next) {
         if (cookieObj['max-age'] !== undefined) {
             cookieResOptions.maxAge = cookieObj['max-age'] * 1000;
         }
+
         res.cookie(cookieObj.key, cookieObj.value, cookieResOptions);
 
         // Transfer browser object further in case of future use, for example, in 'X-UA-Compatible' header
@@ -186,7 +190,7 @@ export const handleHTTPRequest = async function (req, res, next) {
                 logger.warn(_.compact([
                     `${context.ridMark} HTTP request`,
                     `${inspect(error.toJSON())}`,
-                    error.trace ? error.stack : undefined
+                    error.trace ? error.stack : undefined,
                 ]).join('\n'));
             }
         } else {
@@ -285,7 +289,6 @@ export const handleHTTPAPIRequest = (function () {
  * Handle incoming websocket-connection. Executes only once for browser tab
  */
 export const handleSocketConnection = (function () {
-
     // On disconnetcion checks the necessity of keeping session and usObj in hashes
     const onSocketDisconnection = function (connectionContext/* , reason */) {
         const socket = this;
@@ -325,6 +328,7 @@ export const handleSocketConnection = (function () {
             if (!session.sockets) {
                 session.sockets = Object.create(null);
             }
+
             session.sockets[socket.id] = socket; // Put socket into session
 
             socket.on('disconnect', _.partial(onSocketDisconnection, context)); // Disconnect handler
@@ -352,6 +356,7 @@ export const handleSocketConnection = (function () {
  * Handler of all websocket requests
  */
 const handleSocketRequest = sioRouter();
+
 handleSocketRequest.on('*', async function handleSocketRequest(socket, args) {
     const start = Date.now();
     const methodName = args[0];

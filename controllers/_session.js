@@ -45,7 +45,7 @@ const createLangCookieObj = (function () {
 const getBrowserAgent = function (browser) {
     const agent = {
         n: browser.agent.family, // Agent name e.g. 'Chrome'
-        v: browser.agent.toVersion() // Agent version string e.g. '15.0.874'
+        v: browser.agent.toVersion(), // Agent version string e.g. '15.0.874'
     };
 
     const device = browser.agent.device.toString(); // Device e.g 'Asus A100'
@@ -54,6 +54,7 @@ const getBrowserAgent = function (browser) {
     if (os) {
         agent.os = os;
     }
+
     if (device && device !== 'Other') {
         agent.d = device;
     }
@@ -72,7 +73,7 @@ export const identifyUserLocale = (function () {
         }
 
         // Find the most suitable locale for agent
-        const suggestedLocale = (new locale.Locales(acceptLanguage)).best(localesSuported);
+        const suggestedLocale = new locale.Locales(acceptLanguage).best(localesSuported);
 
         return localesMap.get(suggestedLocale.normalized) || localesMap.get(suggestedLocale.language) || localeDefault;
     };
@@ -90,6 +91,7 @@ export const getPlainUser = (function () {
             delete ret.active;
             delete ret.__v;
         }
+
         delete ret._id;
     };
 
@@ -177,13 +179,13 @@ const emitSessionSockets = (session, data, waitResponse, excludeSocket) => _.cha
 const emitSidCookie = (socket, waitResponse) => emitSocket({
     socket,
     data: ['command', [{ name: 'updateCookie', data: createSidCookieObj(socket.handshake.session) }]],
-    waitResponse
+    waitResponse,
 });
 
 const emitLangCookie = (socket, lang, waitResponse) => emitSocket({
     socket,
     data: ['command', [{ name: 'updateCookie', data: createLangCookieObj(lang) }]],
-    waitResponse
+    waitResponse,
 });
 
 const sendReload = (session, waitResponse, excludeSocket) =>
@@ -254,6 +256,7 @@ async function addSessionToUserObject(session) {
     } else {
         logger.warn(`${this.ridMark} Anonym trying to add new session?! Key: ${session.key}`);
     }
+
     this.addUserIdToRidMark(usObj, session);
 
     usObj.sessions[session.key] = session; // Add session to sessions hash of usObj
@@ -274,6 +277,7 @@ function userObjectTreatUser(usObj) {
     if (usObj.registered && user.settings.photo_filter_type.length &&
         !_.isEqual(user.settings.photo_filter_type, userSettingsDef.photo_filter_type)) {
         const types = user.settings.photo_filter_type;
+
         usObj.photoFilterTypes = types;
         usObj.photoFilterQuery = { type: types.length === 1 ? types[0] : { $in: types } };
     } else if (usObj.photoFilterTypes.length) {
@@ -293,12 +297,12 @@ async function createSession(ip, headers, browser) {
             ip,
             headers,
             lang: config.lang,
-            agent: getBrowserAgent(browser)
+            agent: getBrowserAgent(browser),
         },
         anonym: {
             regionHome: regionController.DEFAULT_HOME._id,
-            regions: []
-        }
+            regions: [],
+        },
     });
 
     return session.save();
@@ -322,6 +326,7 @@ async function updateSession(session, ip, headers, browser) {
         if (!data.ip_hist) {
             data.ip_hist = [];
         }
+
         data.ip_hist.push({ ip: data.ip, off: stamp });
         data.ip = ip;
     }
@@ -334,10 +339,13 @@ async function updateSession(session, ip, headers, browser) {
             if (!data.agent_hist) {
                 data.agent_hist = [];
             }
+
             data.agent_hist.push({ agent: data.agent, off: stamp });
         }
+
         data.agent = getBrowserAgent(browser);
     }
+
     data.headers = headers;
     session.markModified('data');
 
@@ -349,7 +357,7 @@ function copySession(sessionSource) {
     const session = new Session({
         key: Utils.randomString(12),
         stamp: new Date(),
-        data: _.pick(sessionSource.data, 'ip', 'headers', 'agent')
+        data: _.pick(sessionSource.data, 'ip', 'headers', 'agent'),
     });
 
     return session;
@@ -358,6 +366,7 @@ function copySession(sessionSource) {
 // Add newly created or newly selected session in hashes
 async function addSessionToHashes(session) {
     sessWaitingConnect[session.key] = session;
+
     const usObj = await addSessionToUserObject.call(this, session);
 
     return usObj;
@@ -377,6 +386,7 @@ export function removeSessionFromHashes({ session: { key: sessionKey }, usObj, l
     someCountPrev = Object.keys(usSid).length;
     delete usSid[sessionKey];
     someCountNew = Object.keys(usSid).length;
+
     // logger.info('Delete session from usSid', someCountNew);
     if (someCountNew !== someCountPrev - 1) {
         logger.warn(`${logPrefix} Session from usSid not removed (${sessionKey}) ${userKey}`);
@@ -385,6 +395,7 @@ export function removeSessionFromHashes({ session: { key: sessionKey }, usObj, l
     someCountPrev = Object.keys(usObj.sessions).length;
     delete usObj.sessions[sessionKey];
     someCountNew = Object.keys(usObj.sessions).length;
+
     // logger.info('Delete session from usObj.sessions', someCountNew);
     if (someCountNew !== someCountPrev - 1) {
         logger.warn(`${logPrefix} WARN-Session from usObj not removed (${sessionKey}) ${userKey}`);
@@ -423,9 +434,9 @@ async function popUserRegions(usObj) {
     const paths = [
         {
             path: pathPrefix + 'regionHome',
-            select: { _id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1, center: 1, bbox: 1, bboxhome: 1 }
+            select: { _id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1, center: 1, bbox: 1, bboxhome: 1 },
         },
-        { path: pathPrefix + 'regions', select: { _id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1 } }
+        { path: pathPrefix + 'regions', select: { _id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1 } },
     ];
 
     let modregionsEquals; // Profile regions and moderation regions are equals
@@ -434,6 +445,7 @@ async function popUserRegions(usObj) {
         modregionsEquals = _.isEqual(user.regions, user.mod_regions) || undefined;
         paths.push({ path: pathPrefix + 'mod_regions', select: { _id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1 } });
     }
+
     await user.populate(paths).execPopulate();
 
     let regionsData = regionController.buildQuery(user.regions);
@@ -477,7 +489,7 @@ export async function regetUser(usObj, emitHim, excludeSocket) {
 
     // Assign new user object to usObj and to all its sessions
     usObj.user = user;
-    _.forOwn(usObj.sessions, function (session) {
+    _.forOwn(usObj.sessions, session => {
         session.user = user;
     });
 
@@ -499,7 +511,7 @@ export function regetUsers(filterFn, emitThem) {
     const usersCount = _.size(usersToReget);
 
     // _.forEach, because usersToReget object(usLogin), either an array(result of _.filter)
-    _.forEach(usersToReget, function (usObj) {
+    _.forEach(usersToReget, usObj => {
         regetUser(usObj, emitThem);
     });
 
@@ -527,6 +539,7 @@ export async function loginUser({ user }) {
     // usObj already exists if user already logged in on some other device (other session), in this case
     // user must be taken from usObj instaed of incoming
     const usObj = await addSessionToUserObject.call(this, sessionNew);
+
     user = usObj.user;
 
     // For all socket of currect (old) session assign new session and usObj
@@ -541,6 +554,7 @@ export async function loginUser({ user }) {
         // Transfer all sockets from old session to new
         sessionNew.sockets = sessionOld.sockets;
     }
+
     delete sessionOld.sockets;
 
     // Remove old session from sessions map
@@ -601,6 +615,7 @@ export async function logoutUser() {
         // Transfer all sockets from old session to new
         sessionNew.sockets = sessionOld.sockets;
     }
+
     delete sessionOld.sockets;
 
     // Remove old session from sessions map
@@ -622,7 +637,9 @@ export async function logoutUser() {
 export function isOnline({ login, userId } = {}) {
     if (login) {
         return usLogin[login] !== undefined;
-    } else if (userId) {
+    }
+
+    if (userId) {
         return usId[userId] !== undefined;
     }
 
@@ -633,7 +650,9 @@ export function isOnline({ login, userId } = {}) {
 export function getOnline({ login, userId } = {}) {
     if (login) {
         return usLogin[login];
-    } else if (userId) {
+    }
+
+    if (userId) {
         return usId[userId];
     }
 }
@@ -693,7 +712,7 @@ const checkExpiredSessions = (function () {
                     }
 
                     // If session contains sockets, break connection
-                    _.forEach(session.sockets, function (socket) {
+                    _.forEach(session.sockets, socket => {
                         if (socket.disconnet) {
                             socket.disconnet();
                         }
@@ -737,6 +756,7 @@ export async function handleConnection(ip, headers, overHTTP, req) {
 
     // Parse user-agent information
     const browser = checkUserAgent(headers['user-agent']);
+
     if (browser.badbrowser) {
         throw new BadParamsError({ code: constantsError.BAD_BROWSER, agent: browser.agent, trace: false }, this.rid);
     }
@@ -772,7 +792,7 @@ export async function handleConnection(ip, headers, overHTTP, req) {
         // then select session from db, but if it's already selecting just wait promise
 
         if (!sessWaitingSelect[sid]) {
-            sessWaitingSelect[sid] = new Promise(async function (resolve, reject) {
+            sessWaitingSelect[sid] = (async () => {
                 try {
                     let session = await Session.findOne({ key: sid }).populate('user').exec();
 
@@ -781,22 +801,20 @@ export async function handleConnection(ip, headers, overHTTP, req) {
                         await updateSession.call(this, session, ip, headers, browser);
                     } else {
                         // If session with such key doesn't exist, create new one
-                        track = `Session haven't been found in db by incoming sid, creating new one`;
+                        track = 'Session has\'t been found in the db by the incoming sid, creating a new one';
                         session = await createSession.call(this, ip, headers, browser);
                     }
 
                     const usObj = await addSessionToHashes.call(this, session);
 
-                    resolve({ session, usObj });
-                } catch (err) {
-                    reject(err);
+                    return { session, usObj };
                 } finally {
                     // Remove promise from hash of waiting connect by session key, anyway - success or error
                     delete sessWaitingSelect[sid];
                 }
-            }.bind(this)); // We can't use arrow function as async yet, so make bind
+            })();
         } else {
-            track = 'Session searching have been already started, waiting for that promise';
+            track = 'Session searching has already started, waiting for that promise';
         }
 
         ({ session, usObj } = await sessWaitingSelect[sid]);
@@ -834,24 +852,22 @@ export async function getSessionLight({ sid }) {
         this.addUserIdToRidMark(usObj, session);
     } else {
         if (!sessWaitingSelect[sid]) {
-            sessWaitingSelect[sid] = new Promise(async function (resolve, reject) {
+            sessWaitingSelect[sid] = (async () => {
                 try {
                     const session = await Session.findOne({ key: sid }).populate('user').exec();
 
                     if (!session) {
-                        reject(new ApplicationError({ code: constantsError.SESSION_NOT_FOUND, trace: false }, this.rid));
+                        throw new ApplicationError({ code: constantsError.SESSION_NOT_FOUND, trace: false }, this.rid);
                     }
 
                     const usObj = await addSessionToHashes.call(this, session);
 
-                    resolve({ session, usObj });
-                } catch (err) {
-                    reject(err);
+                    return { session, usObj };
                 } finally {
                     // Remove promise from hash of waiting connect by session key, anyway - success or error
                     delete sessWaitingSelect[sid];
                 }
-            }.bind(this)); // We can't use arrow function as async yet, so make bind
+            })();
         }
 
         ({ session, usObj } = await sessWaitingSelect[sid]);
@@ -888,8 +904,8 @@ function giveInitData() {
             p: clientParams,
             u: getPlainUser(iAm.user),
             registered: iAm.registered,
-            cook: createSidCookieObj(session)
-        }]
+            cook: createSidCookieObj(session),
+        }],
     });
 }
 
@@ -905,7 +921,7 @@ export default {
     removeSessionFromHashes,
     getSessionLight,
     emitSocket,
-    regetUsers
+    regetUsers,
 };
 
 waitDb.then(() => {

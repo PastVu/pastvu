@@ -10,11 +10,11 @@ const delInfo = {
     stamp: { type: Date },
     reason: {
         cid: { type: Number }, // Номер причины удаления из справочника
-        desc: { type: String } // Ручное описание причины удаления. Как основное, так и дополнительное в случае cid
+        desc: { type: String }, // Ручное описание причины удаления. Как основное, так и дополнительное в случае cid
     },
     origin: { type: Number }, // Если у удаляемого комментария есть дочерние, проставляем им ссылку (cid) непосредственно удаляемого, в этом случае reason дочерним можно не указывать
     role: { type: Number }, // Реализуемая на момент удаления роль пользователя. Например, если это модератор. При удалении своего комментария без потомков не заполняется
-    roleregion: { type: Number } // Регион реализуемой роли
+    roleregion: { type: Number }, // Регион реализуемой роли
 };
 const histSchema = {
     user: { type: Schema.Types.ObjectId, ref: 'User' },
@@ -25,13 +25,13 @@ const histSchema = {
     del: { // Некоторые поля удаления из delInfo (остальные непосредственно в histSchema)
         reason: {
             cid: { type: Number },
-            desc: { type: String }
+            desc: { type: String },
         },
-        origin: { type: Number }
+        origin: { type: Number },
     },
     restore: { type: Boolean }, // Восстановлен
     role: { type: Number }, // Реализуемая на момент операции роль пользователя. Например, если это модератор
-    roleregion: { type: Number } // Регион реализуемой роли
+    roleregion: { type: Number }, // Регион реализуемой роли
 };
 // Photos comments
 const CommentPSchema = new Schema(
@@ -63,10 +63,10 @@ const CommentPSchema = new Schema(
         lastChanged: { type: Date }, // Time of last changes
         hist: [new Schema(histSchema)],
 
-        del: delInfo // Comment is deleted
+        del: delInfo, // Comment is deleted
     },
     {
-        strict: true
+        strict: true,
     }
 );
 
@@ -84,7 +84,7 @@ const CommentNSchema = new Schema(
         lastChanged: { type: Date }, // Time of last changes
         hist: [new Schema(histSchema)],
 
-        del: delInfo // Comment is deleted
+        del: delInfo, // Comment is deleted
     },
     { strict: true, collection: 'commentsn' }
 );

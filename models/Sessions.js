@@ -13,7 +13,7 @@ registerModel(db => {
             stamp: { type: Date, 'default': Date.now }, // Time of last session activity
             user: { type: Schema.Types.ObjectId, ref: 'User', index: true }, // _id of registered user
             anonym: require('./User').AnonymScheme, // Object of anonym user, which is saved directly to session
-            data: { type: Schema.Types.Mixed, 'default': {} } // Session date
+            data: { type: Schema.Types.Mixed, 'default': {} }, // Session date
         },
         { collection: 'sessions', strict: true }
     ));
@@ -26,7 +26,7 @@ registerModel(db => {
             archived: { type: Date, 'default': Date.now }, // Time of archivation
             user: { type: Schema.Types.ObjectId, ref: 'User', index: true }, // _id of registered user
             anonym: require('./User').AnonymScheme, // Object of anonym user, which is saved directly to session
-            data: { type: Schema.Types.Mixed, 'default': {} } // Session date
+            data: { type: Schema.Types.Mixed, 'default': {} }, // Session date
         },
         { collection: 'sessions_archive', strict: true }
     ));

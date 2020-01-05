@@ -15,17 +15,17 @@ import ApplicationError from './Application';
  * throw new TimeoutError({timeout: 5000, message: 'Custom message', somedata: {}, somestring: ''})
  */
 export default class TimeoutError extends ApplicationError {
-
     constructor(data = {}, rid) {
         if (typeof data === 'number') {
             data = { timeout: data };
         }
+
         const { timeout, ...details } = data;
 
         _.defaults(details, {
             code: constants.TIMEOUT,
             statusCode: 408,
-            message: `${errorMsgs[constants.TIMEOUT]} (${ms(timeout, { long: true })})`
+            message: `${errorMsgs[constants.TIMEOUT]} (${ms(timeout, { long: true })})`,
         });
 
         super(details, rid);
@@ -35,9 +35,9 @@ export default class TimeoutError extends ApplicationError {
 
     toJSON() {
         const { timeout } = this;
+
         return Object.assign(super.toJSON(), { timeout });
     }
-
 }
 
 TimeoutError.prototype.name = 'TimeoutError';

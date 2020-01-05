@@ -16,12 +16,12 @@ module.exports = {
         'es7.functionBind',
         'es7.objectRestSpread',
         'es7.trailingFunctionCommas',
-        'optimisation.modules.system'
+        'optimisation.modules.system',
         // 'runtime',
     ],
     blacklist: [
         'es3.memberExpressionLiterals', // For very old browsers
-        'es3.propertyLiterals'  // For very old browsers
+        'es3.propertyLiterals',  // For very old browsers
         // 'es5.properties.mutators', // Enabled in V8 4.2 (Node 4)
         // 'es6.arrowFunctions', // Enabled in V8 4.5 (Node 4)
         // 'es6.blockScoping', // Enabled in V8 4.1 (Node 4)
@@ -49,5 +49,5 @@ module.exports = {
         // 'spec.functionName',
         // 'strict',
         // 'validation.react'
-    ]
+    ],
 };

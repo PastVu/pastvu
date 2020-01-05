@@ -12,7 +12,7 @@ const ClusterPoster = {
     dir: { type: String },
     title: { type: String },
     year: { type: Number },
-    year2: { type: Number }
+    year2: { type: Number },
 };
 
 const ClusterSchema = new Schema(
@@ -23,7 +23,7 @@ const ClusterSchema = new Schema(
         geo: { type: [Number] }, // Cluster center of gravity coordinates
         c: { type: Number }, // Number of photos inside cluster
         y: { type: Schema.Types.Mixed }, // Hash (object kye:value) of years within cluster
-        p: ClusterPoster // Cluster poster
+        p: ClusterPoster, // Cluster poster
     },
     { strict: true }
 );
@@ -36,7 +36,7 @@ const ClusterPaintSchema = new Schema(
         geo: { type: [Number] }, // Cluster center of gravity coordinates
         c: { type: Number }, // Number of photos inside cluster
         y: { type: Schema.Types.Mixed }, // Hash (object kye:value) of years within cluster
-        p: ClusterPoster // Cluster poster
+        p: ClusterPoster, // Cluster poster
     },
     { strict: true, collection: 'clusterspaint' }
 );
@@ -55,7 +55,7 @@ const ClusterParamsSchema = new Schema(
         sz: { type: Number }, // Zoom, on which we calculated clusters
         sw: { type: Number }, // Cluster width in pixels
         sh: { type: Number }, // Cluster hight in pixels
-        gravity: { type: Boolean }
+        gravity: { type: Boolean },
     },
     { strict: true }
 );

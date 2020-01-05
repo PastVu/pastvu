@@ -45,7 +45,7 @@ const imageVersions = {
         dir: 'a/',
         quality: 86,
         noTransforn: true,
-        water: true
+        water: true,
     },
     d: {
         parent: sourceDir,
@@ -56,7 +56,7 @@ const imageVersions = {
         height: 700,
         strip: true,
         postfix: '>',
-        water: true
+        water: true,
     },
     h: {
         parent: sourceDir,
@@ -87,7 +87,7 @@ const imageVersions = {
 
             return result;
         },
-        postfix: '^'
+        postfix: '^',
     },
     m: {
         parent: 'h',
@@ -97,7 +97,7 @@ const imageVersions = {
         height: 100,
         filter: 'Sinc',
         gravity: 'Center',
-        postfix: '^'
+        postfix: '^',
     },
     q: {
         parent: 'm',
@@ -106,7 +106,7 @@ const imageVersions = {
         width: 90,
         height: 60,
         gravity: 'Center',
-        postfix: '^'
+        postfix: '^',
     },
     s: {
         parent: 'm',
@@ -115,7 +115,7 @@ const imageVersions = {
         width: 60,
         height: 60,
         gravity: 'Center',
-        postfix: '^'
+        postfix: '^',
         // crop: true // Crop занимает больше места чем ресайз http://www.imagemagick.org/discourse-server/viewtopic.php?f=1&t=20415
     },
     x: {
@@ -125,11 +125,11 @@ const imageVersions = {
         width: 40,
         height: 40,
         gravity: 'Center',
-        postfix: '^'
-    }
+        postfix: '^',
+    },
 };
 const imageVersionsPriority = fillImgPrior(sourceDir, 0);
-export const imageVersionsKeys = Object.keys(imageVersionsPriority).sort((a, b) => (imageVersionsPriority[a] - imageVersionsPriority[b]));
+export const imageVersionsKeys = Object.keys(imageVersionsPriority).sort((a, b) => imageVersionsPriority[a] - imageVersionsPriority[b]);
 
 const waterMarkGen = (function () {
     const logo = path.normalize(waterDir + 'logo.png');
@@ -140,7 +140,7 @@ const waterMarkGen = (function () {
         logo: 12,
         indent_logo_l: 2,
         indent_logo_r: 3,
-        indent_label_b: 1
+        indent_label_b: 1,
     };
 
     return function (options) {
@@ -149,9 +149,7 @@ const waterMarkGen = (function () {
 
         if (options.h > base.height) {
             multiplier = options.h / base.height;
-            params = _.mapValues(params, function (n) {
-                return Math.round(n * multiplier);
-            });
+            params = _.mapValues(params, n => Math.round(n * multiplier));
         }
 
         const offset = (params.splice - params.pointsize) / 2;
@@ -166,19 +164,19 @@ const waterMarkGen = (function () {
         return {
             params,
             commands: [
-                `-gravity South`,
-                `-background '#555555'`, // #285991
+                '-gravity South',
+                '-background \'#555555\'', // #285991
                 `-splice 0x${params.splice}`,
-                `-gravity Southwest`,
+                '-gravity Southwest',
                 `-font ${waterFontPath}`,
                 `-pointsize ${params.pointsize}`,
-                `-stroke none`,
-                `-fill '#f2f2f2'`,
+                '-stroke none',
+                '-fill \'#f2f2f2\'',
                 `-annotate ${textPosition} '${options.txt}'`,
                 `\\( ${logo} -resize ${params.logo} \\)`,
                 `-geometry +${params.indent_logo_l}+${Math.floor(offset)}`,
-                `-composite`
-            ]
+                '-composite',
+            ],
         };
     };
 }());
@@ -199,20 +197,20 @@ const protectCoverGen = function (options) {
     }
 
     return [
-        `-gravity center`,
+        '-gravity center',
         `-blur 0x${blurSigma}`,
-        `-background '#0008'`,
-        `-stroke none`,
-        `-fill '#f2f2f2'`,
+        '-background \'#0008\'',
+        '-stroke none',
+        '-fill \'#f2f2f2\'',
         `-font ${waterFontPath}`,
         `-size ${options.w}x${options.h}`,
-        `caption:'Not available'`,
-        `-composite`
+        'caption:\'Not available\'',
+        '-composite',
     ];
 };
 
 function fillImgPrior(parent, level) {
-    return _.transform(imageVersions, function (result, item, key) {
+    return _.transform(imageVersions, (result, item, key) => {
         if (item.parent === parent) {
             result[key] = level;
             Object.assign(result, fillImgPrior(key, level + 1));
@@ -223,11 +221,12 @@ function fillImgPrior(parent, level) {
 // Собираем статистику конвейера на начало каждой 10-минутки
 function CollectConveyerStat() {
     const st = new STPhotoConveyer({
-        stamp: new Date(+(moment.utc().startOf('minute'))),
+        stamp: new Date(+moment.utc().startOf('minute')),
         clength: conveyerMaxLength,
-        converted: conveyerConverted
+        converted: conveyerConverted,
     });
-    st.save(function (err) {
+
+    st.save(err => {
         if (err) {
             logger.error('STPhotoConveyer error.\n ' + err);
         }
@@ -262,6 +261,7 @@ async function conveyerControl() {
     if (!conveyerEnabled || toWork < 1) {
         return;
     }
+
     goingToWork += toWork;
 
     const files = await PhotoConveyer.find({ converting: { $exists: false } })
@@ -284,7 +284,7 @@ async function conveyerControl() {
                 cid: 1, s: 1, user: 1,
                 path: 1, file: 1, mime: 1,
                 w: 1, h: 1, ws: 1, hs: 1,
-                conv: 1, convqueue: 1, watersignText: 1
+                conv: 1, convqueue: 1, watersignText: 1,
             })
             .populate({ path: 'user', select: { _id: 0, login: 1 } })
             .exec();
@@ -309,9 +309,11 @@ async function conveyerControl() {
         await Promise.all([photo.save(), photoConv.remove()]);
 
         working -= 1;
+
         if (conveyerLength) {
             conveyerLength -= 1;
         }
+
         conveyerControl();
     }
 }
@@ -355,7 +357,7 @@ async function conveyorStep(photo, { protect: onlyProtectPublic = false, webpOnl
         const originSrcPath = path.join(sourceDir, photo.path);
 
         await tryPromise(5, () => identifyImage(originSrcPath, originIdentifyString), `identify origin of photo ${cid}`)
-            .then(function (result) {
+            .then(result => {
                 photo.w = parseInt(result.w, 10) || undefined;
                 photo.h = parseInt(result.h, 10) || undefined;
                 photo.format = result.f || undefined;
@@ -368,11 +370,12 @@ async function conveyorStep(photo, { protect: onlyProtectPublic = false, webpOnl
         await conveyorSubStep(photo, {
             webpOnly,
             waterTxt,
-            protectCover: !itsPublicPhoto || onlyProtectPublic
+            protectCover: !itsPublicPhoto || onlyProtectPublic,
         });
 
         // Check again that photo is public to avoid race condition if photo's status was changed during conveyorSubStep
         const photoForCurrentStatus = await Photo.findOne({ cid: photo.cid }, { s: 1 }).exec();
+
         itsPublicPhoto = photoForCurrentStatus.s === status.PUBLIC;
 
         // If photo is not public anymore, try to delete its files from public folder
@@ -388,7 +391,7 @@ async function conveyorStep(photo, { protect: onlyProtectPublic = false, webpOnl
         await conveyorSubStep(photo, {
             webpOnly, waterTxt,
             isPublic: false,
-            getStandardAttributes: !wasPublished // Get attributes only if they hasn't been taken on public step
+            getStandardAttributes: !wasPublished, // Get attributes only if they hasn't been taken on public step
         });
     }
 }
@@ -403,6 +406,7 @@ async function conveyorSubStep(photo, { isPublic = true, protectCover = false, w
         if (photo.w > 16383 || photo.h > 16383) {
             return;
         }
+
         return tryPromise(5,
             () => execAsync(`cwebp -preset photo -m 5 ${lossless ? '-lossless ' : ''}${dstPath} -o ${dstPath}.webp`),
             `convert ${variantName}-variant to webp of photo ${cid}`
@@ -428,11 +432,13 @@ async function conveyorSubStep(photo, { isPublic = true, protectCover = false, w
         const commands = [`convert ${srcPath}`];
 
         if (variant.strip) {
-            commands.push(`-strip`);
+            commands.push('-strip');
         }
+
         if (variant.filter) {
             commands.push(`-filter ${variant.filter}`);
         }
+
         if (variant.quality) {
             commands.push(`-quality ${variant.quality}`);
         }
@@ -444,6 +450,7 @@ async function conveyorSubStep(photo, { isPublic = true, protectCover = false, w
                 if (variant.gravity) {
                     commands.push(`-gravity ${variant.gravity}`);
                 }
+
                 commands.push(`-crop '${variant.width}x${variant.height}'`);
             } else {
                 commands.push(`-resize '${variant.width}x${variant.height}${variant.postfix || ''}'`);
@@ -480,7 +487,7 @@ async function conveyorSubStep(photo, { isPublic = true, protectCover = false, w
         if (isStandardsize && getStandardAttributes) {
             await tryPromise(6,
                 () => identifyImage(dstPath, '{"w": "%w", "h": "%h"}'), `identify standard size of photo ${cid}`
-            ).then(function (result) {
+            ).then(result => {
                 photo.ws = parseInt(result.w, 10) || undefined;
                 photo.hs = parseInt(result.h, 10) || undefined;
             });
@@ -490,7 +497,7 @@ async function conveyorSubStep(photo, { isPublic = true, protectCover = false, w
             const watermark = waterMarkGen({
                 w: isFullsize ? photo.w : photo.ws,
                 h: isFullsize ? photo.h : photo.hs,
-                txt: waterTxt
+                txt: waterTxt,
             });
 
             commands.pop();
@@ -498,7 +505,7 @@ async function conveyorSubStep(photo, { isPublic = true, protectCover = false, w
             if (protectCover) {
                 const protectCommands = protectCoverGen({
                     w: isFullsize ? photo.w : photo.ws,
-                    h: isFullsize ? photo.h : photo.hs
+                    h: isFullsize ? photo.h : photo.hs,
                 });
 
                 commands.push(...protectCommands);
@@ -516,6 +523,7 @@ async function conveyorSubStep(photo, { isPublic = true, protectCover = false, w
             }
 
             photo[isFullsize ? 'waterh' : 'waterhs'] = watermark.params.splice;
+
             if (isStandardsize && getStandardAttributes) {
                 photo.hs -= watermark.params.splice;
             }
@@ -524,6 +532,7 @@ async function conveyorSubStep(photo, { isPublic = true, protectCover = false, w
         // We must know signature of result photo, to use it for resetting user's browser cache
         if (isStandardsize && getStandardAttributes) {
             const { signature, fileParam } = await getFileSign(photo, dstPath);
+
             photo.signs = signature || undefined;
             photo.file = `${photo.path}${fileParam}`;
         }
@@ -541,6 +550,7 @@ async function tryPromise(attemps, promiseGenerator, data, attemp) {
         if (!attemp) {
             attemp = 1;
         }
+
         if (!attemps) {
             attemps = 1;
         }
@@ -548,6 +558,7 @@ async function tryPromise(attemps, promiseGenerator, data, attemp) {
         if (attemp < attemps) {
             await sleep(100 * attemp);
             logger.warn(`Trying execute the promise ${attemp + 1}th time. ${data || ''}`);
+
             return tryPromise(attemps, promiseGenerator, data, attemp + 1);
         }
 
@@ -588,7 +599,7 @@ export async function movePhotoFiles({ photo, copy = false, toProtected = false 
 
         return Promise.all([
             method(path.join(source, filePath), path.join(target, filePath)),
-            method(path.join(source, fileWebp), path.join(target, fileWebp))
+            method(path.join(source, fileWebp), path.join(target, fileWebp)),
         ]);
     }));
 
@@ -597,6 +608,7 @@ export async function movePhotoFiles({ photo, copy = false, toProtected = false 
         await sleep(50);
 
         const { signature, fileParam } = await getFileSign(photo, path.join(targetDir, 'd', filePath));
+
         await Photo.update(
             { cid: photo.cid }, { $set: { file: filePath + fileParam, signs: signature || '', converted: new Date() } }
         ).exec();
@@ -612,7 +624,7 @@ export function deletePhotoFiles({ photo, fromProtected = false, fromCovered = f
 
     return Promise.all(imageVersionsKeys.map(key => Promise.all([
         fsAsync.unlink(path.join(dir, key, filePath)).catch(_.noop),
-        fsAsync.unlink(path.join(dir, key, fileWebp)).catch(_.noop)
+        fsAsync.unlink(path.join(dir, key, fileWebp)).catch(_.noop),
     ])));
 }
 
@@ -643,8 +655,8 @@ export async function addPhotos(data, priority, potectPublicOnly) {
     }
 
     return {
-        message: (toConvertObjs.length === 1 ? 'Фотография отправлена' : `${toConvertObjs.length} фотографии отправлено`)
-        + ' на конвертацию'
+        message: (toConvertObjs.length === 1 ? 'Фотография отправлена' : `${toConvertObjs.length} фотографии отправлено`) +
+        ' на конвертацию',
     };
 }
 
@@ -676,6 +688,7 @@ export async function removePhotos(cids) {
     }
 
     const { result: { n: removedCount = 0 } } = await PhotoConveyer.remove({ cid: { $in: cids } }).exec();
+
     conveyerLength -= removedCount;
 
     return removedCount;
@@ -685,7 +698,7 @@ export async function removePhotos(cids) {
     await waitDb;
 
     // Запускаем конвейер после рестарта сервера, устанавливаем все недоконвертированные фото обратно в false
-    setTimeout(async function () {
+    setTimeout(async () => {
         try {
             await PhotoConveyer.update(
                 { converting: { $exists: true } }, { $unset: { converting: 1 } }, { multi: true }
@@ -703,13 +716,15 @@ export async function removePhotos(cids) {
     conveyerMaxLength = conveyerLength;
 
     // Планируем запись статистики конвейера на начало следующей 10-минутки
-    const hourStart = +(moment.utc().startOf('hour'));
+    const hourStart = +moment.utc().startOf('hour');
+
     setTimeout(CollectConveyerStat, hourStart + ms('10m') * Math.ceil((Date.now() - hourStart) / ms('10m')) - Date.now() + 10);
 }());
 
 function conveyorStartStop({ value }) {
     if (_.isBoolean(value)) {
         conveyerEnabled = value;
+
         if (value) {
             conveyerControl();
         }
@@ -728,7 +743,7 @@ async function conveyorStat() {
     const halfYear = Date.now() - ms('0.5y');
     const docs = await STPhotoConveyer.find({ stamp: { $gt: halfYear } }, { _id: 0, __v: 0 }, {
         sort: 'stamp',
-        lean: true
+        lean: true,
     }).exec();
 
     docs.forEach(doc => doc.stamp = doc.stamp.getTime());
@@ -740,7 +755,7 @@ const conveyorStatFast = () => ({
     conveyerEnabled,
     conveyerLength,
     conveyerMaxLength,
-    conveyerConverted
+    conveyerConverted,
 });
 
 conveyorStartStop.isPublic = true;
@@ -752,7 +767,7 @@ export default {
     conveyorStartStop,
     conveyerClear,
     conveyorStat,
-    conveyorStatFast
+    conveyorStatFast,
 };
 
 /**

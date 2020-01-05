@@ -31,7 +31,7 @@ export async function configure(startStamp) {
         logPath,
         storePath,
         manualGarbageCollect,
-        listen: { hostname, port, uport, dport }
+        listen: { hostname, port, uport, dport },
     } = config;
 
     makeDir.sync(path.join(storePath, 'incoming'));
@@ -49,7 +49,7 @@ export async function configure(startStamp) {
     await connectDb({
         redis: config.redis,
         mongo: { uri: config.mongo.connection, poolSize: config.mongo.pool },
-        logger
+        logger,
     });
 
     const status404Text = http.STATUS_CODES[404];
@@ -65,6 +65,7 @@ export async function configure(startStamp) {
     moment.locale(config.lang); // Set global language for momentjs
 
     const app = express();
+
     app.disable('x-powered-by'); // Disable default X-Powered-By
     app.set('query parser', 'extended'); // Parse query with 'qs' module
     app.set('views', 'views');
@@ -92,11 +93,11 @@ export async function configure(startStamp) {
         pretty: false, // Adds whitespace to the resulting html to make it easier for a human to read
         compileDebug: false, // Include the function source in the compiled template for better error messages
         debug: false, // If set to true, the tokens and function body is logged to stdoutl (in development).
-        config
+        config,
     });
 
     // Alias for photos with cid from root. /5 -> /p/5
-    app.get(/^\/(\d{1,7})$/, function (req, res) {
+    app.get(/^\/(\d{1,7})$/, (req, res) => {
         res.redirect(303, '/p/' + req.params[0]);
     });
 
@@ -111,15 +112,16 @@ export async function configure(startStamp) {
 
         if (env === 'development') {
             const lessMiddleware = require('less-middleware');
+
             app.use('/style', lessMiddleware(path.join(pub, 'style'), {
                 force: true,
                 once: false,
                 debug: false,
                 render: {
                     compress: false,
-                    yuicompress: false
+                    yuicompress: false,
                     // sourceMap: { sourceMapFileInline: true }
-                }
+                },
             }));
         }
 
@@ -148,22 +150,24 @@ export async function configure(startStamp) {
 
         // Serve protected files for not public photos
         const prServeMiddleware = ourMiddlewares.serveImages(path.join(storePath, 'protected/photos/'), { maxAge: ms('7d') });
+
         app.use('/_pr/',
-            function (req, res, next) {
+            (req, res, next) => {
                 request
                     .get({
                         url: `${downloadServer}${req.originalUrl}`,
                         headers: req.headers,
                         followRedirect: false,
-                        timeout: 1500
+                        timeout: 1500,
                     })
-                    .on('response', function (response) {
+                    .on('response', response => {
                         if (response.statusCode === 303) { // 303 means ok, user can get protected file
                             return prServeMiddleware(req, res, next);
                         }
+
                         next();
                     })
-                    .on('error', function (err) {
+                    .on('error', err => {
                         logger.warn('Downloader server request error:', err.message);
                         next();
                     });
@@ -177,10 +181,10 @@ export async function configure(startStamp) {
         // Serve avatars
         app.use('/_a/', ourMiddlewares.serveImages(path.join(storePath, 'public/avatars/'), { maxAge: ms('2d') }));
         // Replace unfound avatars with default one
-        app.get('/_a/d/*', function (req, res) {
+        app.get('/_a/d/*', (req, res) => {
             res.redirect(302, '/img/caps/avatar.png');
         });
-        app.get('/_a/h/*', function (req, res) {
+        app.get('/_a/h/*', (req, res) => {
             res.redirect(302, '/img/caps/avatarth.png');
         });
 
@@ -200,7 +204,7 @@ export async function configure(startStamp) {
         wsEngine: 'ws',
         transports: ['websocket', 'polling'],
         path: '/socket.io',
-        serveClient: false
+        serveClient: false,
     });
 
     // Set zero for unlimited listeners
@@ -290,11 +294,11 @@ export async function configure(startStamp) {
 
     await new CoreServer('Core', { port: config.core.port, host: config.core.hostname }, logger).listen();
 
-    httpServer.listen(port, hostname, function () {
+    httpServer.listen(port, hostname, () => {
         logger.info(
             `HTTP server started up in ${(Date.now() - startStamp) / 1000}s`,
             `and listening [${hostname || '*'}:${port}]`,
-            config.gzip ? `with gzip` : '',
+            config.gzip ? 'with gzip' : '',
             '\n'
         );
 
