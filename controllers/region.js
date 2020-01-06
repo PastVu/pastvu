@@ -3,7 +3,7 @@ import _ from 'lodash';
 import log4js from 'log4js';
 import config from '../config';
 import Utils from '../commons/Utils';
-import turf from '@turf/turf';
+import { polygon as turfPolygon } from '@turf/turf';
 import turfIntersect from '@turf/intersect';
 import geojsonRewind from 'geojson-rewind';
 import geojsonHint from '@mapbox/geojsonhint';
@@ -978,7 +978,7 @@ async function save(data) {
 
                     for (let i = 1; i < leftPolygons.length; i++) {
                         const polygon = leftPolygons[i];
-                        const intersectionWithExterior = turfIntersect(turf.polygon(exteriorPolygon), turf.polygon(polygon));
+                        const intersectionWithExterior = turfIntersect(turfPolygon(exteriorPolygon), turfPolygon(polygon));
 
                         if (intersectionWithExterior && intersectionWithExterior.geometry.type === 'Polygon') {
                             // If polygons intersect as Polygon, means current one is a hole (interior ring)
