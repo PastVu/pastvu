@@ -15,6 +15,7 @@ module.exports = function (config, appRequire) {
             pool: 10
         },
 
+        // In development you should create a test account at https://ethereal.email, so email will not be sent to the real users
         mail: {
             type: 'SMTP',
             service: 'gmail',
