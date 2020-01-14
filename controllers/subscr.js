@@ -493,7 +493,7 @@ async function giveUserSubscriptions({ login, page = 1, type = 'photo' }) {
                 { _id: { $in: objIds } }, { _id: 1, cid: 1, title: 1, ccount: 1 }, { lean: true }
             ).exec() :
             Photo.find(
-                Object.assign(buildPhotosQuery({ r: 0, t: null, s: [5, 7] }, null, iAm).query, { _id: { $in: objIds } }),
+                Object.assign(buildPhotosQuery({ r: 0, t: null, s: [5, 7, 9] }, null, iAm).query, { _id: { $in: objIds } }),
                 photosFields, { lean: true }
             ).exec());
     }
