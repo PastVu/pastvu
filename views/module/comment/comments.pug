@@ -1,6 +1,11 @@
 .fullComments(data-bind="with: repository[M!M]")
     .cmtsHead
-        a.count.headElem.interact(href="?hl=comments", data-replace="true", data-bind="html: $root.intl.num(count()) + (countNew() ? '<span class=\"cnew\"> +' + $root.intl.num(countNew()) + '</span>' : '')", title="Link to the comments area")
+        a.count.headElem.interact(href="?hl=comments", data-replace="true", data-bind="html: $root.intl.num(count()) + (countNew() ? '<span class=\"cnew\"> +' + $root.intl.num(countNew()) + '</span>' : '')", title="Link to the comments")
+        //ko if: countDel() > 0
+        .delComments.headElem.interact(data-bind="css: {delCommentsShow: showDelComments()}, click: toggleShowDelComments, attr: {title: (showDelComments() ? 'Hide' : 'Show')+' deleted comments'}")
+            span(data-bind="text: '+' + countDel()")
+            span.glyphicon.glyphicon-trash
+        // /ko
         //ko if: canReply()
         .addZero.headElem.interact.strokeBefore(data-bind="click: replyZero", title="Add first level comment")
             span.glyphicon.glyphicon-edit

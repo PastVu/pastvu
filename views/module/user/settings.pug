@@ -288,17 +288,35 @@
                                 |  For each image you can set allowance of downloading original individually. Here you can reset such individual settings and common setting, specified above, will be applied to them
 
     .panel.panel-pastvu
-        .panel-heading: .panel-title: a(data-toggle="collapse", href="#notice") Subscription and notification
+        .panel-heading: .panel-title: a(data-toggle="collapse", href="#comments") Comments
+        .panel-collapse.collapse.in#comments: .panel-body
+            dl.dl-horizontal
+                dt.helpexists
+                    .help.tltp-wrap
+                        span.glyphicon.glyphicon-info-sign
+                        .tltp.tltp-top.tltp-animate-move
+                            | Show deleted comments
+                            br
+                            | automatically on page load
+                    | &nbsp;Show deleted comments
+                    br
+                    | by default
+                dd
+                    .btn-group.btn-group-sm
+                        button.btn.btn-primary.yes(type="button", data-bind="css: {active: u.settings.comment_show_deleted()}, click: deletedCommentsShow") Yes
+                        button.btn.btn-primary.no(type="button", data-bind="css: {active: !u.settings.comment_show_deleted()}, click: deletedCommentsShow") No
+    .panel.panel-pastvu
+        .panel-heading: .panel-title: a(data-toggle="collapse", href="#notice") Subscription and notifications
         .panel-collapse.collapse.in#notice: .panel-body
             dl.dl-horizontal
                 dt.helpexists
                     .help.tltp-wrap
                         span.glyphicon.glyphicon-info-sign
                         .tltp.tltp-top.tltp-animate-move
-                            | Default state of «Subscribe» checkbox
+                            | Default state of the «Subscribe» checkbox
                             br
-                            | at comment writing form
-                    | &nbsp;Automatic subscription when comment topic
+                            | below the comment writing input
+                    | &nbsp;Subscribe automatically on the comment submission
                 dd
                     .btn-group.btn-group-sm
                         button.btn.btn-primary.yes(type="button", data-bind="css: {active: u.settings.subscr_auto_reply()}, click: autoReply") Yes
@@ -310,8 +328,8 @@
                         .tltp.tltp-top.tltp-animate-move
                             | Minimal amount of time between
                             br
-                            | sending of notification letter
-                    | &nbsp;Minimum interval between sending
+                            | sending of notification emails
+                    | &nbsp;Minimum interval between sendings
                 dd.throttle(data-bind="foreach: vars.subscr_throttle")
                     label.radio-inline
                         input(type="radio", name="subscr_throttle_radios", data-bind="attr: {id: 'subscr_throttle_radios_' + $index(), value: ''+$data}, checked: $parent.u.settings.subscr_throttle")
