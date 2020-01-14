@@ -133,7 +133,7 @@
                     b(data-bind="text: $root.intl.num(stats.all.userCount)")
                 .statrow
                     = 'Фотографий: '
-                    b(data-bind="text: $root.intl.num(stats.all.pallCount)")
+                    b(data-bind="text: $root.intl.num(stats.all.pallCount) + (auth.loggedIn() ? ', из них ' + $root.intl.num(stats.all.ppubCount) + ' публичных' : '')")
                 .statrow
                     span(data-bind="text: 'Больше всего фотографий относится к ' + stats.all.photoYear.pop.year + ' году, их '")
                     b(data-bind="text: $root.intl.num(stats.all.photoYear.pop.count)")
@@ -145,7 +145,7 @@
                     b(data-bind="text: $root.intl.num(stats.all.pweekCount)")
                 .statrow
                     = 'Комментариев: '
-                    b(data-bind="text: $root.intl.num(stats.all.callCount)")
+                    b(data-bind="text: $root.intl.num(stats.all.callCount)+ (auth.loggedIn() ? ', из них ' + $root.intl.num(stats.all.callCount - stats.all.cpubCount) + ' удаленных' : '')")
                 .statrow
                     = 'Сегодня новых комментариев: '
                     b(data-bind="text: $root.intl.num(stats.all.cdayCount)")
