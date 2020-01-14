@@ -330,6 +330,9 @@ define([
                 this.changeSetting('photo_filter_type', valNumbers);
             }
         },
+        deletedCommentsShow: function (data, evt) {
+            this.changeSetting('comment_show_deleted', isYes(evt), true);
+        },
         subscr_throttleHandler: function (val) {
             //Изначальное значение число. А во время изменения radio в knockout это всегда будет строка
             //Соответственно нам нужно отправлять на изменение только когда строка

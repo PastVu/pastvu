@@ -294,6 +294,24 @@
                                 |  В каждом изображении вы можете устанавливать разрешение на скачивание индивидуально. Здесь вы можете сбросить индивидуальную настройку в этих изображениях и к ним будет применена общая, указанная выше
 
     .panel.panel-pastvu
+        .panel-heading: .panel-title: a(data-toggle="collapse", href="#comments") Комментарии
+        .panel-collapse.collapse.in#comments: .panel-body
+            dl.dl-horizontal
+                dt.helpexists
+                    .help.tltp-wrap
+                        span.glyphicon.glyphicon-info-sign
+                        .tltp.tltp-top.tltp-animate-move
+                            | Показывать удаленные комментарии
+                            br
+                            | автоматически при заходе на страницу
+                    | &nbsp;Показывать удаленные комментарии
+                    br
+                    | по умолчанию
+                dd
+                    .btn-group.btn-group-sm
+                        button.btn.btn-primary.yes(type="button", data-bind="css: {active: u.settings.comment_show_deleted()}, click: deletedCommentsShow") Да
+                        button.btn.btn-primary.no(type="button", data-bind="css: {active: !u.settings.comment_show_deleted()}, click: deletedCommentsShow") Нет
+    .panel.panel-pastvu
         .panel-heading: .panel-title: a(data-toggle="collapse", href="#notice") Подписка и уведомления
         .panel-collapse.collapse.in#notice: .panel-body
             dl.dl-horizontal

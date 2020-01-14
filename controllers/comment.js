@@ -97,14 +97,47 @@ function commentsTreeBuildAnonym(comments, usersHash) {
     return tree;
 }
 
-async function commentsTreeBuildAuth(myId, comments, previousViewStamp, canReply) {
+async function commentsTreeBuildAuth({ iAm, type, commentModel, obj, canReply, showDel }) {
+    const myId = String(iAm.user._id);
+    const [comments, relBeforeUpdate] = await Promise.all([
+        // Take all object comments
+        commentModel.find(
+            { obj: obj._id },
+            { _id: 0, obj: 0, hist: 0, 'del.reason': 0, geo: 0, r0: 0, r1: 0, r2: 0, r3: 0, r4: 0, r5: 0, __v: 0 },
+            { lean: true, sort: { stamp: 1 } }
+        ).exec(),
+        // Get last user's view time of comments and object and replace it with current time
+        // with notification reset if it scheduled
+        userObjectRelController.setCommentView(obj._id, iAm.user._id, type),
+    ]);
+
+    const commentsTree = [];
+    let countTotal = 0;
+    let countNew = 0;
+    let countDel = 0;
+
+    if (!comments.length) {
+        return { tree: commentsTree, users: {}, countTotal, countNew, countDel };
+    }
+
+    let previousViewStamp;
+
+    if (relBeforeUpdate) {
+        if (relBeforeUpdate.comments) {
+            previousViewStamp = relBeforeUpdate.comments.getTime();
+        }
+
+        if (relBeforeUpdate.sbscr_noty) {
+            // If notification has been scheduled,
+            // ask subscribe controller to check if there are notification on other objects
+            subscrController.commentViewed(obj._id, iAm.user);
+        }
+    }
+
     const dayAgo = Date.now() - dayMS;
     const commentsArr = [];
     const commentsHash = {};
     const usersSet = new Set();
-
-    let countTotal = 0;
-    let countNew = 0;
 
     for (const comment of comments) {
         comment.user = String(comment.user);
@@ -132,12 +165,17 @@ async function commentsTreeBuildAuth(myId, comments, previousViewStamp, canReply
             if (commentParent === undefined) {
                 // If parent doesn't exists in hash, possibly because its in saved branch of removed comments already,
                 // but is not root, and therefore already dropped, so we need drop current as well
+                if (commentIsDeleted) {
+                    countDel++;
+                }
+
                 continue;
             }
 
             if (commentIsDeleted) {
                 if (commentParent.del !== undefined) {
                     if (commentParent.delRoot.delSave === true) {
+                        countDel++;
                         continue; // If root removed parent has already saved, drop current
                     }
 
@@ -146,6 +184,7 @@ async function commentsTreeBuildAuth(myId, comments, previousViewStamp, canReply
                     if (commentIsMine) {
                         // If it's own current, indicate that root must be saved and drop current
                         comment.delRoot.delSave = true;
+                        countDel++;
                         continue;
                     }
                 } else if (commentIsMine) {
@@ -193,20 +232,29 @@ async function commentsTreeBuildAuth(myId, comments, previousViewStamp, canReply
 
     const { usersById, usersByLogin } = await getUsersHashForComments(usersSet);
 
-    const commentsTree = [];
-
     // Grow comments tree
     for (const comment of commentsArr) {
         if (comment.del !== undefined) {
             if (comment.delRoot.delSave === true) {
+                countDel++;
                 // Just pass a flag, that comment is removed. Details can be found in the history of changes
                 comment.del = true;
+
+                // Don't include deleted comment in response if user doesn't want to see them
+                if (!showDel) {
+                    continue;
+                }
+
                 delete comment.txt; // Removed root comment (closed) pass without a text
                 delete comment.frag;
                 delete comment.delRoot;
                 delete comment.delSave; // Remove delSave, and then its children will not be included in this branch
                 delete comment.comments;
             } else {
+                if (comment.delRoot.del === true) {
+                    countDel++;
+                }
+
                 continue;
             }
         }
@@ -224,16 +272,48 @@ async function commentsTreeBuildAuth(myId, comments, previousViewStamp, canReply
         }
     }
 
-    return { tree: commentsTree, users: usersByLogin, countTotal, countNew };
+    return { tree: commentsTree, users: usersByLogin, countTotal, countNew, countDel };
 }
 
-async function commentsTreeBuildCanModerate(myId, comments, previousViewStamp) {
-    const commentsMap = new Map();
-    const commentsTree = [];
-    const usersSet = new Set();
+async function commentsTreeBuildCanModerate({ iAm, type, commentModel, obj, showDel }) {
+    const myId = String(iAm.user._id);
+    const [comments, relBeforeUpdate, countDel = obj.cdcount] = await Promise.all([
+        // Take all object comments
+        commentModel.find(
+            { obj: obj._id, ...showDel ? { 'del.origin': null } : { del: null } },
+            { _id: 0, obj: 0, hist: 0, 'del.reason': 0, geo: 0, r0: 0, r1: 0, r2: 0, r3: 0, r4: 0, r5: 0, __v: 0 },
+            { lean: true, sort: { stamp: 1 } }
+        ).exec(),
+        // Get last user's view time of comments and object and replace it with current time
+        // with notification reset if it scheduled
+        userObjectRelController.setCommentView(obj._id, iAm.user._id, type),
+        // News doesn't contain number of deleted comments, count it dynamically
+        type === 'news' ? await commentModel.count({ obj: obj._id, del: { $exists: true } }).exec() : undefined,
+    ]);
 
+    const commentsTree = [];
     let countTotal = 0;
     let countNew = 0;
+
+    if (!comments.length) {
+        return { tree: commentsTree, users: {}, countTotal, countNew, countDel };
+    }
+
+    const commentsMap = new Map();
+    const usersSet = new Set();
+    let previousViewStamp;
+
+    if (relBeforeUpdate) {
+        if (relBeforeUpdate.comments) {
+            previousViewStamp = relBeforeUpdate.comments.getTime();
+        }
+
+        if (relBeforeUpdate.sbscr_noty) {
+            // If notification has been scheduled,
+            // ask subscribe controller to check if there are notification on other objects
+            subscrController.commentViewed(obj._id, iAm.user);
+        }
+    }
 
     for (const comment of comments) {
         if (comment.level === undefined) {
@@ -273,13 +353,14 @@ async function commentsTreeBuildCanModerate(myId, comments, previousViewStamp) {
             delete comment.txt; // Removed root comment (closed) pass without a text
             delete comment.frag;
             delete comment.comments;
-            continue;
-        } else if (previousViewStamp && comment.stamp > previousViewStamp && comment.user !== myId) {
-            comment.isnew = true;
-            countNew++;
-        }
+        } else {
+            countTotal++;
 
-        countTotal++;
+            if (previousViewStamp && comment.stamp > previousViewStamp && comment.user !== myId) {
+                comment.isnew = true;
+                countNew++;
+            }
+        }
     }
 
     const { usersById, usersByLogin } = await getUsersHashForComments(usersSet);
@@ -288,7 +369,7 @@ async function commentsTreeBuildCanModerate(myId, comments, previousViewStamp) {
         comment.user = usersById[comment.user].login;
     }
 
-    return { tree: commentsTree, users: usersByLogin, countTotal, countNew };
+    return { tree: commentsTree, users: usersByLogin, countTotal, countNew, countDel };
 }
 
 async function commentsTreeBuildDel(comment, childs, checkMyId) {
@@ -363,22 +444,24 @@ async function commentsTreeBuildDel(comment, childs, checkMyId) {
 
 // Prepare users hash for comments
 async function getUsersHashForComments(usersSet) {
-    const users = await User.find(
-        { _id: { $in: [...usersSet] } }, { _id: 1, login: 1, avatar: 1, disp: 1, ranks: 1 }, { lean: true }
-    ).exec();
-
     const usersById = {};
     const usersByLogin = {};
 
-    for (const user of users) {
-        if (user.avatar) {
-            user.avatar = '/_a/h/' + user.avatar;
-        }
+    if (usersSet.size) {
+        const users = await User.find(
+            { _id: { $in: [...usersSet] } }, { _id: 1, login: 1, avatar: 1, disp: 1, ranks: 1 }, { lean: true }
+        ).exec();
 
-        // For speed check directly in hash, without 'isOnline' function
-        user.online = session.usLogin[user.login] !== undefined;
-        usersByLogin[user.login] = usersById[String(user._id)] = user;
-        delete user._id;
+        for (const user of users) {
+            if (user.avatar) {
+                user.avatar = '/_a/h/' + user.avatar;
+            }
+
+            // For speed check directly in hash, without 'isOnline' function
+            user.online = session.usLogin[user.login] !== undefined;
+            usersByLogin[user.login] = usersById[String(user._id)] = user;
+            delete user._id;
+        }
     }
 
     return { usersById, usersByLogin };
@@ -427,7 +510,7 @@ async function getCommentsObjAnonym({ cid, type = 'photo' }) {
     return { comments: tree || [], countTotal: comments.length, users: usersByLogin };
 }
 
-async function getCommentsObjAuth({ cid, type = 'photo' }) {
+async function getCommentsObjAuth({ cid, type = 'photo', showDel = false }) {
     const { handshake: { usObj: iAm } } = this;
 
     let obj;
@@ -435,7 +518,7 @@ async function getCommentsObjAuth({ cid, type = 'photo' }) {
 
     if (type === 'news') {
         commentModel = CommentN;
-        obj = await News.findOne({ cid }, { _id: 1, nocomments: 1 }).exec();
+        obj = await News.findOne({ cid }, { _id: 1, nocomments: 1, cdcount: 1 }).exec();
     } else {
         commentModel = Comment;
         obj = await this.call('photo.find', { query: { cid } });
@@ -445,47 +528,17 @@ async function getCommentsObjAuth({ cid, type = 'photo' }) {
         throw new NotFoundError(constantsError.COMMENT_NO_OBJECT);
     }
 
-    const [comments, relBeforeUpdate] = await Promise.all([
-        // Take all object comments
-        commentModel.find(
-            { obj: obj._id },
-            { _id: 0, obj: 0, hist: 0, 'del.reason': 0, geo: 0, r0: 0, r1: 0, r2: 0, r3: 0, r4: 0, r5: 0, __v: 0 },
-            { lean: true, sort: { stamp: 1 } }
-        ).exec(),
-        // Get last user's view time of comments and object and replace it with current time
-        // with notification reset if it scheduled
-        userObjectRelController.setCommentView(obj._id, iAm.user._id, type),
-    ]);
-
-    let previousViewStamp;
-
-    if (relBeforeUpdate) {
-        if (relBeforeUpdate.comments) {
-            previousViewStamp = relBeforeUpdate.comments.getTime();
-        }
-
-        if (relBeforeUpdate.sbscr_noty) {
-            // Если было заготовлено уведомление,
-            // просим менеджер подписок проверить есть ли уведомления по другим объектам
-            subscrController.commentViewed(obj._id, iAm.user);
-        }
-    }
-
     const canModerate = permissions.canModerate(type, obj, iAm);
     const canReply = permissions.canReply(type, obj, iAm);
 
-    if (!comments.length) {
-        return { comments: [], users: {}, countTotal: 0, countNew: 0, canModerate, canReply };
-    }
-
-    const { tree, users, countTotal, countNew } = await (canModerate ?
+    const { tree, users, countTotal, countNew, countDel } = await (canModerate ?
         // Если это модератор данной фотографии или администратор новости
-        commentsTreeBuildCanModerate(String(iAm.user._id), comments, previousViewStamp) :
+        commentsTreeBuildCanModerate({ iAm, type, commentModel, obj, showDel }) :
         // Если это зарегистрированный пользователь
-        commentsTreeBuildAuth(String(iAm.user._id), comments, previousViewStamp, !obj.nocomments)
+        commentsTreeBuildAuth({ iAm, type, commentModel, obj, canReply, showDel })
     );
 
-    return { comments: tree, users, countTotal, countNew, canModerate, canReply };
+    return { comments: tree, users, countTotal, countNew, countDel, canModerate, canReply };
 }
 
 // Select comments for object

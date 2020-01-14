@@ -61,9 +61,11 @@ define([
             this.cid = null;
             this.count = ko.observable(this.options.count || 0);
             this.countNew = ko.observable(this.options.countNew || 0);
+            this.countDel = ko.observable(0);
             this.subscr = ko.observable(this.options.subscr || false);
             this.nocomments = ko.observable(this.options.nocomments);
             this.canReply = ko.observable(this.options.canReply);
+            this.showDelComments = ko.observable(this.auth.iAm.settings.comment_show_deleted());
 
             this.loading = ko.observable(false);
             this.showTree = ko.observable(false);
@@ -333,9 +335,9 @@ define([
                 }.bind(this));
         },
 
-        receive: function (cb, ctx) {
+        receive: function (cb, ctx, cbBeforeRender) {
             this.loading(true);
-            socket.run('comment.giveForObj', { type: this.type, cid: this.cid }, true).then(function (data) {
+            socket.run('comment.giveForObj', { type: this.type, cid: this.cid, showDel: this.showDelComments() }, true).then(function (data) {
                 if (data.cid !== this.cid) {
                     console.info('Comments received for another ' + this.type + ' ' + data.cid);
                 } else {
@@ -351,8 +353,13 @@ define([
                         this.count(data.countTotal);
                     }
                     this.countNew(data.countNew);
+                    this.countDel(data.countDel || 0);
                     this.canModerate(canModerate);
                     this.canReply(canReply);
+
+                    if (Utils.isType('function', cbBeforeRender)) {
+                        cbBeforeRender.call(ctx, data);
+                    }
 
                     // Отрисовываем комментарии путем замены innerHTML результатом шаблона dot
                     this.$cmts[0].innerHTML = this.renderComments(data.comments, tplComments, true);
@@ -796,6 +803,7 @@ define([
 
                         comment.lastChanged = result.stamp;
                         this.count(this.count() - count);
+                        this.countDel(this.countDel() + count);
                         this.parentModule.commentCountIncrement(-count);
 
                         if (Array.isArray(result.frags)) {
@@ -809,12 +817,19 @@ define([
                         // т.к. могут быть дочерние уже удалённые, на которых hlRemove не распространяется,
                         // но убрать их из дерева тоже надо)
                         getChildComments(comment, $c).remove();
-                        // Заменяем корневой удаляемый комментарий на удалённый(схлопнутый)
-                        var $cdel = $(tplCommentDel(comment, {
-                            fDate: formatDateRelative,
-                            fDateIn: formatDateRelativeIn
-                        }));
-                        $c.replaceWith($cdel);
+
+                        if (this.showDelComments()) {
+                            // If user wants to see removed comments,
+                            // then replace root removed comment with the collapsed one
+                            var $cdel = $(tplCommentDel(comment, {
+                                fDate: formatDateRelative,
+                                fDateIn: formatDateRelativeIn
+                            }));
+                            $c.replaceWith($cdel);
+                        } else {
+                            // Otherwise just remove it as well as its children
+                            $c.remove();
+                        }
 
                         // Если обычный пользователь удаляет свой ответ на свой же комментарий,
                         // пока может тот редактировать, и у того не осталось неудаленных дочерних,
@@ -879,6 +894,7 @@ define([
 
                             comment.lastChanged = result.stamp;
                             that.count(that.count() + count);
+                            that.countDel(that.countDel() - count);
                             that.parentModule.commentCountIncrement(count);
 
                             if (Array.isArray(result.frags)) {
@@ -1291,6 +1307,22 @@ define([
                     this.parentModule.setNoComments(!!data.nocomments);
                     this.nocomments(!!data.nocomments);
                 }.bind(this));
+        },
+
+
+        toggleShowDelComments: function () {
+            if (this.loading()) {
+                return;
+            }
+
+            this.showDelComments(!this.showDelComments());
+            this.receive(null, this, function () {
+                //Перед рендером надо вынуть ответ первого уровня из dom,
+                //и положить после рендеринга заново, т.к. рендеринг заменяет innerHTML блока комментариев
+                this.inputZeroDetach();
+                //Удаляем через jquery остальные возможные поля ввода, чтобы снять с них события
+                $('.cadd', this.$cmts).remove();
+            });
         },
 
         navUp: function () {

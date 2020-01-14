@@ -1,6 +1,11 @@
 .fullComments(data-bind="with: repository[M!M]")
     .cmtsHead
         a.count.headElem.interact(href="?hl=comments", data-replace="true", data-bind="html: $root.intl.num(count()) + (countNew() ? '<span class=\"cnew\"> +' + $root.intl.num(countNew()) + '</span>' : '')", title="Ссылка на область комментариев")
+        //ko if: countDel() > 0
+        .delComments.headElem.interact(data-bind="css: {delCommentsShow: showDelComments()}, click: toggleShowDelComments, attr: {title: (showDelComments() ? 'Скрыть' : 'Показать')+' удаленные комментарии'}")
+            span(data-bind="text: '+' + countDel()")
+            span.glyphicon.glyphicon-trash
+        // /ko
         //ko if: canReply()
         .addZero.headElem.interact.strokeBefore(data-bind="click: replyZero", title="Добавить комментарий первого уровня")
             span.glyphicon.glyphicon-edit
