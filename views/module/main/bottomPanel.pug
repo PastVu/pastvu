@@ -133,7 +133,7 @@
                     b(data-bind="text: $root.intl.num(stats.all.userCount)")
                 .statrow
                     = 'Photos: '
-                    b(data-bind="text: $root.intl.num(stats.all.pallCount)")
+                    b(data-bind="text: $root.intl.num(stats.all.pallCount) + (auth.loggedIn() ? ', of which ' + $root.intl.num(stats.all.ppubCount) + ' are public' : '')")
                 .statrow
                     span(data-bind="text: 'Vast majority of photos refers to ' + stats.all.photoYear.pop.year + ' year, '")
                     b(data-bind="text: $root.intl.num(stats.all.photoYear.pop.count)")
@@ -145,7 +145,7 @@
                     b(data-bind="text: $root.intl.num(stats.all.pweekCount)")
                 .statrow
                     = 'Comments: '
-                    b(data-bind="text: $root.intl.num(stats.all.callCount)")
+                    b(data-bind="text: $root.intl.num(stats.all.callCount)+ (auth.loggedIn() ? ', of which ' + $root.intl.num(stats.all.callCount - stats.all.cpubCount) + ' are deleted' : '')")
                 .statrow
                     = 'Today new comments: '
                     b(data-bind="text: $root.intl.num(stats.all.cdayCount)")

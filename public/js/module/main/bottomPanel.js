@@ -75,11 +75,13 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
             this.stats = {
                 all: {
                     pallCount: 0,
+                    ppubCount: 0,
                     userCount: 0,
                     photoYear: {},
                     pdayCount: 0,
                     pweekCount: 0,
                     callCount: 0,
+                    cpubCount: 0,
                     cdayCount: 0,
                     cweekCount: 0
                 },

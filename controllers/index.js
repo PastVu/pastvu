@@ -166,16 +166,21 @@ const giveStats = (function () {
     return Utils.memoizePromise(async () => {
         const [
             [photoYear],
-            pallCount, userCount, pdayCount, pweekCount, callCount,
-            cnallCount, cdayCount, cndayCount, cweekCount, cnweekCount,
+            pallCount, ppubCount, userCount, pdayCount, pweekCount,
+            callCount, cnallCount,
+            cpubCount, cnpubCount, cdayCount, cndayCount, cweekCount, cnweekCount,
         ] = await Promise.all([
             Photo.aggregate(aggregateParams).exec(),
 
+            Photo.count({}).exec(),
             Photo.count({ s: 5 }).exec(),
             User.count({ active: true }).exec(),
 
             Photo.count({ s: 5, adate: { $gt: dayStart } }).exec(),
             Photo.count({ s: 5, adate: { $gt: weekStart } }).exec(),
+
+            Comment.count({}).exec(),
+            CommentN.count({}).exec(),
 
             Comment.count({ s: 5, del: null }).exec(),
             CommentN.count({ del: null }).exec(),
@@ -187,8 +192,9 @@ const giveStats = (function () {
 
         return {
             all: {
-                photoYear, pallCount, userCount, pdayCount, pweekCount,
+                photoYear, pallCount, ppubCount, userCount, pdayCount, pweekCount,
                 callCount: callCount + cnallCount,
+                cpubCount: cpubCount + cnpubCount,
                 cdayCount: cdayCount + cndayCount,
                 cweekCount: cweekCount + cnweekCount,
             },
