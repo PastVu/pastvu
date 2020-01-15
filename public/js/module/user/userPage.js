@@ -188,7 +188,7 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 				Utils.title.setTitle({title: this.user.disp()});
 			} else if (section === 'photos' || section === 'photo') {
 				module = 'm/photo/gallery';
-				moduleOptions.options.addPossible = true;
+				moduleOptions.options.addPossible = !this.user.nophotoupload();
 				if (upload) {
 					if (this.contentVM && this.contentVM.module === module) {
 						this.contentVM.showUpload(); //Если галерея уже загружена, просто открываем окно загрузки
