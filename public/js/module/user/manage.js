@@ -239,12 +239,34 @@ define([
             }
         },
 
-        changewaterchange: function (data, evt) {
-            socket.run('profile.setUserWatermarkChange', { login: this.u.login(), nowaterchange: !isYes(evt) }, true)
+        changeRestrictions: function (key, val, checkValChange, cb, ctx) {
+            debugger;
+            if (checkValChange && val === this.u[key]()) {
+                return;
+            }
+
+            socket.run('profile.changeRestrictions', { login: this.u.login(), key: key, val: val }, true)
                 .then(function (result) {
-                    this.u.nowaterchange(result.nowaterchange);
-                    this.u_origin.nowaterchange = result.nowaterchange;
-                }.bind(this));
+                    this.u[result.key](result.val);
+                    this.u_origin[result.key] = result.val;
+
+                    if (_.isFunction(cb)) {
+                        cb.call(ctx, null, result);
+                    }
+                }.bind(this))
+                .catch(function (error) {
+                    if (_.isFunction(cb)) {
+                        cb.call(ctx, error);
+                    }
+                });
+        },
+
+        changewaterchange: function (data, evt) {
+            this.changeRestrictions('nowaterchange', !isYes(evt), true);
+        },
+
+        changenophotoupload: function (data, evt) {
+            this.changeRestrictions('nophotoupload', !isYes(evt), true);
         },
 
         ranksSelectedHandler: function (val) {

@@ -84,6 +84,7 @@ registerModel(db => {
         active: { type: Boolean, 'default': false },
         activatedate: { type: Date },
 
+        nophotoupload: { type: Boolean }, // Prevent user from uploading new photos
         nowaterchange: { type: Boolean }, // Prohibit user to change his own default watersign setting and watersign of his own photos
     });
 

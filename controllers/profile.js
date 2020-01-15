@@ -24,6 +24,11 @@ const publicDir = path.join(config.storePath, 'public/avatars/');
 const execAsync = util.promisify(childProcess.exec);
 const emailRegexp = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@(([[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 
+const restrictions = new Map([
+    ['nophotoupload', { val: false, vars: new Set([true, false]) }],
+    ['nowaterchange', { val: false, vars: new Set([true, false]) }],
+]);
+
 const getUserByLogin = async function (login) {
     const usObjOnline = session.getOnline({ login });
     const user = usObjOnline ? usObjOnline.user : await User.findOne({ login }).exec();
@@ -198,6 +203,45 @@ async function changeSetting({ login, key, val }) {
         } else {
             session.emitUser({ usObj: usObjOnline, excludeSocket: socket });
         }
+    }
+
+    return { key, val };
+}
+
+// Changes value of specified user restriction (by admin)
+async function changeRestrictions({ login, key, val }) {
+    const { socket, handshake: { usObj: iAm } } = this;
+
+    if (!iAm.isAdmin) {
+        throw new AuthorizationError();
+    }
+
+    if (!login || !key) {
+        throw new BadParamsError();
+    }
+
+    const defRestriction = restrictions.get(key);
+
+    // If this setting does not exist or its value is not allowed - throw error
+    if (defRestriction === undefined || !defRestriction.vars.has(val)) {
+        throw new BadParamsError(constantsError.SETTING_DOESNT_EXISTS);
+    }
+
+    const { usObjOnline, user } = await getUserByLogin(login);
+    const currentValue = user[key] ?? defRestriction.val;
+
+    if (_.isEqual(currentValue, val)) {
+        // If the specified setting have not changed, just return
+        return { key, val };
+    }
+
+    user[key] = val === defRestriction.val ? undefined : val;
+    user.markModified(key);
+
+    await user.save();
+
+    if (usObjOnline) {
+        session.emitUser({ usObj: usObjOnline, excludeSocket: socket });
     }
 
     return { key, val };
@@ -462,42 +506,6 @@ async function delAvatar({ login }) {
     return { message: 'ok' };
 }
 
-// Change (by administrator) user ability to change his watersign setting
-async function setUserWatermarkChange({ login, nowaterchange }) {
-    const { socket, handshake: { usObj: iAm } } = this;
-
-    if (!iAm.isAdmin) {
-        throw new AuthorizationError();
-    }
-
-    if (!login) {
-        throw new BadParamsError();
-    }
-
-    const { usObjOnline, user } = await getUserByLogin(login);
-
-    let changed;
-
-    if (nowaterchange) {
-        if (!user.nowaterchange) {
-            user.nowaterchange = changed = true;
-        }
-    } else if (user.nowaterchange !== undefined) {
-        user.nowaterchange = undefined;
-        changed = true;
-    }
-
-    if (changed) {
-        await user.save();
-
-        if (usObjOnline) {
-            session.emitUser({ usObj: usObjOnline, excludeSocket: socket });
-        }
-    }
-
-    return { nowaterchange: user.nowaterchange };
-}
-
 // Save user ranks
 async function saveUserRanks({ login, ranks }) {
     const { handshake: { usObj: iAm } } = this;
@@ -597,8 +605,8 @@ giveUser.isPublic = true;
 saveUser.isPublic = true;
 changeDispName.isPublic = true;
 changeSetting.isPublic = true;
+changeRestrictions.isPublic = true;
 setWatersignCustom.isPublic = true;
-setUserWatermarkChange.isPublic = true;
 changeEmail.isPublic = true;
 changeAvatar.isPublic = true;
 delAvatar.isPublic = true;
@@ -611,8 +619,8 @@ export default {
     saveUser,
     changeDispName,
     changeSetting,
+    changeRestrictions,
     setWatersignCustom,
-    setUserWatermarkChange,
     changeEmail,
     changeAvatar,
     delAvatar,

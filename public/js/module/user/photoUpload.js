@@ -42,7 +42,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
             this.filesToSubmit = [];
 
             var user = this.auth.iAm.login();
-            if (this.auth.loggedIn()) {
+            if (this.auth.loggedIn() && !this.auth.iAm.nophotoupload()) {
                 storage.user(user, function (data) {
                     if (data) {
                         this.u = data.vm;
@@ -79,7 +79,10 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                     }
                 }, this);
             } else {
-                this.toptext('Вы не авторизованы для загрузки фотографий');
+                this.toptext(
+                    this.auth.iAm.nophotoupload() ? 'У вас нет прав на загрузку фотографий' : 'Вы не авторизованы для загрузки фотографий'
+                );
+                ko.applyBindings(globalVM, this.$dom[0]);
                 this.show();
             }
         },
