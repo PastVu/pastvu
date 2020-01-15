@@ -26,6 +26,10 @@
         "startManualGC": "node --max-old-space-size=4096 --nouse-idle-notification --expose-gc bin/run.js --manualGarbageCollect=30000",
         "inspect": "node --inspect --max-old-space-size=4096 bin/run.js",
         "inspectManualGC": "node --inspect --max-old-space-size=4096 --nouse-idle-notification --expose-gc bin/run.js --manualGarbageCollect=30000",
+
+        "startUploader": "node --max-old-space-size=2048 bin/run.js --script ./uploader.js",
+        "startDownloader": "node --max-old-space-size=2048 bin/run.js --script ./downloader.js",
+
         "lint": "./node_modules/.bin/eslint .",
         "lintfix": "./node_modules/.bin/eslint . --fix"
     },

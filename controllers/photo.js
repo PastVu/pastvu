@@ -549,7 +549,7 @@ function getUserWaterSign(user, photo) {
 async function create({ files }) {
     const { socket, handshake: { usObj: iAm } } = this;
 
-    if (!iAm.registered) {
+    if (!iAm.registered || iAm.user.nophotoupload) {
         throw new AuthorizationError();
     }
 

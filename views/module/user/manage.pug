@@ -50,6 +50,17 @@
                         .help.tltp-wrap
                             span.glyphicon.glyphicon-info-sign
                             .tltp.tltp-top.tltp-animate-move
+                                | Allow uploading new photos
+                        | &nbsp;Can upload photos
+                    dd
+                        .btn-group.btn-group-sm
+                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nophotoupload()}, click: changenophotoupload") Yes
+                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nophotoupload()}, click: changenophotoupload") No
+                dl.dl-horizontal
+                    dt.helpexists
+                        .help.tltp-wrap
+                            span.glyphicon.glyphicon-info-sign
+                            .tltp.tltp-top.tltp-animate-move
                                 | Allow to change watermark on own photos,
                                 br
                                 | manage downloading settings of original and
