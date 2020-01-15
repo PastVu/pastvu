@@ -43,7 +43,7 @@ module.exports = function (grunt) {
                 stderr: true,
             },
             npm: {
-                command: 'npm --production install',
+                command: 'npm --only=production install',
                 cwd: targetDir,
                 stdout: true,
                 stderr: true,
@@ -211,7 +211,7 @@ module.exports = function (grunt) {
         'pug:compileMainPugs',
         'clean:publicTpl',
         'writeBuildParams',
-        'exec:npm',
+        //'exec:npm',
         'compress',
     ]);
 
