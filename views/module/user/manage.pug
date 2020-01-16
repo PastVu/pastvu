@@ -61,6 +61,17 @@
                         .help.tltp-wrap
                             span.glyphicon.glyphicon-info-sign
                             .tltp.tltp-top.tltp-animate-move
+                                | Разрешать редактировать фотографии
+                        | &nbsp;Может редактировать свои фотографии
+                    dd
+                        .btn-group.btn-group-sm
+                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nophotoedit()}, click: changenophotoedit") Да
+                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nophotoedit()}, click: changenophotoedit") Нет
+                dl.dl-horizontal
+                    dt.helpexists
+                        .help.tltp-wrap
+                            span.glyphicon.glyphicon-info-sign
+                            .tltp.tltp-top.tltp-animate-move
                                 | Разрешать менять подпись на своих фотографиях,
                                 br
                                 | управлять настройками скачивания оригинала и

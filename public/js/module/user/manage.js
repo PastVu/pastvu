@@ -240,7 +240,6 @@ define([
         },
 
         changeRestrictions: function (key, val, checkValChange, cb, ctx) {
-            debugger;
             if (checkValChange && val === this.u[key]()) {
                 return;
             }
@@ -267,6 +266,10 @@ define([
 
         changenophotoupload: function (data, evt) {
             this.changeRestrictions('nophotoupload', !isYes(evt), true);
+        },
+
+        changenophotoedit: function (data, evt) {
+            this.changeRestrictions('nophotoedit', !isYes(evt), true);
         },
 
         ranksSelectedHandler: function (val) {
