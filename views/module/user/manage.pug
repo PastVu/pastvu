@@ -43,7 +43,7 @@
 
         .panel.panel-pastvu
             .panel-heading: .panel-title
-                a.accordion-toggle(data-toggle="collapse", href="#restrictions") Ограничения
+                a.accordion-toggle(data-toggle="collapse", href="#restrictions") Права и ограничения
             .panel-collapse.collapse.in#restrictions: .panel-body
                 dl.dl-horizontal
                     dt.helpexists
@@ -67,6 +67,19 @@
                         .btn-group.btn-group-sm
                             button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nophotoedit()}, click: changenophotoedit") Да
                             button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nophotoedit()}, click: changenophotoedit") Нет
+                dl.dl-horizontal
+                    dt.helpexists
+                        .help.tltp-wrap
+                            span.glyphicon.glyphicon-info-sign
+                            .tltp.tltp-top.tltp-animate-move
+                                | Разрешать пользователю отправлять фотографии на публикацию,
+                                br
+                                | отзывать еще неопубликованную и удалять деактивированную
+                        | &nbsp;Может менять статус своих фотографий
+                    dd
+                        .btn-group.btn-group-sm
+                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nophotostatus()}, click: changenophotostatus") Да
+                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nophotostatus()}, click: changenophotostatus") Нет
                 dl.dl-horizontal
                     dt.helpexists
                         .help.tltp-wrap

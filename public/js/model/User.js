@@ -16,6 +16,7 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params
             watersignCustom: '',
             nophotoupload: false,
             nophotoedit: false,
+            nophotostatus: false,
             nowaterchange: false,
         },
         full: {

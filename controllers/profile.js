@@ -27,6 +27,7 @@ const emailRegexp = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))
 const restrictions = new Map([
     ['nophotoupload', { val: false, vars: new Set([true, false]) }],
     ['nophotoedit', { val: false, vars: new Set([true, false]) }],
+    ['nophotostatus', { val: false, vars: new Set([true, false]) }],
     ['nowaterchange', { val: false, vars: new Set([true, false]) }],
 ]);
 

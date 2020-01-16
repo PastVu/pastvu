@@ -86,6 +86,7 @@ registerModel(db => {
 
         nophotoupload: { type: Boolean }, // Prevent user from uploading new photos
         nophotoedit: { type: Boolean }, // Prevent user from editing their photos
+        nophotostatus: { type: Boolean }, // Prevent user from changins status of their photos
         nowaterchange: { type: Boolean }, // Prohibit user to change his own default watersign setting and watersign of his own photos
     });
 

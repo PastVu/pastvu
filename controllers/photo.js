@@ -184,15 +184,16 @@ export const permissions = {
             can.edit = isAdmin ||
                 (canModerate || ownPhoto && !usObj.user.nophotoedit) && s !== status.REMOVE && s !== status.REVOKE || undefined;
             // Owner can send to premoderation if photo is new or on revision
-            can.ready = (s === status.NEW || s === status.REVISION) && ownPhoto || undefined;
+            can.ready = (s === status.NEW || s === status.REVISION) && ownPhoto && !usObj.user.nophotostatus || undefined;
             // Revoke can only owner if photo is new
-            can.revoke = s < status.REVOKE && ownPhoto || undefined;
+            can.revoke = s < status.REVOKE && ownPhoto && !usObj.user.nophotostatus || undefined;
             // Moderator can reject not his own photo until it's new
             can.reject = s < status.REVOKE && canModerate && !ownPhoto || undefined;
             // Administrator can resore rejected photo
             can.rereject = s === status.REJECT && isAdmin || undefined;
             // Remove can owner its deactivated photo or admin any published or deactivated photo
-            can.remove = ownPhoto && s === status.DEACTIVATE || isAdmin && (s === status.PUBLIC || s === status.DEACTIVATE) || undefined;
+            can.remove = ownPhoto && !usObj.user.nophotostatus && s === status.DEACTIVATE ||
+                isAdmin && (s === status.PUBLIC || s === status.DEACTIVATE) || undefined;
             // Restore from removed can only administrator
             can.restore = isAdmin && s === status.REMOVE || undefined;
             // Send to convert can only admin
