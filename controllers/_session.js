@@ -100,15 +100,15 @@ export const getPlainUser = (function () {
 
 // usObjs by session key. Hash of users object by session keys
 // Several sessions can have one user object, if client loggedin through several devices
-export const usSid = Object.create(null);
+export const usSid = new Map();
 // usObjs loggedin by user login. Hash of users object by registered users logins
-export const usLogin = Object.create(null);
+export const usLogin = new Map();
 // usObjs loggedin by user _id. Hash of users object by registered users _ids
-export const usId = Object.create(null);
+export const usId = new Map();
 
-export const sessConnected = Object.create(null); // Hash of all active sessions with established websocket connection
-export const sessWaitingConnect = Object.create(null); // Hash of sessions, which waiting for websocket connection
-export const sessWaitingSelect = Object.create(null); // Hash of sessions, which waiting for selection from db
+export const sessConnected = new Map(); // Map of all the active sessions (by key) with established websocket connection
+export const sessWaitingConnect = new Map(); // Map of the sessions (by key), which are waiting for websocket connection
+export const sessWaitingSelect = new Map(); // Map of the sessions, which are waiting to be selected from the db
 
 class UsObj {
     constructor(user, registered = false) {
@@ -194,7 +194,7 @@ const sendReload = (session, waitResponse, excludeSocket) =>
 // Send user to all his sockets
 export async function emitUser({ usObj, login, userId, sessId, wait, excludeSocket }) {
     if (!usObj) {
-        usObj = usLogin[login] || usId[userId] || usSid[sessId];
+        usObj = usLogin.get(login) || usId.get(userId) || usSid.get(sessId);
     }
 
     if (!usObj) {
@@ -216,7 +216,7 @@ export async function emitUser({ usObj, login, userId, sessId, wait, excludeSock
 // Save and send user to his sockets
 export async function saveEmitUser({ usObj, login, userId, sessId, wait, excludeSocket }) {
     if (!usObj) {
-        usObj = usLogin[login] || usId[userId] || usSid[sessId];
+        usObj = usLogin.get(login) || usId.get(userId) || usSid.get(sessId);
     }
 
     if (!usObj || !usObj.user) {
@@ -235,22 +235,24 @@ async function addSessionToUserObject(session) {
 
     // For registered users we must get user through logins hash, so existing usObj will be selected,
     // if user has already loggedin through another device
-    let usObj = registered ? usLogin[user.login] : usSid[session.key];
+    let usObj = registered ? usLogin.get(user.login) : usSid.get(session.key);
     let firstAdding = false;
 
     if (usObj === undefined) {
         firstAdding = true;
 
-        usObj = usSid[session.key] = new UsObj(user, registered);
+        usObj = new UsObj(user, registered);
+        usSid.set(session.key, usObj);
 
         if (registered) {
-            usLogin[user.login] = usId[user._id] = usObj;
+            usId.set(user._id, usObj);
+            usLogin.set(user.login, usObj);
             logger.info(`${this.ridMark} Create us hash: ${user.login}`);
         }
     } else if (registered) {
         // If user is already in hashes, he is logged in through another device
-        // Insert into usSid by kye of current session existing usObj and assign existing user to current session
-        usSid[session.key] = usObj;
+        // Insert into usSid by key of current session existing usObj and assign existing user to current session
+        usSid.set(session.key, usObj);
         user = session.user = usObj.user;
         logger.info(`${this.ridMark} Add new session to us hash: ${user.login}`);
     } else {
@@ -365,7 +367,7 @@ function copySession(sessionSource) {
 
 // Add newly created or newly selected session in hashes
 async function addSessionToHashes(session) {
-    sessWaitingConnect[session.key] = session;
+    sessWaitingConnect.set(session.key, session);
 
     const usObj = await addSessionToUserObject.call(this, session);
 
@@ -380,12 +382,12 @@ export function removeSessionFromHashes({ session: { key: sessionKey }, usObj, l
 
     logPrefix = `${_.get(this, 'ridMark', '')} ${logPrefix}`;
 
-    delete sessWaitingConnect[sessionKey];
-    delete sessConnected[sessionKey];
+    sessWaitingConnect.delete(sessionKey);
+    sessConnected.delete(sessionKey);
 
-    someCountPrev = Object.keys(usSid).length;
-    delete usSid[sessionKey];
-    someCountNew = Object.keys(usSid).length;
+    someCountPrev = usSid.size;
+    usSid.delete(sessionKey);
+    someCountNew = usSid.size;
 
     // logger.info('Delete session from usSid', someCountNew);
     if (someCountNew !== someCountPrev - 1) {
@@ -405,8 +407,8 @@ export function removeSessionFromHashes({ session: { key: sessionKey }, usObj, l
         // logger.info('Delete user from hashes', usObj.user.login);
         // If there is no more sessions in usObj of registered object, remove usObj of users hashes
         // (from usSid is already removed)
-        delete usLogin[usObj.user.login];
-        delete usId[usObj.user._id];
+        usLogin.delete(usObj.user.login);
+        usId.delete(usObj.user._id);
     }
 }
 
@@ -507,13 +509,14 @@ export async function regetUser(usObj, emitHim, excludeSocket) {
 // Doesn't wait for execution, returns number of affected users immediately
 // TODO: precess anonymouse users too, populate theirs regions
 export function regetUsers(filterFn, emitThem) {
-    const usersToReget = filterFn === 'all' ? usLogin : _.filter(usLogin, filterFn);
-    const usersCount = _.size(usersToReget);
+    let usersCount = 0;
 
-    // _.forEach, because usersToReget object(usLogin), either an array(result of _.filter)
-    _.forEach(usersToReget, usObj => {
-        regetUser(usObj, emitThem);
-    });
+    for (const usObj of usLogin.values()) {
+        if (filterFn === 'all' || filterFn(usObj)) {
+            regetUser(usObj, emitThem);
+            usersCount++;
+        }
+    }
 
     return usersCount;
 }
@@ -522,7 +525,7 @@ export function regetUsers(filterFn, emitThem) {
 export async function loginUser({ user }) {
     const { socket, handshake: { session: sessionOld, usObj: usObjOld } } = this;
     const sessionNew = copySession(sessionOld);
-    const sessHash = sessWaitingConnect[sessionOld.key] ? sessWaitingConnect : sessConnected;
+    const sessHash = sessWaitingConnect.has(sessionOld.key) ? sessWaitingConnect : sessConnected;
 
     // Assign user to session
     sessionNew.user = user;
@@ -561,7 +564,7 @@ export async function loginUser({ user }) {
     this.call('session.removeSessionFromHashes', { usObj: usObjOld, session: sessionOld, logPrefix: 'loginUser' });
 
     // Put new session into sessions map
-    sessHash[sessionNew.key] = sessionNew;
+    sessHash.set(sessionNew.key, sessionNew);
 
     // Send old session to archive
     await archiveSession(sessionOld);
@@ -585,7 +588,7 @@ export async function loginUser({ user }) {
 export async function logoutUser() {
     const { socket, handshake: { usObj: usObjOld, session: sessionOld } } = this;
     const sessionNew = copySession(sessionOld);
-    const sessHash = sessWaitingConnect[sessionOld.key] ? sessWaitingConnect : sessConnected;
+    const sessHash = sessWaitingConnect.has(sessionOld.key) ? sessWaitingConnect : sessConnected;
 
     const user = usObjOld.user;
 
@@ -622,7 +625,7 @@ export async function logoutUser() {
     this.call('session.removeSessionFromHashes', { usObj: usObjOld, session: sessionOld, logPrefix: 'logoutUser' });
 
     // Put new session in sessions map
-    sessHash[sessionNew.key] = sessionNew;
+    sessHash.set(sessionNew.key, sessionNew);
 
     // Send old session to archive
     await archiveSession(sessionOld);
@@ -633,27 +636,36 @@ export async function logoutUser() {
     sendReload(sessionNew);
 }
 
+
 // Check user is online
-export function isOnline({ login, userId } = {}) {
+export function isOnline({ login, userId, sessionKey } = {}) {
     if (login) {
-        return usLogin[login] !== undefined;
+        return usLogin.has(login);
     }
 
     if (userId) {
-        return usId[userId] !== undefined;
+        return usId.has(userId);
+    }
+
+    if (sessionKey) {
+        return usSid.has(sessionKey);
     }
 
     return false;
 }
 
 // Get online user
-export function getOnline({ login, userId } = {}) {
+export function getOnline({ login, userId, sessionKey } = {}) {
     if (login) {
-        return usLogin[login];
+        return usLogin.get(login);
     }
 
     if (userId) {
-        return usId[userId];
+        return usId.get(userId);
+    }
+
+    if (sessionKey) {
+        return usSid.get(sessionKey);
     }
 }
 
@@ -666,14 +678,14 @@ const checkSessWaitingConnect = (function () {
         const expiredFrontier = Date.now() - SESSION_WAIT_TIMEOUT;
         let removedCount = 0;
 
-        _.forOwn(sessWaitingConnect, (session, key) => {
+        for (const [key, session] of sessWaitingConnect.entries()) {
             const stamp = new Date(session.stamp || 0).getTime();
 
             if (!stamp || stamp <= expiredFrontier) {
                 removedCount++;
-                removeSessionFromHashes({ usObj: usSid[key], session, logPrefix: 'checkSessWaitingConnect' });
+                removeSessionFromHashes({ usObj: usSid.get(key), session, logPrefix: 'checkSessWaitingConnect' });
             }
-        });
+        }
 
         if (removedCount) {
             logger.info(`${removedCount} waiting sessions were removed from hashes`);
@@ -703,8 +715,8 @@ const checkExpiredSessions = (function () {
 
             // Check if some of archived sessions is still in memory (in hashes), remove it frome memory
             _.forEach(result.keys, key => {
-                const session = sessConnected[key];
-                const usObj = usSid[key];
+                const session = sessConnected.get(key);
+                const usObj = usSid.get(key);
 
                 if (session) {
                     if (usObj !== undefined) {
@@ -772,13 +784,13 @@ export async function handleConnection(ip, headers, overHTTP, req) {
 
         session = await createSession.call(this, ip, headers, browser);
         usObj = await addSessionToHashes.call(this, session);
-    } else if ((sessConnected[sid] || sessWaitingConnect[sid]) && usSid[sid]) {
+    } else if ((sessConnected.has(sid) || sessWaitingConnect.has(sid)) && usSid.has(sid)) {
         // If key exists and such session already in hash, then just get this session
         // logger.info(this.ridMark, 'handleConnection', 'Get session from hash');
 
-        track = `Session found among ${sessConnected[sid] ? 'connected' : 'waiting connect'} sessions`;
-        session = sessConnected[sid] || sessWaitingConnect[sid];
-        usObj = usSid[sid];
+        track = `Session found among ${sessConnected.has(sid) ? 'connected' : 'waiting connect'} sessions`;
+        session = sessConnected.get(sid) || sessWaitingConnect.get(sid);
+        usObj = usSid.get(sid);
         this.addUserIdToRidMark(usObj, session);
 
         if (overHTTP) {
@@ -791,8 +803,8 @@ export async function handleConnection(ip, headers, overHTTP, req) {
         // If session key is exists, but session not in hashes,
         // then select session from db, but if it's already selecting just wait promise
 
-        if (!sessWaitingSelect[sid]) {
-            sessWaitingSelect[sid] = (async () => {
+        if (!sessWaitingSelect.has(sid)) {
+            sessWaitingSelect.set(sid, (async () => {
                 try {
                     let session = await Session.findOne({ key: sid }).populate('user').exec();
 
@@ -810,14 +822,14 @@ export async function handleConnection(ip, headers, overHTTP, req) {
                     return { session, usObj };
                 } finally {
                     // Remove promise from hash of waiting connect by session key, anyway - success or error
-                    delete sessWaitingSelect[sid];
+                    sessWaitingSelect.delete(sid);
                 }
-            })();
+            })());
         } else {
             track = 'Session searching has already started, waiting for that promise';
         }
 
-        ({ session, usObj } = await sessWaitingSelect[sid]);
+        ({ session, usObj } = await sessWaitingSelect.get(sid));
     }
 
     if (!usObj || !session) {
@@ -831,9 +843,9 @@ export async function handleConnection(ip, headers, overHTTP, req) {
 
     if (!overHTTP) {
         // Mark session as active (connected by websocket)
-        sessConnected[session.key] = session;
+        sessConnected.set(session.key, session);
         // Delete from hash of waiting connection sessions
-        delete sessWaitingConnect[session.key];
+        sessWaitingConnect.delete(session.key);
     }
 
     return { usObj, session, browser, cookie: cookieObj };
@@ -845,14 +857,14 @@ export async function getSessionLight({ sid }) {
     let session;
     let usObj;
 
-    if ((sessConnected[sid] || sessWaitingConnect[sid]) && usSid[sid]) {
+    if ((sessConnected.has(sid) || sessWaitingConnect.has(sid)) && usSid.has(sid)) {
         // If key exists and such session already in hash, then just get this session
-        session = sessConnected[sid] || sessWaitingConnect[sid];
-        usObj = usSid[sid];
+        session = sessConnected.get(sid) || sessWaitingConnect.get(sid);
+        usObj = usSid.get(sid);
         this.addUserIdToRidMark(usObj, session);
     } else {
-        if (!sessWaitingSelect[sid]) {
-            sessWaitingSelect[sid] = (async () => {
+        if (!sessWaitingSelect.has(sid)) {
+            sessWaitingSelect.set(sid, (async () => {
                 try {
                     const session = await Session.findOne({ key: sid }).populate('user').exec();
 
@@ -865,12 +877,12 @@ export async function getSessionLight({ sid }) {
                     return { session, usObj };
                 } finally {
                     // Remove promise from hash of waiting connect by session key, anyway - success or error
-                    delete sessWaitingSelect[sid];
+                    sessWaitingSelect.delete(sid);
                 }
-            })();
+            })());
         }
 
-        ({ session, usObj } = await sessWaitingSelect[sid]);
+        ({ session, usObj } = await sessWaitingSelect.get(sid));
     }
 
     if (!usObj || !session) {

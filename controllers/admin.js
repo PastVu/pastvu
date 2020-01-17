@@ -56,7 +56,7 @@ function getOnlineStat() {
         throw new AuthorizationError();
     }
 
-    const usersCount = _.size(sessionController.usLogin);
+    const usersCount = sessionController.usLogin.size;
 
     let sessUserCount = 0;
     let sessUserZeroSockCount = 0;
@@ -73,7 +73,7 @@ function getOnlineStat() {
     let socketUserCount = 0;
     let socketAnonymCount = 0;
 
-    _.forOwn(sessionController.sessConnected, session => {
+    for (const session of sessionController.sessConnected.values()) {
         const isReg = Boolean(session.user);
         const sockets = session.sockets;
 
@@ -106,9 +106,9 @@ function getOnlineStat() {
 
             sessNoSockHeaders.push({ stamp: session.stamp, header: _.get(session, 'data.headers', {}) });
         }
-    });
+    }
 
-    _.forOwn(sessionController.sessWaitingConnect, session => {
+    for (const session of sessionController.sessWaitingConnect.values()) {
         const isReg = Boolean(session.user);
 
         if (isReg) {
@@ -118,7 +118,7 @@ function getOnlineStat() {
         }
 
         sessWCNoSockHeaders.push({ stamp: session.stamp, header: _.get(session, 'data.headers', {}) });
-    });
+    }
 
     return Promise.resolve({
         all: usersCount + sessAnonymCount,
@@ -140,11 +140,11 @@ function getOnlineStat() {
         sockAC: socketAnonymCount,
 
         cusLogin: usersCount,
-        cusId: _.size(sessionController.usId),
-        cusSid: _.size(sessionController.usSid),
-        csessConnected: _.size(sessionController.sessConnected),
-        csessWaitingConnect: _.size(sessionController.sessWaitingConnect),
-        csessWaitingSelect: _.size(sessionController.sessWaitingSelect),
+        cusId: sessionController.usId.size,
+        cusSid: sessionController.usSid.size,
+        csessConnected: sessionController.sessConnected.size,
+        csessWaitingConnect: sessionController.sessWaitingConnect.size,
+        csessWaitingSelect: sessionController.sessWaitingSelect.size,
     });
 }
 
