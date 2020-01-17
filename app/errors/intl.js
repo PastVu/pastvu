@@ -38,6 +38,7 @@ export default {
     AUTHENTICATION_PASSCHANGE: 'Ошибка смены пароля',
     AUTHENTICATION_DOESNT_MATCH: 'Неправильная пара логин-пароль',
     AUTHENTICATION_MAX_ATTEMPTS: 'Ваш аккаунт временно заблокирован из-за превышения количества попыток ввода неверных данных',
+    AUTHENTICATION_NOT_ALLOWED: 'Указанному пользователю не разрешено заходить на сайт',
     AUTHENTICATION_PASS_WRONG: 'Пароль не верен',
     AUTHENTICATION_CURRPASS_WRONG: 'Текущий пароль не верен',
     AUTHENTICATION_PASSWORDS_DONT_MATCH: 'Пароли не совпадают',

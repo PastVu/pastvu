@@ -50,6 +50,19 @@
                         .help.tltp-wrap
                             span.glyphicon.glyphicon-info-sign
                             .tltp.tltp-top.tltp-animate-move
+                                | Разрешать заходить на сайт под своим именем.
+                                br
+                                | Будет разлогинен если в данный момент онлайн
+                        | &nbsp;Может логиниться
+                    dd
+                        .btn-group.btn-group-sm
+                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nologin()}, click: changenologin") Да
+                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nologin()}, click: changenologin") Нет
+                dl.dl-horizontal
+                    dt.helpexists
+                        .help.tltp-wrap
+                            span.glyphicon.glyphicon-info-sign
+                            .tltp.tltp-top.tltp-animate-move
                                 | Разрешать загружать фотографии
                         | &nbsp;Может загружать фотографии
                     dd

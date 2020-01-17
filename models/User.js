@@ -84,6 +84,7 @@ registerModel(db => {
         active: { type: Boolean, 'default': false },
         activatedate: { type: Date },
 
+        nologin: { type: Boolean }, // Prevent user from login in
         nophotoupload: { type: Boolean }, // Prevent user from uploading new photos
         nophotoedit: { type: Boolean }, // Prevent user from editing their photos
         nophotostatus: { type: Boolean }, // Prevent user from changins status of their photos
@@ -158,6 +159,10 @@ registerModel(db => {
             // just increment login attempts if account is already locked
             await user.incLoginAttempts();
             throw new AuthenticationError(constants.AUTHENTICATION_MAX_ATTEMPTS);
+        }
+
+        if (user.nologin) {
+            throw new AuthenticationError(constants.AUTHENTICATION_NOT_ALLOWED);
         }
 
         // Test for a matching password
