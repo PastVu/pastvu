@@ -4,7 +4,7 @@
             img.logo(src="/img/misc/logo.png")
             .name(data-bind="html: pageTitle()")
         #panelTools.hide-text
-            //ko if: auth.loggedIn()
+            //ko if: auth.loggedIn() && !auth.iAm.nophotoupload()
             a#toUpload.labledIco.strokeAfter(href="/photoUpload")
                 .glyphicon.glyphicon-cloud-upload
                 .text Upload photo

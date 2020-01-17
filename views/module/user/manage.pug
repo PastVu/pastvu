@@ -50,12 +50,49 @@
                         .help.tltp-wrap
                             span.glyphicon.glyphicon-info-sign
                             .tltp.tltp-top.tltp-animate-move
-                                | Allow uploading new photos
-                        | &nbsp;Can upload photos
+                                | Allow to login using their name.
+                                br
+                                | Will be logout if currently online
+                        | &nbsp;Can login
+                    dd
+                        .btn-group.btn-group-sm
+                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nologin()}, click: changenologin") Yes
+                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nologin()}, click: changenologin") No
+                dl.dl-horizontal
+                    dt.helpexists
+                        .help.tltp-wrap
+                            span.glyphicon.glyphicon-info-sign
+                            .tltp.tltp-top.tltp-animate-move
+                                | Allow uploading pictures
+                        | &nbsp;Can upload pictures
                     dd
                         .btn-group.btn-group-sm
                             button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nophotoupload()}, click: changenophotoupload") Yes
                             button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nophotoupload()}, click: changenophotoupload") No
+                dl.dl-horizontal
+                    dt.helpexists
+                        .help.tltp-wrap
+                            span.glyphicon.glyphicon-info-sign
+                            .tltp.tltp-top.tltp-animate-move
+                                | Allow editing their own pictures
+                        | &nbsp;Can edit their pictures
+                    dd
+                        .btn-group.btn-group-sm
+                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nophotoedit()}, click: changenophotoedit") Yes
+                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nophotoedit()}, click: changenophotoedit") No
+                dl.dl-horizontal
+                    dt.helpexists
+                        .help.tltp-wrap
+                            span.glyphicon.glyphicon-info-sign
+                            .tltp.tltp-top.tltp-animate-move
+                                | Allow user to send their pictures to moderation,
+                                br
+                                | revoke not yet published one and delete deactivated one
+                        | &nbsp;Can changes status of their pictures
+                    dd
+                        .btn-group.btn-group-sm
+                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nophotostatus()}, click: changenophotostatus") Yes
+                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nophotostatus()}, click: changenophotostatus") No
                 dl.dl-horizontal
                     dt.helpexists
                         .help.tltp-wrap

@@ -458,7 +458,7 @@ async function getUsersHashForComments(usersSet) {
             }
 
             // For speed check directly in hash, without 'isOnline' function
-            user.online = session.usLogin[user.login] !== undefined;
+            user.online = session.usLogin.has(user.login);
             usersByLogin[user.login] = usersById[String(user._id)] = user;
             delete user._id;
         }
@@ -762,7 +762,7 @@ const getComments = (function () {
         }
 
         for (const { _id, login, disp } of users) {
-            userFormattedHash[login] = usersHash[_id] = { login, disp, online: session.usLogin[login] !== undefined };
+            userFormattedHash[login] = usersHash[_id] = { login, disp, online: session.usLogin.has(login) };
         }
 
         for (const comment of comments) {

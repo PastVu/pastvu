@@ -38,6 +38,7 @@ export default {
     AUTHENTICATION_PASSCHANGE: 'Password change error',
     AUTHENTICATION_DOESNT_MATCH: 'Wrong login or password',
     AUTHENTICATION_MAX_ATTEMPTS: 'Your account has been suspended due to exceeding the number of failed attempts',
+    AUTHENTICATION_NOT_ALLOWED: 'Specified user is not allowed to login',
     AUTHENTICATION_PASS_WRONG: 'Wrong password',
     AUTHENTICATION_CURRPASS_WRONG: 'Wrong current password',
     AUTHENTICATION_PASSWORDS_DONT_MATCH: 'Passwords do not match',

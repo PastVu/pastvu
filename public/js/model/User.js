@@ -14,7 +14,10 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params
         middle: {
             settings: {},
             watersignCustom: '',
+            nologin: false,
             nophotoupload: false,
+            nophotoedit: false,
+            nophotostatus: false,
             nowaterchange: false,
         },
         full: {

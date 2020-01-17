@@ -66,7 +66,7 @@ const giveRatings = (function () {
         return User.find({ _id: { $in: ids } }, { _id: 1, login: 1, avatar: 1, disp: 1, ccount: 1 }, { lean: true })
             .exec().then(users => _.forEach(users, user => {
                 user.ccount = countHash[user._id];
-                user.online = session.usLogin[user.login] !== undefined;
+                user.online = session.usLogin.has(user.login);
             }).sort(sortCcount));
     });
 
@@ -86,7 +86,7 @@ const giveRatings = (function () {
         return User.find({ _id: { $in: ids } }, { _id: 1, login: 1, avatar: 1, disp: 1, pcount: 1 }, { lean: true })
             .exec().then(users => _.forEach(users, user => {
                 user.pcount = countHash[user._id];
-                user.online = session.usLogin[user.login] !== undefined;
+                user.online = session.usLogin.has(user.login);
             }).sort(sortPcount));
     });
 
@@ -123,7 +123,7 @@ const giveRatings = (function () {
             User.find(
                 { ccount: { $gt: 0 } }, { _id: 0, login: 1, avatar: 1, disp: 1, ccount: 1 },
                 { lean: true, limit, sort: { ccount: -1 } }
-            ).exec().then(users => _.forEach(users, user => user.online = session.usLogin[user.login] !== undefined)),
+            ).exec().then(users => _.forEach(users, user => user.online = session.usLogin.has(user.login))),
 
             // Users by photos count
             usersByPhotosCount(dayStart),
@@ -131,7 +131,7 @@ const giveRatings = (function () {
             User.find(
                 { pcount: { $gt: 0 } }, { _id: 0, login: 1, avatar: 1, disp: 1, pcount: 1 },
                 { lean: true, limit, sort: { pcount: -1 } }
-            ).exec().then(users => _.forEach(users, user => user.online = session.usLogin[user.login] !== undefined)),
+            ).exec().then(users => _.forEach(users, user => user.online = session.usLogin.has(user.login))),
         ]);
 
         return { pday, pweek, pall, pcday, pcweek, pcall, ucday, ucweek, ucall, upday, upweek, upall };
@@ -207,8 +207,8 @@ const giveOnlineStats = (function () {
     const memoizeInterval = ms('5s');
 
     return Utils.memoizePromise(() => {
-        const usersCount = _.size(session.usLogin);
-        const anonymCount = _.reduce(session.sessConnected, (result, session) => session.user ? result : result + 1, 0);
+        const usersCount = session.usLogin.size;
+        const anonymCount = [...session.sessConnected.values()].filter(session => !session.user).length;
 
         return Promise.resolve({
             onall: anonymCount + usersCount,

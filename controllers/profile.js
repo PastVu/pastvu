@@ -25,7 +25,10 @@ const execAsync = util.promisify(childProcess.exec);
 const emailRegexp = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@(([[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 
 const restrictions = new Map([
+    ['nologin', { val: false, vars: new Set([true, false]) }],
     ['nophotoupload', { val: false, vars: new Set([true, false]) }],
+    ['nophotoedit', { val: false, vars: new Set([true, false]) }],
+    ['nophotostatus', { val: false, vars: new Set([true, false]) }],
     ['nowaterchange', { val: false, vars: new Set([true, false]) }],
 ]);
 
@@ -240,7 +243,9 @@ async function changeRestrictions({ login, key, val }) {
 
     await user.save();
 
-    if (usObjOnline) {
+    if (key === 'nologin') {
+        // TODO: Destroy user sessions
+    } else if (usObjOnline) {
         session.emitUser({ usObj: usObjOnline, excludeSocket: socket });
     }
 
