@@ -26,6 +26,7 @@ const emailRegexp = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))
 
 const restrictions = new Map([
     ['nologin', { val: false, vars: new Set([true, false]) }],
+    ['noprofile', { val: false, vars: new Set([true, false]) }],
     ['nophotoupload', { val: false, vars: new Set([true, false]) }],
     ['nophotoedit', { val: false, vars: new Set([true, false]) }],
     ['nophotostatus', { val: false, vars: new Set([true, false]) }],
@@ -97,7 +98,7 @@ async function saveUser({ login, ...data }) {
         throw new BadParamsError();
     }
 
-    if (!iAm.registered || iAm.user.login !== login && !iAm.isAdmin) {
+    if (!iAm.registered || iAm.user.login === login && iAm.user.noprofile || iAm.user.login !== login && !iAm.isAdmin) {
         throw new AuthorizationError();
     }
 
@@ -404,7 +405,7 @@ async function changeAvatar({ login, file, mime }) {
 
     const itsMe = iAm.registered && iAm.user.login === login;
 
-    if (!itsMe && !iAm.isAdmin) {
+    if (itsMe && iAm.user.noprofile || !itsMe && !iAm.isAdmin) {
         throw new AuthorizationError();
     }
 

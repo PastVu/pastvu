@@ -85,6 +85,7 @@ registerModel(db => {
         activatedate: { type: Date },
 
         nologin: { type: Boolean }, // Prevent user from login in
+        noprofile: { type: Boolean }, // Prevent user from changing profile info and avatar
         nophotoupload: { type: Boolean }, // Prevent user from uploading new photos
         nophotoedit: { type: Boolean }, // Prevent user from editing their photos
         nophotostatus: { type: Boolean }, // Prevent user from changins status of their photos

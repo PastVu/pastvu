@@ -19,7 +19,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.edit = ko.observable(false);
 
             this.canBeEdit = this.co.canBeEdit = ko.computed(function () {
-                return this.auth.iAm.login() === this.u.login() || this.auth.iAm.role() > 9;
+                return this.auth.iAm.login() === this.u.login() && !this.auth.iAm.noprofile() || this.auth.iAm.role() > 9;
             }, this);
 
             this.editMode = this.co.editMode = ko.computed(function () {

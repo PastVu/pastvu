@@ -280,6 +280,10 @@ define([
             this.changeRestrictions('nologin', !isYes(evt), true);
         },
 
+        changenoprofile: function (data, evt) {
+            this.changeRestrictions('noprofile', !isYes(evt), true);
+        },
+
         ranksSelectedHandler: function (val) {
             // Так, как сохранение ранков сделает emit во все сокеты, но этот хэндлер опять сработает,
             // т.к. будет новый объект массива с теми же значениями. Поэтому надо проверять на совпадение значений
