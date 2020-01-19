@@ -92,7 +92,8 @@ define([
                 return this.user.avatar() !== User.def.full.avatar;
             }, this);
             this.canAva = this.co.canAva = ko.computed(function () {
-                return this.auth.loggedIn() && (this.auth.iAm.login() === this.user.login() || this.auth.iAm.role() > 9);
+                return this.auth.loggedIn() &&
+                    (this.auth.iAm.login() === this.user.login() && !this.auth.iAm.noprofile() || this.auth.iAm.role() > 9);
             }, this);
 
             ko.applyBindings(globalVM, this.$dom[0]);
