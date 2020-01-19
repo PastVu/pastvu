@@ -1,0 +1,60 @@
+@import "../_vars.less";
+@import "../bs/variables.less";
+@import "../bs/mixins.less";
+
+@optinPanelPaddingTop: 4px;
+@optinPanelPaddingRight: 6px;
+@optinPanelPaddingLeft: 6px;
+
+.user_sessions {
+    padding: 0 5px;
+
+    .panel-body {
+        padding: 11px 10px 11px 22px;
+    }
+
+    .session {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        max-width: 600px;
+        padding: @optinPanelPaddingTop @optinPanelPaddingRight 3px @optinPanelPaddingLeft;
+        margin: -@optinPanelPaddingTop -(@optinPanelPaddingRight + 1) 0 0;
+        background-color: #F5F5F5;
+        border: 1px solid #E2E2E2;
+
+        &:not(:last-child) {
+            margin-bottom: 15px;
+        }
+    }
+
+    .ip {
+        font-feature-settings: 'tnum';
+        font-variant-numeric: tabular-nums;
+    }
+
+    dl.dl-horizontal {
+        position: relative; //Для позиционирования helpico
+        margin: 12px 0 0 0;
+
+        &:first-child {
+            margin: 0;
+        }
+
+        &.dl-tight {
+            margin-top: 4px;
+        }
+        &.forMod {
+            color: @ColorMod;
+        }
+
+        dt {
+            width: 150px;
+            padding: 1px 10px;
+            font-weight: normal;
+        }
+        dd {
+            margin-left: 155px;
+        }
+    }
+}

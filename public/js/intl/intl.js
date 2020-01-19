@@ -6,10 +6,27 @@ define(['Utils'], function () {
     'use strict';
 
     var intlNumFormat = new Intl.NumberFormat('ru-RU').format;
+    var intlDateFormat = new Intl.DateTimeFormat('ru-RU').format;
+    var intlDateFullFormat = new Intl.DateTimeFormat('ru-RU', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    }).format;
 
     return {
         num: function (number) {
             return typeof number === 'number' ? intlNumFormat(number) : number;
+        },
+        date: function (date) {
+            return intlDateFormat(date instanceof Date ? date : new Date(date));
+        },
+        dateFull: function (date) {
+            return intlDateFullFormat(date instanceof Date ? date : new Date(date));
         },
     };
 });

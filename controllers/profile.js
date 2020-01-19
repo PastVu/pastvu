@@ -244,7 +244,10 @@ async function changeRestrictions({ login, key, val }) {
     await user.save();
 
     if (key === 'nologin') {
-        // TODO: Destroy user sessions
+        if (val) {
+            // If we forbidding the user to login, destroy their current active sessions (online and offline) as well
+            await this.call('session.destroyUserSessions', { login });
+        }
     } else if (usObjOnline) {
         session.emitUser({ usObj: usObjOnline, excludeSocket: socket });
     }

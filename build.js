@@ -134,6 +134,10 @@ const requireBuildConfig = {
             exclude: ['commonExcludes', 'bs/collapse'],
         },
         {
+            name: 'm/user/sessions',
+            exclude: ['commonExcludes', 'bs/collapse'],
+        },
+        {
             name: 'm/user/manage',
             exclude: ['commonExcludes', 'bs/collapse'],
         },

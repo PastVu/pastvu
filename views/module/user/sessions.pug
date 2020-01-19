@@ -1,0 +1,71 @@
+.user_sessions(data-bind="with: repository[M!M]"): .panel-group#accordion
+    .panel.panel-pastvu
+        .panel-heading: .panel-title: a(data-toggle="collapse", href="#sessions") Активные сессии
+        .panel-collapse.collapse.in#sessions: .panel-body
+            dl.dl-horizontal
+                //ko if: !onlines().length && !offlines().length
+                | Пользователь не имеет активных сессий
+                // /ko
+                //ko if: onlines().length
+                dt.online Онлайн
+                dd
+                    //ko foreach: onlines
+                    .session
+                        .info
+                            .versions
+                                //ko if: $data.device
+                                strong(data-bind="text: $data.device")
+                                .dotDelimeter ·
+                                // /ko
+                                //ko if: $data.os
+                                strong(data-bind="text: $data.os")
+                                .dotDelimeter ·
+                                // /ko
+                                //ko if: $data.browser
+                                span(data-bind="text: $data.browser")
+                                // /ko
+                            .ip(data-bind="text: 'IP: ' + $data.ip")
+                            div
+                                | Количество открытых вкладок:&nbsp;
+                                span(data-bind="text: $root.intl.num($data.sockets)")
+                            div(data-bind="text: 'Первая активность: ' + $root.intl.dateFull($data.created)")
+                        //ko if: $data.isCurrent
+                        div.online(style="min-width:80px; margin-right:4px; padding: 0 10px; text-align:center; font-style:italic") Текущая
+                        // /ko
+                        //ko if: !$data.isCurrent
+                        button.btn.btn-primary(type="button", title="Уничтожить сессию", data-bind="attr: {disabled: $parent.removing.indexOf($data.key) > -1}, event:{click: function(){$parent.sessionDestroy($data.key)}}", style="min-width:80px;")
+                            | Выйти
+                        // /ko
+                    // /ko
+                // /ko
+
+                //ko if: onlines().length && offlines().length
+                br
+                br
+                // /ko
+
+                //ko if: offlines().length
+                dt Оффлайн
+                dd
+                    //ko foreach: offlines
+                    .session
+                        .info
+                            .versions
+                                //ko if: $data.device
+                                strong(data-bind="text: $data.device")
+                                .dotDelimeter ·
+                                // /ko
+                                //ko if: $data.os
+                                strong(data-bind="text: $data.os")
+                                .dotDelimeter ·
+                                // /ko
+                                //ko if: $data.browser
+                                span(data-bind="text: $data.browser")
+                                // /ko
+                            .ip(data-bind="text: 'IP: ' + $data.ip")
+                            div(data-bind="text: 'Первая активность: ' + $root.intl.dateFull($data.created)")
+                            div(data-bind="text: 'Последняя активность: ' + $root.intl.dateFull($data.stamp)")
+                        button.btn.btn-primary(type="button", title="Уничтожить сессию", data-bind="attr: {disabled: $parent.removing.indexOf($data.key) > -1}, event:{click: function(){$parent.sessionDestroy($data.key)}}", style="min-width:80px;")
+                            | Удалить
+                    // /ko
+                // /ko
