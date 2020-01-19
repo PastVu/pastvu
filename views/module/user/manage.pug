@@ -80,19 +80,27 @@
                         .btn-group.btn-group-sm
                             button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nophotoedit()}, click: changenophotoedit") Yes
                             button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nophotoedit()}, click: changenophotoedit") No
+                        p.text-muted(style="padding:6px 0 0 6px;line-height:1.1;font-size:11px;")
+                            sup(style="margin-left:-6px;") *
+                            |  The user will be able to edit their "New" and "On Revision" photos always, even with the option No selected
                 dl.dl-horizontal
                     dt.helpexists
                         .help.tltp-wrap
                             span.glyphicon.glyphicon-info-sign
                             .tltp.tltp-top.tltp-animate-move
-                                | Allow user to send their pictures to moderation,
+                                | Allow user to recall an unpublished photo,
                                 br
-                                | revoke not yet published one and delete deactivated one
-                        | &nbsp;Can changes status of their pictures
+                                | and remove deactivated
+                        | &nbsp;Can deactivate
+                        br
+                        | and remove their photos
                     dd
                         .btn-group.btn-group-sm
-                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nophotostatus()}, click: changenophotostatus") Yes
-                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nophotostatus()}, click: changenophotostatus") No
+                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nophotostatus()}, click: changenophotostatus") Да
+                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nophotostatus()}, click: changenophotostatus") Нет
+                        p.text-muted(style="padding:6px 0 0 6px;line-height:1.1;font-size:11px;")
+                            sup(style="margin-left:-6px;") *
+                            |  The user will be able to send his “New” and “On Revision” photos to publication always, even with the No option selected
                 dl.dl-horizontal
                     dt.helpexists
                         .help.tltp-wrap

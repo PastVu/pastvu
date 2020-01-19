@@ -182,9 +182,12 @@ export const permissions = {
 
             // Admin can always edit, moderator and owner always except own revoked or removed photo,
             can.edit = isAdmin ||
-                (canModerate || ownPhoto && !usObj.user.nophotoedit) && s !== status.REMOVE && s !== status.REVOKE || undefined;
+                s !== status.REMOVE && s !== status.REVOKE && (
+                    canModerate ||
+                    ownPhoto && (s === status.NEW || s === status.REVISION || !usObj.user.nophotoedit)
+                ) || undefined;
             // Owner can send to premoderation if photo is new or on revision
-            can.ready = (s === status.NEW || s === status.REVISION) && ownPhoto && !usObj.user.nophotostatus || undefined;
+            can.ready = (s === status.NEW || s === status.REVISION) && ownPhoto || undefined;
             // Revoke can only owner if photo is new
             can.revoke = s < status.REVOKE && ownPhoto && !usObj.user.nophotostatus || undefined;
             // Moderator can reject not his own photo until it's new
