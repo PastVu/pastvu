@@ -40,20 +40,26 @@ waitDb.then(db => {
     saveSystemJSFunc(function archiveExpiredSessions(frontierDate) {
         var startFullTime = Date.now();
         var archiveDate = new Date();
-        var query = { stamp: { lte: new Date(frontierDate) } };
-        var fullcount = db.sessions.count(query);
+        var query = { stamp: { $lte: new Date(frontierDate) } };
+        var fullcount = Math.max(db.sessions.count(query), 5000);
         var resultKeys = [];
         var insertBulk = [];
         var castBulkBy = 100;
         var counter = 0;
 
         print('Start to archive ' + fullcount + ' expired sessions');
-        db.sessions.find(query).forEach(session => {
+        db.sessions.find(query).limit(5000).forEach(session => {
             counter++;
-            resultKeys.push(session.key);
+
+            delete session.__v;
             session.archived = archiveDate;
 
-            if (insertBulk.push(session) >= castBulkBy || counter >= fullcount) {
+            insertBulk.push(session);
+            resultKeys.push(session.key);
+
+            db.sessions.remove({ key: session.key });
+
+            if (counter >= castBulkBy || counter >= fullcount) {
                 db.sessions_archive.insert(insertBulk, { ordered: false });
                 insertBulk = [];
             }

@@ -706,7 +706,7 @@ const checkSessWaitingConnect = (function () {
 
 // Periodically sends expired session to archive
 const checkExpiredSessions = (function () {
-    const checkInterval = ms('1h'); // Check interval
+    const checkInterval = ms('5m'); // Check interval
 
     async function procedure() {
         try {
@@ -720,10 +720,10 @@ const checkExpiredSessions = (function () {
 
             // Check if some of archived sessions is still in memory (in hashes), remove it frome memory
             _.forEach(result.keys, key => {
-                const session = sessConnected.get(key);
-                const usObj = usSid.get(key);
+                if (sessConnected.has(key)) {
+                    const session = sessConnected.get(key);
+                    const usObj = usSid.get(key);
 
-                if (session) {
                     if (usObj !== undefined) {
                         removeSessionFromHashes({ usObj, session, logPrefix: 'checkExpiredSessions' });
                     }
