@@ -1,0 +1,71 @@
+.user_sessions(data-bind="with: repository[M!M]"): .panel-group#accordion
+    .panel.panel-pastvu
+        .panel-heading: .panel-title: a(data-toggle="collapse", href="#sessions") Active sessions
+        .panel-collapse.collapse.in#sessions: .panel-body
+            dl.dl-horizontal
+                //ko if: !onlines().length && !offlines().length
+                | The user doesn't have active sessions
+                // /ko
+                //ko if: onlines().length
+                dt.online Online
+                dd
+                    //ko foreach: onlines
+                    .session
+                        .info
+                            .versions
+                                //ko if: $data.device
+                                strong(data-bind="text: $data.device")
+                                .dotDelimeter ·
+                                // /ko
+                                //ko if: $data.os
+                                strong(data-bind="text: $data.os")
+                                .dotDelimeter ·
+                                // /ko
+                                //ko if: $data.browser
+                                span(data-bind="text: $data.browser")
+                                // /ko
+                            .ip(data-bind="text: 'IP: ' + $data.ip")
+                            div
+                                | Number of open browser tabs:&nbsp;
+                                span(data-bind="text: $root.intl.num($data.sockets)")
+                            div(data-bind="text: 'First activity: ' + $root.intl.dateFull($data.created)")
+                        //ko if: $data.isCurrent
+                        div.online(style="min-width:80px; margin-right:4px; padding: 0 10px; text-align:center; font-style:italic") Current
+                        // /ko
+                        //ko if: !$data.isCurrent
+                        button.btn.btn-primary(type="button", title="Destroy session", data-bind="attr: {disabled: $parent.removing.indexOf($data.key) > -1}, event:{click: function(){$parent.sessionDestroy($data.key)}}", style="min-width:80px;")
+                            | Exit
+                        // /ko
+                    // /ko
+                // /ko
+
+                //ko if: onlines().length && offlines().length
+                br
+                br
+                // /ko
+
+                //ko if: offlines().length
+                dt Offline
+                dd
+                    //ko foreach: offlines
+                    .session
+                        .info
+                            .versions
+                                //ko if: $data.device
+                                strong(data-bind="text: $data.device")
+                                .dotDelimeter ·
+                                // /ko
+                                //ko if: $data.os
+                                strong(data-bind="text: $data.os")
+                                .dotDelimeter ·
+                                // /ko
+                                //ko if: $data.browser
+                                span(data-bind="text: $data.browser")
+                                // /ko
+                            .ip(data-bind="text: 'IP: ' + $data.ip")
+                            div(data-bind="text: 'First activity: ' + $root.intl.dateFull($data.created)")
+                            div(data-bind="text: 'Last activity: ' + $root.intl.dateFull($data.stamp)")
+                        button.btn.btn-primary(type="button", title="Destroy session", data-bind="attr: {disabled: $parent.removing.indexOf($data.key) > -1}, event:{click: function(){$parent.sessionDestroy($data.key)}}", style="min-width:80px;")
+                            | Remove
+                    // /ko
+                // /ko

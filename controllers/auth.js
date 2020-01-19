@@ -78,27 +78,12 @@ async function login({ login, pass }) {
 
 // User logout
 async function logout() {
-    await this.call('session.logoutUser');
+    const { socket, handshake: { usObj, session } } = this;
+
+    await this.call('session.logoutUser', { socket, usObj, session, currentSession: true });
 
     return {};
 }
-
-// // Destoy one of the the user sessions, making them logout on a device that uses that session
-// // Can be done by user itself or by the admin
-// async function destroyUserSession() {
-//     await this.call('session.logoutUser');
-//
-//     return {};
-// }
-//
-//
-// // Destoy all the user sessions, making them logout on all device that use those sessions
-// // Can be done only by the admin
-// async function destroyAllUserSessions({}) {
-//     await this.call('session.logoutUser');
-//
-//     return {};
-// }
 
 // Registration
 async function register({ login, email, pass, pass2 }) {
@@ -359,8 +344,6 @@ passChangeRecall.isPublic = true;
 passChange.isPublic = true;
 checkConfirm.isPublic = true;
 whoAmI.isPublic = true;
-//destroyUserSession.isPublic = true;
-//destroyAllUserSessions.isPublic = true;
 
 export default {
     login,

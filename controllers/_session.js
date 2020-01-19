@@ -11,7 +11,7 @@ import { userSettingsDef, clientParams } from './settings';
 import { Session, SessionArchive } from '../models/Sessions';
 import { User } from '../models/User';
 import constantsError from '../app/errors/constants';
-import { ApplicationError, BadParamsError, NotFoundError/*, TimeoutError*/ } from '../app/errors';
+import { AuthorizationError, ApplicationError, BadParamsError, NotFoundError/*, TimeoutError*/ } from '../app/errors';
 
 const logger = log4js.getLogger('session');
 const SESSION_COOKIE_KEY = 'past.sid'; // Session key in client cookies
@@ -229,7 +229,7 @@ export async function saveEmitUser({ usObj, login, userId, sessId, wait, exclude
 }
 
 // Create usObj in hashes (if doesn't exists) and add session to it
-async function addSessionToUserObject(session) {
+async function addSessionToUserObject(session, updateRid) {
     const registered = Boolean(session.user);
     let user = registered ? session.user : session.anonym;
 
@@ -259,7 +259,9 @@ async function addSessionToUserObject(session) {
         logger.warn(`${this.ridMark} Anonym trying to add new session?! Key: ${session.key}`);
     }
 
-    this.addUserIdToRidMark(usObj, session);
+    if (updateRid) {
+        this.addUserIdToRidMark(usObj, session);
+    }
 
     usObj.sessions[session.key] = session; // Add session to sessions hash of usObj
 
@@ -541,13 +543,13 @@ export async function loginUser({ user }) {
     // Add session to existing usObj or will create new usObj
     // usObj already exists if user already logged in on some other device (other session), in this case
     // user must be taken from usObj instaed of incoming
-    const usObj = await addSessionToUserObject.call(this, sessionNew);
+    const usObj = await addSessionToUserObject.call(this, sessionNew, true);
 
     user = usObj.user;
 
     // For all socket of currect (old) session assign new session and usObj
     if (_.isEmpty(sessionOld.sockets)) {
-        logger.warn(`${this.radMark} SessionOld have no sockets while login ${user.login}`);
+        logger.warn(`${this.ridMark} SessionOld have no sockets while login ${user.login}`);
     } else {
         _.forOwn(sessionOld.sockets, ({ handshake }) => {
             handshake.usObj = usObj;
@@ -585,8 +587,7 @@ export async function loginUser({ user }) {
 }
 
 // Session treatment when user exit, invokes from auth-controller
-export async function logoutUser() {
-    const { socket, handshake: { usObj: usObjOld, session: sessionOld } } = this;
+export async function logoutUser({ socket, usObj: usObjOld, session: sessionOld, currentSession = true }) {
     const sessionNew = copySession(sessionOld);
     const sessHash = sessWaitingConnect.has(sessionOld.key) ? sessWaitingConnect : sessConnected;
 
@@ -604,11 +605,11 @@ export async function logoutUser() {
     await sessionNew.save();
 
     // Create new usObj and new session into it
-    const usObj = await addSessionToUserObject.call(this, sessionNew);
+    const usObj = await addSessionToUserObject.call(this, sessionNew, currentSession);
 
     // For all socket of currect (old) session assign new session and usObj
     if (_.isEmpty(sessionOld.sockets)) {
-        logger.warn(`${this.radMark} SessionOld have no sockets while logout ${user.login}`);
+        logger.warn(`${this.ridMark} SessionOld have no sockets while logout ${user.login}`);
     } else {
         _.forOwn(sessionOld.sockets, ({ handshake }) => {
             handshake.usObj = usObj;
@@ -622,7 +623,9 @@ export async function logoutUser() {
     delete sessionOld.sockets;
 
     // Remove old session from sessions map
-    this.call('session.removeSessionFromHashes', { usObj: usObjOld, session: sessionOld, logPrefix: 'logoutUser' });
+    this.call('session.removeSessionFromHashes', {
+        usObj: usObjOld, session: sessionOld, logPrefix: currentSession ? 'logoutCurrentUser' : 'logoutUser',
+    });
 
     // Put new session in sessions map
     sessHash.set(sessionNew.key, sessionNew);
@@ -630,8 +633,10 @@ export async function logoutUser() {
     // Send old session to archive
     await archiveSession(sessionOld);
 
-    // Send client new cookie of anonym session
-    await emitSidCookie(socket, true);
+    if (socket) {
+        // Send client new cookie of anonym session
+        await emitSidCookie(socket, true);
+    }
 
     sendReload(sessionNew);
 }
@@ -892,6 +897,59 @@ export async function getSessionLight({ sid }) {
     return { usObj, session };
 }
 
+async function giveUserSessions({ login }) {
+    const { handshake: { usObj: iAm, session: sessionCurrent } } = this;
+
+    if (!iAm.registered || iAm.user.login !== login && !iAm.isAdmin) {
+        throw new AuthorizationError();
+    }
+
+    const user = isOnline({ login }) ? getOnline({ login }).user : await User.findOne({ login }).exec();
+    const sessions = await Session.find(
+        { user: user._id },
+        { _id: 0, key: 1, created: 1, stamp: 1, data: 1 },
+        { lean: true, sort: { stamp: -1 } },
+    ).exec();
+
+    return sessions.map(({ key, created, stamp, data: { ip, agent } = {} }) => ({
+        key, created, stamp,
+        isOnline: sessConnected.has(key), isCurrent: key === sessionCurrent.key,
+        sockets: sessConnected.has(key) ? Object.keys(sessConnected.get(key).sockets).length : 0,
+        ip, os: agent.os, browser: `${agent.n} ${agent.v}`,
+        device: typeof agent.d === 'string' && agent.d !== 'Other 0.0.0' ? agent.d.replace(/[0)]?\.0\.0$/, '').trim() : undefined,
+    }));
+}
+
+// Destroy specific user session which is done by user itself or admin from Sessions page in user profile
+async function destroyUserSession({ login, key: sid }) {
+    if (sessWaitingSelect.has(sid)) {
+        await sessWaitingSelect.get(sid);
+    }
+
+    if ((sessConnected.has(sid) || sessWaitingConnect.has(sid)) && usSid.has(sid)) {
+        // If current session is online, call logout for that session, so all its sockets (browser tabs) will be reloaded
+        const session = sessConnected.get(sid) || sessWaitingConnect.get(sid);
+        const socket = Object.values(session.sockets)[0];
+        const usObj = usSid.get(sid);
+
+        await this.call('session.logoutUser', { socket, usObj, session, currentSession: false });
+    } else {
+        // If current session is offline, simply archive it
+        try {
+            await archiveSession(await Session.findOne({ key: sid }).exec());
+        } catch (error) {}
+    }
+
+    return this.call('session.giveUserSessions', { login });
+}
+
+// Destroy all user sessions, is done by admin while changing login user restriction from on to off on manage page
+async function destroyUserSessions({ login }) {
+    const sessions = await this.call('session.giveUserSessions', { login });
+
+    await Promise.all(sessions.map(session => this.call('session.destroyUserSession', { login, key: session.key })));
+}
+
 async function langChange(data) {
     const { socket, handshake: { session } } = this;
 
@@ -921,10 +979,15 @@ function giveInitData() {
     });
 }
 
+giveUserSessions.isPublic = true;
+destroyUserSession.isPublic = true;
 giveInitData.isPublic = true;
 langChange.isPublic = true;
 
 export default {
+    giveUserSessions,
+    destroyUserSession,
+    destroyUserSessions,
     loginUser,
     logoutUser,
     giveInitData,
