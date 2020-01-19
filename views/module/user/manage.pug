@@ -80,19 +80,27 @@
                         .btn-group.btn-group-sm
                             button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nophotoedit()}, click: changenophotoedit") Да
                             button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nophotoedit()}, click: changenophotoedit") Нет
+                        p.text-muted(style="padding:6px 0 0 6px;line-height:1.1;font-size:11px;")
+                            sup(style="margin-left:-6px;") *
+                            |  Пользователь сможет редактировать свои "Новые" и фотографии "На доработке" всегда, даже с выбранной опцией Нет
                 dl.dl-horizontal
                     dt.helpexists
                         .help.tltp-wrap
                             span.glyphicon.glyphicon-info-sign
                             .tltp.tltp-top.tltp-animate-move
-                                | Разрешать пользователю отправлять фотографии на публикацию,
+                                | Разрешать пользователю отзывать еще неопубликованную фотографию,
                                 br
-                                | отзывать еще неопубликованную и удалять деактивированную
-                        | &nbsp;Может менять статус своих фотографий
+                                | и удалять деактивированную
+                        | &nbsp;Может деактивировать
+                        br
+                        | и удалять свои фотографии
                     dd
                         .btn-group.btn-group-sm
                             button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nophotostatus()}, click: changenophotostatus") Да
                             button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nophotostatus()}, click: changenophotostatus") Нет
+                        p.text-muted(style="padding:6px 0 0 6px;line-height:1.1;font-size:11px;")
+                            sup(style="margin-left:-6px;") *
+                            |  Пользователь сможет отправлять на публикацию свои "Новые" и фотографии "На доработке" всегда, даже с выбранной опцией Нет
                 dl.dl-horizontal
                     dt.helpexists
                         .help.tltp-wrap
