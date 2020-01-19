@@ -37,23 +37,6 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'globalVM', 'knock
             icon: 'data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/PjxzdmcgaGVpZ2h0PSI1MDAiIGlkPSJzdmcyIiB2ZXJzaW9uPSIxLjEiIHdpZHRoPSI1MDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6Y2M9Imh0dHA6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL25zIyIgeG1sbnM6ZGM9Imh0dHA6Ly9wdXJsLm9yZy9kYy9lbGVtZW50cy8xLjEvIiB4bWxuczppbmtzY2FwZT0iaHR0cDovL3d3dy5pbmtzY2FwZS5vcmcvbmFtZXNwYWNlcy9pbmtzY2FwZSIgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIiB4bWxuczpzb2RpcG9kaT0iaHR0cDovL3NvZGlwb2RpLnNvdXJjZWZvcmdlLm5ldC9EVEQvc29kaXBvZGktMC5kdGQiIHhtbG5zOnN2Zz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxkZWZzIGlkPSJkZWZzNCIvPjxnIGlkPSJsYXllcjEiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAsLTU1Mi4zNjIxOCkiPjxnIGlkPSJsYXllcjEtOSIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTU0OS4wMDUxNSw4MC4yOTQzNzIpIi8+PGcgaWQ9ImxheWVyMS02IiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtNTc1LjcxNDI5LDM5Ljk5OTk5OSkiLz48ZyBpZD0ibGF5ZXIxLTEiIHRyYW5zZm9ybT0ibWF0cml4KDAuOTk5OTY3MzIsMCwwLDAuOTk5OTY3MzIsNDQ3LjY5NTk5LDI3LjU1MzI3NCkiLz48cGF0aCBkPSJtIDAsNTUyLjM2MjE2IDAsNTAwLjAwMDA0IDUwMCwwIDAsLTUwMC4wMDAwNCB6IiBpZD0icmVjdDI5ODktMSIgc3R5bGU9ImZpbGw6IzNmNWE2ZjtmaWxsLW9wYWNpdHk6MTtzdHJva2U6bm9uZSIvPjxwYXRoIGQ9Ik0gNTAwLDUwMCAyOTIuMDYwMzUsNTAwIDE5OS41MTIzMiw0MDcuNDUxOTcgMTg2LjE5NzUxLDI3MS4zNzYwOSAxMzAuNTgwMzUsMjE1Ljc1ODkzIDI2Ni41NzA5NCw1OS45NjkyNCA1MDAsMjkzLjM5ODMgeiIgaWQ9InBhdGgzMDIyIiBzdHlsZT0iZmlsbDojMDAwMDAwO3N0cm9rZTojMDAwMDAwO3N0cm9rZS13aWR0aDoxcHg7c3Ryb2tlLWxpbmVjYXA6YnV0dDtzdHJva2UtbGluZWpvaW46bWl0ZXI7c3Ryb2tlLW9wYWNpdHk6MTtvcGFjaXR5OjAuMyIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMCw1NTIuMzYyMTgpIi8+PHBhdGggZD0iTSAyMTIuNSA2MCBDIDIxMC4wNjc4OSA3OS41ODgxOSAyMDUuNjU3NyA5NS43MzYwODQgMTk5LjE4NzUgMTA4LjQwNjI1IEMgMTkyLjc2MzY0IDEyMS4xMDczMSAxODQuMjAxNjcgMTMxLjk4MjYgMTczLjUzMTI1IDE0MS4wNjI1IEMgMTYyLjkwNzE2IDE1MC4xMTE1MiAxNDUuNjEyMTggMTU3LjAzMzk0IDEzMC42ODc1IDE2MS44NzUgTCAxMzAuNjg3NSAyMTUuNzE4NzUgTCAxODIuMzEyNSAyMTUuNzE4NzUgTCAxODIuMzEyNSAzNDguOTY4NzUgQyAxODIuMzEyNSAzNjYuMzQxMDEgMTg0LjEyOTIxIDM3OS42MjQxMyAxODcuNzgxMjUgMzg4Ljc4MTI1IEMgMTkxLjQyNTU1IDM5Ny45MTUxOSAxOTcuOTQ4MDQgNDA2LjUyNjA0IDIwNy40MDYyNSA0MTQuNjU2MjUgQyAyMTYuODE4MTYgNDIyLjcyNDY5IDIyOC4yMDUxNiA0MjkuMDIxMDggMjQxLjU2MjUgNDMzLjQzNzUgQyAyNTQuODk2NjcgNDM3Ljc5OTg3IDI2NS4xNTkgNDQwIDI4Mi41MzEyNSA0NDAgQyAyOTcuODM0MjYgNDQwIDMxMi4wMzg5OSA0MzguNDMyNTEgMzI1LjIxODc1IDQzNS4zNzUgQyAzMzguMzgzMDUgNDMyLjMxNzQ4IDM1My4wOTgzOSA0MjYuOTI1MDIgMzY5LjMxMjUgNDE5LjI4MTI1IEwgMzY5LjMxMjUgMzU5LjM3NSBDIDM1MC4yODAyMyAzNzEuODc1MyAzMzEuMTQ3IDM3OC4xMjUgMzExLjkwNjI1IDM3OC4xMjUgQyAzMDEuMDgxNCAzNzguMTI1IDI5MS40OTM4NCAzNzUuNjEyMDMgMjgzLjA2MjUgMzcwLjU2MjUgQyAyNzYuNzMxMjkgMzY2Ljg0MDk3IDI3MC45MTc3NiAzNjAuMzcxNjQgMjY4LjU5Mzc1IDM1NC4xNTYyNSBDIDI2Ni4yNjk3MyAzNDcuOTA5OTUgMjY2LjUzMTI1IDMzNS4xOTk3MSAyNjYuNTMxMjUgMzEzLjE1NjI1IEwgMjY2LjUzMTI1IDIxNS43MTg3NSBMIDM1NC40MDYyNSAyMTUuNzE4NzUgTCAzNTQuNDA2MjUgMTQ3Ljg3NSBMIDI2Ni41MzEyNSAxNDcuODc1IEwgMjY2LjUzMTI1IDYwIEwgMjEyLjUgNjAgeiAiIGlkPSJyZWN0Mjk4OSIgc3R5bGU9ImZpbGw6I2ZmZmZmZjtmaWxsLW9wYWNpdHk6MTtzdHJva2U6bm9uZSIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMCw1NTIuMzYyMTgpIi8+PC9nPjwvc3ZnPg=='
         }
     ];
-    var urlShortener = function (url, cb, ctx) {
-        $.ajax({
-                url: 'https://www.googleapis.com/urlshortener/v1/url?key=AIzaSyDB-XJRIMPNN9oeyzGvCTZxJ4SKGDTsrXw',
-                method: 'POST',
-                data: JSON.stringify({ longUrl: url }),
-                contentType: 'application/json',
-                processData: false,
-                dataType: 'json'
-            })
-            .fail(function (jqXHR, textStatus, errorThrown) {
-                console.warn('Fail to get goo.gl shortener because of ' + textStatus, errorThrown);
-                cb.call(ctx, url);
-            })
-            .success(function (result) {
-                cb.call(ctx, result.id ? result.id : url);
-            });
-    };
 
     return Cliche.extend({
         pug: pug,
@@ -154,18 +137,15 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'globalVM', 'knock
                 popup(url);
             } else if (network === 'tw') {
                 var _window = popup('');
+                var maxLength = 280 - 6 - 23; // 23 is reserved for any length link
 
-                urlShortener(pageUrlOrigin, function (shortUrl) {
-                    var maxLength = 140 - shortUrl.length - 6;
+                if (pageTitle.length > maxLength) {
+                    pageTitle = pageTitle.substr(0, maxLength) + '...';
+                }
 
-                    if (pageTitle.length > maxLength) {
-                        pageTitle = pageTitle.substr(0, maxLength) + '...';
-                    }
-
-                    _window.location = 'http://twitter.com/share?text=' + encodeURIComponent(pageTitle) +
-                        '&url=' + encodeURIComponent(shortUrl) +
-                        '&counturl=' + pageUrl;
-                });
+                _window.location = 'http://twitter.com/share?text=' + encodeURIComponent(pageTitle) +
+                    '&url=' + pageUrl +
+                    '&counturl=' + pageUrl;
             }
 
             ga('send', 'event', 'share', network, 'share network click');
