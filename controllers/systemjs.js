@@ -64,6 +64,7 @@ waitDb.then(db => {
             }
 
             session.archived = archiveDate;
+            session.archive_reason = 'expire';
 
             insertBulk.push(session);
             resultKeys.push(session.key);

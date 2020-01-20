@@ -430,9 +430,12 @@ export function removeSessionFromHashes({ session: { key: sessionKey }, usObj, l
 }
 
 // Send session to archive
-async function archiveSession(session) {
+async function archiveSession(session, reason) {
     // Take plain object of session, with _id instead of populated objects
     const sessionPlain = session.toObject({ minimize: true, depopulate: true, versionKey: false });
+
+    // Set the reason for archiving
+    sessionPlain.archive_reason = reason;
 
     // Don't save headers to archive
     if (sessionPlain.data.headers) {
@@ -592,7 +595,7 @@ export async function loginUser({ user }) {
     sessHash.set(sessionNew.key, sessionNew);
 
     // Send old session to archive
-    await archiveSession(sessionOld);
+    await archiveSession(sessionOld, 'login');
 
     // Update cookie in current socket, all browser tabs will see it
     emitSidCookie(socket, false, true);
@@ -654,7 +657,7 @@ export async function logoutUser({ socket, usObj: usObjOld, session: sessionOld,
     sessHash.set(sessionNew.key, sessionNew);
 
     // Send old session to archive
-    await archiveSession(sessionOld);
+    await archiveSession(sessionOld, currentSession ? 'logout' : 'destroy');
 
     if (socket) {
         // Send client new cookie of anonym session
@@ -739,7 +742,9 @@ const checkExpiredSessions = (function () {
                 throw new ApplicationError(constantsError.SESSION_EXPIRED_ARCHIVE_NO_RESULT);
             }
 
-            logger.info(`${result.count} sessions moved to archive, ${result.countRemoved} anonymous sessions dropped`);
+            logger.info(
+                `${result.count} expired registered sessions moved to archive, ${result.countRemoved} expired anonymous sessions dropped`
+            );
 
             // Check if some of archived sessions is still in memory (in hashes), remove it frome memory
             _.forEach(result.keys, key => {
@@ -959,7 +964,7 @@ async function destroyUserSession({ login, key: sid }) {
     } else {
         // If current session is offline, simply archive it
         try {
-            await archiveSession(await Session.findOne({ key: sid }).exec());
+            await archiveSession(await Session.findOne({ key: sid }).exec(), 'destroy');
         } catch (error) {}
     }
 
