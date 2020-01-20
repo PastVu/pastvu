@@ -8,6 +8,8 @@ import config from './config';
 import express from 'express';
 import socketIO from 'socket.io';
 import Utils from './commons/Utils';
+import connectDb, { waitDb } from './controllers/connection';
+import * as session from './controllers/_session';
 import CoreServer from './controllers/serviceConnector';
 import { handleSocketConnection, registerSocketRequestHendler } from './app/request';
 
@@ -20,7 +22,6 @@ import { ready as settingsReady } from './controllers/settings';
 import * as routes from './controllers/routes';
 import * as ourMiddlewares from './controllers/middleware';
 
-import connectDb from './controllers/connection';
 import './models/_initValues';
 import './controllers/systemjs';
 import './basepatch/v1.3.0.7';
@@ -305,5 +306,12 @@ export async function configure(startStamp) {
         );
 
         scheduleMemInfo(startStamp - Date.now());
+    });
+
+    // Once db is connected, start some periodic jobs.
+    // Do it in app.js, not in controllers, to prevent running these jobs on other instances (sitemap, uploader, downloader etc.)
+    waitDb.then(() => {
+        session.checkSessWaitingConnect();
+        session.checkExpiredSessions();
     });
 }

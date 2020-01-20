@@ -4,7 +4,7 @@ import log4js from 'log4js';
 import locale from 'locale';
 import config from '../config';
 import Utils from '../commons/Utils';
-import { waitDb, dbEval } from './connection';
+import { dbEval } from './connection';
 import * as regionController from './region';
 import { parse as parseCookie } from 'cookie';
 import { userSettingsDef, clientParams } from './settings';
@@ -701,7 +701,7 @@ export function getOnline({ login, userId, sessionKey } = {}) {
 }
 
 // Periodic process for dropping waiting connection sessions, if they don't establish connection in given time
-const checkSessWaitingConnect = (function () {
+export const checkSessWaitingConnect = (function () {
     const SESSION_WAIT_CHECK_INTERVAL = ms('10s');
     const SESSION_WAIT_TIMEOUT = ms('1m');
 
@@ -731,7 +731,7 @@ const checkSessWaitingConnect = (function () {
 }());
 
 // Periodically sends expired session to archive
-const checkExpiredSessions = (function () {
+export const checkExpiredSessions = (function () {
     const checkInterval = ms('5m'); // Check interval
 
     async function procedure() {
@@ -774,7 +774,7 @@ const checkExpiredSessions = (function () {
     }
 
     return function () {
-        setTimeout(procedure, checkInterval);
+        setTimeout(procedure, checkInterval).unref();
     };
 }());
 
@@ -1026,8 +1026,3 @@ export default {
     emitSocket,
     regetUsers,
 };
-
-waitDb.then(() => {
-    checkSessWaitingConnect();
-    checkExpiredSessions();
-});
