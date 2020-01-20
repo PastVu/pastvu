@@ -733,13 +733,13 @@ const checkExpiredSessions = (function () {
 
     async function procedure() {
         try {
-            const result = await dbEval('archiveExpiredSessions', [new Date() - SESSION_USER_LIFE], { nolock: true });
+            const result = await dbEval('archiveExpiredSessions', [SESSION_USER_LIFE, SESSION_ANON_LIFE], { nolock: true });
 
             if (!result) {
                 throw new ApplicationError(constantsError.SESSION_EXPIRED_ARCHIVE_NO_RESULT);
             }
 
-            logger.info(`${result.count} sessions moved to archive`);
+            logger.info(`${result.count} sessions moved to archive, ${result.countRemoved} anonymous sessions dropped`);
 
             // Check if some of archived sessions is still in memory (in hashes), remove it frome memory
             _.forEach(result.keys, key => {
