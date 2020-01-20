@@ -1001,5 +1001,6 @@ export default {
 
 waitDb.then(() => {
     checkSessWaitingConnect();
-    checkExpiredSessions();
+    // Don't check expired sessions on en node
+    //checkExpiredSessions();
 });
