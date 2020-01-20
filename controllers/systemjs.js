@@ -51,7 +51,14 @@ waitDb.then(db => {
         db.sessions.find(query).limit(5000).forEach(session => {
             counter++;
 
-            delete session.__v;
+            if (session.__v) {
+                delete session.__v;
+            }
+
+            if (session.data && session.data.headers) {
+                delete session.data.headers;
+            }
+
             session.archived = archiveDate;
 
             insertBulk.push(session);

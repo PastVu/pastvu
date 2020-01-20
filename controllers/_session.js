@@ -326,9 +326,12 @@ async function updateSession(session, ip, headers, browser) {
     }
 
     // If user ip is changed, write old one to history with change time
+    // Limit history to 100 items
     if (ip !== data.ip) {
         if (!data.ip_hist) {
             data.ip_hist = [];
+        } else if (data.ip_hist.length >= 100) {
+            data.ip_hist = data.ip_hist.slice(-99);
         }
 
         data.ip_hist.push({ ip: data.ip, off: stamp });
@@ -338,16 +341,23 @@ async function updateSession(session, ip, headers, browser) {
     data.lang = config.lang;
 
     // If user-agent is changed, parse it and write previous one to history with change time
+    // Limit history to 100 items
     if (headers['user-agent'] !== data.headers['user-agent']) {
-        if (data.agent) {
-            if (!data.agent_hist) {
-                data.agent_hist = [];
+        const agent = getBrowserAgent(browser);
+
+        if (!_.isEqual(agent, data.agent)) {
+            if (data.agent) {
+                if (!data.agent_hist) {
+                    data.agent_hist = [];
+                } else if (data.agent_hist.length >= 100) {
+                    data.agent_hist = data.agent_hist.slice(-99);
+                }
+
+                data.agent_hist.push({ agent: data.agent, off: stamp });
             }
 
-            data.agent_hist.push({ agent: data.agent, off: stamp });
+            data.agent = agent;
         }
-
-        data.agent = getBrowserAgent(browser);
     }
 
     data.headers = headers;
@@ -418,14 +428,22 @@ export function removeSessionFromHashes({ session: { key: sessionKey }, usObj, l
 async function archiveSession(session) {
     // Take plain object of session, with _id instead of populated objects
     const sessionPlain = session.toObject({ minimize: true, depopulate: true, versionKey: false });
+
+    // Don't save headers to archive
+    if (sessionPlain.data.headers) {
+        delete sessionPlain.data.headers;
+    }
+
     const archivingSession = new SessionArchive(sessionPlain);
 
     if (sessionPlain.user) {
         archivingSession.anonym = undefined;
     }
 
-    await session.remove(); // Remove session from collections of active sessions
-    await archivingSession.save(); // Save archive session to collection of archive sessions
+    await Promise.all([
+        session.remove(), // Remove session from collections of active sessions
+        archivingSession.save(), // Save archive session to collection of archive sessions
+    ]);
 
     return archivingSession;
 }
