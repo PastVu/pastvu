@@ -15,7 +15,8 @@ import { AuthorizationError, ApplicationError, BadParamsError, NotFoundError/*, 
 
 const logger = log4js.getLogger('session');
 const SESSION_COOKIE_KEY = 'past.sid'; // Session key in client cookies
-const SESSION_SHELF_LIFE = ms('21d'); // Period of session validity since last activity
+const SESSION_USER_LIFE = ms('21d'); // Lifetime of a registered user session
+const SESSION_ANON_LIFE = ms('7d'); // Lifetime of an anonymous user session
 
 // Locales Map for checking their presence after header parsing
 const localesMap = new Map(config.locales.map(locale => [locale, locale]));
@@ -28,18 +29,22 @@ export const checkUserAgent = Utils.checkUserAgent(config.browsers);
 export const createSidCookieObj = (function () {
     const key = SESSION_COOKIE_KEY;
     const domain = config.client.hostname;
-    const cookieMaxAge = SESSION_SHELF_LIFE / 1000;
+    const cookieUserMaxAge = SESSION_USER_LIFE / 1000;
+    const cookieAnonMaxAge = SESSION_ANON_LIFE / 1000;
 
-    return session => ({ key, domain, path: '/', value: session.key, 'max-age': cookieMaxAge });
+    return (session, registered) => ({
+        key, domain, path: '/', value: session.key, 'max-age': registered ? cookieUserMaxAge : cookieAnonMaxAge,
+    });
 }());
 
 // Create cookie lang object (temporary)
 const createLangCookieObj = (function () {
     const key = 'past.lang';
     const domain = config.client.hostname;
-    const cookieMaxAge = SESSION_SHELF_LIFE / 1000;
+    const cookieUserMaxAge = SESSION_USER_LIFE / 1000;
+    const cookieAnonMaxAge = SESSION_ANON_LIFE / 1000;
 
-    return lang => ({ key, domain, path: '/', value: lang, 'max-age': cookieMaxAge });
+    return (lang, registered) => ({ key, domain, path: '/', value: lang, 'max-age': registered ? cookieUserMaxAge : cookieAnonMaxAge });
 }());
 
 const getBrowserAgent = function (browser) {
@@ -176,15 +181,15 @@ const emitSessionSockets = (session, data, waitResponse, excludeSocket) => _.cha
     .filter(socket => socket && socket !== excludeSocket && _.isFunction(socket.emit))
     .map(socket => emitSocket({ socket, data, waitResponse })).value();
 
-const emitSidCookie = (socket, waitResponse) => emitSocket({
+const emitSidCookie = (socket, waitResponse, regitered) => emitSocket({
     socket,
-    data: ['command', [{ name: 'updateCookie', data: createSidCookieObj(socket.handshake.session) }]],
+    data: ['command', [{ name: 'updateCookie', data: createSidCookieObj(socket.handshake.session, regitered) }]],
     waitResponse,
 });
 
-const emitLangCookie = (socket, lang, waitResponse) => emitSocket({
+const emitLangCookie = (socket, lang, waitResponse, registered) => emitSocket({
     socket,
-    data: ['command', [{ name: 'updateCookie', data: createLangCookieObj(lang) }]],
+    data: ['command', [{ name: 'updateCookie', data: createLangCookieObj(lang, registered) }]],
     waitResponse,
 });
 
@@ -590,7 +595,7 @@ export async function loginUser({ user }) {
     await archiveSession(sessionOld);
 
     // Update cookie in current socket, all browser tabs will see it
-    emitSidCookie(socket);
+    emitSidCookie(socket, false, true);
 
     const userPlain = getPlainUser(user);
 
@@ -653,7 +658,7 @@ export async function logoutUser({ socket, usObj: usObjOld, session: sessionOld,
 
     if (socket) {
         // Send client new cookie of anonym session
-        await emitSidCookie(socket, true);
+        await emitSidCookie(socket, true, false);
     }
 
     sendReload(sessionNew);
@@ -728,7 +733,7 @@ const checkExpiredSessions = (function () {
 
     async function procedure() {
         try {
-            const result = await dbEval('archiveExpiredSessions', [new Date() - SESSION_SHELF_LIFE], { nolock: true });
+            const result = await dbEval('archiveExpiredSessions', [new Date() - SESSION_USER_LIFE], { nolock: true });
 
             if (!result) {
                 throw new ApplicationError(constantsError.SESSION_EXPIRED_ARCHIVE_NO_RESULT);
@@ -969,14 +974,14 @@ async function destroyUserSessions({ login }) {
 }
 
 async function langChange(data) {
-    const { socket, handshake: { session } } = this;
+    const { socket, handshake: { session, usObj } } = this;
 
     if (!config.locales.includes(data.lang)) {
         return;
     }
 
     // Send client new language cookie
-    await emitLangCookie(socket, data.lang, true);
+    await emitLangCookie(socket, data.lang, true, usObj.registered);
 
     sendReload(session);
 }
@@ -992,7 +997,7 @@ function giveInitData() {
             p: clientParams,
             u: getPlainUser(iAm.user),
             registered: iAm.registered,
-            cook: createSidCookieObj(session),
+            cook: createSidCookieObj(session, iAm.registered),
         }],
     });
 }
