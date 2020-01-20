@@ -37,35 +37,54 @@ waitDb.then(db => {
         );
     }
 
-    saveSystemJSFunc(function archiveExpiredSessions(frontierDate) {
-        var startFullTime = Date.now();
+    saveSystemJSFunc(function archiveExpiredSessions(SESSION_USER_LIFE, SESSION_ANON_LIFE) {
         var archiveDate = new Date();
-        var query = { stamp: { $lte: new Date(frontierDate) } };
-        var fullcount = Math.max(db.sessions.count(query), 5000);
+        var start = archiveDate.getTime();
         var resultKeys = [];
         var insertBulk = [];
         var castBulkBy = 100;
         var counter = 0;
 
-        print('Start to archive ' + fullcount + ' expired sessions');
-        db.sessions.find(query).limit(5000).forEach(session => {
+        const userQuery = { user: { $exists: true }, stamp: { $lte: new Date(start - SESSION_USER_LIFE) } };
+        const anonQuery = { anonym: { $exists: true }, stamp: { $lte: new Date(start - SESSION_ANON_LIFE) } };
+
+        // Simply remove anonymous sessions older then SESSION_ANON_LIFE, there is no point in storing them
+        const countRemoved = db.sessions.remove(anonQuery).nRemoved;
+
+        // Move each expired registered user session to sessions_archive
+        db.sessions.find(userQuery).limit(5000).forEach(session => {
             counter++;
 
-            delete session.__v;
+            if (session.__v) {
+                delete session.__v;
+            }
+
+            if (session.data && session.data.headers) {
+                delete session.data.headers;
+            }
+
             session.archived = archiveDate;
+            session.archive_reason = 'expire';
 
             insertBulk.push(session);
             resultKeys.push(session.key);
 
             db.sessions.remove({ key: session.key });
 
-            if (counter >= castBulkBy || counter >= fullcount) {
+            if (counter >= castBulkBy) {
                 db.sessions_archive.insert(insertBulk, { ordered: false });
                 insertBulk = [];
             }
         });
 
-        return { message: 'Done in ' + (Date.now() - startFullTime) / 1000 + 's', count: counter, keys: resultKeys };
+        if (insertBulk.length) {
+            db.sessions_archive.insert(insertBulk, { ordered: false });
+        }
+
+        return {
+            message: 'Done in ' + (Date.now() - start) / 1000 + 's',
+            countRemoved: countRemoved, count: counter, keys: resultKeys,
+        };
     });
 
     saveSystemJSFunc(function clusterPhotosAll(withGravity, logByNPhotos, zooms) {

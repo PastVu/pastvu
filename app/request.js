@@ -170,7 +170,7 @@ export const handleHTTPRequest = async function (req, res, next) {
         req.handshake.locale = data.locale;
 
         // Add session id to Set-cookie header (create or prolongs it on client)
-        const cookieObj = sessionController.createSidCookieObj(data.session);
+        const cookieObj = sessionController.createSidCookieObj(data.session, data.usObj.registered);
         const cookieResOptions = { path: cookieObj.path, domain: cookieObj.domain };
 
         if (cookieObj['max-age'] !== undefined) {
