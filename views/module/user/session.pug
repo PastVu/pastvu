@@ -1,0 +1,56 @@
+.user_session(data-bind="with: repository[M!M]")
+    dl.dl-horizontal
+        dt First activity:
+        dd(data-bind="text: $root.intl.dateFull(session.created)")
+        //ko if: !session.sockets
+        dt Last activity:
+        dd(data-bind="text: $root.intl.dateFull(session.stamp)")
+        // /ko
+        //ko if: session.lang
+        dt Language:
+        dd(data-bind="text: session.lang")
+        // /ko
+        //ko if: session.sockets
+        dt Number of tabs:
+        dd(data-bind="text: $root.intl.num(session.sockets)")
+        // /ko
+        dt IP addresses:
+        dd
+            // ko if: session.ips.length === 101
+            div Previous ip addresses might have been dropped due to the storage limits
+            // /ko
+            //ko foreach: session.ips
+            div
+                span.ip(data-bind="text: $data.ip")
+                //ko if: $data.off
+                span(data-bind="text: ' (until ' + $root.intl.dateFullDigit($data.off) + ')'")
+                // /ko
+                //ko if: !$data.off
+                i(data-bind="text: $parent.online ? ' (current address)' : ' ( last address)'")
+                // /ko
+            // /ko
+        dt Клиенты:
+        dd
+            // ko if: session.agents.length === 101
+            div Previous clients might have been dropped due to the storage limits
+            // /ko
+            //ko foreach: session.agents
+            .versions
+                //ko if: $data.device
+                strong(data-bind="text: $data.device")
+                .dotDelimeter ·
+                // /ko
+                //ko if: $data.os
+                strong(data-bind="text: $data.os")
+                .dotDelimeter ·
+                // /ko
+                //ko if: $data.browser
+                span(data-bind="text: $data.browser")
+                // /ko
+                //ko if: $data.off
+                span(data-bind="text: ' (until ' + $root.intl.dateFullDigit($data.off) + ')'")
+                // /ko
+                //ko if: !$data.off
+                i(data-bind="text: $parent.online ? ' (current client)' : '  (last client)'")
+                // /ko
+            // /ko

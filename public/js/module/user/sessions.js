@@ -20,7 +20,14 @@ define([
                 this.originUser = storage.userImmediate(this.u.login()).origin;
                 this.onlines = ko.observableArray();
                 this.offlines = ko.observableArray();
+                this.archives = ko.observableArray();
+                this.archivedCount = ko.observable(0);
+                this.archivedShow = ko.observable(false);
+                this.archivedFetching = ko.observable(false);
                 this.removing = ko.observableArray();
+
+                this.handleShowSession = this.handleShowSession.bind(this);
+                this.handleSessionDestroy = this.handleSessionDestroy.bind(this);
 
                 this.itsMe = this.co.itsMe = ko.computed(function () {
                     return this.auth.iAm.login() === this.u.login();
@@ -69,9 +76,17 @@ define([
                 this.nextGetSessionTimeout = null;
             }
 
-            socket.run('session.giveUserSessions', {login: this.u.login()}, true)
+            socket.run('session.giveUserSessions', {login: this.u.login(), withArchive: this.archivedShow()}, true)
                 .then(function (result) {
-                    this.applySessions(result);
+                    this.applySessions(result.sessions);
+
+                    if (this.auth.iAm.role() > 9) {
+                        this.archivedCount(result.archiveCount);
+
+                        if (result.archiveSessions) {
+                            this.archives(result.archiveSessions);
+                        }
+                    }
 
                     if (_.isFunction(cb)) {
                         cb.call(ctx, result);
@@ -81,19 +96,83 @@ define([
                 }.bind(this));
         },
 
-        sessionDestroy: function (key) {
+        toggleArchive() {
+            if (this.archivedFetching()) {
+                return;
+            }
+
+            if (this.archivedShow()) {
+                this.archivedShow(false);
+                this.archives([]);
+            } else if (this.archivedCount() && this.auth.iAm.role() > 9) {
+                this.archivedFetching(true);
+                this.archivedShow(true);
+
+                this.getSessions(function () {
+                    this.archivedFetching(false);
+                }, this);
+            }
+        },
+
+        handleSessionDestroy: function (data, evt) {
+            var key = data.key;
+
+            evt.stopPropagation();
             clearTimeout(this.nextGetSessionTimeout);
             this.nextGetSessionTimeout = null;
             this.removing.push(key);
 
             socket.run('session.destroyUserSession', { login: this.u.login(), key }, true)
                 .then(function (result) {
-                    this.applySessions(result);
+                    this.applySessions(result.sessions);
+
+                    if (this.auth.iAm.role() > 9) {
+                        this.archivedCount(result.archiveCount);
+                    }
+
                     this.nextGetSessionTimeout = setTimeout(this.getSessions.bind(this), 5000);
                 }.bind(this))
                 .finally(function () {
                     this.removing.remove(key);
                 }.bind(this))
+        },
+
+        handleShowSession: function (key, archive, online) {
+            if (!this.detailVM) {
+                renderer(
+                    [
+                        {
+                            module: 'm/user/session',
+                            options: { login: this.u.login(), key: key, archive: archive, online: online },
+                            modal: {
+                                topic: 'Детали сессии',
+                                animateScale: true,
+                                initWidth: '800px',
+                                maxWidthRatio: 0.95,
+                                curtainClick: { click: this.handleCloseSession, ctx: this },
+                                offIcon: { text: 'Закрыть', click: this.handleCloseSession, ctx: this },
+                                btns: [
+                                    { css: 'btn-primary', text: 'Закрыть', click: this.handleCloseSession, ctx: this }
+                                ]
+                            },
+                            callback: function (vm) {
+                                this.detailVM = this.childModules[vm.id] = vm;
+                                ga('send', 'event', 'user', 'session');
+                            }.bind(this)
+                        }
+                    ],
+                    {
+                        parent: this,
+                        level: this.level + 2
+                    }
+                );
+            }
+        },
+        handleCloseSession: function () {
+            if (this.detailVM) {
+                this.detailVM.destroy();
+                delete this.detailVM;
+            }
         },
     });
 });

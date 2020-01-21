@@ -5,12 +5,14 @@
             dl.dl-horizontal
                 //ko if: !onlines().length && !offlines().length
                 | The user doesn't have active sessions
+                br
+                br
                 // /ko
                 //ko if: onlines().length
                 dt.online Online
                 dd
                     //ko foreach: onlines
-                    .session
+                    .session(data-bind="click: function () {$parent.handleShowSession($data.key, false, true)}")
                         .info
                             .versions
                                 //ko if: $data.device
@@ -24,7 +26,17 @@
                                 //ko if: $data.browser
                                 span(data-bind="text: $data.browser")
                                 // /ko
-                            .ip(data-bind="text: 'IP: ' + $data.ip")
+                                //ko if: $data.agentHistCount
+                                i(data-bind="text: ' (+' + $data.agentHistCount + ')'")
+                                // /ko
+                            .ip
+                                span(data-bind="text: 'IP: ' + $data.ip")
+                                //ko if: $data.ipHistCount
+                                i(data-bind="text: ' (+' + $data.ipHistCount + ')'")
+                                // /ko
+                            //ko if: $data.lang
+                            div(data-bind="text: 'Language: ' + $data.lang")
+                            // /ko
                             div
                                 | Number of open browser tabs:&nbsp;
                                 span(data-bind="text: $root.intl.num($data.sockets)")
@@ -33,7 +45,7 @@
                         div.online(style="min-width:80px; margin-right:4px; padding: 0 10px; text-align:center; font-style:italic") Current
                         // /ko
                         //ko if: !$data.isCurrent
-                        button.btn.btn-primary(type="button", title="Destroy session", data-bind="attr: {disabled: $parent.removing.indexOf($data.key) > -1}, event:{click: function(){$parent.sessionDestroy($data.key)}}", style="min-width:80px;")
+                        button.btn.btn-primary(type="button", title="Destroy session", data-bind="attr: {disabled: $parent.removing.indexOf($data.key) > -1}, event:{click: $parent.handleSessionDestroy}", style="min-width:80px;")
                             | Exit
                         // /ko
                     // /ko
@@ -48,7 +60,7 @@
                 dt Offline
                 dd
                     //ko foreach: offlines
-                    .session
+                    .session(data-bind="click: function () {$parent.handleShowSession($data.key)}")
                         .info
                             .versions
                                 //ko if: $data.device
@@ -62,10 +74,68 @@
                                 //ko if: $data.browser
                                 span(data-bind="text: $data.browser")
                                 // /ko
-                            .ip(data-bind="text: 'IP: ' + $data.ip")
+                                //ko if: $data.agentHistCount
+                                i(data-bind="text: ' (+' + $data.agentHistCount + ')'")
+                                // /ko
+                            .ip
+                                span(data-bind="text: 'IP: ' + $data.ip")
+                                //ko if: $data.ipHistCount
+                                i(data-bind="text: ' (+' + $data.ipHistCount + ')'")
+                                // /ko
+                            div(data-bind="text: 'Language: ' + $data.lang")
                             div(data-bind="text: 'First activity: ' + $root.intl.dateFull($data.created)")
                             div(data-bind="text: 'Last activity: ' + $root.intl.dateFull($data.stamp)")
-                        button.btn.btn-primary(type="button", title="Destroy session", data-bind="attr: {disabled: $parent.removing.indexOf($data.key) > -1}, event:{click: function(){$parent.sessionDestroy($data.key)}}", style="min-width:80px;")
+                        button.btn.btn-primary(type="button", title="Destroy session", data-bind="attr: {disabled: $parent.removing.indexOf($data.key) > -1}, event:{click: $parent.handleSessionDestroy}", style="min-width:80px;")
                             | Remove
+                    // /ko
+                // /ko
+
+                //ko if: archivedCount()
+                //ko if: onlines().length || offlines().length
+                br
+                br
+                // /ko
+                dt.helpexists
+                    .help.tltp-wrap
+                        span.glyphicon.glyphicon-info-sign
+                        .tltp.tltp-top.tltp-animate-move
+                            | Viewing archive sessions
+                            br
+                            | is available only to admin
+                    | &nbsp;Archive
+                dd
+                    button.btn.btn-primary(type="button", data-bind="text: archivedShow() ? 'Hide' : 'Show (' + archivedCount() + ')', event:{click: toggleArchive}, attr: {disabled: archivedFetching()}", style="min-width:80px;")
+                    //ko if: archives()
+                    br
+                    br
+                    // /ko
+                    //ko foreach: archives
+                    .session(data-bind="click: function () {$parent.handleShowSession($data.key, true)}")
+                        .info
+                            .versions
+                                //ko if: $data.device
+                                strong(data-bind="text: $data.device")
+                                .dotDelimeter ·
+                                // /ko
+                                //ko if: $data.os
+                                strong(data-bind="text: $data.os")
+                                .dotDelimeter ·
+                                // /ko
+                                //ko if: $data.browser
+                                span(data-bind="text: $data.browser")
+                                // /ko
+                                //ko if: $data.agentHistCount
+                                i(data-bind="text: ' (+' + $data.agentHistCount + ')'")
+                                // /ko
+                            .ip
+                                span(data-bind="text: 'IP: ' + $data.ip")
+                                //ko if: $data.ipHistCount
+                                i(data-bind="text: ' (+' + $data.ipHistCount + ')'")
+                                // /ko
+                            //ko if: $data.lang
+                            div(data-bind="text: 'Language: ' + $data.lang")
+                            // /ko
+                            div(data-bind="text: 'First activity: ' + $root.intl.dateFull($data.created)")
+                            div(data-bind="text: 'Last activity: ' + $root.intl.dateFull($data.stamp)")
                     // /ko
                 // /ko
