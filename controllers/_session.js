@@ -376,7 +376,7 @@ function copySession(sessionSource) {
     const session = new Session({
         key: Utils.randomString(12),
         stamp: new Date(),
-        data: _.pick(sessionSource.data, 'ip', 'headers', 'agent'),
+        data: _.pick(sessionSource.data, 'lang', 'ip', 'headers', 'agent'),
     });
 
     return session;
@@ -436,6 +436,8 @@ async function archiveSession(session, reason) {
 
     // Set the reason for archiving
     sessionPlain.archive_reason = reason;
+
+    console.log('archiveSession', sessionPlain);
 
     // Don't save headers to archive
     if (sessionPlain.data.headers) {
@@ -925,7 +927,7 @@ export async function getSessionLight({ sid }) {
     return { usObj, session };
 }
 
-async function giveUserSessions({ login }) {
+async function giveUserSessions({ login, withArchive = false }) {
     const { handshake: { usObj: iAm, session: sessionCurrent } } = this;
 
     if (!iAm.registered || iAm.user.login !== login && !iAm.isAdmin) {
@@ -933,17 +935,59 @@ async function giveUserSessions({ login }) {
     }
 
     const user = isOnline({ login }) ? getOnline({ login }).user : await User.findOne({ login }).exec();
-    const sessions = await Session.find(
+
+    if (!user) {
+        throw new NotFoundError(constantsError.NO_SUCH_USER);
+    }
+
+    const [sessions, archiveCount, archiveSessions] = await Promise.all([
+        Session.find(
+            { user: user._id },
+            { _id: 0, key: 1, created: 1, stamp: 1, data: 1 },
+            { lean: true, sort: { stamp: -1 } },
+        ).exec(),
+        iAm.isAdmin ? SessionArchive.count({ user: user._id }).exec() : undefined,
+        iAm.isAdmin && withArchive ? this.call('session.giveUserArchiveSessions', { login, user }) : undefined,
+    ]);
+
+    return {
+        archiveCount, archiveSessions,
+        sessions: sessions.map(({ key, created, stamp, data: { ip, ip_hist: ipHist = [], agent, agent_hist: agentHist = [], lang } }) => ({
+            key, created, stamp, lang, archiveCount,
+            isOnline: sessConnected.has(key), isCurrent: key === sessionCurrent.key,
+            sockets: sessConnected.has(key) ? Object.keys(sessConnected.get(key).sockets).length : 0,
+            ip, ipHistCount: ipHist.length, agentHistCount: agentHist.length,
+            os: agent.os, browser: `${agent.n} ${agent.v}`,
+            device: typeof agent.d === 'string' && agent.d !== 'Other 0.0.0' ? agent.d.replace(/[0)]?\.0\.0$/, '').trim() : undefined,
+        })),
+    };
+}
+
+async function giveUserArchiveSessions({ login, user }) {
+    const { handshake: { usObj: iAm } } = this;
+
+    if (!iAm.isAdmin) {
+        throw new AuthorizationError();
+    }
+
+    if (!user) {
+        user = isOnline({ login }) ? getOnline({ login }).user : await User.findOne({ login }).exec();
+    }
+
+    if (!user) {
+        throw new NotFoundError(constantsError.NO_SUCH_USER);
+    }
+
+    const sessions = await SessionArchive.find(
         { user: user._id },
         { _id: 0, key: 1, created: 1, stamp: 1, data: 1 },
         { lean: true, sort: { stamp: -1 } },
     ).exec();
 
-    return sessions.map(({ key, created, stamp, data: { ip, agent } = {} }) => ({
-        key, created, stamp,
-        isOnline: sessConnected.has(key), isCurrent: key === sessionCurrent.key,
-        sockets: sessConnected.has(key) ? Object.keys(sessConnected.get(key).sockets).length : 0,
-        ip, os: agent.os, browser: `${agent.n} ${agent.v}`,
+    return sessions.map(({ key, created, stamp, data: { ip, ip_hist: ipHist = [], agent, agent_hist: agentHist = [], lang } = {} }) => ({
+        key, created, stamp, lang,
+        ip, ipHistCount: ipHist.length, agentHistCount: agentHist.length,
+        os: agent.os, browser: `${agent.n} ${agent.v}`,
         device: typeof agent.d === 'string' && agent.d !== 'Other 0.0.0' ? agent.d.replace(/[0)]?\.0\.0$/, '').trim() : undefined,
     }));
 }
@@ -1014,6 +1058,7 @@ langChange.isPublic = true;
 
 export default {
     giveUserSessions,
+    giveUserArchiveSessions,
     destroyUserSession,
     destroyUserSessions,
     loginUser,

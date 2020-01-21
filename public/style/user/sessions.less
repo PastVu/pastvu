@@ -22,15 +22,39 @@
         margin: -@optinPanelPaddingTop -(@optinPanelPaddingRight + 1) 0 0;
         background-color: #F5F5F5;
         border: 1px solid #E2E2E2;
+        cursor: pointer;
 
         &:not(:last-child) {
             margin-bottom: 15px;
+        }
+
+        &:hover {
+            background-color: #ecedf4;
         }
     }
 
     .ip {
         font-feature-settings: 'tnum';
         font-variant-numeric: tabular-nums;
+    }
+
+    .helpexists {
+        overflow: visible;
+
+        > .help {
+            display:inline-block;
+            cursor: help;
+            position: relative;
+            margin-left: -16px;
+
+            > .glyphicon {
+                font-size: @font-size-small;
+
+                &.glyphicon-info-sign {
+                    color: #777;
+                }
+            }
+        }
     }
 
     dl.dl-horizontal {

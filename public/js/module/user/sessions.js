@@ -20,7 +20,14 @@ define([
                 this.originUser = storage.userImmediate(this.u.login()).origin;
                 this.onlines = ko.observableArray();
                 this.offlines = ko.observableArray();
+                this.archives = ko.observableArray();
+                this.archivedCount = ko.observable(0);
+                this.archivedShow = ko.observable(false);
+                this.archivedFetching = ko.observable(false);
                 this.removing = ko.observableArray();
+
+                this.handleSessionClick = this.handleSessionClick.bind(this);
+                this.handleSessionDestroy = this.handleSessionDestroy.bind(this);
 
                 this.itsMe = this.co.itsMe = ko.computed(function () {
                     return this.auth.iAm.login() === this.u.login();
@@ -69,9 +76,17 @@ define([
                 this.nextGetSessionTimeout = null;
             }
 
-            socket.run('session.giveUserSessions', {login: this.u.login()}, true)
+            socket.run('session.giveUserSessions', {login: this.u.login(), withArchive: this.archivedShow()}, true)
                 .then(function (result) {
-                    this.applySessions(result);
+                    this.applySessions(result.sessions);
+
+                    if (this.auth.iAm.role() > 9) {
+                        this.archivedCount(result.archiveCount);
+
+                        if (result.archiveSessions) {
+                            this.archives(result.archiveSessions);
+                        }
+                    }
 
                     if (_.isFunction(cb)) {
                         cb.call(ctx, result);
@@ -81,19 +96,49 @@ define([
                 }.bind(this));
         },
 
-        sessionDestroy: function (key) {
+        toggleArchive() {
+            if (this.archivedFetching()) {
+                return;
+            }
+
+            if (this.archivedShow()) {
+                this.archivedShow(false);
+                this.archives([]);
+            } else if (this.archivedCount() && this.auth.iAm.role() > 9) {
+                this.archivedFetching(true);
+                this.archivedShow(true);
+
+                this.getSessions(function () {
+                    this.archivedFetching(false);
+                }, this);
+            }
+        },
+
+        handleSessionDestroy: function (data, evt) {
+            var key = data.key;
+
+            evt.stopPropagation();
             clearTimeout(this.nextGetSessionTimeout);
             this.nextGetSessionTimeout = null;
             this.removing.push(key);
 
             socket.run('session.destroyUserSession', { login: this.u.login(), key }, true)
                 .then(function (result) {
-                    this.applySessions(result);
+                    this.applySessions(result.sessions);
+
+                    if (this.auth.iAm.role() > 9) {
+                        this.archivedCount(result.archiveCount);
+                    }
+
                     this.nextGetSessionTimeout = setTimeout(this.getSessions.bind(this), 5000);
                 }.bind(this))
                 .finally(function () {
                     this.removing.remove(key);
                 }.bind(this))
         },
+
+        handleSessionClick: function (data, evt) {
+
+        }
     });
 });
