@@ -927,6 +927,50 @@ export async function getSessionLight({ sid }) {
     return { usObj, session };
 }
 
+
+async function giveUserSessionDetails({ login, key, archive = false }) {
+    const { handshake: { usObj: iAm, session: sessionCurrent } } = this;
+
+    if (!iAm.registered || iAm.user.login !== login && !iAm.isAdmin) {
+        throw new AuthorizationError();
+    }
+
+    const user = isOnline({ login }) ? getOnline({ login }).user : await User.findOne({ login }).exec();
+    let session;
+
+    if (archive || !sessConnected.has(key) && !sessWaitingConnect.has(key)) {
+        const Model = archive ? SessionArchive : Session;
+
+        session = await Model.findOne({ user: user._id, key }, { _id: 0, key: 1, created: 1, stamp: 1, data: 1 }, { lean: true });
+    } else {
+        const sessionOnline = sessConnected.get(key) || sessWaitingConnect.get(key);
+
+        if (sessionOnline.user._id === user._id) {
+            session = _.pick(
+                sessionOnline.toObject({ minimize: true, depopulate: true, versionKey: false }),
+                'key', 'created', 'stamp', 'data'
+            );
+        }
+    }
+
+    if (_.isEmpty(session)) {
+        throw new NotFoundError(constantsError.SESSION_NOT_FOUND);
+    }
+
+    const { created, stamp, data: { lang, ip, ip_hist: ipHist = [], agent, agent_hist: agentHist = [] } = {} } = session;
+
+    return {
+        key, created, stamp, lang,
+        isOnline: sessConnected.has(key), isCurrent: key === sessionCurrent.key,
+        sockets: sessConnected.has(key) ? Object.keys(sessConnected.get(key).sockets).length : 0,
+        ips: ipHist.concat({ ip }),
+        agents: agentHist.concat({ agent }).map(({ agent, off }) => ({
+            off, os: agent.os, browser: `${agent.n} ${agent.v}`,
+            device: typeof agent.d === 'string' && agent.d !== 'Other 0.0.0' ? agent.d.replace(/[0)]?\.0\.0$/, '').trim() : undefined,
+        })),
+    };
+}
+
 async function giveUserSessions({ login, withArchive = false }) {
     const { handshake: { usObj: iAm, session: sessionCurrent } } = this;
 
@@ -1052,6 +1096,7 @@ function giveInitData() {
 }
 
 giveUserSessions.isPublic = true;
+giveUserSessionDetails.isPublic = true;
 destroyUserSession.isPublic = true;
 giveInitData.isPublic = true;
 langChange.isPublic = true;
@@ -1059,6 +1104,7 @@ langChange.isPublic = true;
 export default {
     giveUserSessions,
     giveUserArchiveSessions,
+    giveUserSessionDetails,
     destroyUserSession,
     destroyUserSessions,
     loginUser,

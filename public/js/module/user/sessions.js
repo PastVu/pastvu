@@ -26,7 +26,7 @@ define([
                 this.archivedFetching = ko.observable(false);
                 this.removing = ko.observableArray();
 
-                this.handleSessionClick = this.handleSessionClick.bind(this);
+                this.handleShowSession = this.handleShowSession.bind(this);
                 this.handleSessionDestroy = this.handleSessionDestroy.bind(this);
 
                 this.itsMe = this.co.itsMe = ko.computed(function () {
@@ -137,8 +137,42 @@ define([
                 }.bind(this))
         },
 
-        handleSessionClick: function (data, evt) {
-
-        }
+        handleShowSession: function (key, archive, online) {
+            if (!this.detailVM) {
+                renderer(
+                    [
+                        {
+                            module: 'm/user/session',
+                            options: { login: this.u.login(), key: key, archive: archive, online: online },
+                            modal: {
+                                topic: 'Детали сессии',
+                                animateScale: true,
+                                initWidth: '800px',
+                                maxWidthRatio: 0.95,
+                                curtainClick: { click: this.handleCloseSession, ctx: this },
+                                offIcon: { text: 'Закрыть', click: this.handleCloseSession, ctx: this },
+                                btns: [
+                                    { css: 'btn-primary', text: 'Закрыть', click: this.handleCloseSession, ctx: this }
+                                ]
+                            },
+                            callback: function (vm) {
+                                this.detailVM = this.childModules[vm.id] = vm;
+                                ga('send', 'event', 'user', 'session');
+                            }.bind(this)
+                        }
+                    ],
+                    {
+                        parent: this,
+                        level: this.level + 2
+                    }
+                );
+            }
+        },
+        handleCloseSession: function () {
+            if (this.detailVM) {
+                this.detailVM.destroy();
+                delete this.detailVM;
+            }
+        },
     });
 });

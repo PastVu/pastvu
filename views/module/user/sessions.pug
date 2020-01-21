@@ -12,7 +12,7 @@
                 dt.online Онлайн
                 dd
                     //ko foreach: onlines
-                    .session(data-bind="click: $parent.handleSessionClick")
+                    .session(data-bind="click: function () {$parent.handleShowSession($data.key, false, true)}")
                         .info
                             .versions
                                 //ko if: $data.device
@@ -60,7 +60,7 @@
                 dt Оффлайн
                 dd
                     //ko foreach: offlines
-                    .session
+                    .session(data-bind="click: function () {$parent.handleShowSession($data.key)}")
                         .info
                             .versions
                                 //ko if: $data.device
@@ -110,7 +110,7 @@
                     br
                     // /ko
                     //ko foreach: archives
-                    .session
+                    .session(data-bind="click: function () {$parent.handleShowSession($data.key, true)}")
                         .info
                             .versions
                                 //ko if: $data.device
@@ -139,3 +139,7 @@
                             div(data-bind="text: 'Последняя активность: ' + $root.intl.dateFull($data.stamp)")
                     // /ko
                 // /ko
+
+    | <script id="sessionDetailsTpl" type="text/x-dot-template">
+    .head Детали сессии
+    | </script>
