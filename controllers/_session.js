@@ -17,6 +17,7 @@ const logger = log4js.getLogger('session');
 const SESSION_COOKIE_KEY = 'past.sid'; // Session key in client cookies
 const SESSION_USER_LIFE = ms('21d'); // Lifetime of a registered user session
 const SESSION_ANON_LIFE = ms('7d'); // Lifetime of an anonymous user session
+const loopbackIPs = new Set(['127.0.0.1', '::ffff:127.0.0.1', '::1']);
 
 // Locales Map for checking their presence after header parsing
 const localesMap = new Map(config.locales.map(locale => [locale, locale]));
@@ -332,7 +333,7 @@ async function updateSession(session, ip, headers, browser) {
 
     // If user ip is changed, write old one to history with change time
     // Limit history to 100 items
-    if (ip !== data.ip) {
+    if (ip !== data.ip && !loopbackIPs.has(ip)) {
         if (!data.ip_hist) {
             data.ip_hist = [];
         } else if (data.ip_hist.length >= 100) {
@@ -436,8 +437,6 @@ async function archiveSession(session, reason) {
 
     // Set the reason for archiving
     sessionPlain.archive_reason = reason;
-
-    console.log('archiveSession', sessionPlain);
 
     // Don't save headers to archive
     if (sessionPlain.data.headers) {
