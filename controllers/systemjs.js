@@ -1243,6 +1243,102 @@ waitDb.then(db => {
         };
     });
 
+    // This method removes local ips from ip_hist which might have been reported accidentally from the reverse proxy
+    saveSystemJSFunc(function pruneLocalHistIPs() {
+        var startTime = Date.now();
+        var locallRemoved = 0;
+        var normalFlattened = 0;
+        var histRemoved = 0;
+
+        function run(collection) {
+            collection.find({}).forEach(({ key, data }) => {
+                if (Array.isArray(data.ip_hist)) {
+                    var hist = data.ip_hist.reduce((acc, item, i, arr) => {
+                        if (item.ip === '127.0.0.1' || item.ip === '::1') {
+                            if (acc.length) {
+                                if (i === arr.length - 1) {
+                                    delete acc[acc.length - 1].off;
+                                } else {
+                                    acc[acc.length - 1].off = item.off;
+                                }
+                            }
+
+                            locallRemoved++;
+                        } else if (acc.length && item.ip === acc[acc.length - 1].ip) {
+                            acc[acc.length - 1].off = item.off;
+                            normalFlattened++;
+                        } else if (i < arr.length - 1 || item.ip !== data.ip) {
+                            acc.push(item);
+                        }
+
+                        return acc;
+                    }, []);
+
+                    if (!hist.length || hist.length === 1 && hist[0].ip === data.ip) {
+                        histRemoved++;
+                        collection.update({ key: key }, { $unset: { 'data.ip_hist': 1 } });
+                    } else {
+                        collection.update({ key: key }, { $set: { 'data.ip_hist': hist } });
+                    }
+                }
+            });
+        }
+
+        run(db.sessions);
+        run(db.sessions_archive);
+
+        return {
+            locallRemoved: locallRemoved,
+            normalFlattened: normalFlattened,
+            histRemoved: histRemoved,
+            message: 'Pruning local loopback ip addresses has been done in ' + (Date.now() - startTime) / 1000 + 's',
+        };
+    });
+
+    // This method removes repeating agents in history
+    saveSystemJSFunc(function pruneHistAgents() {
+        var startTime = Date.now();
+        var normalFlattened = 0;
+        var histRemoved = 0;
+
+        function run(collection) {
+            collection.find({}).forEach(({ key, data }) => {
+                if (Array.isArray(data.agent_hist)) {
+                    var hist = data.agent_hist.reduce((acc, { agent, off }, i, arr) => {
+                        var prevAgent = acc[acc.length - 1] && acc[acc.length - 1].agent;
+
+                        if (prevAgent && agent.d === prevAgent.d && agent.os === prevAgent.os &&
+                            agent.n === prevAgent.n && agent.v === prevAgent.v) {
+                            acc[acc.length - 1].off = off;
+                            normalFlattened++;
+                        } else if (i < arr.length - 1 || agent.d !== data.agent.d || agent.os !== data.agent.os ||
+                            agent.n !== data.agent.n || agent.v !== data.agent.v) {
+                            acc.push({ agent: agent, off: off });
+                        }
+
+                        return acc;
+                    }, []);
+
+                    if (!hist.length) {
+                        histRemoved++;
+                        collection.update({ key: key }, { $unset: { 'data.agent_hist': 1 } });
+                    } else {
+                        collection.update({ key: key }, { $set: { 'data.agent_hist': hist } });
+                    }
+                }
+            });
+        }
+
+        run(db.sessions);
+        run(db.sessions_archive);
+
+        return {
+            normalFlattened: normalFlattened,
+            histRemoved: histRemoved,
+            message: 'Pruning agent history has been done in ' + (Date.now() - startTime) / 1000 + 's',
+        };
+    });
+
     saveSystemJSFunc(function toPrecision(number, precision) {
         var divider = Math.pow(10, precision || 6);
 
