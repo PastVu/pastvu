@@ -1,18 +1,16 @@
 module.exports = function (config, appRequire) {
     const _ = appRequire('lodash');
-    const ms = appRequire('ms');
 
     _.merge(config, {
         client: {
-            hostname: 'klimashkin.com'
+            hostname: 'mypastvu.com',
         },
 
         storePath: '../store',
-
-        manualGarbageCollect: ms('30s'),
+        logPath: '../logs',
 
         mongo: {
-            pool: 10
+            pool: 10,
         },
 
         // In development you should create a test account at https://ethereal.email, so email will not be sent to the real users
@@ -24,9 +22,9 @@ module.exports = function (config, appRequire) {
             port: 0,
             auth: {
                 user: '',
-                pass: ''
-            }
-        }
+                pass: '',
+            },
+        },
     });
 
     return config;
