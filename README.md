@@ -17,7 +17,7 @@ https://docs.mongodb.com/manual/tutorial/install-mongodb-on-os-x-tarball. In tha
 
 4. Create folders for the data, database and logs: `mkdir db data logs`.
 
-5. Clone the project from this repository (being inside the pastvu_dev if you like), `git clone https://github.com/klimashkin/pastvu.git`. It will create `pastvu` folder.
+5. Clone the project from this repository (being inside the pastvu_dev if you like), `git clone https://github.com/pastvu/pastvu.git`. It will create `pastvu` folder.
 
 6. Move to `pastvu` folder and install npm dependencies by doing `npm i`.
 
