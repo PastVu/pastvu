@@ -9,7 +9,7 @@ We welcome any keen developer in helping us building the better PastVu. You can 
 0. It's recommended to create a folder where you'll be storing all the pastvu related data and code. For the sake of this readme we can call it pastvu_dev, so do `mkdir pastvu_dev`. But, of course, you can structure it however you like.
 
 1. Install [MongoDB 3.2.22 Community Edition](https://docs.mongodb.com/manual/administration/install-community). The easiest way to do it in development is by using a tarball, for instance for macos:
-https://docs.mongodb.com/manual/tutorial/install-mongodb-on-os-x-tarball. In that case you can extract tarball into our pastvu_dev folder, and rename the result folder into `mongodb-3.2.22`, it will come in handy when you or somebody else will be updating MongoDB version.
+https://docs.mongodb.com/manual/tutorial/install-mongodb-on-os-x-tarball. In that case you can extract tarball into our pastvu_dev folder, and rename the result folder into `mongodb-3.2.22`. Having version as a postfix will come in handy when you or somebody else will be updating MongoDB version.
 
 2. Install [Redis 5.0.7](https://redis.io/topics/quickstart). It's also easier to build it from a tarball which you can extract into our pastvu_dev folder as well, and rename it to `redis-5.0.7`.
 
@@ -29,7 +29,11 @@ You can now open project folder (`pastvu`) in your favorite IDE.
 
 1. Copy `config/local.config.js.example` into `config/local.config.js`. Default configuration is located in `default.config.js` file, it's just a JavaScript file, and its object is passed to the local.config.js as an argument. You can modify any of the props and return the final version of the config. Remember, don't change `default.config.js` unless you are altering the default project configuration for a purpose. `config/local.config.js.` is in .gitignore and you can change it locally as much as you want without affecting others.
 
-2. Go to [ethereal.email](https://ethereal.email) and press `Create Ehereal Account` button. Now copy the result parameters to the `mail` section of your local config file, like this:
+2. Depending on the `hostname` prop in your local.config.js, you should modify your hosts file to associate that domain with your localhost. There are different ways to modify hosts file on different OS that you can google, for example, on macos you do `sudo nano /etc/hosts`. And assuming you have the default setting `mypastvu.com`, you need to update hosts file with
+
+    `127.0.0.1       localhost mypastvu.com`
+
+3. Go to [ethereal.email](https://ethereal.email) and press `Create Ehereal Account` button. Now copy the result parameters to the `mail` section of your local config file, like this:
     ```javascript
     mail: {
         type: 'SMTP',
@@ -44,14 +48,31 @@ You can now open project folder (`pastvu`) in your favorite IDE.
     ```
     That will allow your local server to send emails that will never reach a target, giving you the ability to see such messages on the [messages](https://ethereal.email/messages) page. But be aware that accounts on ethereal.email are temporary and after a while, if you want to see sent messages, you'll need to create a new account again.
 
-3. Download [db sample](https://github.com/PastVu/pastvu-sample-db/raw/master/pastvu.tar.gz) into your `pastvu_dev` folder and import it to your MongoDB
+4. Download [db sample](https://github.com/PastVu/pastvu-sample-db/raw/master/pastvu.tar.gz) into your `pastvu_dev` folder and import it to your MongoDB
     ```bash
    # Start MongoDB server:
    ./mongodb-3.2.22/bin/mongod --dbpath ./db --storageEngine wiredTiger
-   # Unarchive db sample
+   # Unarchive the db sample
    tar -xzvf pastvu.tar.gz
    # Import pastvu db
    ./mongodb-3.2.22/bin/mongorestore --db pastvu dump/pastvu
     ```
+   Now you have one default user `admin` with password `admin` and 6.5K regions in you database
 
 ### Starting
+
+There are two databases, `MongoDB` and `Redis`, and four services to start: `app` (main application), `uploader` (responsible for uploading images), `downloader` (responsible for downloading images) and `sitemap` (responsible for generating sitemap). It's not necessary to start all of them locally, only `app` is required, but if you want to work with images make sure to start corresponding services as well.
+
+1. Start MongoDB server `./mongodb-3.2.22/bin/mongod --dbpath ./db --storageEngine wiredTiger`. You can inspect it using the default terminal client `./mongodb-3.2.22/bin/mongo` or any other third-party client with gui.
+
+2. Start Redis server `redis-server`. You can inspect it using the default terminal client `redis-cli`.
+
+3. Being inside the project folder (`pastvu`), you can manually start any service directly with `node`, and any parameter, like `node --max-old-space-size=4096 bin/run.js --script ./<servicename>.js`. Or you can use shorthand scripts from package.json and start the services in the following way:
+    * `npm run app`
+    * `npm run uploader`
+    * `npm run downloader`
+    * `npm run sitemap`
+
+Now, depending on the `hostname` prop in your local.config.js you should be able to access your local copy of PastVu in your browser! 🎉
+
+In case of the default hostname and port, just open this url: http://mypastvu.com:3000 and login with the default user `admin`/`admin`!
