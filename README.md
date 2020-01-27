@@ -44,4 +44,14 @@ You can now open project folder (`pastvu`) in your favorite IDE.
     ```
     That will allow your local server to send emails that will never reach a target, giving you the ability to see such messages on the [messages](https://ethereal.email/messages) page. But be aware that accounts on ethereal.email are temporary and after a while, if you want to see sent messages, you'll need to create a new account again.
 
+3. Download [db sample](https://github.com/PastVu/pastvu-sample-db/raw/master/pastvu.tar.gz) into your `pastvu_dev` folder and import it to your MongoDB
+    ```bash
+   # Start MongoDB server:
+   ./mongodb-3.2.22/bin/mongod --dbpath ./db --storageEngine wiredTiger
+   # Unarchive db sample
+   tar -xzvf pastvu.tar.gz
+   # Import pastvu db
+   ./mongodb-3.2.22/bin/mongorestore --db pastvu dump/pastvu
+    ```
+
 ### Starting
