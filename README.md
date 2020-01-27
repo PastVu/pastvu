@@ -2,7 +2,7 @@ Let's recall the whole world!
 
 ## Contributing
 
-We welcome any keen developer in helping us building the better PastVu. You can install local version of the project using the following instuction.
+We welcome any keen developer in helping us build the better PastVu. You can install local version of the project using the following instructions.
 
 ### Dependencies
 
@@ -17,7 +17,13 @@ https://docs.mongodb.com/manual/tutorial/install-mongodb-on-os-x-tarball. In tha
 
 4. Create folders for the data, database and logs: `mkdir db data logs`.
 
-5. Clone the project from this repository (being inside the pastvu_dev if you like), `git clone https://github.com/pastvu/pastvu.git`. It will create `pastvu` folder.
+5. Clone the project (being inside the `pastvu_dev` folder if you like):
+
+    * Directly from this repository if you want to just try this project out without having a plan to commit any code or you want to commit and you are a maintainer with the admin permissions (you are probably not), do `git clone https://github.com/pastvu/pastvu.git`.
+
+    * Otherwise, if you are not an admin and you *do* plan to contribute by committing a code, then fork the repository first (standard github flow) and then clone it from you repository name, like `git clone https://github.com/<yourname>/pastvu.git`.
+
+    It will create `pastvu` project folder inside your `pastvu_dev` folder.
 
 6. Move to `pastvu` folder and install npm dependencies by doing `npm i`.
 
@@ -25,7 +31,7 @@ By the end this section you should have `pastvu_dev` folder with these folders i
 
 ### Configuring
 
-You can now open project folder (`pastvu`) in your favorite IDE.
+You can now open the project folder (`pastvu`) in your favorite IDE.
 
 1. Copy `config/local.config.js.example` into `config/local.config.js`. Default configuration is located in `default.config.js` file, it's just a JavaScript file, and its object is passed to the local.config.js as an argument. You can modify any of the props and return the final version of the config. Remember, don't change `default.config.js` unless you are altering the default project configuration for a purpose. `config/local.config.js.` is in .gitignore and you can change it locally as much as you want without affecting others.
 
