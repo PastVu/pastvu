@@ -1271,7 +1271,7 @@ define([
                     [
                         {
                             module: 'm/comment/hist',
-                            options: { cid: cid, type: this.type },
+                            options: { objCid: this.cid, cid: cid, type: this.type },
                             modal: {
                                 topic: 'История изменений комментария',
                                 animateScale: true,

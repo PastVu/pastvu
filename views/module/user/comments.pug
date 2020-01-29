@@ -43,7 +43,7 @@
             a.commentStamp(data-bind="attr: {href: $data.link}, text: moment($data.stamp).calendar()")
             //ko if: $data.lastChanged
             .dotDelimeter ·
-            .commentChanged(title="Показать историю изменений", data-bind="text: ($data.del ? 'Удален ' : 'Изменен ') + moment($data.lastChanged).calendar().toLowerCase(), click: function () {$parent.showHistory($data.cid)}")
+            .commentChanged(title="Показать историю изменений", data-bind="text: ($data.del ? 'Удален ' : 'Изменен ') + moment($data.lastChanged).calendar().toLowerCase(), click: function () {$parent.showHistory($data.obj.cid, $data.cid)}")
             // /ko
         a.commentText(data-bind="attr: {href: $data.link}, html: $data.txt")
     | </script>
@@ -56,7 +56,7 @@
             a.commentStamp(data-bind="attr: {href: $data.link}, text: moment($data.stamp).calendar()")
             //ko if: $data.lastChanged
             .dotDelimeter ·
-            .commentChanged(title="Показать историю изменений", data-bind="text: ($data.del ? 'Удален ' : 'Изменен ') + moment($data.lastChanged).calendar().toLowerCase(), click: function () {$parent.showHistory($data.cid)}")
+            .commentChanged(title="Показать историю изменений", data-bind="text: ($data.del ? 'Удален ' : 'Изменен ') + moment($data.lastChanged).calendar().toLowerCase(), click: function () {$parent.showHistory($data.obj.cid, $data.cid)}")
             // /ko
         a.commentText(style="margin-left:29px", data-bind="attr: {href: $data.link}, html: $data.txt")
     | </script>

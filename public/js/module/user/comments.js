@@ -270,7 +270,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     }
                 }.bind(this));
         },
-        showHistory: function (cid) {
+        showHistory: function (objCid, cid) {
             if (!this.histVM) {
                 renderer(
                     [
@@ -285,7 +285,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                                     { css: 'btn-primary', text: 'Закрыть', click: this.closeHistory, ctx: this }
                                 ]
                             },
-                            options: { cid: cid, type: this.type() },
+                            options: { objCid: objCid, cid: cid, type: this.type() },
                             callback: function (vm) {
                                 this.histVM = vm;
                                 this.childModules[vm.id] = vm;
