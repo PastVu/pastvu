@@ -20,7 +20,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.type = ko.observable(this.options.type);
             this.comments = ko.observableArray();
             this.commentsObjs = {};
-            this.statusesCheckboxed = ko.observableArray(this.options.statuses);
+            this.statusesCheckboxed = ko.observableArray(this.options.statuses.slice());
             this.loadingComments = ko.observable(false);
 
             this.itsMe = this.co.itsMe = ko.computed(function () {
