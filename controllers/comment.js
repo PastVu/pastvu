@@ -666,7 +666,7 @@ async function giveForUser({ login, page = 1, type = 'photo', active = true, del
             countPhoto = countActiveP;
         }
 
-        const fields = { _id: 0, lastChanged: 1, cid: 1, obj: 1, stamp: 1, txt: 1, 'del.stamp': 1 };
+        const fields = { _id: 0, lastChanged: 1, cid: 1, obj: 1, stamp: 1, txt: 1, 'del.origin': 1 };
         const options = { lean: true, sort: { stamp: -1 }, skip: page * commentsUserPerPage, limit: commentsUserPerPage };
 
         comments = await commentModel.find(query, fields, options).exec();
@@ -730,10 +730,6 @@ async function giveForUser({ login, page = 1, type = 'photo', active = true, del
         if (obj !== undefined) {
             comment.obj = obj.cid;
             commentsArrResult.push(comment);
-
-            if (comment.del) {
-                comment.del = true;
-            }
         }
     }
 

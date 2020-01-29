@@ -24,7 +24,7 @@
         .pag(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}, template: {name: 'pagerTpl'}")
 
     | <script id="photoCommentsTpl" type="text/html">
-    .comment.clearfix(data-bind="css: {delopen: $data.del===true}")
+    .comment.clearfix(data-bind="css: {delopen: $data.del}")
         .photoPreview.withStatus.fringe(data-bind="attr: {title: $data.obj.title}, css: 's'+$data.obj.s")
             a.photoBox(data-bind="attr: {href: $data.obj.link}")
                 img.img(data-bind="attr: {src: $data.obj.sfile, alt: $data.obj.title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}")
@@ -49,7 +49,7 @@
     | </script>
 
     | <script id="newsCommentsTpl" type="text/html">
-    .comment.clearfix(data-bind="css: {delopen: $data.del===true}")
+    .comment.clearfix(data-bind="css: {delopen: $data.del}")
         .commentHead
             a.photoName(data-bind="attr: {href: $data.obj.link}, text: $data.obj.cid + '. ' + $data.obj.title")
             .dotDelimeter ·

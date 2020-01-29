@@ -251,8 +251,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         });
 
                         comments.forEach(function (comment) {
+                            // If comment was removed because its parent was removed,
+                            // then link to that parent since the tree of deleted comments on the object page is collapsed.
+                            // If it's not removed then link directly to the comment
+                            var cid = comment.del && comment.del.origin ? comment.del.origin : comment.cid;
+
                             comment.obj = objs[comment.obj];
-                            comment.link = comment.obj.link + '?hl=comment-' + comment.cid;
+                            comment.link = comment.obj.link + '?hl=comment-' + cid;
                         });
 
                         this.commentsObjs = objs;
