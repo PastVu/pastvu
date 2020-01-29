@@ -628,17 +628,19 @@ async function giveForUser({ login, page = 1, type = 'photo', active = true, del
         throw new NotFoundError(constantsError.NO_SUCH_USER);
     }
 
+    const canSeeDel = iAm.registered && iAm.user.login === login || iAm.isAdmin;
+
     page = (Math.abs(Number(page)) || 1) - 1;
 
     let comments;
     let countNews;
     let countPhoto;
 
-    const [countActiveP, countActiveN, countDelP, countDelN] = await Promise.all([
+    const [countActiveP, countActiveN, countDelP = 0, countDelN = 0] = await Promise.all([
         Comment.count({ user: userId, del: null }).exec(),
         CommentN.count({ user: userId, del: null }).exec(),
-        Comment.count({ user: userId, del: { $exists: true } }).exec(),
-        CommentN.count({ user: userId, del: { $exists: true } }).exec(),
+        canSeeDel ? Comment.count({ user: userId, del: { $exists: true } }).exec() : undefined,
+        canSeeDel ? CommentN.count({ user: userId, del: { $exists: true } }).exec() : undefined,
     ]);
 
     const countActive = countActiveP + countActiveN;
@@ -671,7 +673,13 @@ async function giveForUser({ login, page = 1, type = 'photo', active = true, del
     }
 
     if (_.isEmpty(comments)) {
-        return { type, page: page + 1, countNews, countPhoto, perPage: commentsUserPerPage, comments: [], objs: {} };
+        return {
+            type, page: page + 1,
+            countNews, countPhoto,
+            countActive, countDel: canSeeDel ? countDel : undefined,
+            perPage: commentsUserPerPage,
+            comments: [], objs: {},
+        };
     }
 
     // Make array of unique values of photo _ids
@@ -732,7 +740,7 @@ async function giveForUser({ login, page = 1, type = 'photo', active = true, del
     return {
         type,
         countActive,
-        countDel,
+        countDel: canSeeDel ? countDel : undefined,
         countNews,
         countPhoto,
         page: page + 1,
