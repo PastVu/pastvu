@@ -11,7 +11,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         pug: pug,
         options: {
             userVM: null,
-            type: 'photo' // Тип объекта по умолчанию (фото, новость и т.д.)
+            type: 'photo', // Тип объекта по умолчанию (фото, новость и т.д.)
+            statuses: ['active'] // Default statuses (active, del)
         },
         create: function () {
             this.auth = globalVM.repository['m/common/auth'];
@@ -19,6 +20,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.type = ko.observable(this.options.type);
             this.comments = ko.observableArray();
             this.commentsObjs = {};
+            this.statusesCheckboxed = ko.observableArray(this.options.statuses);
             this.loadingComments = ko.observable(false);
 
             this.itsMe = this.co.itsMe = ko.computed(function () {
@@ -32,8 +34,16 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 news: ko.observable(0)
             };
 
+            this.statuses = {
+                fetched: [],
+                active_persist: ko.observable(0),
+                del_persist: ko.observable(0),
+                active: ko.observable(0),
+                del: ko.observable(0),
+            };
+
             this.page = ko.observable(0);
-            this.pageSize = ko.observable(15);
+            this.pageSize = ko.observable(20);
             this.pageSlide = ko.observable(2);
 
             this.pageLast = this.co.pageLast = ko.computed(function () {
@@ -126,19 +136,24 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             var params = globalVM.router.params();
             var page = Math.abs(Number(params.page)) || 1;
             var type = params.type || self.options.type;
+            var rowStatuses = params.statuses ? params.statuses.split('!').filter(s => s === '0' || s === '1').map(Number).sort() : [];
+            var statuses = params.statuses ? self.decodeStatuses(rowStatuses) : self.statusesCheckboxed();
 
-            if (params.page && page < 2) {
-                return setTimeout(function () {
-                    globalVM.router.navigate(self.pageUrl() + (type !== 'photo' ? '?type=' + type : ''), { replace: true });
-                }, 100);
-            } else if (!self.types[type]) {
+            if (params.page && page < 2 || !self.types[type] || params.statuses && rowStatuses.join('!') !== params.statuses) {
                 setTimeout(function () {
-                    globalVM.router.navigate(self.pageUrl() + (page > 1 ? '/' + page : ''), { replace: true });
+                    globalVM.router.navigate(self.pageUrl() + self.getUrlParams(page, type, rowStatuses), { replace: true });
                 }, 100);
-            } else if (page !== self.page() || type !== self.type()) {
-                if (type !== self.type()) {
+            } else if (page !== self.page() || type !== self.type() || !_.isEqual(statuses, self.statuses.fetched)) {
+                if (type !== self.type() || !_.isEqual(statuses, self.statuses.fetched)) {
                     self.resetData();
+                    self.type(type);
+                    self.statusesCheckboxed(statuses);
                 }
+
+                if (!self.subscriptions.status) {
+                    self.subscriptions.status = self.statusesCheckboxed.subscribe(self.handleStatus, self);
+                }
+
                 self.getPage(page, type, this.onGetPage);
             }
         },
@@ -147,12 +162,53 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.page(data.page);
             this.makeBinding();
         },
+        handleStatus: function (data) {
+            if (!data.length) {
+                setTimeout(function () {
+                    this.statusesCheckboxed(['active']);
+                }.bind(this), 10);
+                return;
+            }
+
+            globalVM.router.navigate(this.pageUrl() + this.getUrlParams(this.page(), this.type(), this.encodeStatuses(data)));
+        },
+
+        encodeStatuses: function (statuses) {
+            if (!statuses) {
+                statuses = this.statusesCheckboxed();
+            }
+
+            return statuses.map(status => status === 'del' ? 0 : 1).sort();
+        },
+
+        decodeStatuses: function (statuses) {
+            return statuses.map(s => s === 0 ? 'del' : 'active');
+        },
+
+        getUrlParams(page, type, statuses) {
+            var paramsArr = [];
+
+
+            if (this.types[type] && type !== 'photo') {
+                paramsArr.push('type=' + type);
+            }
+
+            if (statuses.length > 1 || statuses.length === 1 && statuses[0] !== 1) {
+                paramsArr.push('statuses=' + statuses.join('!'));
+            }
+
+            return (page > 1 ? '/' + page : '') + (paramsArr.length ? '?' + paramsArr.join('&') : '');
+        },
 
         getPage: function (page, type, cb, ctx) {
             var self = this;
+            var statuses = this.statusesCheckboxed().slice();
             self.loadingComments(true);
 
-            socket.run('comment.giveForUser', { login: self.u.login(), type: type, page: page }, true)
+            socket.run('comment.giveForUser', {
+                login: self.u.login(), type: type, page: page,
+                active: statuses.indexOf('active') >= 0, del: statuses.indexOf('del') >= 0
+            }, true)
                 .then(function (data) {
                     var objs;
                     var comments;
@@ -160,6 +216,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     if (data.page === page && data.type === type) {
                         objs = data.objs;
                         comments = data.comments;
+                        self.statuses.fetched = statuses;
 
                         self.type(type);
                         self.pageSize(data.perPage || 24);
@@ -167,15 +224,16 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         self.types.news_persist(data.countNews || 0);
                         self.types.photo(data.countPhoto || 0);
                         self.types.news(data.countNews || 0);
+                        self.statuses.active_persist(data.countActive || 0);
+                        self.statuses.del_persist(data.countDel || 0);
+                        self.statuses.active(data.countActive || 0);
+                        self.statuses.del(data.countDel || 0);
 
-                        if (_.isEmpty(comments) && page > 1) {
-                            return setTimeout(function () {
-                                globalVM.router.navigate(
-                                    self.pageUrl() + (self.paginationShow() ? '/' + self.pageLast() : '') +
-                                    (type !== 'photo' ? '?type=' + type : ''),
-                                    { replace: true }
-                                );
-                            }, 100);
+                        if (page > this.pageLast()) {
+                            return globalVM.router.navigate(
+                                self.pageUrl() + self.getUrlParams(this.pageLast(), type, self.encodeStatuses(statuses)),
+                                { replace: true }
+                            );
                         }
 
                         _.forOwn(objs, function (obj) {

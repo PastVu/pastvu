@@ -1,10 +1,20 @@
 .comments(data-bind="with: repository[M!M]")
-    h4(data-bind="text: itsMe()?'Ваши комментарии':'Комментарии пользователя'")
+    .top-select
+        h4(data-bind="text: itsMe()?'Ваши комментарии:':'Комментарии пользователя:'")
+        //ko if: itsMe() || auth.loggedIn() && auth.iAm.role() > 9
+        dd: span.panel-block(style="padding-bottom:5px;")
+            label.checkbox-inline
+                input(type="checkbox", value="active" data-bind="checked: statusesCheckboxed")
+                span(data-bind="text: 'Активные [' + $root.intl.num(statuses['active_persist']()) + ']'")
+            label.checkbox-inline
+                input(type="checkbox", value="del" data-bind="checked: statusesCheckboxed")
+                span(data-bind="text: 'Удаленные ['+ $root.intl.num(statuses['del_persist']()) + ']'")
+        // /ko
     ul.nav.nav-tabs
         li(data-bind="css: {active: type() === 'photo'}")
-            a(data-bind="attr: {href: pageUrl()}, text: 'К изображениям [' + $root.intl.num(types['photo_persist']()) + ']'")
+            a(data-bind="attr: {href: pageUrl() + getUrlParams(page(), 'photo', encodeStatuses())}, text: 'К изображениям [' + $root.intl.num(types['photo_persist']()) + ']'")
         li(data-bind="css: {active: type() === 'news'}")
-            a(data-bind="attr: {href: pageUrl() + '?type=news'}, text: 'К новостям [' + $root.intl.num(types['news_persist']()) + ']'")
+            a(data-bind="attr: {href: pageUrl() + getUrlParams(page(), 'news', encodeStatuses())}, text: 'К новостям [' + $root.intl.num(types['news_persist']()) + ']'")
     .navContent
         .row
             .col-xs-6.col-md-3.topcol
@@ -14,7 +24,7 @@
         .pag(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}, template: {name: 'pagerTpl'}")
 
     | <script id="photoCommentsTpl" type="text/html">
-    .comment.clearfix
+    .comment.clearfix(data-bind="css: {delopen: $data.del===true}")
         .photoPreview.withStatus.fringe(data-bind="attr: {title: $data.obj.title}, css: 's'+$data.obj.s")
             a.photoBox(data-bind="attr: {href: $data.obj.link}")
                 img.img(data-bind="attr: {src: $data.obj.sfile, alt: $data.obj.title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}")
@@ -33,20 +43,20 @@
             a.commentStamp(data-bind="attr: {href: $data.link}, text: moment($data.stamp).calendar()")
             //ko if: $data.lastChanged
             .dotDelimeter ·
-            .commentChanged(title="Показать историю изменений", data-bind="text: 'Изменен ' + moment($data.lastChanged).calendar().toLowerCase(), click: function () {$parent.showHistory($data.cid)}")
+            .commentChanged(title="Показать историю изменений", data-bind="text: ($data.del ? 'Удален ' : 'Изменен ') + moment($data.lastChanged).calendar().toLowerCase(), click: function () {$parent.showHistory($data.cid)}")
             // /ko
         a.commentText(data-bind="attr: {href: $data.link}, html: $data.txt")
     | </script>
 
     | <script id="newsCommentsTpl" type="text/html">
-    .comment.clearfix
+    .comment.clearfix(data-bind="css: {delopen: $data.del===true}")
         .commentHead
             a.photoName(data-bind="attr: {href: $data.obj.link}, text: $data.obj.cid + '. ' + $data.obj.title")
             .dotDelimeter ·
             a.commentStamp(data-bind="attr: {href: $data.link}, text: moment($data.stamp).calendar()")
             //ko if: $data.lastChanged
             .dotDelimeter ·
-            .commentChanged(title="Показать историю изменений", data-bind="text: 'Изменен ' + moment($data.lastChanged).calendar().toLowerCase(), click: function () {$parent.showHistory($data.cid)}")
+            .commentChanged(title="Показать историю изменений", data-bind="text: ($data.del ? 'Удален ' : 'Изменен ') + moment($data.lastChanged).calendar().toLowerCase(), click: function () {$parent.showHistory($data.cid)}")
             // /ko
         a.commentText(style="margin-left:29px", data-bind="attr: {href: $data.link}, html: $data.txt")
     | </script>

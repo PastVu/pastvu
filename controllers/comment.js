@@ -614,32 +614,61 @@ const photosFieldsForReguser = {
     ...regionController.regionsAllSelectHash,
 };
 
-async function giveForUser({ login, page = 1, type = 'photo' }) {
+async function giveForUser({ login, page = 1, type = 'photo', active = true, del = false }) {
     const { handshake: { usObj: iAm } } = this;
 
     if (!login) {
         throw new BadParamsError();
     }
 
-    const userid = await User.getUserID(login);
+    const usObj = session.getOnline({ login });
+    const userId = usObj ? usObj.user._id : await User.getUserID(login);
 
-    if (!userid) {
+    if (!userId) {
         throw new NotFoundError(constantsError.NO_SUCH_USER);
     }
 
     page = (Math.abs(Number(page)) || 1) - 1;
 
-    const commentModel = type === 'news' ? CommentN : Comment;
-    const queryNews = { user: userid, del: null };
-    const queryPhotos = { ...queryNews, ...photoController.buildPhotosQuery({ r: 0, t: null, s: [5, 7] }, null, iAm).query };
-    const fields = { _id: 0, lastChanged: 1, cid: 1, obj: 1, stamp: 1, txt: 1 };
-    const options = { lean: true, sort: { stamp: -1 }, skip: page * commentsUserPerPage, limit: commentsUserPerPage };
+    let comments;
+    let countNews;
+    let countPhoto;
 
-    const [comments, countNews, countPhoto] = await Promise.all([
-        commentModel.find(type === 'news' ? queryNews : queryPhotos, fields, options).exec(),
-        CommentN.count(queryNews).exec(),
-        Comment.count(queryPhotos).exec(),
+    const [countActiveP, countActiveN, countDelP, countDelN] = await Promise.all([
+        Comment.count({ user: userId, del: null }).exec(),
+        CommentN.count({ user: userId, del: null }).exec(),
+        Comment.count({ user: userId, del: { $exists: true } }).exec(),
+        CommentN.count({ user: userId, del: { $exists: true } }).exec(),
     ]);
+
+    const countActive = countActiveP + countActiveN;
+    const countDel = countDelP + countDelN;
+
+    if (!active && !del) {
+        comments = [];
+        countNews = countPhoto = 0;
+    } else {
+        const commentModel = type === 'news' ? CommentN : Comment;
+        const query = { user: userId };
+
+        if (active && del) {
+            countNews = countActiveN + countDelN;
+            countPhoto = countActiveP + countDelP;
+        } else if (del) {
+            query.del = { $exists: true };
+            countNews = countDelN;
+            countPhoto = countDelP;
+        } else {
+            query.del = null;
+            countNews = countActiveN;
+            countPhoto = countActiveP;
+        }
+
+        const fields = { _id: 0, lastChanged: 1, cid: 1, obj: 1, stamp: 1, txt: 1, 'del.stamp': 1 };
+        const options = { lean: true, sort: { stamp: -1 }, skip: page * commentsUserPerPage, limit: commentsUserPerPage };
+
+        comments = await commentModel.find(query, fields, options).exec();
+    }
 
     if (_.isEmpty(comments)) {
         return { type, page: page + 1, countNews, countPhoto, perPage: commentsUserPerPage, comments: [], objs: {} };
@@ -686,18 +715,24 @@ async function giveForUser({ login, page = 1, type = 'photo' }) {
         obj.user = undefined;
     }
 
-    // For each comment check object existens and assign to comment its cid
+    // For each comment check object exists and assign to comment its cid
     for (const comment of comments) {
         const obj = objFormattedHashId[comment.obj];
 
         if (obj !== undefined) {
             comment.obj = obj.cid;
             commentsArrResult.push(comment);
+
+            if (comment.del) {
+                comment.del = true;
+            }
         }
     }
 
     return {
         type,
+        countActive,
+        countDel,
         countNews,
         countPhoto,
         page: page + 1,
