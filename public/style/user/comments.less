@@ -10,6 +10,15 @@
         margin: 7px 0 0 5px;
     }
 
+    .top-select {
+        display: flex;
+        align-items: center;
+
+        > h4 {
+            padding-right: 15px;
+        }
+    }
+
     .topcol {
         margin-top: 2px;
         margin-bottom: 4px;
@@ -94,6 +103,11 @@
             margin-left: 101px;
             color: @text-color;
             text-decoration: none;
+        }
+
+        &.delopen {
+            box-shadow: -1px 0 0 0 @MainRedColor;
+            background-color: rgba(255, 99, 0, .1);
         }
     }
 }

@@ -27,8 +27,8 @@
                     | {{?h.del.origin || h.del.reason && h.del.reason.cid}}
                     div
                         .histCat Reason:
-                        | {{?h.del.origin}} Removing of parent comment&nbsp;
-                        a(href="?hl=comment-{{=h.del.origin}}") {{='#'+h.del.origin}}
+                        | {{?h.del.origin}} Parent comment removal&nbsp;
+                        a(href="{{=it.link + '?hl=comment-' + h.del.origin}}") {{='#'+h.del.origin}}
                         | {{??!!h.del.reason.title}} {{=h.del.reason.title}}{{?}}
                     | {{?}}
 

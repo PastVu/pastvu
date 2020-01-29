@@ -15,10 +15,12 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         pug: pug,
         options: {
             cid: 0,
+            objCid: 0,
             type: 'photo'
         },
         create: function () {
             this.cid = this.options.cid;
+            this.objCid = this.options.objCid;
             this.type = this.options.type;
             this.hist_id = {};
 
@@ -28,7 +30,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
             this.getHist(function (err, hists) {
                 if (hists && hists.length) {
-                    this.$dom[0].innerHTML = tplHist({ hists: hists, fDate: Utils.format.date.relative });
+                    var link = '/' + (this.type === 'photo' ? 'p' : 'news') + '/' + this.objCid;
+                    this.$dom[0].innerHTML = tplHist({ hists: hists, fDate: Utils.format.date.relative, link: link });
                 }
                 this.show();
             }, this);

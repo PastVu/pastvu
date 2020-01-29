@@ -65,7 +65,7 @@ define([
             this.subscr = ko.observable(this.options.subscr || false);
             this.nocomments = ko.observable(this.options.nocomments);
             this.canReply = ko.observable(this.options.canReply);
-            this.showDelComments = ko.observable(this.auth.iAm.settings.comment_show_deleted());
+            this.showDelComments = ko.observable(this.auth.loggedIn() && (this.auth.iAm.settings.comment_show_deleted() || globalVM.router.params().hl));
 
             this.loading = ko.observable(false);
             this.showTree = ko.observable(false);
@@ -1270,7 +1270,7 @@ define([
                     [
                         {
                             module: 'm/comment/hist',
-                            options: { cid: cid, type: this.type },
+                            options: { objCid: this.cid, cid: cid, type: this.type },
                             modal: {
                                 topic: 'History of comment changes',
                                 animateScale: true,
