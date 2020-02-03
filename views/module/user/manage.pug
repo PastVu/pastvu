@@ -132,6 +132,19 @@
                         p.text-muted(style="padding:6px 0 0 6px;line-height:1.1;font-size:11px;")
                             sup(style="margin-left:-6px;") *
                             |  Это глобальная настройка для пользователя, действующая на возможность изменения им соответствующих настроек в профиле и индивидуальных настроек в каждой фотографии. При этом в каждой фотографии можно запретить/разрешить это индивидуально
+                dl.dl-horizontal
+                    dt.helpexists
+                        .help.tltp-wrap
+                            span.glyphicon.glyphicon-info-sign
+                            .tltp.tltp-top.tltp-animate-move
+                                | Разрешать добавлять комментарии,
+                                br
+                                | и редактировать уже добавленные
+                        | &nbsp;Может оставлять комментарии
+                    dd
+                        .btn-group.btn-group-sm
+                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nocomments()}, click: changenocomments") Да
+                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nocomments()}, click: changenocomments") Нет
 
 
         .panel.panel-pastvu

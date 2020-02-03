@@ -284,6 +284,10 @@ define([
             this.changeRestrictions('noprofile', !isYes(evt), true);
         },
 
+        changenocomments: function (data, evt) {
+            this.changeRestrictions('nocomments', !isYes(evt), true);
+        },
+
         ranksSelectedHandler: function (val) {
             // Так, как сохранение ранков сделает emit во все сокеты, но этот хэндлер опять сработает,
             // т.к. будет новый объект массива с теми же значениями. Поэтому надо проверять на совпадение значений
