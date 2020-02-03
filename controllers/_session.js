@@ -779,6 +779,28 @@ export const checkExpiredSessions = (function () {
     };
 }());
 
+// Periodically recalculate user statistics, like pcount, which might get out of sync over time
+export const calcUserStatsJob = (function () {
+    const checkInterval = ms('2d'); // Job interval
+
+    async function procedure() {
+        try {
+            const { userCounter, message } = await dbEval('calcUserStats', [], { nolock: true });
+            const onlineUserCount = regetUsers(usObj => usObj.registered, true);
+
+            logger.info(`${message}. Users: ${userCounter}, registered online: ${onlineUserCount}`);
+        } catch (err) {
+            logger.error('calcUserStatsJob error: ', err);
+        }
+
+        calcUserStatsJob(); // Schedule next launch
+    }
+
+    return function () {
+        setTimeout(procedure, checkInterval).unref();
+    };
+}());
+
 // Handler of http-request or websocket-connection for session and usObj create/select
 export async function handleConnection(ip, headers, overHTTP, req) {
     if (!headers || !headers['user-agent']) {

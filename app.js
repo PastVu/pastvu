@@ -313,5 +313,6 @@ export async function configure(startStamp) {
     waitDb.then(() => {
         session.checkSessWaitingConnect();
         session.checkExpiredSessions();
+        session.calcUserStatsJob();
     });
 }
