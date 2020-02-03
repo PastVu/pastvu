@@ -14,19 +14,26 @@
         dt Number of tabs:
         dd(data-bind="text: $root.intl.num(session.sockets)")
         // /ko
-        dt IP addresses:
+        dt
+            | IP addresses:
+            //ko if: session.ips.length > 2
+            br
+            .btn-group.btn-group-sm(style="margin:3px")
+                button.btn.btn-primary.yes(type="button", data-bind="css: {active: !ipsHist()}, click: toggleIPs") Unique
+                button.btn.btn-primary.no(type="button", data-bind="css: {active: ipsHist()}, click: toggleIPs") History
+            // /ko
         dd
             // ko if: session.ips.length === 101
             div Previous ip addresses might have been dropped due to the storage limits
             // /ko
-            //ko foreach: session.ips
+            //ko foreach: ips
             div
                 span.ip(data-bind="text: $data.ip")
-                //ko if: $data.off
+                //ko if: $parent.ipsHist() && $data.off
                 span(data-bind="text: ' (until ' + $root.intl.dateFullDigit($data.off) + ')'")
                 // /ko
-                //ko if: !$data.off
-                i(data-bind="text: $parent.online ? ' (current address)' : ' ( last address)'")
+                //ko if: $data.ip === $parent.ipLast && (!$parent.ipsHist() || !$data.off)
+                i(data-bind="text: $parent.online ? ' (current address)' : ' (last address)'")
                 // /ko
             // /ko
         dt Клиенты:

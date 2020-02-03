@@ -19,6 +19,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.online = this.options.online;
             this.archive = this.options.archive;
             this.session = null;
+            this.ipsHist = ko.observable(true);
+            this.ips = ko.observableArray();
+            this.ipLast = null;
 
             this.getSession(function () {
                 this.show();
@@ -36,10 +39,35 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             globalVM.func.hideContainer(this.$container);
             this.showing = false;
         },
+        toggleIPs: function () {
+            var newVal = !this.ipsHist();
+            this.ipsHist(newVal);
+
+            if (newVal) {
+                this.ips(this.session.ips);
+            } else {
+                this.uniquifyIPs();
+            }
+        },
+        uniquifyIPs: function () {
+            this.ips(_.uniqBy(this.session.ips, 'ip').map(item => ({ ip: item.ip })));
+        },
         getSession: function (cb, ctx) {
             socket.run('session.giveUserSessionDetails', { login: this.login, key: this.key, archive: this.archive }, true)
                 .then(function (result) {
                     this.session = result;
+                    this.ipLast = _.last(this.session.ips).ip;
+
+                    if (this.session.ips.length > 2) {
+                        this.ipsHist(false);
+                    }
+
+                    if (this.ipsHist()) {
+                        this.ips(this.session.ips);
+                    } else {
+                        this.uniquifyIPs();
+                    }
+
                     cb.call(ctx);
                 }.bind(this))
                 .catch(function (error) {
