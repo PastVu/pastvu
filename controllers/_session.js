@@ -1021,7 +1021,7 @@ async function giveUserSessions({ login, withArchive = false }) {
             key, created, stamp, lang, archiveCount,
             isOnline: sessConnected.has(key), isCurrent: key === sessionCurrent.key,
             sockets: sessConnected.has(key) ? Object.keys(sessConnected.get(key).sockets).length : 0,
-            ip, ipHistCount: ipHist.length, agentHistCount: agentHist.length,
+            ip, ipCount: new Set(ipHist.map(hist => hist.ip)).size, agentHistCount: agentHist.length,
             os: agent.os, browser: `${agent.n} ${agent.v}`,
             device: typeof agent.d === 'string' && agent.d !== 'Other 0.0.0' ? agent.d.replace(/[0)]?\.0\.0$/, '').trim() : undefined,
         })),
@@ -1051,7 +1051,7 @@ async function giveUserArchiveSessions({ login, user }) {
 
     return sessions.map(({ key, created, stamp, data: { ip, ip_hist: ipHist = [], agent, agent_hist: agentHist = [], lang } = {} }) => ({
         key, created, stamp, lang,
-        ip, ipHistCount: ipHist.length, agentHistCount: agentHist.length,
+        ip, ipCount: new Set(ipHist.map(hist => hist.ip)).size, agentHistCount: agentHist.length,
         os: agent.os, browser: `${agent.n} ${agent.v}`,
         device: typeof agent.d === 'string' && agent.d !== 'Other 0.0.0' ? agent.d.replace(/[0)]?\.0\.0$/, '').trim() : undefined,
     }));

@@ -31,8 +31,8 @@
                                 // /ko
                             .ip
                                 span(data-bind="text: 'IP: ' + $data.ip")
-                                //ko if: $data.ipHistCount
-                                i(data-bind="text: ' (+' + $data.ipHistCount + ')'")
+                                //ko if: $data.ipCount
+                                i(data-bind="text: ' (+' + $data.ipCount + ')'")
                                 // /ko
                             //ko if: $data.lang
                             div(data-bind="text: 'Язык: ' + $data.lang")
@@ -79,8 +79,8 @@
                                 // /ko
                             .ip
                                 span(data-bind="text: 'IP: ' + $data.ip")
-                                //ko if: $data.ipHistCount
-                                i(data-bind="text: ' (+' + $data.ipHistCount + ')'")
+                                //ko if: $data.ipCount
+                                i(data-bind="text: ' (+' + $data.ipCount + ')'")
                                 // /ko
                             div(data-bind="text: 'Язык: ' + $data.lang")
                             div(data-bind="text: 'Первая активность: ' + $root.intl.dateFull($data.created)")
@@ -129,8 +129,8 @@
                                 // /ko
                             .ip
                                 span(data-bind="text: 'IP: ' + $data.ip")
-                                //ko if: $data.ipHistCount
-                                i(data-bind="text: ' (+' + $data.ipHistCount + ')'")
+                                //ko if: $data.ipCount
+                                i(data-bind="text: ' (+' + $data.ipCount + ')'")
                                 // /ko
                             //ko if: $data.lang
                             div(data-bind="text: 'Язык: ' + $data.lang")
@@ -139,7 +139,3 @@
                             div(data-bind="text: 'Последняя активность: ' + $root.intl.dateFull($data.stamp)")
                     // /ko
                 // /ko
-
-    | <script id="sessionDetailsTpl" type="text/x-dot-template">
-    .head Детали сессии
-    | </script>

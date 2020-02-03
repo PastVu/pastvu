@@ -14,18 +14,25 @@
         dt Количество вкладок:
         dd(data-bind="text: $root.intl.num(session.sockets)")
         // /ko
-        dt IP адреса:
+        dt
+            | IP адреса:
+            //ko if: session.ips.length > 2
+            br
+            .btn-group.btn-group-sm(style="margin:3px")
+                button.btn.btn-primary.yes(type="button", data-bind="css: {active: !ipsHist()}, click: toggleIPs") Уникальные
+                button.btn.btn-primary.no(type="button", data-bind="css: {active: ipsHist()}, click: toggleIPs") История
+            // /ko
         dd
             // ko if: session.ips.length === 101
             div Предыдущие адреса возможно были отброшены
             // /ko
-            //ko foreach: session.ips
+            //ko foreach: ips
             div
                 span.ip(data-bind="text: $data.ip")
-                //ko if: $data.off
+                //ko if: $parent.ipsHist() && $data.off
                 span(data-bind="text: ' (до ' + $root.intl.dateFullDigit($data.off) + ')'")
                 // /ko
-                //ko if: !$data.off
+                //ko if: $data.ip === $parent.ipLast && (!$parent.ipsHist() || !$data.off)
                 i(data-bind="text: $parent.online ? ' (текущий адрес)' : ' ( последний адрес)'")
                 // /ko
             // /ko
