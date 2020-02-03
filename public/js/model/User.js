@@ -19,6 +19,7 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params
             nophotoupload: false,
             nophotoedit: false,
             nophotostatus: false,
+            nocomments: false,
             nowaterchange: false,
         },
         full: {

@@ -314,5 +314,6 @@ export async function configure(startStamp) {
         session.checkSessWaitingConnect();
         // Don't check expired sessions on en node
         //session.checkExpiredSessions();
+        //session.calcUserStatsJob();
     });
 }

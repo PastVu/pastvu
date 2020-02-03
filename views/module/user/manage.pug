@@ -109,8 +109,8 @@
                         | and remove their photos
                     dd
                         .btn-group.btn-group-sm
-                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nophotostatus()}, click: changenophotostatus") Да
-                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nophotostatus()}, click: changenophotostatus") Нет
+                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nophotostatus()}, click: changenophotostatus") Yes
+                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nophotostatus()}, click: changenophotostatus") No
                         p.text-muted(style="padding:6px 0 0 6px;line-height:1.1;font-size:11px;")
                             sup(style="margin-left:-6px;") *
                             |  The user will be able to send his “New” and “On Revision” photos to publication always, even with the No option selected
@@ -132,6 +132,19 @@
                         p.text-muted(style="padding:6px 0 0 6px;line-height:1.1;font-size:11px;")
                             sup(style="margin-left:-6px;") *
                             |  This is a global setting for the user, affecting on the possibility of changing settings in their profile and individual settings for each photo. For each photo it can disable/enable it individually
+                dl.dl-horizontal
+                    dt.helpexists
+                        .help.tltp-wrap
+                            span.glyphicon.glyphicon-info-sign
+                            .tltp.tltp-top.tltp-animate-move
+                                | Allow user to add new comments,
+                                br
+                                | and edit the existing ones
+                        | &nbsp;Can leave comments
+                    dd
+                        .btn-group.btn-group-sm
+                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nocomments()}, click: changenocomments") Yes
+                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nocomments()}, click: changenocomments") No
 
 
         .panel.panel-pastvu

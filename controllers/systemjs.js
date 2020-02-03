@@ -961,7 +961,10 @@ waitDb.then(db => {
             db.users.update({ _id: user._id }, $update, { upsert: false });
         }
 
-        return { message: 'User statistics were calculated in ' + (Date.now() - startTime) / 1000 + 's' };
+        return {
+            userCounter: users.length,
+            message: 'User statistics were calculated in ' + (Date.now() - startTime) / 1000 + 's',
+        };
     });
 
     saveSystemJSFunc(function calcUsersObjectsRelStats(userId, objId) {

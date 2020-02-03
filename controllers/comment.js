@@ -43,7 +43,7 @@ const permissions = {
              type === 'news' && usObj.isAdmin) || undefined;
     },
     canReply(type, obj, usObj) {
-        return usObj.registered && !obj.nocomments &&
+        return usObj.registered && !usObj.user.nocomments && !obj.nocomments &&
             (type === 'photo' && photoController.permissions.getCan(obj, usObj).comment || type === 'news');
     },
     canEdit(comment, type, obj, usObj) {
