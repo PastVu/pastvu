@@ -200,7 +200,7 @@ const sendReload = (session, waitResponse, excludeSocket) =>
 // Send user to all his sockets
 export async function emitUser({ usObj, login, userId, sessId, wait, excludeSocket }) {
     if (!usObj) {
-        usObj = usLogin.get(login) || usId.get(userId) || usSid.get(sessId);
+        usObj = getOnline({ login, userId, sessionKey: sessId });
     }
 
     if (!usObj) {
@@ -222,7 +222,7 @@ export async function emitUser({ usObj, login, userId, sessId, wait, excludeSock
 // Save and send user to his sockets
 export async function saveEmitUser({ usObj, login, userId, sessId, wait, excludeSocket }) {
     if (!usObj) {
-        usObj = usLogin.get(login) || usId.get(userId) || usSid.get(sessId);
+        usObj = getOnline({ login, userId, sessionKey: sessId });
     }
 
     if (!usObj || !usObj.user) {
@@ -251,7 +251,7 @@ async function addSessionToUserObject(session, updateRid) {
         usSid.set(session.key, usObj);
 
         if (registered) {
-            usId.set(user._id, usObj);
+            usId.set(user._id.toString(), usObj);
             usLogin.set(user.login, usObj);
             logger.info(`${this.ridMark} Create us hash: ${user.login}`);
         }
@@ -426,7 +426,7 @@ export function removeSessionFromHashes({ session: { key: sessionKey }, usObj, l
         // If there is no more sessions in usObj of registered object, remove usObj of users hashes
         // (from usSid is already removed)
         usLogin.delete(usObj.user.login);
-        usId.delete(usObj.user._id);
+        usId.delete(usObj.user._id.toString());
     }
 }
 
@@ -675,8 +675,8 @@ export function isOnline({ login, userId, sessionKey } = {}) {
         return usLogin.has(login);
     }
 
-    if (userId) {
-        return usId.has(userId);
+    if (userId && typeof userId.toString === 'function') {
+        return usId.has(userId.toString());
     }
 
     if (sessionKey) {
@@ -692,8 +692,8 @@ export function getOnline({ login, userId, sessionKey } = {}) {
         return usLogin.get(login);
     }
 
-    if (userId) {
-        return usId.get(userId);
+    if (userId && typeof userId.toString === 'function') {
+        return usId.get(userId.toString());
     }
 
     if (sessionKey) {
