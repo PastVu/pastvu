@@ -1,0 +1,3 @@
+if ($http_user_agent ~ "bim-zone|wget|Wget|curl|libwww-perl|Zend_Http_Client|^\-$|Java|Download|download|porn_viewer|rulinki.ru|___"){
+	set $limit_rate 200;
+}
