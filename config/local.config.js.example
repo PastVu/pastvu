@@ -1,17 +1,50 @@
-module.exports = function (config, appRequire) {
-    const _ = appRequire('lodash');
+module.exports = function(config, appRequire) {
+  const _ = appRequire('lodash');
 
-    _.merge(config, {
-        client: {
-            hostname: 'mypastvu.com',
-        },
+  _.merge(config, {
+    env: 'development',
+    lang: 'ru',
 
-        storePath: '../store',
-        logPath: '../logs',
+    listen: {
+      // Accept only this host. If the hostname is omitted,
+      // the server will accept connections directed to any IPv4 address (INADDR_ANY)
+      hostname: '',
+      port: 3000, // Application app.js will listen this port
+      uport: 3001, // Application uploader.js will listen this port
+      dport: 3002, // Application downloader.js will listen this port
+    },
 
-        mongo: {
-            pool: 10,
-        },
+    client: {
+      port: '',
+      uport: '',
+      dport: '',
+      hostname: 'localhost',
+    },
+
+    core: {
+      hostname: 'app',
+      port: 3010,
+    },
+
+    api: {
+      hostname: 'app',
+      port: 3011,
+    },
+
+    storePath: '/store',
+    logPath: '/logs',
+
+    mongo: {
+      connection: 'mongodb://mongo:27017/pastvu',
+      pool: 10,
+      poolDownloader: 2
+    },
+    mongo_api: {
+      con: 'mongodb://mongo:27017/pastvu',
+    },
+    redis: {
+      host: 'redis',
+    },
 
         // In development you should create a test account at https://ethereal.email, so email will not be sent to the real users
         mail: {
@@ -24,7 +57,9 @@ module.exports = function (config, appRequire) {
                 pass: '',
             },
         },
+
     });
 
-    return config;
+
+  return config;
 };
