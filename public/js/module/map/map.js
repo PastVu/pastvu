@@ -139,7 +139,7 @@ define([
                         id: 'mapnik',
                         desc: 'Mapnik',
                         selected: ko.observable(false),
-                        obj: new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        obj: new L.TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                             updateWhenIdle: false,
                             maxZoom: 20
                         }),
