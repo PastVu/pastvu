@@ -18,7 +18,6 @@ server {
 	access_log   off;
 	error_log    /var/log/nginx/error.log;
 
-
 	include /etc/nginx/mime.types;
 	include /etc/nginx/bad_user_agent;
 
@@ -26,10 +25,6 @@ server {
 		allow all;
 		log_not_found off;
 		access_log off;
-	}
-
-	location  /.well-known/ {
-		root /var/www/www.pastvu.com;
 	}
 
 	location  /. {
@@ -195,9 +190,9 @@ server {
 		# The off parameter cancels the effect of all proxy_redirect directives on the current level
 		proxy_redirect off;
 
-		proxy_set_header   X-Real-IP           $realip_remote_addr;
+		proxy_set_header   X-Real-IP           $http_x_real_ip;
 		proxy_set_header   X-Forwarded-For     $remote_addr; #$proxy_add_x_forwarded_for;
-		proxy_set_header   X-Forwarded-Proto   $scheme;
+		proxy_set_header   X-Forwarded-Proto   $http_x_forwarded_proto;
 		proxy_set_header   Host                $http_host;
 		proxy_set_header   X-NginX-Proxy       true;
 
@@ -228,10 +223,10 @@ server {
 		proxy_next_upstream error timeout http_500 http_502 http_503 http_504;
 
 		proxy_redirect off;
-		proxy_set_header   X-Real-IP           $realip_remote_addr;
+		proxy_set_header   X-Real-IP           $http_x_real_ip;
 		proxy_set_header   X-Forwarded-For     $remote_addr; #$proxy_add_x_forwarded_for;
-		proxy_set_header   X-Forwarded-Proto   $scheme;
-		proxy_set_header   Host                $host;
+		proxy_set_header   X-Forwarded-Proto   $http_x_forwarded_proto;
+		proxy_set_header   Host                $http_host;
 		proxy_set_header   X-NginX-Proxy       true;
 
 		proxy_http_version 1.1;
@@ -252,10 +247,10 @@ server {
 		# Look at the status codes returned from control server, for error_page
 		proxy_intercept_errors on;
 
-		proxy_set_header   X-Real-IP           $realip_remote_addr;
+		proxy_set_header   X-Real-IP           $http_x_real_ip;
 		proxy_set_header   X-Forwarded-For     $remote_addr; #$proxy_add_x_forwarded_for;
-		proxy_set_header   X-Forwarded-Proto   $scheme;
-		proxy_set_header   Host                $host;
+		proxy_set_header   X-Forwarded-Proto   $http_x_forwarded_proto;
+		proxy_set_header   Host                $http_host;
 		proxy_set_header   X-NginX-Proxy       true;
 
 		proxy_http_version 1.1;
@@ -272,10 +267,10 @@ server {
 		proxy_next_upstream error timeout http_500 http_502 http_503 http_504;
 
 		proxy_redirect off;
-		proxy_set_header   X-Real-IP           $realip_remote_addr;
+		proxy_set_header   X-Real-IP           $http_x_real_ip;
 		proxy_set_header   X-Forwarded-For     $remote_addr; #$proxy_add_x_forwarded_for;
-		proxy_set_header   X-Forwarded-Proto   $scheme;
-		proxy_set_header   Host                $host;
+		proxy_set_header   X-Forwarded-Proto   $http_x_forwarded_proto;
+		proxy_set_header   Host                $http_host;
 		proxy_set_header   X-NginX-Proxy       true;
 
 		proxy_http_version 1.1;
