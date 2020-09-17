@@ -19,9 +19,9 @@ import { Download } from './models/Download';
 export async function configure(startStamp) {
     const {
         storePath,
-        listen: {
+        downloader: {
             hostname,
-            dport: listenport,
+            port: listenport,
         },
     } = config;
 
