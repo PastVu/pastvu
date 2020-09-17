@@ -13,9 +13,9 @@ import Utils from './commons/Utils';
 export function configure(startStamp) {
     const {
         storePath,
-        listen: {
+        uploader: {
             hostname,
-            uport: listenport,
+            port: listenport,
         },
     } = config;
 
