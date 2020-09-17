@@ -139,7 +139,7 @@ define([
                         id: 'mapnik',
                         desc: 'Mapnik',
                         selected: ko.observable(false),
-                        obj: new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        obj: new L.TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                             updateWhenIdle: false,
                             maxZoom: 20
                         }),
@@ -344,7 +344,7 @@ define([
             var bbox;
             var fitBounds;
             var qParams = globalVM.router.params();
-            var zoom = Number(qParams.z) || (this.embedded ? 18 : (Utils.getLocalStorage('map.zoom') || Locations.current.z));
+            var zoom = Number(qParams.z) || (this.embedded ? 17 : (Utils.getLocalStorage('map.zoom') || Locations.current.z));
             var system = qParams.s || Utils.getLocalStorage(this.embedded ? 'map.embedded.sys' : 'map.sys') || defaults.sys;
             var type = qParams.t || Utils.getLocalStorage(this.embedded ? 'map.embedded.type' : 'map.type') || defaults.type;
 

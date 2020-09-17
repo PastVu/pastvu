@@ -32,7 +32,7 @@ export async function configure(startStamp) {
         logPath,
         storePath,
         manualGarbageCollect,
-        listen: { hostname, port, uport, dport },
+        listen: { hostname, port },
     } = config;
 
     makeDir.sync(path.join(storePath, 'incoming'));
@@ -142,8 +142,8 @@ export async function configure(startStamp) {
         const request = require('request');
         const rewrite = require('express-urlrewrite');
         const proxy = require('http-proxy-middleware');
-        const uploadServer = `http://${hostname || 'localhost'}:${uport}`;
-        const downloadServer = `http://${hostname || 'localhost'}:${dport}`;
+        const uploadServer = `http://${config.uploader.hostname || 'localhost'}:${config.uploader.port}`;
+        const downloadServer = `http://${config.downloader.hostname || 'localhost'}:${config.downloader.port}`;
 
         // Serve files for public photos
         app.use('/_p/', ourMiddlewares.serveImages(path.join(storePath, 'public/photos/'), { maxAge: ms('7d') }));

@@ -11,8 +11,14 @@ module.exports = {
         // the server will accept connections directed to any IPv4 address (INADDR_ANY)
         hostname: '',
         port: 3000, // Application app.js will listen this port
-        uport: 3001, // Application uploader.js will listen this port
-        dport: 3002, // Application downloader.js will listen this port
+    },
+    uploader: {
+        hostname: '',
+        port: 3001, // Application uploader.js will listen this port
+    },
+    downloader: {
+        hostname: '',
+        port: 3002, // Application downloader.js will listen this port
     },
 
     // Core will listen this
