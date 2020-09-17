@@ -32,7 +32,7 @@ export async function configure(startStamp) {
         logPath,
         storePath,
         manualGarbageCollect,
-        listen: { hostname, port, uport, dport },
+        listen: { hostname, port },
     } = config;
 
     makeDir.sync(path.join(storePath, 'incoming'));
