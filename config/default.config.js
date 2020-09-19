@@ -7,7 +7,7 @@ module.exports = {
     lang: 'ru', // Language: ru, en
 
     admin: {
-	    email: "support@pastvu.com",
+	    email: '',
     },
 
     listen: {
