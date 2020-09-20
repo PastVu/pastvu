@@ -6,6 +6,10 @@ module.exports = {
     locales: ['en', 'ru'], // List of supported locales. First one is the default locale, if user transferred nothing
     lang: 'ru', // Language: ru, en
 
+    admin: {
+	    email: '',
+    },
+
     listen: {
         // Accept only this host. If the hostname is omitted,
         // the server will accept connections directed to any IPv4 address (INADDR_ANY)
