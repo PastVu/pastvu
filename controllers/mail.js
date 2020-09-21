@@ -24,7 +24,7 @@ export async function send(options) {
     const smtpobject = {
         from: sender[options.sender] || sender.noreply,
         to: [{ name: alias, address: options.receiver.email }],
-        bcc: config.admin.email,
+        bcc: options.bcc || '',
         subject: options.subject,
         headers: {
             'X-Laziness-level': 1000,
