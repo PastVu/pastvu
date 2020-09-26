@@ -1334,7 +1334,10 @@ function removeIncoming({ file }) {
         throw new AuthorizationError();
     }
 
-    return fs.unlinkAsync(path.join(incomeDir, file));
+    return fs.unlink(path.join(incomeDir, file), (err) => {
+      if (err) throw err;
+      logger.info('Incoming file deleted');
+    });
 }
 
 // Photo removal
