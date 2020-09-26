@@ -100,3 +100,5 @@ cp config/local.config.js.docker-example config/local.config.js
 # Finally, start the whole application
 docker-compose up
 ```
+
+Navigate to http://localhost:3000 and login with the default user `admin`/`admin`!
