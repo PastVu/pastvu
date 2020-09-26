@@ -54,7 +54,7 @@ You can now open the project folder (`pastvu`) in your favorite IDE.
     ```
     That will allow your local server to send emails that will never reach a target, giving you the ability to see such messages on the [messages](https://ethereal.email/messages) page. But be aware that accounts on ethereal.email are temporary and after a while, if you want to see sent messages, you'll need to create a new account again.
 
-4. Download [db sample](https://github.com/PastVu/pastvu-sample-db/raw/master/pastvu.tar.gz) into your `pastvu_dev` folder and import it to your MongoDB
+4. Download [db sample](https://varlamov.me/pastvu/github/pastvu.tar.gz) into your `pastvu_dev` folder and import it to your MongoDB
     ```bash
    # Start MongoDB server:
    ./mongodb-3.2.22/bin/mongod --dbpath ./db --storageEngine wiredTiger
@@ -82,3 +82,23 @@ There are two databases, `MongoDB` and `Redis`, and four services to start: `app
 Now, depending on the `hostname` prop in your local.config.js you should be able to access your local copy of PastVu in your browser! 🎉
 
 In case of the default hostname and port, just open this url: http://mypastvu.com:3000 and login with the default user `admin`/`admin`!
+
+## Run with Docker
+
+```bash
+# Download and unarchive the database dump
+curl -O https://varlamov.me/pastvu/github/pastvu.tar.gz
+tar -xzvf pastvu.tar.gz
+# Run the mongo container in background
+docker-compose up -d mongo
+# Import pastvu db
+docker-compose exec mongo mongorestore --db pastvu /dump/pastvu
+# Install node modules
+docker-compose run app npm install
+# Copy local configuration
+cp config/local.config.js.docker-example config/local.config.js
+# Finally, start the whole application
+docker-compose up
+```
+
+Navigate to http://localhost:3000 and login with the default user `admin`/`admin`!
