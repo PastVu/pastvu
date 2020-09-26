@@ -29,9 +29,9 @@
         "uploader": "node --max-old-space-size=2048 bin/run.js --script ./uploader.js",
         "downloader": "node --max-old-space-size=2048 bin/run.js --script ./downloader.js",
         "sitemap": "node --max-old-space-size=2048 bin/run.js --script ./sitemap.js",
-
         "lint": "./node_modules/.bin/eslint .",
-        "lintfix": "./node_modules/.bin/eslint . --fix"
+        "lintfix": "./node_modules/.bin/eslint . --fix",
+        "build": "grunt"
     },
     "husky": {
         "hooks": {

@@ -2,8 +2,7 @@ FROM node AS builder
 WORKDIR code
 COPY . .
 RUN npm install
-RUN npm install -g grunt
-RUN grunt
+RUN npm run build
 
 FROM pastvu/node
 ENV LANG ru
