@@ -1,0 +1,66 @@
+version: '3'
+
+services:
+
+  mongo:
+    image: pastvu/mongo:3.2.22
+    volumes:
+      - ./dump:/dump
+    expose:
+      - '21017'
+
+  redis:
+    image: redis:5.0.7
+    expose:
+      - '6379'
+
+  app:
+    image: pastvu/node
+    expose:
+      - "3000"
+      - "3010"
+      - "3011"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - "mongo"
+      - "redis"
+    volumes:
+      - .:/code
+      - store:/store
+    command: npm run app
+
+  uploader:
+    image: pastvu/node
+    expose:
+      - "3001"
+    depends_on:
+      - "app"
+    volumes:
+      - .:/code
+      - store:/store
+    command: npm run uploader
+
+  downloader:
+    image: pastvu/node
+    expose:
+      - "3002"
+    depends_on:
+      - "app"
+    volumes:
+      - .:/code
+      - store:/store:ro
+    command: npm run downloader
+
+  sitemap:
+    image: pastvu/node
+    depends_on:
+      - "app"
+    volumes:
+      - .:/code
+      - sitemap:/sitemap
+    command: npm run sitemap
+
+volumes:
+  store:
+  sitemap:
