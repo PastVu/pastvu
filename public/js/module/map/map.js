@@ -126,7 +126,7 @@ define([
                         id: 'osmosnimki',
                         desc: 'Kosmosnimki',
                         selected: ko.observable(false),
-                        obj: new L.TileLayer('http://{s}.tile.osm.kosmosnimki.ru/kosmo/{z}/{x}/{y}.png', {
+                        obj: new L.TileLayer('https://osm.bhyve.cloud/kosmo/{z}/{x}/{y}.png', {
                             updateWhenIdle: false,
                             maxZoom: 20,
                             maxNativeZoom: 18
