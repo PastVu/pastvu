@@ -177,7 +177,7 @@ define([
                     },
                     {
                         id: 'opentopomap',
-                        desc: 'Топограф. ОСМ',
+                        desc: 'Topographer',
                         selected: ko.observable(false),
                         obj: new L.TileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
                             updateWhenIdle: false,
@@ -191,9 +191,9 @@ define([
                     },
                     {
                         id: 'stamen_bw',
-                        desc: 'Стамен ч/б',
+                        desc: 'Stamen b/w',
                         selected: ko.observable(false),
-                        obj: new L.TileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}{r}.{ext}', {
+                        obj: new L.TileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}.{ext}', {
                             attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Данные &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
                             subdomains: 'abcd',
                             minZoom: 0,
@@ -319,7 +319,7 @@ define([
                     },
                     {
                         id: 'mtb',
-                        desc: 'MTB пеш.',
+                        desc: 'MTB',
                         selected: ko.observable(false),
                         obj: new L.TileLayer('http://tile.mtbmap.cz/mtbmap_tiles/{z}/{x}/{y}.png', {
                             updateWhenIdle: false,
