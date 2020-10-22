@@ -129,11 +129,11 @@ define([
                         obj: new L.TileLayer('https://osm.bhyve.cloud/kosmo/{z}/{x}/{y}.png', {
                             updateWhenIdle: false,
                             maxZoom: 20,
-                            maxNativeZoom: 18
+                            maxNativeZoom: 17
                         }),
-                        maxZoom: 20,
+                        maxZoom: 19,
                         limitZoom: 19,
-                        //maxAfter: 'google.scheme'
+                        maxAfter: 'mapnik'
                     },
                     {
                         id: 'mapnik',
@@ -145,21 +145,66 @@ define([
                         }),
                         maxZoom: 20,
                         limitZoom: 19,
+                        attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                         //maxAfter: 'google.scheme'
                     },
-                    /*{
-                        id: 'mapquest',
-                        desc: 'Mapquest',
+                    {
+                        id: 'mapnik_de',
+                        desc: 'Mapnik De',
                         selected: ko.observable(false),
-                        obj: new L.TileLayer('http://otile1.mqcdn.com/tiles/1.0.0/osm/{z}/{x}/{y}.png', {
+                        obj: new L.TileLayer('https://{s}.tile.openstreetmap.de/tiles/osmde/{z}/{x}/{y}.png', {
                             updateWhenIdle: false,
                             maxZoom: 20,
-                            maxNativeZoom: 18
+                            maxNativeZoom: 18,
+                            attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                        }),
+                        maxZoom: 20,
+                        limitZoom: 18,
+                        maxAfter: 'mapnik'
+                    },
+                    {
+                        id: 'mapnik_fr',
+                        desc: 'Mapnik Fr',
+                        selected: ko.observable(false),
+                        obj: new L.TileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
+                            updateWhenIdle: false,
+                            maxZoom: 20,
+                            attribution: 'OSM Française | &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                         }),
                         maxZoom: 20,
                         limitZoom: 19,
-                        maxAfter: 'google.scheme'
-                    }*/
+                        maxAfter: 'mapnik'
+                    },
+                    {
+                        id: 'opentopomap',
+                        desc: 'Топограф. ОСМ',
+                        selected: ko.observable(false),
+                        obj: new L.TileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                            updateWhenIdle: false,
+                            maxZoom: 20,
+                            maxNativeZoom: 17,
+                            attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | , <a href="http://viewfinderpanoramas.org">SRTM</a> | Стиль карты: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+                        }),
+                        maxZoom: 20,
+                        limitZoom: 17,
+                        maxAfter: 'mapnik'
+                    },
+                    {
+                        id: 'stamen_bw',
+                        desc: 'Стамен ч/б',
+                        selected: ko.observable(false),
+                        obj: new L.TileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}{r}.{ext}', {
+                            attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Данные &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                            subdomains: 'abcd',
+                            minZoom: 0,
+                            maxZoom: 20,
+                            ext: 'png',
+                            updateWhenIdle: false
+                        }),
+                        maxZoom: 20,
+                        limitZoom: 20,
+                        maxAfter: 'mapnik'
+                    }
                 ])
             });
             if (P.settings.USE_GOOGLE_API()) {
@@ -253,6 +298,41 @@ define([
                     ])
                 });
             }
+            this.layers.push({
+                id: 'esri_mtb',
+                desc: 'ESRI, MTB',
+                selected: ko.observable(false),
+                types: ko.observableArray([
+                    {
+                        id: 'esri_satimg',
+                        desc: 'Снимки',
+                        selected: ko.observable(false),
+                        obj: new L.TileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                            attribution: 'Изображения &copy; Esri &mdash; Источники: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, и ГИС сообщество',
+                            updateWhenIdle: false,
+                            maxZoom: 20,
+                            maxNativeZoom: 20
+                        }),
+                        maxZoom: 20,
+                        limitZoom: 20,
+                        maxAfter: 'mapnik'
+                    },
+                    {
+                        id: 'mtb',
+                        desc: 'MTB пеш.',
+                        selected: ko.observable(false),
+                        obj: new L.TileLayer('http://tile.mtbmap.cz/mtbmap_tiles/{z}/{x}/{y}.png', {
+                            updateWhenIdle: false,
+                            maxZoom: 20,
+                            maxNativeZoom: 19
+                        }),
+                        maxZoom: 20,
+                        limitZoom: 19,
+                        attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                        maxAfter: 'mapnik'
+                    }
+                ])
+            });
 
             this.showLinkBind = this.showLink.bind(this);
 

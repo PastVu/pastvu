@@ -35,3 +35,8 @@ public/style/**/*.css
 # Output from babel/transpile #
 ######################
 babel/output*.js
+
+# Dumps #
+######################
+dump
+pastvu.tar.gz
