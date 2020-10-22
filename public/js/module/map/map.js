@@ -129,9 +129,9 @@ define([
                         obj: new L.TileLayer('https://osm.bhyve.cloud/kosmo/{z}/{x}/{y}.png', {
                             updateWhenIdle: false,
                             maxZoom: 20,
-                            maxNativeZoom: 18
+                            maxNativeZoom: 17
                         }),
-                        maxZoom: 20,
+                        maxZoom: 19,
                         limitZoom: 19,
                         maxAfter: 'mapnik'
                     },
@@ -150,21 +150,21 @@ define([
                     },
                     {
                         id: 'mapnik_de',
-                        desc: 'Mapnik Deutsch',
+                        desc: 'Mapnik De',
                         selected: ko.observable(false),
-                        obj: new L.TileLayer('https://https://{s}.tile.openstreetmap.de/tiles/osmde/{z}/{x}/{y}.png', {
+                        obj: new L.TileLayer('https://{s}.tile.openstreetmap.de/tiles/osmde/{z}/{x}/{y}.png', {
                             updateWhenIdle: false,
                             maxZoom: 20,
                             maxNativeZoom: 18,
                             attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                         }),
                         maxZoom: 20,
-                        limitZoom: 18,                        
+                        limitZoom: 18,
                         maxAfter: 'mapnik'
                     },
                     {
                         id: 'mapnik_fr',
-                        desc: 'Mapnik Française',
+                        desc: 'Mapnik Fr',
                         selected: ko.observable(false),
                         obj: new L.TileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
                             updateWhenIdle: false,
@@ -172,7 +172,7 @@ define([
                             attribution: 'OSM Française | &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                         }),
                         maxZoom: 20,
-                        limitZoom: 19,                        
+                        limitZoom: 19,
                         maxAfter: 'mapnik'
                     },
                     {
@@ -186,7 +186,7 @@ define([
                             attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | , <a href="http://viewfinderpanoramas.org">SRTM</a> | Стиль карты: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
                         }),
                         maxZoom: 20,
-                        limitZoom: 17,                        
+                        limitZoom: 17,
                         maxAfter: 'mapnik'
                     },
                     {
@@ -202,7 +202,7 @@ define([
                             updateWhenIdle: false
                         }),
                         maxZoom: 20,
-                        limitZoom: 20,                        
+                        limitZoom: 20,
                         maxAfter: 'mapnik'
                     }
                 ])
@@ -312,14 +312,14 @@ define([
                             updateWhenIdle: false,
                             maxZoom: 20,
                             maxNativeZoom: 20
-                        }),                        
+                        }),
                         maxZoom: 20,
                         limitZoom: 20,
                         maxAfter: 'mapnik'
                     },
-                    {                       
+                    {
                         id: 'mtb',
-                        desc: 'MTB пешеходная',
+                        desc: 'MTB пеш.',
                         selected: ko.observable(false),
                         obj: new L.TileLayer('http://tile.mtbmap.cz/mtbmap_tiles/{z}/{x}/{y}.png', {
                             updateWhenIdle: false,
