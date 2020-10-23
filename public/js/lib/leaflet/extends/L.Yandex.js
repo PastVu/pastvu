@@ -41,7 +41,7 @@ define(['leaflet', (location.protocol || 'http:') + '//api-maps.yandex.ru/2.0/?l
                 this._limitedUpdate = L.Util.limitExecByInterval(this._update, 150, this);
                 map.on('move', this._update, this);
 
-                map._controlCorners['bottomright'].style.marginBottom = "3em";
+                map._controlCorners['bottomright'].style.display = "none";
 
                 this._reset();
                 this._update(true);
@@ -55,7 +55,7 @@ define(['leaflet', (location.protocol || 'http:') + '//api-maps.yandex.ru/2.0/?l
 
                 this._map.off('move', this._update, this);
 
-                map._controlCorners['bottomright'].style.marginBottom = "0em";
+                map._controlCorners['bottomright'].style.display = "block";
             },
 
             getAttribution: function () {

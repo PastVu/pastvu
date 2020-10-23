@@ -48,7 +48,7 @@ define(['leaflet', 'async!' + (location.protocol || 'http:') + '//maps.googleapi
                 map.on('move', this._update, this);
                 //map.on('moveend', this._update, this);
 
-                map._controlCorners['bottomright'].style.marginBottom = "1em";
+                map._controlCorners['bottomright'].style.display = "none";
 
                 this._reset();
                 this._update();
@@ -62,7 +62,7 @@ define(['leaflet', 'async!' + (location.protocol || 'http:') + '//maps.googleapi
                 this._map.off('viewreset', this._resetCallback, this);
 
                 this._map.off('move', this._update, this);
-                map._controlCorners['bottomright'].style.marginBottom = "0em";
+                map._controlCorners['bottomright'].style.display = "block";
                 //this._map.off('moveend', this._update, this);
             },
 
