@@ -1007,7 +1007,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             newSince: self.p.vdate()
                         },
                         modal: {
-                            topic: 'History of photo changes',
+                            topic: 'History of image changes',
                             initWidth: '1400px',
                             maxWidthRatio: 0.82,
                             animateScale: true,
@@ -1485,7 +1485,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }
 
             self.exe(true);
-            self.reasonSelect('photo.revision', 'Reason for reviosion', function (cancel, reason) {
+            self.reasonSelect('photo.revision', 'Reason for revision', function (cancel, reason) {
                 if (cancel) {
                     self.exe(false);
                     return;
