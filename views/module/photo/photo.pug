@@ -2,27 +2,6 @@
     .row.photoData(data-bind="css: {editMode: edit()}")
         .col-xs-12.col-sm-8.col-lg-8.photoPanel
             .imgRow
-                //ko if: can.edit()
-                .topInfo
-                    .photoAction(data-bind="template: {name: edit() ? 'photoActionsEdit' : 'photoActionsView'}")
-                    //ko if: !edit() && can.convert()
-                    .photoAction
-                        button.btn.btn-primary(data-bind="click: toConvert, attr: {disabled: exe()}")
-                            span.glyphicon.glyphicon-refresh
-                            |  Reconvert image
-                    // /ko
-                // /ko
-                //ko if: msg().length
-                .photoMsg.label(data-bind="css: msgCss(), attr: {title: msgTitle()}")
-                    span.glyphicon.glyphicon-warning-sign
-                    span(data-bind="html: ' ' + msg()")
-                    //ko if: msgLink()
-                    |  [
-                    a.msgLink(data-replace="true", data-bind="attr: {href: msgLink()}") More details..
-                    | ]
-                    // /ko
-                br
-                // /ko
                 .imgSuperWrap
                     .imgMiddleWrap(data-bind="css: {loading: photoLoading(), fragSensitive: !edit() && !fraging()}")
                         .imgWrap(data-bind="style: {height: (watermarkShow() ? hsfull() : hs()) + 'px'}")
@@ -85,7 +64,27 @@
                                 span.glyphicon.glyphicon-save
                             .tltp.tltp-bottom.tltp-animate-move(data-bind="html:'Download '+(downLoadOrigin()?'original':'full size')+'<br>'+p.w() + '×' + p.h()")
                         // /ko
-
+                //ko if: can.edit()
+                .Info
+                    .photoAction(data-bind="template: {name: edit() ? 'photoActionsEdit' : 'photoActionsView'}")
+                    //ko if: !edit() && can.convert()
+                    .photoAction
+                        button.btn.btn-primary(data-bind="click: toConvert, attr: {disabled: exe()}")
+                            span.glyphicon.glyphicon-refresh
+                            |  Reconvert image
+                    // /ko
+                // /ko
+                //ko if: msg().length
+                .photoMsg.label(data-bind="css: msgCss(), attr: {title: msgTitle()}")
+                    span.glyphicon.glyphicon-warning-sign
+                    span(data-bind="html: ' ' + msg()")
+                    //ko if: msgLink()
+                    |  [
+                    a.msgLink(data-replace="true", data-bind="attr: {href: msgLink()}") More details..
+                    | ]
+                    // /ko
+                br
+                // /ko
             //ko template: {name: edit() ? p.type() === '2' ? 'paintingEdit' : 'photoEdit' : 'photoView', afterRender: tplAfterRender}
             // /ko
         .col-xs-12.col-sm-4.col-lg-4.rightPanel
