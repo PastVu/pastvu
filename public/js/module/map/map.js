@@ -670,6 +670,12 @@ define([
             }
             return this;
         },
+        // Переменные для созранения состояния указания точки, где стоял фотограф и объекта по центру фото
+        iniclick : true,
+        φλ0: null, // Первые выбранные координаты (фотограф/художник)
+        φλ1 : null, // Вторые выбранные координаты (объект по центру фото/картины)
+        coordline: null, // Линия центрального направления фото или картины
+        ini_marker: null, // Основной маркер, нажатие по которому приводит к отказу от выбора направления и ручному указанию
 
         // Создает редактирующий маркер, если координаты точки есть, а если нет, то создает по клику на карте
         pointEditCreate: function () {
@@ -678,13 +684,31 @@ define([
                 if (this.point.geo()) {
                     this.pointEditMarkerCreate();
                 }
-                this.map.on('click', function (e) {
-                    var geo = Utils.geo.geoToPrecision([e.latlng.lat, e.latlng.lng]);
-
-                    this.point.geo(geo);
-
+                this.map.on('click', function (e) { // Установка точки
+                    var φλ = Utils.geo.geoToPrecision([e.latlng.lat, e.latlng.lng]);
+                    if (this.iniclick){
+                        this.φλ0 = φλ;
+                        this.iniclick = false;
+        /*                if (this.coordline)
+                            map.removeLayer(this.coordline);
+                        if (this.ini_marker)
+                            map.removeLayer(this.ini_marker);
+                            ini_marker.on('click', onMarkerClick); */
+                    } else {
+                        this.iniclick = true;
+                        this.φλ1 = φλ;
+                        this.coordline = L.polyline([
+                            φλ0,  φλ1
+                        ], {color: '#FF0000', width: 1}).addTo(map);
+                        var res = this.Δl_azimut (φλ0, φλ1);
+                        /* L.popup().setLatLng(e.latlng)
+                        .setContent("≈" + res.Δl_m + " м, ∡ ≈" + res.α + " \nНаправление: " + geo_α (res.α))
+                        .openOn(map); */
+                    }                    
+                    this.point.geo(φλ);
+                    
                     if (this.pointMarkerEdit) {
-                        this.pointMarkerEdit.setLatLng(geo);
+                        this.pointMarkerEdit.setLatLng(φλ);
                     } else {
                         this.pointEditMarkerCreate();
                     }
