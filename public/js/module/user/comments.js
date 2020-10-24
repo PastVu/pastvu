@@ -244,7 +244,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                                     can: { 'protected': obj.protected }
                                 });
                                 obj.link = '/p/' + obj.cid;
-                                obj.title += ' <span class="photoYear">' + obj.y + '</span>';
+                                obj.title += ' (' + obj.y + ')';
                             } else if (type === 'news') {
                                 obj.link = '/news/' + obj.cid;
                             }
