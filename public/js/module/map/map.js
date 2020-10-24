@@ -276,24 +276,6 @@ define([
                             selected: ko.observable(false),
                             params: 'hybrid',
                             maxZoom: 19
-                        },
-                        {
-                            id: 'pub',
-                            desc: 'Народная',
-                            selected: ko.observable(false),
-                            params: 'publicMap',
-                            maxZoom: 20,
-                            limitZoom: 19,
-                            //maxAfter: 'google.scheme'
-                        },
-                        {
-                            id: 'pubhyb',
-                            desc: 'Народн. гибр.',
-                            selected: ko.observable(false),
-                            params: 'publicMapHybrid',
-                            maxZoom: 20,
-                            limitZoom: 19,
-                            //maxAfter: 'google.scheme'
                         }
                     ])
                 });
