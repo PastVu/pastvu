@@ -276,6 +276,24 @@ define([
                             selected: ko.observable(false),
                             params: 'hybrid',
                             maxZoom: 19
+                        },
+                        {
+                            id: 'pub',
+                            desc: 'Public',
+                            selected: ko.observable(false),
+                            params: 'publicMap',
+                            maxZoom: 20,
+                            limitZoom: 19,
+                            //maxAfter: 'google.scheme'
+                        },
+                        {
+                            id: 'pubhyb',
+                            desc: 'Public hybrid',
+                            selected: ko.observable(false),
+                            params: 'publicMapHybrid',
+                            maxZoom: 20,
+                            limitZoom: 19,
+                            //maxAfter: 'google.scheme'
                         }
                     ])
                 });
