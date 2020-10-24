@@ -692,6 +692,53 @@ define([
             }
             return this;
         },
+        geo_α: function(α)
+        {   // Название направления в зависимости от азумута, может быть расширено до 16 направлений
+            var x = Math.floor(α/11.25);
+            if (x>=2 && x<6)
+                return "СВ";
+            if (x>=6 && x<10)
+                return "В";
+            if (x>=10 && x<14)
+                return "ЮВ";
+            if (x>=14 && x<18)
+                return "Ю";
+            if (x>=18 && x<22)
+                return "ЮЗ";
+            if (x>=22 && x<26)
+                return "З";
+            if (x>=26 && x<30)
+                return "СЗ";
+            if (x>=30 || x<2)
+                return "С";
+        },
+        Δl_azimut: function  (φλ0, φλ1) {
+            // Расстояние между точками и азимут из начальной точки на конечную
+            function rad (x)
+                { return x * Math.PI/180; }
+            var φ1 = rad (φλ0[0]); var λ1 = rad (φλ0[1]);
+            var φ2 = rad (φλ1[0]); var λ2 = rad (φλ1[1]);
+            var Δφ = rad (φλ1[0]-φλ0[0]);
+            var Δλ = rad (φλ1[1]-φλ0[1]);
+    
+            var a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                Math.cos(φ1) * Math.cos(φ2) *
+                Math.sin(Δλ/2) * Math.sin(Δλ/2);
+            var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+            const R_m = 6371e3; // r ♁
+            var Δl_m = R_m * c;
+
+            var y = Math.sin(λ2-λ1) * Math.cos(φ2);
+            var x = Math.cos(φ1)*Math.sin(φ2) -
+                Math.sin(φ1)*Math.cos(φ2)*Math.cos(λ2-λ1);
+            var θ = Math.atan2(y, x);
+            var α = (θ*180/Math.PI + 360) % 360; // in degrees
+            return {
+                Δl_m: Δl_m.toFixed(2),
+                α:α.toFixed(3)
+            };
+        },
         pointEditDestroy: function () {
             this.pointEditMarkerDestroy();
             this.map.off('click');
