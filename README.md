@@ -85,6 +85,8 @@ In case of the default hostname and port, just open this url: http://mypastvu.co
 
 ## Run with Docker
 
+You need to have `docker` and `docker-compose` installed.
+
 ```bash
 # Download and unarchive the database dump
 curl -O https://varlamov.me/pastvu/github/pastvu.tar.gz
@@ -101,4 +103,6 @@ cp config/local.config.js.docker-example config/local.config.js
 docker-compose up
 ```
 
-Navigate to http://localhost:3000 and login with the default user `admin`/`admin`!
+Navigate to http://localhost:3000 and login with the default user `admin`/`admin`.
+
+If you are using docker inside VM and accessing app from host OS (or any other scenario where web client host may differ from the host where you run docker), make sure that `client.hostname` in your `config/local.config.js` is matching domain name that client uses to access the app. This setting is used for cookies domain, so having it wrong will result in session being cleared on page refresh.
