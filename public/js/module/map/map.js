@@ -330,6 +330,19 @@ define([
                         limitZoom: 19,
                         attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
                         maxAfter: 'mapnik'
+                    },
+                    {
+                        id: 'warfly',
+                        desc: 'АэрофотоВОВ',
+                        selected: ko.observable(false),
+                        obj: new L.TileLayer('https://17200.selcdn.ru/AerialWWII/Z{z}/{y}/{x}.jpg', {
+                            attribution: 'Аэрофотосъёмка Второй Мировой Войны <a href="http://warfly.ru/about">warfly.ru</a> (доступна для отдельных городов)',
+                            updateWhenIdle: false,
+                            minZoom:9,
+                            maxNativeZoom: 18
+                        }),
+                        maxZoom: 18,
+                        minZoom: 9
                     }
                 ])
             });
