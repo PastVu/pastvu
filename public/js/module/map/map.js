@@ -299,13 +299,13 @@ define([
                 });
             }
             this.layers.push({
-                id: 'esri_mtb',
-                desc: 'ESRI, MTB',
+                id: 'other',
+                desc: 'Прочие',
                 selected: ko.observable(false),
                 types: ko.observableArray([
                     {
                         id: 'esri_satimg',
-                        desc: 'Снимки',
+                        desc: 'ESRI Снимки',
                         selected: ko.observable(false),
                         obj: new L.TileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                             attribution: 'Изображения &copy; Esri &mdash; Источники: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, и ГИС сообщество',
@@ -322,13 +322,13 @@ define([
                         desc: 'MTB пеш.',
                         selected: ko.observable(false),
                         obj: new L.TileLayer('http://tile.mtbmap.cz/mtbmap_tiles/{z}/{x}/{y}.png', {
+                            attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | <a href="http://mtbmap.cz/">mtbmap.cz</a>',
                             updateWhenIdle: false,
                             maxZoom: 20,
                             maxNativeZoom: 19
                         }),
                         maxZoom: 20,
                         limitZoom: 19,
-                        attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
                         maxAfter: 'mapnik'
                     },
                     {
@@ -835,51 +835,52 @@ define([
             }
 
             system = this.getSysById(sysId || defaults.sys) || this.getSysById(defaults.sys);
+            type = this.getTypeById(system, typeId || defaults.type) || this.getTypeById(system, defaults.type);
+            if (type === undefined) {
+                // It is likely that required type does not exist in this
+                // system, fallback to default system and type.
+                system = this.getSysById(defaults.sys);
+                type = this.getTypeById(system, defaults.type);
+            }
 
-            if (system) {
-                type = this.getTypeById(system, typeId || defaults.type) || this.getTypeById(system, defaults.type);
-
-                if (type) {
-                    setLayer = function (type) {
-                        this.map.addLayer(type.obj);
-                        this.markerManager.layerChange();
-                        this.map.options.maxZoom = type.maxZoom;
-                        if (this.navSliderVM && Utils.isType('function', this.navSliderVM.recalcZooms)) {
-                            this.navSliderVM.recalcZooms(type.limitZoom || type.maxZoom, true);
-                        }
-                        if (type.limitZoom !== undefined && this.map.getZoom() > type.limitZoom) {
-                            this.map.setZoom(type.limitZoom);
-                        } else if (this.map.getZoom() > type.maxZoom) {
-                            this.map.setZoom(type.maxZoom);
-                        }
-
-                        this.setLocalState();
-                    }.bind(this);
-
-                    if (layerActive.sys && layerActive.type) {
-                        layerActive.sys.selected(false);
-                        layerActive.type.selected(false);
-                        if (layerActive.sys.id === 'osm') {
-                            layerActive.type.obj.off('load');
-                        }
-                        this.map.removeLayer(layerActive.type.obj);
-                    }
-
-                    system.selected(true);
-                    type.selected(true);
-                    this.layerActiveDesc(this.embedded ? system.desc : system.desc + ': ' + type.desc);
-                    this.layerActive({ sys: system, type: type });
-
-                    if (system.deps && !type.obj) {
-                        require([system.deps], function (Construct) {
-                            type.obj = new Construct(type.params);
-                            setLayer(type);
-                            type = null;
-                        });
-                    } else {
-                        setLayer(type);
-                    }
+            setLayer = function (type) {
+                this.map.addLayer(type.obj);
+                this.markerManager.layerChange();
+                this.map.options.maxZoom = type.maxZoom;
+                if (this.navSliderVM && Utils.isType('function', this.navSliderVM.recalcZooms)) {
+                    this.navSliderVM.recalcZooms(type.limitZoom || type.maxZoom, true);
                 }
+                if (type.limitZoom !== undefined && this.map.getZoom() > type.limitZoom) {
+                    this.map.setZoom(type.limitZoom);
+                } else if (this.map.getZoom() > type.maxZoom) {
+                    this.map.setZoom(type.maxZoom);
+                }
+
+                this.setLocalState();
+            }.bind(this);
+
+            if (layerActive.sys && layerActive.type) {
+                layerActive.sys.selected(false);
+                layerActive.type.selected(false);
+                if (layerActive.sys.id === 'osm') {
+                    layerActive.type.obj.off('load');
+                }
+                this.map.removeLayer(layerActive.type.obj);
+            }
+
+            system.selected(true);
+            type.selected(true);
+            this.layerActiveDesc(this.embedded ? system.desc : system.desc + ': ' + type.desc);
+            this.layerActive({ sys: system, type: type });
+
+            if (system.deps && !type.obj) {
+                require([system.deps], function (Construct) {
+                    type.obj = new Construct(type.params);
+                    setLayer(type);
+                    type = null;
+                });
+            } else {
+                setLayer(type);
             }
         },
         onChange: function (callback, ctx) {
