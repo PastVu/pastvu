@@ -30,17 +30,10 @@ module.exports = function(config, appRequire) {
         redis: {
             host: 'redis',
         },
-
-        // In development you should create a test account at https://ethereal.email, so email will not be sent to the real users
-
         mail: {
             type: 'SMTP',
-            host: 'smtp.ethereal.email',
-            port: 587,
-            auth: {
-                user: '',
-                pass: '',
-            },
+            host: 'mailcatcher',
+            port: 1025,
         },
     });
 

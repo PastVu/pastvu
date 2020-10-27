@@ -102,3 +102,5 @@ docker-compose up
 ```
 
 Navigate to http://localhost:3000 and login with the default user `admin`/`admin`!
+
+Mailcatcher web interface is listening on http://localhost:1080 to view emails which app has sent out.

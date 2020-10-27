@@ -61,6 +61,13 @@ services:
       - sitemap:/sitemap
     command: npm run sitemap
 
+  mailcatcher:
+    image: sj26/mailcatcher
+    expose:
+     - "1025"
+    ports:
+     - "1080:1080"
+
 volumes:
   store:
   sitemap:
