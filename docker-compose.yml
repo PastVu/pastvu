@@ -6,6 +6,7 @@ services:
     image: pastvu/mongo:3.2.22
     volumes:
       - ./dump:/dump
+      - mongodb:/data/db
     expose:
       - '21017'
 
@@ -64,3 +65,4 @@ services:
 volumes:
   store:
   sitemap:
+  mongodb:
