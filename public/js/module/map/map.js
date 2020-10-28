@@ -321,7 +321,7 @@ define([
                             attribution: 'Аэрофотосъёмка Второй Мировой Войны <a href="http://warfly.ru/about">warfly.ru</a> (доступна для отдельных городов)',
                             updateWhenIdle: false,
                             minZoom:9,
-                            maxNativeZoom: 18
+                            maxNativeZoom: 17
                         }),
                         maxZoom: 18,
                         minZoom: 9
