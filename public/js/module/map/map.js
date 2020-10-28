@@ -467,7 +467,8 @@ define([
                 center: center,
                 zoom: zoom,
                 zoomAnimation: L.Map.prototype.options.zoomAnimation && true,
-                trackResize: false
+                trackResize: false,
+                zoomControl: false // Remove default zoom control (we use our own)
             });
             if (fitBounds) {
                 this.map.fitBounds(fitBounds, { maxZoom: 18 });
