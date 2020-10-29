@@ -127,6 +127,7 @@ define([
                         desc: 'Kosmosnimki',
                         selected: ko.observable(false),
                         obj: new L.TileLayer('https://osm.bhyve.cloud/kosmo/{z}/{x}/{y}.png', {
+                            attribution: '&copy; <a href="https://kosmosnimki.ru/">ScanEx</a> | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
                             updateWhenIdle: false,
                             maxZoom: 20,
                             maxNativeZoom: 17
@@ -140,12 +141,12 @@ define([
                         desc: 'Mapnik',
                         selected: ko.observable(false),
                         obj: new L.TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
                             updateWhenIdle: false,
                             maxZoom: 20
                         }),
                         maxZoom: 20,
                         limitZoom: 19,
-                        attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                         //maxAfter: 'google.scheme'
                     },
                     {
@@ -156,7 +157,7 @@ define([
                             updateWhenIdle: false,
                             maxZoom: 20,
                             maxNativeZoom: 18,
-                            attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                            attribution: 'OSM Deutsch | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                         }),
                         maxZoom: 20,
                         limitZoom: 18,
@@ -169,7 +170,7 @@ define([
                         obj: new L.TileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
                             updateWhenIdle: false,
                             maxZoom: 20,
-                            attribution: 'OSM Française | &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                            attribution: 'OSM Française | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                         }),
                         maxZoom: 20,
                         limitZoom: 19,
@@ -183,7 +184,7 @@ define([
                             updateWhenIdle: false,
                             maxZoom: 20,
                             maxNativeZoom: 17,
-                            attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | , <a href="http://viewfinderpanoramas.org">SRTM</a> | Стиль карты: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+                            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
                         }),
                         maxZoom: 20,
                         limitZoom: 17,
@@ -194,7 +195,7 @@ define([
                         desc: 'Stamen b/w',
                         selected: ko.observable(false),
                         obj: new L.TileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}.{ext}', {
-                            attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Данные &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>',
                             subdomains: 'abcd',
                             minZoom: 0,
                             maxZoom: 20,
@@ -282,15 +283,15 @@ define([
             }
             this.layers.push({
                 id: 'other',
-                desc: 'Прочие',
+                desc: 'Other',
                 selected: ko.observable(false),
                 types: ko.observableArray([
                     {
                         id: 'esri_satimg',
-                        desc: 'ESRI Снимки',
+                        desc: 'Esri',
                         selected: ko.observable(false),
                         obj: new L.TileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                            attribution: 'Изображения &copy; Esri &mdash; Источники: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, и ГИС сообщество',
+                            attribution: '&copy; Esri &mdash; Sources: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
                             updateWhenIdle: false,
                             maxZoom: 20,
                             maxNativeZoom: 20
@@ -304,7 +305,7 @@ define([
                         desc: 'MTB',
                         selected: ko.observable(false),
                         obj: new L.TileLayer('http://tile.mtbmap.cz/mtbmap_tiles/{z}/{x}/{y}.png', {
-                            attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | <a href="http://mtbmap.cz/">mtbmap.cz</a>',
+                            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | <a href="http://mtbmap.cz/">mtbmap.cz</a>',
                             updateWhenIdle: false,
                             maxZoom: 20,
                             maxNativeZoom: 19
@@ -315,10 +316,10 @@ define([
                     },
                     {
                         id: 'warfly',
-                        desc: 'АэрофотоВОВ',
+                        desc: 'WWII Aerial',
                         selected: ko.observable(false),
                         obj: new L.TileLayer('https://17200.selcdn.ru/AerialWWII/Z{z}/{y}/{x}.jpg', {
-                            attribution: 'Аэрофотосъёмка Второй Мировой Войны <a href="http://warfly.ru/about">warfly.ru</a> (доступна для отдельных городов)',
+                            attribution: 'WWII Aerial photos <a href="http://warfly.ru/about">warfly.ru</a> (coverage is limited to some locations)',
                             updateWhenIdle: false,
                             minZoom:9,
                             maxNativeZoom: 17
