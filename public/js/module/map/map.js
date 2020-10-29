@@ -127,6 +127,7 @@ define([
                         desc: 'Kosmosnimki',
                         selected: ko.observable(false),
                         obj: new L.TileLayer('https://osm.bhyve.cloud/kosmo/{z}/{x}/{y}.png', {
+                            attribution: '&copy; <a href="https://kosmosnimki.ru/">ООО ИТЦ "СКАНЭКС"</a> | &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
                             updateWhenIdle: false,
                             maxZoom: 20,
                             maxNativeZoom: 17
@@ -140,12 +141,12 @@ define([
                         desc: 'Mapnik',
                         selected: ko.observable(false),
                         obj: new L.TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
                             updateWhenIdle: false,
                             maxZoom: 20
                         }),
                         maxZoom: 20,
                         limitZoom: 19,
-                        attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                         //maxAfter: 'google.scheme'
                     },
                     {
@@ -156,7 +157,7 @@ define([
                             updateWhenIdle: false,
                             maxZoom: 20,
                             maxNativeZoom: 18,
-                            attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                            attribution: 'OSM Deutsch | &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                         }),
                         maxZoom: 20,
                         limitZoom: 18,
@@ -183,7 +184,7 @@ define([
                             updateWhenIdle: false,
                             maxZoom: 20,
                             maxNativeZoom: 17,
-                            attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | , <a href="http://viewfinderpanoramas.org">SRTM</a> | Стиль карты: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+                            attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | <a href="http://viewfinderpanoramas.org">SRTM</a> | Стиль карты: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
                         }),
                         maxZoom: 20,
                         limitZoom: 17,
@@ -194,7 +195,7 @@ define([
                         desc: 'Стамен ч/б',
                         selected: ko.observable(false),
                         obj: new L.TileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}.{ext}', {
-                            attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Данные &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                            attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> | &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
                             subdomains: 'abcd',
                             minZoom: 0,
                             maxZoom: 20,
@@ -287,10 +288,10 @@ define([
                 types: ko.observableArray([
                     {
                         id: 'esri_satimg',
-                        desc: 'ESRI Снимки',
+                        desc: 'Esri Снимки',
                         selected: ko.observable(false),
                         obj: new L.TileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                            attribution: 'Изображения &copy; Esri &mdash; Источники: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, и ГИС сообщество',
+                            attribution: '&copy; Esri &mdash; Источники: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, и ГИС сообщество',
                             updateWhenIdle: false,
                             maxZoom: 20,
                             maxNativeZoom: 20
