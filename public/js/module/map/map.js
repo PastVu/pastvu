@@ -316,7 +316,7 @@ define([
                     },
                     {
                         id: 'warfly',
-                        desc: 'АэрофотоВОВ',
+                        desc: 'Аэрофото ВОВ',
                         selected: ko.observable(false),
                         obj: new L.TileLayer('https://17200.selcdn.ru/AerialWWII/Z{z}/{y}/{x}.jpg', {
                             attribution: 'Аэрофотосъёмка Второй Мировой Войны <a href="http://warfly.ru/about">warfly.ru</a> (доступна для отдельных городов)',
