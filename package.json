@@ -51,7 +51,7 @@
         "@turf/turf": "5.1.6",
         "aws-sdk": "2.610.0",
         "basic-auth-connect": "1.0.0",
-        "bcrypt": "3.0.7",
+        "bcrypt": "5.0.0",
         "body-parser": "1.19.0",
         "bufferutil": "4.0.1",
         "compression": "1.7.4",
@@ -86,7 +86,7 @@
         "underscore.string": "3.3.5",
         "useragent": "2.3.0",
         "yamlparser": "0.0.2",
-        "yargs": "15.1.0"
+        "yargs": "16.1.0"
     },
     "devDependencies": {
         "@babel/core": "7.8.3",
