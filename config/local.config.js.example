@@ -3,7 +3,7 @@ module.exports = function (config, appRequire) {
 
     _.merge(config, {
         client: {
-            hostname: 'mypastvu.com',
+            hostname: 'pastvu.local',
         },
 
         storePath: '../store',

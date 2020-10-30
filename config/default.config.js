@@ -37,11 +37,11 @@ module.exports = {
         port: 3011,
     },
 
-    // Address for user
+    // Address for user access
     client: {
         protocol: 'http',
-        hostname: '127.0.0.1', // Hostname for users, i.e. site entry point
-        port: ':3000', // Port for users
+        hostname: '127.0.0.1', // Hostname for user access, i.e. site entry point and cookies domain
+        port: ':3000', // Port for user access
     },
 
     storePath: '', // Store folder with static user content (avatars, photos, etc)
