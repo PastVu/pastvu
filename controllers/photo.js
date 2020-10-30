@@ -72,6 +72,8 @@ const compactFields = {
     cid: 1,
     file: 1,
     s: 1,
+    geo: 1,
+    dir: 1,
     title: 1,
     year: 1,
     ccount: 1,

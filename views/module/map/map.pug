@@ -51,7 +51,7 @@
                 .currentLayer(data-bind="click: toggleLayers, attr: {title: layersOpen() ? 'Click to hide layer vaiarnts' : 'Click to show available map layers'}")
                     .currentLayerTxt(data-bind="text: layerActiveDesc()")
                     img.layerImg(src='/img/map/layers.png')
-                .layerSystems(data-bind="style: {width: (layersOpen() ? 104 * layers().length : 64) + 'px'}")
+                .layerSystems(data-bind="style: {width: (layersOpen() ? 110 * layers().length : 64) + 'px'}")
                     .h_separator
                     //ko foreach: {data: $data.layers, as: 'system'}
                     .layerSystem(data-bind="css: {selected: system.selected()}")

@@ -35,9 +35,11 @@ You can now open the project folder (`pastvu`) in your favorite IDE.
 
 1. Copy `config/local.config.js.example` into `config/local.config.js`. Default configuration is located in `default.config.js` file, it's just a JavaScript file, and its object is passed to the local.config.js as an argument. You can modify any of the props and return the final version of the config. Remember, don't change `default.config.js` unless you are altering the default project configuration for a purpose. `config/local.config.js.` is in .gitignore and you can change it locally as much as you want without affecting others.
 
-2. Depending on the `hostname` prop in your local.config.js, you should modify your hosts file to associate that domain with your localhost. There are different ways to modify hosts file on different OS that you can google, for example, on macos you do `sudo nano /etc/hosts`. And assuming you have the default setting `mypastvu.com`, you need to update hosts file with
+2. Depending on the `client.hostname` prop in your local.config.js, you should modify your hosts file to associate that domain with your localhost. There are different ways to modify hosts file on different OS that you can google, for example, on macos you do `sudo nano /etc/hosts`. And assuming you have the default setting `pastvu.local`, you need to update hosts file with
 
-    `127.0.0.1       localhost mypastvu.com`
+    `127.0.0.1       localhost pastvu.local`
+
+It is important that `client.hostname` is matching hostname of machine where you run browser, as it is used as cookie domain internally. Having it wrong will result in logout on page refresh and other authentication related issues.
 
 3. Go to [ethereal.email](https://ethereal.email) and press `Create Ehereal Account` button. Now copy the result parameters to the `mail` section of your local config file, like this:
     ```javascript
@@ -79,11 +81,13 @@ There are two databases, `MongoDB` and `Redis`, and four services to start: `app
     * `npm run downloader`
     * `npm run sitemap`
 
-Now, depending on the `hostname` prop in your local.config.js you should be able to access your local copy of PastVu in your browser! 🎉
+Now, depending on the `client.hostname` prop in your local.config.js you should be able to access your local copy of PastVu in your browser! 🎉
 
-In case of the default hostname and port, just open this url: http://mypastvu.com:3000 and login with the default user `admin`/`admin`!
+In case of the default hostname and port, just open this url: http://pastvu.local:3000 and login with the default user `admin`/`admin`!
 
 ## Run with Docker
+
+You need to have `docker` and `docker-compose` installed.
 
 ```bash
 # Download and unarchive the database dump
@@ -101,4 +105,8 @@ cp config/local.config.js.docker-example config/local.config.js
 docker-compose up
 ```
 
-Navigate to http://localhost:3000 and login with the default user `admin`/`admin`!
+Navigate to http://localhost:3000 and login with the default user `admin`/`admin`.
+
+Mailcatcher web interface is listening on http://localhost:1080 to view emails which app has sent out.
+
+If you are using docker inside VM and accessing app from host OS (or any other scenario where web client host may differ from the host where you run docker), make sure that `client.hostname` in your `config/local.config.js` is matching domain name that client uses to access the app. This setting is used for cookies domain, so having it wrong will result in session being cleared on page refresh.
