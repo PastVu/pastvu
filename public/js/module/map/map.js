@@ -260,9 +260,7 @@ define([
                             desc: 'Схема',
                             selected: ko.observable(false),
                             params: 'map',
-                            maxZoom: 18,
-                            limitZoom: 17,
-                            maxAfter: 'yandex.pub'
+                            maxZoom: 20
                         },
                         {
                             id: 'sat',
