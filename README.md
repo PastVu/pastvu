@@ -107,4 +107,6 @@ docker-compose up
 
 Navigate to http://localhost:3000 and login with the default user `admin`/`admin`.
 
+Mailcatcher web interface is listening on http://localhost:1080 to view emails which app has sent out.
+
 If you are using docker inside VM and accessing app from host OS (or any other scenario where web client host may differ from the host where you run docker), make sure that `client.hostname` in your `config/local.config.js` is matching domain name that client uses to access the app. This setting is used for cookies domain, so having it wrong will result in session being cleared on page refresh.

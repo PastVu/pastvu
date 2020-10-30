@@ -6,6 +6,7 @@ services:
     image: pastvu/mongo:3.2.22
     volumes:
       - ./dump:/dump
+      - mongodb:/data/db
     expose:
       - '21017'
 
@@ -61,6 +62,14 @@ services:
       - sitemap:/sitemap
     command: npm run sitemap
 
+  mailcatcher:
+    image: sj26/mailcatcher
+    expose:
+     - "1025"
+    ports:
+     - "1080:1080"
+
 volumes:
   store:
   sitemap:
+  mongodb:

@@ -11,7 +11,8 @@ define([
 
     var defaults = {
         sys: 'osm',
-        type: 'osmosnimki'
+        type: 'osmosnimki',
+        minZoom: 3
     };
 
     return Cliche.extend({
@@ -197,7 +198,6 @@ define([
                         obj: new L.TileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}.{ext}', {
                             attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> | &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
                             subdomains: 'abcd',
-                            minZoom: 0,
                             maxZoom: 20,
                             ext: 'png',
                             updateWhenIdle: false
@@ -321,7 +321,7 @@ define([
                         obj: new L.TileLayer('https://17200.selcdn.ru/AerialWWII/Z{z}/{y}/{x}.jpg', {
                             attribution: 'Аэрофотосъёмка Второй Мировой Войны <a href="http://warfly.ru/about">warfly.ru</a> (доступна для отдельных городов)',
                             updateWhenIdle: false,
-                            minZoom:9,
+                            minZoom: 9,
                             maxNativeZoom: 17
                         }),
                         maxZoom: 18,
@@ -467,9 +467,9 @@ define([
             this.map = new L.NeoMap(this.$dom.find('.map')[0], {
                 center: center,
                 zoom: zoom,
-                minZoom: 3,
                 zoomAnimation: L.Map.prototype.options.zoomAnimation && true,
-                trackResize: false
+                trackResize: false,
+                zoomControl: false // Remove default zoom control (we use our own)
             });
             if (fitBounds) {
                 this.map.fitBounds(fitBounds, { maxZoom: 18 });
@@ -830,13 +830,18 @@ define([
                 this.map.addLayer(type.obj);
                 this.markerManager.layerChange();
                 this.map.options.maxZoom = type.maxZoom;
+                this.map.options.minZoom = type.minZoom || defaults.minZoom;
                 if (this.navSliderVM && Utils.isType('function', this.navSliderVM.recalcZooms)) {
                     this.navSliderVM.recalcZooms(type.limitZoom || type.maxZoom, true);
                 }
+                // If curent map zoom is out of range of layer settings, adjust accordingly.
+                let center = this.map.getCenter();
                 if (type.limitZoom !== undefined && this.map.getZoom() > type.limitZoom) {
-                    this.map.setZoom(type.limitZoom);
+                    this.map.setView(center, type.limitZoom);
                 } else if (this.map.getZoom() > type.maxZoom) {
-                    this.map.setZoom(type.maxZoom);
+                    this.map.setView(center, type.maxZoom);
+                } else if (type.minZoom !== undefined && this.map.getZoom() < type.minZoom) {
+                    this.map.setView(center, type.minZoom);
                 }
 
                 this.setLocalState();
