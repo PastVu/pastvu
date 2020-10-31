@@ -227,23 +227,21 @@ define([
                             desc: 'Спутник',
                             selected: ko.observable(false),
                             params: 'SATELLITE',
-                            maxZoom: 19
+                            maxZoom: 20
                         },
                         {
                             id: 'hyb',
                             desc: 'Гибрид',
                             selected: ko.observable(false),
                             params: 'HYBRID',
-                            maxZoom: 19
+                            maxZoom: 20
                         },
                         {
                             id: 'land',
                             desc: 'Ландшафт',
                             selected: ko.observable(false),
                             params: 'TERRAIN',
-                            maxZoom: 16,
-                            limitZoom: 15,
-                            maxAfter: 'google.scheme'
+                            maxZoom: 20
                         }
                     ])
                 });
