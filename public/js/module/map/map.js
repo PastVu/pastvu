@@ -307,11 +307,9 @@ define([
                             attribution: '&copy; Esri &mdash; Источники: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, и ГИС сообщество',
                             updateWhenIdle: false,
                             maxZoom: 20,
-                            maxNativeZoom: 20
+                            maxNativeZoom: 19
                         }),
-                        maxZoom: 20,
-                        limitZoom: 20,
-                        maxAfter: 'mapnik'
+                        maxZoom: 20
                     },
                     {
                         id: 'mtb',
