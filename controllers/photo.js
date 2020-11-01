@@ -1962,7 +1962,7 @@ async function giveNearestPhotos({ geo, type, year, year2, except, distance, lim
     }
 
     const photos = await Photo.find(query, compactFields, options).exec();
-
+    photos.forEach(photo => photo.geo.reverse());
     return { photos };
 }
 
