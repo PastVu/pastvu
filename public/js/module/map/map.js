@@ -125,6 +125,24 @@ define([
                 desc: 'OSM',
                 selected: ko.observable(false),
                 types: ko.observableArray([
+                    /* Define map types (layers).
+                     *
+                     * For fixed max zoom: specify maxZoom in TileLayer and in
+                     * type object. It will be possible to zoom map up to maxZoom
+                     * value.
+                     *
+                     * For "overzoom", set maxNativeZoom in TileLayer, and maxZoom
+                     * in both TileLayer and in type object. It will be possible to
+                     * zoom map up to maxZoom value. Layer will be "stretched" if
+                     * current zoom is above maxNativeZoom.
+                     *
+                     * For switching layer, set maxNativeZoom in TileLayer, and maxZoom
+                     * in both TileLayer and in type object. Set limitZoom in type
+                     * object. It will be possible to zoom map up to maxZoom value.
+                     * When current zoom > limitZoom, map will switch to maxAfter
+                     * layer, keeping current zoom value. maxAfter value
+                     * format is "<sys id>.<type id>", e.g. 'osm.mapnik'.
+                     */
                     {
                         id: 'osmosnimki',
                         desc: 'Kosmosnimki',
@@ -132,12 +150,12 @@ define([
                         obj: new L.TileLayer('https://osmcluster.kosmosnimki.ru/kosmo/{z}/{x}/{y}.png', {
                             attribution: '&copy; <a href="https://kosmosnimki.ru/">ООО ИТЦ "СКАНЭКС"</a> | &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
                             updateWhenIdle: false,
-                            maxZoom: 20,
+                            maxZoom: 18,
                             maxNativeZoom: 17
                         }),
-                        maxZoom: 19,
-                        limitZoom: 19,
-                        maxAfter: 'mapnik'
+                        maxZoom: 18,
+                        limitZoom: 17,
+                        maxAfter: 'osm.mapnik'
                     },
                     {
                         id: 'mapnik',
@@ -146,11 +164,9 @@ define([
                         obj: new L.TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                             attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
                             updateWhenIdle: false,
-                            maxZoom: 20
+                            maxZoom: 19
                         }),
-                        maxZoom: 20,
-                        limitZoom: 19,
-                        //maxAfter: 'google.scheme'
+                        maxZoom: 19
                     },
                     {
                         id: 'mapnik_de',
@@ -158,13 +174,13 @@ define([
                         selected: ko.observable(false),
                         obj: new L.TileLayer('https://{s}.tile.openstreetmap.de/tiles/osmde/{z}/{x}/{y}.png', {
                             updateWhenIdle: false,
-                            maxZoom: 20,
+                            maxZoom: 19,
                             maxNativeZoom: 18,
                             attribution: 'OSM Deutsch | &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                         }),
-                        maxZoom: 20,
+                        maxZoom: 19,
                         limitZoom: 18,
-                        maxAfter: 'mapnik'
+                        maxAfter: 'osm.mapnik'
                     },
                     {
                         id: 'mapnik_fr',
@@ -172,12 +188,13 @@ define([
                         selected: ko.observable(false),
                         obj: new L.TileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
                             updateWhenIdle: false,
-                            maxZoom: 20,
+                            maxZoom: 19,
+                            maxNativeZoom: 18,
                             attribution: 'OSM Française | &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                         }),
-                        maxZoom: 20,
-                        limitZoom: 19,
-                        maxAfter: 'mapnik'
+                        maxZoom: 19,
+                        limitZoom: 18,
+                        maxAfter: 'osm.mapnik'
                     },
                     {
                         id: 'opentopomap',
@@ -185,13 +202,13 @@ define([
                         selected: ko.observable(false),
                         obj: new L.TileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
                             updateWhenIdle: false,
-                            maxZoom: 20,
+                            maxZoom: 18,
                             maxNativeZoom: 17,
                             attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | <a href="http://viewfinderpanoramas.org">SRTM</a> | Стиль карты: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
                         }),
-                        maxZoom: 20,
+                        maxZoom: 18,
                         limitZoom: 17,
-                        maxAfter: 'mapnik'
+                        maxAfter: 'osm.mapnik'
                     },
                     {
                         id: 'stamen_bw',
@@ -204,9 +221,7 @@ define([
                             ext: 'png',
                             updateWhenIdle: false
                         }),
-                        maxZoom: 20,
-                        limitZoom: 20,
-                        maxAfter: 'mapnik'
+                        maxZoom: 20
                     }
                 ])
             });
@@ -305,12 +320,12 @@ define([
                         obj: new L.TileLayer('http://tile.mtbmap.cz/mtbmap_tiles/{z}/{x}/{y}.png', {
                             attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | <a href="http://mtbmap.cz/">mtbmap.cz</a>',
                             updateWhenIdle: false,
-                            maxZoom: 20,
-                            maxNativeZoom: 19
+                            maxZoom: 19,
+                            maxNativeZoom: 18
                         }),
-                        maxZoom: 20,
-                        limitZoom: 19,
-                        maxAfter: 'mapnik'
+                        maxZoom: 19,
+                        limitZoom: 18,
+                        maxAfter: 'osm.mapnik'
                     },
                     {
                         id: 'warfly',
