@@ -14,7 +14,6 @@ export function configure(startStamp) {
     const {
         storePath,
         uploader: {
-            hostname,
             port: listenport,
         },
     } = config;
@@ -287,10 +286,10 @@ export function configure(startStamp) {
         }
     };
 
-    http.createServer(handleRequest).listen(listenport, hostname, () => {
+    http.createServer(handleRequest).listen(listenport, '0.0.0.0', () => {
         logger.info(
             `Uploader server started up in ${(Date.now() - startStamp) / 1000}s`,
-            `and listening [${hostname || '*'}:${listenport}]\n`
+            `and listening [*:${listenport}]\n`
         );
     });
 }
