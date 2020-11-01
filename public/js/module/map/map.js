@@ -12,7 +12,9 @@ define([
     var defaults = {
         sys: 'osm',
         type: 'osmosnimki',
-        minZoom: 3
+        minZoom: 3,
+        maxZoom: 18,
+        zoom: 17
     };
 
     return Cliche.extend({
@@ -416,7 +418,7 @@ define([
             var bbox;
             var fitBounds;
             var qParams = globalVM.router.params();
-            var zoom = Number(qParams.z) || (this.embedded ? 17 : (Utils.getLocalStorage('map.zoom') || Locations.current.z));
+            var zoom = Number(qParams.z) || (this.embedded ? defaults.zoom : (Utils.getLocalStorage('map.zoom') || Locations.current.z));
             var system = qParams.s || Utils.getLocalStorage(this.embedded ? 'map.embedded.sys' : 'map.sys') || defaults.sys;
             var type = qParams.t || Utils.getLocalStorage(this.embedded ? 'map.embedded.type' : 'map.type') || defaults.type;
 
@@ -468,7 +470,7 @@ define([
                 zoomControl: false // Remove default zoom control (we use our own)
             });
             if (fitBounds) {
-                this.map.fitBounds(fitBounds, { maxZoom: 18 });
+                this.map.fitBounds(fitBounds, { maxZoom: defaults.maxZoom });
             }
             this.markerManager = new MarkerManager(this.map, {
                 enabled: false,
