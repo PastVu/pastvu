@@ -5,8 +5,7 @@
 define(['leaflet', 'async!' + (location.protocol || 'http:') + '//maps.googleapis.com/maps/api/js?v=3.11&sensor=false&region=RU'], function (L) {
     (function (google, L) {
 
-        L.Google = L.Class.extend({
-            includes: L.Mixin.Events,
+        L.Google = L.Layer.extend({
             incomingAnimation: false,
 
             options: {
@@ -44,7 +43,7 @@ define(['leaflet', 'async!' + (location.protocol || 'http:') + '//maps.googleapi
                 // set up events
                 map.on('viewreset', this._resetCallback, this);
 
-                this._limitedUpdate = L.Util.limitExecByInterval(this._update, 150, this);
+                this._limitedUpdate = L.Util.throttle(this._update, 150, this);
                 map.on('move', this._update, this);
                 //map.on('moveend', this._update, this);
 
