@@ -10,7 +10,7 @@ define([
 ], function (_, $, Utils, socket, P, ko, koMapping, Cliche, globalVM, noties, L, doT, pug) {
     'use strict';
 
-    var $requestGoogle;
+    var requestNominatim;
     var popupLoadingTpl = doT.template(
         '<table style="text-align: center" border="0" cellspacing="5" cellpadding="0"><tbody>' +
         '<tr><td style="width: 200px;">{{=it.geo}}<hr style="margin: 2px 0 5px;"></td></tr>' +
@@ -20,7 +20,7 @@ define([
     var popupTpl = doT.template(
         '<table style="text-align: center;" border="0" cellspacing="5" cellpadding="0"><tbody>' +
         '<tr><td colspan="2">{{=it.geo}}<hr style="margin: 2px 0 5px;"></td></tr>' +
-        '<tr style="font-weight: bold;"><td style="min-width:150px;">PastVu</td><td style="min-width:150px;">Google</td></tr>' +
+        '<tr style="font-weight: bold;"><td style="min-width:150px;">PastVu</td><td style="min-width:150px;">Nominatim</td></tr>' +
         '<tr><td style="vertical-align: top;">' +
         '{{~it.parr :value:index}}<a target="_blank" href="/admin/region/{{=value.cid}}">{{=value.title_local}}</a><br>{{~}}' +
         '</td><td style="vertical-align: top;">' +
@@ -76,7 +76,8 @@ define([
             this.pointLayer = L.layerGroup();
 
             L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 16
+                maxZoom: 16,
+                attribution: 'Data &copy; OpenStreetMap contributors, ODbL 1.0. https://osm.org/copyright'
             }).addTo(this.map);
 
             this.map.whenReady(function () {
@@ -179,13 +180,13 @@ define([
                 this.ownRegionsDeffered.reject();
                 this.ownRegionsDeffered = null;
             }
-            if (this.googRegionsDeffered) {
-                this.googRegionsDeffered.reject();
-                this.googRegionsDeffered = null;
+            if (this.nominatimRegionsDeffered) {
+                this.nominatimRegionsDeffered.reject();
+                this.nominatimRegionsDeffered = null;
             }
-            if ($requestGoogle) {
-                $requestGoogle.abort();
-                $requestGoogle = null;
+            if (requestNominatim) {
+                requestNominatim.abort();
+                requestNominatim = null;
             }
         },
         updateRegion: function (geo) {
@@ -210,14 +211,14 @@ define([
             //Тогда нижележащий $.when.done выстрелит гарантированно по окончанию обоих запросов
             //и не выстрелит, если мы сами их отменим
             this.ownRegionsDeffered = new $.Deferred();
-            this.googRegionsDeffered = new $.Deferred();
+            this.nominatimRegionsDeffered = new $.Deferred();
             this.ownRegionsDeffered.always(function () {
                 this.ownRegionsDeffered = null;
             }.bind(this));
-            this.googRegionsDeffered.always(function () {
-                this.googRegionsDeffered = null;
+            this.nominatimRegionsDeffered.always(function () {
+                this.nominatimRegionsDeffered = null;
             }.bind(this));
-            $.when(this.ownRegionsDeffered, this.googRegionsDeffered)
+            $.when(this.ownRegionsDeffered, this.nominatimRegionsDeffered)
                 .done(function () {
                     this.marker.setPopupContent(popupTpl(tplObj)).openPopup();
                 }.bind(this));
@@ -234,9 +235,9 @@ define([
                 }
             }, this);
 
-            //Запрашиваем регионы Google
-            $requestGoogle = $.ajax(
-                'http://maps.googleapis.com/maps/api/geocode/json?latlng=' + geo[0] + ',' + geo[1] + '&language=en&sensor=true',
+            //Query Nominatim (https://nominatim.org/release-docs/develop/api/Reverse/).
+            requestNominatim = $.ajax(
+                'https://nominatim.openstreetmap.org/reverse?format=geocodejson&lat=' + geo[0] + '&lon=' + geo[1],
                 {
                     crossDomain: true,
                     dataType: 'json',
@@ -244,50 +245,37 @@ define([
                     context: this
                 }
             );
-            $requestGoogle
+            requestNominatim
                 .fail(function (jqXHR, textStatus, errorThrown) {
-                    console.warn(textStatus, errorThrown);
-                    tplObj.garr.push(textStatus);
+                    if (jqXHR.responseJSON.hasOwnProperty('error')) {
+                        tplObj.garr.push(jqXHR.responseJSON.error.message);
+                        console.warn('Error: ' + jqXHR.responseText);
+                    } else {
+                        tplObj.garr.push(textStatus);
+                        console.warn(textStatus, errorThrown);
+                    }
                 })
                 .done(function (result/*, textStatus, jqXHR*/) {
-                    if (result && Array.isArray(result.results)) {
-                        var level2 = {};
-                        var level1 = {};
-                        var country = {};
-                        var i = result.results.length;
-
-                        if (result.status === 'OK') {
-                            while (i--) {
-                                if (Array.isArray(result.results[i].types)) {
-                                    if (~result.results[i].types.indexOf('country')) {
-                                        country = result.results[i].address_components[0];
-                                    }
-                                    if (~result.results[i].types.indexOf('administrative_area_level_1')) {
-                                        level1 = result.results[i].address_components[0];
-                                    }
-                                    if (~result.results[i].types.indexOf('administrative_area_level_2')) {
-                                        level2 = result.results[i].address_components[0];
-                                    }
-                                }
-                            }
-                            if (country.long_name) {
-                                tplObj.garr.push(country.long_name);
-                            }
-                            if (level1.long_name) {
-                                tplObj.garr.push(level1.long_name);
-                            }
-                            console.log(level2);
-                        } else {
-                            tplObj.garr.push(result.status);
+                    if (result.hasOwnProperty('error')) {
+                        // Error property in 200 responce object, e.g. when clicking at ocean.
+                        tplObj.garr.push(result.error);
+                    }
+                    if (result.hasOwnProperty('features') && result.features.length !== 0) {
+                        let geocoding = result.features[0].properties.geocoding;
+                        // Add country.
+                        tplObj.garr.push(geocoding.country);
+                        // Add all adminstrative boundaries.
+                        let reg;
+                        for (reg in geocoding.admin) {
+                            tplObj.garr.push(geocoding.admin[reg]);
                         }
-
                     }
                 })
                 .always(function () {
-                    if (this.googRegionsDeffered) {
-                        this.googRegionsDeffered.resolve();
+                    if (this.nominatimRegionsDeffered) {
+                        this.nominatimRegionsDeffered.resolve();
                     }
-                    $requestGoogle = null;
+                    requestNominatim = null;
                 });
         },
         getPastvuRegion: function (geo, cb, ctx) {
