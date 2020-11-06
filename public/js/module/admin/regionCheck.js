@@ -18,13 +18,17 @@ define([
         '</tbody></table>'
     );
     var popupTpl = doT.template(
+        '{{##def.nurl:' +
+        '<a target="_blank" href="https://nominatim.openstreetmap.org/ui/details.html?place_id={{=value.place_id}}">{{=value.title}}</a>#}}' +
+        '{{##def.purl:' +
+        '<a target="_blank" href="/admin/region/{{=value.cid}}">{{=value.title_local}}</a>#}}' +
         '<table style="text-align: center;" border="0" cellspacing="5" cellpadding="0"><tbody>' +
         '<tr><td colspan="2">{{=it.geo}}<hr style="margin: 2px 0 5px;"></td></tr>' +
         '<tr style="font-weight: bold;"><td style="min-width:150px;">PastVu</td><td style="min-width:150px;">Nominatim</td></tr>' +
         '<tr><td style="vertical-align: top;">' +
-        '{{~it.parr :value:index}}<a target="_blank" href="/admin/region/{{=value.cid}}">{{=value.title_local}}</a><br>{{~}}' +
+        '{{~it.parr :value:index}}{{? !value.err}}{{#def.purl}}{{?? true}}{{=value.err}}{{?}}<br>{{~}}' +
         '</td><td style="vertical-align: top;">' +
-        '{{~it.garr :value:index}}{{=value}}<br>{{~}}' +
+        '{{~it.narr :value:index}}{{? value.place_id }}{{#def.nurl}}{{?? true }}{{=value.title || value.err}}{{?}}<br>{{~}}' +
         '</td></tr>' +
         '</tbody></table>'
     );
@@ -196,7 +200,7 @@ define([
             var tplObj = {
                 geo: geo[0] + ' , ' + geo[1],
                 parr: [],
-                garr: []
+                narr: []
             };
 
             //Сразу показываем маркер загрузки регионов
@@ -226,7 +230,7 @@ define([
             // Запрашиваем собственные регионы
             this.getPastvuRegion(geo, function (err, data) {
                 if (err) {
-                    tplObj.parr.push(err.message);
+                    tplObj.parr.push({'err': err.message});
                 } else {
                     tplObj.parr = data.regions;
                 }
@@ -248,26 +252,32 @@ define([
             requestNominatim
                 .fail(function (jqXHR, textStatus, errorThrown) {
                     if (jqXHR.responseJSON.hasOwnProperty('error')) {
-                        tplObj.garr.push(jqXHR.responseJSON.error.message);
+                        tplObj.narr.push({'err': jqXHR.responseJSON.error.message});
                         console.warn('Error: ' + jqXHR.responseText);
                     } else {
-                        tplObj.garr.push(textStatus);
+                        tplObj.narr.push({'err': textStatus});
                         console.warn(textStatus, errorThrown);
                     }
                 })
                 .done(function (result/*, textStatus, jqXHR*/) {
                     if (result.hasOwnProperty('error')) {
                         // Error property in 200 responce object, e.g. when clicking at ocean.
-                        tplObj.garr.push(result.error);
+                        tplObj.narr.push({'err': result.error});
                     }
                     if (result.hasOwnProperty('features') && result.features.length !== 0) {
                         let geocoding = result.features[0].properties.geocoding;
                         // Add country.
-                        tplObj.garr.push(geocoding.country);
+                        tplObj.narr.push({'title': geocoding.country});
                         // Add all adminstrative boundaries.
-                        let reg;
-                        for (reg in geocoding.admin) {
-                            tplObj.garr.push(geocoding.admin[reg]);
+                        let numRecs = Object.keys(geocoding.admin).length;
+                        let count = 0;
+                        for (const reg in geocoding.admin) {
+                            count++;
+                            let value = {'title': geocoding.admin[reg]};
+                            // For last item in the list add place_id, so URL
+                            // for place details is displayed.
+                            value['place_id'] = (numRecs === count) ? geocoding.place_id : '';
+                            tplObj.narr.push(value);
                         }
                     }
                 })
