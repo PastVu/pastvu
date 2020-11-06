@@ -20,7 +20,6 @@ export async function configure(startStamp) {
     const {
         storePath,
         downloader: {
-            hostname,
             port: listenport,
         },
     } = config;
@@ -308,10 +307,10 @@ export async function configure(startStamp) {
             res.statusCode = 404;
             res.end(status404Text);
         })
-        .listen(listenport, hostname, () => {
+        .listen(listenport, '0.0.0.0', () => {
             logger.info(
                 `Downloader server started up in ${(Date.now() - startStamp) / 1000}s`,
-                `and listening [${hostname || '*'}:${listenport}]\n`
+                `and listening [*:${listenport}]\n`
             );
 
             scheduleMemInfo(startStamp - Date.now());
