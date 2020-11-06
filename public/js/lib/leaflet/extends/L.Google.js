@@ -61,7 +61,6 @@ define(['leaflet', 'async!' + (location.protocol || 'http:') + '//maps.googleapi
                 this._map.off('viewreset', this._resetCallback, this);
 
                 this._map.off('move', this._update, this);
-                map._controlCorners['bottomright'].style.display = "block";
                 //this._map.off('moveend', this._update, this);
             },
 
