@@ -47,8 +47,6 @@ define(['leaflet', 'async!' + (location.protocol || 'http:') + '//maps.googleapi
                 map.on('move', this._update, this);
                 //map.on('moveend', this._update, this);
 
-                map._controlCorners['bottomright'].style.display = "none";
-
                 this._reset();
                 this._update();
             },
