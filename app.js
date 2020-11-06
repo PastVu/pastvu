@@ -295,7 +295,7 @@ export async function configure(startStamp) {
     logger.info(`servePublic: ${config.servePublic}, serveStore ${config.serveStore}`);
     logger.info(`Host for users: [${config.client.host}]`);
 
-    await new CoreServer('Core', { port: config.core.port, host: config.core.hostname }, logger).listen();
+    await new CoreServer('Core', { port: config.core.port, host: '0.0.0.0' }, logger).listen();
 
     httpServer.listen(port, hostname, () => {
         logger.info(
