@@ -40,8 +40,6 @@ define(['leaflet', (location.protocol || 'http:') + '//api-maps.yandex.ru/2.0/?l
                 this._limitedUpdate = L.Util.throttle(this._update, 150, this);
                 map.on('move', this._update, this);
 
-                map._controlCorners['bottomright'].style.display = "none";
-
                 this._reset();
                 this._update(true);
             },
