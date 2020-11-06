@@ -1927,18 +1927,17 @@ async function giveNearestPhotos({ geo, type, year, year2, except, distance, lim
 
     const years = isPainting ? paintYears : photoYears;
 
-    if (_.isNumber(year) && year > years.min && year < years.max) {
-        query.year = { $gte: year };
+    let yearsQuery = {};
+    if (_.isNumber(year) && year > years.min) {
+        // Set 'from' year boundary.
+        yearsQuery.$gte = year;
     }
-
-    if (_.isNumber(year2) && year2 > years.min && year2 < years.max) {
-        if (year === year2) {
-            query.year = year;
-        } else if (!query.year) {
-            query.year = { $lte: year2 };
-        } else if (year2 > year) {
-            query.year.$lte = year2;
-        }
+    if (_.isNumber(year2) && year2 < years.max) {
+        // Set 'to' year boundary.
+        yearsQuery.$lte = year2;
+    }
+    if (!_.isEmpty(yearsQuery)) {
+        query.year = yearsQuery;
     }
 
     if (_.isNumber(except) && except > 0) {

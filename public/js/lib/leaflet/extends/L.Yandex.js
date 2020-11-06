@@ -6,8 +6,7 @@ define(['leaflet', (location.protocol || 'http:') + '//api-maps.yandex.ru/2.0/?l
 
     (function (ymaps, L) {
 
-        L.Yandex = L.Class.extend({
-            includes: L.Mixin.Events,
+        L.Yandex = L.Layer.extend({
             incomingAnimation: false,
 
             options: {
@@ -38,7 +37,7 @@ define(['leaflet', (location.protocol || 'http:') + '//api-maps.yandex.ru/2.0/?l
                 // set up events
                 map.on('viewreset', this._resetCallback, this);
 
-                this._limitedUpdate = L.Util.limitExecByInterval(this._update, 150, this);
+                this._limitedUpdate = L.Util.throttle(this._update, 150, this);
                 map.on('move', this._update, this);
 
                 map._controlCorners['bottomright'].style.display = "none";
