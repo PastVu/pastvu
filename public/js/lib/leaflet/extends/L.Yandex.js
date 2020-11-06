@@ -53,8 +53,6 @@ define(['leaflet', (location.protocol || 'http:') + '//api-maps.yandex.ru/2.0/?l
                 this._map.off('viewreset', this._resetCallback, this);
 
                 this._map.off('move', this._update, this);
-
-                map._controlCorners['bottomright'].style.display = "block";
             },
 
             getAttribution: function () {
