@@ -464,14 +464,14 @@ define([
                 this.mapObjects.photos[curr.cid] = undefined;
             } else {
                 // Если оно новое - создаем его объект и маркер
-                if (!boundChanged || this.calcBound.contains(curr.geo)) {
+                if (!boundChanged || this.calcBound.contains(curr.φλ0)) {
                     curr.sfile = Photo.picFormats.m + curr.file;
                     divIcon = L.divIcon({
                         className: 'photoIcon ' + getYearClass(curr.year, isPainting) + ' ' + curr.dir,
                         iconSize: this.sizePoint
                     });
                     curr.marker =
-                        L.marker(curr.geo, {
+                        L.marker(curr.φλ0, {
                                 icon: divIcon,
                                 riseOnHover: true,
                                 data: { cid: curr.cid, type: 'photo', obj: curr }
@@ -586,7 +586,7 @@ define([
                 curr = data.photos[--i];
                 if (!this.mapObjects.photos[curr.cid]) {
                     // Если оно новое - создаем его объект и маркер
-                    if (!boundChanged || this.calcBound.contains(curr.geo)) {
+                    if (!boundChanged || this.calcBound.contains(curr.φλ0)) {
                         curr.sfile = Photo.picFormats.m + curr.file;
                         divIcon = L.divIcon(
                             {
@@ -595,7 +595,7 @@ define([
                             }
                         );
                         curr.marker =
-                            L.marker(curr.geo, {
+                            L.marker(curr.φλ0, {
                                     icon: divIcon,
                                     riseOnHover: true,
                                     data: { cid: curr.cid, type: 'photo', obj: curr }
@@ -627,9 +627,9 @@ define([
      */
     MarkerManager.prototype.createClusters = function (data, withGravity) {
         var start = Date.now(),
-            delta = this.clientClusteringDelta[this.currZoom] || this.clientClusteringDelta['default'],
-            clusterW = Utils.math.toPrecision(Math.abs(this.map.layerPointToLatLng(new L.Point(delta, 1)).lng - this.map.layerPointToLatLng(new L.Point(0, 1)).lng)),
-            clusterH = Utils.math.toPrecision(Math.abs(this.map.layerPointToLatLng(new L.Point(1, delta)).lat - this.map.layerPointToLatLng(new L.Point(1, 0)).lat)),
+            Δ = this.clientClusteringDelta[this.currZoom] || this.clientClusteringDelta['default'],
+            clusterW = Utils.math.toPrecision(Math.abs(this.map.layerPointToLatLng(new L.Point(Δ, 1)).lng - this.map.layerPointToLatLng(new L.Point(0, 1)).lng)),
+            clusterH = Utils.math.toPrecision(Math.abs(this.map.layerPointToLatLng(new L.Point(1, Δ)).lat - this.map.layerPointToLatLng(new L.Point(1, 0)).lat)),
             clusterWHalf = Utils.math.toPrecision(clusterW / 2),
             clusterHHalf = Utils.math.toPrecision(clusterH / 2),
             result = { photos: [], clusters: [] },
@@ -639,7 +639,7 @@ define([
             geoPhoto,
             geoPhotoCorrection,
 
-            geo,
+            φλ0,
             cluster,
             clusters = {},
             clustCoordId,
@@ -650,20 +650,20 @@ define([
         i = data.length;
         while (i) {
             photo = data[--i];
-            geoPhoto = photo.geo;
+            geoPhoto = photo.φλ0;
             geoPhotoCorrection = [geoPhoto[0] > 0 ? 1 : 0, geoPhoto[1] < 0 ? -1 : 0];
 
-            geo = [~~(clusterH * (~~(geoPhoto[0] / clusterH) + geoPhotoCorrection[0]) * precisionDivider) / precisionDivider, ~~(clusterW * (~~(geoPhoto[1] / clusterW) + geoPhotoCorrection[1]) * precisionDivider) / precisionDivider];
-            clustCoordId = geo[0] + '@' + geo[1];
+            φλ0 = [~~(clusterH * (~~(geoPhoto[0] / clusterH) + geoPhotoCorrection[0]) * precisionDivider) / precisionDivider, ~~(clusterW * (~~(geoPhoto[1] / clusterW) + geoPhotoCorrection[1]) * precisionDivider) / precisionDivider];
+            clustCoordId = φλ0[0] + '@' + φλ0[1];
             cluster = clusters[clustCoordId];
             if (cluster === undefined) {
                 //При создании объекта в year надо присвоить минимум значащую цифру,
                 //иначе v8(>=3.19) видимо не выделяет память и при добавлении очередного photo.year крэшится через несколько итераций
                 clusters[clustCoordId] = {
                     cid: clustCoordId,
-                    geo: geo,
-                    lats: geo[0] - clusterHHalf,
-                    lngs: geo[1] + clusterWHalf,
+                    geo: φλ0,
+                    lats: φλ0[0] - clusterHHalf,
+                    lngs: φλ0[1] + clusterWHalf,
                     year: 1,
                     c: 1,
                     photos: []
@@ -674,8 +674,8 @@ define([
             cluster.c += 1;
             cluster.year += photo.year;
             if (withGravity) {
-                cluster.lats += photo.geo[0];
-                cluster.lngs += photo.geo[1];
+                cluster.lats += photo.φλ0[0];
+                cluster.lngs += photo.φλ0[1];
             }
             cluster.photos.push(photo);
         }
@@ -688,7 +688,7 @@ define([
 
             if (cluster.c > 2) {
                 if (withGravity) {
-                    cluster.geo = [~~(cluster.lats / cluster.c * precisionDivider) / precisionDivider, ~~(cluster.lngs / cluster.c * precisionDivider) / precisionDivider];
+                    cluster.φλ0 = [~~(cluster.lats / cluster.c * precisionDivider) / precisionDivider, ~~(cluster.lngs / cluster.c * precisionDivider) / precisionDivider];
                 }
                 cluster.c -= 1;
                 cluster.year = --cluster.year / cluster.c >> 0; //Из суммы лет надо вычесть единицу, т.к. прибавили её при создании кластера для v8
@@ -717,8 +717,8 @@ define([
             i = clusters.length;
             while (i) {
                 cluster = clusters[--i];
-                if (!boundChanged || this.calcBound.contains(cluster.geo)) {
-                    cluster.cid = cluster.geo[0] + '@' + cluster.geo[1];
+                if (!boundChanged || this.calcBound.contains(cluster.φλ0)) {
+                    cluster.cid = cluster.φλ0[0] + '@' + cluster.φλ0[1];
                     if (cluster.c > 499) {
                         if (cluster.c > 2999) {
                             size = this.sizeClusterb;
@@ -743,7 +743,7 @@ define([
                     });
                     cluster.measure = measure;
                     cluster.marker =
-                        L.marker(cluster.geo, {
+                        L.marker(cluster.φλ0, {
                                 icon: divIcon,
                                 riseOnHover: true,
                                 data: { type: 'clust', obj: cluster }
@@ -775,7 +775,7 @@ define([
             i = clusters.length;
             while (i) {
                 cluster = clusters[--i];
-                if (!boundChanged || this.calcBound.contains(cluster.geo)) {
+                if (!boundChanged || this.calcBound.contains(cluster.φλ0)) {
                     if (cluster.c > 9) {
                         if (cluster.c > 49) {
                             size = this.sizeClusterLb;
@@ -794,7 +794,7 @@ define([
                         html: cluster.c
                     });
                     cluster.marker =
-                        L.marker(cluster.geo, {
+                        L.marker(cluster.φλ0, {
                                 icon: divIcon,
                                 riseOnHover: true,
                                 data: { type: 'clust', obj: cluster }
@@ -836,7 +836,7 @@ define([
 
         for (i in objHash) {
             obj = objHash[i];
-            if (obj !== undefined && (!onlyOutBound || !onlyOutBound.contains(obj.geo))) {
+            if (obj !== undefined && (!onlyOutBound || !onlyOutBound.contains(obj.φλ0))) {
                 layer.removeLayer(obj.marker.clearAllEventListeners());
                 delete obj.marker.options.data.obj;
                 delete obj.marker.options.data;
@@ -951,7 +951,7 @@ define([
             i = this.photosAll.length;
             while (i) {
                 curr = this.photosAll[--i];
-                if (bound.contains(curr.geo)) {
+                if (bound.contains(curr.φλ0)) {
                     arr.push(curr);
                 }
             }
