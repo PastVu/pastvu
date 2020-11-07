@@ -71,11 +71,11 @@ define([
 
                 this.geoInputComputed = this.co.geoInputComputed = ko.computed({
                     read: function () {
-                        var geo = this.point.geo();
-                        return _.isEmpty(geo) ? '' : geo.join(',');
+                        var φλ0 = this.point.φλ0();
+                        return _.isEmpty(φλ0) ? '' : φλ0.join(',');
                     },
                     write: function (value) {
-                        var geo = this.point.geo();
+                        var φλ0 = this.point.φλ0();
                         var inputGeo;
 
                         if (_.isEmpty(value)) {
@@ -89,9 +89,9 @@ define([
                                 })
                                 .map(Number);
 
-                            if (Utils.geo.checkLatLng(inputGeo) && !_.isEqual(inputGeo, geo)) {
+                            if (Utils.geo.checkLatLng(inputGeo) && !_.isEqual(inputGeo, φλ0)) {
                                 inputGeo = Utils.geo.geoToPrecision(inputGeo);
-                                this.point.geo(inputGeo);
+                                this.point.φλ0(inputGeo);
 
                                 if (this.pointMarkerEdit) {
                                     this.pointMarkerEdit.setLatLng(inputGeo);
@@ -118,6 +118,25 @@ define([
 
             this.infoShow = ko.observable(true);
 
+            this.createMapLayers();
+
+            this.showLinkBind = this.showLink.bind(this);
+
+            ko.applyBindings(globalVM, this.$dom[0]);
+
+            // Subscriptions
+            this.subscriptions.edit = this.editing.subscribe(this.editHandler, this);
+            this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
+            this.subscriptions.openNewTab = this.openNewTab.subscribe(function (val) {
+                if (this.markerManager) {
+                    this.markerManager.openNewTab = val;
+                }
+                this.setLocalState();
+            }, this);
+
+            this.show();
+        },
+        createMapLayers: function() {
             this.layers.push({
                 id: 'osm',
                 desc: 'OSM',
@@ -327,22 +346,6 @@ define([
                     }
                 ])
             });
-
-            this.showLinkBind = this.showLink.bind(this);
-
-            ko.applyBindings(globalVM, this.$dom[0]);
-
-            // Subscriptions
-            this.subscriptions.edit = this.editing.subscribe(this.editHandler, this);
-            this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
-            this.subscriptions.openNewTab = this.openNewTab.subscribe(function (val) {
-                if (this.markerManager) {
-                    this.markerManager.openNewTab = val;
-                }
-                this.setLocalState();
-            }, this);
-
-            this.show();
         },
         setLocalState: function () {
             var layerActive = this.layerActive();
@@ -426,8 +429,8 @@ define([
                 if (this.point) {
                     region = _.last(this.point.regions());
 
-                    if (this.point.geo()) {
-                        center = this.point.geo();
+                    if (this.point.φλ0()) {
+                        center = this.point.φλ0();
                     } else if (region && region.center) {
                         center = [region.center()[1], region.center()[0]];
 
@@ -572,7 +575,7 @@ define([
         },
 
         setPoint: function (point, isPainting) {
-            var geo = point.geo();
+            var φλ0 = point.φλ0();
             var bbox;
             var zoom;
             var region = _.last(point.regions());
@@ -587,20 +590,20 @@ define([
             }
             if (this.editing()) {
                 if (this.pointMarkerEdit) {
-                    if (geo) {
-                        this.pointMarkerEdit.setLatLng(geo);
+                    if (φλ0) {
+                        this.pointMarkerEdit.setLatLng(φλ0);
                     } else {
                         this.pointEditMarkerDestroy();
                     }
-                } else if (geo) {
+                } else if (φλ0) {
                     this.pointEditMarkerCreate();
                 }
             } else {
                 this.pointHighlightCreate();
             }
 
-            if (geo) {
-                this.map.panTo(geo);
+            if (φλ0) {
+                this.map.panTo(φλ0);
             } else if (region && region.center) {
                 if (region.bboxhome || region.bbox) {
                     bbox = region.bboxhome() || region.bbox();
@@ -617,36 +620,36 @@ define([
             return this;
         },
         geoInputBlur: function (vm, evt) {
-            var geo = this.point.geo();
+            var φλ0 = this.point.φλ0();
             var $inputGeo = $(evt.target);
             var inputGeo = $inputGeo.val();
 
-            // При выходе фокуса с поля координаты, вставляем актуальное в него значение geo, например, если оно в поле не валидное
-            if (_.isEmpty(geo)) {
+            // При выходе фокуса с поля координаты, вставляем актуальное в него значение φλ0 (точки фотографа/художника), например, если оно в поле не валидное
+            if (_.isEmpty(φλ0)) {
                 if (inputGeo) {
                     $inputGeo.val('');
                 }
             } else {
-                geo = geo.join(',');
-                if (geo !== inputGeo) {
-                    $inputGeo.val(geo);
+                φλ0 = φλ0.join(',');
+                if (φλ0 !== inputGeo) {
+                    $inputGeo.val(φλ0);
                 }
             }
         },
         delPointGeo: function () {
-            this.pointHighlightDestroy().pointEditMarkerDestroy().point.geo(null);
+            this.pointHighlightDestroy().pointEditMarkerDestroy().point.φλ0(null);
         },
 
         // Создает подсвечивающий маркер для point, если координаты точки есть
         pointHighlightCreate: function () {
             this.pointHighlightDestroy();
-            if (this.point && this.point.geo()) {
+            if (this.point && this.point.φλ0()) {
                 var divIcon = L.divIcon({
                     className: 'photoIcon highlight ' + 'y' + this.point.year() + ' ' + this.point.dir(),
                     iconSize: new L.Point(8, 8)
                 });
 
-                this.pointMarkerHL = L.marker(this.point.geo(), {
+                this.pointMarkerHL = L.marker(this.point.φλ0(), {
                     zIndexOffset: 10000,
                     draggable: false,
                     title: this.point.title(),
@@ -666,19 +669,19 @@ define([
         },
 
         // Создает редактирующий маркер, если координаты точки есть, а если нет, то создает по клику на карте
-        pointEditCreate: function () {
+        pointEditCreate: function () { // GEO EDITOR: INI POINT
             this.pointEditDestroy();
             if (this.point) {
-                if (this.point.geo()) {
+                if (this.point.φλ0()) {
                     this.pointEditMarkerCreate();
                 }
                 this.map.on('click', function (e) {
-                    var geo = Utils.geo.geoToPrecision([e.latlng.lat, e.latlng.lng]);
+                    var φλ0 = Utils.geo.geoToPrecision([e.latlng.lat, e.latlng.lng]);
 
-                    this.point.geo(geo);
+                    this.point.φλ0(φλ0);
 
                     if (this.pointMarkerEdit) {
-                        this.pointMarkerEdit.setLatLng(geo);
+                        this.pointMarkerEdit.setLatLng(φλ0);
                     } else {
                         this.pointEditMarkerCreate();
                     }
@@ -693,7 +696,7 @@ define([
         },
         pointEditMarkerCreate: function () {
             var self = this;
-            this.pointMarkerEdit = L.marker(this.point.geo(),
+            this.pointMarkerEdit = L.marker(this.point.φλ0(), // GEO EDITOR: etalon central L.Marker for φλ0
                 {
                     draggable: true,
                     title: 'Точка съемки',
@@ -706,7 +709,7 @@ define([
                 })
                 .on('dragend', function () {
                     var latlng = Utils.geo.geoToPrecision(this.getLatLng());
-                    self.point.geo([latlng.lat, latlng.lng]);
+                    self.point.φλ0([latlng.lat, latlng.lng]);
                 })
                 .addTo(this.pointLayer);
             return this;
