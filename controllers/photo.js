@@ -72,7 +72,10 @@ const compactFields = {
     cid: 1,
     file: 1,
     s: 1,
-    geo: 1,
+    φλ0: 1,
+    φλ1: 1,
+    β: 1,
+    geoCalc: 1,
     dir: 1,
     title: 1,
     year: 1,
@@ -88,8 +91,8 @@ const compactFieldsForReg = {
     ucdate: 1, // For checking of changes
     mime: 1, // For serving protected files
 };
-const compactFieldsWithRegions = { geo: 1, ...compactFields, ...regionController.regionsAllSelectHash };
-const compactFieldsForRegWithRegions = { geo: 1, ...compactFieldsForReg, ...regionController.regionsAllSelectHash };
+const compactFieldsWithRegions = { φλ0: 1, ...compactFields, ...regionController.regionsAllSelectHash };
+const compactFieldsForRegWithRegions = { φλ0: 1, ...compactFieldsForReg, ...regionController.regionsAllSelectHash };
 
 export const permissions = {
     // Determines whether the user can moderate the photo
@@ -345,7 +348,7 @@ async function getBounds(data) {
         const yearCriteria = hasYears ? year === year2 ? year : { $gte: year, $lte: year2 } : false;
 
         photos = await Promise.all(bounds.map(bound => {
-            const criteria = { geo: { $geoWithin: { $box: bound } } };
+            const criteria = { φλ0: { $geoWithin: { $box: bound } } };
 
             if (yearCriteria) {
                 criteria.year = yearCriteria;
@@ -357,8 +360,8 @@ async function getBounds(data) {
         photos = photos.length > 1 ? _.flatten(photos) : photos[0];
     }
 
-    // Reverse geo
-    photos.forEach(photo => photo.geo.reverse());
+    // Reverse φλ0, photographer's point
+    photos.forEach(photo => photo.φλ0.reverse());
 
     return { photos, clusters };
 }
@@ -400,11 +403,11 @@ async function give(params) {
         }
     }
 
-    const regionFields = photo.geo ? ['cid', 'title_local'] :
+    const regionFields = photo.φλ0 ? ['cid', 'title_local'] :
         // If photo has no coordinates, additionally take home position of regions
         { _id: 0, cid: 1, title_local: 1, center: 1, bbox: 1, bboxhome: 1 };
 
-    const regions = await this.call('region.getObjRegionList', { obj: photo, fields: regionFields, fromDb: !photo.geo });
+    const regions = await this.call('region.getObjRegionList', { obj: photo, fields: regionFields, fromDb: !photo.φλ0 });
 
     // Add public stat for each region
     regionController.fillRegionsPublicStats(regions);
@@ -462,8 +465,8 @@ async function give(params) {
         photo.regions = regions;
     }
 
-    if (photo.geo) {
-        photo.geo = photo.geo.reverse();
+    if (photo.φλ0) {
+        photo.φλ0 = photo.φλ0.reverse();
     }
 
     if (iAm.registered) {
@@ -612,13 +615,18 @@ async function create({ files }) {
             sdate: new Date(now + i * 10 + shift10y), // New photos must be always on top
             mime: item.mime,
             size: item.size,
-            geo: undefined,
+            φλ0: undefined, // photographer's point
+            φλ1: undefined, // point of central object of the image
+            β: undefined, // measure of observation
+            geoCalc: {},
             r2d: [Math.random() * 100, Math.random() * 100],
             title: item.name ? item.name.replace(/(.*)\.[^.]+$/, '$1') : undefined, // Cut off file extension
             frags: undefined,
             watersignText: getUserWaterSign(user),
             convqueue: true,
-            // geo: [_.random(36546649, 38456140) / 1000000, _.random(55465922, 56103812) / 1000000],
+            // φλ0: [_.random(36546649, 38456140) / 1000000, _.random(55465922, 56103812) / 1000000],
+            // φλ1: [_.random(36546649, 38456140) / 1000000, _.random(55465922, 56103812) / 1000000],
+            // β: _.random(36546649, 38456140) / 1000000,
             // dir: dirs[_.random(0, dirs.length - 1)],
         });
 
@@ -647,7 +655,10 @@ async function photoToMap({ photo, geoPhotoOld, yearPhotoOld, paintingMap }) {
     const $update = {
         $setOnInsert: { cid: photo.cid },
         $set: {
-            geo: photo.geo,
+            φλ0: photo.φλ0,
+            φλ1: photo.φλ1,
+            β: photo.β,
+            geoCalc: photo.geoCalc,
             file: photo.file,
             title: photo.title,
             year: photo.year,
@@ -1112,7 +1123,7 @@ const changePublicExternality = async function ({ photo, makePublic }) {
         // Recalculate number of photos of owner
         userPCountUpdate(photo.user, 0, makePublic ? 1 : -1, makePublic ? -1 : 1),
         // If photo has coordinates, means that need to do something with map
-        Utils.geo.check(photo.geo) ? this.call(makePublic ? 'photo.photoToMap' : 'photo.photoFromMap', {
+        Utils.geo.check(photo.φλ0) ? this.call(makePublic ? 'photo.photoToMap' : 'photo.photoFromMap', {
             photo, paintingMap: photo.type === constants.photo.type.PAINTING,
         }) : null,
         this.call('photo.changeFileProtection', { photo, protect: !makePublic }),
@@ -1262,7 +1273,7 @@ async function approve(data) {
     ]);
 
     // Add photo to map
-    if (Utils.geo.check(photo.geo)) {
+    if (Utils.geo.check(photo.φλ0)) {
         await this.call('photo.photoToMap', { photo, paintingMap: photo.type === constants.photo.type.PAINTING });
     }
 
@@ -1911,18 +1922,18 @@ async function giveUserPhotosAround({ cid, limitL, limitR }) {
 }
 
 // Returns array of nearest photos
-async function giveNearestPhotos({ geo, type, year, year2, except, distance, limit, skip }) {
-    if (!Utils.geo.checkLatLng(geo)) {
+async function giveNearestPhotos({ φλ0, type, year, year2, except, distance, limit, skip }) {
+    if (!Utils.geo.checkLatLng(φλ0)) {
         throw new BadParamsError();
     }
 
-    geo.reverse();
+    φλ0.reverse();
 
     type = typesSet.has(type) ? type : constants.photo.type.PHOTO;
 
     const isPainting = type === constants.photo.type.PAINTING;
 
-    const query = { geo: { $near: geo }, s: status.PUBLIC, type };
+    const query = { φλ0: { $near: φλ0 }, s: status.PUBLIC, type };
     const options = { lean: true };
 
     const years = isPainting ? paintYears : photoYears;
@@ -1945,9 +1956,9 @@ async function giveNearestPhotos({ geo, type, year, year2, except, distance, lim
     }
 
     if (_.isNumber(distance) && distance > 0 && distance < 7) {
-        query.geo.$maxDistance = distance;
+        query.φλ0.$maxDistance = distance;
     } else {
-        query.geo.$maxDistance = 2;
+        query.φλ0.$maxDistance = 2;
     }
 
     if (_.isNumber(limit) && limit > 0 && limit < 30) {
@@ -1961,7 +1972,7 @@ async function giveNearestPhotos({ geo, type, year, year2, except, distance, lim
     }
 
     const photos = await Photo.find(query, compactFields, options).exec();
-    photos.forEach(photo => photo.geo.reverse());
+    photos.forEach(photo => photo.φλ0.reverse());
     return { photos };
 }
 
@@ -2129,11 +2140,11 @@ function photoValidate(newValues, oldValues, can) {
         return result;
     }
 
-    // Validate geo
-    if (newValues.geo && Utils.geo.checkLatLng(newValues.geo)) {
-        result.geo = Utils.geo.geoToPrecisionRound(newValues.geo.reverse());
-    } else if (newValues.geo === null) {
-        result.geo = undefined;
+    // Validate φλ0, photograprher's point
+    if (newValues.φλ0 && Utils.geo.checkLatLng(newValues.φλ0)) {
+        result.φλ0 = Utils.geo.geoToPrecisionRound(newValues.φλ0.reverse());
+    } else if (newValues.φλ0 === null) {
+        result.φλ0 = undefined;
     }
 
     if (_.isNumber(newValues.type) && typesSet.has(newValues.type)) {
@@ -2294,7 +2305,7 @@ async function save(data) {
     const newValues = Utils.diff(
         _.pick(
             changes,
-            'geo', 'type', 'year', 'year2', 'dir', 'title', 'address', 'desc', 'source', 'author',
+            'φλ0', 'type', 'year', 'year2', 'dir', 'title', 'address', 'desc', 'source', 'author',
             'nowaterchange',
             'watersignIndividual', 'watersignOption', 'watersignCustom',
             'disallowDownloadOriginIndividual', 'disallowDownloadOrigin'
@@ -2308,13 +2319,13 @@ async function save(data) {
 
     Object.assign(photo, newValues);
 
-    const geoToNull = newValues.hasOwnProperty('geo') && newValues.geo === undefined; // Flag of coordinates nullify
-    const oldGeo = oldPhotoObj.geo;
-    const newGeo = newValues.geo;
+    const geoToNull = newValues.hasOwnProperty('φλ0') && newValues.φλ0 === undefined; // Flag of φλ0 nullify
+    const old_φλ0 = oldPhotoObj.φλ0;
+    const new_φλ0 = newValues.φλ0;
     let newRegions;
 
     // If coorditates were nullyfied or don't exist, region must be assign
-    if (geoToNull || _.isEmpty(oldGeo) && !newGeo) {
+    if (geoToNull || _.isEmpty(old_φλ0) && !new_φλ0) {
         if (changes.region) {
             // If region assign manually, find its ancestry and assing to object
             newRegions = regionController.setObjRegionsByRegionCid(
@@ -2335,9 +2346,9 @@ async function save(data) {
     }
 
     // If coordinates have been added/changed, request regions by them
-    if (newGeo) {
+    if (new_φλ0) {
         newRegions = await this.call('region.setObjRegionsByGeo',
-            { obj: photo, geo: newGeo, returnArrFields: { _id: 0, cid: 1, parents: 1, title_en: 1, title_local: 1 } }
+            { obj: photo, φλ0: new_φλ0, returnArrFields: { _id: 0, cid: 1, parents: 1, title_en: 1, title_local: 1 } }
         );
     }
 
@@ -2396,13 +2407,13 @@ async function save(data) {
             await this.call('photo.photoFromMap', {
                 photo: oldPhotoObj, paintingMap: oldPhotoObj.type === constants.photo.type.PAINTING,
             });
-        } else if (!_.isEmpty(photo.geo)) {
+        } else if (!_.isEmpty(photo.φλ0)) {
             // Old values of changing properties
             const oldValues = _.transform(newValues, (result, val, key) => {
                 result[key] = oldPhotoObj[key];
             }, {});
 
-            if (newGeo || !_.isEmpty(_.pick(oldValues, 'type', 'dir', 'title', 'year', 'year2'))) {
+            if (new_φλ0 || !_.isEmpty(_.pick(oldValues, 'type', 'dir', 'title', 'year', 'year2'))) {
                 if (oldValues.type) {
                     // If type has been changed, delete object from previous type map
                     await this.call('photo.photoFromMap', {
@@ -2411,14 +2422,14 @@ async function save(data) {
                 }
 
                 // If coordinates have been added/changed or cluster's poster might be changed, then recalculate map.
-                // Coordinates must be get exactly from 'photo.geo', not from 'newGeo',
-                // because 'newGeo' can be 'undefined' and this case could mean, that coordinates haven't been changed,
+                // Coordinates must be get exactly from 'photo.φλ0', not from 'new_φλ0',
+                // because 'new_φλ0' can be 'undefined' and this case could mean, that coordinates haven't been changed,
                 // but data for poster might have been changed
                 await this.call('photo.photoToMap', {
                     photo,
                     paintingMap: photo.type === constants.photo.type.PAINTING,
                     // If type was changed, no need to recalc old coordinates or year
-                    geoPhotoOld: oldValues.type ? undefined : oldGeo,
+                    geoPhotoOld: oldValues.type ? undefined : old_φλ0,
                     yearPhotoOld: oldValues.type ? undefined : oldPhotoObj.year,
                 });
             }
@@ -2431,9 +2442,9 @@ async function save(data) {
         const commentAdditionUpdate = {};
 
         if (geoToNull) {
-            commentAdditionUpdate.$unset = { geo: 1 };
-        } else if (newGeo) {
-            commentAdditionUpdate.$set = { geo: newGeo };
+            commentAdditionUpdate.$unset = { φλ0: 1 };
+        } else if (new_φλ0) {
+            commentAdditionUpdate.$set = { φλ0: new_φλ0 };
         }
 
         await this.call('region.updateObjsRegions', {
@@ -3172,8 +3183,8 @@ async function giveObjHist({ cid, fetchId, showDiff }) {
                 delete history.diff;
             }
 
-            if (values.geo) {
-                values.geo.reverse();
+            if (values.φλ0) {
+                values.φλ0.reverse();
             }
 
             // If regions changed in this entry, add each of them into hash for further selection
