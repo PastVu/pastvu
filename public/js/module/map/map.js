@@ -127,9 +127,8 @@ define([
                         id: 'osmosnimki',
                         desc: 'Kosmosnimki',
                         selected: ko.observable(false),
-                        obj: new L.TileLayer('https://osm.pastvu.com/kosmo/{z}/{x}/{y}.png', {
+                        obj: new L.TileLayer('https://osmcluster.kosmosnimki.ru/kosmo/{z}/{x}/{y}.png', {
                             attribution: '&copy; <a href="https://kosmosnimki.ru/">ScanEx</a> | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-
                             updateWhenIdle: false,
                             maxZoom: 20,
                             maxNativeZoom: 17
