@@ -21,7 +21,7 @@ define([
         '{{##def.nurl:' +
         '<a target="_blank" href="https://nominatim.openstreetmap.org/ui/details.html?place_id={{=value.place_id}}">{{=value.title}}</a>#}}' +
         '{{##def.purl:' +
-        '<a target="_blank" href="/admin/region/{{=value.cid}}">{{=value.title_local}}</a>#}}' +
+        '<a target="_blank" href="/admin/region/{{=value.cid}}">{{=value.title}}</a>#}}' +
         '<table style="text-align: center;" border="0" cellspacing="5" cellpadding="0"><tbody>' +
         '<tr><td colspan="2">{{=it.geo}}<hr style="margin: 2px 0 5px;"></td></tr>' +
         '<tr style="font-weight: bold;"><td style="min-width:150px;">PastVu</td><td style="min-width:150px;">Nominatim</td></tr>' +
@@ -232,6 +232,10 @@ define([
                 if (err) {
                     tplObj.parr.push({'err': err.message});
                 } else {
+                    data.regions.forEach(function (region) {
+                        // Set title propertly to current language title.
+                        region.title = region.hasOwnProperty('title_' + P.settings.lang) ? region['title_' + P.settings.lang] : region.title_local;
+                    });
                     tplObj.parr = data.regions;
                 }
                 if (this.ownRegionsDeffered) {
