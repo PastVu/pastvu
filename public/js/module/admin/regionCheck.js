@@ -241,7 +241,8 @@ define([
 
             //Query Nominatim (https://nominatim.org/release-docs/develop/api/Reverse/).
             requestNominatim = $.ajax(
-                'https://nominatim.openstreetmap.org/reverse?format=geocodejson&lat=' + geo[0] + '&lon=' + geo[1],
+                'https://nominatim.openstreetmap.org/reverse?format=geocodejson&lat=' + geo[0] + '&lon=' + geo[1] +
+                '&accept-language=' + P.settings.lang,
                 {
                     crossDomain: true,
                     dataType: 'json',
@@ -276,7 +277,7 @@ define([
                             let value = {'title': geocoding.admin[reg]};
                             // For last item in the list add place_id, so URL
                             // for place details is displayed.
-                            value['place_id'] = (numRecs === count) ? geocoding.place_id : '';
+                            value.place_id = (numRecs === count) ? geocoding.place_id : '';
                             tplObj.narr.push(value);
                         }
                     }
