@@ -90,13 +90,13 @@ In case of the default hostname and port, just open this url: http://pastvu.loca
 You need to have `docker` and `docker-compose` installed.
 
 ```bash
-# Download and unarchive the database dump
-curl -O https://varlamov.me/pastvu/github/pastvu.tar.gz
-tar -xzvf pastvu.tar.gz
+# Download database dump
+mkdir dump
+curl -o dump/pastvu.gz https://varlamov.me/pastvu/github/pastvu.gz
 # Run the mongo container in background
 docker-compose up -d mongo
 # Import pastvu db
-docker-compose exec mongo mongorestore --db pastvu /dump/pastvu
+docker-compose exec mongo mongorestore --gzip --db pastvu --archive="/dump/pastvu.gz"
 # Install node modules
 docker-compose run app npm install
 # Copy local configuration
