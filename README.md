@@ -91,7 +91,7 @@ You need to have `docker` and `docker-compose` installed.
 
 ```bash
 # Download database dump
-mkdir dump
+mkdir -p dump
 curl -o dump/pastvu.gz https://varlamov.me/pastvu/github/pastvu.gz
 # Run the mongo container in background
 docker-compose up -d mongo
