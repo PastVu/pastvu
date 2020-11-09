@@ -1,19 +1,21 @@
-version: '3'
+version: '3.8'
 
 services:
 
   mongo:
-    image: pastvu/mongo:3.2.22
+    image: mongo
     volumes:
       - ./dump:/dump
-      - mongodb:/data/db
+      - mongo:/data/db
     expose:
-      - '21017'
+      - "27017"
+    ports:
+      - "27017:27017"
 
   redis:
-    image: redis:5.0.7
+    image: redis
     expose:
-      - '6379'
+      - "6379"
 
   app:
     image: pastvu/node
@@ -72,4 +74,4 @@ services:
 volumes:
   store:
   sitemap:
-  mongodb:
+  mongo:
