@@ -235,6 +235,17 @@ module.exports = function (grunt) {
                 },
             },
         },
+        stylelint: {
+            options: {
+                configFile: '.stylelintrc',
+                formatter: 'string',
+                failOnError: true,
+                fix: grunt.option('fix'),
+            },
+            all: [
+                'public/style/**/*.less',
+            ],
+        },
     });
 
     grunt.loadNpmTasks('grunt-contrib-clean');
@@ -248,6 +259,7 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-mkdir');
     grunt.loadNpmTasks('grunt-babel');
     grunt.loadNpmTasks('grunt-eslint');
+    grunt.loadNpmTasks('grunt-stylelint');
 
     // Default task(s).
     grunt.registerTask('default', [
@@ -274,6 +286,7 @@ module.exports = function (grunt) {
         'exec:testNodeVersionDockerfile:./docker/backend.Dockerfile',
         'exec:testNodeVersionDockerfile:./docker/frontend.Dockerfile',
         'eslint',
+        'stylelint',
     ]);
 
     // Записываем параметры сборки, например hash, из которых запуск в prod возьмет данные
