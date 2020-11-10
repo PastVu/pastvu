@@ -1565,7 +1565,7 @@ async function giveRegionsByGeo({ geo }) {
     geo.reverse();
 
     const regions = await this.call(
-        'region.getRegionsByGeoPoint', { geo, fields: { _id: 0, cid: 1, title_local: 1, parents: 1 } }
+        'region.getRegionsByGeoPoint', { geo, fields: { _id: 0, cid: 1, title_local: 1, parents: 1, title_en: 1 } }
     );
 
     if (_.isEmpty(regions)) {
