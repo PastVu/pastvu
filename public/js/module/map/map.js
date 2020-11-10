@@ -746,14 +746,7 @@ define([
 
             if (limitZoom !== undefined && maxAfter !== undefined && this.map.getZoom() > limitZoom) {
                 var layers = maxAfter.split('.');
-                if (this.layerActive().sys.id === 'osm') {
-                    this.layerActive().type.obj.on('load', function (/*evt*/) {
-                        this.selectLayer(layers[0], layers[1]);
-                    }, this);
-                } else {
-                    window.setTimeout(_.bind(this.selectLayer, this, layers[0], layers[1]), 500);
-                }
-
+                window.setTimeout(_.bind(this.selectLayer, this, layers[0], layers[1]), 300);
             }
         },
         toggleLayers: function (/*vm, event*/) {
@@ -862,9 +855,6 @@ define([
             if (layerActive.sys && layerActive.type) {
                 layerActive.sys.selected(false);
                 layerActive.type.selected(false);
-                if (layerActive.sys.id === 'osm') {
-                    layerActive.type.obj.off('load');
-                }
                 this.map.removeLayer(layerActive.type.obj);
             }
 
