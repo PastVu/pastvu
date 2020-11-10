@@ -56,14 +56,12 @@ It is important that `client.hostname` is matching hostname of machine where you
     ```
     That will allow your local server to send emails that will never reach a target, giving you the ability to see such messages on the [messages](https://ethereal.email/messages) page. But be aware that accounts on ethereal.email are temporary and after a while, if you want to see sent messages, you'll need to create a new account again.
 
-4. Download [db sample](https://varlamov.me/pastvu/github/pastvu.tar.gz) into your `pastvu_dev` folder and import it to your MongoDB
+4. Download [db sample](https://varlamov.me/pastvu/github/pastvu.gz) into your `pastvu_dev` folder and import it to your MongoDB
     ```bash
    # Start MongoDB server:
    ./mongodb-3.2.22/bin/mongod --dbpath ./db --storageEngine wiredTiger
-   # Unarchive the db sample
-   tar -xzvf pastvu.tar.gz
    # Import pastvu db
-   ./mongodb-3.2.22/bin/mongorestore --db pastvu dump/pastvu
+   ./mongodb-3.2.22/bin/mongorestore mongorestore --gzip --db pastvu --archive="pastvu.gz"
     ```
    Now you have one default user `admin` with password `admin` and 6.5K regions in you database
 
