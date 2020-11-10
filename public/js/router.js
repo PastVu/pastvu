@@ -133,10 +133,12 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'globalVM', 'renderer'], fu
             var paramsVals;
             var paramsCurrentVals;
             var paramsStringNew;
+            let sameOrigin = (Utils.parseUrl(location.origin).hostname === Utils.parseUrl(href).hostname);
 
             if (!href || href.length === 0 || router.blockHrefs) {
                 evt.preventDefault();
-            } else if (target !== '_blank' && !evt.ctrlKey && !evt.shiftKey && !evt.altKey && !evt.metaKey) {
+            } else if (sameOrigin && target !== '_blank' && !evt.ctrlKey && !evt.shiftKey && !evt.altKey && !evt.metaKey) {
+                // sameOrigin --> If this is an internal url (we don't use router for external urls).
                 // target === '_blank' --> Open a link in a new tab in foreground.
                 // Ctrl/Cmd + Shift + Click --> Open a link in a new tab in foreground.
                 // Ctrl/Cmd + Click --> Open a link in a new tab in backgroud.

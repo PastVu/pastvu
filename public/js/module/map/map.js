@@ -12,7 +12,9 @@ define([
     var defaults = {
         sys: 'osm',
         type: 'osmosnimki',
-        minZoom: 3
+        minZoom: 3,
+        maxZoom: 18,
+        zoom: 17
     };
 
     return Cliche.extend({
@@ -123,6 +125,24 @@ define([
                 desc: 'OSM',
                 selected: ko.observable(false),
                 types: ko.observableArray([
+                    /* Define map types (layers).
+                     *
+                     * For fixed max zoom: specify maxZoom in TileLayer and in
+                     * type object. It will be possible to zoom map up to maxZoom
+                     * value.
+                     *
+                     * For "overzoom", set maxNativeZoom in TileLayer, and maxZoom
+                     * in both TileLayer and in type object. It will be possible to
+                     * zoom map up to maxZoom value. Layer will be "stretched" if
+                     * current zoom is above maxNativeZoom.
+                     *
+                     * For switching layer, set maxNativeZoom in TileLayer, and maxZoom
+                     * in both TileLayer and in type object. Set limitZoom in type
+                     * object. It will be possible to zoom map up to maxZoom value.
+                     * When current zoom > limitZoom, map will switch to maxAfter
+                     * layer, keeping current zoom value. maxAfter value
+                     * format is "<sys id>.<type id>", e.g. 'osm.mapnik'.
+                     */
                     {
                         id: 'osmosnimki',
                         desc: 'Kosmosnimki',
@@ -130,12 +150,12 @@ define([
                         obj: new L.TileLayer('https://osmcluster.kosmosnimki.ru/kosmo/{z}/{x}/{y}.png', {
                             attribution: '&copy; <a href="https://kosmosnimki.ru/">ScanEx</a> | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
                             updateWhenIdle: false,
-                            maxZoom: 20,
+                            maxZoom: 18,
                             maxNativeZoom: 17
                         }),
-                        maxZoom: 19,
-                        limitZoom: 19,
-                        maxAfter: 'mapnik'
+                        maxZoom: 18,
+                        limitZoom: 17,
+                        maxAfter: 'osm.mapnik'
                     },
                     {
                         id: 'mapnik',
@@ -144,11 +164,9 @@ define([
                         obj: new L.TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
                             updateWhenIdle: false,
-                            maxZoom: 20
+                            maxZoom: 19
                         }),
-                        maxZoom: 20,
-                        limitZoom: 19,
-                        //maxAfter: 'google.scheme'
+                        maxZoom: 19
                     },
                     {
                         id: 'mapnik_de',
@@ -156,13 +174,13 @@ define([
                         selected: ko.observable(false),
                         obj: new L.TileLayer('https://{s}.tile.openstreetmap.de/tiles/osmde/{z}/{x}/{y}.png', {
                             updateWhenIdle: false,
-                            maxZoom: 20,
+                            maxZoom: 19,
                             maxNativeZoom: 18,
                             attribution: 'OSM Deutsch | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                         }),
-                        maxZoom: 20,
+                        maxZoom: 19,
                         limitZoom: 18,
-                        maxAfter: 'mapnik'
+                        maxAfter: 'osm.mapnik'
                     },
                     {
                         id: 'mapnik_fr',
@@ -173,9 +191,9 @@ define([
                             maxZoom: 20,
                             attribution: 'OSM Française | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                         }),
-                        maxZoom: 20,
-                        limitZoom: 19,
-                        maxAfter: 'mapnik'
+                        maxZoom: 19,
+                        limitZoom: 18,
+                        maxAfter: 'osm.mapnik'
                     },
                     {
                         id: 'opentopomap',
@@ -183,13 +201,13 @@ define([
                         selected: ko.observable(false),
                         obj: new L.TileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
                             updateWhenIdle: false,
-                            maxZoom: 20,
+                            maxZoom: 18,
                             maxNativeZoom: 17,
                             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
                         }),
-                        maxZoom: 20,
+                        maxZoom: 18,
                         limitZoom: 17,
-                        maxAfter: 'mapnik'
+                        maxAfter: 'osm.mapnik'
                     },
                     {
                         id: 'stamen_bw',
@@ -202,9 +220,7 @@ define([
                             ext: 'png',
                             updateWhenIdle: false
                         }),
-                        maxZoom: 20,
-                        limitZoom: 20,
-                        maxAfter: 'mapnik'
+                        maxZoom: 20
                     }
                 ])
             });
@@ -227,23 +243,21 @@ define([
                             desc: 'Satellite',
                             selected: ko.observable(false),
                             params: 'SATELLITE',
-                            maxZoom: 19
+                            maxZoom: 20
                         },
                         {
                             id: 'hyb',
                             desc: 'Hybrid',
                             selected: ko.observable(false),
                             params: 'HYBRID',
-                            maxZoom: 19
+                            maxZoom: 20
                         },
                         {
                             id: 'land',
                             desc: 'Terrain',
                             selected: ko.observable(false),
                             params: 'TERRAIN',
-                            maxZoom: 16,
-                            limitZoom: 15,
-                            maxAfter: 'google.scheme'
+                            maxZoom: 20
                         }
                     ])
                 });
@@ -292,11 +306,9 @@ define([
                             attribution: '&copy; Esri &mdash; Sources: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
                             updateWhenIdle: false,
                             maxZoom: 20,
-                            maxNativeZoom: 20
+                            maxNativeZoom: 19
                         }),
-                        maxZoom: 20,
-                        limitZoom: 20,
-                        maxAfter: 'mapnik'
+                        maxZoom: 20
                     },
                     {
                         id: 'mtb',
@@ -305,12 +317,12 @@ define([
                         obj: new L.TileLayer('http://tile.mtbmap.cz/mtbmap_tiles/{z}/{x}/{y}.png', {
                             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | <a href="http://mtbmap.cz/">mtbmap.cz</a>',
                             updateWhenIdle: false,
-                            maxZoom: 20,
-                            maxNativeZoom: 19
+                            maxZoom: 19,
+                            maxNativeZoom: 18
                         }),
-                        maxZoom: 20,
-                        limitZoom: 19,
-                        maxAfter: 'mapnik'
+                        maxZoom: 19,
+                        limitZoom: 18,
+                        maxAfter: 'osm.mapnik'
                     },
                     {
                         id: 'warfly',
@@ -320,9 +332,10 @@ define([
                             attribution: 'WWII Aerial photos <a href="http://warfly.ru/about">warfly.ru</a> (coverage is limited to some locations)',
                             updateWhenIdle: false,
                             minZoom: 9,
+                            maxZoom: 19,
                             maxNativeZoom: 17
                         }),
-                        maxZoom: 18,
+                        maxZoom: 19,
                         minZoom: 9
                     }
                 ])
@@ -418,7 +431,7 @@ define([
             var bbox;
             var fitBounds;
             var qParams = globalVM.router.params();
-            var zoom = Number(qParams.z) || (this.embedded ? 17 : (Utils.getLocalStorage('map.zoom') || Locations.current.z));
+            var zoom = Number(qParams.z) || (this.embedded ? defaults.zoom : (Utils.getLocalStorage('map.zoom') || Locations.current.z));
             var system = qParams.s || Utils.getLocalStorage(this.embedded ? 'map.embedded.sys' : 'map.sys') || defaults.sys;
             var type = qParams.t || Utils.getLocalStorage(this.embedded ? 'map.embedded.type' : 'map.type') || defaults.type;
 
@@ -470,7 +483,7 @@ define([
                 zoomControl: false // Remove default zoom control (we use our own)
             });
             if (fitBounds) {
-                this.map.fitBounds(fitBounds, { maxZoom: 18 });
+                this.map.fitBounds(fitBounds, { maxZoom: defaults.maxZoom });
             }
             this.markerManager = new MarkerManager(this.map, {
                 enabled: false,
@@ -732,14 +745,7 @@ define([
 
             if (limitZoom !== undefined && maxAfter !== undefined && this.map.getZoom() > limitZoom) {
                 var layers = maxAfter.split('.');
-                if (this.layerActive().sys.id === 'osm') {
-                    this.layerActive().type.obj.on('load', function (/*evt*/) {
-                        this.selectLayer(layers[0], layers[1]);
-                    }, this);
-                } else {
-                    window.setTimeout(_.bind(this.selectLayer, this, layers[0], layers[1]), 500);
-                }
-
+                window.setTimeout(_.bind(this.selectLayer, this, layers[0], layers[1]), 300);
             }
         },
         toggleLayers: function (/*vm, event*/) {
@@ -848,9 +854,6 @@ define([
             if (layerActive.sys && layerActive.type) {
                 layerActive.sys.selected(false);
                 layerActive.type.selected(false);
-                if (layerActive.sys.id === 'osm') {
-                    layerActive.type.obj.off('load');
-                }
                 this.map.removeLayer(layerActive.type.obj);
             }
 

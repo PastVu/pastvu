@@ -4,6 +4,12 @@ Let's recall the whole world!
 
 We welcome any keen developer in helping us build the better PastVu. You can install local version of the project using the following instructions.
 
+## Create development environment
+ * [Traditional way](#traditional-way)
+ * [Docker](#run-with-docker)
+
+## Traditional way
+
 ### Dependencies
 
 0. It's recommended to create a folder where you'll be storing all the pastvu related data and code. For the sake of this readme we can call it pastvu_dev, so do `mkdir pastvu_dev`. But, of course, you can structure it however you like.
@@ -56,14 +62,12 @@ It is important that `client.hostname` is matching hostname of machine where you
     ```
     That will allow your local server to send emails that will never reach a target, giving you the ability to see such messages on the [messages](https://ethereal.email/messages) page. But be aware that accounts on ethereal.email are temporary and after a while, if you want to see sent messages, you'll need to create a new account again.
 
-4. Download [db sample](https://varlamov.me/pastvu/github/pastvu.tar.gz) into your `pastvu_dev` folder and import it to your MongoDB
+4. Download [db sample](https://varlamov.me/pastvu/github/pastvu.gz) into your `pastvu_dev` folder and import it to your MongoDB
     ```bash
    # Start MongoDB server:
    ./mongodb-3.2.22/bin/mongod --dbpath ./db --storageEngine wiredTiger
-   # Unarchive the db sample
-   tar -xzvf pastvu.tar.gz
    # Import pastvu db
-   ./mongodb-3.2.22/bin/mongorestore --db pastvu dump/pastvu
+   ./mongodb-3.2.22/bin/mongorestore --gzip --db pastvu --archive="pastvu.gz"
     ```
    Now you have one default user `admin` with password `admin` and 6.5K regions in you database
 
@@ -91,12 +95,11 @@ You need to have `docker` and `docker-compose` installed.
 
 ```bash
 # Download database dump
-mkdir dump
-curl -o dump/pastvu.gz https://varlamov.me/pastvu/github/pastvu.gz
+curl -O https://varlamov.me/pastvu/github/pastvu.gz
 # Run the mongo container in background
 docker-compose up -d mongo
 # Import pastvu db
-docker-compose exec mongo mongorestore --gzip --db pastvu --archive="/dump/pastvu.gz"
+docker-compose exec -T mongo mongorestore --gzip --db pastvu --archive < pastvu.gz
 # Install node modules
 docker-compose run app npm install
 # Copy local configuration
