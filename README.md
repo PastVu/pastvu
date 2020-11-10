@@ -61,7 +61,7 @@ It is important that `client.hostname` is matching hostname of machine where you
    # Start MongoDB server:
    ./mongodb-3.2.22/bin/mongod --dbpath ./db --storageEngine wiredTiger
    # Import pastvu db
-   ./mongodb-3.2.22/bin/mongorestore mongorestore --gzip --db pastvu --archive="pastvu.gz"
+   ./mongodb-3.2.22/bin/mongorestore --gzip --db pastvu --archive="pastvu.gz"
     ```
    Now you have one default user `admin` with password `admin` and 6.5K regions in you database
 
