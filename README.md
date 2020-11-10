@@ -4,6 +4,12 @@ Let's recall the whole world!
 
 We welcome any keen developer in helping us build the better PastVu. You can install local version of the project using the following instructions.
 
+## Create development environment
+ * [Traditional way](#traditional-way)
+ * [Docker](#run-with-docker)
+
+## Traditional way
+
 ### Dependencies
 
 0. It's recommended to create a folder where you'll be storing all the pastvu related data and code. For the sake of this readme we can call it pastvu_dev, so do `mkdir pastvu_dev`. But, of course, you can structure it however you like.
