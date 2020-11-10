@@ -38,6 +38,4 @@ babel/output*.js
 
 # Dumps #
 ######################
-dump
-pastvu.tar.gz
-pastvu-*.gz
+pastvu*.gz

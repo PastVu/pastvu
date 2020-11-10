@@ -99,7 +99,7 @@ curl -O https://varlamov.me/pastvu/github/pastvu.gz
 # Run the mongo container in background
 docker-compose up -d mongo
 # Import pastvu db
-docker-compose exec -T mongo mongorestore --gzip --db pastvu --archive="pastvu.gz"
+docker-compose exec -T mongo mongorestore --gzip --db pastvu --archive < pastvu.gz
 # Install node modules
 docker-compose run app npm install
 # Copy local configuration
