@@ -5,7 +5,7 @@
 /* global google: true */
 
 L.Google = L.Layer.extend({
-	includes: L.Mixin.Events,
+	includes: L.Evented.prototype,
 
 	options: {
 		minZoom: 0,
@@ -62,7 +62,7 @@ L.Google = L.Layer.extend({
 			map.on('zoomanim', _this._handleZoomAnim, _this);
 
 			// 20px instead of 1em to avoid a slight overlap with google's attribution
-			map._controlCorners.bottomright.style.marginBottom = '20px';
+			map._controlCorners.bottomright.style.marginBottom = '15px';
 
 			_this._reset();
 			_this._update();
@@ -78,7 +78,9 @@ L.Google = L.Layer.extend({
 
 		map.off('zoomanim', this._handleZoomAnim, this);
 
-		map._controlCorners.bottomright.style.marginBottom = '0em';
+                if (map._controlCorners) {
+                    map._controlCorners.bottomright.style.marginBottom = '0em';
+                }
 	},
 
 	getAttribution: function () {
