@@ -95,6 +95,11 @@ module.exports = {
     // Connection settings for mail provider. Need to be overrided locally
     mail: {},
 
+    // Third-party API keys for using on client side.
+    publicApiKeys: {
+        googleMaps: process.env.GOOGLE_MAPS_API_KEY || ''
+    },
+
     // Default home region for new user
     regionHome: 2,
 
