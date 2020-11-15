@@ -1,10 +1,11 @@
-FROM pastvu/node AS builder
+ARG NODE_TAG=15
+FROM pastvu/node:$NODE_TAG AS builder
 WORKDIR /code
 COPY . .
 RUN npm install
 RUN npm run build
 
-FROM pastvu/node
+FROM pastvu/node:$NODE_TAG
 WORKDIR /code
 ENV LANG ru
 ENV MODULE app
