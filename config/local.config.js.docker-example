@@ -1,4 +1,4 @@
-module.exports = function(config, appRequire) {
+module.exports = function (config, appRequire) {
     const _ = appRequire('lodash');
 
     _.merge(config, {
