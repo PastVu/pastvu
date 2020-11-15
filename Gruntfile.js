@@ -187,7 +187,7 @@ module.exports = function (grunt) {
         eslint: {
             options: {
                 configFile: '.eslintrc.js',
-                fix: false
+                fix: false,
             },
             all: {
                 files: {
@@ -198,12 +198,12 @@ module.exports = function (grunt) {
                         'commons/**/*.js',
                         'models/**/*.js',
                         'config/!(local.config).js',
-                        'config/*example'
+                        'config/*example',
                         // TODO: Add public/js/ and remove it from eslintignore.
-                    ]
-                }
-            }
-        }
+                    ],
+                },
+            },
+        },
     });
 
     grunt.loadNpmTasks('grunt-contrib-clean');
@@ -237,7 +237,7 @@ module.exports = function (grunt) {
     ]);
 
     grunt.registerTask('test', [
-        'eslint'
+        'eslint',
     ]);
 
     // Записываем параметры сборки, например hash, из которых запуск в prod возьмет данные
