@@ -89,7 +89,9 @@ L.Yandex = L.Layer.extend({
 		map.on(events, this);
 		this.once('remove', function () {
 			map.off(events, this);
-			this._container.remove(); // we do not call this until api is initialized (ymaps API expects DOM element)
+                        if (this._container) {
+			    this._container.remove(); // we do not call this until api is initialized (ymaps API expects DOM element)
+                        }
 		}, this);
 	},
 
