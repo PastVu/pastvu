@@ -31,7 +31,8 @@
         "sitemap": "node --max-old-space-size=2048 bin/run.js --script ./sitemap.js",
         "lint": "./node_modules/.bin/eslint .",
         "lintfix": "./node_modules/.bin/eslint . --fix",
-        "build": "grunt"
+        "build": "grunt",
+        "test": "grunt test"
     },
     "husky": {
         "hooks": {
@@ -109,6 +110,7 @@
         "grunt-contrib-copy": "1.0.0",
         "grunt-contrib-pug": "2.0.0",
         "grunt-contrib-requirejs": "1.0.0",
+        "grunt-eslint": "23.0.0",
         "grunt-exec": "3.0.0",
         "grunt-mkdir": "1.0.0",
         "grunt-string-replace": "1.3.1",
