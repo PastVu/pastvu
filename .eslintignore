@@ -8,5 +8,4 @@ babel/output.js
 logs/**
 misc/**
 views/**
-public/**
 basepatch/**
