@@ -1,9 +1,11 @@
-/*global define*/
+/*
+ * Map helper.
+ */
 define(['jquery', 'Utils', 'leaflet', 'Params'], function ($, Utils, L, P) {
     'use strict';
 
-    var deltaH;
-    var deltaV;
+    let deltaH;
+    let deltaV;
 
     function calcDelta() {
         deltaH = Math.floor(P.window.w() / 4);
@@ -28,7 +30,7 @@ define(['jquery', 'Utils', 'leaflet', 'Params'], function ($, Utils, L, P) {
         },
         right: function () {
             this.panBy(new L.Point(deltaH, 0));
-        }
+        },
 
     });
 });
