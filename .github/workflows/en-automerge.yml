@@ -1,0 +1,19 @@
+name: Automerge 'en' branch
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  update-en:
+    name: Merge master into en after push
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: merge
+        uses: mtanzi/action-automerge@v1
+        with:
+          source: 'master'
+          target: 'en'
