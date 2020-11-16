@@ -3,7 +3,7 @@
  */
 define([
     'underscore', 'jquery', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM',
-    'renderer', 'model/User', 'model/storage', 'leaflet', 'lib/leaflet/extends/L.neoMap', 'noties',
+    'renderer', 'model/User', 'model/storage', 'leaflet', 'leaflet-extends/L.neoMap', 'noties',
     'text!tpl/map/mapClusterCalc.pug', 'css!style/map/mapClusterCalc', 'jquery-ui/draggable', 'jquery-ui/resizable',
     'jquery-ui/effect-highlight', 'css!style/jquery/ui/core', 'css!style/jquery/ui/resizable', 'css!style/jquery/ui/theme'
 ], function (_, $, Browser, Utils, socket, P, ko, Cliche, globalVM, renderer, User, storage, L, Map, noties, pug) {
@@ -66,7 +66,7 @@ define([
                 this.layers.push({
                     id: 'google',
                     desc: 'Google',
-                    deps: 'lib/leaflet/extends/L.Google',
+                    deps: 'leaflet-extends/L.Google',
                     selected: ko.observable(false),
                     types: ko.observableArray([
                         {
@@ -100,7 +100,7 @@ define([
                 this.layers.push({
                     id: 'yandex',
                     desc: 'Яндекс',
-                    deps: 'lib/leaflet/extends/L.Yandex',
+                    deps: 'leaflet-extends/L.Yandex',
                     selected: ko.observable(false),
                     types: ko.observableArray([
                         {

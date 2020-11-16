@@ -23,9 +23,9 @@ const getUserRanks = () => userRanksPromise;
 // Fill object for client parameters
 async function fillClientParams() {
     const settings = await Settings.find({}, { _id: 0, key: 1, val: 1 }, { lean: true }).exec();
-    const { lang, hash } = config;
+    const { lang, hash, publicApiKeys } = config;
 
-    Object.assign(clientParams, { lang, hash });
+    Object.assign(clientParams, { lang, hash, publicApiKeys });
 
     for (const setting of settings) {
         clientParams[setting.key] = setting.val;
