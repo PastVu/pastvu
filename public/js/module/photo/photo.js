@@ -1077,7 +1077,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             linkObject: '/_p/a/' + p.file()
                         },
                         modal: {
-                            topic: 'Share this photo',
+                            topic: 'Share this image',
                             initWidth: '500px',
                             animateScale: true,
                             curtainClick: { click: self.closeHistoryOrShare, ctx: self },
