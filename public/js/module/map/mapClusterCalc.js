@@ -73,25 +73,25 @@ define([
                             id: 'scheme',
                             desc: 'Схема',
                             selected: ko.observable(false),
-                            params: 'ROADMAP'
+                            params: 'roadmap'
                         },
                         {
                             id: 'sat',
                             desc: 'Спутник',
                             selected: ko.observable(false),
-                            params: 'SATELLITE'
+                            params: 'satellite'
                         },
                         {
                             id: 'hyb',
                             desc: 'Гибрид',
                             selected: ko.observable(false),
-                            params: 'HYBRID'
+                            params: 'hybrid'
                         },
                         {
                             id: 'land',
                             desc: 'Ландшафт',
                             selected: ko.observable(false),
-                            params: 'TERRAIN'
+                            params: 'terrain'
                         }
                     ])
                 });
