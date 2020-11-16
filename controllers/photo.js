@@ -72,6 +72,8 @@ const compactFields = {
     cid: 1,
     file: 1,
     s: 1,
+    geo: 1,
+    dir: 1,
     title: 1,
     year: 1,
     ccount: 1,
@@ -1334,9 +1336,12 @@ function removeIncoming({ file }) {
         throw new AuthorizationError();
     }
 
-    return fs.unlink(path.join(incomeDir, file), (err) => {
-      if (err) throw err;
-      logger.info('Incoming file deleted');
+    return fs.unlink(path.join(incomeDir, file), err => {
+        if (err) {
+            throw err;
+        }
+
+        logger.info('Incoming file deleted');
     });
 }
 
@@ -1925,18 +1930,20 @@ async function giveNearestPhotos({ geo, type, year, year2, except, distance, lim
 
     const years = isPainting ? paintYears : photoYears;
 
-    if (_.isNumber(year) && year > years.min && year < years.max) {
-        query.year = { $gte: year };
+    const yearsQuery = {};
+
+    if (_.isNumber(year) && year > years.min) {
+        // Set 'from' year boundary.
+        yearsQuery.$gte = year;
     }
 
-    if (_.isNumber(year2) && year2 > years.min && year2 < years.max) {
-        if (year === year2) {
-            query.year = year;
-        } else if (!query.year) {
-            query.year = { $lte: year2 };
-        } else if (year2 > year) {
-            query.year.$lte = year2;
-        }
+    if (_.isNumber(year2) && year2 < years.max) {
+        // Set 'to' year boundary.
+        yearsQuery.$lte = year2;
+    }
+
+    if (!_.isEmpty(yearsQuery)) {
+        query.year = yearsQuery;
     }
 
     if (_.isNumber(except) && except > 0) {
@@ -1960,6 +1967,8 @@ async function giveNearestPhotos({ geo, type, year, year2, except, distance, lim
     }
 
     const photos = await Photo.find(query, compactFields, options).exec();
+
+    photos.forEach(photo => photo.geo.reverse());
 
     return { photos };
 }

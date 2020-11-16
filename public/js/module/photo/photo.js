@@ -1010,7 +1010,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             newSince: self.p.vdate()
                         },
                         modal: {
-                            topic: 'История изменений фотографии',
+                            topic: 'История изменений изображений',
                             initWidth: '1400px',
                             maxWidthRatio: 0.82,
                             animateScale: true,

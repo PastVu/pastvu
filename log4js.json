@@ -2,6 +2,9 @@
 	"replaceConsole": true,
 	"appenders": [
 		{
+			"type": "stdout"
+		},
+		{
 			"type": "file",
 			"filename": "all.log",
 			"maxLogSize": 15728640,

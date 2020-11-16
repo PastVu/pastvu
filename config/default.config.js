@@ -7,7 +7,7 @@ module.exports = {
     lang: 'ru', // Language: ru, en
 
     admin: {
-	    email: '',
+        email: '',
     },
 
     listen: {
@@ -37,11 +37,11 @@ module.exports = {
         port: 3011,
     },
 
-    // Address for user
+    // Address for user access
     client: {
         protocol: 'http',
-        hostname: '127.0.0.1', // Hostname for users, i.e. site entry point
-        port: ':3000', // Port for users
+        hostname: '127.0.0.1', // Hostname for user access, i.e. site entry point and cookies domain
+        port: ':3000', // Port for user access
     },
 
     storePath: '', // Store folder with static user content (avatars, photos, etc)
@@ -94,6 +94,12 @@ module.exports = {
 
     // Connection settings for mail provider. Need to be overrided locally
     mail: {},
+
+    // Third-party API keys for using on client side.
+    publicApiKeys: {
+        googleMaps: process.env.GOOGLE_MAPS_API_KEY || '',
+        yandexMaps: process.env.YANDEX_MAPS_API_KEY || '',
+    },
 
     // Default home region for new user
     regionHome: 2,

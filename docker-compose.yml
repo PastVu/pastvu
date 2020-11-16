@@ -1,18 +1,20 @@
-version: '3'
+version: '3.8'
 
 services:
 
   mongo:
     image: pastvu/mongo:3.2.22
     volumes:
-      - ./dump:/dump
+      - mongo:/data/db
     expose:
-      - '21017'
+      - "27017"
+    ports:
+      - "27017:27017"
 
   redis:
-    image: redis:5.0.7
+    image: redis
     expose:
-      - '6379'
+      - "6379"
 
   app:
     image: pastvu/node
@@ -61,6 +63,14 @@ services:
       - sitemap:/sitemap
     command: npm run sitemap
 
+  mailcatcher:
+    image: sj26/mailcatcher
+    expose:
+     - "1025"
+    ports:
+     - "1080:1080"
+
 volumes:
   store:
   sitemap:
+  mongo:
