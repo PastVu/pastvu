@@ -187,7 +187,7 @@ module.exports = function (grunt) {
         eslint: {
             options: {
                 configFile: '.eslintrc.js',
-                fix: false,
+                fix: grunt.option('fix'),
             },
             all: {
                 files: {
