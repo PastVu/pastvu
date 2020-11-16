@@ -1,6 +1,6 @@
 define([
 	'jquery', 'underscore', 'Browser', 'Utils', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'renderer',
-	'leaflet', 'lib/leaflet/extends/L.neoMap', 'Locations', '../../EventTypes',
+	'leaflet', 'leaflet-extends/L.neoMap', 'Locations', '../../EventTypes',
 	'text!tpl/map/navSlider.pug', 'css!style/map/navSlider'
 ], function ($, _, Browser, Utils, P, ko, Cliche, globalVM, renderer, L, Map, Locations, ET, pug) {
 	'use strict';

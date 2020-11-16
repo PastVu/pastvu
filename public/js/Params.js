@@ -34,7 +34,10 @@ define(['jquery', 'underscore', 'socket!', 'Utils', 'knockout', 'knockout.mappin
 
     Params.window.square = Params.window.w * Params.window.h;
     updateSettings(init.settings, true);
-    Params = koMapping.fromJS(Params, { copy: ['window.head', 'settings.lang'] });
+
+    // Create Params view model, define properties that will not be observable
+    // when view model is converted to JS object.
+    Params = koMapping.fromJS(Params, { copy: ['window.head', 'settings.lang', 'settings.publicApiKeys'] });
 
     // Пересчитываем размеры при ресайзе окна
     $window.on('resize', _.debounce(function () {
@@ -47,11 +50,11 @@ define(['jquery', 'underscore', 'socket!', 'Utils', 'knockout', 'knockout.mappin
 
     // Обновляем настройки и в случае наличия поддоменов формируем их массив
     function updateSettings(settings, plain) {
-
         if (plain) {
             _.merge(Params.settings, settings);
         } else {
-            koMapping.fromJS({ settings: settings }, Params, { copy: ['window.head'] });
+            // Update Params.settings view model with settings returned by the server.
+            koMapping.fromJS({ settings: settings }, Params);
         }
     }
 
