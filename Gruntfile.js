@@ -184,6 +184,26 @@ module.exports = function (grunt) {
                 ],
             },
         },
+        eslint: {
+            options: {
+                configFile: '.eslintrc.js',
+                fix: false,
+            },
+            all: {
+                files: {
+                    src: [
+                        '*.js',
+                        'app/**/*.js',
+                        'controllers/**/*.js',
+                        'commons/**/*.js',
+                        'models/**/*.js',
+                        'config/!(local.config).js',
+                        'config/*example',
+                        // TODO: Add public/js/ and remove it from eslintignore.
+                    ],
+                },
+            },
+        },
     });
 
     grunt.loadNpmTasks('grunt-contrib-clean');
@@ -196,6 +216,7 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-exec');
     grunt.loadNpmTasks('grunt-mkdir');
     grunt.loadNpmTasks('grunt-babel');
+    grunt.loadNpmTasks('grunt-eslint');
 
     // Default task(s).
     grunt.registerTask('default', [
@@ -213,6 +234,10 @@ module.exports = function (grunt) {
         'writeBuildParams',
         //'exec:npm',
         'compress',
+    ]);
+
+    grunt.registerTask('test', [
+        'eslint',
     ]);
 
     // Записываем параметры сборки, например hash, из которых запуск в prod возьмет данные

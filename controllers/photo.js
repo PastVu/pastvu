@@ -1336,9 +1336,12 @@ function removeIncoming({ file }) {
         throw new AuthorizationError();
     }
 
-    return fs.unlink(path.join(incomeDir, file), (err) => {
-      if (err) throw err;
-      logger.info('Incoming file deleted');
+    return fs.unlink(path.join(incomeDir, file), err => {
+        if (err) {
+            throw err;
+        }
+
+        logger.info('Incoming file deleted');
     });
 }
 
@@ -1927,15 +1930,18 @@ async function giveNearestPhotos({ geo, type, year, year2, except, distance, lim
 
     const years = isPainting ? paintYears : photoYears;
 
-    let yearsQuery = {};
+    const yearsQuery = {};
+
     if (_.isNumber(year) && year > years.min) {
         // Set 'from' year boundary.
         yearsQuery.$gte = year;
     }
+
     if (_.isNumber(year2) && year2 < years.max) {
         // Set 'to' year boundary.
         yearsQuery.$lte = year2;
     }
+
     if (!_.isEmpty(yearsQuery)) {
         query.year = yearsQuery;
     }
@@ -1961,7 +1967,9 @@ async function giveNearestPhotos({ geo, type, year, year2, except, distance, lim
     }
 
     const photos = await Photo.find(query, compactFields, options).exec();
+
     photos.forEach(photo => photo.geo.reverse());
+
     return { photos };
 }
 
