@@ -89,8 +89,8 @@ L.GridLayer.GoogleMutant = L.GridLayer.extend({
 			}.bind(this));
 
 			//20px instead of 1em to avoid a slight overlap with google's attribution
-			map._controlCorners.bottomright.style.marginBottom = '20px';
-			map._controlCorners.bottomleft.style.marginBottom = '20px';
+			map._controlCorners.bottomright.style.marginBottom = '15px';
+			map._controlCorners.bottomleft.style.marginBottom = '15px';
 
 			this._update();
 
