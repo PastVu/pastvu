@@ -187,7 +187,7 @@ module.exports = function (grunt) {
         eslint: {
             options: {
                 configFile: '.eslintrc.js',
-                fix: false,
+                fix: grunt.option('fix'),
             },
             all: {
                 files: {
@@ -199,7 +199,10 @@ module.exports = function (grunt) {
                         'models/**/*.js',
                         'config/!(local.config).js',
                         'config/*example',
-                        // TODO: Add public/js/ and remove it from eslintignore.
+                        // Add here public/js/ files that have been modified
+                        // in PRs, so we gradually get them all covered and
+                        // then refactor into smaller list.
+                        'public/js/lib/leaflet/extends/*.js',
                     ],
                 },
             },

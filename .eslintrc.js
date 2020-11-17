@@ -664,5 +664,19 @@ module.exports = {
         'babel/no-invalid-this': 0,
         'babel/semi': 2,
         'babel/no-unused-expressions': 2, // Stop complaining about optional chaining
-    }
+    },
+    'overrides': [
+        {
+            // Old-school rules for public code.
+            'files': ['public/js/**/*.js'],
+            'rules': {
+                // no complains about using function for callback.
+                'prefer-arrow-callback': 0,
+                // arrow functions are OK, but don't mix them with ES5 syntax in the same file.
+                'object-shorthand': [2, 'consistent'],
+                // don't complain about private members of object
+                'no-underscore-dangle': 0,
+            }
+        }
+    ]
 };
