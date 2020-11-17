@@ -1,8 +1,7 @@
 .about(data-bind="with: repository[M!M]")
     header.line
-        | PastVu - project to collect vintage images. A look at the history of humanity habitat.
-    .userrow
-        hr
+        | PastVu &mdash; project to collect vintage images. A look at the history of humanity habitat.
+    .userrow(style="margin-top:15px;")
         .row.usercenter
             .col-xs-6
                 a.line.clearfix(target="_blank", href="/u/Ilya", ontouchstart="this.classList.toggle('hover');")
@@ -53,14 +52,9 @@
                         .humanAbout Infrastructure, Client relations
     .postrow
         div
-            | To support the development of the project, you can go&nbsp;
-            a.donate(target="_blank", href="http://planeta.ru/139975") to our page at
-            | &nbsp;Planeta.ru
-    .postrow
-        hr
-        div
             | Open development is performed&nbsp;
             a.donate(target="_blank", href="https://github.com/PastVu") on GitHub
             | . You may track for issues progress and send us your ideas!
-        br
-        img.poster(src="/img/loading/Loading1.jpg")
+    .postrow
+        div.img(style="margin-top:15px;")
+            img.poster(src="/img/loading/Loading1.jpg")
