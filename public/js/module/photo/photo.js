@@ -2,18 +2,19 @@
  * Модель страницы фотографии
  */
 define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'noties', 'model/Photo', 'model/Region', 'model/storage', 'm/photo/fields', 'm/photo/status', 'text!tpl/photo/photo.pug', 'css!style/photo/photo', 'bs/ext/multiselect', 'jquery-plugins/imgareaselect'], function (_, Utils, socket, P, ko, koMapping, Cliche, globalVM, renderer, moment, noties, Photo, Region, storage, fields, statuses, pug) {
-    var $window = $(window);
-    var imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
-    var statusKeys = statuses.keys;
-    var statusNums = statuses.nums;
-    var isYes = function (evt) {
+    const $window = $(window);
+    const imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
+    const statusKeys = statuses.keys;
+    const statusNums = statuses.nums;
+    const isYes = function (evt) {
         return !!evt.target.classList.contains('yes');
     };
 
     return Cliche.extend({
         pug: pug,
         create: function () {
-            var self = this;
+            const self = this;
+
             this.destroy = _.wrap(this.destroy, this.localDestroy);
 
             this.auth = globalVM.repository['m/common/auth'];
@@ -61,8 +62,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 return Number(self.p.type()) === statuses.type.PAINTING;
             });
             this.msgByStatus = this.co.msgByStatus = ko.computed(function () {
-                var status = statusNums[this.p.s()];
-                var link;
+                const status = statusNums[this.p.s()];
+                let link;
 
                 if (this.p.stdate()) {
                     link = '?history=' + this.p.stdate().getTime();
@@ -84,7 +85,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 },
                 write: function (valNew) {
                     self.p.watersignIndividual(valNew === 'true');
-                }
+                },
             });
 
             this.watersignOptionTrigger = ko.observable(null);
@@ -92,14 +93,15 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 read: function () {
                     this.watersignOptionTrigger();
 
-                    var result;
-                    var p = self.p;
-                    var addSignBySetting = p.user.settings.photo_watermark_add_sign;
+                    let result;
+                    const p = self.p;
+                    let addSignBySetting = p.user.settings.photo_watermark_add_sign;
 
                     addSignBySetting = addSignBySetting && addSignBySetting() || false;
 
                     if (p.watersignIndividual()) {
-                        var photoOption = this.p.watersignOption();
+                        const photoOption = this.p.watersignOption();
+
                         result = photoOption !== undefined ? photoOption : addSignBySetting;
                     } else {
                         result = addSignBySetting;
@@ -118,7 +120,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
                     this.p.watersignOption(valNew);
                 },
-                owner: this
+                owner: this,
             });
 
             this.watersignCustom = this.co.watersignCustom = ko.computed({
@@ -130,7 +132,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         this.p.watersignCustom(valNew);
                     }
                 },
-                owner: this
+                owner: this,
             });
 
             this.disallowDownloadOriginIndividual = this.co.disallowDownloadOriginIndividual = ko.computed({
@@ -139,22 +141,22 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 },
                 write: function (valNew) {
                     self.p.disallowDownloadOriginIndividual(valNew === 'true');
-                }
+                },
             });
             this.disallowDownloadOrigin = this.co.disallowDownloadOrigin = ko.computed({
                 read: function () {
                     this.watersignOptionTrigger();
 
-                    var result;
-                    var p = self.p;
+                    let result;
+                    const p = self.p;
 
                     if (this.watersignOption() === false) {
                         result = false;
                     } else if (p.disallowDownloadOriginIndividual()) {
                         result = p.disallowDownloadOrigin();
                     } else {
-                        var addSignBySetting = p.user.settings.photo_watermark_add_sign;
-                        var disallowDownloadBySetting = p.user.settings.photo_disallow_download_origin;
+                        const addSignBySetting = p.user.settings.photo_watermark_add_sign;
+                        const disallowDownloadBySetting = p.user.settings.photo_disallow_download_origin;
 
                         if (addSignBySetting && addSignBySetting() === false) {
                             result = false;
@@ -180,10 +182,11 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
                     this.p.disallowDownloadOrigin(valNew);
                 },
-                owner: this
+                owner: this,
             });
 
-            var userInfoTpl = _.template('Добавил${ addEnd } <a href="/u/${ login }" ${ css }>${ name }</a>, ${ stamp }');
+            const userInfoTpl = _.template('Добавил${ addEnd } <a href="/u/${ login }" ${ css }>${ name }</a>, ${ stamp }');
+
             this.userInfo = this.co.userInfo = ko.computed(function () {
                 return userInfoTpl(
                     {
@@ -191,20 +194,20 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         name: this.p.user.disp(),
                         css: this.p.user.online() ? 'class="online"' : '',
                         addEnd: this.p.user.sex && this.p.user.sex() === 'f' ? 'а' : '',
-                        stamp: moment(this.p.ldate()).format('D MMMM YYYY')
+                        stamp: moment(this.p.ldate()).format('D MMMM YYYY'),
                     }
                 );
             }, this);
 
             this.downLoadOrigin = this.co.downLoadOrigin = ko.computed(function () {
-                var download = this.can.download();
+                const download = this.can.download();
 
                 return download === true || download === 'byrole';
             }, this);
 
             this.downloadCSSClass = this.co.downloadCSSClass = ko.computed(function () {
-                var download = this.can.download();
-                var result;
+                const download = this.can.download();
+                let result;
 
                 if (download === true) {
                     result = 'btn-success';
@@ -252,13 +255,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     callback: function (vm) {
                         this.commentsVM = this.childModules[vm.id] = vm;
                         this.routeHandler();
-                    }
-                }
+                    },
+                },
             ];
 
             this.descCheckInViewportDebounced = _.debounce(this.descCheckInViewport, 210, {
                 leading: false,
-                trailing: true
+                trailing: true,
             });
 
             // Вызовется один раз в начале 700мс и в конце один раз, если за эти 700мс были другие вызовы
@@ -268,9 +271,11 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.subscriptions.type = this.p.type.subscribe(this.yearCheck, this);
             this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandlerDebounced, this);
             this.subscriptions.edit = this.edit.subscribe(this.editHandler, this);
+
             if (!this.auth.loggedIn()) {
                 this.subscriptions.loggedIn = this.auth.loggedIn.subscribe(this.loggedInHandler, this);
             }
+
             this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
             this.subscriptions.hscaleTumbler = this.hscaleTumbler.subscribe(this.sizesCalcPhoto, this);
             this.subscriptions.watermarkShow = this.watermarkShow.subscribe(this.sizesCalcPhoto, this);
@@ -303,8 +308,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 if (this.mapVM) {
                     this.mapVM.offChange(this.nearestForCenterDebounced, this);
                 }
+
                 this.nearestForCenterDebounced = null;
             }
+
             destroy.call(this);
         },
 
@@ -320,7 +327,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             embedded: true,
                             editing: this.edit(),
                             point: this.genMapPoint(),
-                            isPainting: this.isPainting()
+                            isPainting: this.isPainting(),
                         },
                         ctx: this,
                         callback: function (vm) {
@@ -328,11 +335,11 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             vm.readyPromise.then(function () {
                                 this.mapModulePromiseResolve();
                             }.bind(this));
-                        }
+                        },
                     }],
                     {
                         parent: this,
-                        level: this.level + 2 //Чтобы не удалился модуль комментариев
+                        level: this.level + 2, //Чтобы не удалился модуль комментариев
                     }
                 );
 
@@ -342,7 +349,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
 
         rechargeData: function (photo, can) {
-            var originData = this.originData;
+            const originData = this.originData;
 
             // If data has already been, so clear it (object must remain)
             if (_.isObject(originData)) {
@@ -361,10 +368,11 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
 
         routeHandler: function () {
-            var self = this;
-            var params = globalVM.router.params();
-            var cid = Number(params.cid);
-            var hl = params.hl;
+            const self = this;
+            const params = globalVM.router.params();
+            const cid = Number(params.cid);
+            const hl = params.hl;
+
             self.share = Number(params.share) === 1 ? Number(params.share) : false;
             self.history = Number(params.history) >= 0 ? Number(params.history) : false;
 
@@ -386,8 +394,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 self.commentsVM.deactivate();
 
                 this.receivePhoto(cid, false, function (data) {
-                    var editModeCurr = self.edit();
-                    var editModeNew = !!data.forEdit;
+                    const editModeCurr = self.edit();
+                    const editModeNew = !!data.forEdit;
 
                     self.rechargeData(data.photo, data.can);
 
@@ -396,6 +404,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     if (self.photoLoadContainer) {
                         self.photoLoadContainer.off('load').off('error');
                     }
+
                     self.photoLoadContainer = $(new Image())
                         .on('load', self.onPhotoLoad.bind(self))
                         .on('error', self.onPhotoError.bind(self))
@@ -431,17 +440,20 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     } else {
                         self.destroyHistory();
                     }
+
                     ga('send', 'pageview', '/p');
                 }, this);
             } else {
                 if (self.toFrag || self.toComment) {
                     self.scrollTimeout = setTimeout(self.scrollToBind, 50);
                 }
+
                 if (self.share !== false) {
                     self.showShare();
                 } else {
                     self.destroyShare();
                 }
+
                 if (self.history !== false) {
                     self.showHistory();
                 } else {
@@ -451,7 +463,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
 
         receivePhoto: function (cid, edit, cb, ctx) {
-            var finish = function (data) {
+            const finish = function (data) {
                 Photo.factory(data.photo, { can: data.can });
 
                 cb.call(ctx, data);
@@ -460,6 +472,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             if (_.get(init, 'photo.photo.cid') === cid) {
                 finish(init.photo);
                 delete init.photo;
+
                 return;
             }
 
@@ -497,6 +510,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
         mapEditOff: function () {
             this.mapVM.editPointOff();
+
             if (this.subscriptions.geoChange && this.subscriptions.geoChange.dispose) {
                 this.subscriptions.geoChange.dispose();
             }
@@ -524,21 +538,21 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
         //Пересчитывает все размеры, зависимые от размера окна
         sizesCalc: function () {
-            var rightPanelW = this.$dom.find('.rightPanel').width();
-            var userRibbonW = rightPanelW - 85;
+            const rightPanelW = this.$dom.find('.rightPanel').width();
+            const userRibbonW = rightPanelW - 85;
 
-            var thumbW;
-            var thumbH;
+            let thumbW;
+            let thumbH;
 
-            var thumbWV1 = 84; //Минимальная ширина thumb
-            var thumbWV2 = 90; //Максимальная ширина thumb
-            var thumbMarginMin = 1;
-            var thumbMarginMax = 7;
-            var thumbMargin;
-            var thumbNMin = 2;
-            var thumbNV1;
-            var thumbNV2;
-            var thumbNV1User;
+            const thumbWV1 = 84; //Минимальная ширина thumb
+            const thumbWV2 = 90; //Максимальная ширина thumb
+            const thumbMarginMin = 1;
+            const thumbMarginMax = 7;
+            let thumbMargin;
+            const thumbNMin = 2;
+            let thumbNV1;
+            let thumbNV2;
+            let thumbNV1User;
 
             thumbNV1 = Math.max(thumbNMin, (rightPanelW + thumbMarginMin) / (thumbWV1 + thumbMarginMin) >> 0);
             thumbNV2 = Math.max(thumbNMin, (rightPanelW + thumbMarginMin) / (thumbWV2 + thumbMarginMin) >> 0);
@@ -565,15 +579,15 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
         // Пересчитывает размер фотографии
         sizesCalcPhoto: function () {
-            var maxWidth = this.$dom.find('.photoPanel').width() - 24 >> 0;
-            var maxHeight = P.window.h() - this.$dom.find('.imgRow').offset().top - 58 >> 0;
-            var ws = this.p.ws();
-            var hs = this.p.hs(); // Image heigth without watermark
-            var water = this.p.waterhs(); // Watermark heigth
-            var hsfull = hs + water; // Image height with watermark
-            var waterRatio = water / hsfull;
-            var aspect = ws / hsfull;
-            var fragSelection;
+            const maxWidth = this.$dom.find('.photoPanel').width() - 24 >> 0;
+            const maxHeight = P.window.h() - this.$dom.find('.imgRow').offset().top - 58 >> 0;
+            let ws = this.p.ws();
+            let hs = this.p.hs(); // Image heigth without watermark
+            let water = this.p.waterhs(); // Watermark heigth
+            let hsfull = hs + water; // Image height with watermark
+            const waterRatio = water / hsfull;
+            const aspect = ws / hsfull;
+            let fragSelection;
 
             // Подгоняем по максимальной ширине
             if (ws > maxWidth) {
@@ -587,11 +601,14 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             // то делаем возможным hscale и при влюченном тумблере hscale пересчитываем высоту и ширину
             if (hs > maxHeight) {
                 this.hscalePossible(true);
+
                 if (this.hscaleTumbler()) {
                     hs = maxHeight;
+
                     if (water) {
                         water = Math.ceil(waterRatio * hs / (1 - waterRatio));
                     }
+
                     hsfull = hs + water;
                     ws = Math.round(hsfull * aspect);
                 }
@@ -612,7 +629,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
 
         stateChange: function (data, event) {
-            var state = $(event.currentTarget).attr('data-state');
+            const state = $(event.currentTarget).attr('data-state');
+
             if (state && this[state]) {
                 this[state](!this[state]());
             }
@@ -621,11 +639,12 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             if (num < 100) {
                 return num;
             }
+
             if (num < 1000) {
                 return (num / 100 >> 0) + 'h';
             }
-            return (num / 1000 >> 0) + 'k';
 
+            return (num / 1000 >> 0) + 'k';
         },
 
         descSetEdit: function () {
@@ -640,13 +659,15 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.p.author(this.authorEditOrigin);
         },
         inputlblfocus: function (data, event) {
-            var label = event.target && event.target.previousElementSibling;
+            const label = event.target && event.target.previousElementSibling;
+
             if (label && label.classList) {
                 label.classList.add('on');
             }
         },
         inputlblblur: function (data, event) {
-            var label = event.target && event.target.previousElementSibling;
+            const label = event.target && event.target.previousElementSibling;
+
             if (label && label.classList) {
                 label.classList.remove('on');
             }
@@ -665,8 +686,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
         // Отслеживанием ввод, чтобы подгонять desc под высоту текста
         descKeyup: function (evt) {
-            var $input = $(evt.target);
-            var realHeight = this.descCheckHeight($input);
+            const $input = $(evt.target);
+            const realHeight = this.descCheckHeight($input);
 
             // Если высота изменилась, проверяем вхождение во вьюпорт с этой высотой
             // (т.к. у нас transition на высоту textarea, сразу правильно её подсчитать нельзя)
@@ -677,33 +698,37 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         // Подгоняем desc под высоту текста.
         // Если высота изменилась, возвращаем её, если нет - false
         descCheckHeight: function ($input) {
-            var height = $input.height() + 2; //2 - border
-            var heightScroll = ($input[0].scrollHeight) || height;
-            var content = $.trim($input.val());
+            const height = $input.height() + 2; //2 - border
+            const heightScroll = $input[0].scrollHeight || height;
+            const content = $.trim($input.val());
 
             if (!content) {
                 $input.height('auto');
+
                 return false;
-            } else if (heightScroll > height) {
+            }
+
+            if (heightScroll > height) {
                 $input.height(heightScroll);
+
                 return heightScroll;
             }
         },
         descCheckInViewport: function (input, inputHeight) {
-            var cBottom = input.offset().top + (inputHeight || (input.height() + 2)) + 10;
-            var wTop = $window.scrollTop();
-            var wFold = $window.height() + wTop;
+            const cBottom = input.offset().top + (inputHeight || input.height() + 2) + 10;
+            const wTop = $window.scrollTop();
+            const wFold = $window.height() + wTop;
 
             if (wFold < cBottom) {
                 $window.scrollTo('+=' + (cBottom - wFold - P.window.head) + 'px', { axis: 'y', duration: 200 });
             }
         },
         yearCheck: function () {
-            var p = this.p;
-            var year = Number(p.year());
-            var year2 = Number(p.year2());
-            var isPainting = this.isPainting();
-            var years = statuses.years[isPainting ? statuses.type.PAINTING : statuses.type.PHOTO];
+            const p = this.p;
+            let year = Number(p.year());
+            const year2 = Number(p.year2());
+            const isPainting = this.isPainting();
+            const years = statuses.years[isPainting ? statuses.type.PAINTING : statuses.type.PHOTO];
 
             if (!p.year() || isNaN(year)) {
                 // If value is empty or wrong number, put default one
@@ -714,6 +739,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 if (year === 0) {
                     year = 1;
                 }
+
                 // Убеждаемся, что год в допустимом интервале
                 year = Math.min(Math.max(year, years.min), years.max);
             }
@@ -725,24 +751,26 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             if (year === Photo.def.full.year || year2 === Photo.def.full.year2 || year > year2) {
                 p.year2(year);
             } else if (year !== year2) {
-                var maxYearsDelta = isPainting ? 200 : 50;
+                let maxYearsDelta = isPainting ? 200 : 50;
+
                 // If both years have the same sign (they're in one era), subtract one year from delta
                 if (year * year2 > 0) {
                     maxYearsDelta -= 1;
                 }
+
                 if (year2 > year + maxYearsDelta) {
-                    p.year2((year + maxYearsDelta) || year / Math.abs(year));
+                    p.year2(year + maxYearsDelta || year / Math.abs(year));
                 } else if (year2 > years.max) {
                     p.year2(years.max);
                 }
             }
         },
         year2Check: function () {
-            var p = this.p;
-            var year = Number(p.year());
-            var year2 = Number(p.year2());
-            var isPainting = this.isPainting();
-            var years = statuses.years[isPainting ? statuses.type.PAINTING : statuses.type.PHOTO];
+            const p = this.p;
+            const year = Number(p.year());
+            let year2 = Number(p.year2());
+            const isPainting = this.isPainting();
+            const years = statuses.years[isPainting ? statuses.type.PAINTING : statuses.type.PHOTO];
 
             if (!p.year2() || isNaN(year2)) {
                 // If value is empty or wrong number, put first year or default one
@@ -755,13 +783,15 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     // Если год конца заполнен, а начала - нет, заполняем
                     p.year(year2);
                 } else if (year !== year2) {
-                    var maxYearsDelta = isPainting ? 200 : 50;
+                    let maxYearsDelta = isPainting ? 200 : 50;
+
                     // If both years have the same sign (they're in one era), subtract one year from delta
                     if (year * year2 > 0) {
                         maxYearsDelta -= 1;
                     }
+
                     if (year2 > year + maxYearsDelta) {
-                        p.year((year2 - maxYearsDelta) || year2 / Math.abs(year2));
+                        p.year(year2 - maxYearsDelta || year2 / Math.abs(year2));
                     }
                 }
             }
@@ -786,7 +816,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
         regionSelect: function () {
             if (!this.regselectVM) {
-                var selected = _.last(koMapping.toJS(this.p.regions()));
+                let selected = _.last(koMapping.toJS(this.p.regions()));
+
                 if (selected) {
                     selected = [selected];
                 } else {
@@ -800,7 +831,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             options: {
                                 min: 0,
                                 max: 1,
-                                selectedInit: selected
+                                selectedInit: selected,
                             },
                             modal: {
                                 topic: 'Выбор региона принадлежности для фотографии',
@@ -815,33 +846,35 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                                         text: 'Применить',
                                         glyphicon: 'glyphicon-ok',
                                         click: function () {
-                                            var regions = this.regselectVM.getSelectedRegionsFull(['cid', 'title_local']);
+                                            const regions = this.regselectVM.getSelectedRegionsFull(['cid', 'title_local']);
 
                                             if (regions.length > 1) {
                                                 noties.alert({
                                                     message: 'Допускается выбрать только один регион',
                                                     type: 'error',
-                                                    timeout: 2500
+                                                    timeout: 2500,
                                                 });
+
                                                 return;
                                             }
+
                                             Photo.vm({ regions: regions[0] || [] }, this.p, true); //Обновляем регионы
                                             this.closeRegionSelect();
                                         },
-                                        ctx: this
+                                        ctx: this,
                                     },
-                                    { css: 'btn-warning', text: 'Отмена', click: this.closeRegionSelect, ctx: this }
-                                ]
+                                    { css: 'btn-warning', text: 'Отмена', click: this.closeRegionSelect, ctx: this },
+                                ],
                             },
                             callback: function (vm) {
                                 this.regselectVM = vm;
                                 this.childModules[vm.id] = vm;
-                            }.bind(this)
-                        }
+                            }.bind(this),
+                        },
                     ],
                     {
                         parent: this,
-                        level: this.level + 3 //Чтобы не удалился модуль карты
+                        level: this.level + 3, //Чтобы не удалился модуль карты
                     }
                 );
             }
@@ -854,10 +887,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
 
         watersignOptionChange: function (data, evt) {
-            var flag = isYes(evt);
-            var p = this.p;
-            var user = p.user;
-            var newOption;
+            const flag = isYes(evt);
+            const p = this.p;
+            const user = p.user;
+            let newOption;
 
             if (!flag) {
                 newOption = false;
@@ -884,7 +917,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 'Вы можете сделать это в любое время, нажав кнопку «На публикацию»',
                 type: 'information',
                 layout: 'topRight',
-                timeout: 6000
+                timeout: 6000,
             });
         },
         notifyReconvert: function () {
@@ -893,7 +926,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 'Изображение изменится в течении нескольких минут, обновите страницу позже',
                 type: 'information',
                 layout: 'topRight',
-                timeout: 5000
+                timeout: 5000,
             });
         },
         askForGeo: function (cb, ctx) {
@@ -912,7 +945,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         onClick: function ($noty) {
                             this.edit(true);
                             $noty.close();
-                        }.bind(this)
+                        }.bind(this),
                     },
                     {
                         addClass: 'btn btn-warning margBott',
@@ -921,7 +954,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             this.edit(true);
                             $noty.close();
                             this.regionSelect();
-                        }.bind(this)
+                        }.bind(this),
                     },
                     {
                         addClass: 'btn btn-danger margBott', text: 'Отмена',
@@ -929,10 +962,11 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             if (cb) {
                                 cb.call(ctx);
                             }
+
                             $noty.close();
-                        }
-                    }
-                ]
+                        },
+                    },
+                ],
             });
         },
 
@@ -945,7 +979,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 [{
                     module: 'm/common/reason',
                     options: {
-                        action: action
+                        action: action,
                     },
                     modal: {
                         topic: topic,
@@ -955,39 +989,39 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             text: 'Отмена', click: function () {
                                 cb.call(ctx, true);
                                 this.reasonDestroy();
-                            }, ctx: this
+                            }, ctx: this,
                         },
                         btns: [
                             {
                                 css: 'btn-warning', text: 'Выполнить', glyphicon: 'glyphicon-ok',
                                 click: function () {
-                                    var reason = this.reasonVM.getReason();
+                                    const reason = this.reasonVM.getReason();
+
                                     if (reason) {
                                         cb.call(ctx, null, reason);
                                         this.reasonDestroy();
                                     }
-                                }, ctx: this
+                                }, ctx: this,
                             },
                             {
                                 css: 'btn-success', text: 'Отмена',
                                 click: function () {
                                     cb.call(ctx, true);
                                     this.reasonDestroy();
-                                }, ctx: this
-                            }
-                        ]
+                                }, ctx: this,
+                            },
+                        ],
                     },
                     callback: function (vm) {
                         this.reasonVM = vm;
                         this.childModules[vm.id] = vm;
-                    }.bind(this)
+                    }.bind(this),
                 }],
                 {
                     parent: this,
-                    level: this.level + 3
+                    level: this.level + 3,
                 }
             );
-
         },
         reasonDestroy: function () {
             if (this.reasonVM) {
@@ -997,8 +1031,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
 
         showHistory: function () {
-            var self = this;
-            var cid = self.p.cid();
+            const self = this;
+            const cid = self.p.cid();
 
             if (!self.histVM) {
                 renderer(
@@ -1007,7 +1041,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         options: {
                             cid: cid,
                             scroll: this.history || 0,
-                            newSince: self.p.vdate()
+                            newSince: self.p.vdate(),
                         },
                         modal: {
                             topic: 'История изменений изображений',
@@ -1017,17 +1051,17 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             curtainClick: { click: self.closeHistoryOrShare, ctx: self },
                             offIcon: { text: 'Закрыть', click: self.closeHistoryOrShare, ctx: self },
                             btns: [
-                                { css: 'btn-primary', text: 'Закрыть', click: self.closeHistoryOrShare, ctx: self }
-                            ]
+                                { css: 'btn-primary', text: 'Закрыть', click: self.closeHistoryOrShare, ctx: self },
+                            ],
                         },
                         callback: function (vm) {
                             self.histVM = self.childModules[vm.id] = vm;
                             ga('send', 'event', 'photo', 'history');
-                        }
+                        },
                     }],
                     {
                         parent: self,
-                        level: self.level + 3
+                        level: self.level + 3,
                     }
                 );
             } else if (this.history !== false) {
@@ -1047,23 +1081,25 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
 
         showShare: function () {
-            var self = this;
-            var p = self.p;
-            var title = p.title() || 'Photo at PatVu.com';
-            var desc = p.desc() || '';
-            var link = '/p/' + p.cid();
+            const self = this;
+            const p = self.p;
+            let title = p.title() || 'Photo at PatVu.com';
+            let desc = p.desc() || '';
+            const link = '/p/' + p.cid();
 
             if (!self.shareVM && p.s() === statuses.keys.PUBLIC) {
                 // Include years in OpenGraph title, if they are not in title already
                 if (!title.includes(p.year()) && (!p.year2() || !title.includes(p.year2()))) {
                     title = p.y() + ' ' + title;
                 }
+
                 if (desc) {
                     desc = Utils.txtHtmlToPlain(desc, true);
                 } else if (!_.isEmpty(p.regions())) {
                     // If there in no description, create it as regions names
                     desc = p.regions().reduceRight(function (result, region, index) {
                         result += region.title_local() + (index ? ', ' : '');
+
                         return result;
                     }, '');
                 }
@@ -1077,7 +1113,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             img: '/_p/a/' + p.file(),
                             linkPage: link,
                             linkSocial: link,
-                            linkObject: '/_p/a/' + p.file()
+                            linkObject: '/_p/a/' + p.file(),
                         },
                         modal: {
                             topic: 'Поделиться изображением',
@@ -1086,16 +1122,16 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             curtainClick: { click: self.closeHistoryOrShare, ctx: self },
                             offIcon: { text: 'Закрыть', click: self.closeHistoryOrShare, ctx: self },
                             btns: [
-                                { css: 'btn-primary', text: 'Закрыть', click: self.closeHistoryOrShare, ctx: self }
-                            ]
+                                { css: 'btn-primary', text: 'Закрыть', click: self.closeHistoryOrShare, ctx: self },
+                            ],
                         },
                         callback: function (vm) {
                             self.shareVM = self.childModules[vm.id] = vm;
-                        }
+                        },
                     }],
                     {
                         parent: self,
-                        level: self.level + 3
+                        level: self.level + 3,
                     }
                 );
             }
@@ -1108,10 +1144,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
 
         download: (function () {
-            var supportDownloadAttribute = 'download' in document.createElement('a');
-            var waitingForKey = false;
-            var downloadPath = '/download/';
-            var getDownloadKey = function (cid) {
+            const supportDownloadAttribute = 'download' in document.createElement('a');
+            let waitingForKey = false;
+            const downloadPath = '/download/';
+            const getDownloadKey = function (cid) {
                 waitingForKey = true;
                 socket.run('photo.getDownloadKey', { cid: cid })
                     .then(function (data) {
@@ -1120,7 +1156,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             data.origin ? 'origin' : 'water', 'download ' + (data.origin ? 'origin' : 'water')
                         );
 
-                        var a = document.createElement('a');
+                        const a = document.createElement('a');
+
                         a.setAttribute('href', downloadPath + data.key);
                         // Tell browser that we expect to download it, to suppress warning about resource interpretation
                         // File name will be obtained from Content-Disposition anyway
@@ -1146,19 +1183,21 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 if (!this.can.download()) {
                     return;
                 }
+
                 if (waitingForKey) {
                     event.stopPropagation();
                     event.preventDefault();
+
                     return false;
                 }
 
-                var a = event.currentTarget;
-                var $a = $(a);
+                const a = event.currentTarget;
+                const $a = $(a);
 
                 ga('send', 'event', 'download', 'click', 'download click');
 
-                var canDownload = this.can.download();
-                var cid = data.p.cid();
+                const canDownload = this.can.download();
+                const cid = data.p.cid();
 
                 if (this.downLoadOrigin()) {
                     getDownloadKey(cid, $a);
@@ -1168,8 +1207,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     // If don't support, get photo from server
                     if (supportDownloadAttribute) {
                         ga('send', 'event', 'download', 'water', 'download water');
+
                         return true;
                     }
+
                     getDownloadKey(cid, $a);
                 } else if (canDownload === 'login' && !this.auth.loggedIn()) {
                     this.auth.show('login', function (result) {
@@ -1183,20 +1224,22 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
                 event.stopPropagation();
                 event.preventDefault();
+
                 return false;
             };
         }()),
 
         tryOperation: function (options) {
-            var self = this;
-            var callback = options.callback;
-            var confirmer = options.confirmer;
-            var proceedText = options.proceedText;
-            var ignoreChange = options.ignoreChange;
-            var requestCreater = options.requestCreater;
-            var customChangedMessage = options.customChangedMessage;
+            const self = this;
+            const callback = options.callback;
+            let confirmer = options.confirmer;
+            const proceedText = options.proceedText;
+            const ignoreChange = options.ignoreChange;
+            const requestCreater = options.requestCreater;
+            const customChangedMessage = options.customChangedMessage;
 
             self.exe(true);
+
             return requestCreater(ignoreChange)
                 .catch(function (error) {
                     if (error.code === 'PHOTO_CHANGED' || error.code === 'PHOTO_ANOTHER_STATUS') {
@@ -1205,17 +1248,17 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             confirmer = null;
                         }
 
-                        var message = error.message + (customChangedMessage ||
+                        const message = error.message + (customChangedMessage ||
                             '<br><a target="_blank" href="/p/' + self.p.cid() + '">Посмотреть последнюю версию</a>');
-                        var okText = proceedText || 'Продолжить операцию';
-                        var cancelText = 'Отменить операцию';
+                        const okText = proceedText || 'Продолжить операцию';
+                        const cancelText = 'Отменить операцию';
 
                         if (error.code === 'PHOTO_ANOTHER_STATUS') {
                             noties.alert({
                                 message: error.message,
                                 onOk: function () {
                                     self.exe(false);
-                                }
+                                },
                             });
                         } else {
                             noties.confirm({
@@ -1225,12 +1268,12 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                                 onOk: function (notiesConfirmer) {
                                     confirmer = notiesConfirmer;
                                     self.tryOperation(_.assign({}, options, {
-                                        confirmer: confirmer, ignoreChange: true
+                                        confirmer: confirmer, ignoreChange: true,
                                     }));
                                 },
                                 onCancel: function () {
                                     self.exe(false);
-                                }
+                                },
                             });
                         }
 
@@ -1260,7 +1303,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
 
         editSave: function () {
-            var self = this;
+            const self = this;
 
             if (!self.can.edit()) {
                 return;
@@ -1273,7 +1316,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }
         },
         editCancel: function () {
-            var self = this;
+            const self = this;
 
             if (self.edit()) {
                 this.p = Photo.vm(self.originData, this.p);
@@ -1285,7 +1328,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }
         },
         editPhoto: function () {
-            var self = this;
+            const self = this;
 
             this.receivePhoto(self.p.cid(), true, function (data) {
                 if (data.forEdit) {
@@ -1297,22 +1340,21 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     self.edit(true);
                 }
             }, this);
-
         },
 
         savePhoto: function () {
-            var self = this;
-            var p = self.p;
-            var origin = self.originData;
-            var cid = p.cid();
+            const self = this;
+            const p = self.p;
+            const origin = self.originData;
+            const cid = p.cid();
 
-            var changes = _.chain(koMapping.toJS(p))
+            const changes = _.chain(koMapping.toJS(p))
                 .pick(
                     'geo', 'dir', 'title', 'year', 'year2', 'address',
                     'nowaterchange', 'watersignIndividual', 'disallowDownloadOriginIndividual'
                 )
                 .transform(function (result, value, key) {
-                    var valueOrigin = origin[key];
+                    const valueOrigin = origin[key];
 
                     if (!_.isEqual(value, valueOrigin)) {
                         if (!_.isNumber(value) && !_.isBoolean(value) && _.isEmpty(value)) {
@@ -1344,31 +1386,38 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             if (p.desc() !== self.descEditOrigin) {
                 changes.desc = p.desc() || null;
             }
+
             if (p.source() !== self.sourceEditOrigin) {
                 changes.source = p.source() || null;
             }
+
             if (p.author() !== self.authorEditOrigin) {
                 changes.author = p.author() || null;
             }
 
-            var watersignOption = self.watersignOption();
+            let watersignOption = self.watersignOption();
+
             if (p.watersignIndividual()) {
                 if (watersignOption === 'true') {
                     watersignOption = true;
                 }
+
                 if (watersignOption !== origin.watersignOption) {
                     changes.watersignOption = watersignOption;
                 }
+
                 if (self.watersignCustom() !== origin.watersignCustom) {
                     changes.watersignCustom = self.watersignCustom() || null;
                 }
             }
+
             if (p.disallowDownloadOriginIndividual()) {
-                var disallowDownloadOrigin = self.disallowDownloadOrigin();
+                let disallowDownloadOrigin = self.disallowDownloadOrigin();
 
                 if (disallowDownloadOrigin === 'true') {
                     disallowDownloadOrigin = true;
                 }
+
                 if (watersignOption !== false && disallowDownloadOrigin !== origin.disallowDownloadOrigin) {
                     changes.disallowDownloadOrigin = disallowDownloadOrigin;
                 }
@@ -1378,8 +1427,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 return self.edit(false);
             }
 
-            var params = { cid: cid, cdate: p.cdate(), s: p.s(), changes: changes };
-            var changedMessage = '<br>В случае продолжения сохранения, ваши изменения заменят более ранние' +
+            const params = { cid: cid, cdate: p.cdate(), s: p.s(), changes: changes };
+            const changedMessage = '<br>В случае продолжения сохранения, ваши изменения заменят более ранние' +
                 '<br><a data-replace="true" href="?history=1">Посмотреть историю изменений</a>' +
                 '<br><a target="_blank" href="/p/' + cid + '">Открыть последнюю версию</a>';
 
@@ -1394,6 +1443,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                                 if (p.s() === statusKeys.NEW) {
                                     self.notifyReady();
                                 }
+
                                 if (data.reconvert) {
                                     self.notifyReconvert();
                                 }
@@ -1409,12 +1459,12 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         self.edit(false);
                         ga('send', 'event', 'photo', 'edit', 'photo edit ' + (result.error ? 'error' : 'success'));
                     }
-                }
+                },
             });
         },
 
         revoke: function () {
-            var self = this;
+            const self = this;
 
             if (!self.can.revoke()) {
                 return false;
@@ -1428,8 +1478,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 onOk: function (initConfirmer) {
                     initConfirmer.disable();
 
-                    var p = self.p;
-                    var params = { cid: p.cid(), cdate: p.cdate(), s: p.s() };
+                    const p = self.p;
+                    const params = { cid: p.cid(), cdate: p.cdate(), s: p.s() };
+
                     self.tryOperation({
                         proceedText: 'Продолжить отзыв', confirmer: initConfirmer,
                         requestCreater: function (ignoreChange) {
@@ -1443,27 +1494,29 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                                 ga('send', 'event', 'photo', 'revoke', 'photo revoke ' + (result.error ? 'error' : 'success'));
                                 globalVM.router.navigate('/u/' + p.user.login() + '/photo');
                             }
-                        }
+                        },
                     });
                 },
                 onCancel: function () {
                     self.exe(false);
-                }
+                },
             });
         },
 
         ready: function () {
-            var self = this;
-            var p = self.p;
+            const self = this;
+            const p = self.p;
 
             if (!self.can.ready()) {
                 return false;
             }
+
             if (_.isEmpty(p.geo()) && _.isEmpty(p.regions())) {
                 return self.askForGeo();
             }
 
-            var params = { cid: p.cid(), cdate: p.cdate(), s: p.s() };
+            const params = { cid: p.cid(), cdate: p.cdate(), s: p.s() };
+
             self.tryOperation({
                 proceedText: 'Продолжить отправку',
                 requestCreater: function (ignoreChange) {
@@ -1476,12 +1529,12 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         self.exe(false);
                         ga('send', 'event', 'photo', 'ready', 'photo ready ' + (result.error ? 'error' : 'success'));
                     }
-                }
+                },
             });
         },
 
         toRevision: function () {
-            var self = this;
+            const self = this;
 
             if (!self.can.revision()) {
                 return false;
@@ -1491,11 +1544,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             self.reasonSelect('photo.revision', 'Причина возврата', function (cancel, reason) {
                 if (cancel) {
                     self.exe(false);
+
                     return;
                 }
 
-                var p = self.p;
-                var params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), reason: reason };
+                const p = self.p;
+                const params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), reason: reason };
+
                 self.tryOperation({
                     proceedText: 'Продолжить операцию возврата',
                     requestCreater: function (ignoreChange) {
@@ -1508,13 +1563,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             self.exe(false);
                             ga('send', 'event', 'photo', 'revision', 'photo revision ' + (result.error ? 'error' : 'success'));
                         }
-                    }
+                    },
                 });
             });
         },
 
         reject: function () {
-            var self = this;
+            const self = this;
 
             if (!self.can.reject()) {
                 return false;
@@ -1526,8 +1581,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     return self.exe(false);
                 }
 
-                var p = self.p;
-                var params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), reason: reason };
+                const p = self.p;
+                const params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), reason: reason };
+
                 self.tryOperation({
                     proceedText: 'Продолжить отклонение',
                     requestCreater: function (ignoreChange) {
@@ -1540,13 +1596,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             self.exe(false);
                             ga('send', 'event', 'photo', 'reject', 'photo reject ' + (result.error ? 'error' : 'success'));
                         }
-                    }
+                    },
                 });
             });
         },
 
         rereject: function () {
-            var self = this;
+            const self = this;
 
             if (!self.can.rereject()) {
                 return false;
@@ -1558,8 +1614,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     return self.exe(false);
                 }
 
-                var p = self.p;
-                var params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), reason: reason };
+                const p = self.p;
+                const params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), reason: reason };
+
                 self.tryOperation({
                     proceedText: 'Продолжить восстановление',
                     requestCreater: function (ignoreChange) {
@@ -1572,20 +1629,21 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             self.exe(false);
                             ga('send', 'event', 'photo', 'rereject', 'photo rereject ' + (result.error ? 'error' : 'success'));
                         }
-                    }
+                    },
                 });
             });
         },
 
         approve: function () {
-            var self = this;
+            const self = this;
 
             if (!self.can.approve()) {
                 return false;
             }
 
-            var p = self.p;
-            var params = { cid: p.cid(), cdate: p.cdate(), s: p.s() };
+            const p = self.p;
+            const params = { cid: p.cid(), cdate: p.cdate(), s: p.s() };
+
             self.tryOperation({
                 proceedText: 'Продолжить публикацию',
                 requestCreater: function (ignoreChange) {
@@ -1599,13 +1657,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         self.exe(false);
                         ga('send', 'event', 'photo', 'approve', 'photo approve ' + (result.error ? 'error' : 'success'));
                     }
-                }
+                },
             });
         },
 
         toggleDisable: function () {
-            var self = this;
-            var disable = self.can.deactivate();
+            const self = this;
+            const disable = self.can.deactivate();
 
             if (!disable && !self.can.activate()) {
                 return false;
@@ -1626,8 +1684,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }
 
             function request(reason) {
-                var p = self.p;
-                var params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), disable: disable, reason: reason };
+                const p = self.p;
+                const params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), disable: disable, reason: reason };
+
                 self.tryOperation({
                     requestCreater: function (ignoreChange) {
                         return socket.run('photo.activateDeactivate', _.assign({ ignoreChange: ignoreChange }, params))
@@ -1638,18 +1697,20 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     callback: function (result) {
                         if (_.get(result, 'done', false)) {
                             self.exe(false);
-                            var operation = p.s() === statusKeys.DEACTIVATE ? 'enabled' : 'disabled';
+
+                            const operation = p.s() === statusKeys.DEACTIVATE ? 'enabled' : 'disabled';
+
                             ga(
                                 'send', 'event', 'photo', operation, 'photo ' + operation + (result.error ? 'error' : 'success')
                             );
                         }
-                    }
+                    },
                 });
             }
         },
 
         remove: function () {
-            var self = this;
+            const self = this;
 
             if (!self.can.remove()) {
                 return false;
@@ -1661,8 +1722,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     return self.exe(false);
                 }
 
-                var p = self.p;
-                var params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), reason: reason };
+                const p = self.p;
+                const params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), reason: reason };
+
                 self.tryOperation({
                     proceedText: 'Продолжить удаление',
                     requestCreater: function (ignoreChange) {
@@ -1681,16 +1743,16 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                                 countdown: 5,
                                 onOk: function () {
                                     globalVM.router.navigate('/u/' + p.user.login() + '/photo');
-                                }
+                                },
                             });
                         }
-                    }
+                    },
                 });
             });
         },
 
         restore: function () {
-            var self = this;
+            const self = this;
 
             if (!self.can.restore()) {
                 return false;
@@ -1702,8 +1764,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     return self.exe(false);
                 }
 
-                var p = self.p;
-                var params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), reason: reason };
+                const p = self.p;
+                const params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), reason: reason };
+
                 self.tryOperation({
                     proceedText: 'Продолжить восстановление',
                     requestCreater: function (ignoreChange) {
@@ -1716,13 +1779,14 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             self.exe(false);
                             ga('send', 'event', 'photo', 'restore', 'photo restore ' + (result.error ? 'error' : 'success'));
                         }
-                    }
+                    },
                 });
             });
         },
 
         toConvert: function () {
-            var self = this;
+            const self = this;
+
             if (!self.can.convert()) {
                 return false;
             }
@@ -1735,7 +1799,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
                     noties.alert({
                         message: _.get(result, 'message') || 'Отправлено',
-                        layout: 'topRight'
+                        layout: 'topRight',
                     });
                 })
                 .catch(function () {
@@ -1746,19 +1810,20 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         // Стандартная обработка поступающего массива лент фотографий,
         // если пришедшая фотография есть, она вставляется в новый массив
         processRibbonItem: function (incomingArr, targetArr) {
-            var resultArr = [];
-            var item;
-            var itemExistFunc = function (element) {
+            const resultArr = [];
+            let item;
+            const itemExistFunc = function (element) {
                 return element.cid === item.cid;
             };
 
-            for (var i = 0; i < incomingArr.length; i++) {
+            for (let i = 0; i < incomingArr.length; i++) {
                 item = incomingArr[i];
                 resultArr.push(
                     _.find(targetArr, itemExistFunc) ||
                     Photo.factory(item, { type: 'base', pic: 'q', can: { 'protected': item.protected } })
                 );
             }
+
             return resultArr;
         },
 
@@ -1776,9 +1841,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 });
         },
         applyUserRibbon: function () {
-            var n = this.thumbNUser();
-            var nLeft = Math.min(Math.max(Math.ceil(n / 2), n - this.ribbonUserRight.length), this.ribbonUserLeft.length);
-            var newRibbon = this.ribbonUserLeft.slice(-nLeft);
+            const n = this.thumbNUser();
+            const nLeft = Math.min(Math.max(Math.ceil(n / 2), n - this.ribbonUserRight.length), this.ribbonUserLeft.length);
+            const newRibbon = this.ribbonUserLeft.slice(-nLeft);
 
             Array.prototype.push.apply(newRibbon, this.ribbonUserRight.slice(0, n - nLeft));
             this.userRibbon(this.setRibbonStatus(newRibbon));
@@ -1791,7 +1856,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
         // Берем ленту ближайщих на карте либо к текущей (если у неё есть координата), либо к центру карты
         getNearestRibbon: function () {
-            var self = this;
+            const self = this;
+
             self.mapData = self.mapData || {};
 
             if (self.p.geo()) {
@@ -1827,18 +1893,20 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }
         },
         receiveNearestRibbon: function () {
-            var reqId = this.receiveNearestRibbonId = Math.random();
-            var sendParams = {
+            const reqId = this.receiveNearestRibbonId = Math.random();
+            const sendParams = {
                 geo: this.mapData.center,
                 type: this.mapData.isPainting ? statuses.type.PAINTING : statuses.type.PHOTO,
                 year: this.mapData.year, year2: this.mapData.year2,
-                limit: 12, except: this.p.cid()
+                limit: 12, except: this.p.cid(),
             };
+
             socket.run('photo.giveNearestPhotos', sendParams)
                 .then(function (data) {
                     if (reqId !== this.receiveNearestRibbonId) {
                         return;
                     }
+
                     this.nearestRibbonOrigin = this.processRibbonItem(data.photos || [], this.nearestRibbonOrigin);
                     this.nearestRibbon(this.nearestRibbonOrigin);
                 }.bind(this))
@@ -1848,15 +1916,17 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
 
         processRanks: function (ranks) {
-            var rank;
-            var rnks = '';
+            let rank;
+            let rnks = '';
 
-            for (var r = 0; r < ranks.length; r++) {
+            for (let r = 0; r < ranks.length; r++) {
                 rank = globalVM.ranks[ranks[r]];
+
                 if (rank) {
                     rnks += '<img class="rank" src="' + rank.src + '" title="' + rank.title + '">';
                 }
             }
+
             this.rnks(rnks);
         },
 
@@ -1864,8 +1934,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
          * COMMENTS
          */
         commentsActivate: function (options) {
-            var self = this;
-            var p = self.p;
+            const self = this;
+            const p = self.p;
 
             // Активируем комментарии, если фото не редактируется и разрешено комментировать
             if (!self.edit() && p.s() >= statusKeys.PUBLIC) {
@@ -1876,11 +1946,11 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         countNew: p.ccount_new(),
                         subscr: p.subscr(),
                         nocomments: p.nocomments(),
-                        canReply: self.can.comment()
+                        canReply: self.can.comment(),
                     },
                     _.defaults(options || {}, {
                         instant: !!self.toComment || p.frags().length,
-                        checkTimeout: p.ccount() > 30 ? 500 : 300
+                        checkTimeout: p.ccount() > 30 ? 500 : 300,
                     }),
                     function () {
                         // На случай наличия параметра подсветки фрагментов или комментариев вызываем scrollTo, после окончания receive
@@ -1904,7 +1974,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     if (_.isFunction(cb)) {
                         cb.call(ctx);
                     }
-                }
+                },
             });
         },
         scrollTo: function () {
@@ -1915,10 +1985,11 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 this.highlightFragOff();
                 this.commentsVM.scrollTo(this.toComment);
             }
+
             this.toComment = this.toFrag = undefined;
         },
         scrollToFrag: function (frag) {
-            var $element = $('.photoFrag[data-cid="' + frag + '"]');
+            const $element = $('.photoFrag[data-cid="' + frag + '"]');
 
             if ($element && $element.length === 1) {
                 this.highlightFragOff();
@@ -1926,9 +1997,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     offset: -P.window.head,
                     duration: 400, onAfter: function () {
                         this.highlightFrag(frag);
-                    }.bind(this)
+                    }.bind(this),
                 });
             }
+
             return $element;
         },
         highlightFrag: function (frag) {
@@ -1954,12 +2026,12 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         fragAreasActivate: function () {
             var $wrap = $('.imgMiddleWrap', this.$dom)
                 .on('mouseenter', '.photoFrag', function (evt) {
-                    var $frag = $(evt.target);
-                    var fragOffset = $frag.offset();
-                    var fragPosition = $frag.position();
-                    var fragWidth = $frag.width();
-                    var $comment = $('#c' + $frag.data('cid'), this.$dom);
-                    var placement;
+                    const $frag = $(evt.target);
+                    const fragOffset = $frag.offset();
+                    const fragPosition = $frag.position();
+                    const fragWidth = $frag.width();
+                    const $comment = $('#c' + $frag.data('cid'), this.$dom);
+                    let placement;
 
                     if ($comment.length === 1) {
                         $wrap
@@ -1974,7 +2046,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                                 imageHeightScaled: this.hs(),
                                 zIndex: 1,
                                 parent: $wrap,
-                                disable: true
+                                disable: true,
                             });
 
                         if (fragOffset.left + fragWidth / 2 < 150) {
@@ -1984,6 +2056,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         } else {
                             placement = 'bottom';
                         }
+
                         $frag
                             .popover({
                                 title: $('.author', $comment).text(),
@@ -1992,7 +2065,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                                 html: false,
                                 delay: 0,
                                 animation: false,
-                                trigger: 'manual'
+                                trigger: 'manual',
                             })
                             .popover('show');
                     }
@@ -2004,11 +2077,11 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
         fragAreaCreate: function (selections) {
             if (!this.fragArea) {
-                var $parent = this.$dom.find('.imgMiddleWrap');
-                var ws = this.p.ws();
-                var hs = this.p.hs();
-                var ws2;
-                var hs2;
+                const $parent = this.$dom.find('.imgMiddleWrap');
+                const ws = this.p.ws();
+                const hs = this.p.hs();
+                let ws2;
+                let hs2;
 
                 if (!selections) {
                     ws2 = ws / 2 >> 0;
@@ -2022,9 +2095,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         imageWidth: ws,
                         imageHeight: hs, imageHeightScaled: this.hs(),
                         minWidth: 30, minHeight: 30,
-                        handles: true, parent: $parent, persistent: true, instance: true
+                        handles: true, parent: $parent, persistent: true, instance: true,
                     }, selections));
             }
+
             this.fraging(true);
         },
         fragAreaDelete: function () {
@@ -2033,42 +2107,46 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 this.$dom.find('.photoImg').removeData('imgAreaSelect');
                 this.fragArea = null;
             }
+
             this.fraging(false);
         },
         fragAreaSelection: function (flag) {
-            var result;
+            let result;
+
             if (this.fragArea instanceof $.imgAreaSelect) {
                 result = this.fragArea.getSelection(flag);
             }
+
             return result;
         },
         fragAreaObject: function () {
-            var selection = this.fragAreaSelection(false);
-            var result;
+            const selection = this.fragAreaSelection(false);
+            let result;
 
             if (selection) {
                 result = {
                     l: 100 * selection.x1 / this.p.ws(),
                     t: 100 * selection.y1 / this.p.hs(),
                     w: 100 * selection.width / this.p.ws(),
-                    h: 100 * selection.height / this.p.hs()
+                    h: 100 * selection.height / this.p.hs(),
                 };
             }
+
             return result;
         },
         fragAdd: function (frag) {
             this.p.frags.push(koMapping.fromJS(frag));
         },
         fragEdit: function (ccid, options) {
-            var frag = this.fragGetByCid(ccid);
-            var ws1percent = this.p.ws() / 100;
-            var hs1percent = this.p.hs() / 100;
+            const frag = this.fragGetByCid(ccid);
+            const ws1percent = this.p.ws() / 100;
+            const hs1percent = this.p.hs() / 100;
 
             this.fragAreaCreate(_.assign({
                 x1: frag.l() * ws1percent,
                 y1: frag.t() * hs1percent,
                 x2: frag.l() * ws1percent + frag.w() * ws1percent,
-                y2: frag.t() * hs1percent + frag.h() * hs1percent
+                y2: frag.t() * hs1percent + frag.h() * hs1percent,
             }, options));
         },
         fragRemove: function (ccid) {
@@ -2084,16 +2162,18 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
 
         onPhotoLoad: function (event) {
-            var img = event.target;
-            var waterhs = this.p.waterhs();
+            const img = event.target;
+            const waterhs = this.p.waterhs();
 
             // Если реальные размеры фото не соответствуют тем что в базе, используем реальные
             if (_.isNumber(img.width) && this.p.ws() !== img.width) {
                 this.p.ws(img.width);
             }
+
             if (_.isNumber(img.height) && this.p.hs() + waterhs !== img.height) {
                 this.p.hs(img.height - waterhs);
             }
+
             this.photoSrc(this.p.sfile());
             this.sizesCalcPhoto();
             this.photoLoadContainer = null;
@@ -2115,24 +2195,26 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             event.target.parentNode.parentNode.classList.add('showPrv');
         },
         onPreviewErr: function (data, event) {
-            var $photoBox = $(event.target.parentNode);
-            var parent = $photoBox[0].parentNode;
-            var content = '';
+            const $photoBox = $(event.target.parentNode);
+            const parent = $photoBox[0].parentNode;
+            let content = '';
 
             event.target.style.visibility = 'hidden';
+
             if (data.conv) {
                 content = imgFailTpl({
                     style: 'padding-top: 20px; background: url(/img/misc/photoConvWhite.png) 50% 0 no-repeat;',
-                    txt: ''
+                    txt: '',
                 });
             } else if (data.convqueue) {
                 content = imgFailTpl({ style: '', txt: '<span class="glyphicon glyphicon-road"></span>' });
             } else {
                 content = imgFailTpl({
                     style: 'width:24px; height:20px; background: url(/img/misc/imgw.png) 50% 0 no-repeat;',
-                    txt: ''
+                    txt: '',
                 });
             }
+
             $photoBox.append(content);
             parent.classList.add('showPrv');
         },
@@ -2142,6 +2224,6 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.msgCss('label-' + (labelMod || 'default'));
             this.msgTitle(abbr || '');
             this.msgLink(link || '');
-        }
+        },
     });
 });

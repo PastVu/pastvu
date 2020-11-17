@@ -4,7 +4,7 @@
 define(['underscore'], function (_) {
     'use strict';
 
-    var statuses = {
+    const statuses = {
         NEW: { // Новое
             num: 0,
             title: 'Новая фотография. Должна быть заполнена и отправлена на премодерацию для публикации',
@@ -15,7 +15,7 @@ define(['underscore'], function (_) {
             icon: 'glyphicon-asterisk',
             icon_history: 'glyphicon-cloud-upload',
             label: 'success',
-            color: '#333'
+            color: '#333',
         },
         REVISION: { // На доработке
             num: 1,
@@ -26,7 +26,7 @@ define(['underscore'], function (_) {
             tip: 'На доработке',
             icon: 'glyphicon-repeat',
             label: 'warning',
-            color: '#e99100'
+            color: '#e99100',
         },
         READY: { // Ожидает публикации
             num: 2,
@@ -36,7 +36,7 @@ define(['underscore'], function (_) {
             filter_title: 'Готовые',
             icon: 'glyphicon-flag',
             label: 'success',
-            color: '#5FA803'
+            color: '#5FA803',
         },
         REVOKE: { // Отозвано владельцем
             num: 3,
@@ -47,7 +47,7 @@ define(['underscore'], function (_) {
             tip: 'Отозвана',
             icon: 'glyphicon-remove-circle',
             label: 'default',
-            color: '#999'
+            color: '#999',
         },
         REJECT: { // Отклонено
             num: 4,
@@ -57,14 +57,14 @@ define(['underscore'], function (_) {
             tip: 'Отклонена',
             icon: 'glyphicon-ban-circle',
             label: 'danger',
-            color: '#c60c1a'
+            color: '#c60c1a',
         },
         PUBLIC: { // Опубликованное
             num: 5,
             filter_title: 'Публичные',
             action: 'Опубликована',
             icon_history: 'glyphicon-globe',
-            color: '#0a6d04'
+            color: '#0a6d04',
         },
         DEACTIVATE: { // Деактивировано
             num: 7,
@@ -75,7 +75,7 @@ define(['underscore'], function (_) {
             tip: 'Фотография неактивна',
             icon: 'glyphicon-lock',
             label: 'warning',
-            color: '#e99100'
+            color: '#e99100',
         },
         REMOVE: { // Удалено
             num: 9,
@@ -86,16 +86,17 @@ define(['underscore'], function (_) {
             tip: 'Фотография удалена',
             icon: 'glyphicon-trash',
             label: 'danger',
-            color: '#c60c1a'
-        }
+            color: '#c60c1a',
+        },
     };
-    var keys = {}; // Ключ - число. { NEW: 0 }
-    var nums = {}; // Число - статус. { '0': {} }
+    const keys = {}; // Ключ - число. { NEW: 0 }
+    const nums = {}; // Число - статус. { '0': {} }
 
     _.forOwn(statuses, function (status, key) {
         if (!status.title_owner) {
             status.title_owner = status.title;
         }
+
         keys[key] = status.num;
         nums[status.num] = status;
     });
@@ -104,11 +105,11 @@ define(['underscore'], function (_) {
     statuses.nums = nums;
     statuses.type = {
         PHOTO: 1,
-        PAINTING: 2
+        PAINTING: 2,
     };
     statuses.years = {
         1: { min: 1826, max: 2000 },
-        2: { min: -100, max: 1980 }
+        2: { min: -100, max: 1980 },
     };
 
     return statuses;

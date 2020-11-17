@@ -1,33 +1,33 @@
 define(['module'], function (/* module */) {
     'use strict';
 
-    var onLoad;
+    let onLoad;
 
     function moduleHandler(_, io, noties, TimeoutError) {
-        var connectPath = location.host;
-        var connectOptions = {
+        const connectPath = location.host;
+        const connectOptions = {
             autoConnect: false,
             // Initial interval (in ms) between browser attempts to reconnect, followings increase exponentially
             reconnectionDelay: _.random(700, 900),
             // Maximum interval (in ms) between browser attempts to reconnect
             reconnectionDelayMax: _.random(6000, 8000),
             // Maximum amount of reconnect, after which will be triggered 'connect_failed' event
-            reconnectionAttempts: 150
+            reconnectionAttempts: 150,
         };
-        var manager = io(connectPath, connectOptions);
-        var socket = { connected: false, ons: {}, emitQueue: {} };
+        const manager = io(connectPath, connectOptions);
+        const socket = { connected: false, ons: {}, emitQueue: {} };
 
-        var firstConnected = false; // Flag of initial connect
-        var firstConnectSubscribers = [];
-        var disconnectionDataReturn = {
+        let firstConnected = false; // Flag of initial connect
+        const firstConnectSubscribers = [];
+        const disconnectionDataReturn = {
             error: true,
             noconnect: true,
-            message: 'Нет соединения с сервером, повторите после восстановления связи'
+            message: 'Нет соединения с сервером, повторите после восстановления связи',
         };
-        var noConnWait = '<div class="noconn"><div class="inn">Нет соединения с сервером, пробую подключиться.. После восстановления связи сообщение пропадет автоматически</div></div>';
-        var noConnFail = '<div class="noconn fail"><div class="inn">Не удалось автоматически подключиться к серверу. <span class="repeat">Продолжать попытки</span></div></div>';
-        var $noConnWait;
-        var $noConnFail;
+        const noConnWait = '<div class="noconn"><div class="inn">Нет соединения с сервером, пробую подключиться.. После восстановления связи сообщение пропадет автоматически</div></div>';
+        const noConnFail = '<div class="noconn fail"><div class="inn">Не удалось автоматически подключиться к серверу. <span class="repeat">Продолжать попытки</span></div></div>';
+        let $noConnWait;
+        let $noConnFail;
 
         /**
          * Событие первого соединения с сервером
@@ -59,16 +59,22 @@ define(['module'], function (/* module */) {
         socket.emit = function (name, data, queueIfNoConnection) {
             if (socket.connected) {
                 manager.emit(name, data);
+
                 return true;
-            } else if (queueIfNoConnection) {
-                var nameQueue = socket.emitQueue[name];
+            }
+
+            if (queueIfNoConnection) {
+                const nameQueue = socket.emitQueue[name];
+
                 if (!nameQueue) {
                     socket.emitQueue[name] = [data];
                 } else {
                     nameQueue.push(data);
                 }
+
                 return true;
             }
+
             return false; // If no connection, return false
         };
 
@@ -81,7 +87,7 @@ define(['module'], function (/* module */) {
          * @returns {boolean} Флаг, что событие зарегистрировано
          */
         socket.on = function (name, cb, ctx, noConnectionNotify) {
-            var registered = eventHandlerRegister('on', name, cb, ctx, noConnectionNotify);
+            const registered = eventHandlerRegister('on', name, cb, ctx, noConnectionNotify);
 
             // Если указано уведомлять об отсутствии соединения и его сейчас нет,
             // то сразу после регистрации события уведомляем об этом
@@ -113,13 +119,17 @@ define(['module'], function (/* module */) {
                     setTimeout(function () {
                         cb.apply(ctx, [disconnectionDataReturn, _.noop]);
                     }, 4);
+
                     return false;
-                } else if (!registerEvenNoConnection) {
+                }
+
+                if (!registerEvenNoConnection) {
                     // Если флагом не указано, что сказано регистрировать даже в случае отсутствия соединения,
                     // то выходим
                     return false;
                 }
             }
+
             return eventHandlerRegister('once', name, cb, ctx, noConnectionNotify);
         };
 
@@ -130,25 +140,28 @@ define(['module'], function (/* module */) {
          * @returns {boolean}
          */
         socket.off = function (name, cb) {
-            var nameStack = socket.ons[name];
-            var item;
+            const nameStack = socket.ons[name];
+            let item;
 
             if (!Array.isArray(nameStack)) {
                 return false;
             }
 
-            for (var i = 0; i < nameStack.length; i++) {
+            for (let i = 0; i < nameStack.length; i++) {
                 item = nameStack[i];
+
                 // Если коллбека не передано, то удаляем все. Если передан, то только его
                 if (!cb || cb === item.cb) {
                     nameStack.splice(i--, 1);
                 }
             }
+
             // Если обработчиков не осталось, удаляем подписку на событие manager
             if (!nameStack.length) {
                 manager.removeAllListeners(name);
                 delete socket.ons[name];
             }
+
             return true;
         };
 
@@ -162,7 +175,7 @@ define(['module'], function (/* module */) {
          */
         socket.request = function (name, data, timeToWaitIfNoConnection) {
             return new Promise(function (resolve, reject) {
-                var resolver = function (result) {
+                const resolver = function (result) {
                     // console.log('Request resolve', result);
                     resolve(result);
                 };
@@ -170,19 +183,21 @@ define(['module'], function (/* module */) {
                 if (socket.connected) {
                     manager.emit(name, data, resolver);
                 } else if (_.isNumber(timeToWaitIfNoConnection) && timeToWaitIfNoConnection >= 0) {
-                    var queueName = socket.emitQueue[name];
-                    var queueData = { data: data, cb: resolver };
+                    let queueName = socket.emitQueue[name];
+                    const queueData = { data: data, cb: resolver };
 
                     if (timeToWaitIfNoConnection) {
                         setTimeout(function () {
                             queueName = _.without(queueName, queueData);
+
                             if (_.isEmpty(queueName)) {
                                 delete socket.emitQueue[name];
                             }
+
                             reject(new TimeoutError({
                                 type: 'SOCKET_CONNECTION',
                                 name: name,
-                                data: data
+                                data: data,
                             }, timeToWaitIfNoConnection));
                         }, timeToWaitIfNoConnection);
                     }
@@ -244,18 +259,18 @@ define(['module'], function (/* module */) {
         // Добавляем обработчик события
         // Если его еще нет в хеше, создаем в нем стек по имени и вешаем событие на manager
         function eventHandlerRegister(type, name, cb, ctx, noConnectionNotify) {
-            var nameStack = socket.ons[name];
-            var stackRecord = { type: type, name: name, cb: cb, ctx: ctx, connoty: noConnectionNotify };
+            const nameStack = socket.ons[name];
+            const stackRecord = { type: type, name: name, cb: cb, ctx: ctx, connoty: noConnectionNotify };
 
             if (Array.isArray(nameStack)) {
                 nameStack.push(stackRecord);
             } else {
                 socket.ons[name] = [stackRecord];
                 manager.on(name, function () {
-                    var data = _.head(arguments);
-                    var acknowledgementCallback;
-                    var acknowledgementCallbackCallResult;
-                    var acknowledgementCallbackOrigin = _.last(arguments);
+                    const data = _.head(arguments);
+                    let acknowledgementCallback;
+                    let acknowledgementCallbackCallResult;
+                    const acknowledgementCallbackOrigin = _.last(arguments);
 
                     if (_.isFunction(acknowledgementCallbackOrigin)) {
                         acknowledgementCallbackCallResult = { data: [] };
@@ -279,7 +294,7 @@ define(['module'], function (/* module */) {
         // Если обработчик установлен как once, удаляет его из стека после вызова
         // Если обработчиков после вызова не осталось, удаляем событие из хэша и отписываемся от manager
         function eventHandlersNotify(name, result, aboutNoConnection) {
-            var nameStack = socket.ons[name];
+            const nameStack = socket.ons[name];
 
             if (!Array.isArray(nameStack)) {
                 return;
@@ -328,12 +343,13 @@ define(['module'], function (/* module */) {
                     socket.emitQueue[name].forEach(emitNameData);
                 }
             }
+
             socket.emitQueue = {};
         }
 
         // В случае разрыва соединения оповещает все подписанные на все события обработчики
         function disconnectionAllNotyfy() {
-            for (var name in socket.ons) {
+            for (const name in socket.ons) {
                 if (socket.ons.hasOwnProperty(name)) {
                     eventHandlersNotify(name, null, true);
                 }
@@ -401,6 +417,7 @@ define(['module'], function (/* module */) {
         });
         manager.on('reconnecting', function (attempt) {
             console.log('Trying to reconnect to server %d time', attempt);
+
             if (attempt > 1) {
                 noConnWaitShow();
             }
@@ -431,11 +448,13 @@ define(['module'], function (/* module */) {
         load: function (name, req, onLoadExe, config) {
             if (config.isBuild) {
                 onLoadExe(null); // Avoid errors in the r.js optimizer
+
                 return;
             }
+
             onLoad = onLoadExe;
 
             req(['underscore', 'socket.io', 'noties', 'errors/Timeout'], moduleHandler);
-        }
+        },
     };
 });

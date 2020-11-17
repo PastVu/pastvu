@@ -5,9 +5,9 @@
 define(['Utils'], function () {
     'use strict';
 
-    var intlNumFormat = new Intl.NumberFormat('ru-RU').format;
-    var intlDateFormat = new Intl.DateTimeFormat('ru-RU').format;
-    var intlDateFullFormat = new Intl.DateTimeFormat('ru-RU', {
+    const intlNumFormat = new Intl.NumberFormat('ru-RU').format;
+    const intlDateFormat = new Intl.DateTimeFormat('ru-RU').format;
+    const intlDateFullFormat = new Intl.DateTimeFormat('ru-RU', {
         weekday: 'long',
         day: 'numeric',
         month: 'long',
@@ -15,16 +15,16 @@ define(['Utils'], function () {
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
-        hour12: false
+        hour12: false,
     }).format;
-    var intlDateFullDigitFormat = new Intl.DateTimeFormat('ru-RU', {
+    const intlDateFullDigitFormat = new Intl.DateTimeFormat('ru-RU', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
-        hour12: false
+        hour12: false,
     }).format;
 
     return {

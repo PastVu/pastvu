@@ -5,14 +5,14 @@ define([
     'underscore', 'jquery', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM',
     'renderer', 'model/User', 'model/storage', 'leaflet', 'leaflet-extends/L.neoMap', 'noties',
     'text!tpl/map/mapClusterCalc.pug', 'css!style/map/mapClusterCalc', 'jquery-ui/draggable', 'jquery-ui/resizable',
-    'jquery-ui/effect-highlight', 'css!style/jquery/ui/core', 'css!style/jquery/ui/resizable', 'css!style/jquery/ui/theme'
+    'jquery-ui/effect-highlight', 'css!style/jquery/ui/core', 'css!style/jquery/ui/resizable', 'css!style/jquery/ui/theme',
 ], function (_, $, Browser, Utils, socket, P, ko, Cliche, globalVM, renderer, User, storage, L, Map, noties, pug) {
     'use strict';
 
     return Cliche.extend({
         pug: pug,
         options: {
-            deferredWhenReady: null // Deffered wich will be resolved when map ready
+            deferredWhenReady: null, // Deffered wich will be resolved when map ready
         },
         create: function () {
             this.destroy = _.wrap(this.destroy, this.localDestroy);
@@ -45,23 +45,24 @@ define([
                             id: 'osmosnimki',
                             desc: 'Osmosnimki',
                             selected: ko.observable(false),
-                            obj: new L.TileLayer('http://{s}.tile.osmosnimki.ru/kosmo/{z}/{x}/{y}.png', { updateWhenIdle: false })
+                            obj: new L.TileLayer('http://{s}.tile.osmosnimki.ru/kosmo/{z}/{x}/{y}.png', { updateWhenIdle: false }),
                         },
                         {
                             id: 'mapnik',
                             desc: 'Mapnik',
                             selected: ko.observable(false),
-                            obj: new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { updateWhenIdle: false })
+                            obj: new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { updateWhenIdle: false }),
                         },
                         {
                             id: 'mapquest',
                             desc: 'Mapquest',
                             selected: ko.observable(false),
-                            obj: new L.TileLayer('http://otile1.mqcdn.com/tiles/1.0.0/osm/{z}/{x}/{y}.png', { updateWhenIdle: false })
-                        }
-                    ])
+                            obj: new L.TileLayer('http://otile1.mqcdn.com/tiles/1.0.0/osm/{z}/{x}/{y}.png', { updateWhenIdle: false }),
+                        },
+                    ]),
                 });
             }
+
             if (P.settings.USE_GOOGLE_API()) {
                 this.layers.push({
                     id: 'google',
@@ -73,29 +74,30 @@ define([
                             id: 'scheme',
                             desc: 'Схема',
                             selected: ko.observable(false),
-                            params: 'roadmap'
+                            params: 'roadmap',
                         },
                         {
                             id: 'sat',
                             desc: 'Спутник',
                             selected: ko.observable(false),
-                            params: 'satellite'
+                            params: 'satellite',
                         },
                         {
                             id: 'hyb',
                             desc: 'Гибрид',
                             selected: ko.observable(false),
-                            params: 'hybrid'
+                            params: 'hybrid',
                         },
                         {
                             id: 'land',
                             desc: 'Ландшафт',
                             selected: ko.observable(false),
-                            params: 'terrain'
-                        }
-                    ])
+                            params: 'terrain',
+                        },
+                    ]),
                 });
             }
+
             if (P.settings.USE_YANDEX_API()) {
                 this.layers.push({
                     id: 'yandex',
@@ -107,33 +109,33 @@ define([
                             id: 'scheme',
                             desc: 'Схема',
                             selected: ko.observable(false),
-                            params: 'map'
+                            params: 'map',
                         },
                         {
                             id: 'sat',
                             desc: 'Спутник',
                             selected: ko.observable(false),
-                            params: 'satellite'
+                            params: 'satellite',
                         },
                         {
                             id: 'hyb',
                             desc: 'Гибрид',
                             selected: ko.observable(false),
-                            params: 'hybrid'
+                            params: 'hybrid',
                         },
                         {
                             id: 'pub',
                             desc: 'Народная',
                             selected: ko.observable(false),
-                            params: 'publicMap'
+                            params: 'publicMap',
                         },
                         {
                             id: 'pubhyb',
                             desc: 'Народный гибрид',
                             selected: ko.observable(false),
-                            params: 'publicMapHybrid'
-                        }
-                    ])
+                            params: 'publicMapHybrid',
+                        },
+                    ]),
                 });
             }
 
@@ -142,16 +144,16 @@ define([
             this.show();
         },
         show: function () {
-            var _this = this;
-            globalVM.func.showContainer(this.$container, function () {
+            const _this = this;
 
+            globalVM.func.showContainer(this.$container, function () {
                 this.map = new L.NeoMap(this.$dom.find('.map')[0], {
                     center: [55.753395, 37.621994],
                     zoom: 13,
                     minZoom: 3,
                     maxZoom: 18,
                     zoomAnimation: false,
-                    trackResize: false
+                    trackResize: false,
                 });
 
                 // Самостоятельно обновлем размеры карты
@@ -161,13 +163,15 @@ define([
 
                 this.map.whenReady(function () {
                     this.selectLayer('google', 'scheme');
+
                     if (this.options.deferredWhenReady && Utils.isType('function', this.options.deferredWhenReady.resolve)) {
                         this.options.deferredWhenReady.resolve();
                     }
+
                     this.$dom.find('.clusterRect').draggable({
                         containment: this.$dom.find('.mapContainer'),
                         scroll: false,
-                        cursor: 'move'
+                        cursor: 'move',
                     }).resizable({
                         minHeight: 40,
                         minWidth: 40,
@@ -177,10 +181,9 @@ define([
                         resize: function (event, ui) {
                             _this.wNew(ui.size.width);
                             _this.hNew(ui.size.height);
-                        }
+                        },
                     });
                 }, this);
-
             }, this);
 
             this.showing = true;
@@ -196,39 +199,39 @@ define([
         },
 
         save: function () {
-            var _this = this;
+            const _this = this;
 
-            var $clusterRect = this.$dom.find('.clusterRect');
-            var w = this.wNew();
-            var h = this.hNew();
-            var pos = $clusterRect.position();
+            const $clusterRect = this.$dom.find('.clusterRect');
+            const w = this.wNew();
+            const h = this.hNew();
+            const pos = $clusterRect.position();
 
-            var centerGeo = this.map.containerPointToLatLng(new L.Point(pos.left + w / 2, pos.top + h / 2));
+            const centerGeo = this.map.containerPointToLatLng(new L.Point(pos.left + w / 2, pos.top + h / 2));
 
-            var wMap = this.$dom.find('.mapContainer').width();
-            var hMap = this.$dom.find('.mapContainer').height();
+            const wMap = this.$dom.find('.mapContainer').width();
+            const hMap = this.$dom.find('.mapContainer').height();
 
-            var zooms = _.range(3, 16 + 1); // Уровни 3 - 16
-            var result = [];
+            const zooms = _.range(3, 16 + 1); // Уровни 3 - 16
+            const result = [];
 
-            var setZoom = function (z) {
+            const setZoom = function (z) {
                 if (_this.exe()) {
                     _this.map.setView(centerGeo, z);
                 }
             };
-            var calcOnZoom = function (z) {
-                var rectCenter = _this.map.latLngToContainerPoint(_this.map.getCenter());
-                var rectTopLeft = _this.map.containerPointToLatLng(new L.Point(rectCenter.x - w / 2, rectCenter.y - h / 2));
-                var rectBottomRight = _this.map.containerPointToLatLng(new L.Point(rectCenter.x + w / 2, rectCenter.y + h / 2));
+            const calcOnZoom = function (z) {
+                const rectCenter = _this.map.latLngToContainerPoint(_this.map.getCenter());
+                const rectTopLeft = _this.map.containerPointToLatLng(new L.Point(rectCenter.x - w / 2, rectCenter.y - h / 2));
+                const rectBottomRight = _this.map.containerPointToLatLng(new L.Point(rectCenter.x + w / 2, rectCenter.y + h / 2));
 
                 return {
                     z: z,
                     w: Utils.math.toPrecision(Math.abs(rectTopLeft.lng - rectBottomRight.lng)),
-                    h: Utils.math.toPrecision(Math.abs(rectTopLeft.lat - rectBottomRight.lat))
+                    h: Utils.math.toPrecision(Math.abs(rectTopLeft.lat - rectBottomRight.lat)),
                 };
             };
             var changeZoomRecursive = _.debounce(function () {
-                var z = _this.map.getZoom();
+                const z = _this.map.getZoom();
 
                 result.push(calcOnZoom(z));
                 this.exePercent(Math.ceil(100 * (zooms.indexOf(z) + 1) / zooms.length)); // Обновляем прогресс-бар подсчета
@@ -248,14 +251,14 @@ define([
                 sgeo: Utils.geo.geoToPrecision([centerGeo.lng, centerGeo.lat]),
                 sz: this.map.getZoom(),
                 sw: this.wNew(),
-                sh: this.hNew()
+                sh: this.hNew(),
             };
             this.calcDeffered = new $.Deferred();
             // Ставим статус, что идет пересчет
             this.exe(true);
             this.exePercent(0);
             // Ставим прямоугольник по центру
-            $clusterRect.css({ left: (wMap / 2) - w / 2, top: (hMap / 2) - h / 2 });
+            $clusterRect.css({ left: wMap / 2 - w / 2, top: hMap / 2 - h / 2 });
             // Подписываемся на изменение зума карты
             this.map.on('moveend', changeZoomRecursive, this);
             // Начинаем подсчет
@@ -264,7 +267,7 @@ define([
             $.when(this.calcDeffered.promise()).done(this.send.bind(this));
         },
         send: function (arr) {
-            var _this = this;
+            const _this = this;
 
             noties.confirm({
                 message: 'Новые параметры кластера посчитаны для всех ' + arr.length + ' уровней зума. <br>' +
@@ -287,6 +290,7 @@ define([
                             if (confirmer) {
                                 confirmer.close();
                             }
+
                             _this.cancel();
                         });
 
@@ -300,7 +304,7 @@ define([
                 },
                 onCancel: function () {
                     _this.cancel();
-                }
+                },
             });
         },
         cancel: function () {
@@ -309,13 +313,16 @@ define([
                 this.exePercent(0);
                 this.map.off('moveend');
                 window.clearTimeout(this.setZoomTimeout);
+
                 if (this.calcDeffered) {
                     this.calcDeffered.reject();
                 }
+
                 delete this.calcDeffered;
                 delete this.setZoomTimeout;
                 delete this.saveParams;
             }
+
             this.wNew(this.wCurr());
             this.hNew(this.hCurr());
             this.$dom.find('.clusterRect').css({ width: this.wCurr(), height: this.hCurr() });
@@ -333,10 +340,10 @@ define([
             this.layersOpen(!this.layersOpen());
         },
         selectLayer: function (sysId, typeId) {
-            var layers = this.layers();
-            var layerActive = this.layerActive();
-            var system;
-            var type;
+            let layers = this.layers();
+            const layerActive = this.layerActive();
+            let system;
+            let type;
 
             if (layerActive.sys && layerActive.sys.id === sysId && layerActive.type.id === typeId) {
                 return;
@@ -377,6 +384,6 @@ define([
             }
 
             layers = system = null;
-        }
+        },
     });
 });

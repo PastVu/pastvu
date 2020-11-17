@@ -3,13 +3,13 @@
  */
 define([
     'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
-    'model/storage', 'noties', 'text!tpl/region/select.pug', 'css!style/region/select', 'bs/ext/tokenfield'
+    'model/storage', 'noties', 'text!tpl/region/select.pug', 'css!style/region/select', 'bs/ext/tokenfield',
 ], function (_, $, Utils, socket, P, ko, koMapping, Cliche, globalVM, storage, noties, pug) {
     'use strict';
 
-    var collator = new Intl.Collator('ru-RU', { numeric: true, sensitivity: 'base' });
-    var $window = $(window);
-    var cache = null;
+    const collator = new Intl.Collator('ru-RU', { numeric: true, sensitivity: 'base' });
+    const $window = $(window);
+    let cache = null;
 
     return Cliche.extend({
         pug: pug,
@@ -18,7 +18,7 @@ define([
             max: 10,
             selectedInit: [],
             topCidsFilter: [],
-            neverSelectable: []
+            neverSelectable: [],
         },
         create: function () {
             this.auth = globalVM.repository['m/common/auth'];
@@ -29,12 +29,14 @@ define([
             this.topCidsFilter = this.options.topCidsFilter;
             this.neverSelectable = this.options.neverSelectable.reduce(function (hash, cid) {
                 hash[cid] = true;
+
                 return hash;
             }, Object.create(null));
 
             this.selectedInit = this.options.selectedInit;
             this.selectedInitHash = {};
             this.selectedInitTkns = [];
+
             if (this.selectedInit && this.selectedInit.length) {
                 this.selectedInit.forEach(function (region) {
                     this.selectedInitHash[region.cid] = region;
@@ -51,7 +53,9 @@ define([
             this.sortOrder = ko.observable(Utils.getLocalStorage('regionSelect.sortOrder') || 1); // 1, -1
 
             this.pinHomeAllowed = this.auth.loggedIn() && this.auth.iAm.regionHome.cid() && this.topCidsFilter.length === 0;
-            var pinHome = this.pinHomeAllowed ? Utils.getLocalStorage('regionSelect.pinHome') : false;
+
+            const pinHome = this.pinHomeAllowed ? Utils.getLocalStorage('regionSelect.pinHome') : false;
+
             this.pinHome = ko.observable(typeof pinHome === 'boolean' ? pinHome : true);
 
             this.clickNode = this.clickNode.bind(this);
@@ -87,9 +91,11 @@ define([
             ko.applyBindings(globalVM, this.$dom[0]);
 
             globalVM.func.showContainer(this.$container);
+
             if (this.modal) {
                 this.modal.$curtain.addClass('showModalCurtain');
             }
+
             this.showing = true;
         },
         hide: function () {
@@ -107,17 +113,17 @@ define([
         },
         //Включаем "прилипание" поля ввода при скроллинге к верхнему краю модального окна
         affixInputOn: function () {
-            var _this = this;
-            var $container = this.$container;
-            var $sticker = this.$dom.find('.inputwrap.origin');
+            const _this = this;
+            const $container = this.$container;
+            const $sticker = this.$dom.find('.inputwrap.origin');
 
-            var stickAfter = $sticker.position().top;
-            var stickFixedTop = $container.offset().top - $window.scrollTop() + 7;
-            var stickFixedLeft = $sticker.offset().left - $window.scrollLeft() - 44;
-            var stickFixedWidth = $sticker.width() + 21 + 21;
+            const stickAfter = $sticker.position().top;
+            const stickFixedTop = $container.offset().top - $window.scrollTop() + 7;
+            const stickFixedLeft = $sticker.offset().left - $window.scrollLeft() - 44;
+            const stickFixedWidth = $sticker.width() + 21 + 21;
 
-            var calcValues = function () {
-                var scrollUnder = $container.scrollTop() > stickAfter;
+            const calcValues = function () {
+                const scrollUnder = $container.scrollTop() > stickAfter;
 
                 if (!_this.isSticked && scrollUnder) {
                     _this.sticker.style.top = stickFixedTop + 'px';
@@ -179,34 +185,37 @@ define([
         },
         //Возвращает массив выбранных регионов с переданными полями
         getSelectedRegions: function (fields) {
-            var tkn = this.$dom.find('.regionstkn');
-            var tokens = tkn.tokenfield('getTokens');
-            var result = [];
+            const tkn = this.$dom.find('.regionstkn');
+            const tokens = tkn.tokenfield('getTokens');
+            const result = [];
 
             tokens.forEach(function (item) {
-                var region = this.regionsHashByTitle[item.value];
+                const region = this.regionsHashByTitle[item.value];
+
                 if (region && region.exists) {
                     result.push(fields ? _.pick(region, fields) : region);
                 }
             }, this);
+
             return result;
         },
         //Возвращает массив выбранных регионов с родителями с переданными полями
         getSelectedRegionsFull: function (fields) {
-            var tkn = this.$dom.find('.regionstkn');
-            var tokens = tkn.tokenfield('getTokens');
-            var results = [];
+            const tkn = this.$dom.find('.regionstkn');
+            const tokens = tkn.tokenfield('getTokens');
+            const results = [];
 
             tokens.forEach(function (item) {
-                var region = this.regionsHashByTitle[item.value];
+                const region = this.regionsHashByTitle[item.value];
 
                 if (region && region.exists) {
-                    var result = [];
+                    const result = [];
 
                     //Если есть родительские, то вставляем и их
                     if (region.parents && region.parents.length) {
                         region.parents.forEach(function (cid) {
-                            var region = this.regionsHashByCid[cid];
+                            const region = this.regionsHashByCid[cid];
+
                             if (region && region.exists) {
                                 result.push(fields ? _.pick(region, fields) : region);
                             }
@@ -217,34 +226,38 @@ define([
                     results.push(result);
                 }
             }, this);
+
             return results;
         },
         //Возвращает массив cid выбранных регионов
         getSelectedCids: function () {
-            var tkn = this.$dom.find('.regionstkn');
-            var tokens = tkn.tokenfield('getTokens');
-            var result = [];
+            const tkn = this.$dom.find('.regionstkn');
+            const tokens = tkn.tokenfield('getTokens');
+            const result = [];
 
             tokens.forEach(function (item) {
-                var region = this.regionsHashByTitle[item.value];
+                const region = this.regionsHashByTitle[item.value];
+
                 if (region && region.exists) {
                     result.push(region.cid);
                 }
             }, this);
+
             return result;
         },
         getRegionsByCids: function (cids, fields) {
-            var regionsHashByCid = this.regionsHashByCid;
+            const regionsHashByCid = this.regionsHashByCid;
 
             return cids.map(function (cid) {
                 return fields ? _.pick(regionsHashByCid[cid], fields) : regionsHashByCid[cid];
             }, {});
         },
         getRegionsHashByCids: function (cids, fields) {
-            var regionsHashByCid = this.regionsHashByCid;
+            const regionsHashByCid = this.regionsHashByCid;
 
             return cids.reduce(function (result, cid) {
                 result[cid] = fields ? _.pick(regionsHashByCid[cid], fields) : regionsHashByCid[cid];
+
                 return result;
             }, {});
         },
@@ -260,17 +273,16 @@ define([
                         name: 'regions',
                         valueKey: 'title',
                         limit: 10,
-                        local: this.regionsTypehead/*[{title: 'США', tokens: ['USA', 'США', 'Соединенные Штаты Америки']}]*/
-                    }
+                        local: this.regionsTypehead, /*[{title: 'США', tokens: ['USA', 'США', 'Соединенные Штаты Америки']}]*/
+                    },
                 })
                 .on('afterCreateToken', this.onCreateToken.bind(this)) //При создании токена добавляем выбор
                 .on('beforeEditToken removeToken', this.onRemoveToken.bind(this)); //При удалении или редиктировании токена удаляем выбор
-
         },
         //Событие создания токена. Вызовется как при создании в поле, так и при удалении из дерева (потому что при этом пересоздаются неудаляемые токены)
         onCreateToken: function (e) {
-            var title = e.token.value;
-            var region = this.regionsHashByTitle[title];
+            const title = e.token.value;
+            const region = this.regionsHashByTitle[title];
 
             if (region && region.exists) {
                 //Если регион уже выбран, значит, мы создаем токен вручную после клика по узлу дерева
@@ -288,8 +300,8 @@ define([
         },
         //Событие удаления токена непосредственно из поля
         onRemoveToken: function (e) {
-            var title = e.token.value;
-            var region = this.regionsHashByTitle[title];
+            const title = e.token.value;
+            const region = this.regionsHashByTitle[title];
 
             if (region && region.exists) {
                 region.selected(false);
@@ -299,9 +311,9 @@ define([
         //Ручное удаление токена, работает полной заменой токенов, кроме удаляемого.
         //Поэтому для удаляемого токена событие onRemoveToken не сработает, но сработает onCreateToken для каждого неудаляемого
         removeToken: function (region) {
-            var title = region.title_local;
-            var tkn = this.$dom.find('.regionstkn');
-            var tokensExists;
+            const title = region.title_local;
+            const tkn = this.$dom.find('.regionstkn');
+            let tokensExists;
 
             tokensExists = tkn.tokenfield('getTokens');
             _.remove(tokensExists, function (item) {
@@ -314,17 +326,21 @@ define([
             if (this.neverSelectable[region.cid] !== undefined) {
                 return false;
             }
+
             if (this.checkBranchSelected(region)) {
                 noties.alert({
                     message: 'Нельзя одновременно выбирать родительский и дочерний регионы',
                     type: 'warning',
                     timeout: 4000,
-                    ok: true
+                    ok: true,
                 });
+
                 return false;
             }
+
             region.selected(true);
             this.toggleBranchSelectable(region, false);
+
             return true;
         },
         //Клик по узлу дерева
@@ -332,9 +348,10 @@ define([
             if (!region.selectable()) {
                 return;
             }
-            var title = region.title_local;
-            var add = !region.selected();
-            var tkn = this.$dom.find('.regionstkn');
+
+            const title = region.title_local;
+            const add = !region.selected();
+            const tkn = this.$dom.find('.regionstkn');
 
             if (add) {
                 if (this.selectRegion(region)) {
@@ -356,18 +373,20 @@ define([
 
             function downrecursive(regions) {
                 if (regions && regions.length) {
-                    for (var i = regions.length; i--;) {
+                    for (let i = regions.length; i--;) {
                         if (regions[i].selected() || downrecursive(regions[i].regions())) {
                             return true;
                         }
                     }
                 }
+
                 return false;
             }
         },
         //Ставит selectable всем в ветке, в которой находится переданный регион
         toggleBranchSelectable: function (region, selectable) {
-            var neverSelectable = this.neverSelectable;
+            const neverSelectable = this.neverSelectable;
+
             return uprecursive(region.parent) || downrecursive(region.regions());
 
             function uprecursive(region) {
@@ -379,10 +398,11 @@ define([
 
             function downrecursive(regions) {
                 if (regions && regions.length) {
-                    for (var i = regions.length; i--;) {
+                    for (let i = regions.length; i--;) {
                         if (neverSelectable[regions[i].cid] === undefined) {
                             regions[i].selectable(selectable);
                         }
+
                         downrecursive(regions[i].regions());
                     }
                 }
@@ -390,25 +410,26 @@ define([
         },
 
         treeBuild: function (arr) {
-            var filterByCids = Boolean(this.topCidsFilter.length);
-            var parentsCidsFilterHash = this.topCidsFilter.reduce(function (hash, cid) {
+            const filterByCids = Boolean(this.topCidsFilter.length);
+            const parentsCidsFilterHash = this.topCidsFilter.reduce(function (hash, cid) {
                 hash[cid] = true;
+
                 return hash;
             }, {});
 
-            var cid;
-            var region;
-            var selected;
-            var selectable;
-            var hash = {};
-            var selectedRegions = [];
-            var result = ko.observableArray();
+            let cid;
+            let region;
+            let selected;
+            let selectable;
+            const hash = {};
+            const selectedRegions = [];
+            const result = ko.observableArray();
 
-            var homeRegionsCids = this.pinHomeAllowed && this.auth.iAm.regionHome.parents().concat(this.auth.iAm.regionHome.cid()) || false;
-            var homeCountryCidFound = false;
+            const homeRegionsCids = this.pinHomeAllowed && this.auth.iAm.regionHome.parents().concat(this.auth.iAm.regionHome.cid()) || false;
+            let homeCountryCidFound = false;
 
             function openRegionParents(region) {
-                var parentRegion = region.parent;
+                const parentRegion = region.parent;
 
                 if (parentRegion) {
                     parentRegion.opened(true);
@@ -421,7 +442,7 @@ define([
                 return a.parents.length < b.parents.length ? -1 : a.parents.length > b.parents.length ? 1 : 0;
             });
 
-            for (var i = 0, len = arr.length; i < len; i++) {
+            for (let i = 0, len = arr.length; i < len; i++) {
                 region = arr[i];
                 region.level = region.parents.length;
 
@@ -430,7 +451,7 @@ define([
                 region.exists = false;
                 this.regionsTypehead.push({
                     title: region.title_local,
-                    tokens: [String(cid), region.title_local, region.title_en]
+                    tokens: [String(cid), region.title_local, region.title_en],
                 });
                 this.regionsHashByTitle[region.title_local] = region;
 
@@ -440,7 +461,7 @@ define([
 
                 cid = region.cid;
 
-                var proceed = !filterByCids || parentsCidsFilterHash[cid] === true ||
+                const proceed = !filterByCids || parentsCidsFilterHash[cid] === true ||
                     region.level > 0 && parentsCidsFilterHash[region.parents[region.level - 1]] === true;
 
                 if (!proceed) {
@@ -484,6 +505,7 @@ define([
                 region.clickNode = this.clickNode;
 
                 hash[cid] = region;
+
                 if (filterByCids) {
                     parentsCidsFilterHash[cid] = true;
                 }
@@ -504,10 +526,10 @@ define([
         },
 
         sortTree(tree) {
-            var sortBy = this.sortBy();
-            var sortOrder = this.sortOrder();
-            var pinHome = this.pinHome();
-            var field;
+            const sortBy = this.sortBy();
+            let sortOrder = this.sortOrder();
+            const pinHome = this.pinHome();
+            let field;
 
             switch (sortBy) {
                 case 'sub':
@@ -532,7 +554,7 @@ define([
             }
 
             return (function recursiveSort(arr) {
-                var arrRaw = arr();
+                const arrRaw = arr();
 
                 if (arrRaw.length === 0) {
                     return arr;
@@ -544,13 +566,14 @@ define([
                         if (a.home === true) {
                             return -1;
                         }
+
                         if (b.home === true) {
                             return 1;
                         }
                     }
 
-                    var aval = a[field];
-                    var bval = b[field];
+                    const aval = a[field];
+                    const bval = b[field];
 
                     if (!aval && bval) {
                         return 1;
@@ -594,10 +617,10 @@ define([
          * @param cascadeDir Направление рекурсивного переключения ('up'/'down')
          */
         nodeToggle: function (region, expandSelf, cascadeExpand, cascadeDir) {
-            var nextRegions;
+            let nextRegions;
 
             if (region && region.exists) {
-                region.opened(typeof expandSelf === 'boolean' ? expandSelf : (typeof cascadeExpand === 'boolean' ? cascadeExpand : !region.opened()));
+                region.opened(typeof expandSelf === 'boolean' ? expandSelf : typeof cascadeExpand === 'boolean' ? cascadeExpand : !region.opened());
             } else if (cascadeDir) {
                 region = { regions: this.regionsTree };
             }
@@ -607,8 +630,9 @@ define([
             } else if (cascadeDir === 'down' && region.regions().length) {
                 nextRegions = region.regions();
             }
+
             if (nextRegions) {
-                for (var i = nextRegions.length; i--;) {
+                for (let i = nextRegions.length; i--;) {
                     this.nodeToggle(nextRegions[i], undefined, cascadeExpand, cascadeDir);
                 }
             }
@@ -655,6 +679,6 @@ define([
         },
         sortByComment() {
             this.sortBy('comment');
-        }
+        },
     });
 });

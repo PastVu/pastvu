@@ -3,29 +3,29 @@
  * Модель управляет футером
  */
 define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'renderer', 'text!tpl/common/foot.pug', 'css!style/common/foot'], function (_, P, ko, Cliche, globalVM, renderer, pug) {
-	'use strict';
+    'use strict';
 
-	return Cliche.extend({
-		pug: pug,
-		create: function () {
-			ko.applyBindings(globalVM, this.$dom[0]);
+    return Cliche.extend({
+        pug: pug,
+        create: function () {
+            ko.applyBindings(globalVM, this.$dom[0]);
 
-			window.setTimeout(function () {
+            window.setTimeout(function () {
                 this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandler, this);
                 this.routeHandler();
                 this.show();
             }.bind(this), 800);
-		},
-		show: function () {
-			globalVM.func.showContainer(this.$container);
-			this.showing = true;
-		},
-		hide: function () {
-			globalVM.func.hideContainer(this.$container);
-			this.showing = false;
-		},
+        },
+        show: function () {
+            globalVM.func.showContainer(this.$container);
+            this.showing = true;
+        },
+        hide: function () {
+            globalVM.func.hideContainer(this.$container);
+            this.showing = false;
+        },
         routeHandler: function () {
-            var params = globalVM.router.params();
+            const params = globalVM.router.params();
 
             if (params.rules) {
                 this.showRules();
@@ -41,34 +41,34 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'rend
         navigateAbout: function () {
             globalVM.router.navigate('/about');
         },
-		showAbout: function () {
-			if (!this.aboutVM) {
-				renderer(
-					[
-						{
-							module: 'm/diff/about',
-							modal: {
-								topic: 'О проекте',
-								initWidth: '1000px',
-								//animateScale: true,
-								curtainClick: {click: this.closePopup, ctx: this},
-								offIcon: {text: 'Закрыть', click: this.closePopup, ctx: this},
-								btns: [
-									{css: 'btn-primary', text: 'Закрыть', click: this.closePopup, ctx: this}
-								]
-							},
-							callback: function (vm) {
-								this.aboutVM = this.childModules[vm.id] = vm;
-							}.bind(this)
-						}
-					],
-					{
-						parent: this,
-						level: this.level + 2
-					}
-				);
-			}
-		},
+        showAbout: function () {
+            if (!this.aboutVM) {
+                renderer(
+                    [
+                        {
+                            module: 'm/diff/about',
+                            modal: {
+                                topic: 'О проекте',
+                                initWidth: '1000px',
+                                //animateScale: true,
+                                curtainClick: { click: this.closePopup, ctx: this },
+                                offIcon: { text: 'Закрыть', click: this.closePopup, ctx: this },
+                                btns: [
+                                    { css: 'btn-primary', text: 'Закрыть', click: this.closePopup, ctx: this },
+                                ],
+                            },
+                            callback: function (vm) {
+                                this.aboutVM = this.childModules[vm.id] = vm;
+                            }.bind(this),
+                        },
+                    ],
+                    {
+                        parent: this,
+                        level: this.level + 2,
+                    }
+                );
+            }
+        },
         destroyAbout: function () {
             if (this.aboutVM) {
                 this.aboutVM.destroy();
@@ -79,39 +79,39 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'rend
         navigateRules: function () {
             globalVM.router.navigate('/rules');
         },
-		showRules: function () {
-			if (!this.rulesVM) {
-				renderer(
-					[
-						{
-							module: 'm/diff/rules',
-							modal: {
-								topic: 'Правила PastVu',
-								initWidth: '1000px',
-								curtainClick: {click: this.closePopup, ctx: this},
-								offIcon: {text: 'Закрыть', click: this.closePopup, ctx: this},
-								btns: [
-									{css: 'btn-primary', text: 'Закрыть', click: this.closePopup, ctx: this}
-								]
-							},
-							callback: function (vm) {
-								this.rulesVM = this.childModules[vm.id] = vm;
-							}.bind(this)
-						}
-					],
-					{
-						parent: this,
-						level: this.level + 2
-					}
-				);
-			}
-		},
-		destroyRules: function () {
-			if (this.rulesVM) {
-				this.rulesVM.destroy();
-				delete this.rulesVM;
-			}
-		},
+        showRules: function () {
+            if (!this.rulesVM) {
+                renderer(
+                    [
+                        {
+                            module: 'm/diff/rules',
+                            modal: {
+                                topic: 'Правила PastVu',
+                                initWidth: '1000px',
+                                curtainClick: { click: this.closePopup, ctx: this },
+                                offIcon: { text: 'Закрыть', click: this.closePopup, ctx: this },
+                                btns: [
+                                    { css: 'btn-primary', text: 'Закрыть', click: this.closePopup, ctx: this },
+                                ],
+                            },
+                            callback: function (vm) {
+                                this.rulesVM = this.childModules[vm.id] = vm;
+                            }.bind(this),
+                        },
+                    ],
+                    {
+                        parent: this,
+                        level: this.level + 2,
+                    }
+                );
+            }
+        },
+        destroyRules: function () {
+            if (this.rulesVM) {
+                this.rulesVM.destroy();
+                delete this.rulesVM;
+            }
+        },
 
         closePopup: function () {
             // Закрытие будет вызвано автоматиечски после срабатывания routeHandler
@@ -120,6 +120,6 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'rend
             } else {
                 globalVM.router.navigate('/');
             }
-        }
-	});
+        },
+    });
 });

@@ -4,16 +4,16 @@ define(['Utils', 'errors/Application'], function (Utils, ApplicationError) {
 
         this.event = event;
         this.timeout = timeout;
-    };
+    }
 
     Utils.inherit(TimeoutError, ApplicationError);
 
     TimeoutError.prototype.name = 'TimeoutError';
     TimeoutError.prototype.toString = function () {
-        var message = 'Timeout: ' + JSON.stringify(this.event);
+        let message = 'Timeout: ' + JSON.stringify(this.event);
 
         if (this.timeout) {
-            message += ' (' + (this.timeout / 1000) + 's passed)';
+            message += ' (' + this.timeout / 1000 + 's passed)';
         }
 
         return message;

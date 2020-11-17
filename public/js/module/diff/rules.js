@@ -17,6 +17,7 @@ define(
                 ko.applyBindings(globalVM, this.$dom[0]);
                 globalVM.func.showContainer(this.$container);
                 this.showing = true;
+
                 if (this.modal) {
                     this.modal.$curtain.addClass('showModalCurtain');
                 }
@@ -24,6 +25,6 @@ define(
             hide: function () {
                 globalVM.func.hideContainer(this.$container);
                 this.showing = false;
-            }
+            },
         });
     });

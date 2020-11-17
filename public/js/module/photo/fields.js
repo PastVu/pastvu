@@ -16,7 +16,7 @@ define(['m/photo/status'], function (statuses) {
         dir: 'Направление съемки',
         typeVals: {
             1: 'Фотография',
-            2: 'Картина/рисунок'
+            2: 'Картина/рисунок',
         },
         types: ['1', '2'],
         dirVals: {
@@ -28,7 +28,7 @@ define(['m/photo/status'], function (statuses) {
             sw: 'Юго-Запад',
             w: 'Запад',
             nw: 'Северо-Запад',
-            aero: 'Аэро/Спутник'
+            aero: 'Аэро/Спутник',
         },
         dirValsArr: ['w', 'nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'aero'],
         watersign: {
@@ -37,7 +37,7 @@ define(['m/photo/status'], function (statuses) {
             'individual': 'Индивидуально',
             'option': 'Добавлять подпись на вотермарк',
             'default': 'Настройки системы',
-            'text': 'Текст'
+            'text': 'Текст',
         },
         watersignText: 'Подпись на вотермарке',
         watersignLength: 65,
@@ -46,11 +46,11 @@ define(['m/photo/status'], function (statuses) {
             title: 'Скачивание оригинала',
             profile: 'Как указано в профиле',
             individual: 'Индивидуально',
-            option: 'Разрешать другим пользователям скачивать оригинал'
+            option: 'Разрешать другим пользователям скачивать оригинал',
         },
 
         painting: {
-            title: 'Название'
-        }
+            title: 'Название',
+        },
     };
 });

@@ -1,8 +1,7 @@
 define(
     ['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params', 'model/User', 'model/Region', 'm/photo/status'],
     function ($, _, ko, koMapping, Utils, P, User, Region, statuses) {
-
-        var defaults = {
+        const defaults = {
             // Следующие типы включают друг друга по нарастающей
             base: {
                 cid: '',
@@ -14,7 +13,7 @@ define(
                 title: '',
 
                 conv: false, // Converting now
-                convqueue: false // In queue for convertion
+                convqueue: false, // In queue for convertion
             },
             compact: {
                 ldate: Date.now(), // Load time
@@ -23,7 +22,7 @@ define(
                 year: null,
                 year2: null,
 
-                ccount: 0
+                ccount: 0,
             },
             full: {
                 user: {},
@@ -73,10 +72,10 @@ define(
 
                 ccount_new: 0,
                 subscr: false,
-                nocomments: false
-            }
+                nocomments: false,
+            },
         };
-        var canDef = {
+        const canDef = {
             edit: false,
             ready: false,
             revision: false,
@@ -93,20 +92,21 @@ define(
             watersign: false,
             nowaterchange: false,
             download: 'login',
-            'protected': undefined
+            'protected': undefined,
         };
-        var picPrefix = '/_p';
-        var picProtectedPrefix = '/_pr';
-        var picCoveredPrefix = '/_prn';
-        var sizeVariants = ['a', 'd', 'h', 'm', 'q', 's', 'x'];
+        const picPrefix = '/_p';
+        const picProtectedPrefix = '/_pr';
+        const picCoveredPrefix = '/_prn';
+        const sizeVariants = ['a', 'd', 'h', 'm', 'q', 's', 'x'];
 
-        var picFormats = createFormatMap(picPrefix);
-        var picCoveredFormats = createFormatMap(picCoveredPrefix);
-        var picProtectedFormats = createFormatMap(picProtectedPrefix);
+        const picFormats = createFormatMap(picPrefix);
+        const picCoveredFormats = createFormatMap(picCoveredPrefix);
+        const picProtectedFormats = createFormatMap(picProtectedPrefix);
 
         function createFormatMap(prefix) {
             return sizeVariants.reduce(function (result, size) {
                 result[size] = prefix + '/' + size + '/';
+
                 return result;
             }, {});
         }
@@ -125,13 +125,15 @@ define(
             if (origin === undefined) {
                 origin = {};
             }
+
             if (options === undefined) {
                 options = {};
             }
-            var type = options.type || 'full';
-            var pic = options.pic || 'd';
-            var userType = options.userType || 'middle';
-            var can = options.can || {};
+
+            const type = options.type || 'full';
+            const pic = options.pic || 'd';
+            const userType = options.userType || 'middle';
+            const can = options.can || {};
 
             if (options.customDefaults) {
                 origin = _.defaults(origin, options.customDefaults, defaults[type]);
@@ -147,18 +149,23 @@ define(
                 if (!Utils.geo.checkLatLng(origin.geo)) {
                     origin.geo = defaults[type].geo;
                 }
+
                 if (origin.regions.length) {
                     Region.factory(_.last(origin.regions), 'home');
                 }
+
                 if (origin.cdate) {
                     origin.cdate = new Date(origin.cdate);
                 }
+
                 if (origin.vdate) {
                     origin.vdate = new Date(origin.vdate);
                 }
+
                 if (origin.stdate) {
                     origin.stdate = new Date(origin.stdate);
                 }
+
                 User.factory(origin.user, userType);
             }
 
@@ -179,9 +186,10 @@ define(
         }
 
         function vmCreate(data) {
-            var vm = koMapping.fromJS(data);
+            const vm = koMapping.fromJS(data);
 
             User.vmAdditional(vm.user);
+
             return vm;
         }
 
@@ -197,21 +205,26 @@ define(
             if (!withoutFactory) {
                 factory(data, { can: can });
             }
+
             if (!vmExist) {
                 vmExist = vmCreate(data);
             } else {
                 koMapping.fromJS(data, vmExist);
+
                 // Hack, somehow koMapping stopped replace some fields
                 if (data.desc !== undefined) {
                     vmExist.desc(data.desc);
                 }
+
                 if (data.author !== undefined) {
                     vmExist.author(data.author);
                 }
+
                 if (data.source !== undefined) {
                     vmExist.source(data.source);
                 }
             }
+
             return vmExist;
         }
 
@@ -222,7 +235,7 @@ define(
             canDef: canDef,
             picFormats: picFormats,
             picCoveredFormats: picCoveredFormats,
-            picProtectedFormats: picProtectedFormats
+            picProtectedFormats: picProtectedFormats,
         };
     }
 );

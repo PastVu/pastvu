@@ -9,3 +9,4 @@ logs/**
 misc/**
 views/**
 basepatch/**
+public/js/lib/**

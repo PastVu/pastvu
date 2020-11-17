@@ -11,7 +11,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
                 storage.waitings['u' + login].push({ cb: callback, ctx: context });
             } else {
                 storage.waitings['u' + login] = [
-                    { cb: callback, ctx: context }
+                    { cb: callback, ctx: context },
                 ];
 
                 socket.run('profile.giveUser', { login: login })
@@ -47,7 +47,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
                 storage.waitings['p' + cid].push({ cb: callback, ctx: context });
             } else {
                 storage.waitings['p' + cid] = [
-                    { cb: callback, ctx: context }
+                    { cb: callback, ctx: context },
                 ];
 
                 socket.run('photo.giveForPage', { cid: cid }, true)
@@ -57,7 +57,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
                             storage.photos[cid] = {
                                 vm: Photo.vm(data.photo, undefined, true),
                                 origin: data.photo,
-                                can: data.can || Photo.canDef
+                                can: data.can || Photo.canDef,
                             };
                             storage.timeouts[cid] = setTimeout(function () {
                                 delete storage.photos[cid];
@@ -79,6 +79,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
                 storage.photo(cid, function (data) {
                     storage.photoCan(cid, callback, context);
                 });
+
                 return;
             }
 
@@ -90,7 +91,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
                         callback.call(context, data);
                     }
                 });
-        }
+        },
     };
 
     return storage;

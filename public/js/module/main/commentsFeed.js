@@ -3,13 +3,13 @@
  */
 define([
     'underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
-    'model/Photo', 'lib/doT', 'text!tpl/main/commentsFeed.pug', 'css!style/main/commentsFeed'
+    'model/Photo', 'lib/doT', 'text!tpl/main/commentsFeed.pug', 'css!style/main/commentsFeed',
 ], function (_, Utils, socket, P, ko, koMapping, Cliche, globalVM, Photo, doT, pug) {
     'use strict';
 
-    var tplComments;
-    var regexpAHrefTag = /<(?:\s*)?\/?(?:\s*)?a[^>]*>/g;
-    var regexpNewLine = /\f|\r|\n|<br\/?>/gi;
+    let tplComments;
+    const regexpAHrefTag = /<(?:\s*)?\/?(?:\s*)?a[^>]*>/g;
+    const regexpNewLine = /\f|\r|\n|<br\/?>/gi;
 
     return Cliche.extend({
         pug: pug,
@@ -20,6 +20,7 @@ define([
                 if (!this.auth.loggedIn()) {
                     this.subscriptions.loggedIn = this.auth.loggedIn.subscribe(this.loggedInHandler, this);
                 }
+
                 this.show();
             }, this);
         },
@@ -39,13 +40,13 @@ define([
         },
         receive: function (cb, ctx) {
             socket.run('comment.giveForFeed', { limit: 30 }).then(function (data) {
-                var photo;
-                var user;
-                var comment;
-                var regions;
-                var photoCommentsToInsert = [];
-                var i;
-                var j;
+                let photo;
+                let user;
+                let comment;
+                let regions;
+                const photoCommentsToInsert = [];
+                let i;
+                let j;
 
                 for (i in data.users) {
                     if (data.users[i] !== undefined) {
@@ -82,6 +83,7 @@ define([
 
                             photoCommentsToInsert.push(photo);
                         }
+
                         comment.link = photo.link + '?hl=comment-' + comment.cid;
                         photo.comments.unshift(comment);
                     }
@@ -92,10 +94,11 @@ define([
                 }
 
                 this.$dom[0].querySelector('.commentsBody').innerHTML = tplComments(photoCommentsToInsert);
+
                 if (cb) {
                     cb.call(ctx);
                 }
             }.bind(this));
-        }
+        },
     });
 });

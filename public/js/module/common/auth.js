@@ -81,6 +81,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 
         pressHandler: function (vm, event) {
             this.caps(Utils.capsLockDetect(event));
+
             return true;
         },
 
@@ -94,8 +95,8 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
         },
         formReset: function () {
             this.$dom.find(':focus').blur();
-            this.$dom.find("input").val(null);
-            this.$dom.find(".mess").height(0).removeClass('text-error text-warning text-info text-success muted');
+            this.$dom.find('input').val(null);
+            this.$dom.find('.mess').height(0).removeClass('text-error text-warning text-info text-success muted');
             this.mode('');
             this.login('');
             this.name('');
@@ -116,6 +117,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
                     this.callback.call(this.ctx, { loggedIn: false });
                 }
             }
+
             this.hide();
         },
         formWorking: function (param) {
@@ -123,7 +125,8 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
             this.$dom.find('form:visible').find('input, button').attr('disabled', param);
         },
         setMessage: function (text, type) {
-            var css = '';
+            let css = '';
+
             switch (type) {
                 case 'error':
                     css = 'text-danger';
@@ -154,16 +157,15 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
             if (!Array.isArray(data)) {
                 return;
             }
-            var result = {};
+
+            const result = {};
 
             try {
                 _.forEach(data, function (command) {
                     if (command.name === 'clearCookie') {
                         Utils.cookie.removeItem('past.sid', '/');
-
                     } else if (command.name === 'updateCookie' && _.isObject(command.data)) {
                         updateCookie(command.data);
-
                     } else if (command.name === 'location') {
                         setTimeout(function () {
                             if (command.path) {
@@ -176,7 +178,6 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
                         result.error = { message: 'Unknown command' };
                     }
                 });
-
             } catch (err) {
                 console.error(err);
                 result.error = err;
@@ -188,9 +189,10 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
         },
 
         submit: function (data, evt) {
-            var self = this;
-            var $form = $(evt.target);
-            var formData = $form.serializeObject();
+            const self = this;
+            const $form = $(evt.target);
+            const formData = $form.serializeObject();
+
             $form.find(':focus').blur();
 
             try {
@@ -215,7 +217,6 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
                             ga('send', 'event', 'auth', 'login', 'auth login error');
                         }
                     );
-
                 } else if (self.mode() === 'reg') {
                     self.doRegister(
                         $.extend(formData, {}),
@@ -344,9 +345,9 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
         //чтобы обновлялись зависимости в страницах, зависимых от storage, например, userPage
         setProps: function (props) {
             if (this.loggedIn() && !Utils.isObjectEmpty(props)) {
-                var myLogin = this.iAm.login(),
-                    reallyChanged,
-                    p;
+                const myLogin = this.iAm.login();
+                let reallyChanged;
+                let p;
 
                 for (p in props) {
                     if (props[p] !== undefined && Utils.isType('function', this.iAm[p]) && props[p] !== this.iAm[p]()) {
@@ -355,6 +356,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
                         reallyChanged = true;
                     }
                 }
+
                 if (reallyChanged) {
                     this.iAm._v_(this.iAm._v_() + 1);
                 }
@@ -363,14 +365,16 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 
         // Обновление модели пользователя с сервера при логине или emitUser
         processMe: function (usObj) {
-            var user = usObj.user,
-                loggedIn = !!usObj.registered || this.loggedIn(),
-                storageUser = storage.users[user.login];
+            const user = usObj.user;
+            const loggedIn = !!usObj.registered || this.loggedIn();
+            const storageUser = storage.users[user.login];
 
             user.online = loggedIn; //Залогиненный пользователь всегда онлайн
+
             if (this.iAm) {
                 user._v_ = this.iAm._v_(); //Оригинальную версию надо сохранить, в противном случае подставится 0
             }
+
             this.iAm = User.vm(user, this.iAm);
 
             if (!storageUser) {
@@ -378,9 +382,11 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
             } else {
                 storageUser.origin = user;
             }
+
             if (loggedIn) {
                 this.loggedIn(loggedIn); //loggedIn должен изменятся после обновления storage, так как на него есть зависимые подписки
             }
+
             //Поднимаем версию пользователя, с помощью которой есть подписки на обновление iAm
             this.iAm._v_(user._v_ + 1);
         },
@@ -405,11 +411,13 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
                 });
         },
         doLogout: (function () {
-            var logouting;
+            let logouting;
+
             return function (callback) {
                 if (logouting) {
                     return;
                 }
+
                 logouting = true;
                 ga('send', 'event', 'auth', 'logout');
 
@@ -446,7 +454,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
             } else {
                 this.hide();
             }
-        }
+        },
 
     });
 });
