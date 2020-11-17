@@ -10,3 +10,7 @@ build:
 	docker build -t $(IMAGE) .
 push:
 	docker push $(IMAGE)
+test:
+	docker-compose run app npm test
+lintfix:
+	docker-compose run app npm run lintfix
