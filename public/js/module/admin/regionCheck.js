@@ -19,7 +19,8 @@ define([
     );
     var popupTpl = doT.template(
         '{{##def.nurl:' +
-        '<a target="_blank" href="https://nominatim.openstreetmap.org/ui/details.html?place_id={{=value.place_id}}">{{=value.title}}</a>#}}' +
+        '<a target="_blank" href="https://nominatim.openstreetmap.org/ui/details.html' +
+        '?osmtype={{=value.osm_type}}&osmid={{=value.osm_id}}">{{=value.title}}</a>#}}' +
         '{{##def.purl:' +
         '<a target="_blank" href="/admin/region/{{=value.cid}}">{{=value.title}}</a>#}}' +
         '<table style="text-align: center;" border="0" cellspacing="5" cellpadding="0"><tbody>' +
@@ -28,7 +29,7 @@ define([
         '<tr><td style="vertical-align: top;">' +
         '{{~it.parr :value:index}}{{? !value.err}}{{#def.purl}}{{?? true}}{{=value.err}}{{?}}<br>{{~}}' +
         '</td><td style="vertical-align: top;">' +
-        '{{~it.narr :value:index}}{{? value.place_id }}{{#def.nurl}}{{?? true }}{{=value.title || value.err}}{{?}}<br>{{~}}' +
+        '{{~it.narr :value:index}}{{? value.osm_id}}{{#def.nurl}}{{?? true }}{{=value.title || value.err}}{{?}}<br>{{~}}' +
         '</td></tr>' +
         '</tbody></table>'
     );
@@ -279,9 +280,13 @@ define([
                         for (const reg in geocoding.admin) {
                             count++;
                             let value = {'title': geocoding.admin[reg]};
-                            // For last item in the list add place_id, so URL
+                            // For last item in the list add osm_id, so URL
                             // for place details is displayed.
-                            value.place_id = (numRecs === count) ? geocoding.place_id : '';
+                            if (numRecs === count) {
+                                value.osm_id = geocoding.osm_id;
+                                // osmtype param in details URL should be first capital letter of type.
+                                value.osm_type = geocoding.osm_type.charAt(0).toUpperCase();
+                            }
                             tplObj.narr.push(value);
                         }
                     }
