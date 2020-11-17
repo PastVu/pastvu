@@ -1,8 +1,7 @@
 .about(data-bind="with: repository[M!M]")
     header.line
-        | PastVu - проект по сбору свидетельств прошлого. Взгляд на историю среды обитания человечества.
-    .userrow
-        hr
+        | PastVu &mdash; проект по сбору свидетельств прошлого. Взгляд на историю среды обитания человечества.
+    .userrow(style="margin-top:15px;")
         .row.usercenter
             .col-xs-6
                 a.line.clearfix(target="_blank", href="/u/Ilya", ontouchstart="this.classList.toggle('hover');")
@@ -53,14 +52,9 @@
                         .humanAbout Инфраструктура, CRM
     .postrow
         div
-            | Поддержать развитие проекта вы можете&nbsp;
-            a.donate(target="_blank", href="http://planeta.ru/139975") на нашей официальной странице
-            | &nbsp;в сервисе Planeta.ru
-    .postrow
-        hr
-        div
             | Открытая разработка ведется&nbsp;
             a.donate(target="_blank", href="https://github.com/PastVu") на GitHub
             | . Следите за выполнением задач и присылайте свои идеи!
-        br
-        img.poster(src="/img/loading/Loading1.jpg")
+    .postrow
+        div.img(style="margin-top:15px;")
+            img.poster(src="/img/loading/Loading1.jpg")
