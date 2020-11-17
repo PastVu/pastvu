@@ -8,5 +8,9 @@ define(['Params', 'leaflet', 'leaflet-plugins/Google'], function (P, L) {
     // Load Google Maps API library asynchronously.
     require([ 'async!' + url]);
 
-    return L.Google;
+    return function (type, options) {
+        options = options || {};
+        options.type = type;
+        return new L.GridLayer.GoogleMutant(options);
+    }
 });
