@@ -11,6 +11,7 @@ define(['Params', 'leaflet', 'leaflet-plugins/Google'], function (P, L) {
     return function (type, options) {
         options = options || {};
         options.type = type;
+
         return new L.GridLayer.GoogleMutant(options);
-    }
+    };
 });
