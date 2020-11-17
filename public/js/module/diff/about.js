@@ -9,7 +9,7 @@ define(['underscore', 'Params', 'socket!', 'knockout', 'm/_moduleCliche', 'globa
         pug: pug,
         create: function () {
             this.show();
-            this.version = P.settings.hash();
+            this.version = P.settings.version();
         },
         show: function () {
             var self = this;
