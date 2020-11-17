@@ -235,28 +235,28 @@ define([
                             id: 'scheme',
                             desc: 'Scheme',
                             selected: ko.observable(false),
-                            params: 'ROADMAP',
+                            params: 'roadmap',
                             maxZoom: 20
                         },
                         {
                             id: 'sat',
                             desc: 'Satellite',
                             selected: ko.observable(false),
-                            params: 'SATELLITE',
+                            params: 'satellite',
                             maxZoom: 20
                         },
                         {
                             id: 'hyb',
                             desc: 'Hybrid',
                             selected: ko.observable(false),
-                            params: 'HYBRID',
+                            params: 'hybrid',
                             maxZoom: 20
                         },
                         {
                             id: 'land',
                             desc: 'Terrain',
                             selected: ko.observable(false),
-                            params: 'TERRAIN',
+                            params: 'terrain',
                             maxZoom: 20
                         }
                     ])
