@@ -79,7 +79,7 @@ define([
             });
             this.pointLayer = L.layerGroup();
 
-            L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 16,
                 attribution: 'Data &copy; OpenStreetMap contributors, ODbL 1.0. https://osm.org/copyright',
             }).addTo(this.map);
