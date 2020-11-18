@@ -1,23 +1,21 @@
-/*global define:true*/
-
 /**
  * Модель проверки региона по координате
  */
 define([
     'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
     'noties', 'leaflet', 'lib/doT',
-    'text!tpl/admin/regionCheck.pug', 'css!style/admin/regionCheck', 'css!style/leaflet/leaflet'
+    'text!tpl/admin/regionCheck.pug', 'css!style/admin/regionCheck', 'css!style/leaflet/leaflet',
 ], function (_, $, Utils, socket, P, ko, koMapping, Cliche, globalVM, noties, L, doT, pug) {
     'use strict';
 
-    var requestNominatim;
-    var popupLoadingTpl = doT.template(
+    let requestNominatim;
+    const popupLoadingTpl = doT.template(
         '<table style="text-align: center" border="0" cellspacing="5" cellpadding="0"><tbody>' +
         '<tr><td style="width: 200px;">{{=it.geo}}<hr style="margin: 2px 0 5px;"></td></tr>' +
         '<tr><td><img src="/img/misc/load.gif" style="width: 67px; height: 10px"/></td></tr>' +
         '</tbody></table>'
     );
-    var popupTpl = doT.template(
+    const popupTpl = doT.template(
         '{{##def.nurl:' +
         '<a target="_blank" href="https://nominatim.openstreetmap.org/ui/details.html' +
         '?osmtype={{=value.osm_type}}&osmid={{=value.osm_id}}">{{=value.title}}</a>#}}' +
@@ -52,13 +50,14 @@ define([
             this.show();
         },
         show: function () {
-            var passedGeo = globalVM.router.params().g;
-            var passedZoom;
+            let passedGeo = globalVM.router.params().g;
+            let passedZoom;
 
             if (passedGeo) {
                 passedGeo = passedGeo.split(',').map(function (element) {
                     return parseFloat(element);
                 });
+
                 if (Utils.geo.checkLatLng(passedGeo)) {
                     passedZoom = Number(globalVM.router.params().z);
                 } else {
@@ -76,13 +75,13 @@ define([
                 zoom: passedZoom || 7,
                 minZoom: 3,
                 maxZoom: 16,
-                trackResize: false
+                trackResize: false,
             });
             this.pointLayer = L.layerGroup();
 
-            L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 16,
-                attribution: 'Data &copy; OpenStreetMap contributors, ODbL 1.0. https://osm.org/copyright'
+                attribution: 'Data &copy; OpenStreetMap contributors, ODbL 1.0. https://osm.org/copyright',
             }).addTo(this.map);
 
             this.map.whenReady(function () {
@@ -94,7 +93,8 @@ define([
                         }
                     }, this)
                     .on('click', function (e) {
-                        var geo = [to6Precision(e.latlng.lat), to6Precision(e.latlng.lng)];
+                        const geo = [to6Precision(e.latlng.lat), to6Precision(e.latlng.lng)];
+
                         this.goToGeo(geo);
                     }, this);
 
@@ -105,9 +105,10 @@ define([
         },
         //Пересчитывает размер карты
         sizesCalc: function () {
-            var height = P.window.h() - this.$dom.find('.map').offset().top - 37 >> 0;
+            const height = P.window.h() - this.$dom.find('.map').offset().top - 37 >> 0;
 
             this.mh(height + 'px');
+
             if (this.map) {
                 this.map.whenReady(this.map._onResize, this.map); //Самостоятельно обновляем размеры карты
             }
@@ -122,11 +123,12 @@ define([
             if (event.keyCode === 13) {
                 this.inputGeo();
             }
+
             return true;
         },
         inputGeo: function (/*data, event*/) {
-            var val = this.$dom.find('input.inputGeo').val();
-            var geo = val.split(',').map(function (element) {
+            const val = this.$dom.find('input.inputGeo').val();
+            const geo = val.split(',').map(function (element) {
                 return parseFloat(element);
             });
 
@@ -136,7 +138,7 @@ define([
             } else {
                 noties.alert({
                     message: 'Неверный формат',
-                    type: 'warning'
+                    type: 'warning',
                 });
             }
         },
@@ -147,6 +149,7 @@ define([
             } else {
                 this.markerCreate(geo);
             }
+
             this.updateRegion(geo);
         },
         markerCreate: function (geo) {
@@ -159,8 +162,8 @@ define([
                         iconAnchor: [13, 36],
                         popupAnchor: [0, -36],
                         iconUrl: '/img/map/pinEdit.png',
-                        className: 'pointMarkerEdit'
-                    })
+                        className: 'pointMarkerEdit',
+                    }),
                 })
                 .on('dragstart', function () {
                     this.updateRegionAbort();
@@ -168,7 +171,8 @@ define([
                     this.link('');
                 }, this)
                 .on('dragend', function () {
-                    var latlng = this.marker.getLatLng();
+                    const latlng = this.marker.getLatLng();
+
                     this.updateRegion([to6Precision(latlng.lat), to6Precision(latlng.lng)]);
                 }, this)
                 .bindPopup(L.popup({
@@ -176,7 +180,7 @@ define([
                     minWidth: 200,
                     closeButton: false,
                     offset: new L.Point(0, 60),
-                    autoPanPadding: new L.Point(5, 5)
+                    autoPanPadding: new L.Point(5, 5),
                 }))
                 .addTo(this.pointLayer);
         },
@@ -185,10 +189,12 @@ define([
                 this.ownRegionsDeffered.reject();
                 this.ownRegionsDeffered = null;
             }
+
             if (this.nominatimRegionsDeffered) {
                 this.nominatimRegionsDeffered.reject();
                 this.nominatimRegionsDeffered = null;
             }
+
             if (requestNominatim) {
                 requestNominatim.abort();
                 requestNominatim = null;
@@ -198,10 +204,10 @@ define([
             //Если уже ожидаются запросы - отменяем их
             this.updateRegionAbort();
 
-            var tplObj = {
+            const tplObj = {
                 geo: geo[0] + ' , ' + geo[1],
                 parr: [],
-                narr: []
+                narr: [],
             };
 
             //Сразу показываем маркер загрузки регионов
@@ -231,7 +237,7 @@ define([
             // Запрашиваем собственные регионы
             this.getPastvuRegion(geo, function (err, data) {
                 if (err) {
-                    tplObj.parr.push({'err': err.message});
+                    tplObj.parr.push({ 'err': err.message });
                 } else {
                     data.regions.forEach(function (region) {
                         // Set title propertly to current language title.
@@ -239,6 +245,7 @@ define([
                     });
                     tplObj.parr = data.regions;
                 }
+
                 if (this.ownRegionsDeffered) {
                     this.ownRegionsDeffered.resolve();
                 }
@@ -252,34 +259,40 @@ define([
                     crossDomain: true,
                     dataType: 'json',
                     cache: false,
-                    context: this
+                    context: this,
                 }
             );
             requestNominatim
                 .fail(function (jqXHR, textStatus, errorThrown) {
                     if (jqXHR.responseJSON.hasOwnProperty('error')) {
-                        tplObj.narr.push({'err': jqXHR.responseJSON.error.message});
+                        tplObj.narr.push({ 'err': jqXHR.responseJSON.error.message });
                         console.warn('Error: ' + jqXHR.responseText);
                     } else {
-                        tplObj.narr.push({'err': textStatus});
+                        tplObj.narr.push({ 'err': textStatus });
                         console.warn(textStatus, errorThrown);
                     }
                 })
                 .done(function (result/*, textStatus, jqXHR*/) {
                     if (result.hasOwnProperty('error')) {
                         // Error property in 200 responce object, e.g. when clicking at ocean.
-                        tplObj.narr.push({'err': result.error});
+                        tplObj.narr.push({ 'err': result.error });
                     }
+
                     if (result.hasOwnProperty('features') && result.features.length !== 0) {
-                        let geocoding = result.features[0].properties.geocoding;
+                        const geocoding = result.features[0].properties.geocoding;
+
                         // Add country.
-                        tplObj.narr.push({'title': geocoding.country});
+                        tplObj.narr.push({ 'title': geocoding.country });
+
                         // Add all adminstrative boundaries.
-                        let numRecs = Object.keys(geocoding.admin).length;
+                        const numRecs = Object.keys(geocoding.admin).length;
                         let count = 0;
-                        for (const reg in geocoding.admin) {
+
+                        for (const reg in geocoding.admin) {  //eslint-disable-line guard-for-in
                             count++;
-                            let value = {'title': geocoding.admin[reg]};
+
+                            const value = { 'title': geocoding.admin[reg] };
+
                             // For last item in the list add osm_id, so URL
                             // for place details is displayed.
                             if (numRecs === count) {
@@ -287,6 +300,7 @@ define([
                                 // osmtype param in details URL should be first capital letter of type.
                                 value.osm_type = geocoding.osm_type.charAt(0).toUpperCase();
                             }
+
                             tplObj.narr.push(value);
                         }
                     }
@@ -295,6 +309,7 @@ define([
                     if (this.nominatimRegionsDeffered) {
                         this.nominatimRegionsDeffered.resolve();
                     }
+
                     requestNominatim = null;
                 });
         },
@@ -311,6 +326,6 @@ define([
                 .catch(function (err) {
                     cb.call(ctx, err);
                 });
-        }
+        },
     });
 });
