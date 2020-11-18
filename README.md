@@ -5,8 +5,33 @@ Let's recall the whole world!
 We welcome any keen developer in helping us build the better PastVu. You can install local version of the project using the following instructions.
 
 ## Create development environment
- * [Traditional way](#traditional-way)
  * [Docker](#run-with-docker)
+ * [Traditional way](#traditional-way)
+
+## Run with Docker
+
+You need to have [docker](https://docs.docker.com/engine/install/) and [docker-compose](https://docs.docker.com/compose/install/) installed.
+
+```bash
+# Download database dump
+curl -O https://varlamov.me/pastvu/github/pastvu.gz
+# Run the mongo container in background
+docker-compose up -d mongo
+# Import pastvu db
+docker-compose exec -T mongo mongorestore --gzip --db pastvu --archive < pastvu.gz
+# Install node modules
+docker-compose run app npm install
+# Copy local configuration
+cp config/local.config.js.docker-example config/local.config.js
+# Finally, start the whole application
+docker-compose up
+```
+
+Navigate to http://localhost:3000 and login with the default user `admin`/`admin`.
+
+Mailcatcher web interface is listening on http://localhost:1080 to view emails which app has sent out.
+
+If you are using docker inside VM and accessing app from host OS (or any other scenario where web client host may differ from the host where you run docker), make sure that `client.hostname` in your `config/local.config.js` is matching domain name that client uses to access the app. This setting is used for cookies domain, so having it wrong will result in session being cleared on page refresh.
 
 ## Traditional way
 
@@ -88,28 +113,3 @@ There are two databases, `MongoDB` and `Redis`, and four services to start: `app
 Now, depending on the `client.hostname` prop in your local.config.js you should be able to access your local copy of PastVu in your browser! 🎉
 
 In case of the default hostname and port, just open this url: http://pastvu.local:3000 and login with the default user `admin`/`admin`!
-
-## Run with Docker
-
-You need to have `docker` and `docker-compose` installed.
-
-```bash
-# Download database dump
-curl -O https://varlamov.me/pastvu/github/pastvu.gz
-# Run the mongo container in background
-docker-compose up -d mongo
-# Import pastvu db
-docker-compose exec -T mongo mongorestore --gzip --db pastvu --archive < pastvu.gz
-# Install node modules
-docker-compose run app npm install
-# Copy local configuration
-cp config/local.config.js.docker-example config/local.config.js
-# Finally, start the whole application
-docker-compose up
-```
-
-Navigate to http://localhost:3000 and login with the default user `admin`/`admin`.
-
-Mailcatcher web interface is listening on http://localhost:1080 to view emails which app has sent out.
-
-If you are using docker inside VM and accessing app from host OS (or any other scenario where web client host may differ from the host where you run docker), make sure that `client.hostname` in your `config/local.config.js` is matching domain name that client uses to access the app. This setting is used for cookies domain, so having it wrong will result in session being cleared on page refresh.
