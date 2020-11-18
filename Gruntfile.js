@@ -203,6 +203,7 @@ module.exports = function (grunt) {
                         // in PRs, so we gradually get them all covered and
                         // then refactor into smaller list.
                         'public/js/lib/leaflet/extends/*.js',
+                        'public/js/module/admin/regionCheck.js',
                     ],
                 },
             },
