@@ -187,17 +187,14 @@ define([
         updateRegionAbort: function () {
             if (this.ownRegionsDeffered) {
                 this.ownRegionsDeffered.reject();
-                this.ownRegionsDeffered = null;
             }
 
             if (this.nominatimRegionsDeffered) {
                 this.nominatimRegionsDeffered.reject();
-                this.nominatimRegionsDeffered = null;
             }
 
             if (requestNominatim) {
                 requestNominatim.abort();
-                requestNominatim = null;
             }
         },
         updateRegion: function (geo) {
@@ -257,6 +254,7 @@ define([
                 '&accept-language=' + P.settings.lang,
                 {
                     crossDomain: true,
+
                     dataType: 'json',
                     cache: false,
                     context: this,
@@ -264,7 +262,13 @@ define([
             );
             requestNominatim
                 .fail(function (jqXHR, textStatus, errorThrown) {
-                    if (jqXHR.responseJSON.hasOwnProperty('error')) {
+                    if (textStatus === 'abort') {
+                        // We must have clicked before previous request
+                        // finished.
+                        return;
+                    }
+
+                    if (jqXHR.responseJSON && jqXHR.responseJSON.hasOwnProperty('error')) {
                         tplObj.narr.push({ 'err': jqXHR.responseJSON.error.message });
                         console.warn('Error: ' + jqXHR.responseText);
                     } else {
