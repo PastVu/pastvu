@@ -138,7 +138,7 @@ define([
             } else {
                 noties.alert({
                     message: 'Incorrect format',
-                    type: 'warning'
+                    type: 'warning',
                 });
             }
         },
