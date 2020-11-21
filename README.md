@@ -5,7 +5,7 @@ Let's recall the whole world!
 We welcome any keen developer in helping us build the better PastVu. You can install local version of the project using the following instructions.
 
 ## Create development environment
- * [Docker](#run-with-docker)
+ * [Docker](#run-with-docker) (preffered option)
  * [Traditional way](#traditional-way)
 
 ## Run with Docker
@@ -31,7 +31,33 @@ Navigate to http://localhost:3000 and login with the default user `admin`/`admin
 
 Mailcatcher web interface is listening on http://localhost:1080 to view emails which app has sent out.
 
+Data store and Mongo database are using persistent storage (located on volumes), so you can re-create containers without losing the data. If you change code related to server side operation, you will need to restart containers after change to take effect.
+
 If you are using docker inside VM and accessing app from host OS (or any other scenario where web client host may differ from the host where you run docker), make sure that `client.hostname` in your `config/local.config.js` is matching domain name that client uses to access the app. This setting is used for cookies domain, so having it wrong will result in session being cleared on page refresh.
+
+### Debugging
+
+It is possible to debug application using Node.js inspector client when
+required. There are several [clients
+available](https://nodejs.org/en/docs/guides/debugging-getting-started/#inspector-clients),
+although most strightforward option is using Chrome DevTools. Open
+`chrome://inspect` in Chromium based browser and make sure you have
+`localhost:9229` configured at "Discover network taget". Now you need to start
+application with inspector agent enabled:
+```
+docker-compose run -p 9229:9229 -p 3000:3000 app npm run inspect
+```
+
+Under "Remote target" section in inspector tab you will see a new running instance that you can use for debugging.
+
+In the case when appication can't be started at all, you can use inspector with an
+option to break before user code starts:
+```
+docker-compose run -p 9229:9229 -p 3000:3000 app npm run inspect-brk
+```
+
+In this case execution will stop at the first line of code, allowing you to
+run inspector client and control execution flow.
 
 ## Traditional way
 
