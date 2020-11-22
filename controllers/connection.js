@@ -41,25 +41,21 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
         mongoose.Promise = Promise;
 
         connectionPromises.push(new Promise((resolve, reject) => {
-            db = mongoose.createConnection() // http://mongoosejs.com/docs/api.html#connection_Connection
+            db = mongoose.createConnection() // https://mongoosejs.com/docs/api/mongoose.html#mongoose_Mongoose-createConnection
                 .once('open', openHandler)
                 .once('error', errFirstHandler);
 
-            db.open(uri, {
-                db: { native_parser: true, promiseLibrary: Promise },
-                server: {
-                    poolSize,
-                    auto_reconnect: true,
-                    reconnectTries: 10000,
-                    reconnectInterval: 1000,
-                    socketOptions: {
-                        noDelay: true,
-                        keepAlive: 0, // Enable keep alive connection
-                        autoReconnect: true,
-                        socketTimeoutMS: 0,
-                        connectTimeoutMS: ms('5m'),
-                    },
-                },
+            db.openUri(uri, {
+                poolSize,
+                promiseLibrary: Promise,
+                noDelay: true,
+                keepAlive: 0, // Enable keep alive connection
+                socketTimeoutMS: 0,
+                connectTimeoutMS: ms('5m'),
+                useUnifiedTopology: true, // Use new topology engine (since MongoDB driver 3.3)
+                useNewUrlParser: true, // Use new connection string parser.
+                useCreateIndex: true, // Use createIndex internally (ensureIndex is deprecated in MongoDB driver 3.2).
+                useFindAndModify: false, // Use findOneAndUpdate interally (findAndModify is deprecated in MongoDB driver 3.1).
             });
 
             async function openHandler() {
