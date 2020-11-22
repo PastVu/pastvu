@@ -2,6 +2,7 @@ module.exports = function (config, appRequire) {
     const _ = appRequire('lodash');
 
     _.merge(config, {
+        notifier: false, // Do not send periodical emails to user
         client: {
             hostname: 'localhost',
         },

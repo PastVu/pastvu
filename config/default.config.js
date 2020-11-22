@@ -5,6 +5,7 @@ module.exports = {
     env: 'development', // Enviroment: development, testing, production
     locales: ['en', 'ru'], // List of supported locales. First one is the default locale, if user transferred nothing
     lang: 'ru', // Language: ru, en
+    notifier: false, // If true, send periodical emails to users
 
     admin: {
         email: '',
