@@ -27,7 +27,7 @@ async function recalcAll({ params, conditions }) {
         throw new AuthorizationError();
     }
 
-    await ClusterParams.remove({}).exec();
+    await ClusterParams.deleteMany({}).exec();
     await Promise.all([
         ClusterParams.collection.insert(params, { safe: true }),
         ClusterParams.collection.insert(conditions, { safe: true }),
@@ -79,7 +79,7 @@ async function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, isPainting
 
     if (cluster && c <= 1 && inc === -1) {
         // If after deletion photo from cluster, cluster become empty - remove it
-        return ClusterModel.remove({ g, z: zParam.z }).exec();
+        return ClusterModel.deleteMany({ g, z: zParam.z }).exec();
     }
 
     if (inc !== 0) {

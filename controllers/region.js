@@ -1311,9 +1311,9 @@ async function remove(data) {
         // Update comments of included photos
         Comment.update(objectsMatchQuery, objectsUpdateQuery, { multi: true }).exec(),
         // Remove child regions
-        Region.remove({ parents: regionToRemove.cid }).exec(),
+        Region.deleteMany({ parents: regionToRemove.cid }).exec(),
         // Remove this regions
-        regionToRemove.remove(),
+        regionToRemove.deleteOne(),
     ]);
 
     // If removing region has parent, recalc parents stat
@@ -2217,7 +2217,7 @@ async function removeDrainedRegionStat() {
         const photoCidsToRemove = Array.from(drainingPhotoCidsSet);
 
         drainingPhotoCidsSet = new Set();
-        await RegionStatQueue.remove({ cid: { $in: photoCidsToRemove } }).exec();
+        await RegionStatQueue.deleteMany({ cid: { $in: photoCidsToRemove } }).exec();
     }
 }
 

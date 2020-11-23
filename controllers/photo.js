@@ -673,7 +673,7 @@ function photoFromMap({ photo, paintingMap }) {
 
     return Promise.all([
         this.call('cluster.declusterPhoto', { photo, isPainting: paintingMap }),
-        MapModel.remove({ cid: photo.cid }).exec(),
+        MapModel.deleteMany({ cid: photo.cid }).exec(),
     ]);
 }
 

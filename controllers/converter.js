@@ -244,7 +244,7 @@ async function conveyerClear({ value }) {
     if (value === true) {
         conveyerEnabled = value;
 
-        ({ result: { n: removedCount = 0 } } = await PhotoConveyer.remove({ converting: { $exists: false } }).exec());
+        ({ n: removedCount = 0 } = await PhotoConveyer.deleteMany({ converting: { $exists: false } }).exec());
     }
 
     conveyerLength = await PhotoConveyer.estimatedDocumentCount().exec();
@@ -306,7 +306,7 @@ async function conveyerControl() {
         photo.conv = undefined; // Set undefined to remove properties
         photo.convqueue = undefined;
         photo.converted = new Date(); // Save last converted stamp
-        await Promise.all([photo.save(), photoConv.remove()]);
+        await Promise.all([photo.save(), photoConv.deleteOne()]);
 
         working -= 1;
 
@@ -687,7 +687,7 @@ export async function removePhotos(cids) {
         return 0;
     }
 
-    const { result: { n: removedCount = 0 } } = await PhotoConveyer.remove({ cid: { $in: cids } }).exec();
+    const { n: removedCount = 0 } = await PhotoConveyer.deleteMany({ cid: { $in: cids } }).exec();
 
     conveyerLength -= removedCount;
 

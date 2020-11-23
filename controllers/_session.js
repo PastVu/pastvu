@@ -450,7 +450,7 @@ async function archiveSession(session, reason) {
     }
 
     await Promise.all([
-        session.remove(), // Remove session from collections of active sessions
+        session.deleteOne(), // Remove session from collections of active sessions
         archivingSession.save(), // Save archive session to collection of archive sessions
     ]);
 

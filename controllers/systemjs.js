@@ -49,7 +49,7 @@ waitDb.then(db => {
         const anonQuery = { anonym: { $exists: true }, stamp: { $lte: new Date(start - SESSION_ANON_LIFE) } };
 
         // Simply remove anonymous sessions older then SESSION_ANON_LIFE, there is no point in storing them
-        const countRemoved = db.sessions.remove(anonQuery).nRemoved;
+        const countRemoved = db.sessions.deleteMany(anonQuery).nRemoved;
 
         // Move each expired registered user session to sessions_archive
         db.sessions.find(userQuery).limit(5000).forEach(session => {
@@ -69,7 +69,7 @@ waitDb.then(db => {
             insertBulk.push(session);
             resultKeys.push(session.key);
 
-            db.sessions.remove({ key: session.key });
+            db.sessions.deleteOne({ key: session.key });
 
             if (counter >= castBulkBy) {
                 db.sessions_archive.insert(insertBulk, { ordered: false });
@@ -187,7 +187,7 @@ waitDb.then(db => {
             });
 
             print(clusterZoom.z + ': ' + clustersCount + ' clusters ready for inserting ' + (Date.now() - startTime) / 1000 + 's');
-            db.clusters.remove({ z: clusterZoom.z });
+            db.clusters.deleteMany({ z: clusterZoom.z });
 
             clustersCounter = clustersArr.length;
 
@@ -250,7 +250,7 @@ waitDb.then(db => {
         var startTime = Date.now();
 
         print('Clearing photos map collection');
-        db.photos_map.remove({});
+        db.photos_map.deleteMany({});
 
         print('Start to fill conveyer for ' + db.photos.countDocument({ s: 5, type: 1, geo: { $exists: true } }) + ' photos');
         db.photos
@@ -278,7 +278,7 @@ waitDb.then(db => {
             });
 
         print('Clearing paintings map collection');
-        db.paintings_map.remove({});
+        db.paintings_map.deleteMany({});
         print('Start to fill conveyer for ' + db.photos.countDocuments({ s: 5, type: 2, geo: { $exists: true } }) + ' paintings');
         db.photos
             .find({ s: 5, type: 2, geo: { $exists: true } }, {
@@ -1104,7 +1104,7 @@ waitDb.then(db => {
             print('Heads up, removing ' + queueLength + ' queue items');
 
             // Delete photos stat queue first
-            db.region_stat_queue.remove({});
+            db.region_stat_queue.deleteMany({});
         }
 
         var changeCounter = 0;
