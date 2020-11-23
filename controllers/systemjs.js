@@ -72,13 +72,13 @@ waitDb.then(db => {
             db.sessions.deleteOne({ key: session.key });
 
             if (counter >= castBulkBy) {
-                db.sessions_archive.insert(insertBulk, { ordered: false });
+                db.sessions_archive.insertMany(insertBulk, { ordered: false });
                 insertBulk = [];
             }
         });
 
         if (insertBulk.length) {
-            db.sessions_archive.insert(insertBulk, { ordered: false });
+            db.sessions_archive.insertMany(insertBulk, { ordered: false });
         }
 
         return {
@@ -227,7 +227,7 @@ waitDb.then(db => {
                     }
                 }
 
-                db.clusters.insert(clustersArrInner);
+                db.clusters.insertMany(clustersArrInner);
                 clustersInserted += clustersArrInner.length;
                 print(
                     clusterZoom.z + ': Inserted ' + clustersInserted + '/' + clustersCount + ' clusters ok. ' +
@@ -266,7 +266,7 @@ waitDb.then(db => {
             })
             .sort({ cid: 1 })
             .forEach(photo => {
-                db.photos_map.insert({
+                db.photos_map.insertOne({
                     cid: photo.cid,
                     geo: photo.geo,
                     file: photo.file,
@@ -293,7 +293,7 @@ waitDb.then(db => {
             })
             .sort({ cid: 1 })
             .forEach(photo => {
-                db.paintings_map.insert({
+                db.paintings_map.insertOne({
                     cid: photo.cid,
                     geo: photo.geo,
                     file: photo.file,
@@ -370,7 +370,7 @@ waitDb.then(db => {
         });
 
         if (conveyer.length) {
-            db.photos_conveyer.insert(conveyer);
+            db.photos_conveyer.insertMany(conveyer);
         }
 
         return {

@@ -38,7 +38,7 @@ function saveLog() {
     clearTimeout(saveLogTimeout);
 
     if (bulk.length) {
-        ApiLog.collection.insert(bulk, { forceServerObjectId: true, checkKeys: false }, err => {
+        ApiLog.collection.insertMany(bulk, { forceServerObjectId: true, checkKeys: false }, err => {
             if (err) {
                 logger.error(err);
             }

@@ -646,7 +646,7 @@ export async function addPhotos(data, priority, potectPublicOnly) {
     }
 
     if (toConvertObjs.length) {
-        await PhotoConveyer.collection.insert(toConvertObjs, { safe: true });
+        await PhotoConveyer.collection.insertMany(toConvertObjs, { safe: true });
 
         conveyerLength += toConvertObjs.length;
         conveyerMaxLength = Math.max(conveyerLength, conveyerMaxLength);

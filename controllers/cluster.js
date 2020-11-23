@@ -29,8 +29,8 @@ async function recalcAll({ params, conditions }) {
 
     await ClusterParams.deleteMany({}).exec();
     await Promise.all([
-        ClusterParams.collection.insert(params, { safe: true }),
-        ClusterParams.collection.insert(conditions, { safe: true }),
+        ClusterParams.collection.insertMany(params, { safe: true }),
+        ClusterParams.collection.insertMany(conditions, { safe: true }),
     ]);
     await readClusterParams();
     await dbEval('clusterPhotosAll', [true], { nolock: true });
