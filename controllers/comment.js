@@ -288,7 +288,7 @@ async function commentsTreeBuildCanModerate({ iAm, type, commentModel, obj, show
         // with notification reset if it scheduled
         userObjectRelController.setCommentView(obj._id, iAm.user._id, type),
         // News doesn't contain number of deleted comments, count it dynamically
-        type === 'news' ? await commentModel.count({ obj: obj._id, del: { $exists: true } }).exec() : undefined,
+        type === 'news' ? await commentModel.countDocuments({ obj: obj._id, del: { $exists: true } }).exec() : undefined,
     ]);
 
     const commentsTree = [];
@@ -637,10 +637,10 @@ async function giveForUser({ login, page = 1, type = 'photo', active = true, del
     let countPhoto;
 
     const [countActiveP, countActiveN, countDelP = 0, countDelN = 0] = await Promise.all([
-        Comment.count({ user: userId, del: null }).exec(),
-        CommentN.count({ user: userId, del: null }).exec(),
-        canSeeDel ? Comment.count({ user: userId, del: { $exists: true } }).exec() : undefined,
-        canSeeDel ? CommentN.count({ user: userId, del: { $exists: true } }).exec() : undefined,
+        Comment.countDocuments({ user: userId, del: null }).exec(),
+        CommentN.countDocuments({ user: userId, del: null }).exec(),
+        canSeeDel ? Comment.countDocuments({ user: userId, del: { $exists: true } }).exec() : undefined,
+        canSeeDel ? CommentN.countDocuments({ user: userId, del: { $exists: true } }).exec() : undefined,
     ]);
 
     const countActive = countActiveP + countActiveN;
@@ -989,7 +989,7 @@ async function remove(data) {
     }
 
     // Count amout of unremoved children
-    const childCount = await commentModel.count({ obj: obj._id, parent: cid, del: null }).exec();
+    const childCount = await commentModel.countDocuments({ obj: obj._id, parent: cid, del: null }).exec();
 
     // Regular user can remove if there no unremoved comments and it's his own fresh comment
     const canEdit = !childCount && permissions.canEdit(comment, data.type, obj, iAm);

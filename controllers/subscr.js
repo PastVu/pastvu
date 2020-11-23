@@ -168,7 +168,7 @@ export async function commentViewed(objId, user, setInRel) {
     }
 
     // Calculate amount of notification which ready for sending to user
-    const count = await UserObjectRel.count({ user: user._id, sbscr_noty: true }).exec();
+    const count = await UserObjectRel.countDocuments({ user: user._id, sbscr_noty: true }).exec();
 
     if (count === 0) {
         // If there is no notifications ready fo sending left, reset scheduled sending to user
@@ -500,10 +500,10 @@ async function giveUserSubscriptions({ login, page = 1, type = 'photo' }) {
 
     const [countPhoto = 0, countNews = 0, { nextnoty: nextNoty } = {}] = await Promise.all([
         // Count total number of photos in subscriptions
-        UserObjectRel.count({ user: userId, type: 'photo', sbscr_create: { $exists: true } }).exec(),
+        UserObjectRel.countDocuments({ user: userId, type: 'photo', sbscr_create: { $exists: true } }).exec(),
 
         // Count total number of news in subscriptions
-        UserObjectRel.count({ user: userId, type: 'news', sbscr_create: { $exists: true } }).exec(),
+        UserObjectRel.countDocuments({ user: userId, type: 'news', sbscr_create: { $exists: true } }).exec(),
 
         // Take time of next scheduled notification
         await UserNoty.findOne(

@@ -1480,12 +1480,12 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40, random = fa
 
             [photos, count] = await Promise.all([
                 Photo.find(query, fieldsSelect, { lean: true, limit }).exec(),
-                Photo.count(countQuery).exec(),
+                Photo.countDocuments(countQuery).exec(),
             ]);
         } else {
             [photos, count] = await Promise.all([
                 Photo.find(query, fieldsSelect, { lean: true, skip, limit, sort: { sdate: -1 } }).exec(),
-                Photo.count(query).exec(),
+                Photo.countDocuments(query).exec(),
             ]);
         }
 
@@ -3414,7 +3414,7 @@ async function resetPhotosAnticache() {
 async function syncUnpublishedPhotosWithRedis() {
     try {
         let [actualCount = 0, redisCount] = await Promise.all([
-            Photo.count({ s: { $ne: status.PUBLIC } }).exec(),
+            Photo.countDocuments({ s: { $ne: status.PUBLIC } }).exec(),
             dbRedis.getAsync('notpublic:count'),
         ]);
 

@@ -247,7 +247,7 @@ async function conveyerClear({ value }) {
         ({ result: { n: removedCount = 0 } } = await PhotoConveyer.remove({ converting: { $exists: false } }).exec());
     }
 
-    conveyerLength = await PhotoConveyer.count({}).exec();
+    conveyerLength = await PhotoConveyer.estimatedDocumentCount().exec();
 
     return { message: `Cleared ok! Removed ${removedCount}, left ${conveyerLength}` };
 }
@@ -710,7 +710,7 @@ export async function removePhotos(cids) {
         conveyerControl();
     }, 4000);
 
-    const count = await PhotoConveyer.count({}).exec();
+    const count = await PhotoConveyer.estimatedDocumentCount().exec();
 
     conveyerLength = Math.max(count, conveyerMaxLength);
     conveyerMaxLength = conveyerLength;

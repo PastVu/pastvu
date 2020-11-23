@@ -536,7 +536,7 @@ async function getChildsLenByLevel(region) {
 
         while (level++ < maxRegionLevel) { // level инкрементируется после сравнения
             childrenQuery.parents = { $size: level };
-            promises.push(Region.count(childrenQuery).exec());
+            promises.push(Region.countDocuments(childrenQuery).exec());
         }
 
         return _.compact(await Promise.all(promises));
@@ -677,7 +677,7 @@ async function changeRegionParentExternality(region, oldParentsArray, childLenAr
     // Calculate number of photos belongs to the region
     const countQuery = { ['r' + levelWas]: region.cid };
     const [affectedPhotos, affectedComments] = await Promise.all([
-        Photo.count(countQuery).exec(), Comment.count(countQuery).exec(),
+        Photo.countDocuments(countQuery).exec(), Comment.countDocuments(countQuery).exec(),
     ]);
 
     let affectedUsers;
@@ -1446,7 +1446,7 @@ export async function getRegionsCountByLevel() {
     const promises = [];
 
     for (let i = 0; i <= maxRegionLevel; i++) {
-        promises.push(Region.count({ parents: { $size: i } }).exec());
+        promises.push(Region.countDocuments({ parents: { $size: i } }).exec());
     }
 
     return Promise.all(promises);
