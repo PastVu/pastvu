@@ -401,8 +401,8 @@ waitDb.then(db => {
 
         if (clearBefore) {
             print('Clearing current regions assignment\n');
-            db.photos.update(
-                { geo: { $exists: true } }, { $unset: { r0: 1, r1: 1, r2: 1, r3: 1, r4: 1, r5: 1 } }, { multi: true }
+            db.photos.updateMany(
+                { geo: { $exists: true } }, { $unset: { r0: 1, r1: 1, r2: 1, r3: 1, r4: 1, r5: 1 } }
             );
         }
 
@@ -447,7 +447,7 @@ waitDb.then(db => {
                     }
                 }
 
-                var updated = db.photos.update(query, $update, { multi: true });
+                var updated = db.photos.updateMany(query, $update);
 
                 modifiedCounter += updated.nModified;
 
@@ -460,10 +460,9 @@ waitDb.then(db => {
         }
 
         // Set Open sea to photos without top region
-        db.photos.update(
+        db.photos.updateMany(
             { r0: null, geo: { $exists: true } },
-            { $set: { r0: 1000000 }, $unset: { r1: 1, r2: 1, r3: 1, r4: 1, r5: 1 } },
-            { multi: true }
+            { $set: { r0: 1000000 }, $unset: { r1: 1, r2: 1, r3: 1, r4: 1, r5: 1 } }
         );
 
         return { message: 'Assigning finished in ' + (Date.now() - startTime) / 1000 + 's. Modified ' + modifiedCounter + ' photos' };
@@ -539,7 +538,7 @@ waitDb.then(db => {
 
             if (setCounter > 0 || unsetCounter > 0) {
                 counterUpdated++;
-                db.photos.update({ cid: photo.cid }, $update);
+                db.photos.updateOne({ cid: photo.cid }, $update);
             }
 
             counter++;
@@ -598,7 +597,7 @@ waitDb.then(db => {
             }
 
             if (setCounter > 0 || unsetCounter > 0) {
-                db.comments.update({ obj: photo._id }, $update, { multi: true });
+                db.comments.updateMany({ obj: photo._id }, $update);
             }
 
             photoCounter++;
@@ -630,7 +629,7 @@ waitDb.then(db => {
         print('Start to calc center for ' + db.regions.countDocuments(query) + ' regions..\n');
         db.regions.find(query, { _id: 0, cid: 1, geo: 1, bbox: 1 }).forEach(region => {
             if (region.geo && (region.geo.type === 'MultiPolygon' || region.geo.type === 'Polygon')) {
-                db.regions.update({ cid: region.cid }, {
+                db.regions.updateOne({ cid: region.cid }, {
                     $set: {
                         center: geoToPrecision(region.geo.type === 'MultiPolygon' ?
                             [(region.bbox[0] + region.bbox[2]) / 2, (region.bbox[1] + region.bbox[3]) / 2] :
@@ -682,7 +681,7 @@ waitDb.then(db => {
         print('Start to calc bbox for ' + db.regions.countDocuments(query) + ' regions..\n');
         db.regions.find(query, { _id: 0, cid: 1, geo: 1 }).forEach(region => {
             if (region.geo && (region.geo.type === 'MultiPolygon' || region.geo.type === 'Polygon')) {
-                db.regions.update({ cid: region.cid }, { $set: { bbox: polyBBOX(region.geo).map(toPrecision6) } });
+                db.regions.updateOne({ cid: region.cid }, { $set: { bbox: polyBBOX(region.geo).map(toPrecision6) } });
             } else {
                 print('Error with ' + region.cid + ' region');
             }
@@ -793,7 +792,7 @@ waitDb.then(db => {
             var count;
 
             count = region.geo.type === 'Point' ? 1 : region.geo.coordinates.reduce(calcGeoJSONPointsNumReduce, 0);
-            db.regions.update({ cid: region.cid }, { $set: { pointsnum: count } });
+            db.regions.updateOne({ cid: region.cid }, { $set: { pointsnum: count } });
             print(count + ': ' + region.cid + ' ' + region.title_en + ' in ' + (Date.now() - startTime) / 1000 + 's');
         });
 
@@ -821,7 +820,7 @@ waitDb.then(db => {
                 polynum = { exterior: 0, interior: 0 };
             }
 
-            db.regions.update({ cid: region.cid }, { $set: { polynum: polynum } });
+            db.regions.updateOne({ cid: region.cid }, { $set: { polynum: polynum } });
         });
 
         function calcGeoJSONPolygonsNum(geometry) {
@@ -864,7 +863,7 @@ waitDb.then(db => {
 
         db.photos.find({ title: regRxp }, { title: 1 }).forEach(photo => {
             count++;
-            db.photos.update({ _id: photo._id }, { $set: { title: photo.title.replace(regRxp, '$2') } });
+            db.photos.updateOne({ _id: photo._id }, { $set: { title: photo.title.replace(regRxp, '$2') } });
         });
 
         return { count: count, message: 'In ' + (Date.now() - startTime) / 1000 + 's' };
@@ -958,7 +957,7 @@ waitDb.then(db => {
                 $update.$unset = $unset;
             }
 
-            db.users.update({ _id: user._id }, $update, { upsert: false });
+            db.users.updateOne({ _id: user._id }, $update, { upsert: false });
         }
 
         return {
@@ -1020,7 +1019,7 @@ waitDb.then(db => {
 
             if (Object.keys($update).length) {
                 counterUpdated++;
-                db.users_objects_rel.update({ _id: rel._id }, $update);
+                db.users_objects_rel.updateOne({ _id: rel._id }, $update);
             }
 
             if (counter % 50000 === 0 && counter) {
@@ -1076,7 +1075,7 @@ waitDb.then(db => {
                 $update.$unset = $unset;
             }
 
-            db.photos.update({ _id: photo._id }, $update, { upsert: false });
+            db.photos.updateOne({ _id: photo._id }, $update, { upsert: false });
 
             photoCounter++;
 
@@ -1220,7 +1219,7 @@ waitDb.then(db => {
             $update.cstat.del = db.comments.countDocuments((delete queryC.s, queryC.del = { $exists: true }, queryC));
             $update.cstat.all = $update.cstat.s5 + $update.cstat.s7 + $update.cstat.s9 + $update.cstat.del;
 
-            db.regions.update({ cid: region.cid }, { $set: $update });
+            db.regions.updateOne({ cid: region.cid }, { $set: $update });
 
             var currentChangeCounter = changeCounter;
 
@@ -1279,9 +1278,9 @@ waitDb.then(db => {
 
                     if (!hist.length || hist.length === 1 && hist[0].ip === data.ip) {
                         histRemoved++;
-                        collection.update({ key: key }, { $unset: { 'data.ip_hist': 1 } });
+                        collection.updateOne({ key: key }, { $unset: { 'data.ip_hist': 1 } });
                     } else {
-                        collection.update({ key: key }, { $set: { 'data.ip_hist': hist } });
+                        collection.updateOne({ key: key }, { $set: { 'data.ip_hist': hist } });
                     }
                 }
             });
@@ -1324,9 +1323,9 @@ waitDb.then(db => {
 
                     if (!hist.length) {
                         histRemoved++;
-                        collection.update({ key: key }, { $unset: { 'data.agent_hist': 1 } });
+                        collection.updateOne({ key: key }, { $unset: { 'data.agent_hist': 1 } });
                     } else {
-                        collection.update({ key: key }, { $set: { 'data.agent_hist': hist } });
+                        collection.updateOne({ key: key }, { $set: { 'data.agent_hist': hist } });
                     }
                 }
             });

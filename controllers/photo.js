@@ -478,7 +478,7 @@ async function give(params) {
             photo.vcount = (photo.vcount || 0) + 1;
 
             // Through increment in db, to avoid race conditions
-            Photo.update({ cid }, { $inc: { vdcount: 1, vwcount: 1, vcount: 1 } }).exec();
+            Photo.updateOne({ cid }, { $inc: { vdcount: 1, vwcount: 1, vcount: 1 } }).exec();
         }
 
         // Update view stamp of object by user
@@ -662,7 +662,7 @@ async function photoToMap({ photo, geoPhotoOld, yearPhotoOld, paintingMap }) {
     }
 
     await Promise.all([
-        MapModel.update({ cid: photo.cid }, $update, { upsert: true }).exec(),
+        MapModel.updateOne({ cid: photo.cid }, $update, { upsert: true }).exec(),
         this.call('cluster.clusterPhoto', { photo, geoPhotoOld, yearPhotoOld, isPainting: paintingMap }), // Send to clusterization
     ]);
 }
@@ -872,7 +872,7 @@ async function saveHistory({ oldPhotoObj, photo, canModerate, reason, parsedFile
     if (firstTime) {
         promises.push(new PhotoHistory(histories[0]).save());
     } else if (firstEntryChanged) {
-        promises.push(PhotoHistory.update({ _id: histories[0]._id }, { $set: { values: histories[0].values } }).exec());
+        promises.push(PhotoHistory.updateOne({ _id: histories[0]._id }, { $set: { values: histories[0].values } }).exec());
     }
 
     return Promise.all(promises);
@@ -951,7 +951,7 @@ function userPCountUpdate(user, newDelta = 0, publicDelta = 0, inactiveDelta = 0
         return session.saveEmitUser({ usObj: ownerObj, wait: true });
     }
 
-    return User.update({ _id: userId }, {
+    return User.updateOne({ _id: userId }, {
         $inc: {
             pfcount: newDelta || 0,
             pcount: publicDelta || 0,
@@ -2509,7 +2509,7 @@ async function convert({ cids = [] }) {
     const converterData = photos.map(photo => ({ cid: photo.cid, watersign: getUserWaterSign(photo.user, photo) }));
 
     if (converterData.length) {
-        await Photo.update({ cid: { $in: cids } }, { $set: { convqueue: true } }, { multi: true }).exec();
+        await Photo.updateMany({ cid: { $in: cids } }, { $set: { convqueue: true } }).exec();
     }
 
     return converter.addPhotos(converterData, 3);
@@ -2671,8 +2671,8 @@ async function convertByUser({ login, resetIndividual, r }) {
         }
 
         await Promise.all([
-            Photo.update(query, update, { multi: true }).exec(),
-            Photo.update(queryNew, updateNew, { multi: true }).exec(),
+            Photo.updateMany(query, update).exec(),
+            Photo.updateMany(queryNew, updateNew).exec(),
             Promise.all(historyCalls.map(hist => this.call('photo.saveHistory', hist))),
         ]);
 
@@ -2728,8 +2728,8 @@ async function resetIndividualDownloadOrigin({ login, r }) {
         query[`r${region.level}`] = region.cid;
     }
 
-    const { n: updated = 0 } = await Photo.update(
-        query, { $unset: { disallowDownloadOriginIndividual: 1 } }, { multi: true }
+    const { n: updated = 0 } = await Photo.updateMany(
+        query, { $unset: { disallowDownloadOriginIndividual: 1 } }
     ).exec();
 
     const time = Date.now() - stampStart;
@@ -3371,8 +3371,8 @@ const planResetDisplayStat = (function () {
         try {
             logger.info(`Resetting day ${needWeek ? 'and week ' : ''}display statistics...`);
 
-            const { n: count = 0 } = await Photo.update(
-                { s: { $in: [status.PUBLIC, status.DEACTIVATE, status.REMOVE] } }, { $set: setQuery }, { multi: true }
+            const { n: count = 0 } = await Photo.updateMany(
+                { s: { $in: [status.PUBLIC, status.DEACTIVATE, status.REMOVE] } }, { $set: setQuery }
             ).exec();
 
             logger.info(`Reset day ${needWeek ? 'and week ' : ''}display statistics for ${count} photos complete`);
@@ -3398,7 +3398,7 @@ async function resetPhotosAnticache() {
 
     // For each of found photo set file equals path, don't wait execution
     for (const { cid, path } of photos) {
-        Photo.update({ cid }, { $set: { file: path } }).exec();
+        Photo.updateOne({ cid }, { $set: { file: path } }).exec();
     }
 
     if (photos.length) {

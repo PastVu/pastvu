@@ -609,7 +609,7 @@ export async function movePhotoFiles({ photo, copy = false, toProtected = false 
 
         const { signature, fileParam } = await getFileSign(photo, path.join(targetDir, 'd', filePath));
 
-        await Photo.update(
+        await Photo.updateOne(
             { cid: photo.cid }, { $set: { file: filePath + fileParam, signs: signature || '', converted: new Date() } }
         ).exec();
     }
@@ -700,8 +700,8 @@ export async function removePhotos(cids) {
     // Запускаем конвейер после рестарта сервера, устанавливаем все недоконвертированные фото обратно в false
     setTimeout(async () => {
         try {
-            await PhotoConveyer.update(
-                { converting: { $exists: true } }, { $unset: { converting: 1 } }, { multi: true }
+            await PhotoConveyer.updateMany(
+                { converting: { $exists: true } }, { $unset: { converting: 1 } }
             ).exec();
         } catch (err) {
             return logger.error(err);

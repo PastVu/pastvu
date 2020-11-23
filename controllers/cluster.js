@@ -143,7 +143,7 @@ async function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, isPainting
     $update.$set.p = photo;
     $update.$set.geo = geoCluster;
 
-    const { n: count = 0 } = await ClusterModel.update({ g, z: zParam.z }, $update, { multi: false, upsert: true }).exec();
+    const { n: count = 0 } = await ClusterModel.updateOne({ g, z: zParam.z }, $update, { upsert: true }).exec();
 
     return count;
 }
