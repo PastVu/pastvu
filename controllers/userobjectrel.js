@@ -122,7 +122,7 @@ export async function setCommentView(objId, userId, type = 'photo', stamp = new 
         }
     }
 
-    await UserObjectRel.update(query, update, { upsert: true }).exec();
+    await UserObjectRel.updateOne(query, update, { upsert: true }).exec();
 
     return relBeforeUpdate;
 }
@@ -134,10 +134,9 @@ export async function setCommentView(objId, userId, type = 'photo', stamp = new 
  * @param {string} [type=photo] Object type
  */
 export async function onCommentAdd(objId, userId, type = 'photo') {
-    const { n: count = 0 } = await UserObjectRel.update(
+    const { n: count = 0 } = await UserObjectRel.updateMany(
         { obj: objId, comments: { $exists: true }, user: { $ne: userId }, type },
-        { $inc: { ccount_new: 1 } },
-        { multi: true }
+        { $inc: { ccount_new: 1 } }
     ).exec();
 
     return count;
@@ -192,7 +191,7 @@ export async function onCommentsRemove(objId, comments, type = 'photo') {
 
             // Update specific rel, but just in case но на всякий случае specify maximum time of comments view,
             // on which we compute, in case while we compete user read comments again
-            result.push(UserObjectRel.update(
+            result.push(UserObjectRel.updateOne(
                 { _id: rel._id, comments: { $lte: lastCommentStamp } },
                 { $inc: { ccount_new: -newDeltaCount } }
             ).exec());
@@ -247,7 +246,7 @@ export async function onCommentsRestore(objId, comments, type = 'photo') {
         }, 0);
 
         if (newDeltaCount) {
-            result.push(UserObjectRel.update(
+            result.push(UserObjectRel.updateOne(
                 // Обновляем конкретный rel, но на всякий случае указываем максимальное время просмотра комментариев,
                 // по которому мы считали, на случай, если пока мы считали пользователь опять посмотрел комментарии
                 { _id: rel._id, comments: { $lte: lastCommentStamp } },

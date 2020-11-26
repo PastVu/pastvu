@@ -49,7 +49,7 @@ waitDb.then(db => {
         const anonQuery = { anonym: { $exists: true }, stamp: { $lte: new Date(start - SESSION_ANON_LIFE) } };
 
         // Simply remove anonymous sessions older then SESSION_ANON_LIFE, there is no point in storing them
-        const countRemoved = db.sessions.remove(anonQuery).nRemoved;
+        const countRemoved = db.sessions.deleteMany(anonQuery).nRemoved;
 
         // Move each expired registered user session to sessions_archive
         db.sessions.find(userQuery).limit(5000).forEach(session => {
@@ -69,16 +69,16 @@ waitDb.then(db => {
             insertBulk.push(session);
             resultKeys.push(session.key);
 
-            db.sessions.remove({ key: session.key });
+            db.sessions.deleteOne({ key: session.key });
 
             if (counter >= castBulkBy) {
-                db.sessions_archive.insert(insertBulk, { ordered: false });
+                db.sessions_archive.insertMany(insertBulk, { ordered: false });
                 insertBulk = [];
             }
         });
 
         if (insertBulk.length) {
-            db.sessions_archive.insert(insertBulk, { ordered: false });
+            db.sessions_archive.insertMany(insertBulk, { ordered: false });
         }
 
         return {
@@ -92,7 +92,7 @@ waitDb.then(db => {
         var clusterparamsQuery = { sgeo: { $exists: false } };
         var clusterZooms;
         var clusterZoomsCounter = -1;
-        var photosAllCount = db.photos.count({ s: 5, geo: { $exists: true } });
+        var photosAllCount = db.photos.countDocuments({ s: 5, geo: { $exists: true } });
 
         if (zooms) {
             clusterparamsQuery.z = { $in: zooms };
@@ -187,7 +187,7 @@ waitDb.then(db => {
             });
 
             print(clusterZoom.z + ': ' + clustersCount + ' clusters ready for inserting ' + (Date.now() - startTime) / 1000 + 's');
-            db.clusters.remove({ z: clusterZoom.z });
+            db.clusters.deleteMany({ z: clusterZoom.z });
 
             clustersCounter = clustersArr.length;
 
@@ -227,7 +227,7 @@ waitDb.then(db => {
                     }
                 }
 
-                db.clusters.insert(clustersArrInner);
+                db.clusters.insertMany(clustersArrInner);
                 clustersInserted += clustersArrInner.length;
                 print(
                     clusterZoom.z + ': Inserted ' + clustersInserted + '/' + clustersCount + ' clusters ok. ' +
@@ -242,7 +242,7 @@ waitDb.then(db => {
         return {
             message: 'Ok in ' + (Date.now() - startFullTime) / 1000 + 's',
             photos: photosAllCount,
-            clusters: db.clusters.count(),
+            clusters: db.clusters.estimatedDocumentCount(),
         };
     });
 
@@ -250,9 +250,9 @@ waitDb.then(db => {
         var startTime = Date.now();
 
         print('Clearing photos map collection');
-        db.photos_map.remove({});
+        db.photos_map.deleteMany({});
 
-        print('Start to fill conveyer for ' + db.photos.count({ s: 5, type: 1, geo: { $exists: true } }) + ' photos');
+        print('Start to fill conveyer for ' + db.photos.countDocument({ s: 5, type: 1, geo: { $exists: true } }) + ' photos');
         db.photos
             .find({ s: 5, type: 1, geo: { $exists: true } }, {
                 _id: 0,
@@ -266,7 +266,7 @@ waitDb.then(db => {
             })
             .sort({ cid: 1 })
             .forEach(photo => {
-                db.photos_map.insert({
+                db.photos_map.insertOne({
                     cid: photo.cid,
                     geo: photo.geo,
                     file: photo.file,
@@ -278,8 +278,8 @@ waitDb.then(db => {
             });
 
         print('Clearing paintings map collection');
-        db.paintings_map.remove({});
-        print('Start to fill conveyer for ' + db.photos.count({ s: 5, type: 2, geo: { $exists: true } }) + ' paintings');
+        db.paintings_map.deleteMany({});
+        print('Start to fill conveyer for ' + db.photos.countDocuments({ s: 5, type: 2, geo: { $exists: true } }) + ' paintings');
         db.photos
             .find({ s: 5, type: 2, geo: { $exists: true } }, {
                 _id: 0,
@@ -293,7 +293,7 @@ waitDb.then(db => {
             })
             .sort({ cid: 1 })
             .forEach(photo => {
-                db.paintings_map.insert({
+                db.paintings_map.insertOne({
                     cid: photo.cid,
                     geo: photo.geo,
                     file: photo.file,
@@ -304,7 +304,7 @@ waitDb.then(db => {
                 });
             });
 
-        return { message: db.photos_map.count() + db.paintings_map.count() + ' photos to map added in ' + (Date.now() - startTime) / 1000 + 's' };
+        return { message: db.photos_map.estimatedDocumentCount() + db.paintings_map.estimatedDocumentCount() + ' photos to map added in ' + (Date.now() - startTime) / 1000 + 's' };
     });
 
     saveSystemJSFunc(function convertPhotosAll(params) {
@@ -354,7 +354,7 @@ waitDb.then(db => {
             query.s = { $in: params.statuses };
         }
 
-        print('Start to fill conveyer for ' + (query.user ? query.user + ' user for ' : '') + db.photos.count(query) + ' photos');
+        print('Start to fill conveyer for ' + (query.user ? query.user + ' user for ' : '') + db.photos.countDocuments(query) + ' photos');
         db.photos.find(query, selectFields).sort({ cid: 1 }).forEach(photo => {
             var row;
 
@@ -370,7 +370,7 @@ waitDb.then(db => {
         });
 
         if (conveyer.length) {
-            db.photos_conveyer.insert(conveyer);
+            db.photos_conveyer.insertMany(conveyer);
         }
 
         return {
@@ -401,8 +401,8 @@ waitDb.then(db => {
 
         if (clearBefore) {
             print('Clearing current regions assignment\n');
-            db.photos.update(
-                { geo: { $exists: true } }, { $unset: { r0: 1, r1: 1, r2: 1, r3: 1, r4: 1, r5: 1 } }, { multi: true }
+            db.photos.updateMany(
+                { geo: { $exists: true } }, { $unset: { r0: 1, r1: 1, r2: 1, r3: 1, r4: 1, r5: 1 } }
             );
         }
 
@@ -412,7 +412,7 @@ waitDb.then(db => {
 
             query.parents = { $size: level };
 
-            print('Starting objects assignment to ' + db.regions.count(query) + ' regions at ' + level + 'th level...');
+            print('Starting objects assignment to ' + db.regions.countDocuments(query) + ' regions at ' + level + 'th level...');
             db.regions.find(query, { _id: 0, cid: 1, parents: 1, geo: 1, title_en: 1 }).forEach(region => {
                 var startTime = Date.now();
                 var query = { geo: { $geoWithin: { $geometry: region.geo } } };
@@ -447,7 +447,7 @@ waitDb.then(db => {
                     }
                 }
 
-                var updated = db.photos.update(query, $update, { multi: true });
+                var updated = db.photos.updateMany(query, $update);
 
                 modifiedCounter += updated.nModified;
 
@@ -460,10 +460,9 @@ waitDb.then(db => {
         }
 
         // Set Open sea to photos without top region
-        db.photos.update(
+        db.photos.updateMany(
             { r0: null, geo: { $exists: true } },
-            { $set: { r0: 1000000 }, $unset: { r1: 1, r2: 1, r3: 1, r4: 1, r5: 1 } },
-            { multi: true }
+            { $set: { r0: 1000000 }, $unset: { r1: 1, r2: 1, r3: 1, r4: 1, r5: 1 } }
         );
 
         return { message: 'Assigning finished in ' + (Date.now() - startTime) / 1000 + 's. Modified ' + modifiedCounter + ' photos' };
@@ -494,9 +493,9 @@ waitDb.then(db => {
 
         var counter = 0;
         var counterUpdated = 0;
-        var count = db.photos.count(query);
+        var count = db.photos.countDocuments(query);
 
-        print('Starting iteration over ' + db.photos.count(query) + ' photos..');
+        print('Starting iteration over ' + db.photos.countDocuments(query) + ' photos..');
         db.photos.find(query, fields).sort({ cid: 1 }).forEach(photo => {
             var regions = db.regions.find(
                 { geo: { $nearSphere: { $geometry: { type: 'Point', coordinates: photo.geo }, $maxDistance: 1 } } },
@@ -539,7 +538,7 @@ waitDb.then(db => {
 
             if (setCounter > 0 || unsetCounter > 0) {
                 counterUpdated++;
-                db.photos.update({ cid: photo.cid }, $update);
+                db.photos.updateOne({ cid: photo.cid }, $update);
             }
 
             counter++;
@@ -558,7 +557,7 @@ waitDb.then(db => {
         var photoCounter = 0;
         var maxRegionLevel = 5;
 
-        print('Assign regions to comments for ' + db.photos.count({ s: { $gte: 5 } }) + ' published photos');
+        print('Assign regions to comments for ' + db.photos.countDocuments({ s: { $gte: 5 } }) + ' published photos');
         db.photos.find(
             { s: { $gte: 5 } }, { _id: 1, geo: 1, r0: 1, r1: 1, r2: 1, r3: 1, r4: 1, r5: 1 }
         ).forEach(photo => {
@@ -598,7 +597,7 @@ waitDb.then(db => {
             }
 
             if (setCounter > 0 || unsetCounter > 0) {
-                db.comments.update({ obj: photo._id }, $update, { multi: true });
+                db.comments.updateMany({ obj: photo._id }, $update);
             }
 
             photoCounter++;
@@ -627,10 +626,10 @@ waitDb.then(db => {
             ];
         }
 
-        print('Start to calc center for ' + db.regions.count(query) + ' regions..\n');
+        print('Start to calc center for ' + db.regions.countDocuments(query) + ' regions..\n');
         db.regions.find(query, { _id: 0, cid: 1, geo: 1, bbox: 1 }).forEach(region => {
             if (region.geo && (region.geo.type === 'MultiPolygon' || region.geo.type === 'Polygon')) {
-                db.regions.update({ cid: region.cid }, {
+                db.regions.updateOne({ cid: region.cid }, {
                     $set: {
                         center: geoToPrecision(region.geo.type === 'MultiPolygon' ?
                             [(region.bbox[0] + region.bbox[2]) / 2, (region.bbox[1] + region.bbox[3]) / 2] :
@@ -679,10 +678,10 @@ waitDb.then(db => {
         var startTime = Date.now();
         var query = { cid: { $ne: 1000000 } };
 
-        print('Start to calc bbox for ' + db.regions.count(query) + ' regions..\n');
+        print('Start to calc bbox for ' + db.regions.countDocuments(query) + ' regions..\n');
         db.regions.find(query, { _id: 0, cid: 1, geo: 1 }).forEach(region => {
             if (region.geo && (region.geo.type === 'MultiPolygon' || region.geo.type === 'Polygon')) {
-                db.regions.update({ cid: region.cid }, { $set: { bbox: polyBBOX(region.geo).map(toPrecision6) } });
+                db.regions.updateOne({ cid: region.cid }, { $set: { bbox: polyBBOX(region.geo).map(toPrecision6) } });
             } else {
                 print('Error with ' + region.cid + ' region');
             }
@@ -787,13 +786,13 @@ waitDb.then(db => {
             return previousValue + (Array.isArray(currentValue[0]) ? currentValue.reduce(calcGeoJSONPointsNumReduce, 0) : 1);
         }
 
-        print('Start to calculate points number for ' + db.regions.count(query) + ' regions..\n');
+        print('Start to calculate points number for ' + db.regions.countDocuments(query) + ' regions..\n');
         db.regions.find(query, { cid: 1, geo: 1, title_en: 1 }).sort({ cid: 1 }).forEach(region => {
             var startTime = Date.now();
             var count;
 
             count = region.geo.type === 'Point' ? 1 : region.geo.coordinates.reduce(calcGeoJSONPointsNumReduce, 0);
-            db.regions.update({ cid: region.cid }, { $set: { pointsnum: count } });
+            db.regions.updateOne({ cid: region.cid }, { $set: { pointsnum: count } });
             print(count + ': ' + region.cid + ' ' + region.title_en + ' in ' + (Date.now() - startTime) / 1000 + 's');
         });
 
@@ -811,7 +810,7 @@ waitDb.then(db => {
             query.cid = cidArr.length === 1 ? cidArr[0] : { $in: cidArr };
         }
 
-        print('Start to calculate polynum for ' + db.regions.count(query) + ' regions..\n');
+        print('Start to calculate polynum for ' + db.regions.countDocuments(query) + ' regions..\n');
         db.regions.find(query, { cid: 1, geo: 1, title_en: 1 }).sort({ cid: 1 }).forEach(region => {
             var polynum;
 
@@ -821,7 +820,7 @@ waitDb.then(db => {
                 polynum = { exterior: 0, interior: 0 };
             }
 
-            db.regions.update({ cid: region.cid }, { $set: { polynum: polynum } });
+            db.regions.updateOne({ cid: region.cid }, { $set: { polynum: polynum } });
         });
 
         function calcGeoJSONPolygonsNum(geometry) {
@@ -864,7 +863,7 @@ waitDb.then(db => {
 
         db.photos.find({ title: regRxp }, { title: 1 }).forEach(photo => {
             count++;
-            db.photos.update({ _id: photo._id }, { $set: { title: photo.title.replace(regRxp, '$2') } });
+            db.photos.updateOne({ _id: photo._id }, { $set: { title: photo.title.replace(regRxp, '$2') } });
         });
 
         return { count: count, message: 'In ' + (Date.now() - startTime) / 1000 + 's' };
@@ -876,7 +875,7 @@ waitDb.then(db => {
         var counter = 0;
         var renamedCounter = 0;
 
-        print('Start for ' + db.regions.count() + ' regions..\n');
+        print('Start for ' + db.regions.estimatedDocumentCount() + ' regions..\n');
         db.regions.find({}, { _id: 0, title_en: 1, title_local: 1 }).sort({ cid: 1 }).forEach(region => {
             renamedCounter += regionClearPhotoTitle([region.title_en, region.title_local]).count;
 
@@ -919,11 +918,11 @@ waitDb.then(db => {
             $set = {};
             $unset = {};
             $update = {};
-            pcount = db.photos.count({ user: user._id, s: 5 });
-            pfcount = db.photos.count({ user: user._id, s: { $in: [0, 1, 2] } });
-            pdcount = db.photos.count({ user: user._id, s: { $in: [3, 4, 7, 9] } });
-            ccount = db.comments.count({ user: user._id, del: null }) +
-                     db.commentsn.count({ user: user._id, del: null });
+            pcount = db.photos.countDocuments({ user: user._id, s: 5 });
+            pfcount = db.photos.countDocuments({ user: user._id, s: { $in: [0, 1, 2] } });
+            pdcount = db.photos.countDocuments({ user: user._id, s: { $in: [3, 4, 7, 9] } });
+            ccount = db.comments.countDocuments({ user: user._id, del: null }) +
+                     db.commentsn.countDocuments({ user: user._id, del: null });
 
             if (pcount > 0) {
                 $set.pcount = pcount;
@@ -958,7 +957,7 @@ waitDb.then(db => {
                 $update.$unset = $unset;
             }
 
-            db.users.update({ _id: user._id }, $update, { upsert: false });
+            db.users.updateOne({ _id: user._id }, $update, { upsert: false });
         }
 
         return {
@@ -981,7 +980,7 @@ waitDb.then(db => {
             query.obj = objId;
         }
 
-        print('0s Start to calc for ' + db.users_objects_rel.count(query) + ' rels');
+        print('0s Start to calc for ' + db.users_objects_rel.countDocuments(query) + ' rels');
         db.users_objects_rel.find(query).sort({ user: 1 }).forEach(rel => {
             counter += 1;
 
@@ -994,7 +993,7 @@ waitDb.then(db => {
                     rel.ccount_new = 0;
                 }
 
-                ccountNew = commentCollection.count({
+                ccountNew = commentCollection.countDocuments({
                     obj: rel.obj,
                     del: null,
                     stamp: { $gt: rel.comments },
@@ -1020,7 +1019,7 @@ waitDb.then(db => {
 
             if (Object.keys($update).length) {
                 counterUpdated++;
-                db.users_objects_rel.update({ _id: rel._id }, $update);
+                db.users_objects_rel.updateOne({ _id: rel._id }, $update);
             }
 
             if (counter % 50000 === 0 && counter) {
@@ -1052,7 +1051,7 @@ waitDb.then(db => {
             $set = {};
             $unset = {};
             $update = {};
-            ccount = db.comments.count({ obj: photo._id, del: null });
+            ccount = db.comments.countDocuments({ obj: photo._id, del: null });
 
             if (ccount > 0) {
                 $set.ccount = ccount;
@@ -1060,7 +1059,7 @@ waitDb.then(db => {
                 $unset.ccount = 1;
             }
 
-            cdcount = db.comments.count({ obj: photo._id, del: { $exists: true } });
+            cdcount = db.comments.countDocuments({ obj: photo._id, del: { $exists: true } });
 
             if (cdcount > 0) {
                 $set.cdcount = cdcount;
@@ -1076,7 +1075,7 @@ waitDb.then(db => {
                 $update.$unset = $unset;
             }
 
-            db.photos.update({ _id: photo._id }, $update, { upsert: false });
+            db.photos.updateOne({ _id: photo._id }, $update, { upsert: false });
 
             photoCounter++;
 
@@ -1098,13 +1097,13 @@ waitDb.then(db => {
             query.cid = { $in: cids };
         }
 
-        const queueLength = db.region_stat_queue.count({});
+        const queueLength = db.region_stat_queue.estimatedDocumentCount();
 
         if (queueLength) {
             print('Heads up, removing ' + queueLength + ' queue items');
 
             // Delete photos stat queue first
-            db.region_stat_queue.remove({});
+            db.region_stat_queue.deleteMany({});
         }
 
         var changeCounter = 0;
@@ -1127,12 +1126,12 @@ waitDb.then(db => {
             return changedSomething;
         }
 
-        var count = db.regions.count(query);
+        var count = db.regions.countDocuments(query);
 
         print('Starting stat calculation for ' + count + ' regions');
         db.regions.find(query, fields).sort({ cid: 1 }).forEach(region => {
             var level = region.parents && region.parents.length || 0;
-            var regionHasChildren = db.regions.count({ parents: region.cid }) > 0;
+            var regionHasChildren = db.regions.countDocuments({ parents: region.cid }) > 0;
 
             var queryC = { del: null };
             var queryImage = {};
@@ -1187,11 +1186,11 @@ waitDb.then(db => {
                 photos.statuses.forEach(status => {
                     $update.photostat['s' + status.s] = status.count;
                 });
-                $update.photostat.geo = db.photos.count((queryPhoto.geo = { $exists: true }, queryPhoto));
+                $update.photostat.geo = db.photos.countDocuments((queryPhoto.geo = { $exists: true }, queryPhoto));
 
                 if (regionHasChildren) {
-                    $update.photostat.owngeo = db.photos.count((queryPhoto['r' + (level + 1)] = null, queryPhoto));
-                    $update.photostat.own = db.photos.count((delete queryPhoto.geo, queryPhoto));
+                    $update.photostat.owngeo = db.photos.countDocuments((queryPhoto['r' + (level + 1)] = null, queryPhoto));
+                    $update.photostat.own = db.photos.countDocuments((delete queryPhoto.geo, queryPhoto));
                 } else {
                     $update.photostat.owngeo = $update.photostat.geo;
                     $update.photostat.own = $update.photostat.all;
@@ -1203,24 +1202,24 @@ waitDb.then(db => {
                 paintings.statuses.forEach(status => {
                     $update.paintstat['s' + status.s] = status.count;
                 });
-                $update.paintstat.geo = db.photos.count((queryPaint.geo = { $exists: true }, queryPaint));
+                $update.paintstat.geo = db.photos.countDocuments((queryPaint.geo = { $exists: true }, queryPaint));
 
                 if (regionHasChildren) {
-                    $update.paintstat.owngeo = db.photos.count((queryPaint['r' + (level + 1)] = null, queryPaint));
-                    $update.paintstat.own = db.photos.count((delete queryPaint.geo, queryPaint));
+                    $update.paintstat.owngeo = db.photos.countDocuments((queryPaint['r' + (level + 1)] = null, queryPaint));
+                    $update.paintstat.own = db.photos.countDocuments((delete queryPaint.geo, queryPaint));
                 } else {
                     $update.paintstat.owngeo = $update.paintstat.geo;
                     $update.paintstat.own = $update.paintstat.all;
                 }
             }
 
-            $update.cstat.s5 = db.comments.count((queryC.s = 5, queryC));
-            $update.cstat.s7 = db.comments.count((queryC.s = 7, queryC));
-            $update.cstat.s9 = db.comments.count((queryC.s = 9, queryC));
-            $update.cstat.del = db.comments.count((delete queryC.s, queryC.del = { $exists: true }, queryC));
+            $update.cstat.s5 = db.comments.countDocuments((queryC.s = 5, queryC));
+            $update.cstat.s7 = db.comments.countDocuments((queryC.s = 7, queryC));
+            $update.cstat.s9 = db.comments.countDocuments((queryC.s = 9, queryC));
+            $update.cstat.del = db.comments.countDocuments((delete queryC.s, queryC.del = { $exists: true }, queryC));
             $update.cstat.all = $update.cstat.s5 + $update.cstat.s7 + $update.cstat.s9 + $update.cstat.del;
 
-            db.regions.update({ cid: region.cid }, { $set: $update });
+            db.regions.updateOne({ cid: region.cid }, { $set: $update });
 
             var currentChangeCounter = changeCounter;
 
@@ -1279,9 +1278,9 @@ waitDb.then(db => {
 
                     if (!hist.length || hist.length === 1 && hist[0].ip === data.ip) {
                         histRemoved++;
-                        collection.update({ key: key }, { $unset: { 'data.ip_hist': 1 } });
+                        collection.updateOne({ key: key }, { $unset: { 'data.ip_hist': 1 } });
                     } else {
-                        collection.update({ key: key }, { $set: { 'data.ip_hist': hist } });
+                        collection.updateOne({ key: key }, { $set: { 'data.ip_hist': hist } });
                     }
                 }
             });
@@ -1324,9 +1323,9 @@ waitDb.then(db => {
 
                     if (!hist.length) {
                         histRemoved++;
-                        collection.update({ key: key }, { $unset: { 'data.agent_hist': 1 } });
+                        collection.updateOne({ key: key }, { $unset: { 'data.agent_hist': 1 } });
                     } else {
-                        collection.update({ key: key }, { $set: { 'data.agent_hist': hist } });
+                        collection.updateOne({ key: key }, { $set: { 'data.agent_hist': hist } });
                     }
                 }
             });

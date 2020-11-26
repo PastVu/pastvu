@@ -467,15 +467,15 @@ async function calcRegionIncludes(cidOrRegion) {
     // First clear assignment of objects with coordinates to region
     const unsetObject = { $unset: { [level]: 1 } };
     const [{ n: photosCountBefore = 0 }, { n: commentsCountBefore = 0 }] = await Promise.all([
-        Photo.update({ geo: { $exists: true }, [level]: region.cid }, unsetObject, { multi: true }).exec(),
-        Comment.update({ geo: { $exists: true }, [level]: region.cid }, unsetObject, { multi: true }).exec(),
+        Photo.updateMany({ geo: { $exists: true }, [level]: region.cid }, unsetObject).exec(),
+        Comment.updateMany({ geo: { $exists: true }, [level]: region.cid }, unsetObject).exec(),
     ]);
 
     // Then assign to region on located in it polygon objects
     const setObject = { $set: { [level]: region.cid } };
     const [{ n: photosCountAfter = 0 }, { n: commentsCountAfter = 0 }] = await Promise.all([
-        Photo.update({ geo: { $geoWithin: { $geometry: region.geo } } }, setObject, { multi: true }).exec(),
-        Comment.update({ geo: { $geoWithin: { $geometry: region.geo } } }, setObject, { multi: true }).exec(),
+        Photo.updateMany({ geo: { $geoWithin: { $geometry: region.geo } } }, setObject).exec(),
+        Comment.updateMany({ geo: { $geoWithin: { $geometry: region.geo } } }, setObject).exec(),
     ]);
 
     return { cid: region.cid, photosCountBefore, commentsCountBefore, photosCountAfter, commentsCountAfter };
@@ -536,7 +536,7 @@ async function getChildsLenByLevel(region) {
 
         while (level++ < maxRegionLevel) { // level инкрементируется после сравнения
             childrenQuery.parents = { $size: level };
-            promises.push(Region.count(childrenQuery).exec());
+            promises.push(Region.countDocuments(childrenQuery).exec());
         }
 
         return _.compact(await Promise.all(promises));
@@ -568,8 +568,8 @@ async function changeRegionParentExternality(region, oldParentsArray, childLenAr
 
     function updateObjects(query, update) {
         return Promise.all([
-            Photo.update(query, update, { multi: true }).exec(),
-            Comment.update(query, update, { multi: true }).exec(),
+            Photo.updateMany(query, update).exec(),
+            Comment.updateMany(query, update).exec(),
         ]);
     }
 
@@ -655,20 +655,20 @@ async function changeRegionParentExternality(region, oldParentsArray, childLenAr
         const [{ n: affectedUsers = 0 }, { n: affectedMods = 0 }] = await Promise.all([
             // Remove subscription on moving regions of those users, who have subscription on new and on parent regions,
             // because in this case they'll have subscription on children automatically
-            User.update({
+            User.updateMany({
                 $and: [
                     { regions: { $in: parentRegionsIds } },
                     { regions: { $in: movingRegionsIds } },
                 ],
-            }, { $pull: { regions: { $in: movingRegionsIds } } }, { multi: true }).exec(),
+            }, { $pull: { regions: { $in: movingRegionsIds } } }).exec(),
 
             // Tha same with moderated regions
-            User.update({
+            User.updateMany({
                 $and: [
                     { mod_regions: { $in: parentRegionsIds } },
                     { mod_regions: { $in: movingRegionsIds } },
                 ],
-            }, { $pull: { mod_regions: { $in: movingRegionsIds } } }, { multi: true }).exec(),
+            }, { $pull: { mod_regions: { $in: movingRegionsIds } } }).exec(),
         ]);
 
         return { affectedUsers, affectedMods };
@@ -677,7 +677,7 @@ async function changeRegionParentExternality(region, oldParentsArray, childLenAr
     // Calculate number of photos belongs to the region
     const countQuery = { ['r' + levelWas]: region.cid };
     const [affectedPhotos, affectedComments] = await Promise.all([
-        Photo.count(countQuery).exec(), Comment.count(countQuery).exec(),
+        Photo.countDocuments(countQuery).exec(), Comment.countDocuments(countQuery).exec(),
     ]);
 
     let affectedUsers;
@@ -689,8 +689,8 @@ async function changeRegionParentExternality(region, oldParentsArray, childLenAr
         regionsDiff = _.difference(oldParentsArray, region.parents);
 
         // Remove differens in regions from children of moving region, eg move them up too
-        await Region.update(
-            { parents: region.cid }, { $pull: { parents: { $in: regionsDiff } } }, { multi: true }
+        await Region.updateMany(
+            { parents: region.cid }, { $pull: { parents: { $in: regionsDiff } } }
         ).exec();
 
         if (affectedPhotos) {
@@ -702,10 +702,9 @@ async function changeRegionParentExternality(region, oldParentsArray, childLenAr
         regionsDiff = _.difference(region.parents, oldParentsArray);
 
         // Insert added parent regions to children of moving region, eg move them down also
-        await Region.update(
+        await Region.updateMany(
             { parents: region.cid },
-            { $push: { parents: { $each: regionsDiff, $position: levelWas } } },
-            { multi: true }
+            { $push: { parents: { $each: regionsDiff, $position: levelWas } } }
         ).exec();
 
         if (!affectedPhotos) {
@@ -722,16 +721,15 @@ async function changeRegionParentExternality(region, oldParentsArray, childLenAr
         // Move region to ANOTHER BRANCH
 
         // Remove all parents of this region from its children
-        await Region.update(
-            { parents: region.cid }, { $pull: { parents: { $in: oldParentsArray } } }, { multi: true }
+        await Region.updateMany(
+            { parents: region.cid }, { $pull: { parents: { $in: oldParentsArray } } }
         ).exec();
 
         // Insert added parent regions to children of moving region, eg move them down also
         // Insert all parents of region to its children
-        await Region.update(
+        await Region.updateMany(
             { parents: region.cid },
-            { $push: { parents: { $each: region.parents, $position: 0 } } },
-            { multi: true }
+            { $push: { parents: { $each: region.parents, $position: 0 } } }
         ).exec();
 
         if (affectedPhotos && levelNew !== levelWas) {
@@ -1277,13 +1275,13 @@ async function remove(data) {
     removingRegionsIds.push(regionToRemove._id);
 
     // Replace home regions
-    const { n: homeAffectedUsers = 0 } = await User.update(
-        { regionHome: { $in: removingRegionsIds } }, { $set: { regionHome: parentRegion._id } }, { multi: true }
+    const { n: homeAffectedUsers = 0 } = await User.updateMany(
+        { regionHome: { $in: removingRegionsIds } }, { $set: { regionHome: parentRegion._id } }
     ).exec();
 
     // Unsubscribe all users from removing regions ('my regions')
-    const { n: affectedUsers = 0 } = await User.update(
-        { regions: { $in: removingRegionsIds } }, { $pull: { regions: { $in: removingRegionsIds } } }, { multi: true }
+    const { n: affectedUsers = 0 } = await User.updateMany(
+        { regions: { $in: removingRegionsIds } }, { $pull: { regions: { $in: removingRegionsIds } } }
     ).exec();
 
     // Remove removing regions from moderated by users
@@ -1307,13 +1305,13 @@ async function remove(data) {
 
     const [{ n: affectedPhotos = 0 }, { n: affectedComments = 0 }] = await Promise.all([
         // Update included photos
-        Photo.update(objectsMatchQuery, objectsUpdateQuery, { multi: true }).exec(),
+        Photo.updateMany(objectsMatchQuery, objectsUpdateQuery).exec(),
         // Update comments of included photos
-        Comment.update(objectsMatchQuery, objectsUpdateQuery, { multi: true }).exec(),
+        Comment.updateMany(objectsMatchQuery, objectsUpdateQuery).exec(),
         // Remove child regions
-        Region.remove({ parents: regionToRemove.cid }).exec(),
+        Region.deleteMany({ parents: regionToRemove.cid }).exec(),
         // Remove this regions
-        regionToRemove.remove(),
+        regionToRemove.deleteOne(),
     ]);
 
     // If removing region has parent, recalc parents stat
@@ -1355,17 +1353,15 @@ async function removeRegionsFromMods(usersQuery, regionsIds) {
 
     if (modUsersCids.length) {
         // Remove regions from finded moderators
-        const { n: affectedMods = 0 } = await User.update(
+        const { n: affectedMods = 0 } = await User.updateMany(
             { cid: { $in: modUsersCids } },
-            { $pull: { mod_regions: { $in: regionsIds } } },
-            { multi: true }
+            { $pull: { mod_regions: { $in: regionsIds } } }
         ).exec();
 
         // Revoke moderation role from users, in whose no moderation regions left after regions removal
-        const { n: affectedModsLose = 0 } = await User.update(
+        const { n: affectedModsLose = 0 } = await User.updateMany(
             { cid: { $in: modUsersCids }, mod_regions: { $size: 0 } },
-            { $unset: { role: 1, mod_regions: 1 } },
-            { multi: true }
+            { $unset: { role: 1, mod_regions: 1 } }
         ).exec();
 
         return { affectedMods, affectedModsLose };
@@ -1446,7 +1442,7 @@ export async function getRegionsCountByLevel() {
     const promises = [];
 
     for (let i = 0; i <= maxRegionLevel; i++) {
-        promises.push(Region.count({ parents: { $size: i } }).exec());
+        promises.push(Region.countDocuments({ parents: { $size: i } }).exec());
     }
 
     return Promise.all(promises);
@@ -1695,7 +1691,7 @@ async function updateObjsRegions({ model, criteria = {}, regions = [], additiona
     }
 
     if (Object.keys($update).length) {
-        await model.update(criteria, $update, { multi: true }).exec();
+        await model.updateMany(criteria, $update).exec();
     }
 }
 
@@ -1747,7 +1743,7 @@ export async function setUserRegions({ login, regions: regionsCids, field }) {
         $update.$set = { [field]: [...regionsIdsSet] };
     }
 
-    return User.update({ login }, $update).exec();
+    return User.updateOne({ login }, $update).exec();
 }
 
 async function saveUserHomeRegion({ login, cid }) {
@@ -2178,7 +2174,7 @@ function regionStatQueueDrain(limit) {
             }, Object.create(null));
 
             if (count) {
-                updatePromises.push(Region.update({ cid }, { $inc }).exec());
+                updatePromises.push(Region.updateOne({ cid }, { $inc }).exec());
 
                 const region = regionCacheHash[cid];
 
@@ -2217,7 +2213,7 @@ async function removeDrainedRegionStat() {
         const photoCidsToRemove = Array.from(drainingPhotoCidsSet);
 
         drainingPhotoCidsSet = new Set();
-        await RegionStatQueue.remove({ cid: { $in: photoCidsToRemove } }).exec();
+        await RegionStatQueue.deleteMany({ cid: { $in: photoCidsToRemove } }).exec();
     }
 }
 
@@ -2260,7 +2256,7 @@ export async function putPhotoToRegionStatQueue(oldPhoto, newPhoto) {
         updateMethod = '$setOnInsert';
     }
 
-    await RegionStatQueue.update({ cid }, { [updateMethod]: {
+    await RegionStatQueue.updateOne({ cid }, { [updateMethod]: {
         stamp: new Date(), cid,
         state: { s, type, geo: _.isEmpty(geo) ? undefined : geo, regions: regionCids, cc, ccd },
     } }, { upsert: true }).exec();

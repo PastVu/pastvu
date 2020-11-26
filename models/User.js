@@ -129,7 +129,7 @@ registerModel(db => {
     UserScheme.methods.incLoginAttempts = function () {
         // If we have a previous lock that has expired, restart at 1
         if (this.lockUntil && this.lockUntil < Date.now()) {
-            return this.update({ $set: { loginAttempts: 1 }, $unset: { lockUntil: 1 } }).exec();
+            return this.updateOne({ $set: { loginAttempts: 1 }, $unset: { lockUntil: 1 } }).exec();
         }
 
         // Otherwise we're incrementing
@@ -140,7 +140,7 @@ registerModel(db => {
             updates.$set = { lockUntil: Date.now() + LOCK_TIME };
         }
 
-        return this.update(updates).exec();
+        return this.updateOne(updates).exec();
     };
 
     UserScheme.statics.getAuthenticated = async function (login, password) {

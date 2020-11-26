@@ -169,7 +169,7 @@ async function register({ login, email, pass, pass2 }) {
             text: `Перейдите по следующей ссылке: ${config.client.origin}/confirm/${confirmKey}`,
         });
     } catch (err) {
-        await User.remove({ login }).exec();
+        await User.deleteOne({ login }).exec();
 
         logger.error('Auth register after save: ', err);
         throw new AuthenticationError(constants.AUTHENTICATION_REGISTRATION);
@@ -204,7 +204,7 @@ async function recall({ login }) {
 
     const confirmKey = Utils.randomString(8);
 
-    await UserConfirm.remove({ user: user._id }).exec();
+    await UserConfirm.deleteOne({ user: user._id }).exec();
 
     await new UserConfirm({ key: confirmKey, user: user._id }).save();
 
@@ -262,7 +262,7 @@ async function passChangeRecall({ key, pass, pass2 }) {
         user.activatedate = new Date();
     }
 
-    await Promise.all([user.save(), confirm.remove()]);
+    await Promise.all([user.save(), confirm.deleteOne()]);
 
     return { message: 'Новый пароль сохранен успешно' };
 }
@@ -312,7 +312,7 @@ async function checkConfirm({ key }) {
     if (key.length === 7) { // Confirm registration
         user.active = true;
         user.activatedate = new Date();
-        await Promise.all([user.save(), confirm.remove()]);
+        await Promise.all([user.save(), confirm.deleteOne()]);
 
         return {
             message: 'Спасибо, регистрация подтверждена! Теперь вы можете войти в систему, используя ваш логин и пароль',

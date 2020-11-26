@@ -65,8 +65,8 @@ run inspector client and control execution flow.
 
 0. It's recommended to create a folder where you'll be storing all the pastvu related data and code. For the sake of this readme we can call it pastvu_dev, so do `mkdir pastvu_dev`. But, of course, you can structure it however you like.
 
-1. Install [MongoDB 3.2.22 Community Edition](https://docs.mongodb.com/manual/administration/install-community). The easiest way to do it in development is by using a tarball, for instance for macos:
-https://docs.mongodb.com/manual/tutorial/install-mongodb-on-os-x-tarball. In that case you can extract tarball into our pastvu_dev folder, and rename the result folder into `mongodb-3.2.22`. Having version as a postfix will come in handy when you or somebody else will be updating MongoDB version.
+1. Install [MongoDB 4.4 Community Edition](https://docs.mongodb.com/manual/administration/install-community). The easiest way to do it in development is by using a tarball, for instance for macos:
+https://docs.mongodb.com/manual/tutorial/install-mongodb-on-os-x-tarball. In that case you can extract tarball into our pastvu_dev folder, and rename the result folder into `mongodb-4.4`. Having version as a postfix will come in handy when you or somebody else will be updating MongoDB version.
 
 2. Install [Redis 5.0.7](https://redis.io/topics/quickstart). It's also easier to build it from a tarball which you can extract into our pastvu_dev folder as well, and rename it to `redis-5.0.7`.
 
@@ -84,7 +84,7 @@ https://docs.mongodb.com/manual/tutorial/install-mongodb-on-os-x-tarball. In tha
 
 6. Move to `pastvu` folder and install npm dependencies by doing `npm i`.
 
-By the end this section you should have `pastvu_dev` folder with these folders inside: `data`, `db`, `logs`, `mongodb-3.2.22`, `pastvu`, `redis-5.0.7`.
+By the end this section you should have `pastvu_dev` folder with these folders inside: `data`, `db`, `logs`, `mongodb-4.4`, `pastvu`, `redis-5.0.7`.
 
 ### Configuring
 
@@ -116,9 +116,9 @@ It is important that `client.hostname` is matching hostname of machine where you
 4. Download [db sample](https://varlamov.me/pastvu/github/pastvu.gz) into your `pastvu_dev` folder and import it to your MongoDB
     ```bash
    # Start MongoDB server:
-   ./mongodb-3.2.22/bin/mongod --dbpath ./db --storageEngine wiredTiger
+   ./mongodb-4.4/bin/mongod --dbpath ./db --storageEngine wiredTiger
    # Import pastvu db
-   ./mongodb-3.2.22/bin/mongorestore --gzip --db pastvu --archive="pastvu.gz"
+   ./mongodb-4.4/bin/mongorestore --gzip --db pastvu --archive="pastvu.gz"
     ```
    Now you have one default user `admin` with password `admin` and 6.5K regions in you database
 
@@ -126,7 +126,7 @@ It is important that `client.hostname` is matching hostname of machine where you
 
 There are two databases, `MongoDB` and `Redis`, and four services to start: `app` (main application), `uploader` (responsible for uploading images), `downloader` (responsible for downloading images) and `sitemap` (responsible for generating sitemap). It's not necessary to start all of them locally, only `app` is required, but if you want to work with images make sure to start corresponding services as well.
 
-1. Start MongoDB server `./mongodb-3.2.22/bin/mongod --dbpath ./db --storageEngine wiredTiger`. You can inspect it using the default terminal client `./mongodb-3.2.22/bin/mongo` or any other third-party client with gui.
+1. Start MongoDB server `./mongodb-4.4/bin/mongod --dbpath ./db --storageEngine wiredTiger`. You can inspect it using the default terminal client `./mongodb-4.4/bin/mongo` or any other third-party client with gui.
 
 2. Start Redis server `redis-server`. You can inspect it using the default terminal client `redis-cli`.
 

@@ -450,7 +450,7 @@ async function archiveSession(session, reason) {
     }
 
     await Promise.all([
-        session.remove(), // Remove session from collections of active sessions
+        session.deleteOne(), // Remove session from collections of active sessions
         archivingSession.save(), // Save archive session to collection of archive sessions
     ]);
 
@@ -1011,7 +1011,7 @@ async function giveUserSessions({ login, withArchive = false }) {
             { _id: 0, key: 1, created: 1, stamp: 1, data: 1 },
             { lean: true, sort: { stamp: -1 } },
         ).exec(),
-        iAm.isAdmin ? SessionArchive.count({ user: user._id }).exec() : undefined,
+        iAm.isAdmin ? SessionArchive.countDocuments({ user: user._id }).exec() : undefined,
         iAm.isAdmin && withArchive ? this.call('session.giveUserArchiveSessions', { login, user }) : undefined,
     ]);
 

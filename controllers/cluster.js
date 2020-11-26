@@ -27,10 +27,10 @@ async function recalcAll({ params, conditions }) {
         throw new AuthorizationError();
     }
 
-    await ClusterParams.remove({}).exec();
+    await ClusterParams.deleteMany({}).exec();
     await Promise.all([
-        ClusterParams.collection.insert(params, { safe: true }),
-        ClusterParams.collection.insert(conditions, { safe: true }),
+        ClusterParams.collection.insertMany(params, { safe: true }),
+        ClusterParams.collection.insertMany(conditions, { safe: true }),
     ]);
     await readClusterParams();
     await dbEval('clusterPhotosAll', [true], { nolock: true });
@@ -79,7 +79,7 @@ async function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, isPainting
 
     if (cluster && c <= 1 && inc === -1) {
         // If after deletion photo from cluster, cluster become empty - remove it
-        return ClusterModel.remove({ g, z: zParam.z }).exec();
+        return ClusterModel.deleteMany({ g, z: zParam.z }).exec();
     }
 
     if (inc !== 0) {
@@ -143,7 +143,7 @@ async function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, isPainting
     $update.$set.p = photo;
     $update.$set.geo = geoCluster;
 
-    const { n: count = 0 } = await ClusterModel.update({ g, z: zParam.z }, $update, { multi: false, upsert: true }).exec();
+    const { n: count = 0 } = await ClusterModel.updateOne({ g, z: zParam.z }, $update, { upsert: true }).exec();
 
     return count;
 }

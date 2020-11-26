@@ -244,10 +244,10 @@ async function conveyerClear({ value }) {
     if (value === true) {
         conveyerEnabled = value;
 
-        ({ result: { n: removedCount = 0 } } = await PhotoConveyer.remove({ converting: { $exists: false } }).exec());
+        ({ n: removedCount = 0 } = await PhotoConveyer.deleteMany({ converting: { $exists: false } }).exec());
     }
 
-    conveyerLength = await PhotoConveyer.count({}).exec();
+    conveyerLength = await PhotoConveyer.estimatedDocumentCount().exec();
 
     return { message: `Cleared ok! Removed ${removedCount}, left ${conveyerLength}` };
 }
@@ -306,7 +306,7 @@ async function conveyerControl() {
         photo.conv = undefined; // Set undefined to remove properties
         photo.convqueue = undefined;
         photo.converted = new Date(); // Save last converted stamp
-        await Promise.all([photo.save(), photoConv.remove()]);
+        await Promise.all([photo.save(), photoConv.deleteOne()]);
 
         working -= 1;
 
@@ -609,7 +609,7 @@ export async function movePhotoFiles({ photo, copy = false, toProtected = false 
 
         const { signature, fileParam } = await getFileSign(photo, path.join(targetDir, 'd', filePath));
 
-        await Photo.update(
+        await Photo.updateOne(
             { cid: photo.cid }, { $set: { file: filePath + fileParam, signs: signature || '', converted: new Date() } }
         ).exec();
     }
@@ -646,7 +646,7 @@ export async function addPhotos(data, priority, potectPublicOnly) {
     }
 
     if (toConvertObjs.length) {
-        await PhotoConveyer.collection.insert(toConvertObjs, { safe: true });
+        await PhotoConveyer.collection.insertMany(toConvertObjs, { safe: true });
 
         conveyerLength += toConvertObjs.length;
         conveyerMaxLength = Math.max(conveyerLength, conveyerMaxLength);
@@ -687,7 +687,7 @@ export async function removePhotos(cids) {
         return 0;
     }
 
-    const { result: { n: removedCount = 0 } } = await PhotoConveyer.remove({ cid: { $in: cids } }).exec();
+    const { n: removedCount = 0 } = await PhotoConveyer.deleteMany({ cid: { $in: cids } }).exec();
 
     conveyerLength -= removedCount;
 
@@ -700,8 +700,8 @@ export async function removePhotos(cids) {
     // Запускаем конвейер после рестарта сервера, устанавливаем все недоконвертированные фото обратно в false
     setTimeout(async () => {
         try {
-            await PhotoConveyer.update(
-                { converting: { $exists: true } }, { $unset: { converting: 1 } }, { multi: true }
+            await PhotoConveyer.updateMany(
+                { converting: { $exists: true } }, { $unset: { converting: 1 } }
             ).exec();
         } catch (err) {
             return logger.error(err);
@@ -710,7 +710,7 @@ export async function removePhotos(cids) {
         conveyerControl();
     }, 4000);
 
-    const count = await PhotoConveyer.count({}).exec();
+    const count = await PhotoConveyer.estimatedDocumentCount().exec();
 
     conveyerLength = Math.max(count, conveyerMaxLength);
     conveyerMaxLength = conveyerLength;
