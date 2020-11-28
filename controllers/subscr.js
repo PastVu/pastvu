@@ -550,6 +550,12 @@ async function giveUserSubscriptions({ login, page = 1, type = 'photo' }) {
 }
 
 export const ready = (async () => {
+    if (! config.notifier) {
+        return;
+    } //Turn off notifier if disabled in config
+
+    logger.info('Proceeding to load notifier...');
+
     try {
         const data = await fsAsync.readFile(noticeTplPath, 'utf-8');
 
