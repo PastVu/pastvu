@@ -141,9 +141,13 @@ export async function configure(startStamp) {
     if (config.serveStore) {
         const request = require('request');
         const rewrite = require('express-urlrewrite');
+        const cookieParser = require('cookie-parser');
         const proxy = require('http-proxy-middleware');
         const uploadServer = `http://${config.uploader.hostname || 'localhost'}:${config.uploader.port}`;
         const downloadServer = `http://${config.downloader.hostname || 'localhost'}:${config.downloader.port}`;
+
+        // Enable cookie parser.
+        app.use(cookieParser());
 
         // Serve files for public photos
         app.use('/_p/', ourMiddlewares.serveImages(path.join(storePath, 'public/photos/'), { maxAge: ms('7d') }));

@@ -179,6 +179,14 @@ export const handleHTTPRequest = async function (req, res, next) {
 
         res.cookie(cookieObj.key, cookieObj.value, cookieResOptions);
 
+        // Add lang to Set-cookie header (if it is not already there).
+        if (req.cookies[sessionController.LANG_COOKIE_KEY] === undefined) {
+            const langCookieObj = sessionController.createLangCookieObj(data.session.data.lang, data.usObj.registered);
+            const langCookieResOptions = { path: langCookieObj.path, domain: langCookieObj.domain };
+
+            res.cookie(langCookieObj.key, langCookieObj.value, langCookieResOptions);
+        }
+
         // Transfer browser object further in case of future use, for example, in 'X-UA-Compatible' header
         req.browser = data.browser;
         req.cookie = data.cookie;

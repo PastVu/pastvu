@@ -18,6 +18,7 @@ const SESSION_COOKIE_KEY = 'past.sid'; // Session key in client cookies
 const SESSION_USER_LIFE = ms('21d'); // Lifetime of a registered user session
 const SESSION_ANON_LIFE = ms('7d'); // Lifetime of an anonymous user session
 const loopbackIPs = new Set(['127.0.0.1', '::ffff:127.0.0.1', '::1']);
+export const LANG_COOKIE_KEY = 'past.lang'; // Lang key in client cookies
 
 // Locales Map for checking their presence after header parsing
 const localesMap = new Map(config.locales.map(locale => [locale, locale]));
@@ -39,8 +40,8 @@ export const createSidCookieObj = (function () {
 }());
 
 // Create cookie lang object (temporary)
-const createLangCookieObj = (function () {
-    const key = 'past.lang';
+export const createLangCookieObj = (function () {
+    const key = LANG_COOKIE_KEY;
     const domain = config.client.hostname;
     const cookieUserMaxAge = SESSION_USER_LIFE / 1000;
     const cookieAnonMaxAge = SESSION_ANON_LIFE / 1000;
