@@ -3,8 +3,8 @@ module.exports = function (config, appRequire) {
 
     _.merge(config, {
         // Send periodical emails to users depending on environment variable
-        notifier: process.env.NOTIFIER === 'true',
-        master: process.env.MASTER === 'true',
+        notifier: true,
+        master: true,
         client: {
             hostname: 'localhost',
         },
