@@ -33,8 +33,7 @@
         "lint": "./node_modules/.bin/eslint .",
         "lintfix": "./node_modules/.bin/eslint . --fix",
         "build": "grunt",
-        "test": "grunt test",
-        "postinstall": "husky install"
+        "test": "grunt test"
     },
     "dependencies": {
         "@mapbox/geojson-area": "0.2.2",
