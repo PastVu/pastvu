@@ -4,5 +4,5 @@
 # Checking app module
 if test "$MODULE" = "app"
 then
-curl --fail http://localhost:3000
+curl --fail http://localhost:3000 || exit 1
 fi
