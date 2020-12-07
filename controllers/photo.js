@@ -968,14 +968,14 @@ const protectedFileLinkTTLs = config.protectedFileLinkTTL / 1000;
 // If downloader handle regular _p request and there is no fast cache in redis,
 // it will try to get user's authorities from mongo
 const putProtectedFileAccessCache = async function ({ file, mime = '', ttl = protectedFileLinkTTLs }) {
-    if (!dbRedis.connected) {
+    if (dbRedis.status !== 'ready') {
         throw new ApplicationError({ code: constantsError.REDIS_NO_CONNECTION, trace: false });
     }
 
     const { handshake: { session } } = this;
     const [fileUri] = file.split('?');
 
-    return dbRedis.setAsync(`pr:${session.key}:${fileUri}`, `${fileUri}:${mime}`, 'EX', ttl)
+    return dbRedis.set(`pr:${session.key}:${fileUri}`, `${fileUri}:${mime}`, 'EX', ttl)
         .catch(error => {
             throw new ApplicationError({ code: constantsError.REDIS, trace: false, message: error.message });
         });
@@ -983,7 +983,7 @@ const putProtectedFileAccessCache = async function ({ file, mime = '', ttl = pro
 
 // The same as above, but for multiple files (for example, user has requested gallery)
 const putProtectedFilesAccessCache = async function ({ photos = [], ttl = protectedFileLinkTTLs }) {
-    if (!dbRedis.connected) {
+    if (dbRedis.status !== 'ready') {
         throw new ApplicationError({ code: constantsError.REDIS_NO_CONNECTION, trace: false });
     }
 
@@ -1000,7 +1000,7 @@ const putProtectedFilesAccessCache = async function ({ photos = [], ttl = protec
         multi.set(`pr:${session.key}:${fileUri}`, `${fileUri}:${mime}`, 'EX', ttl);
     }
 
-    return multi.execAsync()
+    return multi.exec()
         .catch(error => {
             throw new ApplicationError({ code: constantsError.REDIS, trace: false, message: error.message });
         });
@@ -1048,7 +1048,7 @@ const fillPhotosProtection = async function ({ photos = [], theyAreMine, setMyFl
 };
 
 async function changePhotoInNotpablicCache({ photo, add = true }) {
-    if (!dbRedis.connected) {
+    if (dbRedis.status !== 'ready') {
         throw new ApplicationError({ code: constantsError.REDIS_NO_CONNECTION, trace: false });
     }
 
@@ -1062,7 +1062,7 @@ async function changePhotoInNotpablicCache({ photo, add = true }) {
         multi.decr('notpublic:count').del(`notpublic:${photo.path}`);
     }
 
-    return multi.execAsync()
+    return multi.exec()
         .catch(error => {
             throw new ApplicationError({ code: constantsError.REDIS, trace: false, message: error.message });
         });
@@ -3415,7 +3415,7 @@ async function syncUnpublishedPhotosWithRedis() {
     try {
         let [actualCount = 0, redisCount] = await Promise.all([
             Photo.countDocuments({ s: { $ne: status.PUBLIC } }).exec(),
-            dbRedis.getAsync('notpublic:count'),
+            dbRedis.get('notpublic:count'),
         ]);
 
         redisCount = Number(redisCount) || 0;
@@ -3427,8 +3427,8 @@ async function syncUnpublishedPhotosWithRedis() {
                 // Select cid and path to file for all non public photos
                 Photo.find({ s: { $ne: status.PUBLIC } }, { _id: 0, cid: 1, path: 1 }, { lean: true }).exec(),
 
-                // Remove all 'notpublic:' keys fro redis, by evaluating lua script
-                dbRedis.evalAsync('for _,k in ipairs(redis.call("keys","notpublic:*")) do redis.call("del",k) end', 0),
+                // Remove all 'notpublic:' keys for redis, by evaluating lua script
+                dbRedis.eval('for _,k in ipairs(redis.call("keys","notpublic:*")) do redis.call("del",k) end', 0),
             ]);
 
             // Set count first to avoid race condition,
@@ -3442,7 +3442,7 @@ async function syncUnpublishedPhotosWithRedis() {
             for (const [i, { cid, path }] of photos.entries()) {
                 if (i % 100 === 0 || i === finalCounter) {
                     if (multi) {
-                        await multi.execAsync();
+                        await multi.exec();
                     }
 
                     if (i !== finalCounter) {
@@ -3461,7 +3461,7 @@ async function syncUnpublishedPhotosWithRedis() {
             loggerApp.info('Redis unpublished photos are in sync with mongodb one');
         }
     } catch (error) {
-        loggerApp.error('Redis unpublished photos syncing', error);
+        loggerApp.error('Redis unpublished photos syncing', error.message);
     }
 
     setTimeout(syncUnpublishedPhotosWithRedis, ms('1h'));
