@@ -312,8 +312,10 @@ export async function configure(startStamp) {
     // Do it in app.js, not in controllers, to prevent running these jobs on other instances (sitemap, uploader, downloader etc.)
     waitDb.then(() => {
         session.checkSessWaitingConnect();
-        // Don't check expired sessions on en node
-        //session.checkExpiredSessions();
-        //session.calcUserStatsJob();
+
+        if (config.primary) {
+            session.checkExpiredSessions();
+            session.calcUserStatsJob();
+        }
     });
 }

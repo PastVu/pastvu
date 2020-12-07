@@ -3,6 +3,7 @@ module.exports = function (config, appRequire) {
 
     _.merge(config, {
         notifier: true, // Send periodical emails to user
+        primary: true,
         client: {
             hostname: 'pastvu.local',
         },

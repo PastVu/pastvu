@@ -122,8 +122,10 @@ async function fillCache() {
         err.message = `FillCache: ${err.message}`;
         throw err;
     } finally {
-        // Refill cache in Eng every 10m to catch up master
-        setTimeout(fillCache, ms('10m'));
+        // Refill cache in replica every 5m to catch up primary
+        if (!config.primary) {
+            setTimeout(fillCache, ms('5m'));
+        }
     }
 }
 
@@ -2225,10 +2227,9 @@ async function removeDrainedRegionStat() {
 }
 
 export function scheduleRegionStatQueueDrain() {
-    // No in ENGLISH to avoid overlapping
-    //if (!drainTimeout) {
-    //    drainTimeout = setTimeout(regionStatQueueDrain, ms('1m'), 1000);
-    //}
+    if (!drainTimeout && config.primary) {
+        drainTimeout = setTimeout(regionStatQueueDrain, ms('1m'), 1000);
+    }
 }
 
 export async function putPhotoToRegionStatQueue(oldPhoto, newPhoto) {
