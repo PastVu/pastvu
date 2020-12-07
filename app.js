@@ -313,7 +313,7 @@ export async function configure(startStamp) {
     waitDb.then(() => {
         session.checkSessWaitingConnect();
 
-        if (config.master) {
+        if (config.primary) {
             session.checkExpiredSessions();
             session.calcUserStatsJob();
         }
