@@ -6,7 +6,7 @@ module.exports = {
     locales: ['en', 'ru'], // List of supported locales. First one is the default locale, if user transferred nothing
     lang: 'ru', // Language: ru, en
     notifier: false, // If true, send periodical emails to users
-
+    primary: false, // If not true, the instance will run as a recplica
     admin: {
         email: '',
     },
