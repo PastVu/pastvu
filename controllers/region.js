@@ -121,6 +121,11 @@ async function fillCache() {
     } catch (err) {
         err.message = `FillCache: ${err.message}`;
         throw err;
+    } finally {
+        // Refill cache in replica every 5m to catch up primary
+        if (!config.primary) {
+            setTimeout(fillCache, ms('5m'));
+        }
     }
 }
 
@@ -2218,7 +2223,7 @@ async function removeDrainedRegionStat() {
 }
 
 export function scheduleRegionStatQueueDrain() {
-    if (!drainTimeout) {
+    if (!drainTimeout && config.primary) {
         drainTimeout = setTimeout(regionStatQueueDrain, ms('1m'), 1000);
     }
 }

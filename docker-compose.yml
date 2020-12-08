@@ -32,6 +32,16 @@ services:
       - store:/store
     command: npm run app
 
+  notifier:
+    image: pastvu/node
+    depends_on:
+      - "app"
+    environment:
+      - NOTIFIER=true
+    volumes:
+      - .:/code
+    command: npm run app
+
   uploader:
     image: pastvu/node
     expose:
