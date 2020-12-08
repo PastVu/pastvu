@@ -52,9 +52,6 @@ if (require.main !== module) { // If run.js is required by another module (for e
         babelHook();
     }
 
-    makeDir.sync(logPath);
-    log4js.configure('./log4js.json', { cwd: logPath });
-
     const appName = path.parse(argv.script).name;
     const logger = log4js.getLogger(appName);
 
