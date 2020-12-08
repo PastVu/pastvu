@@ -1,5 +1,7 @@
 module.exports = function (config, appRequire) {
     const _ = appRequire('lodash');
+    const makeDir = require('make-dir');
+    const log4js = require('log4js');
 
     _.merge(config, {
         notifier: true, // Send periodical emails to user
@@ -27,6 +29,10 @@ module.exports = function (config, appRequire) {
             },
         },
     });
+
+    // configure logging to filesystem
+    makeDir.sync(config.logPath);
+    log4js.configure('./config/log4js.json', { cwd: config.logPath });
 
     return config;
 };
