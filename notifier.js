@@ -3,10 +3,7 @@ import log4js from 'log4js';
 import config from './config';
 import connectDb from './controllers/connection';
 
-import { photosReady } from './controllers/photo';
 import { ready as mailReady } from './controllers/mail';
-import { ready as authReady } from './controllers/auth';
-import { ready as regionReady } from './controllers/region';
 import { ready as subscrReady } from './controllers/subscr';
 import { ready as settingsReady } from './controllers/settings';
 
@@ -26,7 +23,7 @@ export async function configure(startStamp) {
 
     moment.locale(config.lang); // Set global language for momentjs
 
-    await Promise.all([authReady, settingsReady, regionReady, subscrReady, mailReady, photosReady]);
+    await Promise.all([settingsReady, subscrReady, mailReady]);
 
     logger.info(`Notifier started up in ${(Date.now() - startStamp) / 1000}s`);
 }
