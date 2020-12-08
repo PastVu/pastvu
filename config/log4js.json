@@ -1,0 +1,110 @@
+{
+	"replaceConsole": true,
+	"appenders": [
+		{
+			"type": "stdout"
+		},
+		{
+			"type": "file",
+			"filename": "all.log",
+			"maxLogSize": 15728640,
+			"backups": 3
+		},
+		{
+			"type": "file",
+			"filename": "app.log",
+			"maxLogSize": 10485760,
+			"backups": 2,
+			"category": ["app", "systemjs.js"]
+		},
+		{
+			"type": "file",
+			"filename": "session.log",
+			"maxLogSize": 1048576,
+			"backups": 2,
+			"category": ["session", "auth.js"]
+		},
+		{
+			"type": "file",
+			"filename": "common.log",
+			"maxLogSize": 10485760,
+			"backups": 2,
+			"category": ["index.js", "profile.js", "cluster.js", "comment.js", "userobjectrel.js"]
+		},
+		{
+			"type": "file",
+			"filename": "photo.log",
+			"maxLogSize": 10485760,
+			"category": ["photo.js"]
+		},
+		{
+			"type": "file",
+			"filename": "region.log",
+			"maxLogSize": 1048576,
+			"backups": 1,
+			"category": ["region.js"]
+		},
+		{
+			"type": "file",
+			"filename": "mail.log",
+			"maxLogSize": 1048576,
+			"backups": 1,
+			"category": ["mail.js"]
+		},
+		{
+			"type": "file",
+			"filename": "404.log",
+			"maxLogSize": 1048576,
+			"backups": 2,
+			"category": ["404.js"]
+		},
+		{
+			"type": "file",
+			"filename": "error.log",
+			"maxLogSize": 1048576,
+			"backups": 2,
+			"category": ["error.js"]
+		},
+		{
+			"type": "file",
+			"filename": "converter.log",
+			"maxLogSize": 524288,
+			"backups": 2,
+			"category": ["converter.js"]
+		},
+		{
+			"type": "file",
+			"filename": "uploader.log",
+			"maxLogSize": 1048576,
+			"backups": 0,
+			"category": ["uploader"]
+		},
+		{
+			"type": "file",
+			"filename": "downloader.log",
+			"maxLogSize": 1048576,
+			"backups": 0,
+			"category": ["downloader"]
+		},
+		{
+			"type": "file",
+			"filename": "subscriber.log",
+			"maxLogSize": 1048576,
+			"backups": 1,
+			"category": ["subscr.js"]
+		},
+		{
+			"type": "file",
+			"filename": "api.log",
+			"maxLogSize": 1048576,
+			"backups": 3,
+			"category": ["api.js"]
+		},
+		{
+			"type": "file",
+			"filename": "sitemap.log",
+			"maxLogSize": 1048576,
+			"category": ["sitemap"]
+		}
+	]
+}
