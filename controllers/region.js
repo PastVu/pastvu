@@ -292,7 +292,7 @@ export const getObjRegionCids = obj => {
  * @param fields Selected region fields. Array, but in case of 'fromDb' - object
  * @param [fromDb] Select from db, not just from cache (in cahce not all fields presented)
  */
-function getObjRegionList({ obj, fields, fromDb }) {
+export function getObjRegionList({ obj, fields, fromDb }) {
     if (fromDb) {
         return getOrderedRegionList(getObjRegionCids(obj), fields);
     }
