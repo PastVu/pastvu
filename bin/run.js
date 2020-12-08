@@ -23,6 +23,7 @@ if (require.main !== module) { // If run.js is required by another module (for e
     const os = require('os');
     const _ = require('lodash');
     const util = require('util');
+    const makeDir = require('make-dir');
     const log4js = require('log4js');
 
     const argv = require('yargs')
@@ -48,6 +49,12 @@ if (require.main !== module) { // If run.js is required by another module (for e
 
     if (env === 'development') {
         babelHook();
+    }
+
+    if (logPath=config.logPath) {
+        // configure logging to filesystem
+        makeDir.sync(logPath);
+        log4js.configure('./config/log4js.json', { cwd: logPath });
     }
 
     const appName = path.parse(argv.script).name;
