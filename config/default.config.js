@@ -49,7 +49,7 @@ module.exports = {
     servePublic: true, // Tell app.js serve out its public folder (js, css, etc)
     serveStore: true, // Tell app.js serve out store public folder
 
-    logPath: './logs', // Folder for logs
+    logPath: '', // Folder for logs
     logLongDuration: ms('2s'),
     serveLog: true, // Tell app.js serve out its logs folder (path: "logPath")
     serveLogAuth: {
