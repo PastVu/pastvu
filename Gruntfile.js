@@ -157,7 +157,7 @@ module.exports = function (grunt) {
                     {
                         expand: true,
                         src: [ // May be array of regexp, or github.com/isaacs/node-glob
-                            '@(app|downloader|uploader|sitemap).js',
+                            '@(app|downloader|uploader|sitemap|notifier).js',
                             'controllers/!(systemjs|api|apilog).js',
                             'commons/time.js',
                             'models/*.js',
