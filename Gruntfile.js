@@ -35,6 +35,10 @@ module.exports = function (grunt) {
                 // Очищаем директорию скомпиленных tpl
                 src: ['public/tpl'],
             },
+            publicCss: {
+                // Clean up compiled css.
+                src: ['public/style/**/*.css'],
+            },
         },
         exec: {
             buildjs: {
