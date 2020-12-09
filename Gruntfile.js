@@ -267,7 +267,8 @@ module.exports = function (grunt) {
 
     grunt.registerTask('test', [
         'exec:testNodeVersion:.node-version',
-        'exec:testNodeVersionDockerfile'
+        'exec:testNodeVersion:.nvmrc',
+        'exec:testNodeVersionDockerfile',
         'eslint',
     ]);
 
