@@ -10,6 +10,7 @@ module.exports = function (config, appRequire) {
 
         storePath: '../store',
         logPath: '../logs',
+        serveLog: true, // serve nodelog at /nodelog uri
 
         mongo: {
             pool: 10,
