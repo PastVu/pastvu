@@ -24,7 +24,6 @@ import * as ourMiddlewares from './controllers/middleware';
 
 import './models/_initValues';
 import './controllers/systemjs';
-import './basepatch/v1.3.0.7';
 
 export async function configure(startStamp) {
     const {
