@@ -17,6 +17,8 @@ const path = require('path');
 const argv = require('yargs').argv;
 const defaultConfig = require('./default.config');
 const browserConfig = require('./browsers.config');
+const log4js = require('log4js');
+const makeDir = require('make-dir');
 
 const localConfigPath = path.join(__dirname, './local.config.js');
 const readJSON = jsonPath => JSON.parse(fs.readFileSync(path.resolve(jsonPath), 'utf8'));
@@ -77,7 +79,13 @@ module.exports = (function () {
     config.client.host = `${config.client.hostname}${config.client.port}`;
     config.client.origin = `${config.client.protocol}://${config.client.host}`;
 
-    config.logPath = path.resolve(config.logPath);
+    if (config.logPath) {
+        // configure logging to filesystem
+        config.logPath = path.resolve(config.logPath);
+        makeDir.sync(config.logPath);
+        log4js.configure('./config/log4js.json', { cwd: config.logPath });
+    }
+
     config.storePath = path.resolve(config.storePath);
 
     return config;
