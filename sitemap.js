@@ -6,7 +6,7 @@ import log4js from 'log4js';
 import makeDir from 'make-dir';
 import config from './config';
 import { times, hhmmssms } from './commons/time';
-import { ready as regionsReady, getObjRegionList, getRegionsPublic } from './controllers/region';
+import { ready as regionsReady, getObjRegionList, giveListPublic as giveRegionsListPublic } from './controllers/region';
 
 import connectDb from './controllers/connection';
 import './models/_initValues';
@@ -179,7 +179,7 @@ async function generatePhotoSitemap(fileName, cidFrom, limit) {
 }
 
 async function generateRegionsSitemap(fileName) {
-    const { regions } = await getRegionsPublic();
+    const { regions } = await giveRegionsListPublic();
 
     let string = processRegions(regions);
 
@@ -210,7 +210,8 @@ async function generateRegionsSitemap(fileName) {
 function getRegionsString(regions) {
     // For Russia regions take local name
     const regionField = regions.r0 === 1 ? 'title_local' : 'title_en';
-    const titles = _.map(getObjRegionList(regions, ['title_en', 'title_local']), regionField);
+    const regionList = getObjRegionList({ obj: regions, fields: ['title_en', 'title_local'] });
+    const titles = _.map(regionList, regionField);
 
     if (!titles.length) {
         return '';

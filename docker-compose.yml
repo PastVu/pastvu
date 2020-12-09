@@ -40,7 +40,7 @@ services:
       - NOTIFIER=true
     volumes:
       - .:/code
-    command: npm run app
+    command: npm run notifier
 
   uploader:
     image: pastvu/node

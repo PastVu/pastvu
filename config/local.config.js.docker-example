@@ -22,7 +22,6 @@ module.exports = function (config, appRequire) {
         },
 
         storePath: '/store',
-        logPath: '/logs',
 
         mongo: {
             connection: 'mongodb://mongo:27017/pastvu',

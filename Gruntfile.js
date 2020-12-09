@@ -100,7 +100,7 @@ module.exports = function (grunt) {
                         src: [
                             'app/**', 'bin/**', 'basepatch/**', 'commons/**', 'misc/watermark/**',
                             'controllers/systemjs.js', 'npm-shrinkwrap.json',
-                            'config/@(client|server|browsers.config|default.config).js', 'config/package.json',
+                            'config/@(client|server|browsers.config|default.config).js', 'config/@(package|log4js).json',
                         ],
                         dest: targetDir,
                     },
@@ -112,7 +112,7 @@ module.exports = function (grunt) {
                     // {expand: true, cwd: 'public-build', src: ['**'], dest: targetDir + 'public'},
                     {
                         expand: true,
-                        src: ['api.js', 'log4js.json', 'package.json', './README'],
+                        src: ['api.js', 'package.json', './README'],
                         dest: targetDir,
                     },
                 ],
@@ -157,7 +157,7 @@ module.exports = function (grunt) {
                     {
                         expand: true,
                         src: [ // May be array of regexp, or github.com/isaacs/node-glob
-                            '@(app|downloader|uploader|sitemap).js',
+                            '@(app|downloader|uploader|sitemap|notifier).js',
                             'controllers/!(systemjs|api|apilog).js',
                             'commons/time.js',
                             'models/*.js',
