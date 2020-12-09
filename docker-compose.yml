@@ -12,12 +12,12 @@ services:
       - "27017:27017"
 
   redis:
-    image: redis
+    image: redis:5.0.7
     expose:
       - "6379"
 
   app:
-    image: pastvu/node
+    image: pastvu/node:15.3.0
     expose:
       - "3000"
       - "3010"
@@ -33,7 +33,7 @@ services:
     command: npm run app
 
   notifier:
-    image: pastvu/node
+    image: pastvu/node:15.3.0
     depends_on:
       - "app"
     environment:
@@ -54,7 +54,7 @@ services:
     command: npm run uploader
 
   downloader:
-    image: pastvu/node
+    image: pastvu/node:15.3.0
     expose:
       - "3002"
     depends_on:
@@ -65,7 +65,7 @@ services:
     command: npm run downloader
 
   sitemap:
-    image: pastvu/node
+    image: pastvu/node:15.3.0
     depends_on:
       - "app"
     volumes:
@@ -74,7 +74,7 @@ services:
     command: npm run sitemap
 
   mailcatcher:
-    image: sj26/mailcatcher
+    image: sj26/mailcatcher:latest
     expose:
      - "1025"
     ports:
