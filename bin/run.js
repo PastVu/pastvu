@@ -45,15 +45,17 @@ if (require.main !== module) { // If run.js is required by another module (for e
         .argv;
 
     const config = require('../config');
-    const logPath = config.logPath;
     const env = config.env;
 
     if (env === 'development') {
         babelHook();
     }
 
-    makeDir.sync(logPath);
-    log4js.configure('./log4js.json', { cwd: logPath });
+    if (config.logPath) {
+        // configure logging to filesystem
+        makeDir.sync(config.logPath);
+        log4js.configure('./config/log4js.json', { cwd: config.logPath });
+    }
 
     const appName = path.parse(argv.script).name;
     const logger = log4js.getLogger(appName);

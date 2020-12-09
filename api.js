@@ -57,16 +57,19 @@ const moongoPool = argv.mongopool_api || conf.mongo_api.pool;
 
 const gzip = conf.gzip; //Использовать gzip
 
-const logPath = path.normalize(conf.logPath || __dirname + '/logs'); //Путь к папке логов
 const manualGarbageCollect = conf.manualGarbageCollect; //Интервал самостоятельного вызова gc. 0 - выключено
 
 
 /**
  * Вызов логера
  */
-console.log('\n');
-makeDir.sync(logPath);
-log4js.configure('./log4js.json', { cwd: logPath });
+if (conf.logPath) {
+    const logPath = path.normalize(conf.logPath || __dirname + '/logs'); //Путь к папке логов
+
+    console.log('\n');
+    makeDir.sync(logPath);
+    log4js.configure('./config/log4js.json', { cwd: logPath });
+}
 
 if (land === 'dev') {
     //В dev выводим все логи также в консоль
