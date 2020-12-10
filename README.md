@@ -68,7 +68,7 @@ run inspector client and control execution flow.
 1. Install [MongoDB 3.2.22 Community Edition](https://docs.mongodb.com/manual/administration/install-community). The easiest way to do it in development is by using a tarball, for instance for macos:
 https://docs.mongodb.com/manual/tutorial/install-mongodb-on-os-x-tarball. In that case you can extract tarball into our pastvu_dev folder, and rename the result folder into `mongodb-3.2.22`. Having version as a postfix will come in handy when you or somebody else will be updating MongoDB version.
 
-2. Install [Redis 5.0.7](https://redis.io/topics/quickstart). It's also easier to build it from a tarball which you can extract into our pastvu_dev folder as well, and rename it to `redis-5.0.7`.
+2. Install [Redis 5.0.7](https://redis.io/topics/quickstart) (or above). It's also easier to build it from a tarball which you can extract into our pastvu_dev folder as well, and rename it to `redis-5.0.7`.
 
 3. Install [NodeJS 12.14.0](https://nodejs.org/en/download). You can do it globally by installing a package from download page or package managers like homebrew. However the exact version is defined in `.node-version` file, so locally it is better to use tools like [nvs](https://github.com/jasongin/nvs), which will download and switch to the right version automatically based on that file.
 
