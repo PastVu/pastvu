@@ -57,6 +57,27 @@ module.exports = function (grunt) {
                 stdout: true,
                 stderr: true,
             },
+            testNodeVersion: {
+                command: function(filename) {
+                    const error = `Version defined in ${filename} is not matching package version of node.`;
+                    const pkgVersion = grunt.template.process('<%= pkg.engines.node %>');
+
+                    return 'if [ "$(cat ' + filename + ')" != "' + pkgVersion + '" ]; then echo "' + error + '"; exit 1; fi;';
+                },
+                stdout: true,
+                stderr: true,
+            },
+            testNodeVersionDockerfile: {
+                command: function() {
+                    const error = `Version defined in Dockerfile is not matching package version of node.`;
+                    const pkgVersion = grunt.template.process('<%= pkg.engines.node %>');
+                    const dockerParse = "sed -n -e '/^ARG NODE_TAG/ s/.*=//p' Dockerfile";
+
+                    return 'if [ "$(' + dockerParse + ')" != "' + pkgVersion + '" ]; then echo "' + error + '"; exit 1; fi;';
+                },
+                stdout: true,
+                stderr: true,
+            },
         },
         concat: {
             options: {
@@ -245,6 +266,8 @@ module.exports = function (grunt) {
     ]);
 
     grunt.registerTask('test', [
+        'exec:testNodeVersion:.node-version',
+        'exec:testNodeVersionDockerfile'
         'eslint',
     ]);
 
