@@ -59,5 +59,6 @@ jobs:
           labels: ${{ steps.docker_meta.outputs.labels }}
 
       - name: Image digest
-        run: echo ${{ steps.docker_build_app.outputs.digest }}
-        run: echo ${{ steps.docker_build_frontend.outputs.digest }}
+        run: |
+          echo ${{ steps.docker_build_app.outputs.digest }}
+          echo ${{ steps.docker_build_frontend.outputs.digest }}
