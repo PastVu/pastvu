@@ -62,7 +62,7 @@ jobs:
           context: .
           file: ./frontend.Dockerfile
           build-args: |
-            TAG=${{ steps.split.outputs._0 }}
+            IMAGE=${{ steps.split.outputs._0 }}
           tags: ${{ steps.docker_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}
 
