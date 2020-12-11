@@ -24,7 +24,7 @@
     "scripts": {
         "app": "node --max-old-space-size=4096 bin/run.js",
         "appManualGC": "node --max-old-space-size=4096 --nouse-idle-notification --expose-gc bin/run.js --manualGarbageCollect=30000",
-        "inspect": "node --inspect=0.0.0.0 --max-old-space-size=4096 bin/run.js",
+        "inspect": "node --inspect=0.0.0.0 --max-old-space-size=4096 --trace-deprecation --trace-warnings --trace-uncaught bin/run.js",
         "inspect-brk": "node --inspect-brk=0.0.0.0 --max-old-space-size=4096 bin/run.js",
         "inspectManualGC": "node --inspect=0.0.0.0 --max-old-space-size=4096 --nouse-idle-notification --expose-gc bin/run.js --manualGarbageCollect=30000",
         "uploader": "node --max-old-space-size=2048 bin/run.js --script ./uploader.js",
