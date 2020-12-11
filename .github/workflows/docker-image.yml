@@ -20,15 +20,30 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Docker meta
-        id: docker_meta
+        id: docker_meta_app
         uses: crazy-max/ghaction-docker-meta@v1
         with:
-          images: |
-            pastvu/pastvu
-            pastvu/frontend
+          images: pastvu/pastvu
           tag-semver: |
             {{version}}
             {{major}}.{{minor}}      
+
+      - name: Docker meta
+        id: docker_meta_frontend
+        uses: crazy-max/ghaction-docker-meta@v1
+        with:
+          images: pastvu/frontend
+          tag-semver: |
+            {{version}}
+            {{major}}.{{minor}}      
+
+      - name: Split tag
+        uses: xom9ikk/split@v1
+        id: split
+        with:
+          string: ${{ steps.docker_meta_frontend.outputs.tags }}
+          separator: '\n'
+          limit: 1
 
       - name: Set up Docker Buildx
         id: buildx
@@ -46,17 +61,9 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          tags: ${{ steps.docker_meta.outputs.tags }}
-          labels: ${{ steps.docker_meta.outputs.labels }}
+          tags: ${{ steps.docker_meta_app.outputs.tags }}
+          labels: ${{ steps.docker_meta_app.outputs.labels }}
           push: true
-
-      - name: Split tag
-        uses: xom9ikk/split@v1
-        id: split
-        with:
-          string: ${{ steps.docker_meta.outputs.tags }}
-          separator: '\n'
-          limit: 1
 
       - name: Build and push frontend
         id: docker_build_frontend
@@ -66,8 +73,8 @@ jobs:
           file: ./frontend.Dockerfile
           build-args: |
             IMAGE=${{ steps.split.outputs._0 }}
-          tags: ${{ steps.docker_meta.outputs.tags }}
-          labels: ${{ steps.docker_meta.outputs.labels }}
+          tags: ${{ steps.docker_meta_frontend.outputs.tags }}
+          labels: ${{ steps.docker_meta_frontend.outputs.labels }}
           push: true
 
       - name: Image digest
