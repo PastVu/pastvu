@@ -47,6 +47,14 @@ jobs:
           tags: ${{ steps.docker_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}
 
+      - name: Split tag
+        uses: xom9ikk/split@v1
+        id: split
+        with:
+          string: ${{ steps.docker_meta.outputs.tags }}
+          separator: '\n'
+          limit: 1
+
       - name: Build and push frontend
         id: docker_build_frontend
         uses: docker/build-push-action@v2
@@ -54,7 +62,7 @@ jobs:
           context: .
           file: ./frontend.Dockerfile
           build-args: |
-            TAG=${{ steps.docker_meta.outputs.tags[0] }}
+            TAG=${{ steps.split.outputs._0 }}
           tags: ${{ steps.docker_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}
 
