@@ -14,7 +14,6 @@ export default Utils.reflectKeys({
     REDIS_MAX_CONNECTION_ATTEMPS: null,
 
     SESSION_CAN_REGET_REGISTERED_ONLY: null,
-    SESSION_EXPIRED_ARCHIVE_NO_RESULT: null,
     SESSION_NO_HEADERS: null,
     SESSION_NOT_FOUND: null,
 

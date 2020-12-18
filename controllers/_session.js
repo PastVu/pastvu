@@ -731,53 +731,73 @@ export const checkSessWaitingConnect = (function () {
     };
 }());
 
-// Periodically sends expired session to archive
-export const checkExpiredSessions = (function () {
-    const checkInterval = ms('5m'); // Check interval
+// Periodically sends expired session to archive.
+export const archiveExpiredSessions = async function () {
+    var archiveDate = new Date();
+    var start = archiveDate.getTime();
+    var resultKeys = [];
+    var insertBulk = [];
+    var counter = 0;
 
-    async function procedure() {
-        try {
-            const result = await dbEval('archiveExpiredSessions', [SESSION_USER_LIFE, SESSION_ANON_LIFE], { nolock: true });
+    const userQuery = { user: { $exists: true }, stamp: { $lte: new Date(start - SESSION_USER_LIFE) } };
+    const anonQuery = { anonym: { $exists: true }, stamp: { $lte: new Date(start - SESSION_ANON_LIFE) } };
 
-            if (!result) {
-                throw new ApplicationError(constantsError.SESSION_EXPIRED_ARCHIVE_NO_RESULT);
-            }
+    // Simply remove anonymous sessions older then SESSION_ANON_LIFE, there is no point in storing them
+    const { n: countRemovedAnon } = await Session.deleteMany(anonQuery).exec();
 
-            logger.info(
-                `${result.count} expired registered sessions moved to archive, ${result.countRemoved} expired anonymous sessions dropped`
-            );
+    // Move each expired registered user session to sessions_archive
+    const sessions = await Session.find(userQuery).limit(5000).exec();
 
-            // Check if some of archived sessions is still in memory (in hashes), remove it frome memory
-            _.forEach(result.keys, key => {
-                if (sessConnected.has(key)) {
-                    const session = sessConnected.get(key);
-                    const usObj = usSid.get(key);
+    _.forEach(sessions, session => {
+        counter++;
 
-                    if (usObj !== undefined) {
-                        removeSessionFromHashes({ usObj, session, logPrefix: 'checkExpiredSessions' });
-                    }
-
-                    // If session contains sockets, break connection
-                    _.forEach(session.sockets, socket => {
-                        if (socket.disconnet) {
-                            socket.disconnet();
-                        }
-                    });
-
-                    delete session.sockets;
-                }
-            });
-        } catch (err) {
-            logger.error('archiveExpiredSessions error: ', err);
+        if (session.__v) {
+            delete session.__v;
         }
 
-        checkExpiredSessions(); // Schedule next launch
+        if (session.data && session.data.headers) {
+            delete session.data.headers;
+        }
+
+        session.archived = archiveDate;
+        session.archive_reason = 'expire';
+
+        insertBulk.push(session);
+        resultKeys.push(session.key);
+    });
+
+    if (insertBulk.length) {
+        await Session.deleteMany({ key: { $in: resultKeys } }).exec();
+        await SessionArchive.insertMany(insertBulk, { ordered: false }); // no exec needed, returns proper promise already!
     }
 
-    return function () {
-        setTimeout(procedure, checkInterval).unref();
+    const result = {
+        message: `${counter} expired registered sessions moved to archive, ${countRemovedAnon} expired anonymous sessions dropped`,
+        data: { keys: resultKeys }
     };
-}());
+
+    // Check if some of archived sessions is still in memory (in hashes), remove it from memory
+    /*_.forEach(result.keys, key => {
+        if (sessConnected.has(key)) {
+            const session = sessConnected.get(key);
+            const usObj = usSid.get(key);
+
+            if (usObj !== undefined) {
+                removeSessionFromHashes({ usObj, session, logPrefix: 'checkExpiredSessions' });
+            }
+
+            // If session contains sockets, break connection
+            _.forEach(session.sockets, socket => {
+                if (socket.disconnet) {
+                    socket.disconnet();
+                }
+            });
+
+            delete session.sockets;
+        }
+    });*/
+    return Promise.resolve(result);
+};
 
 // Periodically recalculate user statistics, like pcount, which might get out of sync over time
 export const calcUserStatsJob = (function () {

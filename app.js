@@ -319,7 +319,6 @@ export async function configure(startStamp) {
         session.checkSessWaitingConnect();
 
         if (config.primary) {
-            session.checkExpiredSessions();
             session.calcUserStatsJob();
         }
     });

@@ -5,7 +5,6 @@ export default {
     BAD_BROWSER: 'Bad browser, we do not support it',
 
     SESSION_CAN_REGET_REGISTERED_ONLY: 'Ошибка выборки пользователей',
-    SESSION_EXPIRED_ARCHIVE_NO_RESULT: 'Ошибка архивации сессий',
     SESSION_NO_HEADERS: 'Bad request - no header or user agent',
     SESSION_NOT_FOUND: 'Сессия не найдена',
 

@@ -31,6 +31,7 @@
         "downloader": "node --max-old-space-size=2048 bin/run.js --script ./downloader.js",
         "sitemap": "node --max-old-space-size=2048 bin/run.js --script ./sitemap.js",
         "notifier": "node --max-old-space-size=2048 bin/run.js --script ./notifier.js",
+        "worker": "node --max-old-space-size=2048 bin/run.js --script ./worker.js",
         "lint": "./node_modules/.bin/eslint .",
         "lintfix": "./node_modules/.bin/eslint . --fix",
         "build": "grunt",
