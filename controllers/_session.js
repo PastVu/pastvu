@@ -731,7 +731,11 @@ export const checkSessWaitingConnect = (function () {
     };
 }());
 
-// Periodically sends expired session to archive.
+/**
+ * Periodically sends expired session to archive.
+ * Used by archiveExpiredSessions job in session queue.
+ * @return {Promise} Promise object containing message and data.
+ */
 export const archiveExpiredSessions = async function () {
     var archiveDate = new Date();
     var start = archiveDate.getTime();
@@ -767,6 +771,7 @@ export const archiveExpiredSessions = async function () {
     });
 
     if (insertBulk.length) {
+        // TODO: Wrap both queries in transaction.
         await Session.deleteMany({ key: { $in: resultKeys } }).exec();
         await SessionArchive.insertMany(insertBulk, { ordered: false }); // no exec needed, returns proper promise already!
     }
