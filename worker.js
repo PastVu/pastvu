@@ -4,7 +4,7 @@ import log4js from 'log4js';
 import config from './config';
 import connectDb, { waitDb, dbRedis } from './controllers/connection';
 import { archiveExpiredSessions } from './controllers/_session';
-import { createQueue } from './controllers/queue';
+import { createQueue, addJobCompletedCallback } from './controllers/queue';
 
 const logger = log4js.getLogger('worker');
 
@@ -23,6 +23,7 @@ export async function configure(startStamp) {
 
     waitDb.then(() => {
         sessionQueue();
+        addJobCompletedCallback('session', 'archiveExpiredSessions', (data) => { console.log(data) }); // test
     });
 }
 
@@ -37,7 +38,7 @@ function sessionQueue() {
 
         // Add archiveExpiredSessions periodic job.
         sessionQueue.add('archiveExpiredSessions', {}, {
-            removeOnComplete: true,
+            removeOnComplete: 1, // Keep 1 job in completed state, needed to be able to retrieve it on global even listener (in different runner).
             removeOnFail: true,
             repeat: { every: ms('5m') },
         });

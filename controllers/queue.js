@@ -3,8 +3,11 @@ import log4js from 'log4js';
 import config from '../config';
 import connectDb, { waitDb, dbRedis } from './connection';
 import Queue from 'bull';
+import constantsError from '../app/errors/constants';
+import { ApplicationError } from '../app/errors';
 
 const logger = log4js.getLogger('session');
+const jobCompletionCallbacks = new Map();
 
 /**
  * Initialise a queue. This is supposed to be used on worker start.
@@ -47,4 +50,34 @@ export async function createQueue(name) {
         }
     });
     return queue;
+}
+
+/**
+ * Add job completed callback. Use this if you want to execute something
+ * on job completion at the different server. e.g. job is run by worker, but
+ * callback needs to be run on different node instance. Callback receives
+ * result.data from job processing promise.
+ * @param {string} queueName Name of the queue.
+ * @param {string} jobName
+ * @param callback - The callback that handles the response, result.data is passed as param.
+ */
+export function addJobCompletedCallback(queueName, jobName, callback) {
+    jobCompletionCallbacks.set(jobName, callback);
+
+    // TODO: Reuse redis connection.
+    const queue = new Queue(queueName, { redis: config.redis });
+    queue.on('global:completed', function(jobId, result) {
+        queue.getJob(jobId).then(job => {
+            if (job === null) {
+                logger.error(`${jobId} can't be located, make sure you don't remove job on completion.`);
+                throw new ApplicationError(constantsError.QUEUE_JOB_NOT_FOUND);
+            }
+            if (jobCompletionCallbacks.has(job.name)) {
+                logger.info(`Executing callback on job ${job.name} completion in ${job.queue.name} queue.`);
+                const callback = jobCompletionCallbacks.get(job.name);
+                result = JSON.parse(result);
+                callback(result.data);
+            }
+        });
+    });
 }
