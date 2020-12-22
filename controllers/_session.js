@@ -778,12 +778,23 @@ export const archiveExpiredSessions = async function () {
 
     const result = {
         message: `${counter} expired registered sessions moved to archive, ${countRemovedAnon} expired anonymous sessions dropped`,
-        data: { keys: resultKeys }
+        data: JSON.stringify({ keys: resultKeys }),
     };
+    return Promise.resolve(result);
+}
 
+/**
+ * Clean archived sessions on frontends following archiveExpiredSessions call
+ * by worker process.
+ * @param {string} Stringified data returned by archiveExpiredSessions.
+ */
+export const cleanArchivedSessions = function(data) {
+    data = JSON.parse(data);
+    let removedCount = 0;
     // Check if some of archived sessions is still in memory (in hashes), remove it from memory
-    /*_.forEach(result.keys, key => {
+    _.forEach(data.keys, key => {
         if (sessConnected.has(key)) {
+            removedCount++;
             const session = sessConnected.get(key);
             const usObj = usSid.get(key);
 
@@ -800,8 +811,8 @@ export const archiveExpiredSessions = async function () {
 
             delete session.sockets;
         }
-    });*/
-    return Promise.resolve(result);
+    });
+    logger.info(`${removedCount} archived sessions were removed from hashes`);
 };
 
 // Periodically recalculate user statistics, like pcount, which might get out of sync over time

@@ -23,7 +23,6 @@ export async function configure(startStamp) {
 
     waitDb.then(() => {
         sessionQueue();
-        addJobCompletedCallback('session', 'archiveExpiredSessions', (data) => { console.log(data) }); // test
     });
 }
 

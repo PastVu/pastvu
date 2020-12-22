@@ -12,6 +12,7 @@ import connectDb, { waitDb } from './controllers/connection';
 import * as session from './controllers/_session';
 import CoreServer from './controllers/serviceConnector';
 import { handleSocketConnection, registerSocketRequestHendler } from './app/request';
+import { addJobCompletedCallback } from './controllers/queue';
 import exitHook from 'async-exit-hook';
 
 import { photosReady } from './controllers/photo';
@@ -316,6 +317,7 @@ export async function configure(startStamp) {
     // Once db is connected, start some periodic jobs.
     // Do it in app.js, not in controllers, to prevent running these jobs on other instances (sitemap, uploader, downloader etc.)
     waitDb.then(() => {
+        addJobCompletedCallback('session', 'archiveExpiredSessions', session.cleanArchivedSessions);
         session.checkSessWaitingConnect();
 
         if (config.primary) {
