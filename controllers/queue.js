@@ -53,17 +53,23 @@ export async function createQueue(name) {
 }
 
 /**
- * Add job completed callback. Use this if you want to execute something
+ * Add job completed callback. Use this method if you want to execute something
  * on job completion at the different server. e.g. job is run by worker, but
  * callback needs to be run on different node instance. Callback receives
- * result.data from job processing promise.
- * @param {string} queueName Name of the queue.
+ * JSON serialised result.data from job processing promise.
  * @param {string} jobName
  * @param callback - The callback that handles the response, result.data is passed as param.
  */
-export function addJobCompletedCallback(queueName, jobName, callback) {
+export function addJobCompletedCallback(jobName, callback) {
     jobCompletionCallbacks.set(jobName, callback);
+}
 
+/**
+ * Setup job completion listener for given queue. This triggers callbacks for jobs
+ * defined using addJobCompletedCallback. Needs to be run on frontend.
+ * @param {string} queueName Name of the queue.
+ */
+export function setupJobCompletionListener(queueName) {
     // TODO: Reuse redis connection.
     const queue = new Queue(queueName, { redis: config.redis });
     queue.on('global:completed', function(jobId, result) {
@@ -76,7 +82,7 @@ export function addJobCompletedCallback(queueName, jobName, callback) {
                 logger.info(`Executing callback on job ${job.name} completion in ${job.queue.name} queue.`);
                 const callback = jobCompletionCallbacks.get(job.name);
                 result = JSON.parse(result);
-                callback(result.data);
+                callback(result.data || null);
             }
         });
     });
