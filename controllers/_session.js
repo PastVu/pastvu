@@ -739,11 +739,11 @@ export const checkSessWaitingConnect = (function () {
  * @return {Promise} Promise object containing message and data.
  */
 export const archiveExpiredSessions = async function () {
-    var archiveDate = new Date();
-    var start = archiveDate.getTime();
-    var resultKeys = [];
-    var insertBulk = [];
-    var counter = 0;
+    const archiveDate = new Date();
+    const start = archiveDate.getTime();
+    let resultKeys = [];
+    let insertBulk = [];
+    let counter = 0;
 
     const userQuery = { user: { $exists: true }, stamp: { $lte: new Date(start - SESSION_USER_LIFE) } };
     const anonQuery = { anonym: { $exists: true }, stamp: { $lte: new Date(start - SESSION_ANON_LIFE) } };
@@ -788,7 +788,7 @@ export const archiveExpiredSessions = async function () {
 /**
  * Clean archived sessions on frontends following archiveExpiredSessions call
  * by worker process.
- * @param {string} Stringified data returned by archiveExpiredSessions.
+ * @param {string} JSON serialised data returned by archiveExpiredSessions.
  */
 export const cleanArchivedSessions = function(data) {
     data = JSON.parse(data);

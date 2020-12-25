@@ -35,10 +35,11 @@ export async function createQueue(name) {
 
     // Report on job completion to log.
     queue.on('completed', function(job, result) {
+        job = job.toJSON();
+        logger.info(`${queueLogPrefix} job '${job.name}' is completed in ${(job.finishedOn - job.processedOn) / 1000}s.`);
         if (result.message) {
             logger.info(`${queueLogPrefix} job '${job.name}' reported: ${result.message}`);
         }
-        logger.info(`${queueLogPrefix} job '${job.name}' is completed.`);
         if (job.opts.repeat) {
             const opts = job.opts.repeat;
             if (opts.every) {
