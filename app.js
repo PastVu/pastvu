@@ -319,9 +319,5 @@ export async function configure(startStamp) {
     waitDb.then(() => {
         addJobCompletedCallback('session', 'archiveExpiredSessions', session.cleanArchivedSessions);
         session.checkSessWaitingConnect();
-
-        if (config.primary) {
-            session.calcUserStatsJob();
-        }
     });
 }

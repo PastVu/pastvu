@@ -3,7 +3,7 @@ import moment from 'moment';
 import log4js from 'log4js';
 import config from './config';
 import connectDb, { waitDb, dbRedis } from './controllers/connection';
-import { archiveExpiredSessions } from './controllers/_session';
+import { archiveExpiredSessions, calcUserStats } from './controllers/_session';
 import { createQueue, addJobCompletedCallback } from './controllers/queue';
 
 const logger = log4js.getLogger('worker');
@@ -22,24 +22,34 @@ export async function configure(startStamp) {
     logger.info(`Worker started up in ${(Date.now() - startStamp) / 1000}s`);
 
     waitDb.then(() => {
-        sessionQueue();
+        setupSessionQueue();
     });
 }
 
 /**
  * Setup queue for session jobs.
  */
-function sessionQueue() {
+function setupSessionQueue() {
     createQueue('session').then((sessionQueue) => {
         sessionQueue.process('archiveExpiredSessions', function(job){
             return archiveExpiredSessions();
         });
+        sessionQueue.process('calcUserStats', function(job){
+            return calcUserStats();
+        });
 
         // Add archiveExpiredSessions periodic job.
         sessionQueue.add('archiveExpiredSessions', {}, {
-            removeOnComplete: 1, // Keep 1 job in completed state, needed to be able to retrieve it on global even listener (in different runner).
+            removeOnComplete: 2, // Needed to be able to retrieve it on global even listener (in different runner).
             removeOnFail: true,
             repeat: { every: ms('5m') },
+        });
+
+        // Add calcUserStatsJob periodic job.
+        sessionQueue.add('calcUserStats', {}, {
+            removeOnComplete: 2,
+            removeOnFail: true,
+            repeat: { every: ms('1d') },
         });
     });
 }

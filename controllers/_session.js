@@ -10,6 +10,8 @@ import { parse as parseCookie } from 'cookie';
 import { userSettingsDef, clientParams } from './settings';
 import { Session, SessionArchive } from '../models/Sessions';
 import { User } from '../models/User';
+import { Photo } from '../models/Photo';
+import { Comment, CommentN } from '../models/Comment';
 import constantsError from '../app/errors/constants';
 import { AuthorizationError, ApplicationError, BadParamsError, NotFoundError/*, TimeoutError*/ } from '../app/errors';
 
@@ -813,29 +815,84 @@ export const cleanArchivedSessions = function(data) {
         }
     });
     logger.info(`${removedCount} archived sessions were removed from hashes`);
-};
+}
 
-// Periodically recalculate user statistics, like pcount, which might get out of sync over time
-export const calcUserStatsJob = (function () {
-    const checkInterval = ms('2d'); // Job interval
+/**
+ * Periodically recalculate user statistics, like pcount, which might get out of sync over time.
+ * Used by calcUserStats job in session queue.
+ * @param {string[]} [logins] Array of logins to limit query to.
+ * @return {Promise} Promise object containing message.
+ */
+export const calcUserStats = async function (logins) {
+    let query = {};
 
-    async function procedure() {
-        try {
-            const { userCounter, message } = await dbEval('calcUserStats', [], { nolock: true });
-            const onlineUserCount = regetUsers(usObj => usObj.registered, true);
-
-            logger.info(`${message}. Users: ${userCounter}, registered online: ${onlineUserCount}`);
-        } catch (err) {
-            logger.error('calcUserStatsJob error: ', err);
-        }
-
-        calcUserStatsJob(); // Schedule next launch
+    if (logins && logins.length) {
+        query.login = { $in: logins };
     }
 
-    return function () {
-        setTimeout(procedure, checkInterval).unref();
-    };
-}());
+    const users = await User.find(query, { _id: 1 }).sort({ cid: -1 }).exec();
+
+    for (const user of users) {
+        let $set = {};
+        let $unset = {};
+        let $update = {};
+        await Promise.all([
+            Photo.countDocuments({ user: user._id, s: 5 }),
+            Photo.countDocuments({ user: user._id, s: { $in: [0, 1, 2] } }),
+            Photo.countDocuments({ user: user._id, s: { $in: [3, 4, 7, 9] } }),
+            Comment.countDocuments({ user: user._id, del: null }),
+            CommentN.countDocuments({ user: user._id, del: null }),
+        ]).then(([pcount, pfcount, pdcount, ccount, cncount]) => {
+            if (pcount > 0) {
+                $set.pcount = pcount;
+            } else {
+                $unset.pcount = 1;
+            }
+
+            if (pfcount > 0) {
+                $set.pfcount = pfcount;
+            } else {
+                $unset.pfcount = 1;
+            }
+
+            if (pdcount > 0) {
+                $set.pdcount = pdcount;
+            } else {
+                $unset.pdcount = 1;
+            }
+
+            if ((ccount + cncount) > 0) {
+                $set.ccount = ccount + cncount;
+            } else {
+                $unset.ccount = 1;
+            }
+
+            //Нельзя присваивать пустой объект $set или $unset - обновления не будет, поэтому проверяем на кол-во ключей
+            if (Object.keys($set).length) {
+                $update.$set = $set;
+            }
+
+            if (Object.keys($unset).length) {
+                $update.$unset = $unset;
+            }
+
+            return User.updateOne({ _id: user._id }, $update, { upsert: false }).exec();
+        });
+    }
+
+    return Promise.resolve({
+        message: `User statistics for ${users.length} users was calculated`,
+    });
+}
+
+/**
+ * Reget users on frontends following calcUserStats call
+ * by worker process.
+ */
+export const regetUsersAfterStatsUpdate = function() {
+    const onlineUserCount = regetUsers(usObj => usObj.registered, true);
+    logger.info(`${onlineUserCount} online users have been synced with db and re-populated.`);
+}
 
 // Handler of http-request or websocket-connection for session and usObj create/select
 export async function handleConnection(ip, headers, overHTTP, req) {

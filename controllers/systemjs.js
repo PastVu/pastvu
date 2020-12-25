@@ -333,7 +333,7 @@ waitDb.then(db => {
         var startTime = Date.now();
 
         calcPhotoStats();
-        calcUserStats();
+        // calcUserStats(); Moved to session queue, see session.calcUserStats
         regionsAssignPhotos();
         regionsAssignComments();
         calcRegionStats();
@@ -840,80 +840,6 @@ waitDb.then(db => {
         });
 
         return { message: 'Renamed ' + renamedCounter + ' photo titles. All done in ' + (Date.now() - startTime) / 1000 + 's' };
-    });
-
-    saveSystemJSFunc(function calcUserStats(logins) {
-        var startTime = Date.now();
-        var query = {};
-
-        if (logins && logins.length) {
-            query.login = { $in: logins };
-        }
-
-        var users = db.users.find(query, { _id: 1 }).sort({ cid: -1 }).toArray();
-        var user;
-        var userCounter = users.length;
-        var $set;
-        var $unset;
-        var $update;
-        var pcount;
-        var pfcount;
-        var pdcount;
-        var ccount;
-
-        print('Start to calc for ' + userCounter + ' users');
-
-        while (userCounter--) {
-            user = users[userCounter];
-            $set = {};
-            $unset = {};
-            $update = {};
-            pcount = db.photos.countDocuments({ user: user._id, s: 5 });
-            pfcount = db.photos.countDocuments({ user: user._id, s: { $in: [0, 1, 2] } });
-            pdcount = db.photos.countDocuments({ user: user._id, s: { $in: [3, 4, 7, 9] } });
-            ccount = db.comments.countDocuments({ user: user._id, del: null }) +
-                     db.commentsn.countDocuments({ user: user._id, del: null });
-
-            if (pcount > 0) {
-                $set.pcount = pcount;
-            } else {
-                $unset.pcount = 1;
-            }
-
-            if (pfcount > 0) {
-                $set.pfcount = pfcount;
-            } else {
-                $unset.pfcount = 1;
-            }
-
-            if (pdcount > 0) {
-                $set.pdcount = pdcount;
-            } else {
-                $unset.pdcount = 1;
-            }
-
-            if (ccount > 0) {
-                $set.ccount = ccount;
-            } else {
-                $unset.ccount = 1;
-            }
-
-            //Нельзя присваивать пустой объект $set или $unset - обновления не будет, поэтому проверяем на кол-во ключей
-            if (Object.keys($set).length) {
-                $update.$set = $set;
-            }
-
-            if (Object.keys($unset).length) {
-                $update.$unset = $unset;
-            }
-
-            db.users.updateOne({ _id: user._id }, $update, { upsert: false });
-        }
-
-        return {
-            userCounter: users.length,
-            message: 'User statistics were calculated in ' + (Date.now() - startTime) / 1000 + 's',
-        };
     });
 
     saveSystemJSFunc(function calcUsersObjectsRelStats(userId, objId) {
