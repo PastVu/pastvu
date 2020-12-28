@@ -1,5 +1,4 @@
 import ms from 'ms';
-import util from 'util';
 import log4js from 'log4js';
 import { ApplicationError } from '../app/errors';
 import constantsError from '../app/errors/constants';
@@ -114,51 +113,61 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
 
     if (redis) {
         const { maxReconnectTime, ...config } = redis;
-
-        redis = require('redis');
-
-        // Create promisified methods
-        redis.RedisClient.prototype.getAsync = util.promisify(redis.RedisClient.prototype.get)/*.bind(dbRedis)*/;
-        redis.RedisClient.prototype.setAsync = util.promisify(redis.RedisClient.prototype.set)/*.bind(dbRedis)*/;
-        redis.RedisClient.prototype.evalAsync = util.promisify(redis.RedisClient.prototype.eval)/*.bind(dbRedis)*/;
-        redis.Multi.prototype.execAsync = util.promisify(redis.Multi.prototype.exec)/*.bind(redis.Multi.prototype)*/;
+        let totalRetryTime = 0;
 
         connectionPromises.push(new Promise((resolve, reject) => {
-            config.retry_strategy = function (options) {
+            const Redis = require('ioredis');
+
+            config.retryStrategy = function (times) {
                 // End reconnecting after a specific timeout and flush all commands with a individual error
-                if (options.total_retry_time > maxReconnectTime) {
+                if (totalRetryTime > maxReconnectTime) {
                     const error = new ApplicationError(constantsError.REDIS_MAX_CONNECTION_ATTEMPS);
 
+                    logger.error(error.message);
                     reject(error); // Reject if it's first time, not doesn't matter in loosing connections in runtime
 
-                    return error; // If it's runtime disconnection, this error will be thrown back to every redis call
+                    return ''; // Return non-number to stop retrying.
                 }
 
-                // reconnect after
-                return Math.min(Math.max(options.attempt * 100, 1000), 4000);
+                const delay = Math.min(Math.max(times * 100, 1000), 4000);
+
+                totalRetryTime += delay;
+
+                // Reconnect after delay.
+                return delay;
             };
 
-            dbRedis = redis.createClient(config)
-                .on('ready', function readyHandler() {
-                    const server = dbRedis.server_info;
+            dbRedis = new Redis(config)
+                .on('ready', () => {
+                    // Reset retries.
+                    totalRetryTime = 0;
+
+                    // Report success to log.
+                    const server = dbRedis.serverInfo;
                     const uri = `${config.host}:${server.tcp_port}`;
 
                     logger.info(
                         `Redis[${server.redis_version}, gcc ${server.gcc_version}, x${server.arch_bits},`,
-                        `pid ${server.process_id}] connected at ${uri}`
+                        `pid ${server.process_id}, ${server.redis_mode} mode] connected at ${uri}`
                     );
                     resolve(dbRedis);
                 })
                 .on('error', error => {
-                    logger.warn(error.message);
-                    reject(error);
+                    // Log error and reject promise if it is different to
+                    // connection issue.  For connection issue we record error
+                    // when retries limit is reached.
+                    if (error.code !== 'ENOTFOUND') {
+                        logger.error(error.message);
+                        reject(error);
+                    }
                 })
-                .on('reconnecting', params => {
+                .on('reconnecting', () => {
                     const uri = `${config.host}:${config.port}`;
+                    const time = Math.max((maxReconnectTime - totalRetryTime) / 1000, 0);
 
                     logger.warn(
-                        `Redis ${params.attempt} reconnection attemp at ${uri}.`,
-                        `Time to stop trying ${(maxReconnectTime - params.total_retry_time) / 1000}s`
+                        `Redis reconnection attempt at ${uri}.`,
+                        `Time to stop trying ${time}s`
                     );
                 });
         }));
