@@ -13,7 +13,7 @@ import * as session from './controllers/_session';
 import CoreServer from './controllers/serviceConnector';
 import { handleSocketConnection, registerSocketRequestHendler } from './app/request';
 import exitHook from 'async-exit-hook';
-import { setupJobCompletionListener, addJobCompletedCallback } from './controllers/queue';
+import { JobCompletionListener } from './controllers/queue';
 
 import { photosReady } from './controllers/photo';
 import { ready as mailReady } from './controllers/mail';
@@ -317,9 +317,11 @@ export async function configure(startStamp) {
     // Once db is connected, register callbacks for some periodic jobs.
     // Do it in app.js, not in controllers, to prevent running them on other instances (sitemap, uploader, downloader etc.)
     waitDb.then(() => {
-        addJobCompletedCallback('archiveExpiredSessions', session.cleanArchivedSessions);
-        addJobCompletedCallback('calcUserStats', session.regetUsersAfterStatsUpdate);
-        setupJobCompletionListener('session');
+        const listener = new JobCompletionListener('session');
+        listener.addCallback('archiveExpiredSessions', session.cleanArchivedSessions);
+        listener.addCallback('calcUserStats', session.regetUsersAfterStatsUpdate);
+        listener.init();
+
         session.checkSessWaitingConnect();
     });
 }

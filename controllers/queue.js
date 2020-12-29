@@ -7,7 +7,6 @@ import constantsError from '../app/errors/constants';
 import { ApplicationError } from '../app/errors';
 
 const logger = log4js.getLogger('session');
-const jobCompletionCallbacks = new Map();
 
 /**
  * Initialise a queue. This is supposed to be used on worker start.
@@ -54,37 +53,45 @@ export async function createQueue(name) {
 }
 
 /**
- * Add job completed callback. Use this method if you want to execute something
- * on job completion at the different server. e.g. job is run by worker, but
- * callback needs to be run on different node instance. Callback receives
- * JSON serialised result.data from job processing promise.
- * @param {string} jobName
- * @param callback - The callback that handles the response, result.data is passed as param.
+ * Job completion listener class. Triggers callbacks on global job completion
+ * event. Designed to be used on frontend instance when some code needs to be
+ * executed following regular task completion on worker instance.
  */
-export function addJobCompletedCallback(jobName, callback) {
-    jobCompletionCallbacks.set(jobName, callback);
-}
+export class JobCompletionListener {
+    constructor(queueName) {
+        this.jobCompletionCallbacks = new Map();
+        this.queue = new Queue(queueName, { redis: config.redis });
+    }
 
-/**
- * Setup job completion listener for given queue. This triggers callbacks for jobs
- * defined using addJobCompletedCallback. Needs to be run on frontend.
- * @param {string} queueName Name of the queue.
- */
-export function setupJobCompletionListener(queueName) {
-    // TODO: Reuse redis connection.
-    const queue = new Queue(queueName, { redis: config.redis });
-    queue.on('global:completed', function(jobId, result) {
-        queue.getJob(jobId).then(job => {
-            if (job === null) {
-                logger.error(`${jobId} can't be located, make sure you don't remove job on completion.`);
-                throw new ApplicationError(constantsError.QUEUE_JOB_NOT_FOUND);
-            }
-            if (jobCompletionCallbacks.has(job.name)) {
-                logger.info(`Executing callback on job ${job.name} completion in ${job.queue.name} queue.`);
-                const callback = jobCompletionCallbacks.get(job.name);
-                result = JSON.parse(result);
-                callback(result.data || null);
-            }
+    /**
+     * Initialise queue completion event listening.
+     */
+    init() {
+        this.queue.on('global:completed', (jobId, result) => {
+            this.queue.getJob(jobId).then(job => {
+                if (job === null) {
+                    logger.error(`${jobId} can't be located, make sure you don't remove job on completion.`);
+                    throw new ApplicationError(constantsError.QUEUE_JOB_NOT_FOUND);
+                }
+                if (this.jobCompletionCallbacks.has(job.name)) {
+                    logger.info(`Executing callback on job ${job.name} completion in ${job.queue.name} queue.`);
+                    const callback = this.jobCompletionCallbacks.get(job.name);
+                    result = JSON.parse(result);
+                    callback(result.data || null);
+                }
+            });
         });
-    });
+        logger.info(`Initiaise ${this.queue.name} completed global event listening.`);
+    }
+
+    /**
+    * Add job completed callback. Callback receives JSON serialised
+    * result.data from job processing promise.
+    * @param {string} jobName
+    * @param callback - The callback function that handles the response, result.data is passed as param.
+    */
+    addCallback(jobName, callback) {
+        logger.info(`Add job completion callback: ${jobName} -> ${callback.name}`);
+        this.jobCompletionCallbacks.set(jobName, callback);
+    }
 }
