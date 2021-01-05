@@ -32,7 +32,7 @@ services:
     volumes:
       - .:/code
       - store:/store
-    command: npm run app
+    command: run app
 
   notifier:
     << : *app-image
@@ -42,7 +42,7 @@ services:
       - NOTIFIER=true
     volumes:
       - .:/code
-    command: npm run notifier
+    command: run notifier
 
   uploader:
     << : *app-image
@@ -53,7 +53,7 @@ services:
     volumes:
       - .:/code
       - store:/store
-    command: npm run uploader
+    command: run uploader
 
   downloader:
     << : *app-image
@@ -64,7 +64,7 @@ services:
     volumes:
       - .:/code
       - store:/store:ro
-    command: npm run downloader
+    command: run downloader
 
   sitemap:
     << : *app-image
@@ -73,7 +73,7 @@ services:
     volumes:
       - .:/code
       - sitemap:/sitemap
-    command: npm run sitemap
+    command: run sitemap
 
   mailcatcher:
     image: sj26/mailcatcher:latest

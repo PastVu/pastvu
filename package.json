@@ -41,6 +41,7 @@
         "@mapbox/geojsonhint": "3.0.0",
         "@turf/intersect": "6.1.3",
         "@turf/turf": "5.1.6",
+        "async-exit-hook": "2.0.1",
         "aws-sdk": "2.610.0",
         "basic-auth-connect": "1.0.0",
         "bcrypt": "5.0.0",

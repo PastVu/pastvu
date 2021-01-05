@@ -12,6 +12,7 @@ import connectDb, { waitDb } from './controllers/connection';
 import * as session from './controllers/_session';
 import CoreServer from './controllers/serviceConnector';
 import { handleSocketConnection, registerSocketRequestHendler } from './app/request';
+import exitHook from 'async-exit-hook';
 
 import { photosReady } from './controllers/photo';
 import { ready as mailReady } from './controllers/mail';
@@ -305,6 +306,11 @@ export async function configure(startStamp) {
         );
 
         scheduleMemInfo(startStamp - Date.now());
+    });
+
+    exitHook(cb => {
+        logger.info('HTTP server is shutting down');
+        httpServer.close(cb);
     });
 
     // Once db is connected, start some periodic jobs.
