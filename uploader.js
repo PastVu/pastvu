@@ -9,6 +9,7 @@ import log4js from 'log4js';
 import config from './config';
 import formidable from 'formidable';
 import Utils from './commons/Utils';
+import exitHook from 'async-exit-hook';
 
 export function configure(startStamp) {
     const {
@@ -286,10 +287,15 @@ export function configure(startStamp) {
         }
     };
 
-    http.createServer(handleRequest).listen(listenport, '0.0.0.0', () => {
+    const server = http.createServer(handleRequest).listen(listenport, '0.0.0.0', () => {
         logger.info(
             `Uploader server started up in ${(Date.now() - startStamp) / 1000}s`,
             `and listening [*:${listenport}]\n`
         );
+    });
+
+    exitHook(cb => {
+        logger.info('Uploader server is shutting down');
+        server.close(cb);
     });
 }
