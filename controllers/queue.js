@@ -5,8 +5,42 @@ import connectDb, { waitDb, dbRedis } from './connection';
 import Queue from 'bull';
 import constantsError from '../app/errors/constants';
 import { ApplicationError } from '../app/errors';
+import exitHook from 'async-exit-hook';
 
-const logger = log4js.getLogger('session');
+const logger = log4js.getLogger('queue');
+const queueInstances = new Map();
+
+exitHook(cb => {
+    logger.info('Stopping all queues');
+    shutdownQueues().then(() => cb());
+});
+
+/**
+ * Gracefully shutdown all opened queues.
+ * @return {Promise}
+ */
+function shutdownQueues() {
+    const queues = Array.from(queueInstances.values()).map((queue) => {
+        return queue.close(false).then(() => {
+            logger.info(`Closed queue '${queue.name}'`);
+        });
+    });
+    return Promise.all(queues);
+}
+
+/**
+ * Retrieve an open queue. If queue has not been opened yet, create a new instance.
+ * @param {string} name Name of the queue.
+ * @return {Queue}
+ */
+function getQueue(name) {
+    if (queueInstances.has(name)) {
+        return queueInstances.get(name);
+    }
+    const queue = new Queue(name, { redis: config.redis });
+    queueInstances.set(name, queue);
+    return queue;
+}
 
 /**
  * Initialise a queue. This is supposed to be used on worker start.
@@ -49,6 +83,8 @@ export async function createQueue(name) {
             // TODO: Output next run info for jobs defined using cron syntax.
         }
     });
+    // Add to the list of opened queues.
+    queueInstances.set(name, queue);
     return queue;
 }
 
@@ -60,7 +96,7 @@ export async function createQueue(name) {
 export class JobCompletionListener {
     constructor(queueName) {
         this.jobCompletionCallbacks = new Map();
-        this.queue = new Queue(queueName, { redis: config.redis });
+        this.queue = getQueue(queueName);
     }
 
     /**
@@ -74,14 +110,14 @@ export class JobCompletionListener {
                     throw new ApplicationError(constantsError.QUEUE_JOB_NOT_FOUND);
                 }
                 if (this.jobCompletionCallbacks.has(job.name)) {
-                    logger.info(`Executing callback on job ${job.name} completion in ${job.queue.name} queue.`);
+                    logger.info(`Executing callback on job '${job.name}' completion in '${job.queue.name}' queue.`);
                     const callback = this.jobCompletionCallbacks.get(job.name);
                     result = JSON.parse(result);
                     callback(result.data || null);
                 }
             });
         });
-        logger.info(`Initiaise ${this.queue.name} completed global event listening.`);
+        logger.info(`Initiaise job completion event listening in '${this.queue.name}' queue.`);
     }
 
     /**

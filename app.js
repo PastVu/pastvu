@@ -314,8 +314,8 @@ export async function configure(startStamp) {
         httpServer.close(cb);
     });
 
-    // Once db is connected, register callbacks for some periodic jobs.
-    // Do it in app.js, not in controllers, to prevent running them on other instances (sitemap, uploader, downloader etc.)
+    // Once db is connected, register callbacks for some periodic jobs run in
+    // worker instance.
     waitDb.then(() => {
         const listener = new JobCompletionListener('session');
         listener.addCallback('archiveExpiredSessions', session.cleanArchivedSessions);

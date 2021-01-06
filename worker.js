@@ -4,7 +4,7 @@ import log4js from 'log4js';
 import config from './config';
 import connectDb, { waitDb, dbRedis } from './controllers/connection';
 import { archiveExpiredSessions, calcUserStats } from './controllers/_session';
-import { createQueue, addJobCompletedCallback } from './controllers/queue';
+import { createQueue } from './controllers/queue';
 
 const logger = log4js.getLogger('worker');
 
