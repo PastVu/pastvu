@@ -35,6 +35,10 @@ module.exports = function (grunt) {
                 // Очищаем директорию скомпиленных tpl
                 src: ['public/tpl'],
             },
+            publicCss: {
+                // Clean up compiled css.
+                src: ['public/style/**/*.css'],
+            },
         },
         exec: {
             buildjs: {
@@ -50,6 +54,27 @@ module.exports = function (grunt) {
             },
             movePublic: {
                 command: `mv public-build ${targetDir}public`,
+                stdout: true,
+                stderr: true,
+            },
+            testNodeVersion: {
+                command: filename => {
+                    const error = `Version defined in ${filename} is not matching package version of node.`;
+                    const pkgVersion = grunt.template.process('<%= pkg.engines.node %>');
+
+                    return 'if [ "$(cat ' + filename + ')" != "' + pkgVersion + '" ]; then echo "' + error + '"; exit 1; fi;';
+                },
+                stdout: true,
+                stderr: true,
+            },
+            testNodeVersionDockerfile: {
+                command: () => {
+                    const error = 'Version defined in Dockerfile is not matching package version of node.';
+                    const pkgVersion = grunt.template.process('<%= pkg.engines.node %>');
+                    const dockerParse = "sed -n -e '/^ARG NODE_TAG/ s/.*=//p' Dockerfile";
+
+                    return 'if [ "$(' + dockerParse + ')" != "' + pkgVersion + '" ]; then echo "' + error + '"; exit 1; fi;';
+                },
                 stdout: true,
                 stderr: true,
             },
@@ -241,6 +266,9 @@ module.exports = function (grunt) {
     ]);
 
     grunt.registerTask('test', [
+        'exec:testNodeVersion:.node-version',
+        'exec:testNodeVersion:.nvmrc',
+        'exec:testNodeVersionDockerfile',
         'eslint',
     ]);
 

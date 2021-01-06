@@ -1,5 +1,6 @@
 import net from 'net';
 import { handleServiceRequest } from '../app/request';
+import exitHook from 'async-exit-hook';
 
 class ClientSocket {
     constructor(server, socket, logger) {
@@ -110,6 +111,11 @@ export default class Server {
                 });
 
             this.logger.info(`${this.name} client connected. Total clients: ${this.clientSockets.length}`);
+        });
+
+        exitHook(cb => {
+            this.logger.info(`${this.name} server is shutting down`);
+            this.server.close(cb);
         });
     }
 

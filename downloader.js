@@ -12,6 +12,7 @@ import { parse as parseCookie } from 'cookie';
 import contentDisposition from 'content-disposition';
 import CorePlug from './controllers/serviceConnectorPlug';
 import { ApplicationError, AuthorizationError, BadParamsError, NotFoundError } from './app/errors';
+import exitHook from 'async-exit-hook';
 
 import connectDb, { dbRedis } from './controllers/connection';
 import { Download } from './models/Download';
@@ -294,7 +295,7 @@ export async function configure(startStamp) {
     core.connect();
 
     // Start server and do manual manual url router, express is not needed
-    http
+    const server = http
         .createServer(function handleRequest(req, res) {
             if (protectedServePattern.test(req.url)) {
                 return protectedHandler(req, res);
@@ -315,4 +316,9 @@ export async function configure(startStamp) {
 
             scheduleMemInfo(startStamp - Date.now());
         });
+
+    exitHook(cb => {
+        logger.info('Downloader server is shutting down');
+        server.close(cb);
+    });
 }

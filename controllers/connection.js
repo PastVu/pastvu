@@ -2,6 +2,7 @@ import ms from 'ms';
 import log4js from 'log4js';
 import { ApplicationError } from '../app/errors';
 import constantsError from '../app/errors/constants';
+import exitHook from 'async-exit-hook';
 
 const modelPromises = [];
 let connectionPromises;
@@ -17,6 +18,7 @@ export const waitDb = new Promise((resolve, reject) => {
     getDBResolve = resolve;
     getDBReject = reject;
 });
+
 export const registerModel = modelPromise => {
     if (db) {
         modelPromise(db);
@@ -35,6 +37,7 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
     if (mongo) {
         const mongoose = require('mongoose');
         const { uri, poolSize = 1 } = mongo;
+        let connErrorLogLevel = 'error';
 
         // Set native Promise as mongoose promise provider
         mongoose.Promise = Promise;
@@ -57,6 +60,13 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
                 useFindAndModify: false, // Use findOneAndUpdate interally (findAndModify is deprecated in MongoDB driver 3.1).
             });
 
+            exitHook(cb => {
+                // Connection related events are no longer regarded as errors.
+                connErrorLogLevel = 'info';
+                logger.info('MongoDB client is shutting down');
+                db.close(cb);
+            });
+
             async function openHandler() {
                 const adminDb = db.db.admin(); // Use the admin database for some operation
 
@@ -75,10 +85,10 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
                     logger.error(`MongoDB connection error to ${uri}`, err);
                 });
                 db.on('disconnected', () => {
-                    logger.error('MongoDB disconnected!');
+                    logger.log(connErrorLogLevel, 'MongoDB disconnected!');
                 });
                 db.on('close', () => {
-                    logger.error('MongoDB connection closed and onClose executed on all of this connections models!');
+                    logger.log(connErrorLogLevel, 'MongoDB connection closed and onClose executed on all of this connections models!');
                 });
                 db.on('reconnected', () => {
                     logger.info('MongoDB reconnected at ' + uri);
@@ -170,6 +180,11 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
                         `Time to stop trying ${time}s`
                     );
                 });
+
+            exitHook(cb => {
+                logger.info('Redis client is shutting down');
+                dbRedis.quit(cb);
+            });
         }));
     }
 

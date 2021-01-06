@@ -1,7 +1,9 @@
 version: '3.8'
 
-services:
+x-defaults: &app-image
+  image: pastvu/node:15.3.0
 
+services:
   mongo:
     image: mongo:4.4
     volumes:
@@ -12,12 +14,12 @@ services:
       - "27017:27017"
 
   redis:
-    image: redis
+    image: redis:6.0.9
     expose:
       - "6379"
 
   app:
-    image: pastvu/node
+    << : *app-image
     expose:
       - "3000"
       - "3010"
@@ -30,20 +32,20 @@ services:
     volumes:
       - .:/code
       - store:/store
-    command: npm run app
+    command: run app
 
   notifier:
-    image: pastvu/node
+    << : *app-image
     depends_on:
       - "app"
     environment:
       - NOTIFIER=true
     volumes:
       - .:/code
-    command: npm run notifier
+    command: run notifier
 
   uploader:
-    image: pastvu/node
+    << : *app-image
     expose:
       - "3001"
     depends_on:
@@ -51,10 +53,10 @@ services:
     volumes:
       - .:/code
       - store:/store
-    command: npm run uploader
+    command: run uploader
 
   downloader:
-    image: pastvu/node
+    << : *app-image
     expose:
       - "3002"
     depends_on:
@@ -62,19 +64,19 @@ services:
     volumes:
       - .:/code
       - store:/store:ro
-    command: npm run downloader
+    command: run downloader
 
   sitemap:
-    image: pastvu/node
+    << : *app-image
     depends_on:
       - "app"
     volumes:
       - .:/code
       - sitemap:/sitemap
-    command: npm run sitemap
+    command: run sitemap
 
   mailcatcher:
-    image: sj26/mailcatcher
+    image: sj26/mailcatcher:latest
     expose:
      - "1025"
     ports:
