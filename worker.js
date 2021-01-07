@@ -4,6 +4,7 @@ import log4js from 'log4js';
 import config from './config';
 import connectDb, { waitDb, dbRedis } from './controllers/connection';
 import { archiveExpiredSessions, calcUserStats } from './controllers/_session';
+import { convertPhotosAll } from './controllers/converter';
 import { createQueue } from './controllers/queue';
 
 const logger = log4js.getLogger('worker');
@@ -23,6 +24,7 @@ export async function configure(startStamp) {
 
     waitDb.then(() => {
         setupSessionQueue();
+        setupUserJobsQueue();
     });
 }
 
@@ -57,3 +59,14 @@ function setupSessionQueue() {
     });
 }
 
+/**
+ * Setup queue for user jobs (non-regular).
+ */
+function setupUserJobsQueue() {
+    createQueue('userjobs').then((userJobsQueue) => {
+        // converter.convertPhotosAll
+        userJobsQueue.process('convertPhotosAll', function(job){
+            return convertPhotosAll(job.data);
+        });
+    });
+}

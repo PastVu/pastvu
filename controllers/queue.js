@@ -136,3 +136,20 @@ export class JobCompletionListener {
         this.jobCompletionCallbacks.set(jobName, callback);
     }
 }
+
+/**
+ * Run job and return result.
+ * @param {string} name Name of the queue.
+ * @return {Promise} Resolving to result.data from job processing promise.
+ */
+export function runJob(jobName, params) {
+    return getQueue('userjobs').add(jobName, params || {})
+        .then(job => {
+            logger.info(`Added job '${job.name}' for processing in '${job.queue.name}' queue`);
+            // Wait for job completion.
+            return job.finished();
+        })
+        .then(result => {
+            return result.data || {};
+        });
+}

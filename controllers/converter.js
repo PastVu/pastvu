@@ -13,8 +13,10 @@ import Utils from '../commons/Utils';
 import childProcess from 'child_process';
 import { waitDb, dbEval } from './connection';
 import { Photo, PhotoConveyer, PhotoConveyerError, STPhotoConveyer } from '../models/Photo';
+import { User } from '../models/User';
 import constantsError from '../app/errors/constants';
 import { ApplicationError, AuthorizationError } from '../app/errors';
+import { runJob } from './queue';
 
 const execAsync = util.promisify(childProcess.exec);
 const logger = log4js.getLogger('converter.js');
@@ -662,10 +664,11 @@ export async function addPhotos(data, priority, potectPublicOnly) {
 
 /**
  * Добавление в конвейер конвертации всех фотографий
- * @param params Объект
+ * @param {Object} params
+ * @return {Object} result
  */
 export async function addPhotosAll(params) {
-    const result = await dbEval('convertPhotosAll', [params], { nolock: true });
+    const result = await runJob('convertPhotosAll', params);
 
     if (result && result.error) {
         throw new ApplicationError({ code: constantsError.CONVERT_PHOTOS_ALL, result });
@@ -679,8 +682,83 @@ export async function addPhotosAll(params) {
 }
 
 /**
+ * Add photos to coversion conveyor.
+ * Used by convertPhotosAll job in userjobs queue.
+ * @param {Object} params
+ * @return {Promise} Promise object containing message and data.
+ */
+export const convertPhotosAll = async function (params) {
+    const addDate = new Date();
+    let query = {};
+    let conveyer = [];
+
+    if (params.login) {
+        const user = await User.findOne({ login: params.login }).exec();
+        if (user) {
+            query.user = user._id;
+        }
+    }
+
+    if (params.min) {
+        query.cid = { $gte: params.min };
+    }
+
+    if (params.max) {
+        if (!query.cid) {
+            query.cid = {};
+        }
+
+        query.cid.$lte = params.max;
+    }
+
+    if (params.region) {
+        query['r' + params.region.level] = params.region.cid;
+    }
+
+    if (params.hasOwnProperty('individual')) {
+        if (params.individual) {
+            query.watersignIndividual = true;
+        } else {
+            query.$or = [{ watersignIndividual: null }, { watersignIndividual: false }];
+        }
+    }
+
+    if (params.onlyWithoutTextApplied) {
+        query.watersignTextApplied = null;
+    }
+
+    if (params.statuses && params.statuses.length) {
+        query.s = { $in: params.statuses };
+    }
+
+    const count = await Photo.countDocuments(query);
+    logger.info(`convertPhotosAll: Start to fill conveyer for ${ query.user ? query.user + ' user for' : ''}${count} photos`);
+
+    const photos = await Photo.find(query, { _id: 0, cid: 1 }).sort({ cid: 1 }).exec();
+    for (const photo of photos) {
+        if (!(await PhotoConveyer.findOne({ cid: photo.cid }).exec())) {
+            let row = { cid: photo.cid, priority: params.priority, added: addDate };
+
+            if (params.webpOnly) {
+                row.webpOnly = true;
+            }
+
+            conveyer.push(row);
+        }
+    }
+
+    if (conveyer.length) {
+        await PhotoConveyer.insertMany(conveyer);
+    }
+
+    return Promise.resolve({
+        data: { conveyorAdded: conveyer.length },
+    });
+}
+
+/**
  * Remove photos from conveyor
- * @param cids Array of cids
+ * @param {number[]} cids
  */
 export async function removePhotos(cids) {
     if (_.isEmpty(cids)) {
