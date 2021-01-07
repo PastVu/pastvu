@@ -17,6 +17,7 @@ import { User } from '../models/User';
 import constantsError from '../app/errors/constants';
 import { ApplicationError, AuthorizationError } from '../app/errors';
 import { runJob } from './queue';
+import exitHook from 'async-exit-hook';
 
 const execAsync = util.promisify(childProcess.exec);
 const logger = log4js.getLogger('converter.js');
@@ -39,6 +40,11 @@ const waterFontPath = path.normalize(waterDir + 'AdobeFanHeitiStd-Bold.otf');
 const maxWorking = 6; // Possible to convert in parallel
 let goingToWork = 0; // Выборка для дальнейшей конвертации
 let working = 0; // Now converting
+
+exitHook(() => {
+    logger.info('Stopping conversion conveyor');
+    conveyerEnabled = false;
+})
 
 const imageVersions = {
     a: {
