@@ -31,9 +31,12 @@ export async function configure(startStamp) {
  */
 function setupSessionQueue() {
     createQueue('session').then((sessionQueue) => {
+        // session.archiveExpiredSessions
         sessionQueue.process('archiveExpiredSessions', function(job){
             return archiveExpiredSessions();
         });
+
+        // session.calcUserStats
         sessionQueue.process('calcUserStats', function(job){
             return calcUserStats();
         });

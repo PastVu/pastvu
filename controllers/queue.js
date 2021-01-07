@@ -49,7 +49,7 @@ function getQueue(name) {
  */
 export async function createQueue(name) {
     const queueLogPrefix = `Queue '${name}'`;
-    logger.info(`${queueLogPrefix} is initialised.`);
+    logger.info(`${queueLogPrefix} is initialised`);
     const queue = new Queue(name, { redis: config.redis });
     // Clear all jobs left from previous run.
     // TODO: Check if this is needed especially if we use more than one
@@ -63,7 +63,7 @@ export async function createQueue(name) {
 
     // Report on job start to log.
     queue.on('active', function(job/*, jobPromise*/) {
-        logger.info(`${queueLogPrefix} job '${job.name}' processing started.`);
+        logger.info(`${queueLogPrefix} job '${job.name}' processing started`);
     });
 
     // Report on job completion to log.
@@ -78,10 +78,15 @@ export async function createQueue(name) {
             if (opts.every) {
                 const nextRunMillis = Math.floor(Date.now() / opts.every) * opts.every + opts.every;
                 const nextRun = new Date(nextRunMillis).toString();
-                logger.info(`${queueLogPrefix} job '${job.name}' next run is scheduled on ${nextRun}.`);
+                logger.info(`${queueLogPrefix} job '${job.name}' next run is scheduled on ${nextRun}`);
             }
             // TODO: Output next run info for jobs defined using cron syntax.
         }
+    });
+    // Report on job failed to log.
+    queue.on('failed', function(job, err) {
+        job = job.toJSON();
+        logger.error(`${queueLogPrefix} job '${job.name}' failed with error: ${err}`);
     });
     // Add to the list of opened queues.
     queueInstances.set(name, queue);
@@ -106,25 +111,25 @@ export class JobCompletionListener {
         this.queue.on('global:completed', (jobId, result) => {
             this.queue.getJob(jobId).then(job => {
                 if (job === null) {
-                    logger.error(`${jobId} can't be located, make sure you don't remove job on completion.`);
+                    logger.error(`${jobId} can't be located, make sure you don't remove job on completion`);
                     throw new ApplicationError(constantsError.QUEUE_JOB_NOT_FOUND);
                 }
                 if (this.jobCompletionCallbacks.has(job.name)) {
-                    logger.info(`Executing callback on job '${job.name}' completion in '${job.queue.name}' queue.`);
+                    logger.info(`Executing callback on job '${job.name}' completion in '${job.queue.name}' queue`);
                     const callback = this.jobCompletionCallbacks.get(job.name);
-                    result = JSON.parse(result);
+                    result = JSON.parse(result); // In global event result is serialised.
                     callback(result.data || null);
                 }
             });
         });
-        logger.info(`Initiaise job completion event listening in '${this.queue.name}' queue.`);
+        logger.info(`Initiaise job completion event listening in '${this.queue.name}' queue`);
     }
 
     /**
     * Add job completed callback. Callback receives JSON serialised
     * result.data from job processing promise.
     * @param {string} jobName
-    * @param callback - The callback function that handles the response, result.data is passed as param.
+    * @param {Function} callback - The callback function that handles the response, result.data is passed as param.
     */
     addCallback(jobName, callback) {
         logger.info(`Add job completion callback: ${jobName} -> ${callback.name}`);

@@ -814,7 +814,7 @@ export const cleanArchivedSessions = function(data) {
             delete session.sockets;
         }
     });
-    logger.info(`${removedCount} archived sessions were removed from hashes`);
+    logger.info(`cleanArchivedSessions: ${removedCount} archived sessions were removed from hashes`);
 }
 
 /**
@@ -891,7 +891,7 @@ export const calcUserStats = async function (logins) {
  */
 export const regetUsersAfterStatsUpdate = function() {
     const onlineUserCount = regetUsers(usObj => usObj.registered, true);
-    logger.info(`${onlineUserCount} online users have been synced with db and re-populated.`);
+    logger.info(`regetUsersAfterStatsUpdate: ${onlineUserCount} online users have been synced with db and re-populated.`);
 }
 
 // Handler of http-request or websocket-connection for session and usObj create/select
