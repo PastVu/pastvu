@@ -5,6 +5,7 @@ import config from './config';
 import connectDb, { waitDb, dbRedis } from './controllers/connection';
 import { archiveExpiredSessions, calcUserStats } from './controllers/_session';
 import { convertPhotosAll } from './controllers/converter';
+import { clusterPhotosAll } from './controllers/cluster';
 import { createQueue } from './controllers/queue';
 
 const logger = log4js.getLogger('worker');
@@ -67,6 +68,10 @@ function setupUserJobsQueue() {
         // converter.convertPhotosAll
         userJobsQueue.process('convertPhotosAll', function(job){
             return convertPhotosAll(job.data);
+        });
+        // cluster.clusterPhotosAll
+        userJobsQueue.process('clusterPhotosAll', function(job){
+            return clusterPhotosAll(job.data);
         });
     });
 }

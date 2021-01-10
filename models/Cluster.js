@@ -51,7 +51,7 @@ const ClusterParamsSchema = new Schema(
         h: { type: Number }, // Cluster height in degrees
 
         // Next fields are common for all parameter, so such document is single
-        sgeo: { type: [Number] }, // [lng, lat] of base cluster
+        sgeo: { type: [Number], 'default': undefined }, // [lng, lat] of base cluster, undefined by default.
         sz: { type: Number }, // Zoom, on which we calculated clusters
         sw: { type: Number }, // Cluster width in pixels
         sh: { type: Number }, // Cluster hight in pixels
