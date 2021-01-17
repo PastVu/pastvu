@@ -487,42 +487,6 @@ async function calcRegionIncludes(cidOrRegion) {
 }
 
 /**
- * Recalculate what objects belong to list of region. If list is empty - recalc all regions
- * @param cids Array of regions cids
- */
-export async function calcRegionsIncludes(cids) {
-    const { handshake: { usObj: iAm } } = this;
-
-    if (!iAm.isAdmin) {
-        throw new AuthorizationError();
-    }
-
-    if (!Array.isArray(cids)) {
-        throw new BadParamsError();
-    }
-
-    let result;
-
-    if (_.isEmpty(cids)) {
-        // If array is empty - recalc all photos
-        result = await dbEval('regionsAssignObjects', [], { nolock: true });
-
-        if (result && result.error) {
-            throw new ApplicationError({ code: constantsError.REGION_ASSIGN_OBJECTS, result });
-        }
-    } else {
-        // Recalc every region in loop
-        result = [];
-
-        for (const cid of cids) {
-            result.push(await calcRegionIncludes(cid));
-        }
-    }
-
-    return result;
-}
-
-/**
  * Returns for region it populated parents and number of children
  * @param region Region object
  */

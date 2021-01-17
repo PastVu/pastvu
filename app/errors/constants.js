@@ -59,7 +59,6 @@ export default Utils.reflectKeys({
     PAINTING_YEARS_CONSTRAINT: null,
     PHOTO_CONVERT_PROCEEDING: null,
 
-    REGION_ASSIGN_OBJECTS: null,
     REGION_PARENT_THE_SAME: null,
     REGION_PARENT_DOESNT_EXISTS: null,
     REGION_PARENT_LOOP: null,
