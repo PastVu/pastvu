@@ -6,6 +6,7 @@ import connectDb, { waitDb, dbRedis } from './controllers/connection';
 import { archiveExpiredSessions, calcUserStats } from './controllers/_session';
 import { convertPhotosAll } from './controllers/converter';
 import { clusterPhotosAll } from './controllers/cluster';
+import { calcRegionStats } from './controllers/region';
 import { createQueue } from './controllers/queue';
 
 const logger = log4js.getLogger('worker');
@@ -72,6 +73,10 @@ function setupUserJobsQueue() {
         // cluster.clusterPhotosAll
         userJobsQueue.process('clusterPhotosAll', function(job){
             return clusterPhotosAll(job.data);
+        });
+        // region.calcRegionStats
+        userJobsQueue.process('calcRegionStats', function(job){
+            return calcRegionStats(job.data);
         });
     });
 }

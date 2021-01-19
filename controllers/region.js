@@ -18,6 +18,7 @@ import { Counter } from '../models/Counter';
 import { Region, RegionStatQueue } from '../models/Region';
 import constantsError from '../app/errors/constants';
 import { ApplicationError, AuthorizationError, BadParamsError, NotFoundError, NoticeError } from '../app/errors';
+import { runJob } from './queue';
 
 export let DEFAULT_HOME = null;
 export const regionsAllSelectHash = Object.create(null);
@@ -2231,6 +2232,12 @@ export async function putPhotoToRegionStatQueue(oldPhoto, newPhoto) {
     } }, { upsert: true }).exec();
 }
 
+/**
+ * Recalculate stats for regions.
+ * @param {number[]} [cids]
+ * @param {boolean} [refillCache]
+ * @return {Object}
+ */
 async function recalcStats(cids = [], refillCache = false) {
     if (statsIsBeingRecalc) {
         return { running: true };
@@ -2246,7 +2253,7 @@ async function recalcStats(cids = [], refillCache = false) {
 
     try {
         // Update all regions stats
-        const result = await dbEval('calcRegionStats', [cids], { nolock: true });
+        const result = await runJob('calcRegionStats', { cids });
 
         if (refillCache) {
             await fillCache(); // Refresh regions cache
@@ -2257,6 +2264,167 @@ async function recalcStats(cids = [], refillCache = false) {
         statsIsBeingRecalc = false;
     }
 }
+
+/**
+ * Calculate stats for regions.
+ * Used by calcRegionStats job in userjobs queue.
+ * @param {Object} params
+ * @return {Promise} Promise object containing message and data.
+ */
+export const calcRegionStats = async function (params) {
+    const startTime = Date.now();
+    let doneCounter = 0;
+    const query = {};
+    const fields = { _id: 0, cid: 1, parents: 1, photostat: 1, paintstat: 1, cstat: 1 };
+
+    if (params.cids && params.cids.length) {
+        query.cid = { $in: params.cids };
+    }
+
+    const queueLength = await RegionStatQueue.estimatedDocumentCount();
+
+    if (queueLength) {
+        logger.info(`calcRegionStats: Heads up, removing ${queueLength} queue items`);
+        // Delete photos stat queue first
+        await RegionStatQueue.deleteMany({});
+    }
+
+    let changeCounter = 0;
+    let changeRegionCounter = 0;
+
+    function countChangingValues(current, upcoming) {
+        let changedSomething = false;
+
+        if (!current) {
+            current = {};
+        }
+
+        for (const key in upcoming) {
+            if (upcoming[key] !== current[key]) {
+                changeCounter++;
+                changedSomething = true;
+            }
+        }
+
+        return changedSomething;
+    }
+
+    const count = await Region.countDocuments(query);
+    logger.info(`calcRegionStats: Starting stat calculation for ${count} regions`);
+    const regions = await Region.find(query, fields).sort({ cid: 1 }).exec();
+
+    for (const region of regions) {
+        const level = region.parents && region.parents.length || 0;
+        const regionHasChildren = await Region.countDocuments({ parents: region.cid }) > 0;
+
+        const queryC = { del: null };
+        const queryImage = {};
+        const queryPhoto = { type: 1 };
+        const queryPaint = { type: 2 };
+        const $update = {
+            photostat: {
+                all: 0, geo: 0, own: 0, owngeo: 0,
+                s0: 0, s1: 0, s2: 0, s3: 0, s4: 0, s5: 0, s7: 0, s9: 0,
+            },
+            paintstat: {
+                all: 0, geo: 0, own: 0, owngeo: 0,
+                s0: 0, s1: 0, s2: 0, s3: 0, s4: 0, s5: 0, s7: 0, s9: 0,
+            },
+            cstat: {
+                all: 0, del: 0,
+                s5: 0, s7: 0, s9: 0,
+            },
+        };
+
+        queryC['r' + level] = region.cid;
+        queryImage['r' + level] = region.cid;
+        queryPhoto['r' + level] = region.cid;
+        queryPaint['r' + level] = region.cid;
+        // Returns array of objects with count for each image type and status value
+        // [{type: 1, count: 9, statuses: {s: 0, count: 7, s: 1, count: 2...}},...]
+        const statusesForTypes = await Photo.aggregate([
+            { $match: queryImage },
+            { $project: { _id: 0, type: 1, s: 1 } },
+            { $group: { _id: { type: '$type', status: '$s' }, scount: { $sum: 1 } } },
+            { $group: {
+                _id: '$_id.type',
+                statuses: { $push: { s: '$_id.status', count: '$scount' } },
+                count: { $sum: '$scount' },
+            } },
+            { $project: { type: '$_id', statuses: 1, count: 1 } },
+            { $sort: { type: 1 } },
+        ]);
+
+        let photos;
+        let paintings;
+
+        if (statusesForTypes) {
+            photos = statusesForTypes.find(stat => stat.type === 1);
+            paintings = statusesForTypes.find(stat => stat.type === 2);
+        }
+
+        if (photos) {
+            $update.photostat.all = photos.count;
+            photos.statuses.forEach(status => {
+                $update.photostat['s' + status.s] = status.count;
+            });
+            $update.photostat.geo = await Photo.countDocuments((queryPhoto.geo = { $exists: true }, queryPhoto));
+
+            if (regionHasChildren) {
+                $update.photostat.owngeo = await Photo.countDocuments((queryPhoto['r' + (level + 1)] = null, queryPhoto));
+                $update.photostat.own = await Photo.countDocuments((delete queryPhoto.geo, queryPhoto));
+            } else {
+                $update.photostat.owngeo = $update.photostat.geo;
+                $update.photostat.own = $update.photostat.all;
+            }
+        }
+
+        if (paintings) {
+            $update.paintstat.all = paintings.count;
+            paintings.statuses.forEach(status => {
+                $update.paintstat['s' + status.s] = status.count;
+            });
+            $update.paintstat.geo = await Photo.countDocuments((queryPaint.geo = { $exists: true }, queryPaint));
+
+            if (regionHasChildren) {
+                $update.paintstat.owngeo = await Photo.countDocuments((queryPaint['r' + (level + 1)] = null, queryPaint));
+                $update.paintstat.own = await Photo.countDocuments((delete queryPaint.geo, queryPaint));
+            } else {
+                $update.paintstat.owngeo = $update.paintstat.geo;
+                $update.paintstat.own = $update.paintstat.all;
+            }
+        }
+
+        $update.cstat.s5 = await Comment.countDocuments((queryC.s = 5, queryC));
+        $update.cstat.s7 = await Comment.countDocuments((queryC.s = 7, queryC));
+        $update.cstat.s9 = await Comment.countDocuments((queryC.s = 9, queryC));
+        $update.cstat.del = await Comment.countDocuments((delete queryC.s, queryC.del = { $exists: true }, queryC));
+        $update.cstat.all = $update.cstat.s5 + $update.cstat.s7 + $update.cstat.s9 + $update.cstat.del;
+
+        await Region.updateOne({ cid: region.cid }, { $set: $update });
+
+        const currentChangeCounter = changeCounter;
+        countChangingValues(region.photostat, $update.photostat);
+        countChangingValues(region.paintstat, $update.paintstat);
+        countChangingValues(region.cstat, $update.cstat);
+
+        if (changeCounter !== currentChangeCounter) {
+            changeRegionCounter++;
+        }
+
+        doneCounter++;
+
+        if (doneCounter % 100 === 0) {
+            const timestamp = (Date.now() - startTime) / 1000;
+            logger.info(`calcRegionStats: Calculated stats for ${doneCounter} region. Cumulative time: ${timestamp}s`);
+        }
+    }
+
+    return Promise.resolve({
+        data: { valuesChanged: changeCounter, regionChanged: changeRegionCounter },
+    });
+}
+
 
 async function recalcStatistics({ cids = [] }) {
     const { handshake: { usObj: iAm } } = this;
