@@ -4,7 +4,6 @@ import log4js from 'log4js';
 import locale from 'locale';
 import config from '../config';
 import Utils from '../commons/Utils';
-import { dbEval } from './connection';
 import * as regionController from './region';
 import { parse as parseCookie } from 'cookie';
 import { userSettingsDef, clientParams } from './settings';

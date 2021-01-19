@@ -8,7 +8,7 @@ import turfIntersect from '@turf/intersect';
 import geojsonRewind from 'geojson-rewind';
 import geojsonHint from '@mapbox/geojsonhint';
 import geojsonArea from '@mapbox/geojson-area';
-import { waitDb, dbEval } from './connection';
+import { waitDb } from './connection';
 import constants from './constants.js';
 import * as _session from './_session.js';
 import { User } from '../models/User';

@@ -2,7 +2,7 @@ import _ from 'lodash';
 import log4js from 'log4js';
 import Utils from '../commons/Utils';
 import constants from './constants.js';
-import { waitDb, dbEval } from './connection';
+import { waitDb } from './connection';
 import { Photo } from '../models/Photo';
 import { Cluster, ClusterPaint, ClusterParams } from '../models/Cluster';
 import { ApplicationError, AuthorizationError, BadParamsError } from '../app/errors';

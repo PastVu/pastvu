@@ -10,7 +10,6 @@ let getDBResolve;
 let getDBReject;
 
 export let db = null;
-export let dbEval = null;
 export let dbNative = null;
 export let dbRedis = null;
 
@@ -95,16 +94,6 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
                 });
 
                 dbNative = db.db;
-
-                // Wrapper to deal with eval crash on some enviroments (gentoo), when one of parameters are object
-                // https://jira.mongodb.org/browse/SERVER-21041
-                // So, do parameters stringify and parse them inside eval function
-                // mongodb-native eval returns promise
-                dbEval = (functionName, params, options) => dbNative.eval(
-                    `function (params) {return ${functionName}.apply(null, JSON.parse(params));}`,
-                    JSON.stringify(Array.isArray(params) ? params : [params]),
-                    options
-                );
 
                 await Promise.all(modelPromises.map(modelPromise => modelPromise(db)));
                 modelPromises.splice(0, modelPromises.length); // Clear promises array

@@ -11,7 +11,7 @@ import config from '../config';
 import constants from './constants';
 import Utils from '../commons/Utils';
 import childProcess from 'child_process';
-import { waitDb, dbEval } from './connection';
+import { waitDb } from './connection';
 import { Photo, PhotoConveyer, PhotoConveyerError, STPhotoConveyer } from '../models/Photo';
 import { User } from '../models/User';
 import constantsError from '../app/errors/constants';
