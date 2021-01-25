@@ -260,6 +260,11 @@ define([
                         name: 'regions',
                         valueKey: 'title',
                         limit: 10,
+                        template: function(context) {
+                            const title = "<p>" + context.title + "</p>";
+                            const parentTitle = context.parentTitle ? "<p style='color: #aaa; font-size 0.9em'>" + context.parentTitle + "</p>" : ''
+                            return title + parentTitle;
+                        },
                         local: this.regionsTypehead/*[{title: 'США', tokens: ['USA', 'США', 'Соединенные Штаты Америки']}]*/
                     }
                 })
@@ -425,18 +430,20 @@ define([
                 region = arr[i];
                 region.level = region.parents.length;
 
+
+                if (region.level) {
+                    region.parent = hash[region.parents[region.level - 1]];
+                }
+
                 // Due to some bug in tokenfield/typehead we have typehead list created only once and never removed,
                 // so track region existence
                 region.exists = false;
                 this.regionsTypehead.push({
                     title: region.title_local,
+                    parentTitle: region.parent && region.parent.title_local,
                     tokens: [String(cid), region.title_local, region.title_en]
                 });
                 this.regionsHashByTitle[region.title_local] = region;
-
-                if (region.level) {
-                    region.parent = hash[region.parents[region.level - 1]];
-                }
 
                 cid = region.cid;
 
