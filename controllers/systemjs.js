@@ -1,8 +1,8 @@
 /* eslint no-var: 0, object-shorthand: [2, 'never'] */
-/*
+/**
  global linkifyUrlString: true, toPrecision: true, toPrecision6: true, toPrecisionRound:true,
  geoToPrecision:true, spinLng:true, regionClearPhotoTitle:true,
- regionsAssignPhotos:true, regionsAssignComments:true, calcPhotoStats:true,, calcUserStats:true, calcRegionStats:true
+ regionsAssignPhotos:true, regionsAssignComments:true, calcPhotoStats:true
  */
 
 /**
@@ -12,32 +12,33 @@
 
 const log4js = require('log4js');
 const mongoose = require('mongoose');
-const connection = require('./connection');
-
-const waitDb = connection.waitDb;
+const waitDb = require('./connection').waitDb;
 const logger = log4js.getLogger('systemjs.js');
 
 waitDb.then(db => {
+    // Clean up existing functions in db.system.js
+    db.db.collection('system.js').deleteMany({});
+
     // Save function to db.system.js
     function saveSystemJSFunc(func) {
         if (!func || !func.name) {
             logger.error('saveSystemJSFunc: function name is not defined');
         }
 
-        db.db.collection('system.js').save(
-            {
-                _id: func.name,
-                value: new mongoose.mongo.Code(func.toString()),
-            },
-            function saveCallback(err) {
+        db.db.collection('system.js').insertOne(
+            { _id: func.name, value: new mongoose.mongo.Code(func.toString()) },
+            err => {
                 if (err) {
-                    logger.error(err);
+                    logger.error(err.message);
+                } else {
+                    logger.info(`saveSystemJSFunc: function ${func.name} is added`);
                 }
             }
         );
     }
 
     // Re-generate photo map.
+    // Used to be a part of cluster.recalcAll function.
     saveSystemJSFunc(function photosToMapAll() {
         var startTime = Date.now();
 
@@ -112,6 +113,7 @@ waitDb.then(db => {
     });
 
     // Для фотографий с координатой заново расчитываем регионы
+    // Used in calcUserPhotoCommentsRegionsStat
     saveSystemJSFunc(function regionsAssignPhotos(clearBefore) {
         var startTime = Date.now();
         var query = { cid: { $ne: 1000000 } };
@@ -190,6 +192,7 @@ waitDb.then(db => {
 
     // Для фотографий с координатой заново расчитываем регионы
     // TOO slow, use regionsAssignPhotos instead
+    // TODO: Consider to remove.
     saveSystemJSFunc(function regionsAssignPhotosOld(cids) {
         if (!cids) {
             return;
@@ -271,7 +274,8 @@ waitDb.then(db => {
         return { message: 'Photo assigning finished in ' + (Date.now() - startTime) / 1000 + 's' };
     });
 
-    //Присваиваем регионы и координаты комментариям фотографий
+    // Присваиваем регионы и координаты комментариям фотографий
+    // Used in calcUserPhotoCommentsRegionsStat
     saveSystemJSFunc(function regionsAssignComments() {
         var startTime = Date.now();
         var photoCounter = 0;
@@ -333,8 +337,9 @@ waitDb.then(db => {
         return { message: 'All assigning finished in ' + (Date.now() - startTime) / 1000 + 's' };
     });
 
-    //Расчет центров регионов
-    //withManual - Всех регионов, включая тех, у кого центр установлен вручную
+    // Расчет центров регионов
+    // withManual - Всех регионов, включая тех, у кого центр установлен вручную
+    // Used in basepatch/v1.0.1.js
     saveSystemJSFunc(function regionsCalcCenter(withManual) {
         var startTime = Date.now();
         var query = { cid: { $ne: 1000000 } };
@@ -393,7 +398,8 @@ waitDb.then(db => {
         return { message: 'All finished in ' + (Date.now() - startTime) / 1000 + 's' };
     });
 
-    //Расчет bbox регионов
+    // Расчет bbox регионов
+    // Used in basepatch/v1.0.1.js
     saveSystemJSFunc(function regionsCalcBBOX() {
         var startTime = Date.now();
         var query = { cid: { $ne: 1000000 } };
@@ -493,7 +499,8 @@ waitDb.then(db => {
         return { message: 'All bbox finished in ' + (Date.now() - startTime) / 1000 + 's' };
     });
 
-    //Расчет количества вершин полигонов
+    // Расчет количества вершин полигонов
+    // Used in basepatch/v1.0.1.js
     saveSystemJSFunc(function regionsCalcPointsNum(cidArr) {
         var startTime = Date.now();
         var query = {};
@@ -521,7 +528,8 @@ waitDb.then(db => {
         return { message: 'All calculated in ' + (Date.now() - startTime) / 1000 + 's' };
     });
 
-    //Расчет количества полигонов в регионе {exterior: 0, interior: 0}
+    // Расчет количества полигонов в регионе {exterior: 0, interior: 0}
+    // Used in basepatch/v1.0.1.js
     saveSystemJSFunc(function regionsCalcPolygonsNum(cidArr) {
         var startTime = Date.now();
         var query = {};
@@ -571,7 +579,8 @@ waitDb.then(db => {
         return { message: 'All calculated in ' + (Date.now() - startTime) / 1000 + 's' };
     });
 
-    //Убирает название(или массив названий) региона в начале названия фотографии
+    // Убирает название(или массив названий) региона в начале названия фотографии
+    // Used in regionsAllClearPhotoTitle
     saveSystemJSFunc(function regionClearPhotoTitle(regionString) {
         if (!regionString) {
             return { message: 'Error parameter required' };
@@ -678,6 +687,8 @@ waitDb.then(db => {
         };
     });
 
+    // Used in calcUserPhotoCommentsRegionsStat
+    // Used in basepatch/oldtransfer.js
     saveSystemJSFunc(function calcPhotoStats() {
         var startTime = Date.now();
         var photos = db.photos.find({}, { _id: 1 }).sort({ cid: -1 }).toArray();
@@ -829,6 +840,7 @@ waitDb.then(db => {
         };
     });
 
+    // Helper functions
     saveSystemJSFunc(function toPrecision(number, precision) {
         var divider = Math.pow(10, precision || 6);
 
@@ -838,6 +850,7 @@ waitDb.then(db => {
         return toPrecision(number, 6);
     });
 
+    // Used in basepatch/oldtransfer.js
     saveSystemJSFunc(function toPrecisionRound(number, precision) {
         var divider = Math.pow(10, precision || 6);
 
@@ -899,6 +912,7 @@ waitDb.then(db => {
         return replacedText;
     });
 
+    // Used in basepatch/oldtransfer.js
     saveSystemJSFunc(function inputIncomingParse(txt, spbPhotoShift) {
         var result = String(txt);
 
