@@ -8,7 +8,6 @@ import { ready as subscrReady } from './controllers/subscr';
 import { ready as settingsReady } from './controllers/settings';
 
 import './models/_initValues';
-import './controllers/systemjs';
 
 export async function configure(startStamp) {
     const logger = log4js.getLogger('notifier');
