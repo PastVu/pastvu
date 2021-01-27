@@ -48,6 +48,12 @@ function getQueue(name) {
  * @return {Queue}
  */
 export async function createQueue(name) {
+    if (queueInstances.has(name)) {
+        // Queue is already created and initialised.
+        console.warn(`Calling createQueue on existing queue ${name}, use getQueue instead.`);
+        return queueInstances.get(name);
+    }
+
     const queueLogPrefix = `Queue '${name}'`;
     logger.info(`${queueLogPrefix} is initialised`);
     const queue = new Queue(name, { redis: config.redis });
@@ -139,10 +145,12 @@ export class JobCompletionListener {
 
 /**
  * Run job and return result.
- * @param {string} name Name of the queue.
+ * @param {string} name Name of the job.
+ * @param {Object} params Params to pass to calling function.
  * @return {Promise} Resolving to result.data from job processing promise.
  */
 export function runJob(jobName, params) {
+    // TODO: Only add job if it is not in the queue already or running now.
     return getQueue('userjobs').add(jobName, params || {})
         .then(job => {
             logger.info(`Added job '${job.name}' for processing in '${job.queue.name}' queue`);
