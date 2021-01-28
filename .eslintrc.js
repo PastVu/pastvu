@@ -27,6 +27,10 @@ module.exports = {
         'babel',
     ],
 
+    "extends": [
+        "plugin:jsdoc/recommended",
+    ],
+
     // Warn about unused eslint-disable and eslint-disable-line comments
     "reportUnusedDisableDirectives": true,
 
@@ -34,6 +38,13 @@ module.exports = {
     },
 
     'rules': {
+        // jsdoc is not compulsory.
+        'jsdoc/require-jsdoc': 0,
+        'jsdoc/require-param': 0,
+        'jsdoc/require-param-description': 0,
+        'jsdoc/require-returns': 0,
+        'jsdoc/require-returns-description': 0,
+
         // babel inserts `'use strict';` for us
         'strict': [0, 'never'],
 
