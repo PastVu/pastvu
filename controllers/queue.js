@@ -168,5 +168,6 @@ export function runJob(jobName, params) {
             // Wait for job completion.
             return job.finished();
         })
-        .then(result => result.data || {});
+        .then(result => result.data || {})
+        .catch(error => ({ 'error': error }));
 }

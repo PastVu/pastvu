@@ -5,7 +5,7 @@ import constants from './constants.js';
 import { waitDb } from './connection';
 import { Photo } from '../models/Photo';
 import { Cluster, ClusterPaint, ClusterParams } from '../models/Cluster';
-import { AuthorizationError, BadParamsError } from '../app/errors';
+import { ApplicationError, AuthorizationError, BadParamsError } from '../app/errors';
 import { runJob } from './queue';
 
 const logger = log4js.getLogger('cluster.js');
@@ -42,6 +42,10 @@ async function recalcAll({ params, conditions }) {
     await readClusterParams();
 
     const result = await runJob('clusterPhotosAll', { withGravity: true });
+
+    if (result && result.error) {
+        throw new ApplicationError({ message: result.error.message });
+    }
 
     // This function used to trigger photosToMapAll db stored function,
     // which does not seem required as photo coordinates are not affected by
