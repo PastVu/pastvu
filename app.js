@@ -318,6 +318,7 @@ export async function configure(startStamp) {
     // worker instance.
     waitDb.then(() => {
         const listener = new JobCompletionListener('session');
+
         listener.addCallback('archiveExpiredSessions', session.cleanArchivedSessions);
         listener.addCallback('calcUserStats', session.regetUsersAfterStatsUpdate);
         listener.init();

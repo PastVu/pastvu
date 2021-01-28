@@ -2310,7 +2310,9 @@ export const calcRegionStats = async function (params) {
     }
 
     const count = await Region.countDocuments(query);
+
     logger.info(`calcRegionStats: Starting stat calculation for ${count} regions`);
+
     const regions = await Region.find(query, fields).sort({ cid: 1 }).exec();
 
     for (const region of regions) {
@@ -2340,6 +2342,7 @@ export const calcRegionStats = async function (params) {
         queryImage['r' + level] = region.cid;
         queryPhoto['r' + level] = region.cid;
         queryPaint['r' + level] = region.cid;
+
         // Returns array of objects with count for each image type and status value
         // [{type: 1, count: 9, statuses: {s: 0, count: 7, s: 1, count: 2...}},...]
         const statusesForTypes = await Photo.aggregate([
@@ -2404,6 +2407,7 @@ export const calcRegionStats = async function (params) {
         await Region.updateOne({ cid: region.cid }, { $set: $update });
 
         const currentChangeCounter = changeCounter;
+
         countChangingValues(region.photostat, $update.photostat);
         countChangingValues(region.paintstat, $update.paintstat);
         countChangingValues(region.cstat, $update.cstat);
@@ -2416,6 +2420,7 @@ export const calcRegionStats = async function (params) {
 
         if (doneCounter % 100 === 0) {
             const timestamp = (Date.now() - startTime) / 1000;
+
             logger.info(`calcRegionStats: Calculated stats for ${doneCounter} region. Cumulative time: ${timestamp}s`);
         }
     }
@@ -2423,7 +2428,7 @@ export const calcRegionStats = async function (params) {
     return Promise.resolve({
         data: { valuesChanged: changeCounter, regionChanged: changeRegionCounter },
     });
-}
+};
 
 
 async function recalcStatistics({ cids = [] }) {

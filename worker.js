@@ -2,7 +2,7 @@ import ms from 'ms';
 import moment from 'moment';
 import log4js from 'log4js';
 import config from './config';
-import connectDb, { waitDb, dbRedis } from './controllers/connection';
+import connectDb, { waitDb } from './controllers/connection';
 import { archiveExpiredSessions, calcUserStats } from './controllers/_session';
 import { convertPhotosAll } from './controllers/converter';
 import { clusterPhotosAll } from './controllers/cluster';
@@ -34,16 +34,12 @@ export async function configure(startStamp) {
  * Setup queue for session jobs.
  */
 function setupSessionQueue() {
-    createQueue('session').then((sessionQueue) => {
+    createQueue('session').then(sessionQueue => {
         // session.archiveExpiredSessions
-        sessionQueue.process('archiveExpiredSessions', function(job){
-            return archiveExpiredSessions();
-        });
+        sessionQueue.process('archiveExpiredSessions', job => archiveExpiredSessions(job.data));
 
         // session.calcUserStats
-        sessionQueue.process('calcUserStats', function(job){
-            return calcUserStats();
-        });
+        sessionQueue.process('calcUserStats', job => calcUserStats(job.data));
 
         // Add archiveExpiredSessions periodic job.
         sessionQueue.add('archiveExpiredSessions', {}, {
@@ -65,18 +61,12 @@ function setupSessionQueue() {
  * Setup queue for user jobs (non-regular).
  */
 function setupUserJobsQueue() {
-    createQueue('userjobs').then((userJobsQueue) => {
+    createQueue('userjobs').then(userJobsQueue => {
         // converter.convertPhotosAll
-        userJobsQueue.process('convertPhotosAll', function(job){
-            return convertPhotosAll(job.data);
-        });
+        userJobsQueue.process('convertPhotosAll', job => convertPhotosAll(job.data));
         // cluster.clusterPhotosAll
-        userJobsQueue.process('clusterPhotosAll', function(job){
-            return clusterPhotosAll(job.data);
-        });
+        userJobsQueue.process('clusterPhotosAll', job => clusterPhotosAll(job.data));
         // region.calcRegionStats
-        userJobsQueue.process('calcRegionStats', function(job){
-            return calcRegionStats(job.data);
-        });
+        userJobsQueue.process('calcRegionStats', job => calcRegionStats(job.data));
     });
 }

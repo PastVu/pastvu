@@ -1,8 +1,6 @@
 /* eslint no-var: 0, object-shorthand: [2, 'never'] */
-/**
- global linkifyUrlString: true, toPrecision: true, toPrecision6: true, toPrecisionRound:true,
- geoToPrecision:true, spinLng:true, regionClearPhotoTitle:true,
- regionsAssignPhotos:true, regionsAssignComments:true, calcPhotoStats:true
+/* global linkifyUrlString: true, toPrecision: true, toPrecision6: true, toPrecisionRound:true, geoToPrecision:true,
+   regionClearPhotoTitle:true, regionsAssignPhotos:true, regionsAssignComments:true, calcPhotoStats:true
  */
 
 /**

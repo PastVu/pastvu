@@ -5,7 +5,7 @@ import constants from './constants.js';
 import { waitDb } from './connection';
 import { Photo } from '../models/Photo';
 import { Cluster, ClusterPaint, ClusterParams } from '../models/Cluster';
-import { ApplicationError, AuthorizationError, BadParamsError } from '../app/errors';
+import { AuthorizationError, BadParamsError } from '../app/errors';
 import { runJob } from './queue';
 
 const logger = log4js.getLogger('cluster.js');
@@ -59,15 +59,18 @@ async function recalcAll({ params, conditions }) {
  * @return {Promise} Promise object containing message and data.
  */
 export const clusterPhotosAll = async function (params) {
-    let clusterparamsQuery = { sgeo: { $exists: false } };
+    const clusterparamsQuery = { sgeo: { $exists: false } };
+
     if (params.zooms) {
         clusterparamsQuery.z = { $in: params.zooms };
     }
+
     const clusterZooms = await ClusterParams.find(clusterparamsQuery, { _id: 0 }).sort({ z: 1 }).exec();
 
     const photosAllCount = await Photo.countDocuments({ s: 5, geo: { $exists: true } });
-    const logByNPhotos =  params.logByNPhotos || photosAllCount / 20 >> 0;
+    const logByNPhotos = params.logByNPhotos || photosAllCount / 20 >> 0;
     const withGravity = params.withGravity || false;
+
     logger.info(`clusterPhotosAll: Start to clusterize ${photosAllCount} photos, progress is logged every ${logByNPhotos}. Gravity: ${withGravity}`);
 
     for (const clusterZoom of clusterZooms) {
@@ -99,11 +102,13 @@ export const clusterPhotosAll = async function (params) {
         clustersArr.push([]);
 
         const photos = await Photo.find({ s: 5, geo: { $exists: true } }, { _id: 0, geo: 1, year: 1, year2: 1 }).exec();
+
         for (const photo of photos) {
             photoCounter++;
 
-            let geoPhoto = photo.geo;
-            let geoPhotoCorrection = [0, 0];
+            const geoPhoto = photo.geo;
+            const geoPhotoCorrection = [0, 0];
+
             geoPhotoCorrection[0] = geoPhoto[0] < 0 ? -1 : 0;
             geoPhotoCorrection[1] = geoPhoto[1] > 0 ? 1 : 0;
 
@@ -118,7 +123,7 @@ export const clusterPhotosAll = async function (params) {
             if (cluster === undefined) {
                 clustersCount++;
                 clusters[clustCoordId] = cluster = {
-                    g: g,
+                    g,
                     z: clusterZoom.z,
                     geo: [g[0] + clusterZoom.wHalf, g[1] - clusterZoom.hHalf],
                     c: 0,
@@ -152,8 +157,10 @@ export const clusterPhotosAll = async function (params) {
         await Cluster.deleteMany({ z: clusterZoom.z });
 
         let clustersCounter = clustersArr.length;
+
         while (clustersCounter) {
             const clustersArrInner = clustersArr[--clustersCounter];
+
             clustersArrInner.sort(sorterByCount);
 
             let clustersCounterInner = clustersArrInner.length;
@@ -175,6 +182,7 @@ export const clusterPhotosAll = async function (params) {
                     if (cluster.g[0] < -180 || cluster.g[0] > 180) {
                         Utils.geo.spinLng(cluster.g);
                     }
+
                     // Link it to photo that will represent cluster.
                     cluster.p = await Photo.findOne({ s: 5, geo: { $near: cluster.geo } }, {
                         _id: 0,
@@ -192,16 +200,19 @@ export const clusterPhotosAll = async function (params) {
             // Record current batch of clusters.
             await Cluster.insertMany(clustersArrInner);
             clustersInserted += clustersArrInner.length;
+
             const timestamp = (Date.now() - startTime) / 1000;
+
             logger.info(`clusterPhotosAll: ${clusterZoom.z}: Inserted ${clustersInserted}/${clustersCount} clusters in ${timestamp}s`);
         }
     }
 
     const clustersCount = await Cluster.estimatedDocumentCount();
+
     return Promise.resolve({
         data: { photos: photosAllCount, clusters: clustersCount },
     });
-}
+};
 
 async function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, isPainting) {
     const ClusterModel = isPainting ? ClusterPaint : Cluster;

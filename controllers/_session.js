@@ -740,8 +740,8 @@ export const checkSessWaitingConnect = (function () {
 export const archiveExpiredSessions = async function () {
     const archiveDate = new Date();
     const start = archiveDate.getTime();
-    let resultKeys = [];
-    let insertBulk = [];
+    const resultKeys = [];
+    const insertBulk = [];
     let counter = 0;
 
     const userQuery = { user: { $exists: true }, stamp: { $lte: new Date(start - SESSION_USER_LIFE) } };
@@ -781,21 +781,25 @@ export const archiveExpiredSessions = async function () {
         message: `${counter} expired registered sessions moved to archive, ${countRemovedAnon} expired anonymous sessions dropped`,
         data: JSON.stringify({ keys: resultKeys }),
     };
+
     return Promise.resolve(result);
-}
+};
 
 /**
  * Clean archived sessions on frontends following archiveExpiredSessions call
  * by worker process.
  * @param {string} JSON serialised data returned by archiveExpiredSessions.
  */
-export const cleanArchivedSessions = function(data) {
+export const cleanArchivedSessions = function (data) {
     data = JSON.parse(data);
+
     let removedCount = 0;
+
     // Check if some of archived sessions is still in memory (in hashes), remove it from memory
     _.forEach(data.keys, key => {
         if (sessConnected.has(key)) {
             removedCount++;
+
             const session = sessConnected.get(key);
             const usObj = usSid.get(key);
 
@@ -814,7 +818,7 @@ export const cleanArchivedSessions = function(data) {
         }
     });
     logger.info(`cleanArchivedSessions: ${removedCount} archived sessions were removed from hashes`);
-}
+};
 
 /**
  * Periodically recalculate user statistics, like pcount, which might get out of sync over time.
@@ -823,7 +827,7 @@ export const cleanArchivedSessions = function(data) {
  * @return {Promise} Promise object containing message.
  */
 export const calcUserStats = async function (logins) {
-    let query = {};
+    const query = {};
 
     if (logins && logins.length) {
         query.login = { $in: logins };
@@ -832,9 +836,10 @@ export const calcUserStats = async function (logins) {
     const users = await User.find(query, { _id: 1 }).sort({ cid: -1 }).exec();
 
     for (const user of users) {
-        let $set = {};
-        let $unset = {};
-        let $update = {};
+        const $set = {};
+        const $unset = {};
+        const $update = {};
+
         await Promise.all([
             Photo.countDocuments({ user: user._id, s: 5 }),
             Photo.countDocuments({ user: user._id, s: { $in: [0, 1, 2] } }),
@@ -860,7 +865,7 @@ export const calcUserStats = async function (logins) {
                 $unset.pdcount = 1;
             }
 
-            if ((ccount + cncount) > 0) {
+            if (ccount + cncount > 0) {
                 $set.ccount = ccount + cncount;
             } else {
                 $unset.ccount = 1;
@@ -882,16 +887,17 @@ export const calcUserStats = async function (logins) {
     return Promise.resolve({
         message: `User statistics for ${users.length} users was calculated`,
     });
-}
+};
 
 /**
  * Reget users on frontends following calcUserStats call
  * by worker process.
  */
-export const regetUsersAfterStatsUpdate = function() {
+export const regetUsersAfterStatsUpdate = function () {
     const onlineUserCount = regetUsers(usObj => usObj.registered, true);
+
     logger.info(`regetUsersAfterStatsUpdate: ${onlineUserCount} online users have been synced with db and re-populated.`);
-}
+};
 
 // Handler of http-request or websocket-connection for session and usObj create/select
 export async function handleConnection(ip, headers, overHTTP, req) {

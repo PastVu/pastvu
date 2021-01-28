@@ -44,7 +44,7 @@ let working = 0; // Now converting
 exitHook(() => {
     logger.info('Stopping conversion conveyor');
     conveyerEnabled = false;
-})
+});
 
 const imageVersions = {
     a: {
@@ -695,11 +695,12 @@ export async function addPhotosAll(params) {
  */
 export const convertPhotosAll = async function (params) {
     const addDate = new Date();
-    let query = {};
-    let conveyer = [];
+    const query = {};
+    const conveyer = [];
 
     if (params.login) {
         const user = await User.findOne({ login: params.login }).exec();
+
         if (user) {
             query.user = user._id;
         }
@@ -738,12 +739,14 @@ export const convertPhotosAll = async function (params) {
     }
 
     const count = await Photo.countDocuments(query);
-    logger.info(`convertPhotosAll: Start to fill conveyer for ${ query.user ? query.user + ' user for' : ''}${count} photos`);
+
+    logger.info(`convertPhotosAll: Start to fill conveyer for ${query.user ? query.user + ' user for' : ''}${count} photos`);
 
     const photos = await Photo.find(query, { _id: 0, cid: 1 }).sort({ cid: 1 }).exec();
+
     for (const photo of photos) {
-        if (!(await PhotoConveyer.findOne({ cid: photo.cid }).exec())) {
-            let row = { cid: photo.cid, priority: params.priority, added: addDate };
+        if (!await PhotoConveyer.findOne({ cid: photo.cid }).exec()) {
+            const row = { cid: photo.cid, priority: params.priority, added: addDate };
 
             if (params.webpOnly) {
                 row.webpOnly = true;
@@ -760,7 +763,7 @@ export const convertPhotosAll = async function (params) {
     return Promise.resolve({
         data: { conveyorAdded: conveyer.length },
     });
-}
+};
 
 /**
  * Remove photos from conveyor

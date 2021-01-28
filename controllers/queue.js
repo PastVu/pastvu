@@ -1,7 +1,5 @@
-import ms from 'ms';
 import log4js from 'log4js';
 import config from '../config';
-import connectDb, { waitDb, dbRedis } from './connection';
 import Queue from 'bull';
 import constantsError from '../app/errors/constants';
 import { ApplicationError } from '../app/errors';
@@ -20,11 +18,10 @@ exitHook(cb => {
  * @return {Promise}
  */
 function shutdownQueues() {
-    const queues = Array.from(queueInstances.values()).map((queue) => {
-        return queue.close(false).then(() => {
-            logger.info(`Closed queue '${queue.name}'`);
-        });
-    });
+    const queues = Array.from(queueInstances.values()).map(queue => queue.close(false).then(() => {
+        logger.info(`Closed queue '${queue.name}'`);
+    }));
+
     return Promise.all(queues);
 }
 
@@ -37,8 +34,11 @@ function getQueue(name) {
     if (queueInstances.has(name)) {
         return queueInstances.get(name);
     }
+
     const queue = new Queue(name, { redis: config.redis });
+
     queueInstances.set(name, queue);
+
     return queue;
 }
 
@@ -51,51 +51,58 @@ export async function createQueue(name) {
     if (queueInstances.has(name)) {
         // Queue is already created and initialised.
         console.warn(`Calling createQueue on existing queue ${name}, use getQueue instead.`);
+
         return queueInstances.get(name);
     }
 
     const queueLogPrefix = `Queue '${name}'`;
+
     logger.info(`${queueLogPrefix} is initialised`);
+
     const queue = new Queue(name, { redis: config.redis });
+
     // Clear all jobs left from previous run.
     // TODO: Check if this is needed especially if we use more than one
     // worker.
-    await queue.getJobs().then(jobs => {
-        return Promise.all([queue.empty(), queue.removeJobs('*')]);
-    })
-    .then(() => {
-        logger.info(`${queueLogPrefix} is cleared.`);
-    });
+    await queue.getJobs().then(() => Promise.all([queue.empty(), queue.removeJobs('*')]))
+        .then(() => {
+            logger.info(`${queueLogPrefix} is cleared.`);
+        });
 
     // Report on job start to log.
-    queue.on('active', function(job/*, jobPromise*/) {
+    queue.on('active', (job/*, jobPromise*/) => {
         logger.info(`${queueLogPrefix} job '${job.name}' processing started`);
     });
 
     // Report on job completion to log.
-    queue.on('completed', function(job, result) {
+    queue.on('completed', (job, result) => {
         job = job.toJSON();
         logger.info(`${queueLogPrefix} job '${job.name}' is completed in ${(job.finishedOn - job.processedOn) / 1000}s.`);
+
         if (result.message) {
             logger.info(`${queueLogPrefix} job '${job.name}' reported: ${result.message}`);
         }
+
         if (job.opts.repeat) {
             const opts = job.opts.repeat;
+
             if (opts.every) {
                 const nextRunMillis = Math.floor(Date.now() / opts.every) * opts.every + opts.every;
                 const nextRun = new Date(nextRunMillis).toString();
+
                 logger.info(`${queueLogPrefix} job '${job.name}' next run is scheduled on ${nextRun}`);
             }
             // TODO: Output next run info for jobs defined using cron syntax.
         }
     });
     // Report on job failed to log.
-    queue.on('failed', function(job, err) {
+    queue.on('failed', (job, err) => {
         job = job.toJSON();
         logger.error(`${queueLogPrefix} job '${job.name}' failed with error: ${err}`);
     });
     // Add to the list of opened queues.
     queueInstances.set(name, queue);
+
     return queue;
 }
 
@@ -120,9 +127,12 @@ export class JobCompletionListener {
                     logger.error(`${jobId} can't be located, make sure you don't remove job on completion`);
                     throw new ApplicationError(constantsError.QUEUE_JOB_NOT_FOUND);
                 }
+
                 if (this.jobCompletionCallbacks.has(job.name)) {
                     logger.info(`Executing callback on job '${job.name}' completion in '${job.queue.name}' queue`);
+
                     const callback = this.jobCompletionCallbacks.get(job.name);
+
                     result = JSON.parse(result); // In global event result is serialised.
                     callback(result.data || null);
                 }
@@ -154,10 +164,9 @@ export function runJob(jobName, params) {
     return getQueue('userjobs').add(jobName, params || {})
         .then(job => {
             logger.info(`Added job '${job.name}' for processing in '${job.queue.name}' queue`);
+
             // Wait for job completion.
             return job.finished();
         })
-        .then(result => {
-            return result.data || {};
-        });
+        .then(result => result.data || {});
 }
