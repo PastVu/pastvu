@@ -105,9 +105,8 @@ export const clusterPhotosAll = async function (params) {
 
         clustersArr.push([]);
 
-        const photos = await Photo.find({ s: 5, geo: { $exists: true } }, { _id: 0, geo: 1, year: 1, year2: 1 }).exec();
-
-        for (const photo of photos) {
+        // Use cursor.
+        for await (const photo of Photo.find({ s: 5, geo: { $exists: true } }, { _id: 0, geo: 1, year: 1, year2: 1 })) {
             photoCounter++;
 
             const geoPhoto = photo.geo;

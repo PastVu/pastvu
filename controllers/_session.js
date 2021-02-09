@@ -751,9 +751,7 @@ export const archiveExpiredSessions = async function () {
     const { n: countRemovedAnon } = await Session.deleteMany(anonQuery).exec();
 
     // Move each expired registered user session to sessions_archive
-    const sessions = await Session.find(userQuery).limit(5000).exec();
-
-    _.forEach(sessions, session => {
+    for await (const session of Session.find(userQuery).limit(5000)) {
         counter++;
 
         if (session.__v) {
@@ -769,10 +767,10 @@ export const archiveExpiredSessions = async function () {
 
         insertBulk.push(session);
         resultKeys.push(session.key);
-    });
+    }
 
     if (insertBulk.length) {
-        // TODO: Wrap both queries in transaction.
+        // TODO: Wrap both queries in transaction when we have replica set.
         await Session.deleteMany({ key: { $in: resultKeys } }).exec();
         await SessionArchive.insertMany(insertBulk, { ordered: false }); // no exec needed, returns proper promise already!
     }
@@ -828,14 +826,14 @@ export const cleanArchivedSessions = function (data) {
  */
 export const calcUserStats = async function (logins) {
     const query = {};
+    let usersUpdated = 0;
 
     if (logins && logins.length) {
         query.login = { $in: logins };
     }
 
-    const users = await User.find(query, { _id: 1 }).sort({ cid: -1 }).exec();
-
-    for (const user of users) {
+    // Using cursor.
+    for await (const user of User.find(query, { _id: 1 }).sort({ cid: -1 })) {
         const $set = {};
         const $unset = {};
         const $update = {};
@@ -880,12 +878,14 @@ export const calcUserStats = async function (logins) {
                 $update.$unset = $unset;
             }
 
+            usersUpdated++;
+
             return User.updateOne({ _id: user._id }, $update, { upsert: false }).exec();
         });
     }
 
     return Promise.resolve({
-        message: `User statistics for ${users.length} users was calculated`,
+        message: `User statistics for ${usersUpdated} users was calculated`,
     });
 };
 

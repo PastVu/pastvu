@@ -2313,9 +2313,8 @@ export const calcRegionStats = async function (params) {
 
     logger.info(`calcRegionStats: Starting stat calculation for ${count} regions`);
 
-    const regions = await Region.find(query, fields).sort({ cid: 1 }).exec();
-
-    for (const region of regions) {
+    // Using cursor. Disable cursor timeout, this extends max run time from 10 to 30 mins.
+    for await (const region of Region.find(query, fields).sort({ cid: 1 }).cursor().addCursorFlag('noCursorTimeout', true)) {
         const level = region.parents && region.parents.length || 0;
         const regionHasChildren = await Region.countDocuments({ parents: region.cid }) > 0;
 

@@ -742,9 +742,8 @@ export const convertPhotosAll = async function (params) {
 
     logger.info(`convertPhotosAll: Start to fill conveyer for ${query.user ? query.user + ' user for' : ''}${count} photos`);
 
-    const photos = await Photo.find(query, { _id: 0, cid: 1 }).sort({ cid: 1 }).exec();
-
-    for (const photo of photos) {
+    // Using cursor.
+    for await (const photo of Photo.find(query, { _id: 0, cid: 1 }).sort({ cid: 1 })) {
         if (!await PhotoConveyer.findOne({ cid: photo.cid }).exec()) {
             const row = { cid: photo.cid, priority: params.priority, added: addDate };
 
