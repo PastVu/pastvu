@@ -44,6 +44,11 @@ module.exports = {
         'jsdoc/require-param-description': 0,
         'jsdoc/require-returns': 0,
         'jsdoc/require-returns-description': 0,
+        'jsdoc/no-undefined-types': [1, {
+                // Ideally this should be defined using typedef and refer to
+                // mongoose.Types.ObjectId.
+                'definedTypes': ['ObjectId'],
+        }],
 
         // babel inserts `'use strict';` for us
         'strict': [0, 'never'],

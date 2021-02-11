@@ -344,7 +344,11 @@ function getWatertext(photo) {
 
 /**
  * Another step of the conveyor
- * @param photo Photo object
+ *
+ * @param {object} photo Photo object
+ * @param {object} filter
+ * @param {boolean} filter.protect
+ * @param {boolean} filter.webpOnly
  */
 async function conveyorStep(photo, { protect: onlyProtectPublic = false, webpOnly = false }) {
     let itsPublicPhoto = photo.s === status.PUBLIC;
@@ -630,8 +634,10 @@ export function deletePhotoFiles({ photo, fromProtected = false, fromCovered = f
 
 /**
  * Method for add photos to the conveyer
- * @param data Array of objects like {cid: 123}
- * @param priority Priority of convertation in conveyer
+ *
+ * @param {object[]} data Array of objects like {cid: 123}
+ * @param {number} priority Priority of convertation in conveyer
+ * @param {boolean} potectPublicOnly
  */
 export async function addPhotos(data, priority, potectPublicOnly) {
     const toConvertObjs = [];
@@ -662,7 +668,8 @@ export async function addPhotos(data, priority, potectPublicOnly) {
 
 /**
  * Добавление в конвейер конвертации всех фотографий
- * @param params Объект
+ *
+ * @param {object} params Объект
  */
 export async function addPhotosAll(params) {
     const result = await dbEval('convertPhotosAll', [params], { nolock: true });
@@ -680,7 +687,8 @@ export async function addPhotosAll(params) {
 
 /**
  * Remove photos from conveyor
- * @param cids Array of cids
+ *
+ * @param {number[]} cids Array of cids
  */
 export async function removePhotos(cids) {
     if (_.isEmpty(cids)) {
