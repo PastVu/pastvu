@@ -2268,8 +2268,8 @@ async function recalcStats(cids = [], refillCache = false) {
 /**
  * Calculate stats for regions.
  * Used by calcRegionStats job in userjobs queue.
- * @param {Object} params
- * @return {Promise} Promise object containing message and data.
+ * @param {object} params
+ * @return {object} object containing message and data.
  */
 export const calcRegionStats = async function (params) {
     const startTime = Date.now();
@@ -2424,9 +2424,9 @@ export const calcRegionStats = async function (params) {
         }
     }
 
-    return Promise.resolve({
+    return {
         data: { valuesChanged: changeCounter, regionChanged: changeRegionCounter },
-    });
+    };
 };
 
 

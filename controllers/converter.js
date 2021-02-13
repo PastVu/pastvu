@@ -690,8 +690,8 @@ export async function addPhotosAll(params) {
 /**
  * Add photos to coversion conveyor.
  * Used by convertPhotosAll job in userjobs queue.
- * @param {Object} params
- * @return {Promise} Promise object containing message and data.
+ * @param {object} params
+ * @return {object} object containing message and data.
  */
 export const convertPhotosAll = async function (params) {
     const addDate = new Date();
@@ -759,9 +759,7 @@ export const convertPhotosAll = async function (params) {
         await PhotoConveyer.insertMany(conveyer);
     }
 
-    return Promise.resolve({
-        data: { conveyorAdded: conveyer.length },
-    });
+    return { data: { conveyorAdded: conveyer.length } };
 };
 
 /**

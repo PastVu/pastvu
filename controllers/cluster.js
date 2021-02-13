@@ -60,7 +60,7 @@ async function recalcAll({ params, conditions }) {
  * @param {boolean} [params.withGravity]
  * @param {number} [params.logByNPhotos] How often to log progress
  * @param {number[]} [params.zooms] Limit to specified zooms
- * @return {Promise} Promise object containing message and data.
+ * @return {object} object containing message and data.
  */
 export const clusterPhotosAll = async function (params) {
     const clusterparamsQuery = { sgeo: { $exists: false } };
@@ -212,9 +212,9 @@ export const clusterPhotosAll = async function (params) {
 
     const clustersCount = await Cluster.estimatedDocumentCount();
 
-    return Promise.resolve({
+    return {
         data: { photos: photosAllCount, clusters: clustersCount },
-    });
+    };
 };
 
 async function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, isPainting) {

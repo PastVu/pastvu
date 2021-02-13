@@ -735,7 +735,7 @@ export const checkSessWaitingConnect = (function () {
 /**
  * Periodically sends expired session to archive.
  * Used by archiveExpiredSessions job in session queue.
- * @return {Promise} Promise object containing message and data.
+ * @return {object} object containing message and data.
  */
 export const archiveExpiredSessions = async function () {
     const archiveDate = new Date();
@@ -775,12 +775,10 @@ export const archiveExpiredSessions = async function () {
         await SessionArchive.insertMany(insertBulk, { ordered: false }); // no exec needed, returns proper promise already!
     }
 
-    const result = {
+    return {
         message: `${counter} expired registered sessions moved to archive, ${countRemovedAnon} expired anonymous sessions dropped`,
         data: JSON.stringify({ keys: resultKeys }),
     };
-
-    return Promise.resolve(result);
 };
 
 /**
@@ -822,7 +820,7 @@ export const cleanArchivedSessions = function (data) {
  * Periodically recalculate user statistics, like pcount, which might get out of sync over time.
  * Used by calcUserStats job in session queue.
  * @param {string[]} [logins] Array of logins to limit query to.
- * @return {Promise} Promise object containing message.
+ * @return {object} object containing message.
  */
 export const calcUserStats = async function (logins) {
     const query = {};
@@ -884,9 +882,7 @@ export const calcUserStats = async function (logins) {
         });
     }
 
-    return Promise.resolve({
-        message: `User statistics for ${usersUpdated} users was calculated`,
-    });
+    return { message: `User statistics for ${usersUpdated} users was calculated` };
 };
 
 /**
