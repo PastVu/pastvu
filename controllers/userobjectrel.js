@@ -91,10 +91,10 @@ export async function fillObjectByRels(objs, userId, type = 'photo', rels) {
  * @param {string} [type=photo] Object type
  * @param {Date} [stamp=new Date()]
  */
-export function setObjectView(objId, userId, type = 'photo') {
+export function setObjectView(objId, userId, type = 'photo', stamp = new Date()) {
     return UserObjectRel.findOneAndUpdate(
         { obj: objId, user: userId, type },
-        { $set: { view: new Date() } },
+        { $set: { view: stamp } },
         { upsert: true, new: true, lean: true, fields: { _id: 0 } }
     ).exec();
 }
