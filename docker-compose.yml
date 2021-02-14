@@ -34,6 +34,15 @@ services:
       - store:/store
     command: run app
 
+  worker:
+    << : *app-image
+    depends_on:
+      - "app"
+    volumes:
+      - .:/code
+      - store:/store
+    command: run worker
+
   notifier:
     << : *app-image
     depends_on:

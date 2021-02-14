@@ -14,7 +14,6 @@ export default Utils.reflectKeys({
     REDIS_MAX_CONNECTION_ATTEMPS: null,
 
     SESSION_CAN_REGET_REGISTERED_ONLY: null,
-    SESSION_EXPIRED_ARCHIVE_NO_RESULT: null,
     SESSION_NO_HEADERS: null,
     SESSION_NOT_FOUND: null,
 
@@ -60,7 +59,6 @@ export default Utils.reflectKeys({
     PAINTING_YEARS_CONSTRAINT: null,
     PHOTO_CONVERT_PROCEEDING: null,
 
-    REGION_ASSIGN_OBJECTS: null,
     REGION_PARENT_THE_SAME: null,
     REGION_PARENT_DOESNT_EXISTS: null,
     REGION_PARENT_LOOP: null,
@@ -95,4 +93,6 @@ export default Utils.reflectKeys({
     MAIL_SEND: null,
     MAIL_WRONG: null,
     MAIL_IN_USE: null,
+
+    QUEUE_JOB_NOT_FOUND: null,
 });

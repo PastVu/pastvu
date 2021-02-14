@@ -11,10 +11,13 @@ import config from '../config';
 import constants from './constants';
 import Utils from '../commons/Utils';
 import childProcess from 'child_process';
-import { waitDb, dbEval } from './connection';
+import { waitDb } from './connection';
 import { Photo, PhotoConveyer, PhotoConveyerError, STPhotoConveyer } from '../models/Photo';
+import { User } from '../models/User';
 import constantsError from '../app/errors/constants';
 import { ApplicationError, AuthorizationError } from '../app/errors';
+import { runJob } from './queue';
+import exitHook from 'async-exit-hook';
 
 const execAsync = util.promisify(childProcess.exec);
 const logger = log4js.getLogger('converter.js');
@@ -37,6 +40,11 @@ const waterFontPath = path.normalize(waterDir + 'AdobeFanHeitiStd-Bold.otf');
 const maxWorking = 6; // Possible to convert in parallel
 let goingToWork = 0; // Выборка для дальнейшей конвертации
 let working = 0; // Now converting
+
+exitHook(() => {
+    logger.info('Stopping conversion conveyor');
+    conveyerEnabled = false;
+});
 
 const imageVersions = {
     a: {
@@ -646,7 +654,7 @@ export async function addPhotos(data, priority, potectPublicOnly) {
     }
 
     if (toConvertObjs.length) {
-        await PhotoConveyer.collection.insertMany(toConvertObjs, { safe: true });
+        await PhotoConveyer.collection.insertMany(toConvertObjs);
 
         conveyerLength += toConvertObjs.length;
         conveyerMaxLength = Math.max(conveyerLength, conveyerMaxLength);
@@ -662,10 +670,11 @@ export async function addPhotos(data, priority, potectPublicOnly) {
 
 /**
  * Добавление в конвейер конвертации всех фотографий
- * @param params Объект
+ * @param {Object} params
+ * @return {Object} result
  */
 export async function addPhotosAll(params) {
-    const result = await dbEval('convertPhotosAll', [params], { nolock: true });
+    const result = await runJob('convertPhotosAll', params);
 
     if (result && result.error) {
         throw new ApplicationError({ code: constantsError.CONVERT_PHOTOS_ALL, result });
@@ -679,8 +688,83 @@ export async function addPhotosAll(params) {
 }
 
 /**
+ * Add photos to coversion conveyor.
+ * Used by convertPhotosAll job in userjobs queue.
+ * @param {object} params
+ * @return {object} object containing message and data.
+ */
+export const convertPhotosAll = async function (params) {
+    const addDate = new Date();
+    const query = {};
+    const conveyer = [];
+
+    if (params.login) {
+        const user = await User.findOne({ login: params.login }).exec();
+
+        if (user) {
+            query.user = user._id;
+        }
+    }
+
+    if (params.min) {
+        query.cid = { $gte: params.min };
+    }
+
+    if (params.max) {
+        if (!query.cid) {
+            query.cid = {};
+        }
+
+        query.cid.$lte = params.max;
+    }
+
+    if (params.region) {
+        query['r' + params.region.level] = params.region.cid;
+    }
+
+    if (params.hasOwnProperty('individual')) {
+        if (params.individual) {
+            query.watersignIndividual = true;
+        } else {
+            query.$or = [{ watersignIndividual: null }, { watersignIndividual: false }];
+        }
+    }
+
+    if (params.onlyWithoutTextApplied) {
+        query.watersignTextApplied = null;
+    }
+
+    if (params.statuses && params.statuses.length) {
+        query.s = { $in: params.statuses };
+    }
+
+    const count = await Photo.countDocuments(query);
+
+    logger.info(`convertPhotosAll: Start to fill conveyer for ${query.user ? query.user + ' user for' : ''}${count} photos`);
+
+    // Using cursor.
+    for await (const photo of Photo.find(query, { _id: 0, cid: 1 }).sort({ cid: 1 })) {
+        if (!await PhotoConveyer.findOne({ cid: photo.cid }).exec()) {
+            const row = { cid: photo.cid, priority: params.priority, added: addDate };
+
+            if (params.webpOnly) {
+                row.webpOnly = true;
+            }
+
+            conveyer.push(row);
+        }
+    }
+
+    if (conveyer.length) {
+        await PhotoConveyer.insertMany(conveyer);
+    }
+
+    return { data: { conveyorAdded: conveyer.length } };
+};
+
+/**
  * Remove photos from conveyor
- * @param cids Array of cids
+ * @param {number[]} cids
  */
 export async function removePhotos(cids) {
     if (_.isEmpty(cids)) {
