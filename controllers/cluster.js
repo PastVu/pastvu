@@ -323,9 +323,12 @@ async function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, isPainting
 
 /**
  * Create cluster for new photo coordinates
- * @param photo Photo
- * @param geoPhotoOld Geo coordinates before changes
- * @param yearPhotoOld Year of photo before changes
+ *
+ * @param {object} obj
+ * @param {object} obj.photo Photo
+ * @param {number[]} obj.geoPhotoOld Geo coordinates before changes
+ * @param {number} obj.yearPhotoOld Year of photo before changes
+ * @param {boolean} obj.isPainting
  */
 export async function clusterPhoto({ photo, geoPhotoOld, yearPhotoOld, isPainting }) {
     if (!photo.year) {
@@ -407,7 +410,10 @@ export async function clusterPhoto({ photo, geoPhotoOld, yearPhotoOld, isPaintin
 
 /**
  * Remove photo from clusters
- * @param photo
+ *
+ * @param {object} obj
+ * @param {object} obj.photo
+ * @param {boolean} obj.isPainting
  */
 export function declusterPhoto({ photo, isPainting }) {
     if (!Utils.geo.check(photo.geo) || !photo.year) {

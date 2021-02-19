@@ -8,10 +8,11 @@ const logger = log4js.getLogger('userobjectrel.js');
 
 /**
  * Find number of new comments for array of objects for user
- * @param objIds Array of _ids of objects
- * @param userId
+ *
+ * @param {ObjectId[]} objIds Array of _ids of objects
+ * @param {ObjectId} userId
  * @param {string} [type=photo] Object type
- * @param {Array|Object} [rels] Already selected rows (for example when serve user subscription)
+ * @param {object|object[]} [rels] Already selected rows (for example when serve user subscription)
  */
 export async function getViewCommentsRel(objIds, userId, type = 'photo', rels) {
     if (!rels) {
@@ -39,10 +40,11 @@ export async function getViewCommentsRel(objIds, userId, type = 'photo', rels) {
  * Fill for every object in transferred array number of new comments - field 'ccount_new'
  * And flag 'changed', if 'ucdate' has changed since last object view
  * Eg mutate transferred objects
- * @param objs Array of objects
- * @param userId
+ *
+ * @param {ObjectId[]} objs Array of objects
+ * @param {ObjectId} userId
  * @param {string} [type=photo] Object type
- * @param [rels]
+ * @param {object|object[]} [rels]
  */
 export async function fillObjectByRels(objs, userId, type = 'photo', rels) {
     const single = !Array.isArray(objs);
@@ -83,22 +85,25 @@ export async function fillObjectByRels(objs, userId, type = 'photo', rels) {
 
 /**
  * Record time of last object view by user
- * @param objId
- * @param userId
+ *
+ * @param {ObjectId} objId
+ * @param {ObjectId} userId
  * @param {string} [type=photo] Object type
+ * @param {Date} [stamp=new Date()]
  */
-export function setObjectView(objId, userId, type = 'photo') {
+export function setObjectView(objId, userId, type = 'photo', stamp = new Date()) {
     return UserObjectRel.findOneAndUpdate(
         { obj: objId, user: userId, type },
-        { $set: { view: new Date() } },
+        { $set: { view: stamp } },
         { upsert: true, new: true, lean: true, fields: { _id: 0 } }
     ).exec();
 }
 
 /**
  * Record time of last comments view on object by user
- * @param objId
- * @param userId
+ *
+ * @param {ObjectId} objId
+ * @param {ObjectId} userId
  * @param {string} [type=photo] Object type
  * @param {Date} [stamp=new Date()]
  */
@@ -129,8 +134,9 @@ export async function setCommentView(objId, userId, type = 'photo', stamp = new 
 
 /**
  * Increase new comments counter of users, who saw comments of this object, when new comment added
- * @param objId
- * @param userId
+ *
+ * @param {ObjectId} objId
+ * @param {ObjectId} userId
  * @param {string} [type=photo] Object type
  */
 export async function onCommentAdd(objId, userId, type = 'photo') {
@@ -145,8 +151,9 @@ export async function onCommentAdd(objId, userId, type = 'photo') {
 /**
  * When remove comments, decrease number of new comments of users,
  * who had read object comments before creation of last comment of removed
- * @param objId
- * @param {Array} comments Comments array
+ *
+ * @param {ObjectId} objId
+ * @param {object[]} comments Comments array
  * @param {string} [type=photo] Object type
  */
 export async function onCommentsRemove(objId, comments, type = 'photo') {
@@ -210,8 +217,9 @@ export async function onCommentsRemove(objId, comments, type = 'photo') {
 /**
  * When restore deleted comments, increase new comments counter of users,
  * who had read object comments before creation of last of restored comments
- * @param objId
- * @param {Array} comments Comments array
+ *
+ * @param {ObjectId} objId
+ * @param {object[]} comments Comments array
  * @param {string} [type=photo] Object type
  */
 export async function onCommentsRestore(objId, comments, type = 'photo') {
@@ -266,9 +274,10 @@ export async function onCommentsRestore(objId, comments, type = 'photo') {
 
 /**
  * Find quantity of new comments for build notification letter for user
- * @param objs Array of _id of object
- * @param relHash
- * @param userId
+ *
+ * @param {ObjectId[]} objs Array of _id of object
+ * @param {object[]} relHash
+ * @param {ObjectId} userId
  * @param {string} [type=photo] Object type
  */
 export async function getNewCommentsBrief(objs, relHash, userId, type = 'photo') {

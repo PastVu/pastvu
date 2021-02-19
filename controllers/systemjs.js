@@ -5,6 +5,7 @@
 
 /**
  * This file is not being transformed by babel
+ *
  * @type {*|exports|module.exports}
  */
 

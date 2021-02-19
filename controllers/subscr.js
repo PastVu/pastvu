@@ -76,10 +76,13 @@ async function subscribeUser({ cid, type = 'photo', subscribe }) {
 
 /**
  * Subscribe by userId and objectId (internal, for example, after photo approval)
- * @param user User object or userId
- * @param objId
- * @param setCommentView
- * @param {string} [type=photo]
+ *
+ * @param {object} obj
+ * @param {object|ObjectId} obj.user User object or userId
+ * @param {ObjectId} obj.objId
+ * @param {boolean} obj.setCommentView
+ * @param {string} [obj.type=photo]
+ * @returns {Promise}
  */
 export async function subscribeUserByIds({ user, objId, setCommentView, type = 'photo' }) {
     const userId = user._id || user;
@@ -95,8 +98,11 @@ export async function subscribeUserByIds({ user, objId, setCommentView, type = '
 
 /**
  * Remove subscriptions to object. If specified userId, only his subscription
- * @param objId
- * @param [userId] Without it remove subscription to object from all users
+ *
+ * @param {object} obj
+ * @param {ObjectId} obj.objId
+ * @param {string} [obj.userId] Without it remove subscription to object from all users
+ * @returns {Promise}
  */
 async function unSubscribeObj({ objId, userId }) {
     const query = { obj: objId };
@@ -112,9 +118,11 @@ async function unSubscribeObj({ objId, userId }) {
 
 /**
  * Establishes notification readiness for object by event of comment addition
- * @param objId
- * @param user
+ *
+ * @param {ObjectId} objId
+ * @param {object} user
  * @param {Date} [stamp=new Date()]
+ * @returns {object[]} users
  */
 export async function commentAdded(objId, user, stamp = new Date()) {
     // Find all users (except comment creator), who is subscribed to object and still don't waiting notification
@@ -149,9 +157,10 @@ export async function commentAdded(objId, user, stamp = new Date()) {
 
 /**
  * Sets object comments like viewed, ie unnecessary to notify
- * @param objId
- * @param user
- * @param [setInRel]
+ *
+ * @param {ObjectId} objId
+ * @param {object} user
+ * @param {boolean} [setInRel]
  */
 export async function commentViewed(objId, user, setInRel) {
     if (setInRel) {
@@ -177,8 +186,9 @@ export async function commentViewed(objId, user, setInRel) {
 
 /**
  * When user changes his 'throttle', need to change time of scheduled sending, if its exists
- * @param userId
- * @param newThrottle
+ *
+ * @param {ObjectId} userId
+ * @param {number} newThrottle
  */
 export async function userThrottleChange(userId, newThrottle) {
     if (!newThrottle) {
@@ -203,7 +213,8 @@ export async function userThrottleChange(userId, newThrottle) {
 
 /**
  * Schedule sending of notification for users
- * @param users Array of users _id
+ *
+ * @param {ObjectId[]} users Array of users _id
  */
 async function scheduleUserNotice(users) {
     const [usersThrottle, usersNoty] = await Promise.all([
@@ -319,7 +330,9 @@ const notifierConveyor = (function () {
 
 /**
  * Forms a letter to user from ready notifications (noty: true) and send it
- * @param userId
+ *
+ * @param {ObjectId} userId
+ * @returns {Promise}
  */
 async function sendUserNotice(userId) {
     const userObj = session.getOnline({ userId });

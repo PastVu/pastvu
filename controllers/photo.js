@@ -267,10 +267,12 @@ export const permissions = {
 
 /**
  * Find photo considering user rights
- * @param query
- * @param fieldSelect Field select (mandatory are: user, s, r0-rmaxRegionLevel)
- * @param options For example, { lean: true }
- * @param populateUser Flag, that user object needed
+ *
+ * @param {object} obj
+ * @param {object} obj.query
+ * @param {object} obj.fieldSelect Field select (mandatory are: user, s, r0-rmaxRegionLevel)
+ * @param {object} obj.options For example, { lean: true }
+ * @param {boolean} obj.populateUser Flag, that user object needed
  */
 export async function find({ query, fieldSelect = {}, options = {}, populateUser }) {
     const { handshake: { usObj: iAm } } = this;
@@ -920,7 +922,11 @@ async function prefetchForEdit({ data: { cid, s, cdate, ignoreChange }, can }) {
 
 /**
  * Сохраняем объект фотографии с подъемом времени просмотра пользователем объекта
- * @param [stamp] Принудительно устанавливает время просмотра
+ *
+ * @param {object} obj
+ * @param {object} obj.photo
+ * @param {object} obj.oldPhotoObj
+ * @param {Date} [obj.stamp] Принудительно устанавливает время просмотра
  */
 async function update({ photo, oldPhotoObj, stamp }) {
     const { handshake: { usObj: iAm } } = this;
@@ -1434,8 +1440,15 @@ async function givePrevNextCids({ cid }) {
 
 /**
  * Return full gallery based of user's rights and filters in compact view
- * @param filter Filter object (parsed)
- * @param userId _id of user, if we need gallery by user
+ *
+ * @param {object} obj
+ * @param {object} obj.filter Filter object (parsed)
+ * @param {object} obj.options
+ * @param {number} obj.options.skip
+ * @param {number} obj.options.limit
+ * @param {boolean} obj.options.random
+ * @param {object} obj.options.customQuery
+ * @param {ObjectId} obj.userId _id of user, if we need gallery by user
  */
 async function givePhotos({ filter, options: { skip = 0, limit = 40, random = false, customQuery }, userId }) {
     const { handshake: { usObj: iAm } } = this;
@@ -2744,9 +2757,11 @@ async function resetIndividualDownloadOrigin({ login, r }) {
 
 /**
  * Build request parameters (query) for requesting photo with filter considering rights on statuses and regions
- * @param filter
- * @param forUserId
- * @param iAm Session object of user
+ *
+ * @param {object} filter
+ * @param {ObjectId} forUserId
+ * @param {ObjectId} iAm Session object of user
+ * @param {boolean} random
  */
 export function buildPhotosQuery(filter, forUserId, iAm, random) {
     let query; // Result query

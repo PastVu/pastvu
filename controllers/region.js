@@ -243,8 +243,9 @@ export const fillRegionsPublicStats = regions => {
 
 /**
  * Returns regions array in the same order as received array of cids
- * @param cidArr Regions cid array
- * @param [fields]
+ *
+ * @param {number[]} cidArr Regions cid array
+ * @param {object} [fields]
  */
 async function getOrderedRegionList(cidArr = [], fields = { _id: 0, geo: 0, __v: 0 }) {
     const regions = await Region.find({ cid: { $in: cidArr } }, fields, { lean: true }).exec();
@@ -271,7 +272,8 @@ async function getOrderedRegionList(cidArr = [], fields = { _id: 0, geo: 0, __v:
 
 /**
  * Return array of cid or object regions
- * @param obj Object (photo, comment и т.д.)
+ *
+ * @param {object} obj Object (photo, comment и т.д.)
  */
 export const getObjRegionCids = obj => {
     const result = [];
@@ -289,9 +291,11 @@ export const getObjRegionCids = obj => {
 
 /**
  * Return populated array of regions for transferred object
- * @param obj Object (photo, comment etc.)
- * @param fields Selected region fields. Array, but in case of 'fromDb' - object
- * @param [fromDb] Select from db, not just from cache (in cahce not all fields presented)
+ *
+ * @param {object} obj
+ * @param {object} obj.obj Object (photo, comment etc.)
+ * @param {string[]|object} obj.fields Selected region fields. Array, but in case of 'fromDb' - object
+ * @param {boolean} [obj.fromDb] Select from db, not just from cache (in cahce not all fields presented)
  */
 export function getObjRegionList({ obj, fields, fromDb }) {
     if (fromDb) {
@@ -455,7 +459,8 @@ export const genObjsShortRegionsArr = function (objs, showlvls = ['r0', 'r1'], d
 /**
  * Recalculate what objects belong to region
  * First, clear current assignment of objects to region, then again search for objects, located within region's polygon
- * @param cidOrRegion
+ *
+ * @param {number|object} cidOrRegion
  */
 async function calcRegionIncludes(cidOrRegion) {
     const region = _.isNumber(cidOrRegion) ?
@@ -488,8 +493,46 @@ async function calcRegionIncludes(cidOrRegion) {
 }
 
 /**
+ * Recalculate what objects belong to list of region. If list is empty - recalc all regions
+ *
+ * @param {number[]} cids Array of regions cids
+ */
+export async function calcRegionsIncludes(cids) {
+    const { handshake: { usObj: iAm } } = this;
+
+    if (!iAm.isAdmin) {
+        throw new AuthorizationError();
+    }
+
+    if (!Array.isArray(cids)) {
+        throw new BadParamsError();
+    }
+
+    let result;
+
+    if (_.isEmpty(cids)) {
+        // If array is empty - recalc all photos
+        result = await dbEval('regionsAssignObjects', [], { nolock: true });
+
+        if (result && result.error) {
+            throw new ApplicationError({ code: constantsError.REGION_ASSIGN_OBJECTS, result });
+        }
+    } else {
+        // Recalc every region in loop
+        result = [];
+
+        for (const cid of cids) {
+            result.push(await calcRegionIncludes(cid));
+        }
+    }
+
+    return result;
+}
+
+/**
  * Returns for region it populated parents and number of children
- * @param region Region object
+ *
+ * @param {object} region Region object
  */
 async function getChildsLenByLevel(region) {
     let level = _.size(region.parents); // Region level equals number of parent regions
@@ -518,7 +561,8 @@ async function getChildsLenByLevel(region) {
 
 /**
  * Возвращает для региона спопулированные parents и кол-во дочерних регионов по уровням
- * @param region Объект региона
+ *
+ * @param {object} region Объект региона
  */
 async function getParentsAndChilds(region) {
     const level = _.size(region.parents); // Region level equals number of parent regions
@@ -835,7 +879,8 @@ async function processFeatureCollection(data) {
 
 /**
  * Save/Create region
- * @param data
+ *
+ * @param {object} data
  */
 async function save(data) {
     const { handshake: { usObj: iAm } } = this;
@@ -1190,7 +1235,8 @@ async function save(data) {
 /**
  * Region removal by administrator
  * Parameter 'reassignChilds' is reserved for moving child regions of removed under another region
- * @param data
+ *
+ * @param {object} data
  */
 async function remove(data) {
     const { handshake: { usObj: iAm } } = this;
@@ -1555,9 +1601,11 @@ async function giveRegionsByGeo({ geo }) {
 
 /**
  * Set to object regions fields r0-rmaxRegionLevel based on a given coordinate
- * @param obj Object (photo, comment etc.)
- * @param geo Coordinate
- * @param returnArrFields Array of selecting fields. Array of regions with selected fields will be reterned
+ *
+ * @param {object} obj
+ * @param {object} obj.obj Object (photo, comment etc.)
+ * @param {number[]} obj.geo Coordinate
+ * @param {object} obj.returnArrFields Array of selecting fields. Array of regions with selected fields will be reterned
  */
 export async function setObjRegionsByGeo({ obj, geo, returnArrFields = { _id: 0, cid: 1, parents: 1 } }) {
     if (!returnArrFields.cid || !returnArrFields.parents) {
@@ -1589,9 +1637,10 @@ export async function setObjRegionsByGeo({ obj, geo, returnArrFields = { _id: 0,
 
 /**
  * Set to object regions fields r0-rmaxRegionLevel based on region cid
- * @param obj Object (photo, comment etc.)
- * @param cid Region cid
- * @param returnArrFields Array of selecting fields. Array of regions with selected fields will be reterned
+ *
+ * @param {object} obj Object (photo, comment etc.)
+ * @param {number} cid Region cid
+ * @param {object} returnArrFields Array of selecting fields. Array of regions with selected fields will be reterned
  */
 export const setObjRegionsByRegionCid = (obj, cid, returnArrFields) => {
     const region = regionCacheHash[cid];
@@ -1628,10 +1677,12 @@ export const setObjRegionsByRegionCid = (obj, cid, returnArrFields) => {
 
 /**
  * Assign regions to object of specified model by specified criteria through update (multi assignment)
- * @param model
- * @param criteria
- * @param regions Array or regions with mandatory cid
- * @param additionalUpdate
+ *
+ * @param {object} obj
+ * @param {object} obj.model
+ * @param {object} obj.criteria
+ * @param {object[]} obj.regions Array or regions with mandatory cid
+ * @param {object} obj.additionalUpdate
  */
 async function updateObjsRegions({ model, criteria = {}, regions = [], additionalUpdate }) {
     const $set = {};
@@ -1667,7 +1718,8 @@ async function updateObjsRegions({ model, criteria = {}, regions = [], additiona
 
 /**
  * Clear all regions from object
- * @param obj Object (photo, comment etc.)
+ *
+ * @param {object} obj Object (photo, comment etc.)
  */
 export const clearObjRegions = obj => {
     for (let i = 0; i <= maxRegionLevel; i++) {
@@ -1815,8 +1867,9 @@ async function saveUserRegions({ login, regions }) {
 
 /**
  * Return query for selecting by regions kind '$or: [{r0: 1}, {r1: {$in: [3, 4]}}, {r2: 10}]' and hash of regions
- * @param regions Array of populated regions
- * @returns {{rquery: {}, rhash: {}}}
+ *
+ * @param {object[]} regions Array of populated regions
+ * @returns {object} query and hash {{rquery: {}, rhash: {}}}
  */
 export const buildQuery = (regions, rs, regionsToExclude, insensitiveForRsCidsSet) => {
     let rquery = Object.create(null);
