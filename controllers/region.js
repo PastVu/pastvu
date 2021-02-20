@@ -2287,9 +2287,10 @@ export async function putPhotoToRegionStatQueue(oldPhoto, newPhoto) {
 
 /**
  * Recalculate stats for regions.
+ *
  * @param {number[]} [cids]
  * @param {boolean} [refillCache]
- * @return {Object}
+ * @returns {object}
  */
 async function recalcStats(cids = [], refillCache = false) {
     if (statsIsBeingRecalc) {
@@ -2321,8 +2322,9 @@ async function recalcStats(cids = [], refillCache = false) {
 /**
  * Calculate stats for regions.
  * Used by calcRegionStats job in userjobs queue.
+ *
  * @param {object} params
- * @return {object} object containing message and data.
+ * @returns {object} object containing message and data.
  */
 export const calcRegionStats = async function (params) {
     const startTime = Date.now();

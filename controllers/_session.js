@@ -735,7 +735,8 @@ export const checkSessWaitingConnect = (function () {
 /**
  * Periodically sends expired session to archive.
  * Used by archiveExpiredSessions job in session queue.
- * @return {object} object containing message and data.
+ *
+ * @returns {object} object containing message and data.
  */
 export const archiveExpiredSessions = async function () {
     const archiveDate = new Date();
@@ -784,7 +785,8 @@ export const archiveExpiredSessions = async function () {
 /**
  * Clean archived sessions on frontends following archiveExpiredSessions call
  * by worker process.
- * @param {string} JSON serialised data returned by archiveExpiredSessions.
+ *
+ * @param {string} data JSON serialised data returned by archiveExpiredSessions.
  */
 export const cleanArchivedSessions = function (data) {
     data = JSON.parse(data);
@@ -819,8 +821,9 @@ export const cleanArchivedSessions = function (data) {
 /**
  * Periodically recalculate user statistics, like pcount, which might get out of sync over time.
  * Used by calcUserStats job in session queue.
+ *
  * @param {string[]} [logins] Array of logins to limit query to.
- * @return {object} object containing message.
+ * @returns {object} object containing message.
  */
 export const calcUserStats = async function (logins) {
     const query = {};
