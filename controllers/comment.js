@@ -955,7 +955,8 @@ async function create(data) {
 
 /**
  * Remove comment and its children
- * @param data
+ *
+ * @param {object} data
  */
 async function remove(data) {
     const { handshake: { usObj: iAm } } = this;
@@ -1594,8 +1595,10 @@ export async function changeObjCommentsStatus({ obj: { _id: objId, s } }) {
 
 /**
  * Hide/show object comments (so doing them unpublic/public). Temporary not in use, because count all photo statuses
- * @param obj
- * @param {boolean} hide
+ *
+ * @param {object} obj
+ * @param {object} obj.obj
+ * @param {boolean} obj.hide
  */
 export async function changeObjCommentsVisibility({ obj, hide }) {
     const count = changeObjCommentsStatus(obj);
@@ -1632,7 +1635,11 @@ export async function changeObjCommentsVisibility({ obj, hide }) {
 
 /**
  * Change photo's comments type
- * @param obj
+ *
+ * @param {object} obj
+ * @param {object} obj.photo
+ * @param {ObjectId} obj.photo._id
+ * @param {number} obj.photo.type
  */
 export async function changePhotoCommentsType({ photo: { _id: objId, type } }) {
     const command = { $set: { type } };

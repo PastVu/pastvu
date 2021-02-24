@@ -105,9 +105,10 @@ Utils.getMyAgentParsed = (function () {
 
 /**
  * Проверяет на соответствие объекта типу (вместо typeof)
+ *
  * @param {string} type Имя типа.
- * @param {Object} obj Проверяемый объект.
- * @return {boolean}
+ * @param {object} obj Проверяемый объект.
+ * @returns {boolean}
  */
 Utils.isType = function (type, obj) {
     return Object.prototype.toString.call(obj).slice(8, -1).toUpperCase() === type.toUpperCase();
@@ -115,8 +116,9 @@ Utils.isType = function (type, obj) {
 
 /**
  * Проверяет что в объекте нет собственный свойств
- * @param {Object} obj Проверяемый объект.
- * @return {boolean}
+ *
+ * @param {object} obj Проверяемый объект.
+ * @returns {boolean}
  */
 Utils.isObjectEmpty = function (obj) {
     return this.getObjectPropertyLength(obj) === 0;
@@ -177,8 +179,9 @@ Utils.pathForExpress = function (paths) {
 
 /**
  * Promise-memoize с опциональным временем жизни
- * @param func Функция, возвращаемый promise которой будет запомнен
- * @param ttl Время жизни в ms
+ *
+ * @param {Function} func Функция, возвращаемый promise которой будет запомнен
+ * @param {number} ttl Время жизни в ms
  */
 Utils.memoizePromise = function (func, ttl) {
     let memoizedPromise;
@@ -204,7 +207,7 @@ Utils.memoizePromise = function (func, ttl) {
  * Transforms a complex object (with nested objects) in a simple (flatten with one level).
  * Return new object
  *
- * @example:
+ * example:
  *     flattenObject({
  *       a: {
  *         b: {
@@ -223,13 +226,13 @@ Utils.memoizePromise = function (func, ttl) {
  *       'd': null
  *     }
  *
- * @param {Object} obj
- * @param {Object} [opts] Options
+ * @param {object} obj Object to transform
+ * @param {object} [opts] Options
  * @param {Function} [opts.filter] Function of filtration nested objects.
  *                                 If specified and returns 'true', need to transform. If 'false' - no transformation
- * @param {String} [prefix]  Prefix, which will be putted before all keys
- * @param {Object} [resultObj={}]  Объект, в который будут записываться преобразованные свойства.
- * @returns {Object}
+ * @param {string} [prefix]  Prefix, which will be putted before all keys
+ * @param {object} [resultObj={}]  Объект, в который будут записываться преобразованные свойства.
+ * @returns {object}
  */
 Utils.flattenObject = (obj, opts, prefix, resultObj) => {
     'use strict';
@@ -493,9 +496,10 @@ Utils.math = (function () {
     /**
      * Обрезание числа с плавающей запятой до указанного количества знаков после запятой
      * http://jsperf.com/math-round-vs-tofixed-with-decimals/2
+     *
      * @param {number} number Число для обрезания
      * @param {number} [precision] Точность
-     * @return {number}
+     * @returns {number}
      */
     function toPrecision(number, precision) {
         const divider = precision ? Math.pow(10, precision) : defDivider;
@@ -505,9 +509,10 @@ Utils.math = (function () {
 
     /**
      * Обрезание с округлением числа с плавающей запятой до указанного количества знаков после запятой
+     *
      * @param {number} number Число
      * @param {number} [precision] Точность
-     * @return {number}
+     * @returns {number}
      */
     function toPrecisionRound(number, precision) {
         const divider = precision ? Math.pow(10, precision) : defDivider;
@@ -561,10 +566,11 @@ Utils.geo = (function () {
 
     /**
      * Get polygon area
-     * @param points Path (array) of points ([[lng, lat]])
-     * @param signed If true function returns the signed area of the polygon (negative if path points are clockwise)
-     * @returns {number}
      * TODO: sphere, now we just move coordinates by 180 for lng and 90 for lat
+     *
+     * @param {object[]} points Path (array) of points ([[lng, lat]])
+     * @param {boolean} [signed] If true function returns the signed area of the polygon (negative if path points are clockwise)
+     * @returns {number}
      */
     function polyArea(points, signed) {
         let area = 0;
@@ -675,11 +681,12 @@ Utils.geo = (function () {
 
     /**
      * Haversine formula to calculate the distance
-     * @param lat1
-     * @param lon1
-     * @param lat2
-     * @param lon2
-     * @return {Number}
+     *
+     * @param {number} lat1
+     * @param {number} lon1
+     * @param {number} lat2
+     * @param {number} lon2
+     * @returns {number}
      */
     function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
         const R = 6371; // Mean radius of the earth in km
@@ -771,8 +778,9 @@ Utils.geo = (function () {
 
 /**
  * Adds left zero to number and rteturn string in format xx (01, 23 etc)
- * @param {number} num
- * @return {string}
+ *
+ * @param {number} num Number to process
+ * @returns {string}
  */
 Utils.addLeftZero = function (num) {
     if (!num) {
@@ -950,7 +958,12 @@ Utils.filesListProcess = function filesListProcess(files, dirCutOff, prefixAdd, 
 
 /**
  * List on files in folder recursive (in parallel mode)
- * @param dir Folder to search files
+ *
+ * @param {object} obj
+ * @param {string} obj.dir Folder to search files
+ * @param {boolean} obj.noDir
+ * @param {string[]} obj.excludeFolders
+ * @param {Function} obj.onDone
  */
 Utils.walkParallel = function ({ dir, noDir, excludeFolders, onDone }) {
     const checkDirsExcluding = Array.isArray(excludeFolders) && excludeFolders.length;
@@ -996,8 +1009,9 @@ Utils.walkParallel = function ({ dir, noDir, excludeFolders, onDone }) {
 
 /**
  * List on files in folder recursive (in serial mode)
- * @param dir Folder to search files
- * @param done Callback function with params (err, resultArr)
+ *
+ * @param {string} dir Folder to search files
+ * @param {Function} done Callback function with params (err, resultArr)
  */
 Utils.walkSerial = function (dir, done) {
     let results = [];
