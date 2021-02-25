@@ -10,7 +10,7 @@ Let's recall the whole world!
 We welcome any keen developer in helping us build the better PastVu. You can install local version of the project using the following instructions.
 
 ## Create development environment
- * [Docker](#run-with-docker) (preffered option)
+ * [Docker](#run-with-docker) (preferred option)
  * [Traditional way](#traditional-way)
 
 ## Run with Docker

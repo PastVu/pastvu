@@ -27,7 +27,7 @@ async function periodicFetchReasons() {
 }
 
 /**
- * @param cids Array of cids of reasons
+ * @param {number[]} cids Array of cids of reasons
  */
 export const getReasonHashFromCache = cids => _.transform(cids, (result, cid) => {
     const reason = reasonsHash[cid];

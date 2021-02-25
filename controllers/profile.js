@@ -63,7 +63,7 @@ async function giveUser({ login }) {
         user.online = Boolean(userObj);
     } else {
         user = await User.findOne(
-            { login: new RegExp(`^${login}$`, 'i'), active: true },
+            { login: new RegExp(`^${_.escapeRegExp(login)}$`, 'i'), active: true },
             { _id: 0, cid: 0, pass: 0, activatedate: 0, loginAttempts: 0, active: 0, rules: 0 }, { lean: true }
         ).populate([
             {
@@ -74,14 +74,14 @@ async function giveUser({ login }) {
             { path: 'mod_regions', select: { _id: 0, cid: 1, title_en: 1, title_local: 1 } },
         ]).exec();
 
+        if (!user) {
+            throw new NotFoundError(constantsError.NO_SUCH_USER);
+        }
+
         // If login in another case, do redirect to the right one
-        if (user.login !== login) {
+        if (user.login !== login && user.login.toLowerCase() === login.toLowerCase()) {
             throw new NotFoundError({ code: constantsError.NO_SUCH_USER, lookat: user.login, trace: false });
         }
-    }
-
-    if (!user) {
-        throw new NotFoundError(constantsError.NO_SUCH_USER);
     }
 
     if (itsMe || iAm.isAdmin) {
