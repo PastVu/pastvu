@@ -155,7 +155,7 @@ async function register({ login, email, pass, pass2 }) {
             sender: 'noreply',
             receiver: { alias: login, email },
             bcc: config.admin.email,
-            subject: 'Registraion Confirmation',
+            subject: 'Registration Confirmation',
             head: true,
             body: regTpl({
                 email,
