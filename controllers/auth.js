@@ -109,7 +109,7 @@ async function register({ login, email, pass, pass2 }) {
         throw new AuthenticationError(constants.AUTHENTICATION_PASSWORDS_DONT_MATCH);
     }
 
-    let user = await User.findOne({ $or: [{ login: new RegExp('^' + login + '$', 'i') }, { email }] }).exec();
+    let user = await User.findOne({ $or: [{ login: new RegExp(`^${_.escapeRegExp(login)}$`, 'i') }, { email }] }).exec();
 
     if (user) {
         if (user.login.toLowerCase() === login.toLowerCase()) {
@@ -190,7 +190,7 @@ async function recall({ login }) {
     }
 
     const user = await User.findOne({
-        $or: [{ login: new RegExp(`^${login}$`, 'i') }, { email: login.toLowerCase() }],
+        $or: [{ login: new RegExp(`^${_.escapeRegExp(login)}$`, 'i') }, { email: login.toLowerCase() }],
     }, null, { lean: true }).exec();
 
     if (!user) {
