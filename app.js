@@ -25,7 +25,6 @@ import * as routes from './controllers/routes';
 import * as ourMiddlewares from './controllers/middleware';
 
 import './models/_initValues';
-import './controllers/systemjs';
 
 export async function configure(startStamp) {
     const {

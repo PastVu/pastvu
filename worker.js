@@ -9,6 +9,8 @@ import { clusterPhotosAll } from './controllers/cluster';
 import { calcRegionStats } from './controllers/region';
 import { createQueue } from './controllers/queue';
 
+import './controllers/systemjs';
+
 const logger = log4js.getLogger('worker');
 
 export async function configure(startStamp) {
