@@ -493,43 +493,6 @@ async function calcRegionIncludes(cidOrRegion) {
 }
 
 /**
- * Recalculate what objects belong to list of region. If list is empty - recalc all regions
- *
- * @param {number[]} cids Array of regions cids
- */
-export async function calcRegionsIncludes(cids) {
-    const { handshake: { usObj: iAm } } = this;
-
-    if (!iAm.isAdmin) {
-        throw new AuthorizationError();
-    }
-
-    if (!Array.isArray(cids)) {
-        throw new BadParamsError();
-    }
-
-    let result;
-
-    if (_.isEmpty(cids)) {
-        // If array is empty - recalc all photos
-        result = await dbEval('regionsAssignObjects', [], { nolock: true });
-
-        if (result && result.error) {
-            throw new ApplicationError({ code: constantsError.REGION_ASSIGN_OBJECTS, result });
-        }
-    } else {
-        // Recalc every region in loop
-        result = [];
-
-        for (const cid of cids) {
-            result.push(await calcRegionIncludes(cid));
-        }
-    }
-
-    return result;
-}
-
-/**
  * Returns for region it populated parents and number of children
  *
  * @param {object} region Region object
@@ -2287,9 +2250,10 @@ export async function putPhotoToRegionStatQueue(oldPhoto, newPhoto) {
 
 /**
  * Recalculate stats for regions.
+ *
  * @param {number[]} [cids]
  * @param {boolean} [refillCache]
- * @return {Object}
+ * @returns {object}
  */
 async function recalcStats(cids = [], refillCache = false) {
     if (statsIsBeingRecalc) {
@@ -2321,8 +2285,9 @@ async function recalcStats(cids = [], refillCache = false) {
 /**
  * Calculate stats for regions.
  * Used by calcRegionStats job in userjobs queue.
+ *
  * @param {object} params
- * @return {object} object containing message and data.
+ * @returns {object} object containing message and data.
  */
 export const calcRegionStats = async function (params) {
     const startTime = Date.now();

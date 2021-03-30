@@ -15,7 +15,8 @@ exitHook(cb => {
 
 /**
  * Gracefully shutdown all opened queues.
- * @return {Promise}
+ *
+ * @returns {Promise}
  */
 function shutdownQueues() {
     const queues = Array.from(queueInstances.values()).map(queue => queue.close(false).then(() => {
@@ -27,8 +28,9 @@ function shutdownQueues() {
 
 /**
  * Retrieve an open queue. If queue has not been opened yet, create a new instance.
+ *
  * @param {string} name Name of the queue.
- * @return {Queue}
+ * @returns {Queue}
  */
 function getQueue(name) {
     if (queueInstances.has(name)) {
@@ -44,8 +46,9 @@ function getQueue(name) {
 
 /**
  * Initialise a queue. This is supposed to be used on worker start.
+ *
  * @param {string} name Name of the queue.
- * @return {Queue}
+ * @returns {Queue}
  */
 export async function createQueue(name) {
     if (queueInstances.has(name)) {
@@ -142,11 +145,12 @@ export class JobCompletionListener {
     }
 
     /**
-    * Add job completed callback. Callback receives JSON serialised
-    * result.data from job processing promise.
-    * @param {string} jobName
-    * @param {Function} callback - The callback function that handles the response, result.data is passed as param.
-    */
+     * Add job completed callback. Callback receives JSON serialised
+     * result.data from job processing promise.
+     *
+     * @param {string} jobName
+     * @param {Function} callback - The callback function that handles the response, result.data is passed as param.
+     */
     addCallback(jobName, callback) {
         logger.info(`Add job completion callback: ${jobName} -> ${callback.name}`);
         this.jobCompletionCallbacks.set(jobName, callback);
@@ -155,9 +159,10 @@ export class JobCompletionListener {
 
 /**
  * Run job and return result.
- * @param {string} name Name of the job.
- * @param {Object} params Params to pass to calling function.
- * @return {Promise} Resolving to result.data from job processing promise.
+ *
+ * @param {string} jobName Name of the job.
+ * @param {object} params Params to pass to calling function.
+ * @returns {Promise} Resolving to result.data from job processing promise.
  */
 export function runJob(jobName, params) {
     // TODO: Only add job if it is not in the queue already or running now.

@@ -22,10 +22,11 @@ async function readClusterParams() {
 
 /**
  * Set new cluster parameters and send clusters to recalculate.
- * @param {Object} params
- * @param {Object} [params.params]
- * @param {Object} [params.conditions]
- * @return {Object} Data object returned by clusterPhotosAll.
+ *
+ * @param {object} params
+ * @param {object} [params.params]
+ * @param {object} [params.conditions]
+ * @returns {object} Data object returned by clusterPhotosAll.
  */
 async function recalcAll({ params, conditions }) {
     const { handshake: { usObj: iAm } } = this;
@@ -56,11 +57,12 @@ async function recalcAll({ params, conditions }) {
 /**
  * Cluster photos.
  * Used by clusterPhotosAll job in userjobs queue.
- * @param {Object} params
+ *
+ * @param {object} params
  * @param {boolean} [params.withGravity]
  * @param {number} [params.logByNPhotos] How often to log progress
  * @param {number[]} [params.zooms] Limit to specified zooms
- * @return {object} object containing message and data.
+ * @returns {object} object containing message and data.
  */
 export const clusterPhotosAll = async function (params) {
     const clusterparamsQuery = { sgeo: { $exists: false } };
