@@ -695,5 +695,18 @@ module.exports = {
                 'no-underscore-dangle': 0,
             },
         },
+        {
+            // eslint-plugin-jest rules are defined via overrides to apply
+            // them to test files only.
+            'files': ['**/__tests__/*.js'],
+            'plugins': ['jest'],
+            'extends': [
+                'plugin:jest/all',
+                'plugin:jest-formatting/strict',
+            ],
+            'rules': {
+                // Jest rules cofiguration go here.
+            },
+        },
     ],
 };

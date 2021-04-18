@@ -78,6 +78,11 @@ module.exports = function (grunt) {
                 stdout: true,
                 stderr: true,
             },
+            jest: {
+                command: 'npm run jest',
+                stdout: true,
+                stderr: true,
+            },
         },
         concat: {
             options: {
@@ -286,6 +291,7 @@ module.exports = function (grunt) {
         'exec:testNodeVersionDockerfile:./docker/frontend.Dockerfile',
         'eslint',
         'stylelint',
+        'exec:jest',
     ]);
 
     // Записываем параметры сборки, например hash, из которых запуск в prod возьмет данные
