@@ -52,6 +52,7 @@
         "compression": "1.7.4",
         "content-disposition": "0.5.3",
         "cookie": "0.4.0",
+        "diff-match-patch": "1.0.5",
         "docker-secret": "1.1.2",
         "express": "4.17.1",
         "express-urlrewrite": "1.2.0",

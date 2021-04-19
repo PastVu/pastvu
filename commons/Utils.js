@@ -5,7 +5,7 @@ const Utils = Object.create(null);
 const _ = require('lodash');
 const _s = require('underscore.string');
 const useragent = require('useragent');
-const DMP = require('./diff_match_patch.js');
+const DMP = require('diff-match-patch');
 const regexpUrl = require('./regex-weburl');
 
 Utils.isEven = function (n) {
