@@ -219,6 +219,7 @@ module.exports = function (grunt) {
                     src: [
                         '*.js',
                         'app/**/*.js',
+                        'babel/*.js',
                         'controllers/**/*.js',
                         'commons/**/*.js',
                         'models/**/*.js',
