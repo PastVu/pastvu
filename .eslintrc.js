@@ -1,6 +1,6 @@
 module.exports = {
     'root': true,
-    'parser': 'babel-eslint',
+    'parser': '@babel/eslint-parser',
 
     'env': {
         'amd': true,
@@ -17,6 +17,9 @@ module.exports = {
             'objectLiteralDuplicateProperties': false
         },
         'codeFrame': true, // Show the code frame in the reporter
+        'babelOptions': {
+            'configFile': "./babel/server.config.js",
+        },
     },
 
     'globals': {
@@ -24,7 +27,7 @@ module.exports = {
     },
 
     'plugins': [
-        'babel',
+        '@babel',
     ],
 
     "extends": [
@@ -672,14 +675,13 @@ module.exports = {
         // require regex literals to be wrapped in parentheses
         'wrap-regex': 0,
 
-        /* https://github.com/babel/eslint-plugin-babel */
+        /* https://github.com/babel/babel/tree/main/eslint/babel-eslint-plugin */
         // Turn them on as they're needed
-        'babel/new-cap': 0,
-        'babel/camelcase': [2, { properties: 'never', ignoreDestructuring: true }], // Stop complaining about optional chaining (var foo = bar?.a_b;)
-        'babel/object-curly-spacing': [2, 'always'],
-        'babel/no-invalid-this': 0,
-        'babel/semi': 2,
-        'babel/no-unused-expressions': 2, // Stop complaining about optional chaining
+        '@babel/new-cap': 0,
+        '@babel/object-curly-spacing': [2, 'always'],
+        '@babel/no-invalid-this': 0,
+        '@babel/semi': 2,
+        '@babel/no-unused-expressions': 2, // Stop complaining about optional chaining
     },
     'overrides': [
         {
