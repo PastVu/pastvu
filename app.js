@@ -139,7 +139,7 @@ export async function configure(startStamp) {
     }
 
     if (config.serveStore) {
-        const request = require('request');
+        const got = require('got');
         const rewrite = require('express-urlrewrite');
         const proxy = require('http-proxy-middleware');
         const uploadServer = `http://${config.uploader.hostname || 'localhost'}:${config.uploader.port}`;
@@ -153,25 +153,23 @@ export async function configure(startStamp) {
         const prServeMiddleware = ourMiddlewares.serveImages(path.join(storePath, 'protected/photos/'), { maxAge: ms('7d') });
 
         app.use('/_pr/',
-            (req, res, next) => {
-                request
-                    .get({
+            async (req, res, next) => {
+                try {
+                    const response = await got({
                         url: `${downloadServer}${req.originalUrl}`,
                         headers: req.headers,
                         followRedirect: false,
                         timeout: 1500,
-                    })
-                    .on('response', response => {
-                        if (response.statusCode === 303) { // 303 means ok, user can get protected file
-                            return prServeMiddleware(req, res, next);
-                        }
-
-                        next();
-                    })
-                    .on('error', err => {
-                        logger.warn('Downloader server request error:', err.message);
-                        next();
                     });
+
+                    if (response.statusCode === 303) { // 303 means ok, user can get protected file
+                        return prServeMiddleware(req, res, next);
+                    }
+                } catch (err) {
+                    logger.warn('Downloader server request error:', err.message);
+                }
+
+                next();
             }
         );
         app.use(rewrite('/_pr/*', '/_prn/$1')); // If protected unavalible for user or file doesn't exist, move to covered
