@@ -206,27 +206,37 @@ export const getRegionsArrFromHash = (hash, cids) => {
 
     return result;
 };
-export const fillRegionsHash = (hash, fileds) => {
-    if (fileds) {
-        // hash is a null prototype object
-        for (const i in hash) { // eslint-disable-line guard-for-in
-            const region = regionCacheHash[i];
 
-            hash[i] = {};
+/**
+ * Returns regions array in the same order as received array of cids
+ *
+ * @param {object[]} hash Array containing region cids as keys.
+ * @param {Array} [fields] Populate hash object with specified fields values only.
+ */
+export const fillRegionsHash = (hash, fields) => {
+    // hash is a null prototype object
+    for (const i in hash) { // eslint-disable-line guard-for-in
+        hash[i] = {};
 
-            for (const field of fileds) {
+        const region = regionCacheHash[i];
+
+        if (region === undefined) {
+            // It is likely the region was deleted, skip it.
+            continue;
+        }
+
+        if (fields.length) {
+            for (const field of fields) {
                 hash[i][field] = region[field];
             }
-        }
-    } else {
-        // hash is a null prototype object
-        for (const i in hash) { // eslint-disable-line guard-for-in
-            hash[i] = regionCacheHash[i];
+        } else {
+            hash[i] = region;
         }
     }
 
     return hash;
 };
+
 export const fillRegionsPublicStats = regions => {
     if (regions) {
         for (const region of regions) {

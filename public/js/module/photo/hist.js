@@ -190,7 +190,9 @@ define(
                             regionsAdd = [];
 
                             for (j = 0; j < regionCids.length; j++) {
-                                regionsArr.push(regionsHash[regionCids[j]]);
+                                if (!_.isEmpty(regionsHash[regionCids[j]])) {
+                                    regionsArr.push(regionsHash[regionCids[j]]);
+                                }
                             }
 
                             if (showDiff && regionsPrev) {
