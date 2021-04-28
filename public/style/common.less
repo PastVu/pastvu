@@ -903,13 +903,26 @@ body {
 			bottom: 4px;
 			left: 2px;
 			text-align: center;
-
+			> .glyphicon {
+				top: 0px;
+                                font-size: 96%;
+			}
 			> .glyphicon-lock {
-				left: 1px;
+				left: 0.5px;
 			}
 		}
 
-		&.s0, &.s2 {
+		&.s0 {
+			border-color: #AA00FF;
+			.status {
+				background-color: #AA00FF;
+			}
+			&.withInfo > .info::after {
+				background: #AA00FF;
+				background: linear-gradient(to right, rgba(40, 89, 145, .3) 0%, rgba(102, 173, 104, .8) 12%, #AA00FF 50%, rgba(102, 173, 104, .8) 88%, rgba(40, 89, 145, .3) 100%);
+			}
+		}
+	        &.s2 {
 			border-color: rgb(114, 193, 116);
 			.status {
 				background-color: rgb(3, 168, 28);
@@ -919,7 +932,7 @@ body {
 				background: linear-gradient(to right, rgba(40, 89, 145, .3) 0%, rgba(102, 173, 104, .8) 12%, #96FF96 50%, rgba(102, 173, 104, .8) 88%, rgba(40, 89, 145, .3) 100%);
 			}
 		}
-		&.s3 {
+                &.s3 {
 			border-color: #8B8B8B;
 			.status {
 				background-color: #8B8B8B;

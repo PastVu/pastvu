@@ -12,8 +12,7 @@ require([
 
     Utils.title.setPostfix('Администрирование - Фотографии прошлого');
 
-    var appHash = P.settings.hash(),
-        routerDeferred = $.Deferred(),
+    var routerDeferred = $.Deferred(),
         routerAnatomy = {
             globalModules: {
                 modules: [
@@ -149,5 +148,5 @@ require([
 
     //window.appRouter = globalVM.router;
     //window.glob = globalVM;
-    console.log('APP %s loaded', appHash);
+    console.log('APP %s loaded', P.settings.version());
 });
