@@ -10,7 +10,6 @@ require([
 
     Utils.title.setPostfix('Retro photos');
 
-    var appHash = P.settings.hash();
     var routerDeferred = $.Deferred();
     var routerAnatomy = {
         globalModules: {
@@ -172,9 +171,12 @@ require([
     globalVM.router = router.init(routerAnatomy);
     $.when(routerDeferred.promise()).then(function () {
         router.start();
+        // App info in console.
+        const style = `color: #204A6B; font-family:monospace; background: url(${location.origin}/favicon.ico) left/contain no-repeat; padding-left: 10px`;
+        const string = `PastVu App v${P.settings.version()} loaded. Bug reports and contribs are welcome at https://github.com/PastVu/pastvu`;
+        console.log("%c " + string, style);
     });
 
     // window.appRouter = globalVM.router;
     // window.glob = globalVM;
-    console.log('APP %s loaded', appHash);
 });
