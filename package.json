@@ -113,7 +113,7 @@
         "lint-staged": "10.0.4",
         "osm-and-geojson": "0.1.2",
         "requirejs": "2.3.6",
-        "xmldom": "0.2.1"
+        "xmldom": "0.6.0"
     },
     "engines": {
         "node": "15.3.0"
