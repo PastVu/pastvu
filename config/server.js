@@ -19,6 +19,7 @@ const defaultConfig = require('./default.config');
 const browserConfig = require('./browsers.config');
 const log4js = require('log4js');
 const makeDir = require('make-dir');
+const exitHook = require('async-exit-hook');
 
 const localConfigPath = path.join(__dirname, './local.config.js');
 const readJSON = jsonPath => JSON.parse(fs.readFileSync(path.resolve(jsonPath), 'utf8'));
@@ -79,12 +80,35 @@ module.exports = (function () {
     config.client.host = `${config.client.hostname}${config.client.port}`;
     config.client.origin = `${config.client.protocol}://${config.client.host}`;
 
+    // Configure logging to stdout.
+    let log4jsConfig = {
+        appenders: { out: { type: 'stdout' } },
+        categories: { default: { appenders: ['out'], level: config.env === 'development' ? 'ALL' : 'INFO' } },
+    };
+
     if (config.logPath) {
-        // configure logging to filesystem
+        // Configure logging to filesystem.
         config.logPath = path.resolve(config.logPath);
         makeDir.sync(config.logPath);
-        log4js.configure('./config/log4js.json', { cwd: config.logPath });
+
+        const loggerConfig = require('./log4js');
+
+        log4jsConfig = _.mergeWith(loggerConfig(config), log4jsConfig, (objValue, srcValue) => {
+            if (_.isArray(objValue)) {
+                return objValue.concat(srcValue);
+            }
+        });
     }
+
+    log4js.configure(log4jsConfig);
+
+    exitHook(cb => {
+        // Delay logger shutdown to capture log output when we stop other things.
+        setTimeout(() => {
+            log4js.getLogger(path.parse(argv.script).name).info('Logger is stopped');
+            log4js.shutdown(cb);
+        }, 3000);
+    });
 
     config.storePath = path.resolve(config.storePath);
 
