@@ -67,6 +67,15 @@ export async function configure(startStamp) {
 
     const app = express();
 
+    // Connect logger.
+    app.use(log4js.connectLogger(log4js.getLogger('http'), {
+        level: 'auto', // 2xx at INFO, 3xx at WARN, 4xx, 5xx at ERROR
+        statusRules: [
+            { codes: [302, 304], level: 'info' }, // Log 3xx (redirects) at INFO, not WARN
+        ],
+        nolog: '\.css|\.ico|\/img\/', // eslint-disable-line no-useless-escape
+    }));
+
     app.disable('x-powered-by'); // Disable default X-Powered-By
     app.set('query parser', 'extended'); // Parse query with 'qs' module
     app.set('views', 'views');
