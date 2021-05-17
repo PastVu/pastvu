@@ -43,7 +43,6 @@ export async function configure(startStamp) {
     makeDir.sync(path.join(storePath, 'publicCovered/photos'));
 
     const logger = log4js.getLogger('app');
-    const logger404 = log4js.getLogger('404.js');
 
     logger.info('Application Hash: ' + config.hash);
 
@@ -53,14 +52,9 @@ export async function configure(startStamp) {
         logger,
     });
 
-    const status404Text = http.STATUS_CODES[404];
-    const static404 = ({ url, method, headers: { useragent, referer } = {} }, res) => {
-        if (env !== 'development') {
-            logger404.error(JSON.stringify({ url, method, useragent, referer }));
-        }
-
+    const static404 = (req, res) => {
         res.statusCode = 404;
-        res.end(status404Text); // Finish with 'end' instead of 'send', that there is no additional operations (etag)
+        res.end(http.STATUS_CODES[404]); // Finish with 'end' instead of 'send', that there is no additional operations (etag)
     };
 
     moment.locale(config.lang); // Set global language for momentjs
