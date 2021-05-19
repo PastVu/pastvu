@@ -40,6 +40,25 @@ Data store and Mongo database are using persistent storage (located on volumes),
 
 ### Debugging
 
+The `DEBUG` environment variable is used to enable debug output and filter it.
+If you are using docker, you can add it to default extension fields in compose
+file. For example, to enable debug output in all running node instances and
+output all debug information excluding noisy babel and log4js namespaces,
+specify:
+
+```yaml
+x-defaults: &app-image
+    image: pastvu/node:15.3.0
+    environment:
+      - NODE_ENV=development
+      - DEBUG=*,-babel*,-log4js*
+```
+
+For more information on syntax refer to `debug` package
+[docs](https://www.npmjs.com/package/debug#wildcards).
+
+#### Using inpector client
+
 It is possible to debug application using Node.js inspector client when
 required. There are several [clients
 available](https://nodejs.org/en/docs/guides/debugging-getting-started/#inspector-clients),

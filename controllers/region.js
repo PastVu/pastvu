@@ -5,7 +5,7 @@ import config from '../config';
 import Utils from '../commons/Utils';
 import { polygon as turfPolygon } from '@turf/turf';
 import turfIntersect from '@turf/intersect';
-import geojsonRewind from 'geojson-rewind';
+import geojsonRewind from '@mapbox/geojson-rewind';
 import geojsonHint from '@mapbox/geojsonhint';
 import geojsonArea from '@mapbox/geojson-area';
 import { waitDb } from './connection';

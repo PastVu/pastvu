@@ -2,6 +2,8 @@ version: '3.8'
 
 x-defaults: &app-image
   image: pastvu/node:15.3.0
+  environment:
+    - NODE_ENV=development
 
 services:
   mongo:
@@ -47,8 +49,6 @@ services:
     << : *app-image
     depends_on:
       - "app"
-    environment:
-      - NOTIFIER=true
     volumes:
       - .:/code
     command: run notifier
