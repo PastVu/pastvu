@@ -11,7 +11,7 @@ services:
     expose:
       - "27017"
     ports:
-      - "localhost:27017:27017"
+      - "127.0.0.1:27017:27017"
 
   redis:
     image: redis:6.0.9
@@ -80,7 +80,7 @@ services:
     expose:
      - "1025"
     ports:
-     - "localhost:1080:1080"
+     - "127.0.0.1:1080:1080"
 
 volumes:
   store:
