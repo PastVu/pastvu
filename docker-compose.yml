@@ -12,8 +12,8 @@ services:
       - mongo:/data/db
     expose:
       - "27017"
-    #ports:
-    #  - "27017:27017"
+    ports:
+      - "127.0.0.1:27017:27017"
 
   redis:
     image: redis:6.0.9
@@ -88,8 +88,8 @@ services:
     image: sj26/mailcatcher:latest
     expose:
      - "1025"
-    #ports:
-    # - "1080:1080"
+    ports:
+     - "127.0.0.1:1080:1080"
 
 volumes:
   store:
