@@ -35,7 +35,12 @@
         "lint": "./node_modules/.bin/eslint .",
         "lintfix": "./node_modules/.bin/eslint . --fix",
         "build": "grunt",
-        "test": "grunt test"
+        "test": "grunt test",
+        "migrate": "npm run migrate:up",
+        "migrate:create": "migrate-mongo create -f config/migrate-mongo.js -- ",
+        "migrate:status": "migrate-mongo status -f config/migrate-mongo.js",
+        "migrate:up": "migrate-mongo up -f config/migrate-mongo.js",
+        "migrate:down": "migrate-mongo down -f config/migrate-mongo.js"
     },
     "dependencies": {
         "@mapbox/geojson-area": "0.2.2",
@@ -67,6 +72,7 @@
         "log4js": "6.3.0",
         "lru-cache": "5.1.1",
         "make-dir": "3.0.0",
+        "migrate-mongo": "8.2.2",
         "mime": "2.4.4",
         "moment": "2.24.0",
         "mongoose": "5.12.2",
