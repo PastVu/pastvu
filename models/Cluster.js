@@ -41,8 +41,8 @@ const ClusterPaintSchema = new Schema(
     { strict: true, collection: 'clusterspaint' }
 );
 
-ClusterSchema.index({ g: '2d', z: 1 });
-ClusterPaintSchema.index({ g: '2d', z: 1 });
+ClusterSchema.index({ g: '2dsphere', z: 1 });
+ClusterPaintSchema.index({ g: '2dsphere', z: 1 });
 
 const ClusterParamsSchema = new Schema(
     {
