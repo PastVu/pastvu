@@ -9,6 +9,7 @@ import express from 'express';
 import socketIO from 'socket.io';
 import Utils from './commons/Utils';
 import connectDb, { waitDb } from './controllers/connection';
+import { logPendingMigrations } from './controllers/migration';
 import * as session from './controllers/_session';
 import CoreServer from './controllers/serviceConnector';
 import { handleSocketConnection, registerSocketRequestHendler } from './app/request';
@@ -302,8 +303,7 @@ export async function configure(startStamp) {
         logger.info(
             `HTTP server started up in ${(Date.now() - startStamp) / 1000}s`,
             `and listening [${hostname || '*'}:${port}]`,
-            config.gzip ? 'with gzip' : '',
-            '\n'
+            config.gzip ? 'with gzip' : ''
         );
 
         scheduleMemInfo(startStamp - Date.now());
@@ -325,4 +325,6 @@ export async function configure(startStamp) {
 
         session.checkSessWaitingConnect();
     });
+
+    logPendingMigrations();
 }
