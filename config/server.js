@@ -78,6 +78,7 @@ module.exports = (function () {
 
     config.client.host = `${config.client.hostname}${config.client.port}`;
     config.client.origin = `${config.client.protocol}://${config.client.host}`;
+    config.storePath = path.resolve(config.storePath);
 
     // Configure logging.
     const loggerConfig = require('./log4js');
@@ -87,12 +88,12 @@ module.exports = (function () {
     exitHook(cb => {
         // Delay logger shutdown to capture log output when we stop other things.
         setTimeout(() => {
-            log4js.getLogger(path.parse(argv.script).name).info('Logger is stopped');
+            const loggerName = argv.script ? path.parse(argv.script).name : path.parse(argv.$0).name;
+
+            log4js.getLogger(loggerName).info('Logger is stopped');
             log4js.shutdown(cb);
         }, 3000);
     });
-
-    config.storePath = path.resolve(config.storePath);
 
     return config;
 }());

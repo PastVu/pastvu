@@ -225,6 +225,7 @@ module.exports = function (grunt) {
                         'models/**/*.js',
                         'config/!(local.config).js',
                         'config/*example',
+                        'migrations/*.js',
                         // Add here public/js/ files that have been modified
                         // in PRs, so we gradually get them all covered and
                         // then refactor into smaller list.

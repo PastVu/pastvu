@@ -1,5 +1,5 @@
 /**
- * Module for generating log4js configuration.
+ * Log4js configuration.
  */
 
 const path = require('path');

@@ -39,7 +39,7 @@ registerModel(db => {
 
             pointsnum: { type: Number, index: true }, // Number of points
             polynum: { type: Schema.Types.Mixed, 'default': {} }, // Number of polygons {exterior: N, interior: N}
-            center: { type: [Number], index: '2d' }, // Coordinates of region's center
+            center: { type: [Number], index: '2dsphere' }, // Coordinates of region's center
             // Does region's center compute automatically(true) or setted manually(false)
             centerAuto: { type: Boolean, 'default': true, required: true },
 
