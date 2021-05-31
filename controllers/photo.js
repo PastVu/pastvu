@@ -1938,7 +1938,7 @@ async function giveNearestPhotos({ geo, type, year, year2, except, distance, lim
 
     const isPainting = type === constants.photo.type.PAINTING;
 
-    const query = { geo: { $near: geo }, s: status.PUBLIC, type };
+    const query = { geo: { $nearSphere: { $geometry: { type: 'Point', coordinates: geo } } }, s: status.PUBLIC, type };
     const options = { lean: true };
 
     const years = isPainting ? paintYears : photoYears;
@@ -1964,9 +1964,9 @@ async function giveNearestPhotos({ geo, type, year, year2, except, distance, lim
     }
 
     if (_.isNumber(distance) && distance > 0 && distance < 7) {
-        query.geo.$maxDistance = distance;
+        query.geo.$nearSphere.$maxDistance = distance;
     } else {
-        query.geo.$maxDistance = 2;
+        query.geo.$nearSphere.$maxDistance = 2;
     }
 
     if (_.isNumber(limit) && limit > 0 && limit < 30) {

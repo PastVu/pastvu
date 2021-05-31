@@ -189,7 +189,10 @@ export const clusterPhotosAll = async function (params) {
                     }
 
                     // Link it to photo that will represent cluster.
-                    cluster.p = await Photo.findOne({ s: 5, geo: { $near: cluster.geo } }, {
+                    cluster.p = await Photo.findOne({
+                        s: 5,
+                        geo: { $nearSphere: { $geometry: { type: 'Point', coordinates: cluster.geo } } },
+                    }, {
                         _id: 0,
                         cid: 1,
                         geo: 1,
@@ -308,7 +311,7 @@ async function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, isPainting
 
     const photo = await Photo.findOne(
         {
-            s: constants.photo.status.PUBLIC, geo: { $near: geoCluster },
+            s: constants.photo.status.PUBLIC, geo: { $nearSphere: { $geometry: { type: 'Point', coordinates: geoCluster } } },
             type: isPainting ? constants.photo.type.PAINTING : constants.photo.type.PHOTO,
         },
         { _id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1 },
@@ -517,7 +520,7 @@ export async function getBoundsByYear({ bounds, z, year, year2, isPainting }) {
 async function getClusterPoster(cluster, yearCriteria, isPainting) {
     cluster.p = await Photo.findOne(
         {
-            s: constants.photo.status.PUBLIC, geo: { $near: cluster.geo }, year: yearCriteria,
+            s: constants.photo.status.PUBLIC, geo: { $nearSphere: { $geometry: { type: 'Point', coordinates: cluster.geo } } }, year: yearCriteria,
             type: isPainting ? constants.photo.type.PAINTING : constants.photo.type.PHOTO,
         },
         { _id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1 },
