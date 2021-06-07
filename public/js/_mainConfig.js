@@ -63,6 +63,7 @@ requirejs.config({
         'leaflet': 'lib/leaflet/leaflet',
         'leaflet-plugins': 'lib/leaflet/plugins',
         'leaflet-extends': 'lib/leaflet/extends',
+        'turf': 'lib/turf.min',
 
         'highstock': 'lib/highstock',
 

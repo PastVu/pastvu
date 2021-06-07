@@ -2,8 +2,8 @@
  * Класс управления маркерами
  */
 define([
-    'underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'globalVM', 'leaflet', 'model/Photo'
-], function (_, Utils, socket, P, ko, ko_mapping, globalVM, L, Photo) {
+    'underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'globalVM', 'leaflet', 'model/Photo', 'turf'
+], function (_, Utils, socket, P, ko, ko_mapping, globalVM, L, Photo, turf) {
     'use strict';
 
     var paintingDivisionYear = Math.floor(1688 / 5) * 5;
@@ -331,8 +331,8 @@ define([
             willLocalWork = newZoom >= this.firstClientWorkZoom,
             crossingLocalWorkZoom = (this.currZoom < this.firstClientWorkZoom && willLocalWork) || (this.currZoom >= this.firstClientWorkZoom && !willLocalWork),
             direction = newZoom - this.currZoom,
-            bound = L.latLngBounds(this.calcBound.getSouthWest(), this.calcBound.getNorthEast()),
-            bounds, //Новые баунды для запроса
+            bound = L.latLngBounds(this.calcBound.getSouthWest(), this.calcBound.getNorthEast()), // copy this.calcBound current values.
+            queryGeometry,
             pollServer = true,
             curr,
             i;
@@ -340,12 +340,17 @@ define([
         this.currZoom = newZoom;
 
         if (!init && willLocalWork && !crossingLocalWorkZoom) {
+            // Local work level. We are expecting photo object at those zoom
+            // levels, so we need to fetch photos for area that become visible
+            // as result of zoom change.
+            const poly = turf.bboxPolygon(bound.toBBoxString().split(','));
+            const prevPoly = turf.bboxPolygon(this.calcBoundPrev.toBBoxString().split(','));
             // Если на клиенте уже есть все фотографии для данного зума
             if (!direction) {
                 //Если зум не изменился, то считаем дополнительные баунды, если они есть, запрашиваем их
                 //а если их нет (т.е. баунд тоже не изменился), то просто пересчитываем локальные кластеры
-                bounds = this.boundSubtraction(bound, this.calcBoundPrev);
-                if (bounds.length) {
+                queryGeometry = turf.difference(poly, prevPoly);
+                if (queryGeometry !== null) {
                     this.cropByBound(null, true);
                 } else {
                     pollServer = false;
@@ -358,45 +363,33 @@ define([
                 this.cropByBound(null, true);
                 this.processIncomingDataZoom(null, false, true, this.clientClustering);
             } else {
-                // Если новый зум меньше, то определяем четыре новых баунда, и запрашиваем объекты только для них
-                bounds = this.boundSubtraction(bound, this.calcBoundPrev);
+                // If new zoom is lower, determine the difference and query
+                // opbjects just for the polygon with an inner ring (hole).
+                queryGeometry = turf.difference(poly, prevPoly);
             }
         } else {
             // При пересечении границы "вверх" обнуляем массив всех фото на клиенте
             if (crossingLocalWorkZoom && !willLocalWork) {
                 this.photosAll = [];
             }
-            // Запрашиваем объекты полностью для нового баунда
-            bounds = [
-                [Utils.geo.latlngToArr(bound.getSouthWest()), Utils.geo.latlngToArr(bound.getNorthEast())]
-            ];
+            // Query objects for new .
+            queryGeometry = turf.bboxPolygon(bound.toBBoxString().split(','));
         }
 
         if (pollServer) {
             if (this.visBound) {
-                //Визуализация баундов, по которым будет отправлен запрос к серверу
-                i = 4;
-                while (i--) {
-                    if (this['b' + i] !== undefined) {
-                        this.map.removeLayer(this['b' + i]);
-                        this['b' + i] = undefined;
-                    }
-                }
-                i = bounds.length;
-                while (i) {
-                    curr = bounds[--i];
-                    this['b' + i] = L.rectangle(curr, { color: '#25CE00', weight: 1 }).addTo(this.map);
-                }
+                this.drawBounds(queryGeometry, true, willLocalWork);
             }
 
             socket.run('photo.getByBounds',
                 {
                     z: newZoom,
-                    bounds: bounds,
+                    geometry: turf.getGeom(queryGeometry),
                     startAt: this.startPendingAt,
                     year: this.year,
                     year2: this.year2,
-                    isPainting: this.isPainting
+                    isPainting: this.isPainting,
+                    localWork: willLocalWork
                 }
             ).then(function (data) {
                 var localWork, // Находимся ли мы на уровне локальной работы
@@ -421,6 +414,21 @@ define([
                 self.startPendingAt = undefined;
             });
         }
+    };
+
+    /**
+     * Visualise bounds for debugging purposes.
+     */
+    MarkerManager.prototype.drawBounds = function (geometry, zoom, localWork) {
+        const summary = (zoom === true) ? `Refresh by Zoom, localWork=${localWork}` : 'Refresh by Move';
+        console.log(summary + ', ' + turf.getType(geometry) + ' (Lng,Lat):', JSON.stringify(turf.getCoords(geometry)));
+        // Remove previous drawings.
+        if (this['b'] !== undefined) {
+            this.map.removeLayer(this['b']);
+            this['b'] = undefined;
+        }
+        // Draw new polygon, reverse coordinates.
+        this['b'] = L.polygon(turf.getCoords(turf.flip(geometry)), { color: '#25CE00', weight: 1 }).addTo(this.map);
     };
 
     /**
@@ -507,32 +515,32 @@ define([
         var self = this;
         var zoom = this.currZoom,
             bound = L.latLngBounds(this.calcBound.getSouthWest(), this.calcBound.getNorthEast()),
-            bounds,
             curr,
             i;
 
-        // Считаем новые баунды для запроса
-        bounds = this.boundSubtraction(bound, this.calcBoundPrev);
+        // Calculate new bounds exposed as result of map moving, which we
+        // enclose into multipolygon. We can't use turf.difference here, as it
+        // will give us L-shaped polygon, which in many cases will be
+        // regarded as invalid by MongoDB due to loop edge crossing error
+        // resulted from distortion of mapping a flat object to a spherical
+        // surface.
+        let bounds = this.boundSubtraction(bound, this.calcBoundPrev);
+        bounds = bounds.map(bound => {
+            const bbox = Utils.geo.bboxReverse(_.flatten(bound));
+            return turf.getCoords(turf.bboxPolygon(bbox));
+        });
+        const queryGeometry = turf.multiPolygon(bounds);
 
         if (this.visBound) {
-            // Визуализация баундов, по которым будет отправлен запрос к серверу
-            i = 4;
-            while (i--) {
-                if (this['b' + i] !== undefined) {
-                    this.map.removeLayer(this['b' + i]);
-                    this['b' + i] = undefined;
-                }
-            }
-            i = bounds.length;
-            while (i) {
-                curr = bounds[--i];
-                this['b' + i] = L.rectangle(curr, { color: "#25CE00", weight: 1 }).addTo(this.map);
-            }
+            this.drawBounds(queryGeometry);
         }
 
         socket
             .run('photo.getByBounds', {
-                z: zoom, bounds: bounds, year: this.year, year2: this.year2,
+                z: zoom,
+                geometry: turf.getGeom(queryGeometry),
+                year: this.year,
+                year2: this.year2,
                 isPainting: this.isPainting
             })
             .then(function (data) {
