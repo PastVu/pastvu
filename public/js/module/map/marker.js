@@ -518,20 +518,13 @@ define([
             curr,
             i;
 
-        // Calculate new bounds exposed as result of map moving, which we
-        // enclose into multipolygon. We can't use turf.difference here, as it
-        // will give us L-shaped polygon, which in many cases will be
-        // regarded as invalid by MongoDB due to loop edge crossing error
-        // resulted from distortion of mapping a flat object to a spherical
-        // surface.
-        let bounds = this.boundSubtraction(bound, this.calcBoundPrev);
-        bounds = bounds.map(bound => {
-            const bbox = Utils.geo.bboxReverse(_.flatten(bound));
-            return turf.getCoords(turf.bboxPolygon(bbox));
-        });
-        const queryGeometry = turf.multiPolygon(bounds);
+        const poly = turf.bboxPolygon(bound.toBBoxString().split(','));
+        const prevPoly = turf.bboxPolygon(this.calcBoundPrev.toBBoxString().split(','));
+        const queryGeometry = turf.difference(poly, prevPoly);
 
         if (this.visBound) {
+            // We expect L-shape polygone here in most cases (or rectangle if map is moved
+            // by pressing arrow keys).
             this.drawBounds(queryGeometry);
         }
 
@@ -852,96 +845,6 @@ define([
                 delete objHash[i];
             }
         }
-    };
-
-    /**
-     * Вычитает один баунд из другого
-     * @param minuend Уменьшаемый
-     * @param subtrahend Вычитаемый
-     * @return {Array} Массив баундов разницы вычитания
-     */
-    MarkerManager.prototype.boundSubtraction = function (minuend, subtrahend) {
-        var a = {
-                west: minuend._southWest.lng,
-                north: minuend._northEast.lat,
-                east: minuend._northEast.lng,
-                south: minuend._southWest.lat
-            },
-            b = {
-                west: subtrahend._southWest.lng,
-                north: subtrahend._northEast.lat,
-                east: subtrahend._northEast.lng,
-                south: subtrahend._southWest.lat
-            },
-            c = [],
-            result = [],
-            curr,
-            i;
-
-
-        if (minuend.contains(subtrahend)) {
-            // Если вычитаемый баунд полностью включается в уменьшаемый, то будет от 2 до 4 результатов
-            if (a.north > b.north) {
-                c[0] = { north: a.north, south: b.north, east: a.east, west: a.west };
-            }
-            if (a.south < b.south) {
-                c[1] = { north: b.south, south: a.south, east: a.east, west: a.west };
-            }
-            if (a.east > b.east) {
-                c[2] = { west: b.east, east: a.east, north: b.north, south: b.south };
-            }
-            if (a.west < b.west) {
-                c[3] = { west: a.west, east: b.west, north: b.north, south: b.south };
-            }
-        } else if (minuend.intersects(subtrahend)) {
-            // Если вычитаемый баунд пересекается с уменьшаемым, то будет от 1 до 2 результатов
-            // or https://github.com/netshade/spatial_query polygon = sq.polygon([[b.west, b.north], [b.east, b.north], [b.east, b.south], [b.west, b.south]]).subtract_2d([[a.west, a.north], [a.east, a.north], [a.east, a.south], [a.west, a.south]]).to_point_array();
-            // or https://github.com/tschaub/geoscript-js
-            // or https://github.com/bjornharrtell/jsts
-            if (a.east > b.east) {
-                c[1] = { west: b.east, east: a.east };
-            } else if (a.east < b.east) {
-                c[1] = { west: a.west, east: b.west };
-            }
-            if (b.north !== a.north) {
-                c[0] = { west: a.west, east: a.east };
-
-                if (a.north > b.north) {
-                    c[0].north = a.north;
-                    c[0].south = b.north;
-
-                    if (c[1]) {
-                        c[1].north = b.north;
-                        c[1].south = a.south;
-                    }
-                } else {
-                    c[0].north = b.south;
-                    c[0].south = a.south;
-
-                    if (c[1]) {
-                        c[1].north = a.north;
-                        c[1].south = b.south;
-                    }
-                }
-            } else {
-                c[1].north = a.north;
-                c[1].south = a.south;
-            }
-        } else {
-            c[0] = a;
-        }
-        c = _.compact(c);
-
-        i = c.length;
-        while (i) {
-            curr = c[--i];
-            result[i] = [
-                [curr.south, curr.west],
-                [curr.north, curr.east]
-            ];
-        }
-
-        return result;
     };
 
     /**

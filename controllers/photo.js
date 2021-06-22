@@ -2494,9 +2494,12 @@ function getByBounds(data) {
     }
 
     if (geometry.type === 'Polygon' && geometry.coordinates.length === 1) {
+        // Compensate map distorsion by adding more points.
+        data.geometry = Utils.geo.polygonFixMapDistortion(geometry);
+
         // Strict winding for single-ringed polygon, to avoid excluding
         // from searching an area that is larger than a hemisphere.
-        geometry.crs = {
+        data.geometry.crs = {
             type: 'name',
             properties: { name: 'urn:x-mongodb:crs:strictwinding:EPSG:4326' },
         };
