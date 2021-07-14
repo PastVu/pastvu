@@ -57,7 +57,7 @@ define([
         this.zoomChanged = false;
         this.refreshByZoomTimeout = null;
         this.refreshDataByZoomBind = this.refreshDataByZoom.bind(this);
-        this.visBound = false;
+        this.visBound = false; // Set to true for debugging.
 
         this.animationOn = false;
 
@@ -241,10 +241,15 @@ define([
         if (force || !this.calcBound || !this.calcBound.contains(this.map.getBounds())) {
             this.calcBoundPrev = this.calcBound;
             this.calcBound = this.map.getBounds().pad(localWork ? 0.1 : 0.25);
-            this.calcBound._northEast.lat = Utils.math.toPrecision(this.calcBound._northEast.lat);
-            this.calcBound._northEast.lng = Utils.math.toPrecision(this.calcBound._northEast.lng);
-            this.calcBound._southWest.lat = Utils.math.toPrecision(this.calcBound._southWest.lat);
-            this.calcBound._southWest.lng = Utils.math.toPrecision(this.calcBound._southWest.lng);
+            // We don't go beyond antemeredian on either side for now, to
+            // comply with WGS84 projection used by MongoDB. In fiture we may
+            // have means of slicing geometries at backend to query object on both
+            // sides of antemeredian, in that case limiting coordinates won't
+            // be needed.
+            this.calcBound._northEast.lat = Utils.math.toPrecision(Math.min(this.calcBound._northEast.lat, 90));
+            this.calcBound._northEast.lng = Utils.math.toPrecision(Math.min(this.calcBound._northEast.lng, 180));
+            this.calcBound._southWest.lat = Utils.math.toPrecision(Math.max(this.calcBound._southWest.lat, -90));
+            this.calcBound._southWest.lng = Utils.math.toPrecision(Math.max(this.calcBound._southWest.lng, -180));
             result = true;
         }
         return result;
@@ -523,7 +528,7 @@ define([
         const queryGeometry = turf.difference(poly, prevPoly);
 
         if (this.visBound) {
-            // We expect L-shape polygone here in most cases (or rectangle if map is moved
+            // We expect L-shape polygon here in most cases (or rectangle if map is moved
             // by pressing arrow keys).
             this.drawBounds(queryGeometry);
         }
