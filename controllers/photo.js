@@ -329,8 +329,14 @@ export function getNewPhotosLimit(user) {
     return canCreate;
 }
 
+/**
+ * Get photos and clusters by GeoJSON geometry object bounds.
+ *
+ * @param {object} data
+ * @returns {object}
+ */
 async function getBounds(data) {
-    const { bounds, z, year, year2, isPainting } = data;
+    const { geometry, year, year2, isPainting, localWork } = data;
     const years = isPainting ? paintYears : photoYears;
 
     // Determine whether fetch by years needed
@@ -340,23 +346,18 @@ async function getBounds(data) {
     let clusters;
     let photos;
 
-    if (z < 17) {
+    if (!localWork) {
         ({ photos, clusters } = await this.call(`cluster.${hasYears ? 'getBoundsByYear' : 'getBounds'}`, data));
     } else {
         const MapModel = isPainting ? PaintingMap : PhotoMap;
         const yearCriteria = hasYears ? year === year2 ? year : { $gte: year, $lte: year2 } : false;
+        const criteria = { geo: { $geoWithin: { $geometry: geometry } } };
 
-        photos = await Promise.all(bounds.map(bound => {
-            const criteria = { geo: { $geoWithin: { $box: bound } } };
+        if (yearCriteria) {
+            criteria.year = yearCriteria;
+        }
 
-            if (yearCriteria) {
-                criteria.year = yearCriteria;
-            }
-
-            return MapModel.find(criteria, { _id: 0 }, { lean: true }).exec();
-        }));
-
-        photos = photos.length > 1 ? _.flatten(photos) : photos[0];
+        photos = await MapModel.find(criteria, { _id: 0 }, { lean: true }).exec();
     }
 
     // Reverse geo
@@ -1938,7 +1939,7 @@ async function giveNearestPhotos({ geo, type, year, year2, except, distance, lim
 
     const isPainting = type === constants.photo.type.PAINTING;
 
-    const query = { geo: { $near: geo }, s: status.PUBLIC, type };
+    const query = { geo: { $nearSphere: { $geometry: { type: 'Point', coordinates: geo } } }, s: status.PUBLIC, type };
     const options = { lean: true };
 
     const years = isPainting ? paintYears : photoYears;
@@ -1964,9 +1965,9 @@ async function giveNearestPhotos({ geo, type, year, year2, except, distance, lim
     }
 
     if (_.isNumber(distance) && distance > 0 && distance < 7) {
-        query.geo.$maxDistance = distance;
+        query.geo.$nearSphere.$maxDistance = distance;
     } else {
-        query.geo.$maxDistance = 2;
+        query.geo.$nearSphere.$maxDistance = 2;
     }
 
     if (_.isNumber(limit) && limit > 0 && limit < 30) {
@@ -2479,19 +2480,29 @@ async function save(data) {
     return this.call('photo.give', { cid: photo.cid, rel }).then(result => ({ reconvert, ...result }));
 }
 
-// Фотографии и кластеры по границам
-// {z: Масштаб, bounds: [[]]}
+/**
+ * Photos and clusters by geometry object (i.e. polygon, multipolygon)
+ *
+ * @param {object} data {z: Zoom, geometry: GeoJSON geometry object, etc.}
+ * @returns {object} object containing result.
+ */
 function getByBounds(data) {
-    const { bounds, z, startAt } = data;
+    const { geometry, z, startAt } = data;
 
-    if (!Array.isArray(bounds) || !_.isNumber(z) || z < 1) {
+    if (!['MultiPolygon', 'Polygon'].includes(geometry.type) || !_.isNumber(z) || z < 1) {
         throw new BadParamsError();
     }
 
-    // Reverse bound's borders
-    for (const bound of bounds) {
-        bound[0].reverse();
-        bound[1].reverse();
+    if (geometry.type === 'Polygon' && geometry.coordinates.length === 1) {
+        // Compensate map distorsion by adding more points.
+        data.geometry = Utils.geo.polygonFixMapDistortion(geometry);
+
+        // Strict winding for single-ringed polygon, to avoid excluding
+        // from searching an area that is larger than a hemisphere.
+        data.geometry.crs = {
+            type: 'name',
+            properties: { name: 'urn:x-mongodb:crs:strictwinding:EPSG:4326' },
+        };
     }
 
     return this.call('photo.getBounds', data).then(result => ({ startAt, z, ...result }));

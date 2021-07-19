@@ -189,7 +189,10 @@ export const clusterPhotosAll = async function (params) {
                     }
 
                     // Link it to photo that will represent cluster.
-                    cluster.p = await Photo.findOne({ s: 5, geo: { $near: cluster.geo } }, {
+                    cluster.p = await Photo.findOne({
+                        s: 5,
+                        geo: { $nearSphere: { $geometry: { type: 'Point', coordinates: cluster.geo } } },
+                    }, {
                         _id: 0,
                         cid: 1,
                         geo: 1,
@@ -308,7 +311,7 @@ async function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, isPainting
 
     const photo = await Photo.findOne(
         {
-            s: constants.photo.status.PUBLIC, geo: { $near: geoCluster },
+            s: constants.photo.status.PUBLIC, geo: { $nearSphere: { $geometry: { type: 'Point', coordinates: geoCluster } } },
             type: isPainting ? constants.photo.type.PAINTING : constants.photo.type.PHOTO,
         },
         { _id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1 },
@@ -438,59 +441,65 @@ export function declusterPhoto({ photo, isPainting }) {
     }));
 }
 
-// Returns clusters within bounds
-export async function getBounds({ bounds, z, isPainting }) {
+/**
+ * Returns clusters within GeoJSON geometry object bounds.
+ *
+ * @param {object} param
+ * @param {object} param.geometry GeoJSON geometry object (e.g. Polygon)
+ * @param {number} param.z Zoom level
+ * @param {boolean} param.isPainting
+ * @returns {object}
+ */
+export async function getBounds({ geometry, z, isPainting }) {
     const ClusterModel = isPainting ? ClusterPaint : Cluster;
-    const foundClusters = await Promise.all(bounds.map(bound => ClusterModel.find(
-        { g: { $geoWithin: { $box: bound } }, z },
+    const foundClusters = await ClusterModel.find(
+        { g: { $geoWithin: { $geometry: geometry } }, z },
         { _id: 0, c: 1, geo: 1, p: 1 },
         { lean: true }
-    ).exec()));
+    ).exec();
 
     const photos = []; // Photos array
     const clusters = [];  // Clusters array
 
-    for (const bound of foundClusters) {
-        for (const cluster of bound) {
-            if (cluster.c > 1) {
-                cluster.geo.reverse(); // Reverse geo
-                clusters.push(cluster);
-            } else if (cluster.c === 1) {
-                photos.push(cluster.p);
-            }
+    for (const cluster of foundClusters) {
+        if (cluster.c > 1) {
+            cluster.geo.reverse(); // Reverse geo
+            clusters.push(cluster);
+        } else if (cluster.c === 1) {
+            photos.push(cluster.p);
         }
     }
 
     return { photos, clusters };
 }
 
-// Returns clusters within bounds within given years intervals
-export async function getBoundsByYear({ bounds, z, year, year2, isPainting }) {
+/**
+ * Returns clusters within GeoJSON geometry object bounds within given years intervals
+ */
+export async function getBoundsByYear({ geometry, z, year, year2, isPainting }) {
     const ClusterModel = isPainting ? ClusterPaint : Cluster;
-    const foundClusters = await Promise.all(bounds.map(bound => ClusterModel.find(
-        { g: { $geoWithin: { $box: bound } }, z },
+    const foundClusters = await ClusterModel.find(
+        { g: { $geoWithin: { $geometry: geometry } }, z },
         { _id: 0, c: 1, geo: 1, y: 1, p: 1 },
         { lean: true }
-    ).exec()));
+    ).exec();
 
     const clustersAll = [];
     const posterPromises = [];
     const yearCriteria = year === year2 ? year : { $gte: year, $lte: year2 };
 
-    for (const bound of foundClusters) {
-        for (const cluster of bound) {
-            cluster.c = 0;
+    for (const cluster of foundClusters) {
+        cluster.c = 0;
 
-            for (let y = year; y <= year2; y++) {
-                cluster.c += cluster.y[y] | 0;
-            }
+        for (let y = year; y <= year2; y++) {
+            cluster.c += cluster.y[y] | 0;
+        }
 
-            if (cluster.c > 0) {
-                clustersAll.push(cluster);
+        if (cluster.c > 0) {
+            clustersAll.push(cluster);
 
-                if (cluster.p.year < year || cluster.p.year > year2) {
-                    posterPromises.push(getClusterPoster(cluster, yearCriteria, isPainting));
-                }
+            if (cluster.p.year < year || cluster.p.year > year2) {
+                posterPromises.push(getClusterPoster(cluster, yearCriteria, isPainting));
             }
         }
     }
@@ -517,7 +526,9 @@ export async function getBoundsByYear({ bounds, z, year, year2, isPainting }) {
 async function getClusterPoster(cluster, yearCriteria, isPainting) {
     cluster.p = await Photo.findOne(
         {
-            s: constants.photo.status.PUBLIC, geo: { $near: cluster.geo }, year: yearCriteria,
+            s: constants.photo.status.PUBLIC,
+            geo: { $nearSphere: { $geometry: { type: 'Point', coordinates: cluster.geo } } },
+            year: yearCriteria,
             type: isPainting ? constants.photo.type.PAINTING : constants.photo.type.PHOTO,
         },
         { _id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1 },
