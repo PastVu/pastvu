@@ -3,6 +3,7 @@ import moment from 'moment';
 import log4js from 'log4js';
 import config from './config';
 import connectDb, { waitDb } from './controllers/connection';
+import { checkPendingMigrations } from './controllers/migration';
 import { archiveExpiredSessions, calcUserStats } from './controllers/_session';
 import { convertPhotosAll } from './controllers/converter';
 import { clusterPhotosAll } from './controllers/cluster';
@@ -15,6 +16,9 @@ const logger = log4js.getLogger('worker');
 
 export async function configure(startStamp) {
     logger.info('Application Hash: ' + config.hash);
+
+    // Perform migration.
+    await checkPendingMigrations(true);
 
     await connectDb({
         redis: config.redis,

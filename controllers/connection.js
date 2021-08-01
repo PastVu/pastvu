@@ -3,6 +3,7 @@ import log4js from 'log4js';
 import { ApplicationError } from '../app/errors';
 import constantsError from '../app/errors/constants';
 import exitHook from 'async-exit-hook';
+import { checkPendingMigrations } from './migration';
 
 const modelPromises = [];
 let connectionPromises;
@@ -97,6 +98,10 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
 
                 await Promise.all(modelPromises.map(modelPromise => modelPromise(db)));
                 modelPromises.splice(0, modelPromises.length); // Clear promises array
+
+                if (! await checkPendingMigrations()) {
+                    getDBReject('DB migration is required, make sure that worker instance is started or migrate manually');
+                }
 
                 getDBResolve(db);
                 resolve(db);
