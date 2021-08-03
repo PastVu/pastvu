@@ -9,7 +9,7 @@ services:
   mongo:
     image: mongo:4.4
     volumes:
-      - mongo:/data/db
+      - mongo4:/data/db
     expose:
       - "27017"
     ports:
@@ -89,9 +89,9 @@ services:
     expose:
      - "1025"
     ports:
-     - "127.0.0.1:1080:1080"
+     - "1080:1080"
 
 volumes:
   store:
   sitemap:
-  mongo:
+  mongo4:
