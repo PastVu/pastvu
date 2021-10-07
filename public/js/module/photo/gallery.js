@@ -207,7 +207,7 @@ define([
                         txt = '' + globalVM.intl.num(this.pageFirstItem()) + '&nbsp;&ndash;&nbsp;' + globalVM.intl.num(this.pageLastItem()) + ' of ' + globalVM.intl.num(count) + ' are shown';
                     }
                 } else {
-                    txt = 'There is not a single image';
+                    txt = 'No images found';
                 }
 
                 return txt;
@@ -332,7 +332,7 @@ define([
                     return;
                 }
 
-                Utils.title.setTitle({ title: preTitle + 'Случайные изображения' });
+                Utils.title.setTitle({ title: preTitle + 'Random gallery' });
 
                 page = 1;
                 this.feed(false);
