@@ -332,7 +332,7 @@ define([
                     return;
                 }
 
-                Utils.title.setTitle({ title: preTitle + 'Random gallery' });
+                Utils.title.setTitle({ title: preTitle + 'Random images' });
 
                 page = 1;
                 this.feed(false);
