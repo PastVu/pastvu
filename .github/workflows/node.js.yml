@@ -5,7 +5,7 @@ name: Node.js CI
 
 on:
   push:
-    branches: 
+    branches:
       - '**'
   pull_request:
 
@@ -16,7 +16,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [15.x]
+        node-version: [16.x]
 
     steps:
     - uses: actions/checkout@v2

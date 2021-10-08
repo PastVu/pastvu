@@ -1,7 +1,7 @@
 version: '3.8'
 
 x-defaults: &app-image
-  image: pastvu/node:15.3.0
+  image: pastvu/node:16.10.0
 
 services:
   mongo:

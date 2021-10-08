@@ -1,4 +1,4 @@
-ARG NODE_TAG=15.3.0
+ARG NODE_TAG=16.10.0
 FROM pastvu/node:$NODE_TAG AS builder
 WORKDIR /code
 COPY package.json .
