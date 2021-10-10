@@ -1,13 +1,15 @@
 version: '3.8'
 
 x-defaults: &app-image
-  image: pastvu/node:16.10.0
+  build: .
 
 services:
   mongo:
     image: pastvu/mongo:3.2.22
     volumes:
       - mongo:/data/db
+      - ./pastvu.gz:/dump/pastvu.gz
+      - ./docker/initdb.sh:/docker-entrypoint-initdb.d/initdb.sh
     expose:
       - "27017"
     ports:
