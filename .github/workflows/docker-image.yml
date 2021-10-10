@@ -60,7 +60,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: .
-          file: ./Dockerfile
+          file: ./backend.Dockerfile
           tags: ${{ steps.docker_meta_backend.outputs.tags }}
           labels: ${{ steps.docker_meta_backend.outputs.labels }}
           push: true
