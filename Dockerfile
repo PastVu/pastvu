@@ -1,12 +1,23 @@
 ARG NODE_TAG=16.10.0
-FROM pastvu/node:$NODE_TAG AS builder
+
+FROM node:$NODE_TAG AS base
+RUN apt-get update && apt-get install -y \
+    graphicsmagick \
+    webp \
+&& rm -rf /var/lib/apt/lists/*
+COPY ./docker/imagick/policy.xml /etc/ImageMagick-6/policy.xml
+WORKDIR /code
+COPY ./docker/pastvu-entrypoint.sh /usr/local/bin/
+ENTRYPOINT ["pastvu-entrypoint.sh"]
+
+FROM node:$NODE_TAG AS builder
 WORKDIR /code
 COPY package.json .
 RUN npm install
 COPY . .
 RUN npm run build
 
-FROM pastvu/node:$NODE_TAG
+FROM base
 WORKDIR /code
 ENV LANG ru
 ENV MODULE app
