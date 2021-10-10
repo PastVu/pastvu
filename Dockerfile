@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install -y \
     graphicsmagick \
     webp \
 && rm -rf /var/lib/apt/lists/*
-COPY ./docker/imagick/policy.xml /etc/ImageMagick-6/policy.xml
+COPY ./docker/imagick-policy.xml /etc/ImageMagick-6/policy.xml
 COPY ./docker/pastvu-entrypoint.sh /usr/local/bin/
 ENTRYPOINT ["pastvu-entrypoint.sh"]
 
