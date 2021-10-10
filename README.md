@@ -148,3 +148,8 @@ There are two databases, `MongoDB` and `Redis`, and four services to start: `app
 Now, depending on the `client.hostname` prop in your local.config.js you should be able to access your local copy of PastVu in your browser! 🎉
 
 In case of the default hostname and port, just open this url: http://pastvu.local:3000 and login with the default user `admin`/`admin`!
+
+
+### How to release
+
+See `npm version --help`. Don't forget to manually tag the `en` branch.
