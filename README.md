@@ -20,8 +20,6 @@ You need to have [docker](https://docs.docker.com/engine/install/) and [docker-c
 ```bash
 # Download database dump
 curl -O https://varlamov.me/pastvu/github/pastvu.gz
-# Run the mongo container in background
-docker-compose up -d mongo
 # Install node modules
 docker-compose run app npm install
 # Copy local configuration
