@@ -22,8 +22,6 @@ You need to have [docker](https://docs.docker.com/engine/install/) and [docker-c
 curl -O https://varlamov.me/pastvu/github/pastvu.gz
 # Run the mongo container in background
 docker-compose up -d mongo
-# Import pastvu db
-docker-compose exec -T mongo mongorestore --gzip --db pastvu --archive < pastvu.gz
 # Install node modules
 docker-compose run app npm install
 # Copy local configuration

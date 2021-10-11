@@ -8,6 +8,8 @@ services:
     image: pastvu/mongo:3.2.22
     volumes:
       - mongo:/data/db
+      - ./pastvu.gz:/pastvu.gz
+      - ./docker/dev-initdb.sh:/docker-entrypoint-initdb.d/initdb.sh
     expose:
       - "27017"
     ports:
