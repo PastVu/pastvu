@@ -9,5 +9,3 @@ WORKDIR /code
 
 COPY ./docker/dev-entrypoint.sh /usr/local/bin/
 ENTRYPOINT ["dev-entrypoint.sh"]
-
-CMD [ "node" ]
