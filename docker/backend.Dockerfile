@@ -22,3 +22,4 @@ ENV CONFIG /config.js
 COPY --from=builder /appBuild/ .
 COPY ./docker/docker-healthcheck.sh .
 RUN npm install --production
+CMD ["bin/run"]
