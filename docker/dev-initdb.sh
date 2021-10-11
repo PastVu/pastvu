@@ -1,2 +1,4 @@
 #!/bin/sh
-mongorestore --gzip --db pastvu --archive=/pastvu.gz
+ARCHIVE=/pastvu.gz
+test -f $ARCHIVE || exit 1
+mongorestore --gzip --db pastvu --archive=$ARCHIVE
