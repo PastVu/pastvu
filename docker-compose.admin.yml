@@ -1,0 +1,8 @@
+version: "3.8"
+
+services:
+  getdump:
+    image: rancher/curl
+    volumes:
+      - ./dump:/dump
+    command: "-o /dump/pastvu.gz https://varlamov.me/pastvu/github/pastvu.gz"
