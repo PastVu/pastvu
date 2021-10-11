@@ -11,14 +11,12 @@ COPY ./docker/pastvu-entrypoint.sh /usr/local/bin/
 ENTRYPOINT ["pastvu-entrypoint.sh"]
 
 FROM base AS builder
-WORKDIR /code
 COPY package.json .
 RUN npm install
 COPY . .
 RUN npm run build
 
 FROM base
-WORKDIR /code
 ENV LANG ru
 ENV MODULE app
 ENV NODE_ENV production
