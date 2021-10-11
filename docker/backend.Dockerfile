@@ -22,4 +22,3 @@ ENV CONFIG /config.js
 COPY --from=builder /appBuild/ .
 COPY ./docker/docker-healthcheck.sh .
 RUN npm install --production
-CMD node --max-old-space-size=4096 /code/bin/run.js --script /code/${MODULE}.js --config ${CONFIG}
