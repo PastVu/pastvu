@@ -147,7 +147,7 @@ define([
                         id: 'osmosnimki',
                         desc: 'Kosmosnimki',
                         selected: ko.observable(false),
-                        obj: new L.TileLayer('https://osmcluster.kosmosnimki.ru/kosmo/{z}/{x}/{y}.png', {
+                        obj: new L.TileLayer('https://tilessputnik.ru/{z}/{x}/{y}.png', {
                             attribution: '&copy; <a href="https://kosmosnimki.ru/">ООО ИТЦ "СКАНЭКС"</a> | &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
                             updateWhenIdle: false,
                             maxZoom: 18,
@@ -315,7 +315,7 @@ define([
                         id: 'mtb',
                         desc: 'MTB пеш.',
                         selected: ko.observable(false),
-                        obj: new L.TileLayer('https://tileproxy.pastvu.com/mtbmap_tiles/{z}/{x}/{y}.png', {
+                        obj: new L.TileLayer('https://tile.mtbmap.cz/mtbmap_tiles/{z}/{x}/{y}.png', {
                             attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | <a href="http://mtbmap.cz/">mtbmap.cz</a>',
                             updateWhenIdle: false,
                             maxZoom: 19,
