@@ -23,7 +23,7 @@ jobs:
         id: docker_meta_backend
         uses: crazy-max/ghaction-docker-meta@v1
         with:
-          images: pastvu/pastvu
+          images: pastvu/backend
           tag-semver: |
             {{version}}
             {{major}}.{{minor}}      

@@ -1,4 +1,4 @@
-ARG IMAGE=pastvu/pastvu:latest
+ARG IMAGE=pastvu/backend:latest
 FROM ${IMAGE} AS app
 
 FROM nginx:1.21.3
