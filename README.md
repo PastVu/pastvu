@@ -19,7 +19,7 @@ You need to have [docker](https://docs.docker.com/engine/install/) and [docker-c
 
 ```bash
 # Download database dump
-(mkdir dump; cd $_; curl -O https://varlamov.me/pastvu/github/pastvu.gz)
+( mkdir -p dump; cd $_; curl -O https://varlamov.me/pastvu/github/pastvu.gz )
 # Install node modules
 docker-compose run app npm install
 # Finally, start the whole application
