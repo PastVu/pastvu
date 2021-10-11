@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y \
 COPY ./docker/imagick-policy.xml /etc/ImageMagick-6/policy.xml
 WORKDIR /code
 
-COPY ./docker/pastvu-entrypoint.sh /usr/local/bin/
-ENTRYPOINT ["pastvu-entrypoint.sh"]
+COPY ./docker/dev-entrypoint.sh /usr/local/bin/
+ENTRYPOINT ["dev-entrypoint.sh"]
 
 CMD [ "node" ]
