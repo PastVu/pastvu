@@ -7,8 +7,6 @@ RUN apt-get update && apt-get install -y \
     webp \
 && rm -rf /var/lib/apt/lists/*
 COPY ./docker/imagick-policy.xml /etc/ImageMagick-6/policy.xml
-COPY ./docker/pastvu-entrypoint.sh /usr/local/bin/
-ENTRYPOINT ["pastvu-entrypoint.sh"]
 
 FROM base AS builder
 COPY package.json .
