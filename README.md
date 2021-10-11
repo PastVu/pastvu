@@ -23,7 +23,7 @@ You need to have [docker](https://docs.docker.com/engine/install/) and [docker-c
 # Install node modules
 docker-compose run app npm install
 # Finally, start the whole application
-docker-compose up
+docker-compose up --build
 ```
 
 Navigate to http://localhost:3000 and login with the default user `admin`/`admin`.
