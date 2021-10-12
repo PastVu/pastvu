@@ -115,7 +115,7 @@
         "jqueryui-amd": "0.0.2",
         "less": "4.1.1",
         "less-middleware": "3.1.0",
-        "lint-staged": "10.0.4",
+        "lint-staged": "10.5.4",
         "osm-and-geojson": "0.1.2",
         "requirejs": "2.3.6",
         "xmldom": "0.6.0"
