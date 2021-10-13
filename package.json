@@ -58,7 +58,7 @@
         "gm": "1.23.1",
         "http-proxy-middleware": "0.20.0",
         "locale": "0.1.0",
-        "lodash": "4.17.20",
+        "lodash": "4.17.21",
         "log4js": "1.1.1",
         "lru-cache": "5.1.1",
         "make-dir": "3.0.0",
