@@ -45,7 +45,7 @@
     "dependencies": {
         "@mapbox/geojson-area": "0.2.2",
         "@mapbox/geojson-rewind": "0.5.0",
-        "@mapbox/geojsonhint": "3.0.1",
+        "@placemarkio/check-geojson": "0.1.7",
         "@turf/turf": "6.4.0",
         "async-exit-hook": "2.0.1",
         "aws-sdk": "2.610.0",
@@ -74,7 +74,7 @@
         "migrate-mongo": "8.2.2",
         "mime": "2.4.4",
         "moment": "2.24.0",
-        "mongoose": "5.12.2",
+        "mongoose": "5.13.10",
         "ms": "2.1.2",
         "mv": "2.1.1",
         "nodemailer": "6.6.0",
@@ -115,7 +115,7 @@
         "jqueryui-amd": "0.0.2",
         "less": "4.1.1",
         "less-middleware": "3.1.0",
-        "lint-staged": "10.0.4",
+        "lint-staged": "10.5.4",
         "osm-and-geojson": "0.1.2",
         "requirejs": "2.3.6",
         "xmldom": "0.6.0"

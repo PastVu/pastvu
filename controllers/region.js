@@ -5,7 +5,7 @@ import config from '../config';
 import Utils from '../commons/Utils';
 import { polygon as turfPolygon, intersect as turfIntersect } from '@turf/turf';
 import geojsonRewind from '@mapbox/geojson-rewind';
-import geojsonHint from '@mapbox/geojsonhint';
+import { getIssues } from '@placemarkio/check-geojson';
 import geojsonArea from '@mapbox/geojson-area';
 import { waitDb } from './connection';
 import constants from './constants.js';
@@ -995,16 +995,13 @@ async function save(data) {
         // https://macwright.org/2015/03/23/geojson-second-bite.html
         data.geo = geojsonRewind(data.geo);
 
-        // Validate geojson objects against the specification
-        const hints = geojsonHint.hint(data.geo, {
-            noDuplicateMembers: true,
-            precisionWarning: false,
-        });
+        // Validate against GeoJSON spec.
+        const hints = getIssues(JSON.stringify(data.geo));
 
         if (hints.length) {
             throw new BadParamsError({
                 code: constantsError.REGION_GEOJSON_PARSE,
-                why: hints.reduce((acc, hint) => `${acc}${hint.message}${hint.line ? `, ${hint.line}` : ''}.<br>`, ''),
+                why: hints.reduce((acc, hint) => `${acc}${hint.message}${hint.from ? `, ${hint.from}` : ''}.<br />`, ''),
             });
         }
     }
