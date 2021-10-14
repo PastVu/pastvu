@@ -12,6 +12,7 @@ import './controllers/systemjs';
 
 export async function configure(startStamp) {
     const logger = log4js.getLogger('notifier');
+    config.notifier = true;
 
     logger.info('Application Hash: ' + config.hash);
 
