@@ -52,6 +52,7 @@ if (require.main !== module) { // If run.js is required by another module (for e
 
     const appName = path.parse(argv.script).name;
     const logger = log4js.getLogger(appName);
+    if (appName === "notifier") config.notifier = true;
 
     // Handling uncaught exceptions
     process.on('uncaughtException', err => {
