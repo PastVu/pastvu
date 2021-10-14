@@ -5,7 +5,7 @@ module.exports = {
     env: 'development', // Enviroment: development, testing, production
     locales: ['en', 'ru'], // List of supported locales. First one is the default locale, if user transferred nothing
     lang: 'en', // Language: ru, en
-    primary: false, // If not true, the instance will run as a recplica
+
     admin: {
         email: '',
     },

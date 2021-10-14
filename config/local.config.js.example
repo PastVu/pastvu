@@ -2,7 +2,6 @@ module.exports = function (config, appRequire) {
     const _ = appRequire('lodash');
 
     _.merge(config, {
-        primary: true,
         client: {
             hostname: 'pastvu.local',
         },
