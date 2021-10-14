@@ -20,7 +20,7 @@ You need to have [docker](https://docs.docker.com/engine/install/) and [docker-c
 ```bash
 # Install node modules
 docker-compose run app npm install
-# Finally, start the whole application
+# Start the application
 docker-compose up
 ```
 
