@@ -5,11 +5,11 @@ x-defaults: &app-image
 
 services:
   mongo:
-    image: pastvu/mongo:3.2.22
+    build:
+      context: ./docker
+      dockerfile: dev-mongo.Dockerfile
     volumes:
       - mongo:/data/db
-      - ./dump:/dump
-      - ./docker/dev-initdb.sh:/docker-entrypoint-initdb.d/initdb.sh
     expose:
       - "27017"
     ports:
