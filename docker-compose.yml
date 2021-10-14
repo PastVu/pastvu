@@ -2,12 +2,13 @@ version: '3.8'
 
 x-defaults: &app-image
   build: .
-  environment:
-    - NODE_ENV=development
+  image: pastvu_node
 
 services:
   mongo:
-    image: mongo:4.4
+    build:
+      context: ./docker
+      dockerfile: dev-mongo.Dockerfile
     volumes:
       - mongo:/data/db
     expose:

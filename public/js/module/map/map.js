@@ -147,7 +147,7 @@ define([
                         id: 'osmosnimki',
                         desc: 'Kosmosnimki',
                         selected: ko.observable(false),
-                        obj: new L.TileLayer('https://tilessputnik.ru/{z}/{x}/{y}.png', {
+                        obj: new L.TileLayer('https://tile.pastvu.com/{z}/{x}/{y}.png', {
                             attribution: '&copy; <a href="https://kosmosnimki.ru/">ООО ИТЦ "СКАНЭКС"</a> | &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
                             updateWhenIdle: false,
                             maxZoom: 18,
