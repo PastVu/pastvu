@@ -42,6 +42,7 @@ if (require.main !== module) { // If run.js is required by another module (for e
             'default': true,
         })
         .options('primary', {
+            boolean: true,
             describe: 'Run as primary instance',
         })
         .argv;
