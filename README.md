@@ -18,16 +18,8 @@ We welcome any keen developer in helping us build the better PastVu. You can ins
 You need to have [docker](https://docs.docker.com/engine/install/) and [docker-compose](https://docs.docker.com/compose/install/) installed.
 
 ```bash
-# Download database dump
-curl -O https://varlamov.me/pastvu/github/pastvu.gz
-# Run the mongo container in background
-docker-compose up -d mongo
-# Import pastvu db
-docker-compose exec -T mongo mongorestore --gzip --db pastvu --archive < pastvu.gz
 # Install node modules
 docker-compose run app npm install
-# Copy local configuration
-cp config/local.config.js.docker-example config/local.config.js
 # Finally, start the whole application
 docker-compose up
 ```
