@@ -6,9 +6,7 @@ x-defaults: &app-image
 
 services:
   mongo:
-    build:
-      context: ./docker
-      dockerfile: dev-mongo.Dockerfile
+    image: mongo:4.4
     volumes:
       - mongo:/data/db
     expose:
