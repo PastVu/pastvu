@@ -18,8 +18,6 @@ We welcome any keen developer in helping us build the better PastVu. You can ins
 You need to have [docker](https://docs.docker.com/engine/install/) and [docker-compose](https://docs.docker.com/compose/install/) installed.
 
 ```bash
-# Download database dump
-docker-compose -f docker-compose.admin.yml run getdump
 # Install node modules
 docker-compose run app npm install
 # Finally, start the whole application
