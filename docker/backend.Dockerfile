@@ -17,6 +17,5 @@ RUN npm run build
 FROM base
 ENV NODE_ENV production
 COPY --from=builder /appBuild/ .
-COPY ./docker/docker-healthcheck.sh .
 RUN npm install --production
 CMD ["bin/run"]
