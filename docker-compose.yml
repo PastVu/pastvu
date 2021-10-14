@@ -41,8 +41,6 @@ services:
     << : *app-image
     depends_on:
       - "app"
-    environment:
-      - NOTIFIER=true
     volumes:
       - .:/code
     command: run notifier
