@@ -3,6 +3,8 @@ version: '3.8'
 x-defaults: &app-image
   build: .
   image: pastvu_node
+  environment:
+    - NODE_ENV=development
 
 services:
   mongo:
