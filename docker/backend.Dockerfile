@@ -18,4 +18,5 @@ FROM base
 ENV NODE_ENV production
 COPY --from=builder /appBuild/ .
 RUN npm install --production
+USER node
 CMD ["bin/run"]
