@@ -48,7 +48,6 @@ module.exports = {
     servePublic: true, // Tell app.js serve out its public folder (js, css, etc)
     serveStore: true, // Tell app.js serve out store public folder
 
-    // logPath: '', // Folder for logs. Setting that property will enable log to files in logPath (relative to project dir). By default it is off
     logLongDuration: ms('2s'),
     serveLog: false, // Tell app.js serve out its logs folder (path: "logPath") at /nodelog
     serveLogAuth: {
