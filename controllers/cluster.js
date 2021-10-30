@@ -21,6 +21,25 @@ async function readClusterParams() {
 }
 
 /**
+ * Compute cluster left top corner coordinates.
+ *
+ * @param {Array} geoPhoto geo coordiante pair of photo [lng, lat]
+ * @param {object} clusterZoom zoom parameters
+ * @returns {Array} geo coordiante pair of cluster [lng, lat]
+ */
+function computeClusterCoords(geoPhoto, clusterZoom) {
+    // Correction for the cluster.
+    // Since the clusters are calculated with binary rounding (>>), we must substruct 1 for negative lng
+    // Since the cluster display goes from the top corner, we need add 1 positive lat
+    const geoPhotoCorrection = [geoPhoto[0] < 0 ? -1 : 0, geoPhoto[1] > 0 ? 1 : 0];
+
+    return Utils.geo.geoToPrecisionRound([
+        clusterZoom.w * ((geoPhoto[0] / clusterZoom.w >> 0) + geoPhotoCorrection[0]),
+        clusterZoom.h * ((geoPhoto[1] / clusterZoom.h >> 0) + geoPhotoCorrection[1]),
+    ]);
+}
+
+/**
  * Set new cluster parameters and send clusters to recalculate.
  *
  * @param {object} params
@@ -73,7 +92,7 @@ export const clusterPhotosAll = async function (params) {
 
     const clusterZooms = await ClusterParams.find(clusterparamsQuery, { _id: 0 }).sort({ z: 1 }).exec();
 
-    const photosAllCount = await Photo.countDocuments({ s: 5, geo: { $exists: true } });
+    const photosAllCount = await Photo.countDocuments({ s: constants.photo.status.PUBLIC, geo: { $exists: true } });
     const logByNPhotos = params.logByNPhotos || photosAllCount / 20 >> 0;
     const withGravity = params.withGravity || false;
 
@@ -88,7 +107,6 @@ export const clusterPhotosAll = async function (params) {
         let timestamp;
 
         let photoCounter = 0;
-        const divider = Math.pow(10, 6);
 
         const clusters = {};
         let clustersCount = 0;
@@ -108,19 +126,13 @@ export const clusterPhotosAll = async function (params) {
         clustersArr.push([]);
 
         // Use cursor.
-        for await (const photo of Photo.find({ s: 5, geo: { $exists: true } }, { _id: 0, geo: 1, year: 1, year2: 1 })) {
+        const photos = Photo.find({ s: constants.photo.status.PUBLIC, geo: { $exists: true } }, { _id: 0, geo: 1, year: 1, year2: 1 });
+
+        for await (const photo of photos) {
             photoCounter++;
 
             const geoPhoto = photo.geo;
-            const geoPhotoCorrection = [0, 0];
-
-            geoPhotoCorrection[0] = geoPhoto[0] < 0 ? -1 : 0;
-            geoPhotoCorrection[1] = geoPhoto[1] > 0 ? 1 : 0;
-
-            const g = [
-                Math.round(divider * (clusterZoom.w * ((geoPhoto[0] / clusterZoom.w >> 0) + geoPhotoCorrection[0]))) / divider,
-                Math.round(divider * (clusterZoom.h * ((geoPhoto[1] / clusterZoom.h >> 0) + geoPhotoCorrection[1]))) / divider,
-            ];
+            const g = computeClusterCoords(geoPhoto, clusterZoom);
             const clustCoordId = g[0] + '@' + g[1];
             let cluster = clusters[clustCoordId];
 
@@ -176,8 +188,10 @@ export const clusterPhotosAll = async function (params) {
                     const cluster = clustersArrInner[--clustersCounterInner];
 
                     if (useGravity) {
-                        cluster.geo[0] = Math.round(divider * (cluster.geo[0] / (cluster.c + 1))) / divider;
-                        cluster.geo[1] = Math.round(divider * (cluster.geo[1] / (cluster.c + 1))) / divider;
+                        cluster.geo = Utils.geo.geoToPrecisionRound([
+                            cluster.geo[0] / (cluster.c + 1),
+                            cluster.geo[1] / (cluster.c + 1),
+                        ]);
                     }
 
                     Utils.geo.normalizeCoordinates(cluster.geo);
@@ -185,7 +199,7 @@ export const clusterPhotosAll = async function (params) {
 
                     // Link it to photo that will represent cluster.
                     cluster.p = await Photo.findOne({
-                        s: 5,
+                        s: constants.photo.status.PUBLIC,
                         geo: { $nearSphere: { $geometry: { type: 'Point', coordinates: cluster.geo } } },
                     }, {
                         _id: 0,
@@ -283,7 +297,8 @@ async function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, isPainting
         // If coordinate didn't transferred, then just change poster
         if (geoPhotos.o && c) {
             geoCluster = Utils.geo.geoToPrecisionRound([
-                (geoCluster[0] * (c + 1) - geoPhotos.o[0]) / c, (geoCluster[1] * (c + 1) - geoPhotos.o[1]) / c,
+                (geoCluster[0] * (c + 1) - geoPhotos.o[0]) / c,
+                (geoCluster[1] * (c + 1) - geoPhotos.o[1]) / c,
             ]);
         }
 
@@ -331,26 +346,11 @@ export async function clusterPhoto({ photo, geoPhotoOld, yearPhotoOld, isPaintin
     let g; // Coordinates of top left corner of cluster for new coordinates
     let gOld;
     let clusterZoom;
-    let geoPhotoCorrection;
-    let geoPhotoOldCorrection;
     const recalcPromises = [];
     const geoPhoto = photo.geo; // New photo coordiate, which has been already saved in db
 
     if (_.isEmpty(geoPhotoOld)) {
         geoPhotoOld = undefined;
-    }
-
-    // Correction for the cluster
-    // Since the clusters are calculated with binary rounding (>>), we must substruct 1 for negative lng
-    // Since the cluster display goes from the top corner, we need add 1 positive lat
-    if (geoPhoto) {
-        // Correction for cluster of current coordinates
-        geoPhotoCorrection = [geoPhoto[0] < 0 ? -1 : 0, geoPhoto[1] > 0 ? 1 : 0];
-    }
-
-    if (geoPhotoOld) {
-        // Correction for cluster of old coordinates
-        geoPhotoOldCorrection = [geoPhotoOld[0] < 0 ? -1 : 0, geoPhotoOld[1] > 0 ? 1 : 0];
     }
 
     for (let i = clusterParams.length; i--;) {
@@ -360,17 +360,11 @@ export async function clusterPhoto({ photo, geoPhotoOld, yearPhotoOld, isPaintin
 
         // Compute cluster for old and new coordinates if they exests
         if (geoPhotoOld) {
-            gOld = Utils.geo.geoToPrecisionRound([
-                clusterZoom.w * ((geoPhotoOld[0] / clusterZoom.w >> 0) + geoPhotoOldCorrection[0]),
-                clusterZoom.h * ((geoPhotoOld[1] / clusterZoom.h >> 0) + geoPhotoOldCorrection[1]),
-            ]);
+            gOld = computeClusterCoords(geoPhotoOld, clusterZoom);
         }
 
         if (geoPhoto) {
-            g = Utils.geo.geoToPrecisionRound([
-                clusterZoom.w * ((geoPhoto[0] / clusterZoom.w >> 0) + geoPhotoCorrection[0]),
-                clusterZoom.h * ((geoPhoto[1] / clusterZoom.h >> 0) + geoPhotoCorrection[1]),
-            ]);
+            g = computeClusterCoords(geoPhoto, clusterZoom);
         }
 
         if (gOld && g && gOld[0] === g[0] && gOld[1] === g[1]) {
@@ -414,16 +408,12 @@ export function declusterPhoto({ photo, isPainting }) {
     }
 
     const geoPhoto = photo.geo;
-    const geoPhotoCorrection = [geoPhoto[0] < 0 ? -1 : 0, geoPhoto[1] > 0 ? 1 : 0];
 
     return Promise.all(clusterParams.map(clusterZoom => {
         clusterZoom.wHalf = Utils.math.toPrecisionRound(clusterZoom.w / 2);
         clusterZoom.hHalf = Utils.math.toPrecisionRound(clusterZoom.h / 2);
 
-        const g = Utils.geo.geoToPrecisionRound([
-            clusterZoom.w * ((geoPhoto[0] / clusterZoom.w >> 0) + geoPhotoCorrection[0]),
-            clusterZoom.h * ((geoPhoto[1] / clusterZoom.h >> 0) + geoPhotoCorrection[1]),
-        ]);
+        const g = computeClusterCoords(geoPhoto, clusterZoom);
 
         return clusterRecalcByPhoto(g, clusterZoom, { o: geoPhoto }, { o: photo.year }, isPainting);
     }));
