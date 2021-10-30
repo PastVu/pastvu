@@ -10,8 +10,8 @@ import { runJob } from './queue';
 
 const logger = log4js.getLogger('cluster.js');
 
-export let clusterParams; // Parameters of cluster
-export let clusterConditions; // Parameters of cluster settings
+let clusterParams; // Parameters of cluster
+let clusterConditions; // Parameters of cluster settings
 
 async function readClusterParams() {
     [clusterParams, clusterConditions] = await Promise.all([
@@ -516,10 +516,20 @@ async function getClusterPoster(cluster, yearCriteria, isPainting) {
     return cluster;
 }
 
-// After connection to db read current cluster parameters
+/**
+ * Return cluster conditions for client use.
+ *
+ * @returns {object} object containing result.
+ */
+function getClusterConditions() {
+    return clusterConditions;
+}
+
+// After connection to db read current cluster parameters.
 waitDb.then(readClusterParams);
 
 recalcAll.isPublic = true;
+getClusterConditions.isPublic = true;
 
 export default {
     recalcAll,
@@ -527,4 +537,5 @@ export default {
     declusterPhoto,
     getBounds,
     getBoundsByYear,
+    getClusterConditions,
 };
