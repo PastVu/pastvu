@@ -180,13 +180,8 @@ export const clusterPhotosAll = async function (params) {
                         cluster.geo[1] = Math.round(divider * (cluster.geo[1] / (cluster.c + 1))) / divider;
                     }
 
-                    if (cluster.geo[0] < -180 || cluster.geo[0] > 180) {
-                        Utils.geo.spinLng(cluster.geo);
-                    }
-
-                    if (cluster.g[0] < -180 || cluster.g[0] > 180) {
-                        Utils.geo.spinLng(cluster.g);
-                    }
+                    Utils.geo.normalizeCoordinates(cluster.geo);
+                    Utils.geo.normalizeCoordinates(cluster.g);
 
                     // Link it to photo that will represent cluster.
                     cluster.p = await Photo.findOne({
@@ -226,9 +221,7 @@ async function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, isPainting
     const ClusterModel = isPainting ? ClusterPaint : Cluster;
     const $update = { $set: {} };
 
-    if (g[0] < -180 || g[0] > 180) {
-        Utils.geo.spinLng(g);
-    }
+    Utils.geo.normalizeCoordinates(g);
 
     const cluster = await ClusterModel.findOne(
         { g, z: zParam.z }, { _id: 0, c: 1, geo: 1, y: 1, p: 1 }, { lean: true }
@@ -241,10 +234,7 @@ async function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, isPainting
 
     if (!geoCluster) {
         geoCluster = [g[0] + zParam.wHalf, g[1] - zParam.hHalf];
-
-        if (geoCluster[0] < -180 || geoCluster[0] > 180) {
-            Utils.geo.spinLng(geoCluster);
-        }
+        Utils.geo.normalizeCoordinates(geoCluster);
     }
 
     if (geoPhotos.o) {
@@ -304,9 +294,7 @@ async function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, isPainting
             ]);
         }
 
-        if (geoCluster[0] < -180 || geoCluster[0] > 180) {
-            Utils.geo.spinLng(geoCluster);
-        }
+        Utils.geo.normalizeCoordinates(geoCluster);
     }
 
     const photo = await Photo.findOne(
@@ -545,7 +533,6 @@ recalcAll.isPublic = true;
 
 export default {
     recalcAll,
-
     clusterPhoto,
     declusterPhoto,
     getBounds,

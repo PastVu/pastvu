@@ -721,12 +721,25 @@ Utils.geo = (function () {
         return geo;
     }
 
-    function spinLng(geo) {
+    /**
+     * Normalize coordinates.
+     *
+     * This spins longtitude if required and makes sure latitude is not out of
+     * EPSG:4326 permitted range.
+     *
+     * @param {Array} geo coordiante pair [lng, lat]
+     */
+    function normalizeCoordinates(geo) {
+        // Spin longtitude.
         if (geo[0] < -180) {
             geo[0] += 360;
         } else if (geo[0] > 180) {
             geo[0] -= 360;
         }
+
+        // Limit latitude.
+        geo[1] = Math.min(geo[1], 89.999999);
+        geo[1] = Math.max(geo[1], -89.999999);
     }
 
     function latlngToArr(ll, lngFirst) {
@@ -806,7 +819,7 @@ Utils.geo = (function () {
         polyBBOX,
         polyArea,
         sortPolygonSegmentsByArea,
-        spinLng,
+        normalizeCoordinates,
         latlngToArr,
         check,
         checkLatLng,
