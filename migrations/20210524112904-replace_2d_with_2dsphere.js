@@ -7,6 +7,11 @@ module.exports = {
         // Use transaction.
         const session = client.startSession();
 
+        // Fix clusters that have out of range latitude. There are few edge
+        // cases that belong to north pole photos.
+        await db.collection('clusters').updateMany({ 'g.1': { $gt: 89.999999 } }, { $set: { 'g.1': 89.999999 } });
+        await db.collection('clusters').updateMany({ 'geo.1': { $gt: 89.999999 } }, { $set: { 'g.1': 89.999999 } });
+
         try {
             await session.withTransaction(async () => {
                 // clusters

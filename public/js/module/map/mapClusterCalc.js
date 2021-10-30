@@ -14,6 +14,10 @@ define([
         options: {
             deferredWhenReady: null // Deffered wich will be resolved when map ready
         },
+        defaults: {
+            w: 40,
+            h: 40,
+        },
         create: function () {
             this.destroy = _.wrap(this.destroy, this.localDestroy);
             this.auth = globalVM.repository['m/common/auth'];
@@ -27,12 +31,15 @@ define([
 
             this.exe = ko.observable(false); //Указывает, что сейчас идет обработка запроса на действие к серверу
             this.exePercent = ko.observable(0); //Указывает, что сейчас идет обработка запроса на действие к серверу
-            this.wCurr = ko.observable(40);
-            this.wNew = ko.observable(40);
-            this.hCurr = ko.observable(40);
-            this.hNew = ko.observable(40);
+            this.wCurr = ko.observable(this.defaults.w);
+            this.wNew = ko.observable(this.defaults.w);
+            this.hCurr = ko.observable(this.defaults.h);
+            this.hNew = ko.observable(this.defaults.h);
             this.changed = this.co.changed = ko.computed(function () {
                 return this.wCurr() !== this.wNew() || this.hCurr() !== this.hNew();
+            }, this);
+            this.isDefault = ko.computed(function () {
+                return this.wCurr() === this.defaults.w || this.hCurr() === this.defaults.h;
             }, this);
 
             if (P.settings.USE_OSM_API()) {
@@ -139,6 +146,15 @@ define([
 
             ko.applyBindings(globalVM, this.$dom[0]);
 
+            socket.run('cluster.getClusterConditions').then(function (data) {
+                if (data) {
+                    this.wCurr(data.sw);
+                    this.hCurr(data.sh);
+                    this.wNew(data.sw);
+                    this.hNew(data.sh);
+                }
+            }.bind(this));
+
             this.show();
         },
         show: function () {
@@ -194,7 +210,10 @@ define([
             this.map = null;
             destroy.call(this);
         },
-
+        setDefaults: function () {
+            this.wNew(this.defaults.w);
+            this.hNew(this.defaults.h);
+        },
         save: function () {
             var _this = this;
 

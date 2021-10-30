@@ -241,15 +241,30 @@ define([
         if (force || !this.calcBound || !this.calcBound.contains(this.map.getBounds())) {
             this.calcBoundPrev = this.calcBound;
             this.calcBound = this.map.getBounds().pad(localWork ? 0.1 : 0.25);
+            this.calcBound._southWest.lng = Utils.math.toPrecision(this.calcBound._southWest.lng);
+            this.calcBound._southWest.lat = Utils.math.toPrecision(this.calcBound._southWest.lat);
+            this.calcBound._northEast.lng = Utils.math.toPrecision(this.calcBound._northEast.lng);
+            this.calcBound._northEast.lat = Utils.math.toPrecision(this.calcBound._northEast.lat);
+
             // We don't go beyond antemeredian on either side for now, to
-            // comply with WGS84 projection used by MongoDB. In fiture we may
+            // comply with EPSG:4326 (WGS 84) projection used by MongoDB. In fiture we may
             // have means of slicing geometries at backend to query object on both
-            // sides of antemeredian, in that case limiting coordinates won't
+            // sides of antimeridian, in that case limiting coordinates won't
             // be needed.
-            this.calcBound._northEast.lat = Utils.math.toPrecision(Math.min(this.calcBound._northEast.lat, 90));
-            this.calcBound._northEast.lng = Utils.math.toPrecision(Math.min(this.calcBound._northEast.lng, 180));
-            this.calcBound._southWest.lat = Utils.math.toPrecision(Math.max(this.calcBound._southWest.lat, -90));
-            this.calcBound._southWest.lng = Utils.math.toPrecision(Math.max(this.calcBound._southWest.lng, -180));
+            this.calcBound._northEast.lng = Math.min(this.calcBound._northEast.lng, 180);
+            this.calcBound._southWest.lng = Math.max(this.calcBound._southWest.lng, -180);
+
+            // The north/south poles have no representation on a cylindrical map projection used in Leaflet
+            // (EPSG:3857 "WGS 84 Web-Mercator") which is bounded by bbox [[-180, -85.06], [180, 85.06]]
+            // However, we have photos and clusters located beyond those latitudes (as we store them in
+            // EPSG:4326 coordinate reference in Mongo), therefore expand latitudes to be able to query
+            // those objects when top/bottom edge of map is visible to user.
+            if (this.calcBound._southWest.lat <= -85.06) {
+                this.calcBound._southWest.lat = -90;
+            }
+            if (this.calcBound._northEast.lat >= 85.06) {
+                this.calcBound._northEast.lat = 90;
+            }
             result = true;
         }
         return result;
@@ -526,6 +541,11 @@ define([
         const poly = turf.bboxPolygon(bound.toBBoxString().split(','));
         const prevPoly = turf.bboxPolygon(this.calcBoundPrev.toBBoxString().split(','));
         const queryGeometry = turf.difference(poly, prevPoly);
+
+        if (queryGeometry === null) {
+            // Likely map is far beyond antimeridian on either side.
+            return;
+        }
 
         if (this.visBound) {
             // We expect L-shape polygon here in most cases (or rectangle if map is moved
