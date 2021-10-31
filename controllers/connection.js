@@ -29,6 +29,18 @@ export const registerModel = modelPromise => {
     return waitDb;
 };
 
+/**
+ * Ensures that the indexes defined in model schemas match the indexes
+ * in respective MongoDB collections.
+ *
+ * @returns {Promise} Promise that resolves when all indexes sync is completed.
+ */
+export async function syncAllIndexes() {
+    const syncPromises = db.modelNames().map(modelName => db.model(modelName).syncIndexes());
+
+    return Promise.all(syncPromises);
+}
+
 export default option => connectionPromises || init(option);
 
 function init({ mongo, redis, logger = log4js.getLogger('app') }) {
@@ -58,6 +70,7 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
                 useNewUrlParser: true, // Use new connection string parser.
                 useCreateIndex: true, // Use createIndex internally (ensureIndex is deprecated in MongoDB driver 3.2).
                 useFindAndModify: false, // Use findOneAndUpdate interally (findAndModify is deprecated in MongoDB driver 3.1).
+                autoIndex: false, // Do not attempt to create index automatically, we use syncIndexes in worker.
             });
 
             exitHook(cb => {
@@ -96,12 +109,12 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
 
                 dbNative = db.db;
 
-                await Promise.all(modelPromises.map(modelPromise => modelPromise(db)));
-                modelPromises.splice(0, modelPromises.length); // Clear promises array
-
                 if (! await checkPendingMigrations()) {
                     getDBReject('DB migration is required, make sure that worker instance is started or migrate manually');
                 }
+
+                await Promise.all(modelPromises.map(modelPromise => modelPromise(db)));
+                modelPromises.splice(0, modelPromises.length); // Clear promises array
 
                 getDBResolve(db);
                 resolve(db);

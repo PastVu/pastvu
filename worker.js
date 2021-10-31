@@ -2,7 +2,7 @@ import ms from 'ms';
 import moment from 'moment';
 import log4js from 'log4js';
 import config from './config';
-import connectDb, { waitDb } from './controllers/connection';
+import connectDb, { waitDb, syncAllIndexes } from './controllers/connection';
 import { checkPendingMigrations } from './controllers/migration';
 import { archiveExpiredSessions, calcUserStats } from './controllers/_session';
 import { convertPhotosAll } from './controllers/converter';
@@ -31,6 +31,10 @@ export async function configure(startStamp) {
     logger.info(`Worker started up in ${(Date.now() - startStamp) / 1000}s`);
 
     waitDb.then(() => {
+        logger.info('Syncing indexes defined in model schemas to MongoDB.');
+
+        return syncAllIndexes();
+    }).then(() => {
         setupSessionQueue();
         setupUserJobsQueue();
     });
