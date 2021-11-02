@@ -6,14 +6,14 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
     'use strict';
 
     var mess = {
-        fsuccess: 'Файл успешно загружен',
-        fcount: 'Превышено разрешенное количество файлов',
+        fsuccess: 'File has been successfully uploaded',
+        fcount: 'Allowed count of files exceeded',
 
-        ftype: 'Тип файла не соответствует Правилам',
-        fmax: 'Файл больше разрешенного размера',
-        fmin: 'Файл слишком мал',
-        fpx: 'Согласно Правилам, размер изображения должен быть не менее 350px по меньшей стороне и не менее 700px по большей стороне',
-        finvalid: 'Файл не прошел валидацию' //Сообщение по умолчанию для валидации
+        ftype: 'File type does not correspond to the Rules',
+        fmax: 'File is bigger then allowed',
+        fmin: 'File is too small',
+        fpx: 'According the rules, image size must be at least 350px on the smaller side and 700 on the larger side',
+        finvalid: 'The file has not passed validation' //Сообщение по умолчанию для валидации
     };
 
     return Cliche.extend({
@@ -52,9 +52,9 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                             this.canCount(this.canCountTotal);
 
                             if (!this.canCount()) {
-                                this.toptext('У вас нет свободных лимитов для загрузки файлов, так как вы имеете ' + this.u.pfcount() + ' неподтвержденных модератором фотографий. Это максимально разрешенное количество, установленное для вашего профиля.');
+                                this.toptext('You are out of limits for uploading files, because you have ' + this.u.pfcount() + ' unconfirmed images by moderator. It is maximum value for your profile type.');
                             } else {
-                                this.toptext('Выберите файлы, нажав на кнопку добавления' + (this.filereader() ? ' или перетащив их в пунктирную область' : ''));
+                                this.toptext('Select files by pushing add button' + (this.filereader() ? ' or draging them inside dashed area' : ''));
                                 this.canLoad(true);
 
                                 this.fileOptions = {
@@ -80,7 +80,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                 }, this);
             } else {
                 this.toptext(
-                    this.auth.iAm.nophotoupload() ? 'У вас нет прав на загрузку фотографий' : 'Вы не авторизованы для загрузки фотографий'
+                    this.auth.iAm.nophotoupload() ? "You don't have rights for uploading photos" : 'You are not authorized for uploading photos'
                 );
                 ko.applyBindings(globalVM, this.$dom[0]);
                 this.show();
@@ -248,7 +248,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
             data.files.forEach(function (file, index) {
                 file.ext.uploading(true);
                 file.ext.uploaded(false);
-                this.setMessage(file, 'Пожалуйста подождите. Загрузка..', 'muted'); //Please wait. Loading..
+                this.setMessage(file, 'Wait please. Loading..', 'muted'); //Please wait. Loading..
             }, this);
         },
         onFileSend: function (e, data) {
@@ -356,7 +356,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
             var that = this,
                 options = this.fileOptions;
 
-            this.setMessage(file, 'Подготовка файла..', 'muted');
+            this.setMessage(file, 'Preparing file..', 'muted');
             loadImage(
                 file,
                 function (img) {

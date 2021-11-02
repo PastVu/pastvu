@@ -1,33 +1,33 @@
 .fullComments(data-bind="with: repository[M!M]")
     .cmtsHead
-        a.count.headElem.interact(href="?hl=comments", data-replace="true", data-bind="html: $root.intl.num(count()) + (countNew() ? '<span class=\"cnew\"> +' + $root.intl.num(countNew()) + '</span>' : '')", title="Ссылка на область комментариев")
+        a.count.headElem.interact(href="?hl=comments", data-replace="true", data-bind="html: $root.intl.num(count()) + (countNew() ? '<span class=\"cnew\"> +' + $root.intl.num(countNew()) + '</span>' : '')", title="Link to the comments")
         //ko if: countDel() > 0
-        .delComments.headElem.interact(data-bind="css: {delCommentsShow: showDelComments()}, click: toggleShowDelComments, attr: {title: (showDelComments() ? 'Скрыть' : 'Показать')+' удаленные комментарии'}")
+        .delComments.headElem.interact(data-bind="css: {delCommentsShow: showDelComments()}, click: toggleShowDelComments, attr: {title: (showDelComments() ? 'Hide' : 'Show')+' deleted comments'}")
             span(data-bind="text: '+' + countDel()")
             span.glyphicon.glyphicon-trash
         // /ko
         //ko if: canReply()
-        .addZero.headElem.interact.strokeBefore(data-bind="click: replyZero", title="Добавить комментарий первого уровня")
+        .addZero.headElem.interact.strokeBefore(data-bind="click: replyZero", title="Add first level comment")
             span.glyphicon.glyphicon-edit
-            |  Добавить
+            |  Add
         // /ko
         //ko if: !auth.loggedIn()
-        .addZero.headElem.interact.strokeBefore(data-bind="click: function(data, evt){auth.show('login')}", title="Кликните, чтобы войти или зарегистрироваться")
+        .addZero.headElem.interact.strokeBefore(data-bind="click: function(data, evt){auth.show('login')}", title="Click to login or register")
             span.glyphicon.glyphicon-log-in
-            |   Войдите, чтобы поделиться мнением
+            |   Log in to share your opinion
         // /ko
         //ko if: auth.loggedIn()
-        .commSubscr.headElem.interact.strokeBefore(data-bind="click: subscribe, css: {isSubscr: subscr()}, attr: {title: subscr() ? 'Вы подписаны на новые комментарии. Нажмите, чтобы отписаться' : 'Подписаться на новые комментарии'}")
+        .commSubscr.headElem.interact.strokeBefore(data-bind="click: subscribe, css: {isSubscr: subscr()}, attr: {title: subscr() ? 'You are subscribed for new comments. Click to unsubscribe' : 'Subscribe to new comments'}")
             span.glyphicon.glyphicon-envelope
-            span(data-bind="text: subscr() ? ' Отписаться' : ' Подписаться'")
+            span(data-bind="text: subscr() ? ' Unsubscribe' : ' Subscribe'")
         // /ko
         //ko if: canModerate()
-        .noComments.headElem.interact(data-bind="click: setNoComments, attr: {title: (nocomments() ? 'Разрешить' : 'Запретить')+' дальнейшее комментирование'}")
+        .noComments.headElem.interact(data-bind="click: setNoComments, attr: {title: (nocomments() ? 'Allow' : 'Disallow')+' further commenting'}")
             span.glyphicon(data-bind="css: nocomments() ? 'glyphicon-ok-sign' : 'glyphicon-minus-sign'")
-            span(data-bind="text: nocomments() ? ' Разрешить комментирование' : ' Запретить комментирование'")
+            span(data-bind="text: nocomments() ? ' Allow commenting' : ' Disallow commenting'")
         // /ko
         //ko if: auth.loggedIn() && nocomments()
-        span.cantComment Комментирование запрещено
+        span.cantComment Commenting is not allowed
         // /ko
         .commentsLoad(data-bind="style: {display: loading() ? '' : 'none'}") &nbsp;
 

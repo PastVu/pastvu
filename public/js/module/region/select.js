@@ -7,7 +7,7 @@ define([
 ], function (_, $, Utils, socket, P, ko, koMapping, Cliche, globalVM, storage, noties, pug) {
     'use strict';
 
-    var collator = new Intl.Collator('ru-RU', { numeric: true, sensitivity: 'base' });
+    var collator = new Intl.Collator('en', { numeric: true, sensitivity: 'base' });
     var $window = $(window);
     var cache = null;
 
@@ -38,7 +38,7 @@ define([
             if (this.selectedInit && this.selectedInit.length) {
                 this.selectedInit.forEach(function (region) {
                     this.selectedInitHash[region.cid] = region;
-                    this.selectedInitTkns.push({ value: region.title_local, label: region.title_local });
+                    this.selectedInitTkns.push({ value: region.title_en, label: region.title_en });
                 }, this);
             }
 
@@ -288,7 +288,7 @@ define([
                     }
                 }
             } else {
-                $(e.relatedTarget).addClass('invalid').attr('title', 'Нет такого региона');
+                $(e.relatedTarget).addClass('invalid').attr('title', 'No such region');
             }
         },
         //Событие удаления токена непосредственно из поля
@@ -304,7 +304,7 @@ define([
         //Ручное удаление токена, работает полной заменой токенов, кроме удаляемого.
         //Поэтому для удаляемого токена событие onRemoveToken не сработает, но сработает onCreateToken для каждого неудаляемого
         removeToken: function (region) {
-            var title = region.title_local;
+            var title = region.title_en;
             var tkn = this.$dom.find('.regionstkn');
             var tokensExists;
 
@@ -321,7 +321,7 @@ define([
             }
             if (this.checkBranchSelected(region)) {
                 noties.alert({
-                    message: 'Нельзя одновременно выбирать родительский и дочерний регионы',
+                    message: 'You can not choose the parent and child regions simultaneously',
                     type: 'warning',
                     timeout: 4000,
                     ok: true
@@ -337,7 +337,7 @@ define([
             if (!region.selectable()) {
                 return;
             }
-            var title = region.title_local;
+            var title = region.title_en;
             var add = !region.selected();
             var tkn = this.$dom.find('.regionstkn');
 
@@ -439,11 +439,11 @@ define([
                 // so track region existence
                 region.exists = false;
                 this.regionsTypehead.push({
-                    title: region.title_local,
-                    parentTitle: region.parent && region.parent.title_local,
-                    tokens: [String(cid), region.title_local, region.title_en]
+                    title: region.title_en,
+                    parentTitle: region.parent && region.parent.title_en,
+                    tokens: [String(cid), region.title_en, region.title_en]
                 });
-                this.regionsHashByTitle[region.title_local] = region;
+                this.regionsHashByTitle[region.title_en] = region;
 
                 cid = region.cid;
 
@@ -535,7 +535,7 @@ define([
                     break;
                 case 'alphabet':
                 default:
-                    field = 'title_local';
+                    field = 'title_en';
             }
 
             return (function recursiveSort(arr) {
@@ -571,7 +571,7 @@ define([
                         // If values are equal (exists or not)
                         if (sortBy !== 'alphabet') {
                             // If it is not alphabetical order, order by title
-                            return collator.compare(a.title_local, b.title_local);
+                            return collator.compare(a.title_en, b.title_en);
                         }
 
                         // Otherwise don't sort

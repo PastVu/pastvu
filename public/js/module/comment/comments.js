@@ -693,7 +693,7 @@ define([
 
             if ($withContent.length) {
                 noties.alert({
-                    message: 'У вас есть незавершенный комментарий. Отправьте или отмените его и переходите к новому',
+                    message: 'You have an incomplete comment. Send or cancel it and move on to new',
                     type: 'warning',
                     timeout: 4000
                 });
@@ -784,7 +784,7 @@ define([
                 action += '.own';
             }
 
-            this.reasonSelect(action, 'Причина удаления', function (cancel, reason) {
+            this.reasonSelect(action, 'Removing reason', function (cancel, reason) {
                 if (cancel) {
                     $('.hlRemove', this.$cmts).removeClass('hlRemove');
                     return;
@@ -856,7 +856,7 @@ define([
                         ga('send', 'event', 'comment', 'delete', 'comment delete success', count);
 
                         noties.alert({
-                            message: 'Удалено комментариев: ' + count + ', от ' + result.countUsers + ' пользователя(ей)',
+                            message: '' + count + ' comments are removed,<br>from ' + result.countUsers + ' user(s)',
                             type: 'information',
                             layout: 'topRight',
                             timeout: 5000
@@ -877,10 +877,9 @@ define([
             }
 
             $('[data-origin="' + cid + '"]', that.$cmts).add($c).addClass('hlRestore');
-
             noties.confirm({
-                message: 'Восстановить комментарий и его потомков, которые были удалены вместе с ним<br>(подсвечены зеленым)?',
-                okText: 'Да',
+                message: 'Restore comment and his children that were deleted along with it <br> (highlighted in green)?',
+                okText: 'Yes',
                 okClass: 'btn-success',
                 onOk: function (confirmer) {
                     confirmer.disable();
@@ -929,7 +928,7 @@ define([
                             confirmer.close();
                         });
                 },
-                cancelText: 'Нет',
+                cancelText: 'No',
                 cancelClass: 'btn-warning',
                 onCancel: function () {
                     $('.hlRestore', that.$cmts).removeClass('hlRestore');
@@ -992,7 +991,7 @@ define([
                     });
                 })
                 .catch(function () {
-                    $('.delico', $c).removeClass('loading').html('Показать');
+                    $('.delico', $c).removeClass('loading').html('Show');
                     that.loadingDel = false;
                 });
         },
@@ -1025,14 +1024,14 @@ define([
                         maxWidthRatio: 0.75,
                         animateScale: true,
                         offIcon: {
-                            text: 'Отмена', click: function () {
+                            text: 'Cancel', click: function () {
                                 cb.call(ctx, true);
                                 this.reasonDestroy();
                             }, ctx: this
                         },
                         btns: [
                             {
-                                css: 'btn-warning', text: 'Выполнить', glyphicon: 'glyphicon-ok',
+                                css: 'btn-warning', text: 'Execute', glyphicon: 'glyphicon-ok',
                                 click: function () {
                                     var reason = this.reasonVM.getReason();
                                     if (reason) {
@@ -1042,7 +1041,7 @@ define([
                                 }, ctx: this
                             },
                             {
-                                css: 'btn-success', text: 'Отмена',
+                                css: 'btn-success', text: 'Cancel',
                                 click: function () {
                                     cb.call(ctx, true);
                                     this.reasonDestroy();
@@ -1273,12 +1272,12 @@ define([
                             module: 'm/comment/hist',
                             options: { objCid: this.cid, cid: cid, type: this.type },
                             modal: {
-                                topic: 'История изменений комментария',
+                                topic: 'History of comment changes',
                                 animateScale: true,
                                 curtainClick: { click: this.closeHistory, ctx: this },
-                                offIcon: { text: 'Закрыть', click: this.closeHistory, ctx: this },
+                                offIcon: { text: 'Close', click: this.closeHistory, ctx: this },
                                 btns: [
-                                    { css: 'btn-primary', text: 'Закрыть', click: this.closeHistory, ctx: this }
+                                    { css: 'btn-primary', text: 'Close', click: this.closeHistory, ctx: this }
                                 ]
                             },
                             callback: function (vm) {
@@ -1397,7 +1396,7 @@ define([
                     this.navScrollCounterOn();
                 } else {
                     // Если дерево еще скрыто, т.е. receive еще не было, просто пишем сколько новых комментариев ниже
-                    $('.navigator .down', this.$dom).addClass('active').find('.navTxt').attr('title', 'Следующий непрочитанный комментарий').text(this.countNew());
+                    $('.navigator .down', this.$dom).addClass('active').find('.navTxt').attr('title', 'Next unread comment').text(this.countNew());
                     this.navScrollCounterOff();
                 }
             } else {
@@ -1449,11 +1448,11 @@ define([
 
             up.classList[upCount ? 'add' : 'remove']('active');
             up.querySelector('.navTxt').innerHTML = upCount ? globalVM.intl.num(upCount) : '';
-            up[upCount ? 'setAttribute' : 'removeAttribute']('title', 'Предыдущий непрочитанный комментарий');
+            up[upCount ? 'setAttribute' : 'removeAttribute']('title', 'Previous unread comment');
 
             down.classList[downCount ? 'add' : 'remove']('active');
             down.querySelector('.navTxt').innerHTML = downCount ? globalVM.intl.num(downCount) : '';
-            down[downCount ? 'setAttribute' : 'removeAttribute']('title', 'Следующий непрочитанный комментарий');
+            down[downCount ? 'setAttribute' : 'removeAttribute']('title', 'Next unread comment');
         }
     });
 });

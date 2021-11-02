@@ -5,7 +5,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
     'use strict';
     var newsDefault = {
         pdate: new Date(),
-        title: 'Нет заголовка',
+        title: 'No title',
         txt: '',
         ccount: 0,
         ccount_new: 0,
@@ -69,8 +69,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
 
         routeHandler: function () {
-            var cid = Number(globalVM.router.params().cid),
-                hl = globalVM.router.params().hl;
+            var cid = Number(globalVM.router.params().cid);
+            var hl = globalVM.router.params().hl;
 
             this.toComment = undefined;
             window.clearTimeout(this.scrollTimeout);

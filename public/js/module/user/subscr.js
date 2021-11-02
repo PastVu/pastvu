@@ -74,9 +74,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     var count = this.types[this.type() + '_persist']();
                     var txt = '';
                     if (count) {
-                        txt = 'Показаны ' + globalVM.intl.num(this.pageFirstItem()) + '&nbsp;&ndash;&nbsp;' + globalVM.intl.num(this.pageLastItem() || this.pageSize()) + ' из ' + globalVM.intl.num(count);
+                        txt = '' + globalVM.intl.num(this.pageFirstItem()) + '&nbsp;&ndash;&nbsp;' + globalVM.intl.num(this.pageLastItem() || this.pageSize()) + ' of ' + globalVM.intl.num(count) + ' are shown';
                     } else {
-                        txt = 'Пока нет подписок в данной категории';
+                        txt = 'Still has no subscription in this category';
                     }
                     return txt;
                 }, this);

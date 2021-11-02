@@ -44,7 +44,7 @@ define([
         },
         routeHandler: function () {
             this.getAllNews(function (data) {
-                Utils.title.setTitle({ title: 'Новости' });
+                Utils.title.setTitle({ title: 'News' });
                 ga('send', 'pageview');
             });
         },

@@ -8,7 +8,7 @@ require([
 ], function (domReady, $, Browser, Utils, socket, _, ko, moment, globalVM, P, renderer, router, Photo, User, noties, html) {
     'use strict';
 
-    Utils.title.setPostfix('Фотографии прошлого');
+    Utils.title.setPostfix('Retro photos');
 
     var routerDeferred = $.Deferred();
     var routerAnatomy = {
@@ -163,7 +163,7 @@ require([
         }
     };
 
-    moment.locale('ru');
+    moment.locale('en');
 
     $('body').append(html);
     ko.applyBindings(globalVM);

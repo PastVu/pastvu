@@ -6,27 +6,27 @@
 
     //ko if: canLoad()
     .warn(style="font-size: 12px; color: #A57A30;")
-        | Согласно&nbsp;
-        a(href="/rules") Правилам
-        | , к публикации будут допущены:
+        | According&nbsp;
+        a(href="/rules") the Rules
+        | , these kind of images will be allowed for publishing:
         br
-        | Фотографии, снятые до 2000 года, и картины, созданные до 1980 года.
+        | Photos filmed up to 2000 year, and paintings, created up to 1980 year.
         br
-        | Имеющие историческую ценность и отображающие объект съемки в уникальном ракурсе или времени.
+        | That have historical value and display the subject in a unique angle or time
     form.uploadForm(method="POST", enctype="multipart/form-data")
         #addFiles
             input.fileInput(type="file", name="files[]", accept="image/*", multiple)
             button.btn.btn-primary.fileSelect(data-bind="click: selectFile")
                 span.glyphicon.glyphicon-plus
-                |  Добавить...
+                |  Add...
             .addfiles_area.centering_content(data-bind="css: {hide: !filereader()}")
-                #or.centering_content или
-                span Перетащите изображения сюда
+                #or.centering_content or
+                span Drag image here
                 #dropzone
 
     //-Отображаем возможное кол-во к загрузке, если менее 25 разрешено
     //ko if: canCount() < 25
-    .canCount(data-bind="text: 'Вы можете добавить еще ' + canCount() + ' фото'")
+    .canCount(data-bind="text: 'You can add another ' + canCount() + ' images'")
     // /ko
 
     div(data-bind="style: {display: fileList().length > 0 ? '' : 'none'}")
@@ -35,14 +35,14 @@
                 .progress-bar(data-bind="style: {width: fileProgressAll() + '%'}")
             .extText(data-bind="text: fileProgressAllText()")
         table.table.table-striped.table-hover.filesTable
-            caption Добавленные фотографии
+            caption Added images
             tbody
                 //ko foreach: fileList
                 tr
                     td.preview
                         div.forcanvas(data-bind="attr: {'data-fileuid': ext.uid}, css: {noValid: !ext.valid, tooBig: ext.tooBigPreview}")
                             //ko if: ext.tooBigPreview
-                            .msg Слишком большая для превью
+                            .msg Too big for preview
                             // /ko
                     td.desc
                         div(data-bind="text: name")
@@ -58,10 +58,10 @@
                         //ko if: ext.valid && !$parent.options.auto && !ext.uploaded()
                         button.btn.btn-success(data-bind="click: function () {$parent.startFile($data)}, css: {disabled: ext.uploading()}, attr: {disabled: ext.uploading()}")
                             span.glyphicon.glyphicon-upload
-                            |  Загрузить
+                            |  Upload
                         // /ko
                         button.btn(data-bind="click: function () {$parent.cancelFile($data)}, css: {'btn-warning': !ext.uploaded(), 'btn-danger': ext.uploaded()}")
                             span.glyphicon(data-bind="css: {'glyphicon-ban-circle': !ext.uploaded(), 'glyphicon-remove-circle': ext.uploaded()}")
-                            span(data-bind="text: ext.uploaded() ? ' Удалить' : ' Отменить'")
+                            span(data-bind="text: ext.uploaded() ? ' Remove' : ' Cancel'")
                 // /ko
     // /ko

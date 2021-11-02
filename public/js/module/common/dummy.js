@@ -8,7 +8,7 @@ define(['jquery', 'Utils', 'Params', 'globalVM', 'knockout', 'm/_moduleCliche', 
     return Cliche.extend({
         pug: pug,
         create: function () {
-            this.dummytext = ko.observable('Заглушка');
+            this.dummytext = ko.observable('Dummy');
         }
     });
 

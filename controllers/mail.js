@@ -30,7 +30,7 @@ export async function send(options) {
             'X-Laziness-level': 1000,
         },
         html: options.body,
-        text: options.text || 'Зайдите, чтобы посмотреть',
+        text: options.text || 'Visit to see',
     };
 
     if (Array.isArray(options.attachments) && options.attachments.length) {

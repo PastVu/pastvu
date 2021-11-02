@@ -1,55 +1,55 @@
 .user_brief(data-bind="with: repository[M!M]")
-	.briefBlock
-		.avatar.fringe
-			img(data-bind="attr: {src: user.avatar(), alt: user.disp()}, event: {load: onAvaLoad, error: onAvaError}")
-			//ko if: avaexe()
-			.avaLoadCurtain
-			// /ko
-			//ko if: canAva()
-			button.btn.btn-sm.btn-primary.avaEdit(data-bind="click: avaActionToggle, css: {disabled: avaexe()}, attr: {disabled: avaexe()}", title="Редактировать аватару")
-				span.glyphicon.glyphicon-pencil
-			//ko if: avaction()
-			.avaAction
-				input.avaInput(type="file", name="files[]")
-				button.btn.btn-primary.avaSelect(data-bind="click: avaSelect, css: {disabled: avaexe()}, attr: {disabled: avaexe()}", title="Загрузить новое изображение")
-					span.glyphicon.glyphicon-cloud-upload
-					|  Сменить
-				//ko if: avaExists()
-				button.btn.btn-primary.avaDel(data-bind="click: avaDel, css: {disabled: avaexe()}, attr: {disabled: avaexe()}", title="Удалить загруженное изображение")
-					span.glyphicon.glyphicon-remove
-					|  Удалить
-				// /ko
-			// /ko
-			// /ko
+    .briefBlock
+        .avatar.fringe
+            img(data-bind="attr: {src: user.avatar(), alt: user.disp()}, event: {load: onAvaLoad, error: onAvaError}")
+            //ko if: avaexe()
+            .avaLoadCurtain
+            // /ko
+            //ko if: canAva()
+            button.btn.btn-sm.btn-primary.avaEdit(data-bind="click: avaActionToggle, css: {disabled: avaexe()}, attr: {disabled: avaexe()}", title="Edit avatar")
+                span.glyphicon.glyphicon-pencil
+            //ko if: avaction()
+            .avaAction
+                input.avaInput(type="file", name="files[]")
+                button.btn.btn-primary.avaSelect(data-bind="click: avaSelect, css: {disabled: avaexe()}, attr: {disabled: avaexe()}", title="Upload new image")
+                    span.glyphicon.glyphicon-cloud-upload
+                    |  Change
+                //ko if: avaExists()
+                button.btn.btn-primary.avaDel(data-bind="click: avaDel, css: {disabled: avaexe()}, attr: {disabled: avaexe()}", title="Remove image")
+                    span.glyphicon.glyphicon-remove
+                    |  Remove
+                // /ko
+            // /ko
+            // /ko
 
-		.userName(data-bind="text: user.disp()")
-		//ko if: rn()
-		.roleName(data-bind="text: rn(), css: rc()")
-		// /ko
+        .userName(data-bind="text: user.disp()")
+        //ko if: rn()
+        .roleName(data-bind="text: rn(), css: rc()")
+        // /ko
 
-	//-.row(data-bind="style: {display:  can_pm() ? '': 'none'}")
-		button.btn.btn-primary(type="button", data-bind="event: {}")
-			span.glyphicon.glyphicon-envelope
-			span Send message
-	.briefBlock
-		.head Общее
-		.h_separator
-		table.briefTable
-			tbody
-				tr
-					td Регистрация:
-					td(data-bind="text: moment(user.regdate()).format('D MMMM YYYY')")
-				tr
-					td Статус:
-					td(data-bind="text: user.online() ? 'Онлайн' : 'Оффлайн', css: {online : user.online()}")
-	.briefBlock
-		.head Краткая статистика
-		.h_separator
-		table.briefTable
-			tbody
-				tr
-					td Фотографий:
-					td(data-bind="text: $root.intl.num(user.pcount())")
-				tr
-					td Комментариев:
-					td(data-bind="text: $root.intl.num(user.ccount())")
+    //-.row(data-bind="style: {display:  can_pm() ? '': 'none'}")
+        button.btn.btn-primary(type="button", data-bind="event: {}")
+            span.glyphicon.glyphicon-envelope
+            span Send message
+    .briefBlock
+        .head Common
+        .h_separator
+        table.briefTable
+            tbody
+                tr
+                    td Registration:
+                    td(data-bind="text: moment(user.regdate()).format('D MMMM YYYY')")
+                tr
+                    td Status:
+                    td(data-bind="text: user.online() ? 'Онлайн' : 'Оффлайн', css: {online : user.online()}")
+    .briefBlock
+        .head Brief statistics
+        .h_separator
+        table.briefTable
+            tbody
+                tr
+                    td Photos:
+                    td(data-bind="text: $root.intl.num(user.pcount())")
+                tr
+                    td Comments:
+                    td(data-bind="text: $root.intl.num(user.ccount())")

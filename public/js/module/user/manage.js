@@ -10,10 +10,10 @@ define([
     }
 
     var ranksLang = {
-        mec: 'Меценат',
-        mec_silv: 'Серебряный меценат',
-        mec_gold: 'Золотой меценат',
-        adviser: 'Советник'
+        mec: 'Maecenas',
+        mec_silv: 'Silver maecenas',
+        mec_gold: 'Gold maecenas',
+        adviser: 'Counselor'
     };
 
     return Cliche.extend({
@@ -35,10 +35,10 @@ define([
 
             this.role = ko.observable(String(this.u_origin.role));
             this.roles = [
-                { cat: 'reg', name: 'Обычный пользователь' },
-                { cat: 'mod', name: 'Модератор' },
-                { cat: 'adm', name: 'Администратор' },
-                { cat: 'sadm', name: 'Суперадминистратор' }
+                { cat: 'reg', name: 'Regular user' },
+                { cat: 'mod', name: 'Moderator' },
+                { cat: 'adm', name: 'Administrator' },
+                { cat: 'sadm', name: 'Superadministrator' }
             ];
             this.roleCategory = ko.computed({
                 read: function () {
@@ -85,7 +85,7 @@ define([
 
             this.photoNewCan = ko.observable(0);
             this.photoNewLimit = ko.observable(null);
-            this.photoNewLimitOrigin = ko.observable('Авто');
+            this.photoNewLimitOrigin = ko.observable('Auto');
             this.photoNewLimitOption = ko.computed({
                 read: function () {
                     return _.isString(that.photoNewLimit()) ? 'manual' : 'auto';
@@ -143,7 +143,7 @@ define([
                 this.photoNewLimitOrigin(this.photoNewLimit());
             } else {
                 this.photoNewLimit(null);
-                this.photoNewLimitOrigin('Авто');
+                this.photoNewLimitOrigin('Auto');
             }
             this.photoNewCan(info.canPhotoNew || 0);
         },
@@ -193,21 +193,21 @@ define([
                             selectedInit: this.regions()
                         },
                         modal: {
-                            topic: 'Изменение списка регионов для модерирования',
+                            topic: 'Change the list of regions for moderation',
                             initWidth: '900px',
                             maxWidthRatio: 0.95,
                             fullHeight: true,
                             withScroll: true,
-                            offIcon: { text: 'Отмена', click: this.closeRegionSelect, ctx: this },
+                            offIcon: { text: 'Cancel', click: this.closeRegionSelect, ctx: this },
                             btns: [
                                 {
-                                    css: 'btn-success', text: 'Применить', glyphicon: 'glyphicon-ok',
+                                    css: 'btn-success', text: 'Apply', glyphicon: 'glyphicon-ok',
                                     click: function () {
-                                        var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']);
+                                        var regions = this.regselectVM.getSelectedRegions(['cid', 'title_en']);
 
                                         if (regions.length > 20) {
                                             return noties.alert({
-                                                message: 'Допускается выбирать до 20 регионов',
+                                                message: 'Allowed to select up to 20 regions',
                                                 type: 'warning',
                                                 timeout: 3000
                                             });
@@ -217,7 +217,7 @@ define([
                                     },
                                     ctx: this
                                 },
-                                { css: 'btn-warning', text: 'Отмена', click: this.closeRegionSelect, ctx: this }
+                                { css: 'btn-warning', text: 'Cancel', click: this.closeRegionSelect, ctx: this }
                             ]
                         },
                         callback: function (vm) {

@@ -202,12 +202,12 @@ define([
 
                 if (count) {
                     if (this.feed() || this.coin()) {
-                        txt = 'Всего ' + globalVM.intl.num(count) + ' фотографий';
+                        txt = '' + globalVM.intl.num(count) + ' images total';
                     } else {
-                        txt = 'Показаны ' + globalVM.intl.num(this.pageFirstItem()) + '&nbsp;&ndash;&nbsp;' + globalVM.intl.num(this.pageLastItem()) + ' из ' + globalVM.intl.num(count);
+                        txt = '' + globalVM.intl.num(this.pageFirstItem()) + '&nbsp;&ndash;&nbsp;' + globalVM.intl.num(this.pageLastItem()) + ' of ' + globalVM.intl.num(count) + ' are shown';
                     }
                 } else {
-                    txt = 'Пока нет ни одной фотографии';
+                    txt = 'No images found';
                 }
 
                 return txt;
@@ -310,9 +310,9 @@ define([
 
             if (page === 'feed') {
                 if (this.u) {
-                    Utils.title.setTitle({ pre: preTitle + 'Лента изображений - ' });
+                    Utils.title.setTitle({ pre: preTitle + 'Images feed - ' });
                 } else {
-                    Utils.title.setTitle({ title: preTitle + 'Лента всех изображений' });
+                    Utils.title.setTitle({ title: preTitle + 'Feed of all images' });
                 }
 
                 if (!this.coin() && this.page() === 1 && currPhotoLength && currPhotoLength <= this.limit) {
@@ -332,7 +332,7 @@ define([
                     return;
                 }
 
-                Utils.title.setTitle({ title: preTitle + 'Случайные изображения' });
+                Utils.title.setTitle({ title: preTitle + 'Random images' });
 
                 page = 1;
                 this.feed(false);
@@ -340,9 +340,9 @@ define([
                 this.coin(true);
             } else {
                 if (this.u) {
-                    Utils.title.setTitle({ pre: preTitle + 'Галерея - ' });
+                    Utils.title.setTitle({ pre: preTitle + 'Gallery - ' });
                 } else {
-                    Utils.title.setTitle({ title: preTitle + 'Галерея' });
+                    Utils.title.setTitle({ title: preTitle + 'Gallery' });
                 }
 
                 if (!this.coin() && page === 1 && this.page() === 1 && currPhotoLength) {
@@ -1207,7 +1207,7 @@ define([
                 Photo.factory(photo, {
                     type: 'compact',
                     pic: 'h',
-                    customDefaults: { title: 'Без названия' },
+                    customDefaults: { title: 'Without title' },
                     can: { 'protected': photo.protected }
                 });
                 if (regionsHash && photo.rs !== undefined) {
@@ -1267,16 +1267,16 @@ define([
                         {
                             module: 'm/user/photoUpload',
                             modal: {
-                                topic: 'Загрузка изображений',
+                                topic: 'Image upload',
                                 initWidth: '1000px',
                                 offIcon: {
-                                    text: 'Отмена', click: function () {
+                                    text: 'Cancel', click: function () {
                                         this.closeUpload();
                                     }, ctx: this
                                 },
                                 btns: [
                                     {
-                                        css: 'btn-success', text: 'Завершить',
+                                        css: 'btn-success', text: 'Finish',
                                         click: function () {
                                             this.uploadVM.createPhotos(function (data) {
                                                 if (data && !data.error) {
@@ -1289,7 +1289,7 @@ define([
                                         }, ctx: this
                                     },
                                     {
-                                        css: 'btn-warning', text: 'Отмена',
+                                        css: 'btn-warning', text: 'Cancel',
                                         click: function () {
                                             this.closeUpload();
                                         }, ctx: this
@@ -1364,17 +1364,17 @@ define([
             if (data.conv) {
                 content = imgFailTpl({
                     style: 'margin-top:7px;padding-top:20px; background: url(/img/misc/photoConvWhite.png) 50% 0 no-repeat;',
-                    txt: 'Превью уже создается<br>пожалуйста, обновите позже'
+                    txt: 'Preview is being created <br>please update later'
                 });
             } else if (data.convqueue) {
                 content = imgFailTpl({
                     style: 'margin-top:7px;',
-                    txt: '<span class="glyphicon glyphicon-road"></span><br>Превью скоро будет создано<br>пожалуйста, обновите позже'
+                    txt: '<span class="glyphicon glyphicon-road"></span><br>Preview will be created soon'
                 });
             } else {
                 content = imgFailTpl({
                     style: 'margin-top:7px;padding-top:25px; background: url(/img/misc/imgw.png) 50% 0 no-repeat;',
-                    txt: 'Превью недоступно'
+                    txt: 'Preview is unavailable'
                 });
             }
             $photoBox.find('.curtain').after(content);
@@ -1393,23 +1393,23 @@ define([
                                 selectedInit: this.filter.disp.r()
                             },
                             modal: {
-                                topic: 'Выбор регионов для фильтрации',
+                                topic: 'Select regions for filtration',
                                 initWidth: '900px',
                                 maxWidthRatio: 0.95,
                                 fullHeight: true,
                                 withScroll: true,
-                                offIcon: { text: 'Отмена', click: this.closeRegionSelect, ctx: this },
+                                offIcon: { text: 'Cancel', click: this.closeRegionSelect, ctx: this },
                                 btns: [
                                     {
                                         css: 'btn-success',
-                                        text: 'Применить',
+                                        text: 'Apply',
                                         glyphicon: 'glyphicon-ok',
                                         click: function () {
-                                            var regions = this.regselectVM.getSelectedRegions(['cid', 'parents', 'title_local', 'childLen']);
+                                            var regions = this.regselectVM.getSelectedRegions(['cid', 'parents', 'title_en', 'childLen']);
 
                                             if (regions.length > 10) {
                                                 return noties.alert({
-                                                    message: 'Допускается выбирать до 10 регионов',
+                                                    message: 'Allowed to select up to 10 regions',
                                                     type: 'warning',
                                                     timeout: 4000,
                                                     ok: true
@@ -1419,7 +1419,7 @@ define([
                                             this.filter.disp.r(regions.map(function (region) {
                                                 if (region.parents) {
                                                     region.parentRegionsArr = this.regselectVM
-                                                        .getRegionsByCids(region.parents, ['cid', 'parents', 'title_local', 'childLen'])
+                                                        .getRegionsByCids(region.parents, ['cid', 'parents', 'title_en', 'childLen'])
                                                         .reverse();
                                                 }
 
@@ -1430,7 +1430,7 @@ define([
                                         },
                                         ctx: this
                                     },
-                                    { css: 'btn-warning', text: 'Отмена', click: this.closeRegionSelect, ctx: this }
+                                    { css: 'btn-warning', text: 'Cancel', click: this.closeRegionSelect, ctx: this }
                                 ]
                             },
                             callback: function (vm) {
@@ -1486,23 +1486,23 @@ define([
                             neverSelectable: topcids
                         },
                         modal: {
-                            topic: 'Выбор регионов для исключения из фильтрации',
+                            topic: 'Select regions to exclude from filtration',
                             initWidth: '900px',
                             maxWidthRatio: 0.95,
                             fullHeight: true,
                             withScroll: true,
-                            offIcon: { text: 'Отмена', click: this.closeRegionExcludeSelect, ctx: this },
+                            offIcon: { text: 'Cancel', click: this.closeRegionExcludeSelect, ctx: this },
                             btns: [
                                 {
                                     css: 'btn-success',
-                                    text: 'Применить',
+                                    text: 'Apply',
                                     glyphicon: 'glyphicon-ok',
                                     click: function () {
-                                        var regions = this.regselectVM.getSelectedRegions(['cid', 'parents', 'title_local']);
+                                        var regions = this.regselectVM.getSelectedRegions(['cid', 'parents', 'title_en']);
 
                                         if (regions.length > 10) {
                                             return noties.alert({
-                                                message: 'Допускается выбирать до 10 регионов',
+                                                message: 'Allowed to select up to 10 regions',
                                                 type: 'warning',
                                                 timeout: 4000,
                                                 ok: true
@@ -1512,7 +1512,7 @@ define([
                                         this.filter.disp.re(regions.map(function (region) {
                                             if (region.parents) {
                                                 region.parentRegionsArr = this.regselectVM
-                                                    .getRegionsByCids(region.parents, ['cid', 'parents', 'title_local', 'childLen'])
+                                                    .getRegionsByCids(region.parents, ['cid', 'parents', 'title_en', 'childLen'])
                                                     .reverse();
                                             }
 
@@ -1525,7 +1525,7 @@ define([
                                     },
                                     ctx: this
                                 },
-                                { css: 'btn-warning', text: 'Отмена', click: this.closeRegionExcludeSelect, ctx: this }
+                                { css: 'btn-warning', text: 'Cancel', click: this.closeRegionExcludeSelect, ctx: this }
                             ]
                         },
                         callback: function (vm) {

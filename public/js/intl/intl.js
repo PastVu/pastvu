@@ -5,9 +5,9 @@
 define(['Utils'], function () {
     'use strict';
 
-    var intlNumFormat = new Intl.NumberFormat('ru-RU').format;
-    var intlDateFormat = new Intl.DateTimeFormat('ru-RU').format;
-    var intlDateFullFormat = new Intl.DateTimeFormat('ru-RU', {
+    var intlNumFormat = new Intl.NumberFormat('en-US').format;
+    var intlDateFormat = new Intl.DateTimeFormat('en-US').format;
+    var intlDateFullFormat = new Intl.DateTimeFormat('en-US', {
         weekday: 'long',
         day: 'numeric',
         month: 'long',

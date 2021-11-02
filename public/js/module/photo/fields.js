@@ -3,54 +3,54 @@
  */
 define(['m/photo/status'], function (statuses) {
     return {
-        s: 'Статус',
-        y: 'Год',
-        geo: 'Координаты',
-        type: 'Тип',
-        regions: 'Регион',
-        title: 'Название фотографии',
-        desc: 'Описание',
-        source: 'Источник',
-        author: 'Автор',
-        address: 'Адрес точки съемки',
-        dir: 'Направление съемки',
+        s: 'Status',
+        y: 'Year',
+        geo: 'Coordinates',
+        type: 'Type',
+        regions: 'Region',
+        title: 'Photo title',
+        desc: 'Description',
+        source: 'Source',
+        author: 'Author',
+        address: 'Adress of shooting point',
+        dir: 'Shooting direction',
         typeVals: {
-            1: 'Фотография',
-            2: 'Картина/рисунок'
+            1: 'Photograph',
+            2: 'Painting'
         },
         types: ['1', '2'],
         dirVals: {
-            n: 'Север',
-            ne: 'Северо-Восток',
-            e: 'Восток',
-            se: 'Юго-Восток',
-            s: 'Юг',
-            sw: 'Юго-Запад',
-            w: 'Запад',
-            nw: 'Северо-Запад',
-            aero: 'Аэро/Спутник'
+            n: 'North',
+            ne: 'Northeast',
+            e: 'East',
+            se: 'Southeast',
+            s: 'South',
+            sw: 'Southwest',
+            w: 'West',
+            nw: 'Northwest',
+            aero: 'Aero/Satellite'
         },
         dirValsArr: ['w', 'nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'aero'],
         watersign: {
-            'title': 'Подпись на вотермарке',
-            'profile': 'Как указано в профиле',
-            'individual': 'Индивидуально',
-            'option': 'Добавлять подпись на вотермарк',
-            'default': 'Настройки системы',
-            'text': 'Текст'
+            'title': 'Text on picture\'s watermark',
+            'profile': 'As specified in profile',
+            'individual': 'Individually',
+            'option': 'Add text to picture\'s watermark',
+            'default': 'System setting',
+            'text': 'Text'
         },
-        watersignText: 'Подпись на вотермарке',
+        watersignText: 'Text on watermark',
         watersignLength: 65,
         watersignPattern: /[\w\.,:;\(\)\[\]\\\|/№§©®℗℠™•\?!@#\$%\^&\*\+\-={}"'<>~` ]/g,
         downloadOrigin: {
-            title: 'Скачивание оригинала',
-            profile: 'Как указано в профиле',
-            individual: 'Индивидуально',
-            option: 'Разрешать другим пользователям скачивать оригинал'
+            title: 'Origin download',
+            profile: 'As specified in profile',
+            individual: 'Individually',
+            option: 'Allow other users to download original'
         },
 
         painting: {
-            title: 'Название'
+            title: 'Title'
         }
     };
 });

@@ -35,7 +35,7 @@ services:
     volumes:
       - .:/code
       - store:/store
-    command: run app
+    command: run app --primary
 
   worker:
     << : *app-image

@@ -10,7 +10,7 @@
         .form-group
             //- Выводим заголовок описания, если он есть или это не свободное описание и вариантов выбора несколько
             //ko if: selected().desc.label || selections().length > 1 && Number(selected().cid) !== 0
-            label.desclabel(for="desc", data-bind="html: selected().desc.label || ('Дополнительная информация' + (selected().desc.required ? '' : ' (опционально)'))")
+            label.desclabel(for="desc", data-bind="html: selected().desc.label || ('Additional info' + (selected().desc.required ? '' : ' (optional)'))")
             // /ko
             textarea#desc.form-control(data-bind="value: desc, attr: {placeholder: selected().desc.placeholder || '', minLength: minLength(), maxlength: selected().desc.max || '1000'}", style="resize: vertical;")
         .form-group

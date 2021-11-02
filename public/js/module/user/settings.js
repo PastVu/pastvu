@@ -212,8 +212,8 @@ define([
                     var warning = !result.updated;
 
                     noties.alert({
-                        message: warning ? 'Ни одной фотографии не отправлено на конвертацию' :
-                        result.updated + ' фотографий отправлено на повторную конвертацию',
+                        message: warning ? 'No photos are sent for conversion' :
+                        result.updated + ' photos has been sent to the re-conversion',
                         type: warning ? 'warning' : 'success',
                         layout: 'topRight',
                         timeout: 4000
@@ -237,18 +237,18 @@ define([
             }
 
             noties.confirm({
-                message: 'Вы уверены что хотите сбросить индивидуальные настройки подписи в фотографиях' +
-                (region ? ' указанного региона' : '') + '?',
-                okText: 'Да, сбросить',
-                cancelText: 'Отменить',
+                message: 'Are you sure you want to reset individual watermark settings on photos' +
+                (region ? ' in specified region' : '') + '?',
+                okText: 'Yes, reset',
+                cancelText: 'Cancel',
                 onOk: function (confirmer) {
                     socket.run('photo.convertByUser', { login: self.u.login(), r: region, resetIndividual: true }, true)
                         .then(function (result) {
                             var warning = !result.updated;
 
                             noties.alert({
-                                message: warning ? 'Не найдено ни одной фотографии с индивидуальными настройками подписи' :
-                                'У ' + result.updated + ' фотографий сброшены индивидуальные настройки подписи и они отправлены на повторную конвертацию',
+                                message: warning ? 'There is no photos with custom watermark' :
+                                'Individual settings have been reset for ' + result.updated + ' photos and they were send to reconvert',
                                 type: warning ? 'warning' : 'success',
                                 layout: 'topRight',
                                 timeout: 4000
@@ -281,18 +281,18 @@ define([
             }
 
             noties.confirm({
-                message: 'Вы уверены что хотите сбросить индивидуальные настройки скачивания оргиналов фотографий' +
-                (region ? ' указанного региона' : '') + '?',
-                okText: 'Да, сбросить',
-                cancelText: 'Отменить',
+                message: 'Are you sure you want to reset individual download settings of photos' +
+                (region ? ' in specified region' : '') + '?',
+                okText: 'Yes, reset',
+                cancelText: 'Cancel',
                 onOk: function (confirmer) {
                     socket.run('photo.resetIndividualDownloadOrigin', { login: self.u.login(), r: region }, true)
                         .then(function (result) {
                             var warning = !result.updated;
 
                             noties.alert({
-                                message: warning ? 'Не найдено ни одной фотографии с индивидуальными настройками скачивания' :
-                                'У ' + result.updated + ' фотографий сброшены индивидуальные настройки скачивания',
+                                message: warning ? 'There is no photos with individual download settings' :
+                                'Individual download settings have been reset at ' + result.updated + ' photos',
                                 type: warning ? 'warning' : 'success',
                                 layout: 'topRight',
                                 timeout: 4000
@@ -437,16 +437,16 @@ define([
         },
         regionHomeSelect: function () {
             if (!this.regHomeselectVM) {
-                this.regionSelect([koMapping.toJS(this.u.regionHome)], 1, 1, 'Выбор домашнего региона',
+                this.regionSelect([koMapping.toJS(this.u.regionHome)], 1, 1, 'Home region selection',
                     function (vm) {
                         this.regHomeselectVM = vm;
                     },
                     function () {
-                        var regions = this.regHomeselectVM.getSelectedRegions(['cid', 'title_local']);
+                        var regions = this.regHomeselectVM.getSelectedRegions(['cid', 'title_en']);
 
                         if (regions.length !== 1) {
                             return noties.alert({
-                                message: 'Необходимо выбрать один регион',
+                                message: 'Necessary to choose only one region',
                                 type: 'warning',
                                 timeout: 4000,
                                 ok: true
@@ -471,16 +471,16 @@ define([
         },
         regionFilterSelect: function () {
             if (!this.regselectVM) {
-                this.regionSelect(koMapping.toJS(this.u.regions), 0, 10, 'Изменение списка регионов для фильтрации по умолчанию',
+                this.regionSelect(koMapping.toJS(this.u.regions), 0, 10, 'List of regions for filtering by default',
                     function (vm) {
                         this.regselectVM = vm;
                     },
                     function () {
-                        var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']);
+                        var regions = this.regselectVM.getSelectedRegions(['cid', 'title_en']);
 
                         if (regions.length > 10) {
                             return noties.alert({
-                                message: 'Допускается выбирать до 10 регионов',
+                                message: 'Allowed to select up to 10 regions',
                                 type: 'warning',
                                 timeout: 4000,
                                 ok: true
@@ -519,16 +519,16 @@ define([
                             maxWidthRatio: 0.95,
                             fullHeight: true,
                             withScroll: true,
-                            offIcon: { text: 'Отмена', click: onCancel, ctx: ctx },
+                            offIcon: { text: 'Cancel', click: onCancel, ctx: ctx },
                             btns: [
                                 {
                                     css: 'btn-success',
-                                    text: 'Применить',
+                                    text: 'Apply',
                                     glyphicon: 'glyphicon-ok',
                                     click: onApply,
                                     ctx: ctx
                                 },
-                                { css: 'btn-warning', text: 'Отмена', click: onCancel, ctx: ctx }
+                                { css: 'btn-warning', text: 'Cancel', click: onCancel, ctx: ctx }
                             ]
                         },
                         callback: function (vm) {

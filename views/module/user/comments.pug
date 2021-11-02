@@ -1,20 +1,20 @@
 .comments(data-bind="with: repository[M!M]")
     .top-select
-        h4(data-bind="text: itsMe()?'Ваши комментарии:':'Комментарии пользователя:'")
+        h4(data-bind="text: itsMe()?'Your comments:':'User comments:'")
         //ko if: itsMe() || auth.loggedIn() && auth.iAm.role() > 9
         dd: span.panel-block(style="padding-bottom:5px;")
             label.checkbox-inline
                 input(type="checkbox", value="active" data-bind="checked: statusesCheckboxed")
-                span(data-bind="text: 'Активные [' + $root.intl.num(statuses['active_persist']()) + ']'")
+                span(data-bind="text: 'Active [' + $root.intl.num(statuses['active_persist']()) + ']'")
             label.checkbox-inline
                 input(type="checkbox", value="del" data-bind="checked: statusesCheckboxed")
-                span(data-bind="text: 'Удаленные ['+ $root.intl.num(statuses['del_persist']()) + ']'")
+                span(data-bind="text: 'Removed ['+ $root.intl.num(statuses['del_persist']()) + ']'")
         // /ko
     ul.nav.nav-tabs
         li(data-bind="css: {active: type() === 'photo'}")
-            a(data-bind="attr: {href: pageUrl() + getUrlParams(page(), 'photo', encodeStatuses())}, text: 'К изображениям [' + $root.intl.num(types['photo_persist']()) + ']'")
+            a(data-bind="attr: {href: pageUrl() + getUrlParams(page(), 'photo', encodeStatuses())}, text: 'Images [' + $root.intl.num(types['photo_persist']()) + ']'")
         li(data-bind="css: {active: type() === 'news'}")
-            a(data-bind="attr: {href: pageUrl() + getUrlParams(page(), 'news', encodeStatuses())}, text: 'К новостям [' + $root.intl.num(types['news_persist']()) + ']'")
+            a(data-bind="attr: {href: pageUrl() + getUrlParams(page(), 'news', encodeStatuses())}, text: 'News [' + $root.intl.num(types['news_persist']()) + ']'")
     .navContent
         .row
             .col-xs-6.col-md-3.topcol
@@ -34,7 +34,7 @@
                     span.glyphicon(data-bind="css: $data.obj.status.icon")
                 // /ko
                 //ko if: $data.obj.my
-                .status.upper.mine.fringe(title="Это ваша фотография")
+                .status.upper.mine.fringe(title="It is your photo")
                     span.glyphicon.glyphicon-user
                 // /ko
         .commentHead
@@ -43,7 +43,7 @@
             a.commentStamp(data-bind="attr: {href: $data.link}, text: moment($data.stamp).calendar()")
             //ko if: $data.lastChanged
             .dotDelimeter ·
-            .commentChanged(title="Показать историю изменений", data-bind="text: ($data.del ? 'Удален ' : 'Изменен ') + moment($data.lastChanged).calendar().toLowerCase(), click: function () {$parent.showHistory($data.obj.cid, $data.cid)}")
+            .commentChanged(title="Show history of changes", data-bind="text: ($data.del ? 'Removed at ' : 'Changed at ') + moment($data.lastChanged).calendar().toLowerCase(), click: function () {$parent.showHistory($data.obj.cid, $data.cid)}")
             // /ko
         a.commentText(data-bind="attr: {href: $data.link}, html: $data.txt")
     | </script>
@@ -56,18 +56,18 @@
             a.commentStamp(data-bind="attr: {href: $data.link}, text: moment($data.stamp).calendar()")
             //ko if: $data.lastChanged
             .dotDelimeter ·
-            .commentChanged(title="Показать историю изменений", data-bind="text: ($data.del ? 'Удален ' : 'Изменен ') + moment($data.lastChanged).calendar().toLowerCase(), click: function () {$parent.showHistory($data.obj.cid, $data.cid)}")
+            .commentChanged(title="Show history of changes", data-bind="text: ($data.del ? 'Removed at ' : 'Changed at ') + moment($data.lastChanged).calendar().toLowerCase(), click: function () {$parent.showHistory($data.obj.cid, $data.cid)}")
             // /ko
         a.commentText(style="margin-left:29px", data-bind="attr: {href: $data.link}, html: $data.txt")
     | </script>
 
     | <script id="pagerTpl" type="text/html">
     ul.pagination
-        li.edge(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: pageUrl() + pageQuery()}", title="Первая страница") &laquo;&laquo;
-        li.edge(data-bind="css: {disabled: !pageHasPrev()}"): a(data-bind="attr: {href: pageUrl() + (page() > 1 ? '/' + (page() - 1) : '')+ pageQuery()}", title="Предыдущая страница") &laquo;
+        li.edge(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: pageUrl() + pageQuery()}", title="First page") &laquo;&laquo;
+        li.edge(data-bind="css: {disabled: !pageHasPrev()}"): a(data-bind="attr: {href: pageUrl() + (page() > 1 ? '/' + (page() - 1) : '')+ pageQuery()}", title="Previous page") &laquo;
         //ko foreach: pages
         li(data-bind="css: {active: $data === $parent.page()}"): a(data-bind="attr: {href: $parent.pageUrl() + '/' + $data + $parent.pageQuery()}, text: $root.intl.num($data)")
         // /ko
-        li.edge(data-bind="css: {disabled: !pageHasNext()}"): a(data-bind="attr: {href: pageUrl() + '/' + (page() + 1) + pageQuery()}", title="Следующая страница") &raquo;
-        li.edge(data-bind="css: {disabled: page() === pageLast()}"): a(data-bind="attr: {href: pageUrl() + '/' + pageLast() + pageQuery()}", title="Последняя страница") &raquo;&raquo;
+        li.edge(data-bind="css: {disabled: !pageHasNext()}"): a(data-bind="attr: {href: pageUrl() + '/' + (page() + 1) + pageQuery()}", title="Next page") &raquo;
+        li.edge(data-bind="css: {disabled: page() === pageLast()}"): a(data-bind="attr: {href: pageUrl() + '/' + pageLast() + pageQuery()}", title="Last page") &raquo;&raquo;
     | </script>
