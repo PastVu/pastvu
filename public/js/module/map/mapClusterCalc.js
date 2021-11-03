@@ -42,12 +42,6 @@ define([
                     selected: ko.observable(false),
                     types: ko.observableArray([
                         {
-                            id: 'osmosnimki',
-                            desc: 'Osmosnimki',
-                            selected: ko.observable(false),
-                            obj: new L.TileLayer('http://{s}.tile.osmosnimki.ru/kosmo/{z}/{x}/{y}.png', { updateWhenIdle: false })
-                        },
-                        {
                             id: 'mapnik',
                             desc: 'Mapnik',
                             selected: ko.observable(false),
