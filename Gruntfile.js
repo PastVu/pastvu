@@ -125,7 +125,7 @@ module.exports = function (grunt) {
                         src: [
                             'app/**', 'bin/**', 'migrations/**', 'commons/**', 'misc/watermark/**',
                             'controllers/systemjs.js', 'npm-shrinkwrap.json',
-                            'config/@(client|server|browsers.config|default.config).js', 'config/package.json',
+                            'config/@(client|server|log4js|migrate-mongo|browsers.config|default.config).js', 'config/package.json',
                         ],
                         dest: targetDir,
                     },
