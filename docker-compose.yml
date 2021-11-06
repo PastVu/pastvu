@@ -1,7 +1,7 @@
 version: '3.8'
 
 x-defaults: &app-image
-  build: .
+  build: ./docker
   image: pastvu_node
 
 services:
@@ -11,6 +11,7 @@ services:
       dockerfile: dev-mongo.Dockerfile
     volumes:
       - mongo:/data/db
+      - ./docker/dev-initdb.sh:/usr/local/bin/initdb
     expose:
       - "27017"
     ports:
