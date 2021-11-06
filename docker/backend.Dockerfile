@@ -15,11 +15,9 @@ COPY . .
 RUN npm run build
 
 FROM base
-ENV LANG ru
-ENV MODULE app
 ENV NODE_ENV production
-ENV CONFIG /config.js
 COPY --from=builder /appBuild/ .
-COPY ./docker/docker-healthcheck.sh .
 RUN npm install --production
+RUN mkdir /store && chown node:node /store
+USER node
 CMD ["bin/run"]

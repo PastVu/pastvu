@@ -5,8 +5,6 @@ module.exports = {
     env: 'development', // Enviroment: development, testing, production
     locales: ['en', 'ru'], // List of supported locales. First one is the default locale, if user transferred nothing
     lang: 'ru', // Language: ru, en
-    notifier: false, // If true, send periodical emails to users
-    primary: false, // If not true, the instance will run as a recplica
     admin: {
         email: '',
     },
@@ -49,7 +47,6 @@ module.exports = {
     servePublic: true, // Tell app.js serve out its public folder (js, css, etc)
     serveStore: true, // Tell app.js serve out store public folder
 
-    logPath: '', // Folder for logs. Setting that property will enable log to files in logPath (relative to project dir). By default it is off
     logLongDuration: ms('2s'),
     serveLog: false, // Tell app.js serve out its logs folder (path: "logPath") at /nodelog
     serveLogAuth: {

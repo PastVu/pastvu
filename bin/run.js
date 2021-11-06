@@ -42,6 +42,10 @@ if (require.main !== module) { // If run.js is required by another module (for e
             describe: 'Log config',
             'default': true,
         })
+        .options('primary', {
+            boolean: true,
+            describe: 'Run as primary instance',
+        })
         .argv;
 
     const config = require('../config');
@@ -53,6 +57,8 @@ if (require.main !== module) { // If run.js is required by another module (for e
 
     const appName = path.parse(argv.script).name;
     const logger = log4js.getLogger(appName);
+    if (appName === "notifier") config.notifier = true;
+    config.primary = !!argv.primary; // If not true, the instance will run as a recplica
 
     // Handling uncaught exceptions
     process.on('uncaughtException', err => {

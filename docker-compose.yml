@@ -1,7 +1,7 @@
 version: '3.8'
 
 x-defaults: &app-image
-  build: .
+  build: ./docker
   image: pastvu_node
   environment:
     - NODE_ENV=development
@@ -11,6 +11,7 @@ services:
     image: mongo:4.4
     volumes:
       - mongo:/data/db
+      - ./docker/dev-initdb.sh:/usr/local/bin/initdb
     expose:
       - "27017"
     ports:
@@ -35,7 +36,7 @@ services:
     volumes:
       - .:/code
       - store:/store
-    command: run app
+    command: run app --primary
 
   worker:
     << : *app-image
