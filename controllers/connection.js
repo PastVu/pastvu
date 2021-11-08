@@ -55,11 +55,7 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
         mongoose.Promise = Promise;
 
         connectionPromises.push(new Promise((resolve, reject) => {
-            db = mongoose.createConnection() // https://mongoosejs.com/docs/api/mongoose.html#mongoose_Mongoose-createConnection
-                .once('open', openHandler)
-                .once('error', errFirstHandler);
-
-            db.openUri(uri, {
+            mongoose.connect(uri, {
                 poolSize,
                 promiseLibrary: Promise,
                 noDelay: true,
@@ -71,7 +67,7 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
                 useCreateIndex: true, // Use createIndex internally (ensureIndex is deprecated in MongoDB driver 3.2).
                 useFindAndModify: false, // Use findOneAndUpdate interally (findAndModify is deprecated in MongoDB driver 3.1).
                 autoIndex: false, // Do not attempt to create index automatically, we use syncIndexes in worker.
-            });
+            }).then(openHandler, errFirstHandler);
 
             exitHook(cb => {
                 // Connection related events are no longer regarded as errors.
@@ -81,9 +77,19 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
             });
 
             async function openHandler() {
-                const adminDb = db.db.admin(); // Use the admin database for some operation
+                db = mongoose.connection;
+                dbNative = db.db;
 
-                const [buildInfo, serverStatus] = await Promise.all([adminDb.buildInfo(), adminDb.serverStatus()]);
+                const adminDb = db.db.admin(); // Use the admin database for some operation
+                const [buildInfo, serverStatus, listDatabases] = await Promise.all([adminDb.buildInfo(),
+                    adminDb.serverStatus(), adminDb.listDatabases()]);
+
+                if (!listDatabases.databases.some(r => r.name === db.name)) {
+                    // MongoDB allows connection to non-existing databases,
+                    // it is not an error, but we require database to exist
+                    // for operation.
+                    return errFirstHandler(`Database ${db.name} does not exist.`);
+                }
 
                 logger.info(
                     `MongoDB[${buildInfo.version}, ${serverStatus.storageEngine.name}, x${buildInfo.bits},`,
@@ -91,9 +97,7 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
                     `with poolsize ${poolSize} at ${uri}`
                 );
 
-                // Full list of events can be found here
-                // https://github.com/Automattic/mongoose/blob/master/lib/connection.js#L33
-                db.removeListener('error', errFirstHandler);
+                // Hook on events.
                 db.on('error', err => {
                     logger.error(`MongoDB connection error to ${uri}`, err);
                 });
@@ -107,10 +111,11 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
                     logger.info('MongoDB reconnected at ' + uri);
                 });
 
-                dbNative = db.db;
-
                 if (! await checkPendingMigrations()) {
-                    getDBReject('DB migration is required, make sure that worker instance is started or migrate manually');
+                    const err = 'DB migration is required, make sure that worker instance is started or migrate manually';
+
+                    getDBReject(err);
+                    reject(err);
                 }
 
                 await Promise.all(modelPromises.map(modelPromise => modelPromise(db)));

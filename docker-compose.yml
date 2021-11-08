@@ -10,7 +10,7 @@ services:
   mongo:
     image: mongo:4.4
     volumes:
-      - mongo:/data/db
+      - mongo4:/data/db
       - ./docker/dev-initdb.sh:/usr/local/bin/initdb
     expose:
       - "27017"
@@ -96,4 +96,4 @@ services:
 volumes:
   store:
   sitemap:
-  mongo:
+  mongo4:
