@@ -1179,7 +1179,7 @@ async function destroyUserSession({ login, key: sid }) {
 
 // Destroy all user sessions, is done by admin while changing login user restriction from on to off on manage page
 async function destroyUserSessions({ login }) {
-    const sessions = await this.call('session.giveUserSessions', { login });
+    const { sessions } = await this.call('session.giveUserSessions', { login });
 
     await Promise.all(sessions.map(session => this.call('session.destroyUserSession', { login, key: session.key })));
 }
