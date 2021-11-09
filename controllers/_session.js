@@ -368,9 +368,8 @@ async function updateSession(session, ip, headers, browser) {
     }
 
     data.headers = headers;
-    session.markModified('data');
 
-    return session.save();
+    return Session.findOneAndUpdate({ _id: session._id }, session);
 }
 
 // Create session as copy from transfered session (ip, header, agent)
