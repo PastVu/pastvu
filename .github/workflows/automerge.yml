@@ -12,7 +12,9 @@ jobs:
       - name: checkout
         uses: actions/checkout@v2
       - name: merge
-        uses: mtanzi/action-automerge@v1
+        uses: devmasx/merge-branch@v1.4.0
         with:
-          source: 'master'
-          target: 'en'
+          type: now
+          from_branch: master
+          target_branch: en
+          github_token: ${{ secrets.GITHUB_TOKEN }}

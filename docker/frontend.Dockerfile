@@ -1,5 +1,10 @@
-ARG IMAGE=pastvu/backend:latest
-FROM ${IMAGE} AS app
+ARG NODE_TAG=16.10.0
+FROM node:${NODE_TAG} AS builder
+WORKDIR /build
+COPY package.json .
+RUN npm install
+COPY . .
+RUN npm run build
 
 FROM nginx:1.21.3
-COPY --from=app /code/public /usr/share/nginx/html
+COPY --from=builder /appBuild/public/ /usr/share/nginx/html/
