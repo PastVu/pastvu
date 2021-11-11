@@ -7,6 +7,7 @@
 const startStamp = Date.now();
 const path = require('path');
 const requireModule = modulePath => require(path.resolve(modulePath));
+
 const babelHook = () => {
     // Use require-hook babel in development
     const babelConfig = require('../babel/server.config');

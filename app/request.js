@@ -187,14 +187,14 @@ export const handleHTTPRequest = async function (req, res, next) {
     } catch (error) {
         if (error instanceof ApplicationError) {
             if (!error.logged) {
-                logger.warn(_.compact([
+                logger.error(_.compact([
                     `${context.ridMark} HTTP request`,
                     `${inspect(error.toJSON())}`,
-                    error.trace ? error.stack : undefined,
+                    error.stack ? error.stack : undefined,
                 ]).join('\n'));
             }
         } else {
-            logger.warn(`${context.ridMark} HTTP request`, error);
+            logger.error(`${context.ridMark} HTTP request`, error.stack ? error.stack : error);
         }
 
         if (error.code === constantsError.SESSION_NO_HEADERS) {

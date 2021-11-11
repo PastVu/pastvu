@@ -45,7 +45,7 @@ const CommentPSchema = new Schema(
         level: { type: Number },
         frag: { type: Boolean },
 
-        geo: { type: [Number], index: '2d' }, // Координаты [lng, lat] фотографии, которой принадлежит комментарий
+        geo: { type: [Number], index: '2dsphere' }, // Координаты [lng, lat] фотографии, которой принадлежит комментарий
 
         type: { type: Number, 'default': constants.photo.type.PHOTO, index: true }, // 1 - Photo, 2 - Painting
         // Photo's status (listed in constants)

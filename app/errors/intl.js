@@ -56,7 +56,6 @@ export default {
     PAINTING_YEARS_CONSTRAINT: 'Published painting must be in the range of 100 BC — 1980 AD',
     PHOTO_CONVERT_PROCEEDING: 'You have already sent a request and it is still running. try later',
 
-    REGION_ASSIGN_OBJECTS: 'Ошибка пересчета принадлежности обектов регионам',
     REGION_PARENT_THE_SAME: 'Вы пытаетесь указать родителем его самого',
     REGION_PARENT_DOESNT_EXISTS: 'Указанного родительского региона не существует',
     REGION_NO_RELATIVES: 'Регионы не должны быть вложенными друг в друга',

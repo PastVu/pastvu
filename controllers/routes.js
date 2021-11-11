@@ -15,7 +15,6 @@ const {
     photo: { status },
 } = constants;
 
-const logger404 = log4js.getLogger('404.js');
 const loggerError = log4js.getLogger('error.js');
 
 const origin = config.client.origin;
@@ -375,7 +374,7 @@ export const send500 = (function () {
 export function bindErrorHandler(app) {
     // Error handler, must be after other middlewares and routes (next argument is mandatory)
     app.use((error, req, res, next) => {
-        const { handshake: { context } = {}, url, method, headers = {} } = req;
+        const { handshake: { context } = {} } = req;
         const is404 = error instanceof NotFoundError || error.code === 'ENOENT' || error.code === 'ENOTDIR';
 
         if (!error.logged && !is404) {
@@ -393,14 +392,6 @@ export function bindErrorHandler(app) {
         }
 
         if (is404) {
-            let log404 = JSON.stringify({ url, method, ua: headers['user-agent'], referer: headers.referer });
-
-            if (context) {
-                log404 = `${context.ridMark} ${log404}`;
-            }
-
-            logger404.error(log404);
-
             return send404(req, res, error);
         }
 

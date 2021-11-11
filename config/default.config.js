@@ -78,7 +78,7 @@ module.exports = {
     redis: {
         host: 'localhost',
         port: '6379',
-        retry_unfulfilled_commands: false,
+        autoResendUnfulfilledCommands: false,
         maxReconnectTime: ms('30s'),
     },
 

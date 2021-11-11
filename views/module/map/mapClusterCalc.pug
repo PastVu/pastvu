@@ -29,6 +29,8 @@
         button.btn.btn-warning.btnSave(type="button", data-bind="click: cancel")
             span.glyphicon.glyphicon-exclamation-sign
             |  Cancel
+    button.btn.btn-primary.btnSave(type="button", data-bind="style: {display: changed() || isDefault() ? 'none' : ''}, click: setDefaults")
+        | Reset to default
     p(style="margin-top: 6px; margin-bottom: 0;", data-bind="style: {display: exe() && changed() ? '' : 'none'}") The process of calculating the new parameters at different levels of zoom:
     .progress.progress-striped.active(data-bind="style: {display: exe() && changed() ? '' : 'none'}")
         .progress-bar.progress-bar-success(data-bind="style: {width: exePercent() + '%'}")

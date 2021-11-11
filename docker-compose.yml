@@ -3,14 +3,14 @@ version: '3.8'
 x-defaults: &app-image
   build: ./docker
   image: pastvu_node
+  environment:
+    - NODE_ENV=development
 
 services:
   mongo:
-    build:
-      context: ./docker
-      dockerfile: dev-mongo.Dockerfile
+    image: mongo:4.4
     volumes:
-      - mongo:/data/db
+      - mongo4:/data/db
       - ./docker/dev-initdb.sh:/usr/local/bin/initdb
     expose:
       - "27017"
@@ -37,6 +37,15 @@ services:
       - .:/code
       - store:/store
     command: run app --primary
+
+  worker:
+    << : *app-image
+    depends_on:
+      - "app"
+    volumes:
+      - .:/code
+      - store:/store
+    command: run worker
 
   notifier:
     << : *app-image
@@ -87,4 +96,4 @@ services:
 volumes:
   store:
   sitemap:
-  mongo:
+  mongo4:

@@ -2,15 +2,16 @@ import _ from 'lodash';
 import log4js from 'log4js';
 import Utils from '../commons/Utils';
 import constants from './constants.js';
-import { waitDb, dbEval } from './connection';
+import { waitDb } from './connection';
 import { Photo } from '../models/Photo';
 import { Cluster, ClusterPaint, ClusterParams } from '../models/Cluster';
 import { ApplicationError, AuthorizationError, BadParamsError } from '../app/errors';
+import { runJob } from './queue';
 
 const logger = log4js.getLogger('cluster.js');
 
-export let clusterParams; // Parameters of cluster
-export let clusterConditions; // Parameters of cluster settings
+let clusterParams; // Parameters of cluster
+let clusterConditions; // Parameters of cluster settings
 
 async function readClusterParams() {
     [clusterParams, clusterConditions] = await Promise.all([
@@ -19,7 +20,33 @@ async function readClusterParams() {
     ]);
 }
 
-// Set new cluster parameters and send clusters to recalculate
+/**
+ * Compute cluster left top corner coordinates.
+ *
+ * @param {Array} geoPhoto geo coordiante pair of photo [lng, lat]
+ * @param {object} clusterZoom zoom parameters
+ * @returns {Array} geo coordiante pair of cluster [lng, lat]
+ */
+function computeClusterCoords(geoPhoto, clusterZoom) {
+    // Correction for the cluster.
+    // Since the clusters are calculated with binary rounding (>>), we must substruct 1 for negative lng
+    // Since the cluster display goes from the top corner, we need add 1 positive lat
+    const geoPhotoCorrection = [geoPhoto[0] < 0 ? -1 : 0, geoPhoto[1] > 0 ? 1 : 0];
+
+    return Utils.geo.geoToPrecisionRound([
+        clusterZoom.w * ((geoPhoto[0] / clusterZoom.w >> 0) + geoPhotoCorrection[0]),
+        clusterZoom.h * ((geoPhoto[1] / clusterZoom.h >> 0) + geoPhotoCorrection[1]),
+    ]);
+}
+
+/**
+ * Set new cluster parameters and send clusters to recalculate.
+ *
+ * @param {object} params
+ * @param {object} [params.params]
+ * @param {object} [params.conditions]
+ * @returns {object} Data object returned by clusterPhotosAll.
+ */
 async function recalcAll({ params, conditions }) {
     const { handshake: { usObj: iAm } } = this;
 
@@ -27,30 +54,188 @@ async function recalcAll({ params, conditions }) {
         throw new AuthorizationError();
     }
 
-    await ClusterParams.remove({}).exec();
+    await ClusterParams.deleteMany({});
     await Promise.all([
-        ClusterParams.collection.insert(params, { safe: true }),
-        ClusterParams.collection.insert(conditions, { safe: true }),
+        ClusterParams.insertMany(params),
+        ClusterParams.insertMany(conditions),
     ]);
     await readClusterParams();
-    await dbEval('clusterPhotosAll', [true], { nolock: true });
 
-    const result = await dbEval('photosToMapAll', [], { nolock: true });
+    const result = await runJob('clusterPhotosAll', { withGravity: true });
 
     if (result && result.error) {
         throw new ApplicationError({ message: result.error.message });
     }
 
+    // This function used to trigger photosToMapAll db stored function,
+    // which does not seem required as photo coordinates are not affected by
+    // clusters calculation.
     return result;
 }
+
+/**
+ * Cluster photos.
+ * Used by clusterPhotosAll job in userjobs queue.
+ *
+ * @param {object} params
+ * @param {boolean} [params.withGravity]
+ * @param {number} [params.logByNPhotos] How often to log progress
+ * @param {number[]} [params.zooms] Limit to specified zooms
+ * @returns {object} object containing message and data.
+ */
+export const clusterPhotosAll = async function (params) {
+    const clusterparamsQuery = { sgeo: { $exists: false } };
+
+    if (params.zooms) {
+        clusterparamsQuery.z = { $in: params.zooms };
+    }
+
+    const clusterZooms = await ClusterParams.find(clusterparamsQuery, { _id: 0 }).sort({ z: 1 }).exec();
+
+    const photosAllCount = await Photo.countDocuments({ s: constants.photo.status.PUBLIC, geo: { $exists: true } });
+    const logByNPhotos = params.logByNPhotos || photosAllCount / 20 >> 0;
+    const withGravity = params.withGravity || false;
+
+    logger.info(`clusterPhotosAll: Start to clusterize ${photosAllCount} photos, progress is logged every ${logByNPhotos}. Gravity: ${withGravity}`);
+
+    for (const clusterZoom of clusterZooms) {
+        await clusterizeZoom(clusterZoom);
+    }
+
+    async function clusterizeZoom(clusterZoom) {
+        const startTime = Date.now();
+        let timestamp;
+
+        let photoCounter = 0;
+
+        const clusters = {};
+        let clustersCount = 0;
+        const clustersArr = [];
+        let clustersArrLastIndex = 0;
+        let clustersInserted = 0;
+
+        const sorterByCount = function (a, b) {
+            return a.c === b.c ? 0 : a.c < b.c ? 1 : -1;
+        };
+
+        clusterZoom.wHalf = Utils.math.toPrecisionRound6(clusterZoom.w / 2);
+        clusterZoom.hHalf = Utils.math.toPrecisionRound6(clusterZoom.h / 2);
+
+        const useGravity = withGravity && clusterZoom.z > 11;
+
+        clustersArr.push([]);
+
+        // Use cursor.
+        const photos = Photo.find({ s: constants.photo.status.PUBLIC, geo: { $exists: true } }, { _id: 0, geo: 1, year: 1, year2: 1 });
+
+        for await (const photo of photos) {
+            photoCounter++;
+
+            const geoPhoto = photo.geo;
+            const g = computeClusterCoords(geoPhoto, clusterZoom);
+            const clustCoordId = g[0] + '@' + g[1];
+            let cluster = clusters[clustCoordId];
+
+            // Create cluster.
+            if (cluster === undefined) {
+                clustersCount++;
+                clusters[clustCoordId] = cluster = {
+                    g,
+                    z: clusterZoom.z,
+                    geo: [g[0] + clusterZoom.wHalf, g[1] - clusterZoom.hHalf],
+                    c: 0,
+                    y: {},
+                    p: null,
+                };
+
+                if (clustersArr[clustersArrLastIndex].push(cluster) > 249) {
+                    // Create next batch.
+                    clustersArr.push([]);
+                    clustersArrLastIndex++;
+                }
+            }
+
+            cluster.c += 1;
+            cluster.y[photo.year] = 1 + (cluster.y[photo.year] | 0);
+
+            if (useGravity) {
+                cluster.geo[0] += geoPhoto[0];
+                cluster.geo[1] += geoPhoto[1];
+            }
+
+            if (photoCounter % logByNPhotos === 0) {
+                timestamp = (Date.now() - startTime) / 1000;
+                logger.info(`clusterPhotosAll: ${clusterZoom.z}: Clusterized ${photoCounter}/${photosAllCount} photos in ` +
+                    `${clustersCount} clusters in ${timestamp}s`);
+            }
+        }
+
+        logger.info(`clusterPhotosAll: ${clusterZoom.z}: ${clustersCount} clusters ready for inserting`);
+        await Cluster.deleteMany({ z: clusterZoom.z });
+
+        let clustersCounter = clustersArr.length;
+
+        while (clustersCounter) {
+            const clustersArrInner = clustersArr[--clustersCounter];
+
+            clustersArrInner.sort(sorterByCount);
+
+            let clustersCounterInner = clustersArrInner.length;
+
+            if (clustersCounterInner > 0) {
+                while (clustersCounterInner) {
+                    // Post-process cluster.
+                    const cluster = clustersArrInner[--clustersCounterInner];
+
+                    if (useGravity) {
+                        cluster.geo = Utils.geo.geoToPrecisionRound([
+                            cluster.geo[0] / (cluster.c + 1),
+                            cluster.geo[1] / (cluster.c + 1),
+                        ]);
+                    }
+
+                    Utils.geo.normalizeCoordinates(cluster.geo);
+                    Utils.geo.normalizeCoordinates(cluster.g);
+
+                    // Link it to photo that will represent cluster.
+                    cluster.p = await Photo.findOne({
+                        s: constants.photo.status.PUBLIC,
+                        geo: { $nearSphere: { $geometry: { type: 'Point', coordinates: cluster.geo } } },
+                    }, {
+                        _id: 0,
+                        cid: 1,
+                        geo: 1,
+                        file: 1,
+                        dir: 1,
+                        title: 1,
+                        year: 1,
+                        year2: 1,
+                    }).exec();
+                }
+            }
+
+            // Record current batch of clusters.
+            await Cluster.insertMany(clustersArrInner);
+            clustersInserted += clustersArrInner.length;
+
+            const timestamp = (Date.now() - startTime) / 1000;
+
+            logger.info(`clusterPhotosAll: ${clusterZoom.z}: Inserted ${clustersInserted}/${clustersCount} clusters in ${timestamp}s`);
+        }
+    }
+
+    const clustersCount = await Cluster.estimatedDocumentCount();
+
+    return {
+        data: { photos: photosAllCount, clusters: clustersCount },
+    };
+};
 
 async function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, isPainting) {
     const ClusterModel = isPainting ? ClusterPaint : Cluster;
     const $update = { $set: {} };
 
-    if (g[0] < -180 || g[0] > 180) {
-        Utils.geo.spinLng(g);
-    }
+    Utils.geo.normalizeCoordinates(g);
 
     const cluster = await ClusterModel.findOne(
         { g, z: zParam.z }, { _id: 0, c: 1, geo: 1, y: 1, p: 1 }, { lean: true }
@@ -63,10 +248,7 @@ async function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, isPainting
 
     if (!geoCluster) {
         geoCluster = [g[0] + zParam.wHalf, g[1] - zParam.hHalf];
-
-        if (geoCluster[0] < -180 || geoCluster[0] > 180) {
-            Utils.geo.spinLng(geoCluster);
-        }
+        Utils.geo.normalizeCoordinates(geoCluster);
     }
 
     if (geoPhotos.o) {
@@ -79,7 +261,7 @@ async function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, isPainting
 
     if (cluster && c <= 1 && inc === -1) {
         // If after deletion photo from cluster, cluster become empty - remove it
-        return ClusterModel.remove({ g, z: zParam.z }).exec();
+        return ClusterModel.deleteMany({ g, z: zParam.z }).exec();
     }
 
     if (inc !== 0) {
@@ -115,7 +297,8 @@ async function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, isPainting
         // If coordinate didn't transferred, then just change poster
         if (geoPhotos.o && c) {
             geoCluster = Utils.geo.geoToPrecisionRound([
-                (geoCluster[0] * (c + 1) - geoPhotos.o[0]) / c, (geoCluster[1] * (c + 1) - geoPhotos.o[1]) / c,
+                (geoCluster[0] * (c + 1) - geoPhotos.o[0]) / c,
+                (geoCluster[1] * (c + 1) - geoPhotos.o[1]) / c,
             ]);
         }
 
@@ -126,14 +309,12 @@ async function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, isPainting
             ]);
         }
 
-        if (geoCluster[0] < -180 || geoCluster[0] > 180) {
-            Utils.geo.spinLng(geoCluster);
-        }
+        Utils.geo.normalizeCoordinates(geoCluster);
     }
 
     const photo = await Photo.findOne(
         {
-            s: constants.photo.status.PUBLIC, geo: { $near: geoCluster },
+            s: constants.photo.status.PUBLIC, geo: { $nearSphere: { $geometry: { type: 'Point', coordinates: geoCluster } } },
             type: isPainting ? constants.photo.type.PAINTING : constants.photo.type.PHOTO,
         },
         { _id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1 },
@@ -143,7 +324,7 @@ async function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, isPainting
     $update.$set.p = photo;
     $update.$set.geo = geoCluster;
 
-    const { n: count = 0 } = await ClusterModel.update({ g, z: zParam.z }, $update, { multi: false, upsert: true }).exec();
+    const { n: count = 0 } = await ClusterModel.updateOne({ g, z: zParam.z }, $update, { upsert: true }).exec();
 
     return count;
 }
@@ -165,26 +346,11 @@ export async function clusterPhoto({ photo, geoPhotoOld, yearPhotoOld, isPaintin
     let g; // Coordinates of top left corner of cluster for new coordinates
     let gOld;
     let clusterZoom;
-    let geoPhotoCorrection;
-    let geoPhotoOldCorrection;
     const recalcPromises = [];
     const geoPhoto = photo.geo; // New photo coordiate, which has been already saved in db
 
     if (_.isEmpty(geoPhotoOld)) {
         geoPhotoOld = undefined;
-    }
-
-    // Correction for the cluster
-    // Since the clusters are calculated with binary rounding (>>), we must substruct 1 for negative lng
-    // Since the cluster display goes from the top corner, we need add 1 positive lat
-    if (geoPhoto) {
-        // Correction for cluster of current coordinates
-        geoPhotoCorrection = [geoPhoto[0] < 0 ? -1 : 0, geoPhoto[1] > 0 ? 1 : 0];
-    }
-
-    if (geoPhotoOld) {
-        // Correction for cluster of old coordinates
-        geoPhotoOldCorrection = [geoPhotoOld[0] < 0 ? -1 : 0, geoPhotoOld[1] > 0 ? 1 : 0];
     }
 
     for (let i = clusterParams.length; i--;) {
@@ -194,17 +360,11 @@ export async function clusterPhoto({ photo, geoPhotoOld, yearPhotoOld, isPaintin
 
         // Compute cluster for old and new coordinates if they exests
         if (geoPhotoOld) {
-            gOld = Utils.geo.geoToPrecisionRound([
-                clusterZoom.w * ((geoPhotoOld[0] / clusterZoom.w >> 0) + geoPhotoOldCorrection[0]),
-                clusterZoom.h * ((geoPhotoOld[1] / clusterZoom.h >> 0) + geoPhotoOldCorrection[1]),
-            ]);
+            gOld = computeClusterCoords(geoPhotoOld, clusterZoom);
         }
 
         if (geoPhoto) {
-            g = Utils.geo.geoToPrecisionRound([
-                clusterZoom.w * ((geoPhoto[0] / clusterZoom.w >> 0) + geoPhotoCorrection[0]),
-                clusterZoom.h * ((geoPhoto[1] / clusterZoom.h >> 0) + geoPhotoCorrection[1]),
-            ]);
+            g = computeClusterCoords(geoPhoto, clusterZoom);
         }
 
         if (gOld && g && gOld[0] === g[0] && gOld[1] === g[1]) {
@@ -248,74 +408,76 @@ export function declusterPhoto({ photo, isPainting }) {
     }
 
     const geoPhoto = photo.geo;
-    const geoPhotoCorrection = [geoPhoto[0] < 0 ? -1 : 0, geoPhoto[1] > 0 ? 1 : 0];
 
     return Promise.all(clusterParams.map(clusterZoom => {
         clusterZoom.wHalf = Utils.math.toPrecisionRound(clusterZoom.w / 2);
         clusterZoom.hHalf = Utils.math.toPrecisionRound(clusterZoom.h / 2);
 
-        const g = Utils.geo.geoToPrecisionRound([
-            clusterZoom.w * ((geoPhoto[0] / clusterZoom.w >> 0) + geoPhotoCorrection[0]),
-            clusterZoom.h * ((geoPhoto[1] / clusterZoom.h >> 0) + geoPhotoCorrection[1]),
-        ]);
+        const g = computeClusterCoords(geoPhoto, clusterZoom);
 
         return clusterRecalcByPhoto(g, clusterZoom, { o: geoPhoto }, { o: photo.year }, isPainting);
     }));
 }
 
-// Returns clusters within bounds
-export async function getBounds({ bounds, z, isPainting }) {
+/**
+ * Returns clusters within GeoJSON geometry object bounds.
+ *
+ * @param {object} param
+ * @param {object} param.geometry GeoJSON geometry object (e.g. Polygon)
+ * @param {number} param.z Zoom level
+ * @param {boolean} param.isPainting
+ * @returns {object}
+ */
+export async function getBounds({ geometry, z, isPainting }) {
     const ClusterModel = isPainting ? ClusterPaint : Cluster;
-    const foundClusters = await Promise.all(bounds.map(bound => ClusterModel.find(
-        { g: { $geoWithin: { $box: bound } }, z },
+    const foundClusters = await ClusterModel.find(
+        { g: { $geoWithin: { $geometry: geometry } }, z },
         { _id: 0, c: 1, geo: 1, p: 1 },
         { lean: true }
-    ).exec()));
+    ).exec();
 
     const photos = []; // Photos array
     const clusters = [];  // Clusters array
 
-    for (const bound of foundClusters) {
-        for (const cluster of bound) {
-            if (cluster.c > 1) {
-                cluster.geo.reverse(); // Reverse geo
-                clusters.push(cluster);
-            } else if (cluster.c === 1) {
-                photos.push(cluster.p);
-            }
+    for (const cluster of foundClusters) {
+        if (cluster.c > 1) {
+            cluster.geo.reverse(); // Reverse geo
+            clusters.push(cluster);
+        } else if (cluster.c === 1) {
+            photos.push(cluster.p);
         }
     }
 
     return { photos, clusters };
 }
 
-// Returns clusters within bounds within given years intervals
-export async function getBoundsByYear({ bounds, z, year, year2, isPainting }) {
+/**
+ * Returns clusters within GeoJSON geometry object bounds within given years intervals
+ */
+export async function getBoundsByYear({ geometry, z, year, year2, isPainting }) {
     const ClusterModel = isPainting ? ClusterPaint : Cluster;
-    const foundClusters = await Promise.all(bounds.map(bound => ClusterModel.find(
-        { g: { $geoWithin: { $box: bound } }, z },
+    const foundClusters = await ClusterModel.find(
+        { g: { $geoWithin: { $geometry: geometry } }, z },
         { _id: 0, c: 1, geo: 1, y: 1, p: 1 },
         { lean: true }
-    ).exec()));
+    ).exec();
 
     const clustersAll = [];
     const posterPromises = [];
     const yearCriteria = year === year2 ? year : { $gte: year, $lte: year2 };
 
-    for (const bound of foundClusters) {
-        for (const cluster of bound) {
-            cluster.c = 0;
+    for (const cluster of foundClusters) {
+        cluster.c = 0;
 
-            for (let y = year; y <= year2; y++) {
-                cluster.c += cluster.y[y] | 0;
-            }
+        for (let y = year; y <= year2; y++) {
+            cluster.c += cluster.y[y] | 0;
+        }
 
-            if (cluster.c > 0) {
-                clustersAll.push(cluster);
+        if (cluster.c > 0) {
+            clustersAll.push(cluster);
 
-                if (cluster.p.year < year || cluster.p.year > year2) {
-                    posterPromises.push(getClusterPoster(cluster, yearCriteria, isPainting));
-                }
+            if (cluster.p.year < year || cluster.p.year > year2) {
+                posterPromises.push(getClusterPoster(cluster, yearCriteria, isPainting));
             }
         }
     }
@@ -342,7 +504,9 @@ export async function getBoundsByYear({ bounds, z, year, year2, isPainting }) {
 async function getClusterPoster(cluster, yearCriteria, isPainting) {
     cluster.p = await Photo.findOne(
         {
-            s: constants.photo.status.PUBLIC, geo: { $near: cluster.geo }, year: yearCriteria,
+            s: constants.photo.status.PUBLIC,
+            geo: { $nearSphere: { $geometry: { type: 'Point', coordinates: cluster.geo } } },
+            year: yearCriteria,
             type: isPainting ? constants.photo.type.PAINTING : constants.photo.type.PHOTO,
         },
         { _id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1 },
@@ -352,16 +516,26 @@ async function getClusterPoster(cluster, yearCriteria, isPainting) {
     return cluster;
 }
 
-// After connection to db read current cluster parameters
+/**
+ * Return cluster conditions for client use.
+ *
+ * @returns {object} object containing result.
+ */
+function getClusterConditions() {
+    return clusterConditions;
+}
+
+// After connection to db read current cluster parameters.
 waitDb.then(readClusterParams);
 
 recalcAll.isPublic = true;
+getClusterConditions.isPublic = true;
 
 export default {
     recalcAll,
-
     clusterPhoto,
     declusterPhoto,
     getBounds,
     getBoundsByYear,
+    getClusterConditions,
 };

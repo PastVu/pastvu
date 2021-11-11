@@ -41,8 +41,8 @@ const ClusterPaintSchema = new Schema(
     { strict: true, collection: 'clusterspaint' }
 );
 
-ClusterSchema.index({ g: '2d', z: 1 });
-ClusterPaintSchema.index({ g: '2d', z: 1 });
+ClusterSchema.index({ g: '2dsphere', z: 1 });
+ClusterPaintSchema.index({ g: '2dsphere', z: 1 });
 
 const ClusterParamsSchema = new Schema(
     {
@@ -51,7 +51,7 @@ const ClusterParamsSchema = new Schema(
         h: { type: Number }, // Cluster height in degrees
 
         // Next fields are common for all parameter, so such document is single
-        sgeo: { type: [Number] }, // [lng, lat] of base cluster
+        sgeo: { type: [Number], 'default': undefined }, // [lng, lat] of base cluster, undefined by default.
         sz: { type: Number }, // Zoom, on which we calculated clusters
         sw: { type: Number }, // Cluster width in pixels
         sh: { type: Number }, // Cluster hight in pixels

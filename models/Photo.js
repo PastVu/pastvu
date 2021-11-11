@@ -45,9 +45,10 @@ const PhotoSchema = new Schema({
     ucdate: { type: Date },
 
     // Coordinates, [lng, lat]
-    geo: { type: [Number], index: '2d' },
+    geo: { type: [Number], index: '2dsphere' },
 
     // Randomize selection if needed (gallery flip coin mode)
+    // We use 2d index here as random coordinates may not be valid lng/lat values.
     r2d: { type: [Number], index: '2d' },
 
     // Нельзя сделать array вхождений в регионы, так как индекс по массивам не эффективен
@@ -115,7 +116,7 @@ const PhotoSchema = new Schema({
 
 // In the main collection if photo do indexing to select on the map by year
 // Compound index http://docs.mongodb.org/manual/core/geospatial-indexes/#compound-geospatial-indexes
-PhotoSchema.index({ geo: '2d', year: 1 });
+PhotoSchema.index({ geo: '2dsphere', year: 1 });
 PhotoSchema.index({ r2d: '2d', s: 1 });
 PhotoSchema.index({ r0: 1, sdate: 1 });
 PhotoSchema.index({ r1: 1, sdate: 1 });
@@ -145,7 +146,7 @@ const PhotoHistSchema = new Schema(
 const PhotoMapSchema = new Schema(
     {
         cid: { type: Number, index: { unique: true } },
-        geo: { type: [Number], index: '2d' },
+        geo: { type: [Number], index: '2dsphere' },
         file: { type: String, required: true },
         dir: { type: String },
         title: { type: String, 'default': '' },
@@ -157,7 +158,7 @@ const PhotoMapSchema = new Schema(
 const PaintingMapSchema = new Schema(
     {
         cid: { type: Number, index: { unique: true } },
-        geo: { type: [Number], index: '2d' },
+        geo: { type: [Number], index: '2dsphere' },
         file: { type: String, required: true },
         dir: { type: String },
         title: { type: String, 'default': '' },

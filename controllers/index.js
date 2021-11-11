@@ -172,22 +172,22 @@ const giveStats = (function () {
         ] = await Promise.all([
             Photo.aggregate(aggregateParams).exec(),
 
-            Photo.count({}).exec(),
-            Photo.count({ s: 5 }).exec(),
-            User.count({ active: true }).exec(),
+            Photo.estimatedDocumentCount().exec(),
+            Photo.countDocuments({ s: 5 }).exec(),
+            User.countDocuments({ active: true }).exec(),
 
-            Photo.count({ s: 5, adate: { $gt: dayStart } }).exec(),
-            Photo.count({ s: 5, adate: { $gt: weekStart } }).exec(),
+            Photo.countDocuments({ s: 5, adate: { $gt: dayStart } }).exec(),
+            Photo.countDocuments({ s: 5, adate: { $gt: weekStart } }).exec(),
 
-            Comment.count({}).exec(),
-            CommentN.count({}).exec(),
+            Comment.estimatedDocumentCount().exec(),
+            CommentN.estimatedDocumentCount().exec(),
 
-            Comment.count({ s: 5, del: null }).exec(),
-            CommentN.count({ del: null }).exec(),
-            Comment.count({ s: 5, stamp: { $gt: dayStart }, del: null }).exec(),
-            CommentN.count({ stamp: { $gt: dayStart }, del: null }).exec(),
-            Comment.count({ s: 5, stamp: { $gt: weekStart }, del: null }).exec(),
-            CommentN.count({ stamp: { $gt: weekStart }, del: null }).exec(),
+            Comment.countDocuments({ s: 5, del: null }).exec(),
+            CommentN.countDocuments({ del: null }).exec(),
+            Comment.countDocuments({ s: 5, stamp: { $gt: dayStart }, del: null }).exec(),
+            CommentN.countDocuments({ stamp: { $gt: dayStart }, del: null }).exec(),
+            Comment.countDocuments({ s: 5, stamp: { $gt: weekStart }, del: null }).exec(),
+            CommentN.countDocuments({ stamp: { $gt: weekStart }, del: null }).exec(),
         ]);
 
         return {

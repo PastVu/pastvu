@@ -123,9 +123,9 @@ module.exports = function (grunt) {
                     {
                         expand: true,
                         src: [
-                            'app/**', 'bin/**', 'basepatch/**', 'commons/**', 'misc/watermark/**',
+                            'app/**', 'bin/**', 'migrations/**', 'commons/**', 'misc/watermark/**',
                             'controllers/systemjs.js', 'npm-shrinkwrap.json',
-                            'config/@(client|server|browsers.config|default.config).js', 'config/@(package|log4js).json',
+                            'config/@(client|server|log4js|migrate-mongo|browsers.config|default.config).js', 'config/package.json',
                         ],
                         dest: targetDir,
                     },
@@ -182,7 +182,7 @@ module.exports = function (grunt) {
                     {
                         expand: true,
                         src: [ // May be array of regexp, or github.com/isaacs/node-glob
-                            '@(app|downloader|uploader|sitemap|notifier).js',
+                            '@(app|downloader|uploader|sitemap|notifier|worker).js',
                             'controllers/!(systemjs|api|apilog).js',
                             'commons/time.js',
                             'models/*.js',
@@ -219,11 +219,13 @@ module.exports = function (grunt) {
                     src: [
                         '*.js',
                         'app/**/*.js',
+                        'babel/*.js',
                         'controllers/**/*.js',
                         'commons/**/*.js',
                         'models/**/*.js',
                         'config/!(local.config).js',
                         'config/*example',
+                        'migrations/*.js',
                         // Add here public/js/ files that have been modified
                         // in PRs, so we gradually get them all covered and
                         // then refactor into smaller list.
