@@ -329,8 +329,14 @@ export function getNewPhotosLimit(user) {
     return canCreate;
 }
 
+/**
+ * Get photos and clusters by GeoJSON geometry object bounds.
+ *
+ * @param {object} data
+ * @returns {object}
+ */
 async function getBounds(data) {
-    const { bounds, z, year, year2, isPainting } = data;
+    const { geometry, year, year2, isPainting, localWork } = data;
     const years = isPainting ? paintYears : photoYears;
 
     // Determine whether fetch by years needed
@@ -340,23 +346,18 @@ async function getBounds(data) {
     let clusters;
     let photos;
 
-    if (z < 17) {
+    if (!localWork) {
         ({ photos, clusters } = await this.call(`cluster.${hasYears ? 'getBoundsByYear' : 'getBounds'}`, data));
     } else {
         const MapModel = isPainting ? PaintingMap : PhotoMap;
         const yearCriteria = hasYears ? year === year2 ? year : { $gte: year, $lte: year2 } : false;
+        const criteria = { geo: { $geoWithin: { $geometry: geometry } } };
 
-        photos = await Promise.all(bounds.map(bound => {
-            const criteria = { geo: { $geoWithin: { $box: bound } } };
+        if (yearCriteria) {
+            criteria.year = yearCriteria;
+        }
 
-            if (yearCriteria) {
-                criteria.year = yearCriteria;
-            }
-
-            return MapModel.find(criteria, { _id: 0 }, { lean: true }).exec();
-        }));
-
-        photos = photos.length > 1 ? _.flatten(photos) : photos[0];
+        photos = await MapModel.find(criteria, { _id: 0 }, { lean: true }).exec();
     }
 
     // Reverse geo
@@ -480,7 +481,7 @@ async function give(params) {
             photo.vcount = (photo.vcount || 0) + 1;
 
             // Through increment in db, to avoid race conditions
-            Photo.update({ cid }, { $inc: { vdcount: 1, vwcount: 1, vcount: 1 } }).exec();
+            Photo.updateOne({ cid }, { $inc: { vdcount: 1, vwcount: 1, vcount: 1 } }).exec();
         }
 
         // Update view stamp of object by user
@@ -664,7 +665,7 @@ async function photoToMap({ photo, geoPhotoOld, yearPhotoOld, paintingMap }) {
     }
 
     await Promise.all([
-        MapModel.update({ cid: photo.cid }, $update, { upsert: true }).exec(),
+        MapModel.updateOne({ cid: photo.cid }, $update, { upsert: true }).exec(),
         this.call('cluster.clusterPhoto', { photo, geoPhotoOld, yearPhotoOld, isPainting: paintingMap }), // Send to clusterization
     ]);
 }
@@ -675,7 +676,7 @@ function photoFromMap({ photo, paintingMap }) {
 
     return Promise.all([
         this.call('cluster.declusterPhoto', { photo, isPainting: paintingMap }),
-        MapModel.remove({ cid: photo.cid }).exec(),
+        MapModel.deleteMany({ cid: photo.cid }).exec(),
     ]);
 }
 
@@ -874,7 +875,7 @@ async function saveHistory({ oldPhotoObj, photo, canModerate, reason, parsedFile
     if (firstTime) {
         promises.push(new PhotoHistory(histories[0]).save());
     } else if (firstEntryChanged) {
-        promises.push(PhotoHistory.update({ _id: histories[0]._id }, { $set: { values: histories[0].values } }).exec());
+        promises.push(PhotoHistory.updateOne({ _id: histories[0]._id }, { $set: { values: histories[0].values } }).exec());
     }
 
     return Promise.all(promises);
@@ -957,7 +958,7 @@ function userPCountUpdate(user, newDelta = 0, publicDelta = 0, inactiveDelta = 0
         return session.saveEmitUser({ usObj: ownerObj, wait: true });
     }
 
-    return User.update({ _id: userId }, {
+    return User.updateOne({ _id: userId }, {
         $inc: {
             pfcount: newDelta || 0,
             pcount: publicDelta || 0,
@@ -974,14 +975,14 @@ const protectedFileLinkTTLs = config.protectedFileLinkTTL / 1000;
 // If downloader handle regular _p request and there is no fast cache in redis,
 // it will try to get user's authorities from mongo
 const putProtectedFileAccessCache = async function ({ file, mime = '', ttl = protectedFileLinkTTLs }) {
-    if (!dbRedis.connected) {
+    if (dbRedis.status !== 'ready') {
         throw new ApplicationError({ code: constantsError.REDIS_NO_CONNECTION, trace: false });
     }
 
     const { handshake: { session } } = this;
     const [fileUri] = file.split('?');
 
-    return dbRedis.setAsync(`pr:${session.key}:${fileUri}`, `${fileUri}:${mime}`, 'EX', ttl)
+    return dbRedis.set(`pr:${session.key}:${fileUri}`, `${fileUri}:${mime}`, 'EX', ttl)
         .catch(error => {
             throw new ApplicationError({ code: constantsError.REDIS, trace: false, message: error.message });
         });
@@ -989,7 +990,7 @@ const putProtectedFileAccessCache = async function ({ file, mime = '', ttl = pro
 
 // The same as above, but for multiple files (for example, user has requested gallery)
 const putProtectedFilesAccessCache = async function ({ photos = [], ttl = protectedFileLinkTTLs }) {
-    if (!dbRedis.connected) {
+    if (dbRedis.status !== 'ready') {
         throw new ApplicationError({ code: constantsError.REDIS_NO_CONNECTION, trace: false });
     }
 
@@ -1006,7 +1007,7 @@ const putProtectedFilesAccessCache = async function ({ photos = [], ttl = protec
         multi.set(`pr:${session.key}:${fileUri}`, `${fileUri}:${mime}`, 'EX', ttl);
     }
 
-    return multi.execAsync()
+    return multi.exec()
         .catch(error => {
             throw new ApplicationError({ code: constantsError.REDIS, trace: false, message: error.message });
         });
@@ -1054,7 +1055,7 @@ const fillPhotosProtection = async function ({ photos = [], theyAreMine, setMyFl
 };
 
 async function changePhotoInNotpablicCache({ photo, add = true }) {
-    if (!dbRedis.connected) {
+    if (dbRedis.status !== 'ready') {
         throw new ApplicationError({ code: constantsError.REDIS_NO_CONNECTION, trace: false });
     }
 
@@ -1068,7 +1069,7 @@ async function changePhotoInNotpablicCache({ photo, add = true }) {
         multi.decr('notpublic:count').del(`notpublic:${photo.path}`);
     }
 
-    return multi.execAsync()
+    return multi.exec()
         .catch(error => {
             throw new ApplicationError({ code: constantsError.REDIS, trace: false, message: error.message });
         });
@@ -1493,12 +1494,12 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40, random = fa
 
             [photos, count] = await Promise.all([
                 Photo.find(query, fieldsSelect, { lean: true, limit }).exec(),
-                Photo.count(countQuery).exec(),
+                Photo.countDocuments(countQuery).exec(),
             ]);
         } else {
             [photos, count] = await Promise.all([
                 Photo.find(query, fieldsSelect, { lean: true, skip, limit, sort: { sdate: -1 } }).exec(),
-                Photo.count(query).exec(),
+                Photo.countDocuments(query).exec(),
             ]);
         }
 
@@ -1938,7 +1939,7 @@ async function giveNearestPhotos({ geo, type, year, year2, except, distance, lim
 
     const isPainting = type === constants.photo.type.PAINTING;
 
-    const query = { geo: { $near: geo }, s: status.PUBLIC, type };
+    const query = { geo: { $nearSphere: { $geometry: { type: 'Point', coordinates: geo } } }, s: status.PUBLIC, type };
     const options = { lean: true };
 
     const years = isPainting ? paintYears : photoYears;
@@ -1964,9 +1965,9 @@ async function giveNearestPhotos({ geo, type, year, year2, except, distance, lim
     }
 
     if (_.isNumber(distance) && distance > 0 && distance < 7) {
-        query.geo.$maxDistance = distance;
+        query.geo.$nearSphere.$maxDistance = distance;
     } else {
-        query.geo.$maxDistance = 2;
+        query.geo.$nearSphere.$maxDistance = 2;
     }
 
     if (_.isNumber(limit) && limit > 0 && limit < 30) {
@@ -2479,19 +2480,29 @@ async function save(data) {
     return this.call('photo.give', { cid: photo.cid, rel }).then(result => ({ reconvert, ...result }));
 }
 
-// Фотографии и кластеры по границам
-// {z: Масштаб, bounds: [[]]}
+/**
+ * Photos and clusters by geometry object (i.e. polygon, multipolygon)
+ *
+ * @param {object} data {z: Zoom, geometry: GeoJSON geometry object, etc.}
+ * @returns {object} object containing result.
+ */
 function getByBounds(data) {
-    const { bounds, z, startAt } = data;
+    const { geometry, z, startAt } = data;
 
-    if (!Array.isArray(bounds) || !_.isNumber(z) || z < 1) {
+    if (!['MultiPolygon', 'Polygon'].includes(geometry.type) || !_.isNumber(z) || z < 1) {
         throw new BadParamsError();
     }
 
-    // Reverse bound's borders
-    for (const bound of bounds) {
-        bound[0].reverse();
-        bound[1].reverse();
+    if (geometry.type === 'Polygon' && geometry.coordinates.length === 1) {
+        // Compensate map distorsion by adding more points.
+        data.geometry = Utils.geo.polygonFixMapDistortion(geometry);
+
+        // Strict winding for single-ringed polygon, to avoid excluding
+        // from searching an area that is larger than a hemisphere.
+        data.geometry.crs = {
+            type: 'name',
+            properties: { name: 'urn:x-mongodb:crs:strictwinding:EPSG:4326' },
+        };
     }
 
     return this.call('photo.getBounds', data).then(result => ({ startAt, z, ...result }));
@@ -2522,7 +2533,7 @@ async function convert({ cids = [] }) {
     const converterData = photos.map(photo => ({ cid: photo.cid, watersign: getUserWaterSign(photo.user, photo) }));
 
     if (converterData.length) {
-        await Photo.update({ cid: { $in: cids } }, { $set: { convqueue: true } }, { multi: true }).exec();
+        await Photo.updateMany({ cid: { $in: cids } }, { $set: { convqueue: true } }).exec();
     }
 
     return converter.addPhotos(converterData, 3);
@@ -2684,8 +2695,8 @@ async function convertByUser({ login, resetIndividual, r }) {
         }
 
         await Promise.all([
-            Photo.update(query, update, { multi: true }).exec(),
-            Photo.update(queryNew, updateNew, { multi: true }).exec(),
+            Photo.updateMany(query, update).exec(),
+            Photo.updateMany(queryNew, updateNew).exec(),
             Promise.all(historyCalls.map(hist => this.call('photo.saveHistory', hist))),
         ]);
 
@@ -2741,8 +2752,8 @@ async function resetIndividualDownloadOrigin({ login, r }) {
         query[`r${region.level}`] = region.cid;
     }
 
-    const { n: updated = 0 } = await Photo.update(
-        query, { $unset: { disallowDownloadOriginIndividual: 1 } }, { multi: true }
+    const { n: updated = 0 } = await Photo.updateMany(
+        query, { $unset: { disallowDownloadOriginIndividual: 1 } }
     ).exec();
 
     const time = Date.now() - stampStart;
@@ -3386,8 +3397,8 @@ const planResetDisplayStat = (function () {
         try {
             logger.info(`Resetting day ${needWeek ? 'and week ' : ''}display statistics...`);
 
-            const { n: count = 0 } = await Photo.update(
-                { s: { $in: [status.PUBLIC, status.DEACTIVATE, status.REMOVE] } }, { $set: setQuery }, { multi: true }
+            const { n: count = 0 } = await Photo.updateMany(
+                { s: { $in: [status.PUBLIC, status.DEACTIVATE, status.REMOVE] } }, { $set: setQuery }
             ).exec();
 
             logger.info(`Reset day ${needWeek ? 'and week ' : ''}display statistics for ${count} photos complete`);
@@ -3413,7 +3424,7 @@ async function resetPhotosAnticache() {
 
     // For each of found photo set file equals path, don't wait execution
     for (const { cid, path } of photos) {
-        Photo.update({ cid }, { $set: { file: path } }).exec();
+        Photo.updateOne({ cid }, { $set: { file: path } }).exec();
     }
 
     if (photos.length) {
@@ -3429,8 +3440,8 @@ async function resetPhotosAnticache() {
 async function syncUnpublishedPhotosWithRedis() {
     try {
         let [actualCount = 0, redisCount] = await Promise.all([
-            Photo.count({ s: { $ne: status.PUBLIC } }).exec(),
-            dbRedis.getAsync('notpublic:count'),
+            Photo.countDocuments({ s: { $ne: status.PUBLIC } }).exec(),
+            dbRedis.get('notpublic:count'),
         ]);
 
         redisCount = Number(redisCount) || 0;
@@ -3442,8 +3453,8 @@ async function syncUnpublishedPhotosWithRedis() {
                 // Select cid and path to file for all non public photos
                 Photo.find({ s: { $ne: status.PUBLIC } }, { _id: 0, cid: 1, path: 1 }, { lean: true }).exec(),
 
-                // Remove all 'notpublic:' keys fro redis, by evaluating lua script
-                dbRedis.evalAsync('for _,k in ipairs(redis.call("keys","notpublic:*")) do redis.call("del",k) end', 0),
+                // Remove all 'notpublic:' keys for redis, by evaluating lua script
+                dbRedis.eval('for _,k in ipairs(redis.call("keys","notpublic:*")) do redis.call("del",k) end', 0),
             ]);
 
             // Set count first to avoid race condition,
@@ -3457,7 +3468,7 @@ async function syncUnpublishedPhotosWithRedis() {
             for (const [i, { cid, path }] of photos.entries()) {
                 if (i % 100 === 0 || i === finalCounter) {
                     if (multi) {
-                        await multi.execAsync();
+                        await multi.exec();
                     }
 
                     if (i !== finalCounter) {
@@ -3476,7 +3487,7 @@ async function syncUnpublishedPhotosWithRedis() {
             loggerApp.info('Redis unpublished photos are in sync with mongodb one');
         }
     } catch (error) {
-        loggerApp.error('Redis unpublished photos syncing', error);
+        loggerApp.error('Redis unpublished photos syncing', error.message);
     }
 
     setTimeout(syncUnpublishedPhotosWithRedis, ms('1h'));

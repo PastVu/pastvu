@@ -59,13 +59,13 @@ async function subscribeUser({ cid, type = 'photo', subscribe }) {
 
     if (subscribe) {
         // TODO: Подумать, что делать с новыми комментариями появившимися после просмотра объекта, но до подписки
-        await UserObjectRel.update(
+        await UserObjectRel.updateOne(
             { obj: obj._id, user: iAm.user._id, type },
             { $set: { sbscr_create: new Date() } },
             { upsert: true }
         ).exec();
     } else {
-        await UserObjectRel.update(
+        await UserObjectRel.updateOne(
             { obj: obj._id, user: iAm.user._id, type },
             { $unset: { sbscr_create: 1, sbscr_noty_change: 1, sbscr_noty: 1 } }
         ).exec();
@@ -93,7 +93,7 @@ export async function subscribeUserByIds({ user, objId, setCommentView, type = '
         $update.$set.comments = stamp;
     }
 
-    return UserObjectRel.update({ obj: objId, user: userId, type }, $update, { upsert: true }).exec();
+    return UserObjectRel.updateOne({ obj: objId, user: userId, type }, $update, { upsert: true }).exec();
 }
 
 /**
@@ -111,7 +111,7 @@ async function unSubscribeObj({ objId, userId }) {
         query.user = userId;
     }
 
-    return UserObjectRel.update(
+    return UserObjectRel.updateOne(
         query, { $unset: { sbscr_create: 1, sbscr_noty_change: 1, sbscr_noty: 1 } }
     ).exec();
 }
@@ -145,10 +145,9 @@ export async function commentAdded(objId, user, stamp = new Date()) {
     }
 
     // Set flag of readiness of notification by object for subscribed users
-    await UserObjectRel.update(
+    await UserObjectRel.updateMany(
         { _id: { $in: ids } },
-        { $set: { sbscr_noty_change: stamp, sbscr_noty: true } },
-        { multi: true }
+        { $set: { sbscr_noty_change: stamp, sbscr_noty: true } }
     ).exec();
 
     scheduleUserNotice(users); // Call scheduler of notification sending for subscribed users
@@ -165,7 +164,7 @@ export async function commentAdded(objId, user, stamp = new Date()) {
  */
 export async function commentViewed(objId, user, setInRel) {
     if (setInRel) {
-        const { n: numberAffected = 0 } = await UserObjectRel.update(
+        const { n: numberAffected = 0 } = await UserObjectRel.updateOne(
             { obj: objId, user: user._id },
             { $unset: { sbscr_noty: 1 }, $set: { sbscr_noty_change: new Date() } },
             { upsert: false }
@@ -177,11 +176,11 @@ export async function commentViewed(objId, user, setInRel) {
     }
 
     // Calculate amount of notification which ready for sending to user
-    const count = await UserObjectRel.count({ user: user._id, sbscr_noty: true }).exec();
+    const count = await UserObjectRel.countDocuments({ user: user._id, sbscr_noty: true }).exec();
 
     if (count === 0) {
         // If there is no notifications ready fo sending left, reset scheduled sending to user
-        await UserNoty.update({ user: user._id }, { $unset: { nextnoty: 1 } }).exec();
+        await UserNoty.updateOne({ user: user._id }, { $unset: { nextnoty: 1 } }).exec();
     }
 }
 
@@ -209,7 +208,7 @@ export async function userThrottleChange(userId, newThrottle) {
         Math.max(userNoty.lastnoty.getTime() + newThrottle, nearestNoticeTimeStamp) :
         nearestNoticeTimeStamp;
 
-    await UserNoty.update({ user: userId }, { $set: { nextnoty: new Date(newNextNoty) } }).exec();
+    await UserNoty.updateOne({ user: userId }, { $set: { nextnoty: new Date(newNextNoty) } }).exec();
 }
 
 /**
@@ -262,7 +261,7 @@ async function scheduleUserNotice(users) {
 
     for (const userId of users) {
         if (usersNotyHash[userId] !== false) {
-            UserNoty.update(
+            UserNoty.updateOne(
                 { user: userId },
                 { $set: { nextnoty: new Date(usersNotyHash[userId] || nearestNoticeTimeStamp) } },
                 { upsert: true }
@@ -313,10 +312,9 @@ const notifierConveyor = (function () {
                 return sendUserNotice(user).catch(err => logger.error('sendUserNotice', err));
             }));
 
-            await UserNoty.update(
+            await UserNoty.updateMany(
                 { user: { $in: userIds } },
-                { $set: { lastnoty: nowDate }, $unset: { nextnoty: 1 } },
-                { multi: true }
+                { $set: { lastnoty: nowDate }, $unset: { nextnoty: 1 } }
             ).exec();
         } catch (err) {
             logger.error('conveyorStep', err);
@@ -364,10 +362,9 @@ async function sendUserNotice(userId) {
     // Reset flag of rediness to notification (sbscr_noty) of sent objects
     async function resetRelsNoty() {
         if (!_.isEmpty(relIds)) {
-            return UserObjectRel.update(
+            return UserObjectRel.updateMany(
                 { _id: { $in: relIds } },
-                { $unset: { sbscr_noty: 1 }, $set: { sbscr_noty_change: new Date() } },
-                { multi: true }
+                { $unset: { sbscr_noty: 1 }, $set: { sbscr_noty_change: new Date() } }
             ).exec();
         }
     }
@@ -513,10 +510,10 @@ async function giveUserSubscriptions({ login, page = 1, type = 'photo' }) {
 
     const [countPhoto = 0, countNews = 0, { nextnoty: nextNoty } = {}] = await Promise.all([
         // Count total number of photos in subscriptions
-        UserObjectRel.count({ user: userId, type: 'photo', sbscr_create: { $exists: true } }).exec(),
+        UserObjectRel.countDocuments({ user: userId, type: 'photo', sbscr_create: { $exists: true } }).exec(),
 
         // Count total number of news in subscriptions
-        UserObjectRel.count({ user: userId, type: 'news', sbscr_create: { $exists: true } }).exec(),
+        UserObjectRel.countDocuments({ user: userId, type: 'news', sbscr_create: { $exists: true } }).exec(),
 
         // Take time of next scheduled notification
         await UserNoty.findOne(

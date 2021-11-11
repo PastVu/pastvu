@@ -5,8 +5,9 @@ const Utils = Object.create(null);
 const _ = require('lodash');
 const _s = require('underscore.string');
 const useragent = require('useragent');
-const DMP = require('./diff_match_patch.js');
+const DMP = require('diff-match-patch');
 const regexpUrl = require('./regex-weburl');
+const turf = require('@turf/turf');
 
 Utils.isEven = function (n) {
     return n % 2 === 0;
@@ -720,12 +721,25 @@ Utils.geo = (function () {
         return geo;
     }
 
-    function spinLng(geo) {
+    /**
+     * Normalize coordinates.
+     *
+     * This spins longtitude if required and makes sure latitude is not out of
+     * EPSG:4326 permitted range.
+     *
+     * @param {Array} geo coordiante pair [lng, lat]
+     */
+    function normalizeCoordinates(geo) {
+        // Spin longtitude.
         if (geo[0] < -180) {
             geo[0] += 360;
         } else if (geo[0] > 180) {
             geo[0] -= 360;
         }
+
+        // Limit latitude.
+        geo[1] = Math.min(geo[1], 89.999999);
+        geo[1] = Math.max(geo[1], -89.999999);
     }
 
     function latlngToArr(ll, lngFirst) {
@@ -757,6 +771,45 @@ Utils.geo = (function () {
         return [bbox[1], bbox[0], bbox[3], bbox[2]];
     }
 
+    /**
+     * Compensate map distortion in polygon geometry object used in geospacial
+     * query.
+     *
+     * This function adds more points along latitude at each degree to compensate
+     * distortion of mapping a flat object to a spherical surface.
+     * Works with box and L-shape single-ringed polygons that are used to request object on
+     * the map after moving and zooming actions.
+     *
+     * @param {object} polygon GeoJSON Polygon geometry object
+     * @returns {object}
+     */
+    function polygonFixMapDistortion(polygon) {
+        const coords = [];
+
+        turf.segmentEach(turf.feature(polygon), currentSegment => {
+            // Push first coordinate.
+            coords.push(currentSegment.geometry.coordinates[0]);
+
+            if (currentSegment.geometry.coordinates[0][1] === currentSegment.geometry.coordinates[1][1]) {
+                // Horisontal line, add more points at each degree to compensate map distortion.
+                let lon = currentSegment.geometry.coordinates[0][0];
+                const deduct = currentSegment.geometry.coordinates[0][0] > currentSegment.geometry.coordinates[1][0];
+                let diff = Math.trunc(Math.abs(currentSegment.geometry.coordinates[0][0] - currentSegment.geometry.coordinates[1][0]));
+
+                while (diff > 1) {
+                    lon = deduct ? lon - 1 : lon + 1;
+                    coords.push([lon, currentSegment.geometry.coordinates[0][1]]);
+                    diff--;
+                }
+            }
+            // No need to push last coordinate, it is the same as first at
+            // next segment. If there is no new segment, turf.lineToPolygon
+            // will autocomplete ring to first coodrinate by default.
+        });
+
+        return turf.getGeom(turf.lineToPolygon(turf.lineString(coords)));
+    }
+
     return {
         deg2rad,
         geoToPrecision,
@@ -766,13 +819,14 @@ Utils.geo = (function () {
         polyBBOX,
         polyArea,
         sortPolygonSegmentsByArea,
-        spinLng,
+        normalizeCoordinates,
         latlngToArr,
         check,
         checkLatLng,
         checkbbox,
         checkbboxLatLng,
         bboxReverse,
+        polygonFixMapDistortion,
     };
 }());
 

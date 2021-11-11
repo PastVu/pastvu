@@ -194,7 +194,7 @@ export async function configure(startStamp) {
 
         // Try to get protected file permission from redis fast cache
         async function getL1(key, sid, file) {
-            const [value, ttl] = await dbRedis.multi([['get', key], ['ttl', key]]).execAsync() || [];
+            const [[, value], [, ttl]] = await dbRedis.multi([['get', key], ['ttl', key]]).exec() || [];
 
             if (!value) {
                 return getL2(key, sid, file);
@@ -208,7 +208,7 @@ export async function configure(startStamp) {
         // Try to get protected file permission from core service
         async function getL2(key, sid, file) {
             // First, check that photo is exists and unpubliched. Redis has map of unpublished photos (path - cid)
-            const cid = Number(await dbRedis.getAsync(`notpublic:${file}`));
+            const cid = Number(await dbRedis.get(`notpublic:${file}`));
 
             if (!cid || !core.connected) {
                 throw new NotFoundError({ sid });
@@ -277,7 +277,7 @@ export async function configure(startStamp) {
                 } else {
                     res.statusCode = 500;
                     res.write(http.STATUS_CODES[500]);
-                    logger.error(`Serving protected file ${filePath}${referer}${sid} failed`, error);
+                    logger.error(`Serving protected file ${filePath}${referer}${sid} failed`, error.message);
                 }
             } finally {
                 res.end();

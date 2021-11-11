@@ -2,8 +2,8 @@
  * Класс управления маркерами
  */
 define([
-    'underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'globalVM', 'leaflet', 'model/Photo'
-], function (_, Utils, socket, P, ko, ko_mapping, globalVM, L, Photo) {
+    'underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'globalVM', 'leaflet', 'model/Photo', 'turf'
+], function (_, Utils, socket, P, ko, ko_mapping, globalVM, L, Photo, turf) {
     'use strict';
 
     var paintingDivisionYear = Math.floor(1688 / 5) * 5;
@@ -57,7 +57,7 @@ define([
         this.zoomChanged = false;
         this.refreshByZoomTimeout = null;
         this.refreshDataByZoomBind = this.refreshDataByZoom.bind(this);
-        this.visBound = false;
+        this.visBound = false; // Set to true for debugging.
 
         this.animationOn = false;
 
@@ -241,10 +241,30 @@ define([
         if (force || !this.calcBound || !this.calcBound.contains(this.map.getBounds())) {
             this.calcBoundPrev = this.calcBound;
             this.calcBound = this.map.getBounds().pad(localWork ? 0.1 : 0.25);
-            this.calcBound._northEast.lat = Utils.math.toPrecision(this.calcBound._northEast.lat);
-            this.calcBound._northEast.lng = Utils.math.toPrecision(this.calcBound._northEast.lng);
-            this.calcBound._southWest.lat = Utils.math.toPrecision(this.calcBound._southWest.lat);
             this.calcBound._southWest.lng = Utils.math.toPrecision(this.calcBound._southWest.lng);
+            this.calcBound._southWest.lat = Utils.math.toPrecision(this.calcBound._southWest.lat);
+            this.calcBound._northEast.lng = Utils.math.toPrecision(this.calcBound._northEast.lng);
+            this.calcBound._northEast.lat = Utils.math.toPrecision(this.calcBound._northEast.lat);
+
+            // We don't go beyond antemeredian on either side for now, to
+            // comply with EPSG:4326 (WGS 84) projection used by MongoDB. In fiture we may
+            // have means of slicing geometries at backend to query object on both
+            // sides of antimeridian, in that case limiting coordinates won't
+            // be needed.
+            this.calcBound._northEast.lng = Math.min(this.calcBound._northEast.lng, 180);
+            this.calcBound._southWest.lng = Math.max(this.calcBound._southWest.lng, -180);
+
+            // The north/south poles have no representation on a cylindrical map projection used in Leaflet
+            // (EPSG:3857 "WGS 84 Web-Mercator") which is bounded by bbox [[-180, -85.06], [180, 85.06]]
+            // However, we have photos and clusters located beyond those latitudes (as we store them in
+            // EPSG:4326 coordinate reference in Mongo), therefore expand latitudes to be able to query
+            // those objects when top/bottom edge of map is visible to user.
+            if (this.calcBound._southWest.lat <= -85.06) {
+                this.calcBound._southWest.lat = -90;
+            }
+            if (this.calcBound._northEast.lat >= 85.06) {
+                this.calcBound._northEast.lat = 90;
+            }
             result = true;
         }
         return result;
@@ -331,8 +351,8 @@ define([
             willLocalWork = newZoom >= this.firstClientWorkZoom,
             crossingLocalWorkZoom = (this.currZoom < this.firstClientWorkZoom && willLocalWork) || (this.currZoom >= this.firstClientWorkZoom && !willLocalWork),
             direction = newZoom - this.currZoom,
-            bound = L.latLngBounds(this.calcBound.getSouthWest(), this.calcBound.getNorthEast()),
-            bounds, //Новые баунды для запроса
+            bound = L.latLngBounds(this.calcBound.getSouthWest(), this.calcBound.getNorthEast()), // copy this.calcBound current values.
+            queryGeometry,
             pollServer = true,
             curr,
             i;
@@ -340,12 +360,17 @@ define([
         this.currZoom = newZoom;
 
         if (!init && willLocalWork && !crossingLocalWorkZoom) {
+            // Local work level. We are expecting photo object at those zoom
+            // levels, so we need to fetch photos for area that become visible
+            // as result of zoom change.
+            const poly = turf.bboxPolygon(bound.toBBoxString().split(','));
+            const prevPoly = turf.bboxPolygon(this.calcBoundPrev.toBBoxString().split(','));
             // Если на клиенте уже есть все фотографии для данного зума
             if (!direction) {
                 //Если зум не изменился, то считаем дополнительные баунды, если они есть, запрашиваем их
                 //а если их нет (т.е. баунд тоже не изменился), то просто пересчитываем локальные кластеры
-                bounds = this.boundSubtraction(bound, this.calcBoundPrev);
-                if (bounds.length) {
+                queryGeometry = turf.difference(poly, prevPoly);
+                if (queryGeometry !== null) {
                     this.cropByBound(null, true);
                 } else {
                     pollServer = false;
@@ -358,45 +383,33 @@ define([
                 this.cropByBound(null, true);
                 this.processIncomingDataZoom(null, false, true, this.clientClustering);
             } else {
-                // Если новый зум меньше, то определяем четыре новых баунда, и запрашиваем объекты только для них
-                bounds = this.boundSubtraction(bound, this.calcBoundPrev);
+                // If new zoom is lower, determine the difference and query
+                // opbjects just for the polygon with an inner ring (hole).
+                queryGeometry = turf.difference(poly, prevPoly);
             }
         } else {
             // При пересечении границы "вверх" обнуляем массив всех фото на клиенте
             if (crossingLocalWorkZoom && !willLocalWork) {
                 this.photosAll = [];
             }
-            // Запрашиваем объекты полностью для нового баунда
-            bounds = [
-                [Utils.geo.latlngToArr(bound.getSouthWest()), Utils.geo.latlngToArr(bound.getNorthEast())]
-            ];
+            // Query objects for new .
+            queryGeometry = turf.bboxPolygon(bound.toBBoxString().split(','));
         }
 
         if (pollServer) {
             if (this.visBound) {
-                //Визуализация баундов, по которым будет отправлен запрос к серверу
-                i = 4;
-                while (i--) {
-                    if (this['b' + i] !== undefined) {
-                        this.map.removeLayer(this['b' + i]);
-                        this['b' + i] = undefined;
-                    }
-                }
-                i = bounds.length;
-                while (i) {
-                    curr = bounds[--i];
-                    this['b' + i] = L.rectangle(curr, { color: '#25CE00', weight: 1 }).addTo(this.map);
-                }
+                this.drawBounds(queryGeometry, true, willLocalWork);
             }
 
             socket.run('photo.getByBounds',
                 {
                     z: newZoom,
-                    bounds: bounds,
+                    geometry: turf.getGeom(queryGeometry),
                     startAt: this.startPendingAt,
                     year: this.year,
                     year2: this.year2,
-                    isPainting: this.isPainting
+                    isPainting: this.isPainting,
+                    localWork: willLocalWork
                 }
             ).then(function (data) {
                 var localWork, // Находимся ли мы на уровне локальной работы
@@ -421,6 +434,21 @@ define([
                 self.startPendingAt = undefined;
             });
         }
+    };
+
+    /**
+     * Visualise bounds for debugging purposes.
+     */
+    MarkerManager.prototype.drawBounds = function (geometry, zoom, localWork) {
+        const summary = (zoom === true) ? `Refresh by Zoom, localWork=${localWork}` : 'Refresh by Move';
+        console.log(summary + ', ' + turf.getType(geometry) + ' (Lng,Lat):', JSON.stringify(turf.getCoords(geometry)));
+        // Remove previous drawings.
+        if (this['b'] !== undefined) {
+            this.map.removeLayer(this['b']);
+            this['b'] = undefined;
+        }
+        // Draw new polygon, reverse coordinates.
+        this['b'] = L.polygon(turf.getCoords(turf.flip(geometry)), { color: '#25CE00', weight: 1 }).addTo(this.map);
     };
 
     /**
@@ -507,32 +535,30 @@ define([
         var self = this;
         var zoom = this.currZoom,
             bound = L.latLngBounds(this.calcBound.getSouthWest(), this.calcBound.getNorthEast()),
-            bounds,
             curr,
             i;
 
-        // Считаем новые баунды для запроса
-        bounds = this.boundSubtraction(bound, this.calcBoundPrev);
+        const poly = turf.bboxPolygon(bound.toBBoxString().split(','));
+        const prevPoly = turf.bboxPolygon(this.calcBoundPrev.toBBoxString().split(','));
+        const queryGeometry = turf.difference(poly, prevPoly);
+
+        if (queryGeometry === null) {
+            // Likely map is far beyond antimeridian on either side.
+            return;
+        }
 
         if (this.visBound) {
-            // Визуализация баундов, по которым будет отправлен запрос к серверу
-            i = 4;
-            while (i--) {
-                if (this['b' + i] !== undefined) {
-                    this.map.removeLayer(this['b' + i]);
-                    this['b' + i] = undefined;
-                }
-            }
-            i = bounds.length;
-            while (i) {
-                curr = bounds[--i];
-                this['b' + i] = L.rectangle(curr, { color: "#25CE00", weight: 1 }).addTo(this.map);
-            }
+            // We expect L-shape polygon here in most cases (or rectangle if map is moved
+            // by pressing arrow keys).
+            this.drawBounds(queryGeometry);
         }
 
         socket
             .run('photo.getByBounds', {
-                z: zoom, bounds: bounds, year: this.year, year2: this.year2,
+                z: zoom,
+                geometry: turf.getGeom(queryGeometry),
+                year: this.year,
+                year2: this.year2,
                 isPainting: this.isPainting
             })
             .then(function (data) {
@@ -844,96 +870,6 @@ define([
                 delete objHash[i];
             }
         }
-    };
-
-    /**
-     * Вычитает один баунд из другого
-     * @param minuend Уменьшаемый
-     * @param subtrahend Вычитаемый
-     * @return {Array} Массив баундов разницы вычитания
-     */
-    MarkerManager.prototype.boundSubtraction = function (minuend, subtrahend) {
-        var a = {
-                west: minuend._southWest.lng,
-                north: minuend._northEast.lat,
-                east: minuend._northEast.lng,
-                south: minuend._southWest.lat
-            },
-            b = {
-                west: subtrahend._southWest.lng,
-                north: subtrahend._northEast.lat,
-                east: subtrahend._northEast.lng,
-                south: subtrahend._southWest.lat
-            },
-            c = [],
-            result = [],
-            curr,
-            i;
-
-
-        if (minuend.contains(subtrahend)) {
-            // Если вычитаемый баунд полностью включается в уменьшаемый, то будет от 2 до 4 результатов
-            if (a.north > b.north) {
-                c[0] = { north: a.north, south: b.north, east: a.east, west: a.west };
-            }
-            if (a.south < b.south) {
-                c[1] = { north: b.south, south: a.south, east: a.east, west: a.west };
-            }
-            if (a.east > b.east) {
-                c[2] = { west: b.east, east: a.east, north: b.north, south: b.south };
-            }
-            if (a.west < b.west) {
-                c[3] = { west: a.west, east: b.west, north: b.north, south: b.south };
-            }
-        } else if (minuend.intersects(subtrahend)) {
-            // Если вычитаемый баунд пересекается с уменьшаемым, то будет от 1 до 2 результатов
-            // or https://github.com/netshade/spatial_query polygon = sq.polygon([[b.west, b.north], [b.east, b.north], [b.east, b.south], [b.west, b.south]]).subtract_2d([[a.west, a.north], [a.east, a.north], [a.east, a.south], [a.west, a.south]]).to_point_array();
-            // or https://github.com/tschaub/geoscript-js
-            // or https://github.com/bjornharrtell/jsts
-            if (a.east > b.east) {
-                c[1] = { west: b.east, east: a.east };
-            } else if (a.east < b.east) {
-                c[1] = { west: a.west, east: b.west };
-            }
-            if (b.north !== a.north) {
-                c[0] = { west: a.west, east: a.east };
-
-                if (a.north > b.north) {
-                    c[0].north = a.north;
-                    c[0].south = b.north;
-
-                    if (c[1]) {
-                        c[1].north = b.north;
-                        c[1].south = a.south;
-                    }
-                } else {
-                    c[0].north = b.south;
-                    c[0].south = a.south;
-
-                    if (c[1]) {
-                        c[1].north = a.north;
-                        c[1].south = b.south;
-                    }
-                }
-            } else {
-                c[1].north = a.north;
-                c[1].south = a.south;
-            }
-        } else {
-            c[0] = a;
-        }
-        c = _.compact(c);
-
-        i = c.length;
-        while (i) {
-            curr = c[--i];
-            result[i] = [
-                [curr.south, curr.west],
-                [curr.north, curr.east]
-            ];
-        }
-
-        return result;
     };
 
     /**

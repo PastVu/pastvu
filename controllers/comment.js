@@ -288,7 +288,7 @@ async function commentsTreeBuildCanModerate({ iAm, type, commentModel, obj, show
         // with notification reset if it scheduled
         userObjectRelController.setCommentView(obj._id, iAm.user._id, type),
         // News doesn't contain number of deleted comments, count it dynamically
-        type === 'news' ? await commentModel.count({ obj: obj._id, del: { $exists: true } }).exec() : undefined,
+        type === 'news' ? await commentModel.countDocuments({ obj: obj._id, del: { $exists: true } }).exec() : undefined,
     ]);
 
     const commentsTree = [];
@@ -637,10 +637,10 @@ async function giveForUser({ login, page = 1, type = 'photo', active = true, del
     let countPhoto;
 
     const [countActiveP, countActiveN, countDelP = 0, countDelN = 0] = await Promise.all([
-        Comment.count({ user: userId, del: null }).exec(),
-        CommentN.count({ user: userId, del: null }).exec(),
-        canSeeDel ? Comment.count({ user: userId, del: { $exists: true } }).exec() : undefined,
-        canSeeDel ? CommentN.count({ user: userId, del: { $exists: true } }).exec() : undefined,
+        Comment.countDocuments({ user: userId, del: null }).exec(),
+        CommentN.countDocuments({ user: userId, del: null }).exec(),
+        canSeeDel ? Comment.countDocuments({ user: userId, del: { $exists: true } }).exec() : undefined,
+        canSeeDel ? CommentN.countDocuments({ user: userId, del: { $exists: true } }).exec() : undefined,
     ]);
 
     const countActive = countActiveP + countActiveN;
@@ -990,7 +990,7 @@ async function remove(data) {
     }
 
     // Count amout of unremoved children
-    const childCount = await commentModel.count({ obj: obj._id, parent: cid, del: null }).exec();
+    const childCount = await commentModel.countDocuments({ obj: obj._id, parent: cid, del: null }).exec();
 
     // Regular user can remove if there no unremoved comments and it's his own fresh comment
     const canEdit = !childCount && permissions.canEdit(comment, data.type, obj, iAm);
@@ -1057,17 +1057,16 @@ async function remove(data) {
         delInfo.reason.desc = Utils.inputIncomingParse(data.reason.desc).result;
     }
 
-    await commentModel.update({ cid }, { $set: { lastChanged: delInfo.stamp, del: delInfo } }).exec();
+    await commentModel.updateOne({ cid }, { $set: { lastChanged: delInfo.stamp, del: delInfo } }).exec();
 
     const countCommentsRemoved = (childsCids.length || 0) + 1;
 
     if (childsCids.length) {
         const delInfoChilds = Object.assign(_.omit(delInfo, 'reason'), { origin: cid });
 
-        await commentModel.update(
+        await commentModel.updateMany(
             { cid: { $in: childsCids } },
-            { $set: { lastChanged: delInfo.stamp, del: delInfoChilds } },
-            { multi: true }
+            { $set: { lastChanged: delInfo.stamp, del: delInfoChilds } }
         ).exec();
     }
 
@@ -1098,7 +1097,7 @@ async function remove(data) {
             userObj.user.ccount = userObj.user.ccount - count;
             promises.push(session.saveEmitUser({ usObj: userObj }));
         } else {
-            promises.push(User.update({ _id: userId }, { $inc: { ccount: -count } }).exec());
+            promises.push(User.updateOne({ _id: userId }, { $inc: { ccount: -count } }).exec());
         }
     }
 
@@ -1221,7 +1220,7 @@ async function restore({ cid, type }) {
         hist[1].roleregion = canModerate;
     }
 
-    await commentModel.update(
+    await commentModel.updateOne(
         { cid }, { $set: { lastChanged: stamp }, $unset: { del: 1 }, $push: { hist: { $each: hist } } }
     ).exec();
 
@@ -1235,11 +1234,11 @@ async function restore({ cid, type }) {
             histChilds[1].roleregion = canModerate;
         }
 
-        await commentModel.update({ obj: obj._id, 'del.origin': cid }, {
+        await commentModel.updateMany({ obj: obj._id, 'del.origin': cid }, {
             $set: { lastChanged: stamp },
             $unset: { del: 1 },
             $push: { hist: { $each: histChilds } },
-        }, { multi: true }).exec();
+        }).exec();
     }
 
     let frags = obj.frags && obj.frags.toObject();
@@ -1271,7 +1270,7 @@ async function restore({ cid, type }) {
             userObj.user.ccount = userObj.user.ccount + ccount;
             promises.push(session.saveEmitUser({ usObj: userObj }));
         } else {
-            promises.push(User.update({ _id: userId }, { $inc: { ccount } }).exec());
+            promises.push(User.updateOne({ _id: userId }, { $inc: { ccount } }).exec());
         }
     }
 
@@ -1588,7 +1587,7 @@ async function setNoComments({ cid, type = 'photo', val: nocomments }) {
 }
 
 export async function changeObjCommentsStatus({ obj: { _id: objId, s } }) {
-    const { n: count = 0 } = await Comment.update({ obj: objId }, { $set: { s } }, { multi: true }).exec();
+    const { n: count = 0 } = await Comment.updateMany({ obj: objId }, { $set: { s } }).exec();
 
     return count;
 }
@@ -1626,7 +1625,7 @@ export async function changeObjCommentsVisibility({ obj, hide }) {
             userObj.user.ccount = userObj.user.ccount + cdelta;
             session.saveEmitUser({ usObj: userObj });
         } else {
-            User.update({ _id: userId }, { $inc: { ccount: cdelta } }).exec();
+            User.updateOne({ _id: userId }, { $inc: { ccount: cdelta } }).exec();
         }
     }
 
@@ -1644,7 +1643,7 @@ export async function changeObjCommentsVisibility({ obj, hide }) {
 export async function changePhotoCommentsType({ photo: { _id: objId, type } }) {
     const command = { $set: { type } };
 
-    const { n: count = 0 } = await Comment.update({ obj: objId }, command, { multi: true }).exec();
+    const { n: count = 0 } = await Comment.updateMany({ obj: objId }, command).exec();
 
     return { count };
 }

@@ -14,8 +14,6 @@ const Utils = require('./commons/Utils');
 
 const lessCompileOptions = {
     compress: true,
-    yuicompress: true,
-    optimization: 2,
     silent: false,
     path: 'public/style/',
     color: true,
@@ -251,11 +249,9 @@ function lessCompile(files, done) {
 
         less.render(data, {
             paths: [lessCompileOptions.path + path.dirname(input)],
-            optimization: lessCompileOptions.optimization,
             filename: path.basename(input),
             strictImports: lessCompileOptions.strictImports,
             compress: lessCompileOptions.compress,
-            yuicompress: lessCompileOptions.yuicompress,
         }).then(result => {
             try {
                 const css = result.css;
@@ -272,7 +268,12 @@ function lessCompile(files, done) {
                 process.exit(1);
             }
         }, err => {
-            less.writeError(err, lessCompileOptions);
+            if (!lessCompileOptions.silent) {
+                console.error(err.toString({
+                    stylize: lessCompileOptions.color && less.lesscHelper.stylize,
+                }));
+            }
+
             process.exit(1);
         });
     }

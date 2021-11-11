@@ -16,7 +16,7 @@ mongoose.Query.prototype.paginate = function paginate(page, limit, cb) {
                 cb(err, null, null);
             } else {
                 // eslint-disable-next-line no-underscore-dangle
-                model.count(query._conditions, (err, total) => {
+                model.countDocuments(query._conditions, (err, total) => {
                     if (err) {
                         cb(err, null, null);
                     } else {

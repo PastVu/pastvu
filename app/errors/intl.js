@@ -5,7 +5,6 @@ export default {
     BAD_BROWSER: 'Bad browser, we do not support it',
 
     SESSION_CAN_REGET_REGISTERED_ONLY: 'Ошибка выборки пользователей',
-    SESSION_EXPIRED_ARCHIVE_NO_RESULT: 'Ошибка архивации сессий',
     SESSION_NO_HEADERS: 'Bad request - no header or user agent',
     SESSION_NOT_FOUND: 'Сессия не найдена',
 
@@ -56,7 +55,6 @@ export default {
     PAINTING_YEARS_CONSTRAINT: 'Опубликованные изображения должны иметь предполагаемую датировку в интервале 100 BC — 1980г.',
     PHOTO_CONVERT_PROCEEDING: 'Вы уже отправили запрос и он еще выполняется. Попробуйте позже',
 
-    REGION_ASSIGN_OBJECTS: 'Ошибка пересчета принадлежности обектов регионам',
     REGION_PARENT_THE_SAME: 'Вы пытаетесь указать родителем его самого',
     REGION_PARENT_DOESNT_EXISTS: 'Указанного родительского региона не существует',
     REGION_NO_RELATIVES: 'Регионы не должны быть вложенными друг в друга',

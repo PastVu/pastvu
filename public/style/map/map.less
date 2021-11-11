@@ -5,7 +5,7 @@
 
 @photoHightYear: 2000;
 @photoLowYear: 1826;
-@spinVal: 242 / 121;
+@spinVal: (242 / 121);
 @yearBase: hsv(240, 100%, 67%);
 .yearLooping(@index) when (@index <= @photoHightYear) {
 	.y@{index} {
@@ -16,7 +16,7 @@
 }
 
 // For photos 1826 - 1879 raise the brightness value from 40 to 66.5
-@lightenVal: (67 - 40) / 54;
+@lightenVal: ((67 - 40) / 54);
 .yearLoopingOld(@index) when (@index >= @photoLowYear) {
 	.y@{index} {
 		@vall: (40% + (@index - @photoLowYear) * @lightenVal);
@@ -28,7 +28,7 @@
 @paintingHightYear: 1980;
 @paintingLowYear: -100;
 @paintingUpStep: 5;
-@paintingDivisionYear: floor(1688 / @paintingUpStep) * @paintingUpStep; // Consider "Glorious Revolution" as begining of Age of Enlightenment
+@paintingDivisionYear: floor((1688 / @paintingUpStep)) * @paintingUpStep; // Consider "Glorious Revolution" as begining of Age of Enlightenment
 @paintingSpinVal: 0.8;
 @paintingBase: hsv(240, 100%, 67%);
 .yearLoopingPaint(@index) when (@index <= @paintingHightYear) {
@@ -42,8 +42,8 @@
 
 // For paintings 100BC - 1680 raise the brightness value from 40 to 66.5
 @paintingDownStep: 25;
-@paintingDownEnd: floor(@paintingDivisionYear / @paintingDownStep) * @paintingDownStep;
-@paintingDownVal: 66 / (@paintingDownEnd - @paintingLowYear) * @paintingDownStep;
+@paintingDownEnd: floor((@paintingDivisionYear / @paintingDownStep)) * @paintingDownStep;
+@paintingDownVal: (66 / (@paintingDownEnd - @paintingLowYear) * @paintingDownStep);
 .yearLoopingOldPaint(@index) when (@index >= @paintingLowYear) {
 	.yp@{index} {
 		@vall: 66% - round(((@paintingDownEnd - @index) / @paintingDownStep) * @paintingDownVal);
@@ -341,8 +341,8 @@
 
 	}
 
-	.yearLoopingOld (1879);
-	.yearLooping (1880);
+	.yearLoopingOld(1879);
+	.yearLooping(1880);
 
     .yearLoopingOldPaint(@paintingDownEnd);
     .yearLoopingPaint(@paintingDivisionYear);

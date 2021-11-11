@@ -13,6 +13,7 @@ import * as session from './controllers/_session';
 import CoreServer from './controllers/serviceConnector';
 import { handleSocketConnection, registerSocketRequestHendler } from './app/request';
 import exitHook from 'async-exit-hook';
+import { JobCompletionListener } from './controllers/queue';
 
 import { photosReady } from './controllers/photo';
 import { ready as mailReady } from './controllers/mail';
@@ -24,7 +25,6 @@ import * as routes from './controllers/routes';
 import * as ourMiddlewares from './controllers/middleware';
 
 import './models/_initValues';
-import './controllers/systemjs';
 
 export async function configure(startStamp) {
     const {
@@ -43,7 +43,6 @@ export async function configure(startStamp) {
     makeDir.sync(path.join(storePath, 'publicCovered/photos'));
 
     const logger = log4js.getLogger('app');
-    const logger404 = log4js.getLogger('404.js');
 
     logger.info('Application Hash: ' + config.hash);
 
@@ -53,19 +52,23 @@ export async function configure(startStamp) {
         logger,
     });
 
-    const status404Text = http.STATUS_CODES[404];
-    const static404 = ({ url, method, headers: { useragent, referer } = {} }, res) => {
-        if (env !== 'development') {
-            logger404.error(JSON.stringify({ url, method, useragent, referer }));
-        }
-
+    const static404 = (req, res) => {
         res.statusCode = 404;
-        res.end(status404Text); // Finish with 'end' instead of 'send', that there is no additional operations (etag)
+        res.end(http.STATUS_CODES[404]); // Finish with 'end' instead of 'send', that there is no additional operations (etag)
     };
 
     moment.locale(config.lang); // Set global language for momentjs
 
     const app = express();
+
+    // Connect logger.
+    app.use(log4js.connectLogger(log4js.getLogger('http'), {
+        level: 'auto', // 2xx at INFO, 3xx at WARN, 4xx, 5xx at ERROR
+        statusRules: [
+            { codes: [302, 304], level: 'info' }, // Log 3xx (redirects) at INFO, not WARN
+        ],
+        nolog: '\.css|\.ico|\/img\/', // eslint-disable-line no-useless-escape
+    }));
 
     app.disable('x-powered-by'); // Disable default X-Powered-By
     app.set('query parser', 'extended'); // Parse query with 'qs' module
@@ -139,7 +142,7 @@ export async function configure(startStamp) {
     }
 
     if (config.serveStore) {
-        const request = require('request');
+        const got = require('got');
         const rewrite = require('express-urlrewrite');
         const proxy = require('http-proxy-middleware');
         const uploadServer = `http://${config.uploader.hostname || 'localhost'}:${config.uploader.port}`;
@@ -153,25 +156,23 @@ export async function configure(startStamp) {
         const prServeMiddleware = ourMiddlewares.serveImages(path.join(storePath, 'protected/photos/'), { maxAge: ms('7d') });
 
         app.use('/_pr/',
-            (req, res, next) => {
-                request
-                    .get({
+            async (req, res, next) => {
+                try {
+                    const response = await got({
                         url: `${downloadServer}${req.originalUrl}`,
                         headers: req.headers,
                         followRedirect: false,
                         timeout: 1500,
-                    })
-                    .on('response', response => {
-                        if (response.statusCode === 303) { // 303 means ok, user can get protected file
-                            return prServeMiddleware(req, res, next);
-                        }
-
-                        next();
-                    })
-                    .on('error', err => {
-                        logger.warn('Downloader server request error:', err.message);
-                        next();
                     });
+
+                    if (response.statusCode === 303) { // 303 means ok, user can get protected file
+                        return prServeMiddleware(req, res, next);
+                    }
+                } catch (err) {
+                    logger.warn('Downloader server request error:', err.message);
+                }
+
+                next();
             }
         );
         app.use(rewrite('/_pr/*', '/_prn/$1')); // If protected unavalible for user or file doesn't exist, move to covered
@@ -301,8 +302,7 @@ export async function configure(startStamp) {
         logger.info(
             `HTTP server started up in ${(Date.now() - startStamp) / 1000}s`,
             `and listening [${hostname || '*'}:${port}]`,
-            config.gzip ? 'with gzip' : '',
-            '\n'
+            config.gzip ? 'with gzip' : ''
         );
 
         scheduleMemInfo(startStamp - Date.now());
@@ -313,14 +313,15 @@ export async function configure(startStamp) {
         httpServer.close(cb);
     });
 
-    // Once db is connected, start some periodic jobs.
-    // Do it in app.js, not in controllers, to prevent running these jobs on other instances (sitemap, uploader, downloader etc.)
+    // Once db is connected, register callbacks for some periodic jobs run in
+    // worker instance.
     waitDb.then(() => {
-        session.checkSessWaitingConnect();
+        const listener = new JobCompletionListener('session');
 
-        if (config.primary) {
-            session.checkExpiredSessions();
-            session.calcUserStatsJob();
-        }
+        listener.addCallback('archiveExpiredSessions', session.cleanArchivedSessions);
+        listener.addCallback('calcUserStats', session.regetUsersAfterStatsUpdate);
+        listener.init();
+
+        session.checkSessWaitingConnect();
     });
 }
