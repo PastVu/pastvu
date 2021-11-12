@@ -480,7 +480,8 @@ define([
                 zoom: zoom,
                 zoomAnimation: L.Map.prototype.options.zoomAnimation && true,
                 trackResize: false,
-                zoomControl: false // Remove default zoom control (we use our own)
+                zoomControl: false, // Remove default zoom control (we use our own)
+                tap: false, // TODO: Prevent double click in Safari, remove when Leaflet/Leaflet#7255 is addressed.
             });
             if (fitBounds) {
                 this.map.fitBounds(fitBounds, { maxZoom: defaults.maxZoom });

@@ -368,9 +368,8 @@ async function updateSession(session, ip, headers, browser) {
     }
 
     data.headers = headers;
-    session.markModified('data');
 
-    return session.save();
+    return Session.findOneAndUpdate({ _id: session._id }, session);
 }
 
 // Create session as copy from transfered session (ip, header, agent)
@@ -462,20 +461,22 @@ async function archiveSession(session, reason) {
 async function popUserRegions(usObj) {
     const user = usObj.user;
     const registered = usObj.registered;
-    const pathPrefix = registered ? '' : 'anonym.';
     const paths = [
         {
-            path: pathPrefix + 'regionHome',
+            path: 'regionHome',
             select: { _id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1, center: 1, bbox: 1, bboxhome: 1 },
         },
-        { path: pathPrefix + 'regions', select: { _id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1 } },
+        {
+            path: 'regions',
+            select: { _id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1 },
+        },
     ];
 
     let modregionsEquals; // Profile regions and moderation regions are equals
 
     if (registered && user.role === 5) {
         modregionsEquals = _.isEqual(user.regions, user.mod_regions) || undefined;
-        paths.push({ path: pathPrefix + 'mod_regions', select: { _id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1 } });
+        paths.push({ path: 'mod_regions', select: { _id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1 } });
     }
 
     await user.populate(paths).execPopulate();
@@ -1179,7 +1180,7 @@ async function destroyUserSession({ login, key: sid }) {
 
 // Destroy all user sessions, is done by admin while changing login user restriction from on to off on manage page
 async function destroyUserSessions({ login }) {
-    const sessions = await this.call('session.giveUserSessions', { login });
+    const { sessions } = await this.call('session.giveUserSessions', { login });
 
     await Promise.all(sessions.map(session => this.call('session.destroyUserSession', { login, key: session.key })));
 }
