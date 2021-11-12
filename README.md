@@ -1,7 +1,7 @@
 # PastVu
 ![GitHub package.json version](https://img.shields.io/github/package-json/v/pastvu/pastvu)
-![Node.js CI](https://github.com/PastVu/pastvu/workflows/Node.js%20CI/badge.svg)
-![Docker Image CI](https://github.com/PastVu/pastvu/workflows/Docker%20Image%20CI/badge.svg)
+[![Node.js CI](https://github.com/PastVu/pastvu/actions/workflows/node.js.yml/badge.svg)](https://github.com/PastVu/pastvu/actions/workflows/node.js.yml)
+[![Docker Image CI](https://github.com/PastVu/pastvu/actions/workflows/docker-image.yml/badge.svg)](https://github.com/PastVu/pastvu/actions/workflows/docker-image.yml)
 
 Let's recall the whole world!
 
