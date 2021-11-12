@@ -1,4 +1,5 @@
 ARG NODE_TAG=16.10.0
+
 FROM node:${NODE_TAG} AS builder
 WORKDIR /build
 COPY package.json .
