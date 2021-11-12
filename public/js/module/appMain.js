@@ -172,11 +172,9 @@ require([
     $.when(routerDeferred.promise()).then(function () {
         router.start();
         // App info in console.
-        const style = `color: #204A6B; font-family:monospace; background: url(${location.origin}/favicon.ico) left/contain no-repeat; padding-left: 10px`;
         const string = `PastVu App v${P.settings.version()} loaded. Bug reports and contribs are welcome at https://github.com/PastVu/pastvu`;
-        console.log("%c " + string, style);
+        console.log("%c ✪ %c" + string, "color: #E07C79; font-size: 1.5em;", "color: #3585F7; font-family: monospace;");
     });
-
     // window.appRouter = globalVM.router;
     // window.glob = globalVM;
 });
