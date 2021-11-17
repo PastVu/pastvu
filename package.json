@@ -48,7 +48,7 @@
         "@placemarkio/check-geojson": "0.1.7",
         "@turf/turf": "6.4.0",
         "async-exit-hook": "2.0.1",
-        "aws-sdk": "2.610.0",
+        "aws-sdk": "2.814.0",
         "basic-auth-connect": "1.0.0",
         "bcrypt": "5.0.0",
         "body-parser": "1.19.0",
