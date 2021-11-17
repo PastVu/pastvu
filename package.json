@@ -121,8 +121,7 @@
         "osm-and-geojson": "0.1.2",
         "requirejs": "2.3.6",
         "stylelint": "14.1.0",
-        "stylelint-config-standard": "24.0.0",
-        "xmldom": "0.6.0"
+        "stylelint-config-standard": "24.0.0"
     },
     "engines": {
         "node": "16.10.0"
