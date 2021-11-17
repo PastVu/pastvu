@@ -217,6 +217,7 @@ module.exports = function (grunt) {
             all: {
                 files: {
                     src: [
+                        '.*.js',
                         '*.js',
                         'app/**/*.js',
                         'babel/*.js',
@@ -237,9 +238,7 @@ module.exports = function (grunt) {
         },
         stylelint: {
             options: {
-                configFile: '.stylelintrc',
-                formatter: 'string',
-                failOnError: true,
+                configFile: '.stylelintrc.js',
                 fix: grunt.option('fix'),
             },
             all: [
