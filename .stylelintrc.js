@@ -11,7 +11,7 @@ module.exports = {
         'at-rule-no-vendor-prefix': null,
         'color-function-notation': 'legacy',
         'string-quotes': 'single',
-        'font-family-no-missing-generic-family-keyword': [true, {ignoreFontFamilies: ['Glyphicons Halflings', 'UCondensed'] }],
+        'font-family-no-missing-generic-family-keyword': [true, { ignoreFontFamilies: ['Glyphicons Halflings', 'UCondensed'] }],
         'selector-class-pattern': '^([a-z]+).*$', // We have a mix of snake_case, lowerCamelCase and kebab-case
         'selector-id-pattern': '^[a-z][a-zA-Z0-9]+$', // lowerCamelCase
         'keyframes-name-pattern': '^[a-z][a-zA-Z0-9]+$', // lowerCamelCase
@@ -19,5 +19,5 @@ module.exports = {
         'function-url-quotes': 'never',
         'max-line-length': null,
         'block-no-empty': null,
-    }
+    },
 };
