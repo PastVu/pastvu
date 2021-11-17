@@ -16,7 +16,7 @@ let clusterConditions; // Parameters of cluster settings
 async function readClusterParams() {
     [clusterParams, clusterConditions] = await Promise.all([
         ClusterParams.find({ sgeo: { $exists: false } }, { _id: 0 }, { lean: true, sort: { z: 1 } }).exec(),
-        ClusterParams.find({ sgeo: { $exists: true } }, { _id: 0 }, { lean: true }).exec(),
+        ClusterParams.findOne({ sgeo: { $exists: true } }, { _id: 0 }, { lean: true }).exec(),
     ]);
 }
 
