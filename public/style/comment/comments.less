@@ -1,498 +1,541 @@
-@import "../_vars.less";
-@import "../bs/variables.less";
-@import "../bs/mixins.less";
+@import '../_vars.less';
+@import '../bs/variables.less';
+@import '../bs/mixins.less';
 
 @headColor: #677A8F;
 @headColorHover: @MainBlueColor;
 
 .levelLooping(@index, @margin) when (@index < 10) {
-	&.l@{index} {
-		@vall: @index * @margin;
-		margin-left: ~"@{vall}px";
-	}
-	.levelLooping(@index + 1, @margin); // next iteration
+    &.l@{index} {
+        @vall: @index * @margin;
+
+        margin-left: ~'@{vall}px';
+    }
+    .levelLooping(@index + 1, @margin); // next iteration
 }
 
 .fullComments {
-	position: relative;
+    position: relative;
 
-	.commentsLoad {
-		position: relative;
-		display: inline-block;
-		width: 70px;
-		height: 20px;
-		margin-left: 10px;
-		background-image: url(/img/misc/load.gif);
-		background-repeat: no-repeat;
-		background-position: 0 50%;
-	}
+    .commentsLoad {
+        position: relative;
+        display: inline-block;
+        width: 70px;
+        height: 20px;
+        margin-left: 10px;
+        background-image: url(/img/misc/load.gif);
+        background-repeat: no-repeat;
+        background-position: 0 50%;
+    }
 
-	> .cmtsHead {
-		position: relative;
+    > .cmtsHead {
+        position: relative;
 
-		.headElem {
-			position: relative;
-			display: inline-block;
-			margin: 0 1px 8px 0;
-			padding: 1px 7px 0 7px;
-			vertical-align: top;
-			font-size: @font-size-small;
-			line-height: 18px;
-			color: #F5F5F5;
-			cursor: default;
-			white-space: nowrap;
-			text-decoration: none;
-			background-color: @headColor;
+        .headElem {
+            position: relative;
+            display: inline-block;
+            margin: 0 1px 8px 0;
+            padding: 1px 7px 0;
+            vertical-align: top;
+            font-size: @font-size-small;
+            line-height: 18px;
+            color: #f5f5f5;
+            cursor: default;
+            white-space: nowrap;
+            text-decoration: none;
+            background-color: @headColor;
 
-			&.interact {
-				cursor: pointer;
+            &.interact {
+                cursor: pointer;
 
-				&:hover {
-					color: #fff;
-					background-color: @headColorHover;
-				}
-			}
-		}
+                &:hover {
+                    color: #fff;
+                    background-color: @headColorHover;
+                }
+            }
+        }
 
-		.count {
-			min-width: 15px;
-			padding: 0 5px 0 5px;
-			font-size: 13px;
-			line-height: 19px;
-			text-align: center;
+        .count {
+            min-width: 15px;
+            padding: 0 5px;
+            font-size: 13px;
+            line-height: 19px;
+            text-align: center;
 
-			&::after {
-				position: absolute;
-				display: block;
-				content: '';
-				left: 20%;
-				bottom: -8px;
-				width: 0;
-				height: 0;
-				border-top: 8px solid @headColor;
-				border-right: 8px solid transparent;
-			}
-			&:hover {
-				&::after {
-					border-top-color: @headColorHover;
-				}
-			}
+            &::after {
+                position: absolute;
+                display: block;
+                content: '';
+                left: 20%;
+                bottom: -8px;
+                width: 0;
+                height: 0;
+                border-top: 8px solid @headColor;
+                border-right: 8px solid transparent;
+            }
 
-			.cnew {
-				color: #88FF91;
-				font-weight: bold;
-			}
-		}
+            &:hover {
+                &::after {
+                    border-top-color: @headColorHover;
+                }
+            }
 
-		.headElem.delComments {
+            .cnew {
+                color: #88ff91;
+                font-weight: bold;
+            }
+        }
+
+        .headElem.delComments {
             color: #b5b5b5;
+
             &.delCommentsShow {
                 color: #f5f5f5;
                 background-color: #9a2b2b;
             }
+
             &.delCommentsShow:hover {
                 color: #f5f5f5;
                 background-color: #bf3535;
             }
+
             .glyphicon {
                 margin-left: 2px;
                 font-size: 90%;
             }
         }
-		.headElem.commSubscr {
-			&.isSubscr {
-				> .glyphicon {
-					color: #63FC5B;
-				}
 
-				&:hover {
-					> .glyphicon {
-						color: #ffbb05;
-					}
+        .headElem.commSubscr {
+            &.isSubscr {
+                > .glyphicon {
+                    color: #63fc5b;
+                }
 
-				}
-			}
+                &:hover {
+                    > .glyphicon {
+                        color: #ffbb05;
+                    }
+                }
+            }
+        }
 
-		}
-		.cantComment {
-			margin-left: 6px;
-			color: #f00;
-		}
-	}
+        .cantComment {
+            margin-left: 6px;
+            color: #f00;
+        }
+    }
 
-	> .cmts {
-		> .c {
-			padding: 6px 0 6px 6px;
+    > .cmts {
+        > .c {
+            padding: 6px 0 6px 6px;
 
-			.levelLooping(0, 58);
+            .levelLooping(0, 58);
 
-			&.isnew {
-				padding-left: 5px;
-				border-width: 0 0 0 1px;
-				border-style: solid;
-				border-color: #81DF7D;
-				background-color: rgba(174, 255, 184, 0.1);
-			}
-			//Редактируемый комментарий скрывается, заменяясь на поле ввода
-			&.edit {
-				display: none;
-			}
-			//Свёрнутый удалённый комментарий
-			&.cdel {
-				> .delico {
-					position: relative;
-					float: left;
-					width: 50px;
-					height: 13px;
-					margin-top: 1px;
-					margin-right: 8px;
-					color: @gray;
-					font-size: @font-size-mini;
-					line-height: 13px;
-					overflow: hidden;
-					cursor: pointer;
-					border-width: 0 0 0 2px;
-					border-style: solid;
-					border-color: @MainRedColor;
-					background: @gray;
-					&:hover {
-						color: @MainLigthColor;
-						border-color: #f00;
-						background: @MainDarkColor;
-					}
+            &.isnew {
+                padding-left: 5px;
+                border-width: 0 0 0 1px;
+                border-style: solid;
+                border-color: #81df7d;
+                background-color: rgba(174, 255, 184, 10%);
+            }
+            //Редактируемый комментарий скрывается, заменяясь на поле ввода
+            &.edit {
+                display: none;
+            }
+            //Свёрнутый удалённый комментарий
+            &.cdel {
+                > .delico {
+                    position: relative;
+                    float: left;
+                    width: 50px;
+                    height: 13px;
+                    margin-top: 1px;
+                    margin-right: 8px;
+                    color: @gray;
+                    font-size: @font-size-mini;
+                    line-height: 13px;
+                    overflow: hidden;
+                    cursor: pointer;
+                    border-width: 0 0 0 2px;
+                    border-style: solid;
+                    border-color: @MainRedColor;
+                    background: @gray;
 
-					&.loading {
-						border-width: 0;
-						background: transparent url(/img/misc/load.gif) 0 50% no-repeat;
-					}
-				}
-				> .cbody {
-					min-height: 15px;
-				}
-				.author {
-					color: #888;
-				}
-			}
-			&.delopen {
-				padding-left: 5px;
-				border-width: 0 0 0 1px;
-				border-style: solid;
-				border-color: @MainRedColor;
-				background-color: rgba(255, 99, 0, .1);
-			}
-			&.hl {
-				background-color: fade(@MainBlueColor, 10%);
-				.transition(~'background-color .25s linear .1s');
-			}
-			&.hlRemove:not(.cdel):not(.delopen) { //Выделения для удаленя не выделяет уже удаленные
-				background-color: rgba(255, 188, 16, .5);
-			}
-			&.hlRestore {
-				background-color: rgba(169, 240, 152, .5);
-			}
+                    &:hover {
+                        color: @MainLigthColor;
+                        border-color: #f00;
+                        background: @MainDarkColor;
+                    }
 
-			> .hrefava {
-				position: relative;
-				float: left;
-				margin-top: 1px;
-				margin-right: 8px;
+                    &.loading {
+                        border-width: 0;
+                        background: transparent url(/img/misc/load.gif) 0 50% no-repeat;
+                    }
+                }
 
-				> .overprint {
-					position: absolute;
-					top: 9px;
-					left: 0;
-					right: 4px;
-					color: @MainLigthColor;
-					line-height: 18px;
-					font-size: 18px;
-					font-weight: bold;
-					text-align: center;
-				}
+                > .cbody {
+                    min-height: 15px;
+                }
 
-				> .cava {
-					display: block;
-					width: 50px;
-					height: 50px;
-				}
-			}
+                .author {
+                    color: #888;
+                }
+            }
 
-			> .cbody {
-				min-height: 52px;
-				margin-left: 58px;
+            &.delopen {
+                padding-left: 5px;
+                border-width: 0 0 0 1px;
+                border-style: solid;
+                border-color: @MainRedColor;
+                background-color: rgba(255, 99, 0, 10%);
+            }
 
-				> .chead {
-					line-height: 14px;
-					margin-bottom: 1px;
-				}
-				> .ctext {
-					max-width: 1024px;
-					word-wrap: break-word; //Переносит разбиением длинные слова, например ссылки
-				}
+            &.hl {
+                background-color: fade(@MainBlueColor, 10%);
+                .transition(~'background-color .25s linear .1s');
+            }
 
-				> .cacts {
-					margin-top: 2px;
-					font-size: @font-size-small;
-					line-height: 14px;
-					color: #888;
+            &.hlRemove:not(.cdel):not(.delopen) { //Выделения для удаленя не выделяет уже удаленные
+                background-color: rgba(255, 188, 16, 50%);
+            }
 
-					> .cact {
-						padding-top: 1px;
-						padding-bottom: 1px;
-						cursor: pointer;
+            &.hlRestore {
+                background-color: rgba(169, 240, 152, 50%);
+            }
 
-						&:hover {
-							color: @MainBlueColor;
-						}
-						&.hidedel {
-							color: #7B7A0B;
-							&:hover {
-								color: #C3BC0B;
-							}
-						}
-						&.restore {
-							color: @MainGreenColor;
-							&:hover {
-								color: #09c600;
-							}
-						}
-					}
-				}
-			}
-		}
-	}
+            > .hrefava {
+                position: relative;
+                float: left;
+                margin-top: 1px;
+                margin-right: 8px;
 
-	.author, .ranks {
-		display: inline-block;
-	}
-	.rank {
-		width: 57px;
-		height: 14px;
-		margin-left: 3px;
-		vertical-align: top;
-	}
-	.frag {
-		display: inline-block;
-		font-size: @font-size-small;
-	}
-	.stamp, .changed {
-		display: inline-block;
-		font-size: @font-size-mini;
-		cursor: pointer;
-		color: #888;
-	}
-	.stamp.dis {
-		cursor: default;
-		text-decoration: none;
-	}
-	.changed {
-		&:hover {
-			color: @MainBlueColor;
-		}
-	}
+                > .overprint {
+                    position: absolute;
+                    top: 9px;
+                    left: 0;
+                    right: 4px;
+                    color: @MainLigthColor;
+                    line-height: 18px;
+                    font-size: 18px;
+                    font-weight: bold;
+                    text-align: center;
+                }
 
-	//Комментарий-ответ
-	.cadd {
-		position: relative;
+                > .cava {
+                    display: block;
+                    width: 50px;
+                    height: 50px;
+                }
+            }
 
-		//Выделяем ответ нулевого уровня, если в дереве уже есть комментарии
-		&:last-of-type:not(:first-of-type) {
-			margin-top: 20px !important;
-			overflow: visible;
+            > .cbody {
+                min-height: 52px;
+                margin-left: 58px;
 
-			&::before {
-				position: absolute;
-				display: block;
-				content: '';
-				top: -10px;
-				left: 0;
-				width: 100%;
-				height: 0;
-				border: 0;
-				border-top: 1px solid #EEE;
-				border-bottom: 1px solid #FFF;
-			}
-		}
+                > .chead {
+                    line-height: 14px;
+                    margin-bottom: 1px;
+                }
 
-		.cinput {
-			min-width: 439px; //Ширина, при которой textarea не перенесется под правый блок и в которую влезет cinputLabel
-			width: 62%;
-			max-width: 95%;
-			min-height: 52px;
-			margin-top: 0px;
-			margin-bottom: 9px;
-			padding: 4px 6px;
+                > .ctext {
+                    max-width: 1024px;
+                    word-wrap: break-word; //Переносит разбиением длинные слова, например ссылки
+                }
 
-			&::-webkit-scrollbar-button:decrement {
-				height: 0;
-			}
-		}
-		.cinputLabel {
-			position: absolute;
-			left: 71px;
-			top: 13px;
-			color: #777;
-			cursor: text;
-		}
-		.btn, .replySubscr {
-			display: none;
-			min-width: 100px;
-			margin-left: 2px;
-			margin-bottom: 5px;
-		}
-		.chkSubscr {
-			margin-top: 3px;
-		}
+                > .cacts {
+                    margin-top: 2px;
+                    font-size: @font-size-small;
+                    line-height: 14px;
+                    color: #888;
 
-		&.hasFocus, &.hasContent {
-			.cinput {
-				min-height: 87px;
-			}
-			.cinputLabel {
-				display: none;
-			}
-			.btn, .replySubscr {
-				display: inline-block;
-			}
-		}
-	}
+                    > .cact {
+                        padding-top: 1px;
+                        padding-bottom: 1px;
+                        cursor: pointer;
 
-	.navigator {
-		position: fixed;
-		left: 0;
-		top: 50%;
-		width: 15px;
-		height: 120px;
-		margin-top: -61px;
-		color: #fff;
-		text-align: center;
-		cursor: default;
-		border-width: 1px 1px 1px 0;
-		border-style: solid;
-		border-color: @FringeBorder;
-		.transition(width .1s linear);
-		.box-shadow(~'0 0 0 1px #000, 1px 2px 3px 0px #222');
-		.user-select(none);
+                        &:hover {
+                            color: @MainBlueColor;
+                        }
 
-		&:hover, &.touch {
-			width: 30px;
+                        &.hidedel {
+                            color: #7b7a0b;
 
-			.navTxt {
-				.rotate(0);
-			}
-			.countAll {
-				-webkit-transform: rotate(0) translate(0, 0);
-				-moz-transform: rotate(0) translate(0, 0);
-				-ms-transform: rotate(0) translate(0, 0);
-				-o-transform: rotate(0) translate(0, 0);
-				transform: rotate(0) translate(0, 0);
-			}
-			.arrow {
-				right: -@popover-arrow-outer-width;
-			}
+                            &:hover {
+                                color: #c3bc0b;
+                            }
+                        }
 
-		}
+                        &.restore {
+                            color: @MainGreenColor;
 
-		.navigatorInn {
-			position: relative;
-			width: 100%;
-			overflow: hidden;
-			background-color: @MainBlueColor;
-		}
+                            &:hover {
+                                color: #09c600;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
-		.arrow,
-		.arrow::after {
-			position: absolute;
-			display: block;
-			width: 0;
-			height: 0;
-			border-color: transparent;
-			border-style: solid;
-		}
-		.arrow {
-			top: 50%;
-			right: 1px;
-			margin-top: -@popover-arrow-outer-width;
-			border-width: @popover-arrow-outer-width;
-			border-right-width: 0;
-			border-left-color: @popover-arrow-outer-color;
-			.transition(right .1s linear);
-		}
-		.arrow::after {
-			content: "";
-			right: 2px;
-			border-width: @popover-arrow-width;
-			border-right-width: 0;
-			border-left-color: @popover-arrow-color;
-			bottom: -@popover-arrow-width;
-		}
+    .author,
+    .ranks {
+        display: inline-block;
+    }
 
-		.up, .down {
-			position: absolute;
-			left: 0;
-			width: 100%;
-			line-height: 18px;
-			text-align: center;
-			color: #bbb;
-			cursor: default;
+    .rank {
+        width: 57px;
+        height: 14px;
+        margin-left: 3px;
+        vertical-align: top;
+    }
 
-			&.active {
-				color: @MainLigthColor;
-				cursor: pointer;
-				-webkit-tap-highlight-color: rgba(0, 0, 0, .2);
+    .frag {
+        display: inline-block;
+        font-size: @font-size-small;
+    }
 
-				&:hover, &:active {
-					color: #fff;
-					background-color: rgba(0, 0, 0, .2);
-				}
-			}
-		}
-		.up {
-			top: 0;
-		}
-		.down {
-			bottom: 0;
-		}
-		.navTxt {
-			position: relative;
-			display: inline-block;
-			width: 100%;
-			.rotate(-90deg);
-			.transition(all .1s linear);
-		}
-		.countAll {
-			position: relative;
-			display: inline-block;
-			width: 100%;
-			line-height: 118px;
-			color: #88FF91;
-			vertical-align: middle;
-			text-decoration: none;
-			-webkit-transform: rotate(-90deg) translate(-4px, 0);
-			transform: rotate(-90deg) translate(-4px, 0);
-			.transition(all .1s linear);
-		}
-	}
+    .stamp,
+    .changed {
+        display: inline-block;
+        font-size: @font-size-mini;
+        cursor: pointer;
+        color: #888;
+    }
+
+    .stamp.dis {
+        cursor: default;
+        text-decoration: none;
+    }
+
+    .changed {
+        &:hover {
+            color: @MainBlueColor;
+        }
+    }
+
+    //Комментарий-ответ
+    .cadd {
+        position: relative;
+
+        //Выделяем ответ нулевого уровня, если в дереве уже есть комментарии
+        &:last-of-type:not(:first-of-type) {
+            margin-top: 20px !important;
+            overflow: visible;
+
+            &::before {
+                position: absolute;
+                display: block;
+                content: '';
+                top: -10px;
+                left: 0;
+                width: 100%;
+                height: 0;
+                border: 0;
+                border-top: 1px solid #eee;
+                border-bottom: 1px solid #fff;
+            }
+        }
+
+        .cinput {
+            min-width: 439px; //Ширина, при которой textarea не перенесется под правый блок и в которую влезет cinputLabel
+            width: 62%;
+            max-width: 95%;
+            min-height: 52px;
+            margin-top: 0;
+            margin-bottom: 9px;
+            padding: 4px 6px;
+
+            &::-webkit-scrollbar-button:decrement {
+                height: 0;
+            }
+        }
+
+        .cinputLabel {
+            position: absolute;
+            left: 71px;
+            top: 13px;
+            color: #777;
+            cursor: text;
+        }
+
+        .btn,
+        .replySubscr {
+            display: none;
+            min-width: 100px;
+            margin-left: 2px;
+            margin-bottom: 5px;
+        }
+
+        .chkSubscr {
+            margin-top: 3px;
+        }
+
+        &.hasFocus,
+        &.hasContent {
+            .cinput {
+                min-height: 87px;
+            }
+
+            .cinputLabel {
+                display: none;
+            }
+
+            .btn,
+            .replySubscr {
+                display: inline-block;
+            }
+        }
+    }
+
+    .navigator {
+        position: fixed;
+        left: 0;
+        top: 50%;
+        width: 15px;
+        height: 120px;
+        margin-top: -61px;
+        color: #fff;
+        text-align: center;
+        cursor: default;
+        border-width: 1px 1px 1px 0;
+        border-style: solid;
+        border-color: @FringeBorder;
+        .transition(width 0.1s linear);
+        .box-shadow(~'0 0 0 1px #000, 1px 2px 3px 0px #222');
+        .user-select(none);
+
+        &:hover,
+        &.touch {
+            width: 30px;
+
+            .navTxt {
+                .rotate(0);
+            }
+
+            .countAll {
+                -webkit-transform: rotate(0) translate(0, 0);
+                -moz-transform: rotate(0) translate(0, 0);
+                -ms-transform: rotate(0) translate(0, 0);
+                -o-transform: rotate(0) translate(0, 0);
+                transform: rotate(0) translate(0, 0);
+            }
+
+            .arrow {
+                right: -@popover-arrow-outer-width;
+            }
+        }
+
+        .navigatorInn {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+            background-color: @MainBlueColor;
+        }
+
+        .arrow,
+        .arrow::after {
+            position: absolute;
+            display: block;
+            width: 0;
+            height: 0;
+            border-color: transparent;
+            border-style: solid;
+        }
+
+        .arrow {
+            top: 50%;
+            right: 1px;
+            margin-top: -@popover-arrow-outer-width;
+            border-width: @popover-arrow-outer-width;
+            border-right-width: 0;
+            border-left-color: @popover-arrow-outer-color;
+            .transition(right 0.1s linear);
+        }
+
+        .arrow::after {
+            content: '';
+            right: 2px;
+            border-width: @popover-arrow-width;
+            border-right-width: 0;
+            border-left-color: @popover-arrow-color;
+            bottom: -@popover-arrow-width;
+        }
+
+        .up,
+        .down {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            line-height: 18px;
+            text-align: center;
+            color: #bbb;
+            cursor: default;
+
+            &.active {
+                color: @MainLigthColor;
+                cursor: pointer;
+                -webkit-tap-highlight-color: rgba(0, 0, 0, 20%);
+
+                &:hover,
+                &:active {
+                    color: #fff;
+                    background-color: rgba(0, 0, 0, 20%);
+                }
+            }
+        }
+
+        .up {
+            top: 0;
+        }
+
+        .down {
+            bottom: 0;
+        }
+
+        .navTxt {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            .rotate(-90deg);
+            .transition(all 0.1s linear);
+        }
+
+        .countAll {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            line-height: 118px;
+            color: #88ff91;
+            vertical-align: middle;
+            text-decoration: none;
+            -webkit-transform: rotate(-90deg) translate(-4px, 0);
+            transform: rotate(-90deg) translate(-4px, 0);
+            .transition(all 0.1s linear);
+        }
+    }
 }
 
 @media (max-width: @screen-sm-max) {
-	.fullComments {
-		> .cmts {
-			> .c {
-				.levelLooping(1, 29);
-			}
-		}
-	}
+    .fullComments {
+        > .cmts {
+            > .c {
+                .levelLooping(1, 29);
+            }
+        }
+    }
 }
 
 @media (max-width: @screen-xs-max) {
-	.fullComments {
-		> .cmts {
-			> .c {
-				.levelLooping(1, 14);
-				> .cbody {
-					margin-left: 0;
-				}
-			}
-		}
-	}
+    .fullComments {
+        > .cmts {
+            > .c {
+                .levelLooping(1, 14);
+
+                > .cbody {
+                    margin-left: 0;
+                }
+            }
+        }
+    }
 }

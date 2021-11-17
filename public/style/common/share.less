@@ -1,10 +1,10 @@
-@import "../_vars.less";
-@import "../bs/variables.less";
-@import "../bs/mixins.less";
+@import '../_vars.less';
+@import '../bs/variables.less';
+@import '../bs/mixins.less';
 
 .share {
-	position: relative;
-	padding: 0;
+    position: relative;
+    padding: 0;
     text-align: center;
 
     hr {
@@ -14,16 +14,18 @@
     .shareBlock {
         margin: 0 -20px;
         padding: 7px 0 8px;
-        transition: all .2s;
+        transition: all 0.2s;
 
         &:first-child {
             padding-top: 12px;
         }
+
         &:last-child {
             padding-bottom: 12px;
         }
+
         &:hover {
-            background-color: rgba(0,0,0,.04);
+            background-color: rgba(0, 0, 0, 4%);
         }
     }
 
@@ -31,7 +33,7 @@
         margin-bottom: 5px;
     }
 
-	.socials {
+    .socials {
         display: inline-block;
     }
 
@@ -41,7 +43,7 @@
         height: 32px;
         margin: 0 5px 5px;
         cursor: pointer;
-        transition: opacity .4s;
+        transition: opacity 0.4s;
         background-position: 0 0;
         background-size: 32px 32px;
         background-repeat: no-repeat;
@@ -55,23 +57,27 @@
             padding: 1px 4px;
         }
     }
+
     .inputLink {
         text-align: center;
         cursor: pointer !important;
     }
+
     .input-group-addon {
-        transition: all .2s;
+        transition: all 0.2s;
 
         &:hover {
             background-color: #e7e7e7;
         }
     }
+
     .copyOk {
         position: absolute;
         display: block;
         top: 0;
         right: 0;
     }
+
     .copy {
         width: 16px;
         height: 18px;

@@ -1,288 +1,300 @@
-@import "../_vars.less";
-@import "../bs/variables.less";
-@import "../bs/mixins.less";
+@import '../_vars.less';
+@import '../bs/variables.less';
+@import '../bs/mixins.less';
 
 .bottomPanel {
-	position: relative;
+    position: relative;
 
-	.newsHeader {
-		margin: 3px 0 1px 0;
-		font-size: 20px;
-		line-height: 1;
-		text-align: center;
-	}
+    .newsHeader {
+        margin: 3px 0 1px;
+        font-size: 20px;
+        line-height: 1;
+        text-align: center;
+    }
 
-	.news {
-		position: relative;
-		padding: 2px 0 0 0;
-		background-color: darken(@body-bg, 2%);
+    .news {
+        position: relative;
+        padding: 2px 0 0;
+        background-color: darken(@body-bg, 2%);
 
-		hr {
-			margin: 0;
-		}
+        hr {
+            margin: 0;
+        }
 
-		.newsLeft {
-			width: 36px;
-			padding-top: 1px;
-			float: left;
-		}
-		.newsDate {
-			color: #777;
-			font-size: 12px;
-			line-height: 15px;
-			text-align: center;
-			vertical-align: top;
-		}
-		.newsComms {
-			position: relative;
-			display: block;
-			margin: 5px 0 8px 0;
-			line-height: 19px;
-			color: #F2F2F2;
-			text-align: center;
-			text-decoration: none;
-			background-color: #999;
+        .newsLeft {
+            width: 36px;
+            padding-top: 1px;
+            float: left;
+        }
 
-			&::after {
-				position: absolute;
-				display: block;
-				content: '';
-				left: 20%;
-				bottom: -8px;
-				width: 0;
-				height: 0;
-				border-top: 8px solid #999;
-				border-right: 8px solid transparent;
-			}
+        .newsDate {
+            color: #777;
+            font-size: 12px;
+            line-height: 15px;
+            text-align: center;
+            vertical-align: top;
+        }
 
-			.cnew {
-				padding-bottom: 1px;
-				color: #88FF91;
-				font-weight: bold;
-			}
-		}
-		.newsBody {
-			margin-left: 41px;
-			vertical-align: top;
-		}
-		.newsTitle {
-			display: inline-block;
-			margin-bottom: 2px;
-			font-weight: bold;
-			font-size: 16px;
-			line-height: 19px;
-		}
-		.newsNotice {
-			line-height: 19px;
+        .newsComms {
+            position: relative;
+            display: block;
+            margin: 5px 0 8px;
+            line-height: 19px;
+            color: #f2f2f2;
+            text-align: center;
+            text-decoration: none;
+            background-color: #999;
 
-			> p:last-child {
-				margin-bottom: 0;
-			}
+            &::after {
+                position: absolute;
+                display: block;
+                content: '';
+                left: 20%;
+                bottom: -8px;
+                width: 0;
+                height: 0;
+                border-top: 8px solid #999;
+                border-right: 8px solid transparent;
+            }
 
-			* {
-			  	max-width: 100%;
-			}
-		}
-		.newsExpand {
-			display: inline-block;
-			margin: 5px 0 4px 0;
-			font-size: 12px;
-		}
+            .cnew {
+                padding-bottom: 1px;
+                color: #88ff91;
+                font-weight: bold;
+            }
+        }
 
-		.novel {
-			margin: 0;
-			padding: 5px 10px 6px 8px;
-			cursor: default;
+        .newsBody {
+            margin-left: 41px;
+            vertical-align: top;
+        }
 
-			&:hover {
-				background-color: #FFF;
+        .newsTitle {
+            display: inline-block;
+            margin-bottom: 2px;
+            font-weight: bold;
+            font-size: 16px;
+            line-height: 19px;
+        }
 
-				.newsDate {
-					color: #000;
-				}
-				.newsComms {
-					color: #fff;
-					background-color: #555;
+        .newsNotice {
+            line-height: 19px;
 
-					&::after {
-						border-top-color: #555;
-					}
-				}
-			}
-		}
-	}
+            > p:last-child {
+                margin-bottom: 0;
+            }
 
-	.catMenu {
-		margin: 0 0 12px 0;
-		text-align: center;
-		line-height: 1; //Чтобы был по высоте центрируемого navbar-nav
-		border-width: 0 0 1px 0;
-		background: darken(@navbar-default-bg, 1%);
-		.box-shadow(~'0 1px 0 0 #000, -2px 2px 6px 0 #222');
+            * {
+                max-width: 100%;
+            }
+        }
 
-		> .navbar-nav {
-			display: inline-block;
-			float: none;
+        .newsExpand {
+            display: inline-block;
+            margin: 5px 0 4px;
+            font-size: 12px;
+        }
 
-			> li {
-				cursor: pointer;
+        .novel {
+            margin: 0;
+            padding: 5px 10px 6px 8px;
+            cursor: default;
 
-				&.loading {
-					cursor: wait;
+            &:hover {
+                background-color: #fff;
 
-					> a {
-						cursor: wait;
-					}
+                .newsDate {
+                    color: #000;
+                }
 
-					&::after {
-						position: absolute;
-						display: block;
-						content: '';
-						width: 0%;
-						height: 1px;
-						left: 17%;
-						bottom: 4px;
-						background-color: #c2c1c9;
-						.animation(navLoad .8s ease .2s infinite);
-					}
-				}
-			}
+                .newsComms {
+                    color: #fff;
+                    background-color: #555;
 
-			.glyphicon-share {
-				margin-left: 3px;
-			}
-		}
-	}
+                    &::after {
+                        border-top-color: #555;
+                    }
+                }
+            }
+        }
+    }
 
-	.catContent {
-		min-height: 700px;
+    .catMenu {
+        margin: 0 0 12px;
+        text-align: center;
+        line-height: 1; //Чтобы был по высоте центрируемого navbar-nav
+        border-width: 0 0 1px;
+        background: darken(@navbar-default-bg, 1%);
+        .box-shadow(~'0 1px 0 0 #000, -2px 2px 6px 0 #222');
 
-		.catHead {
-			margin-bottom: 6px;
-			font-size: 18px;
-		}
+        > .navbar-nav {
+            display: inline-block;
+            float: none;
 
-		.photosNew {
-			text-align: center;
+            > li {
+                cursor: pointer;
 
-			.photoPreview {
-				font-size: 12px;
-				padding-bottom: @PhotoInfoHeight - 5;
+                &.loading {
+                    cursor: wait;
 
-				&.nextPhoto {
-					position: relative;
-					visibility: visible;
-					height: 100px;
-					width: 150px;
-					opacity: 1;
-					color: #555E85;
-					text-align: center;
-					vertical-align: top;
-					border: 1px solid rgba(0, 0, 0, 0);
+                    > a {
+                        cursor: wait;
+                    }
 
-					&:hover {
-						color: #000;
-					}
+                    &::after {
+                        position: absolute;
+                        display: block;
+                        content: '';
+                        width: 0%;
+                        height: 1px;
+                        left: 17%;
+                        bottom: 4px;
+                        background-color: #c2c1c9;
+                        .animation(navLoad 0.8s ease 0.2s infinite);
+                    }
+                }
+            }
 
-					.nextPhotoTxt {
-						position: absolute;
-						top: 50%;
-						width: 100%;
-						margin-top: (-8 - (@PhotoInfoHeight - 5) / 2);
-						padding-top: 10px;
-						font-size: 15px;
-						text-align: center;
-					}
-				}
+            .glyphicon-share {
+                margin-left: 3px;
+            }
+        }
+    }
 
-				.img {
-					width: 150px;
-					height: 100px;
-				}
+    .catContent {
+        min-height: 700px;
 
-				.rightBlocks {
-					bottom: @PhotoInfoHeight + 6 - 5;
-					font-size: @font-size-mini;
-					line-height: 14px;
-				}
-				.info {
-					height: @PhotoInfoHeight - 5;
-					padding-left: 2px;
-					> .title {
-						padding-top: 1px;
-						font-size: 14px;
-						line-height: 17px;
-					}
-					> .regions {
-						font-size: 13px;
-						line-height: 15px;
-					}
-				}
-			}
-		}
+        .catHead {
+            margin-bottom: 6px;
+            font-size: 18px;
+        }
 
-		.ratings {
-			max-width: 1400px;
-			margin: 0 auto;
-			padding: 0 0 0 6px;
+        .photosNew {
+            text-align: center;
 
-			.catHead {
-				padding-left: 2px;
-			}
+            .photoPreview {
+                font-size: 12px;
+                padding-bottom: @PhotoInfoHeight - 5;
 
-			.catGroupHead {
-				margin-bottom: 4px;
-				padding-left: 2px;
-				font-size: 14px;
-			}
+                &.nextPhoto {
+                    position: relative;
+                    visibility: visible;
+                    height: 100px;
+                    width: 150px;
+                    opacity: 1;
+                    color: #555e85;
+                    text-align: center;
+                    vertical-align: top;
+                    border: 1px solid rgba(0, 0, 0, 0%);
 
-			.btn-group {
-				margin-bottom: 3px;
-				padding-left: 2px;
-			}
+                    &:hover {
+                        color: #000;
+                    }
 
-			.ratElem {
-				display: block;
-				margin: 6px 0 0 0;
-				line-height: 15px;
-				cursor: pointer;
-				text-decoration: none;
+                    .nextPhotoTxt {
+                        position: absolute;
+                        top: 50%;
+                        width: 100%;
+                        margin-top: (-8 - (@PhotoInfoHeight - 5) / 2);
+                        padding-top: 10px;
+                        font-size: 15px;
+                        text-align: center;
+                    }
+                }
 
-				&:hover {
-					background-color: fade(@MainBlueColor, 10%);
-				}
+                .img {
+                    width: 150px;
+                    height: 100px;
+                }
 
-				.imgLoad {
-					float: left;
-					margin: 2px 5px 2px 2px;
+                .rightBlocks {
+                    bottom: @PhotoInfoHeight + 6 - 5;
+                    font-size: @font-size-mini;
+                    line-height: 14px;
+                }
 
-					.img {
-						width: 60px;
-						height: 60px;
-					}
-				}
-				.ratName {
-					display: block;
-					padding: 1px 0 2px 0;
-					max-height: 45px;
-					overflow: hidden;
-				}
-				.ratAmount {
-					display: block;
-					font-size: 12px;
-					color: @text-color;
-				}
-			}
-		}
+                .info {
+                    height: @PhotoInfoHeight - 5;
+                    padding-left: 2px;
 
-		.stats {
-			max-width: 700px;
-			margin: 0 auto;
-			padding: 0 0 0 6px;
+                    > .title {
+                        padding-top: 1px;
+                        font-size: 14px;
+                        line-height: 17px;
+                    }
 
-			.statsFast {
-				margin-bottom: 10px;
-			}
-		}
-	}
+                    > .regions {
+                        font-size: 13px;
+                        line-height: 15px;
+                    }
+                }
+            }
+        }
+
+        .ratings {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 0 0 6px;
+
+            .catHead {
+                padding-left: 2px;
+            }
+
+            .catGroupHead {
+                margin-bottom: 4px;
+                padding-left: 2px;
+                font-size: 14px;
+            }
+
+            .btn-group {
+                margin-bottom: 3px;
+                padding-left: 2px;
+            }
+
+            .ratElem {
+                display: block;
+                margin: 6px 0 0;
+                line-height: 15px;
+                cursor: pointer;
+                text-decoration: none;
+
+                &:hover {
+                    background-color: fade(@MainBlueColor, 10%);
+                }
+
+                .imgLoad {
+                    float: left;
+                    margin: 2px 5px 2px 2px;
+
+                    .img {
+                        width: 60px;
+                        height: 60px;
+                    }
+                }
+
+                .ratName {
+                    display: block;
+                    padding: 1px 0 2px;
+                    max-height: 45px;
+                    overflow: hidden;
+                }
+
+                .ratAmount {
+                    display: block;
+                    font-size: 12px;
+                    color: @text-color;
+                }
+            }
+        }
+
+        .stats {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 0 0 0 6px;
+
+            .statsFast {
+                margin-bottom: 10px;
+            }
+        }
+    }
 }

@@ -1,6 +1,6 @@
-@import "../_vars.less";
-@import "../bs/variables.less";
-@import "../bs/mixins.less";
+@import '../_vars.less';
+@import '../bs/variables.less';
+@import '../bs/mixins.less';
 
 .objHist {
     position: relative; // Нужно, чтобы правильно считался position элемента истории
@@ -21,35 +21,41 @@
         border-color: transparent;
 
         &.isnew {
-            border-left-color: #81DF7D;
-            border-right-color: #81DF7D;
-            background-color: rgba(174, 255, 184, .1);
+            border-left-color: #81df7d;
+            border-right-color: #81df7d;
+            background-color: rgba(174, 255, 184, 10%);
         }
+
         &.hl {
-            background-color: #D2D7DC;
+            background-color: #d2d7dc;
         }
 
         .pull-left {
-            padding: 2px 0 3px 0;
+            padding: 2px 0 3px;
         }
+
         .media-object {
             width: 50px;
             height: 50px;
         }
+
         .histHead {
             margin-bottom: 4px;
             line-height: 14px;
         }
+
         .author {
             display: inline-block;
             cursor: pointer;
         }
+
         .role {
             display: inline-block;
             font-size: @font-size-mini;
             color: #888;
             cursor: default;
         }
+
         .histStamp {
             display: inline-block;
             font-size: @font-size-mini;
@@ -61,14 +67,15 @@
             display: inline;
             font-weight: bold;
         }
+
         .histDel {
             max-width: 1000px;
             color: @text-color;
         }
     }
 
-
-    .info, .diffSwitch {
+    .info,
+    .diffSwitch {
         display: inline-block;
         margin-bottom: 2px;
         color: @gray;
@@ -76,6 +83,7 @@
         line-height: 16px;
         border-color: @gray;
     }
+
     .info {
         margin-right: 7px;
         padding-left: 3px;
@@ -83,11 +91,12 @@
         border-style: solid;
         border-width: 0 0 1px 1px;
     }
+
     .diffSwitch {
         margin-left: 65px;
         cursor: pointer;
         border-style: dotted;
-        border-width: 0 0 1px 0;
+        border-width: 0 0 1px;
 
         &:hover {
             color: @MainBlueColor;
@@ -100,7 +109,9 @@
         font-style: italic;
     }
 
-    .regions > .diffDel, .regions > .diffIns, .region {
+    .regions > .diffDel,
+    .regions > .diffIns,
+    .region {
         display: inline-block;
     }
 
@@ -149,11 +160,12 @@
     .red {
         color: @MainRedColor;
     }
+
     .green {
         color: @MainGreenColor;
     }
-    .orange {
-        color: #D89444;
-    }
 
+    .orange {
+        color: #d89444;
+    }
 }

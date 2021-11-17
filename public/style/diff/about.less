@@ -1,116 +1,132 @@
-@import "../_vars";
-@import "../bs/variables";
-@import "../bs/mixins";
+@import '../_vars';
+@import '../bs/variables';
+@import '../bs/mixins';
 
 /**
  * ABOUT
  */
 .about {
-	position: relative;
-	min-height: 770px;
-	margin: 0;
-	padding: 3px 0;
-	color: @MainLigthColor;
-	background-color: #2D3E53;
+    position: relative;
+    min-height: 770px;
+    margin: 0;
+    padding: 3px 0;
+    color: @MainLigthColor;
+    background-color: #2d3e53;
 
-	.userrow, .postrow {
-		text-align: center;
-	}
-	hr {
-		margin: 8px 0;
-	}
-	hr, .poster, .usercenter {
-		display: inline-block;
-		width: 100%;
-		max-width: 758px;
-	}
-	.poster {
-		margin-bottom: 10px;
-	}
+    .userrow,
+    .postrow {
+        text-align: center;
+    }
 
-	.line {
-		display: block;
-		margin: 10px 0 10px 10px;
-		color: #dcdcdc;
-		text-align: left;
-		text-decoration: none;
-	}
-	header.line {
-		font-size: 16px;
-		color: #f5f5f5;
-		cursor: default;
-		text-align: center;
-	}
+    hr {
+        margin: 8px 0;
+    }
 
-	.flip-container {
-		float: left;
-		margin: 0 10px 0 0;
-		.perspective(1000); /* entire container, keeps perspective */
-	}
-	.line:hover, .line.hover {
-		color: #fafafa;
+    hr,
+    .poster,
+    .usercenter {
+        display: inline-block;
+        width: 100%;
+        max-width: 758px;
+    }
 
-		.flip-container .flipper, .flip-container .flipper {
-			.rotateY(180deg);
-		}
-	}
+    .poster {
+        margin-bottom: 10px;
+    }
 
-	.flip-container, .front, .back {
-		width: 100px;
-		height: 100px;
-	}
+    .line {
+        display: block;
+        margin: 10px 0 10px 10px;
+        color: #dcdcdc;
+        text-align: left;
+        text-decoration: none;
+    }
 
-	.flipper {
-		position: relative;
-		.transition-delay(0.1s);
-		.transition-duration(0.6s);
-		-webkit-transform-style: preserve-3d;
-		-moz-transform-style: preserve-3d;
-		-ms-transform-style: preserve-3d;
-		transform-style: preserve-3d;
-	}
+    header.line {
+        font-size: 16px;
+        color: #f5f5f5;
+        cursor: default;
+        text-align: center;
+    }
 
-	.front, .back {
-		position: absolute;
-		top: 0;
-		left: 0;
-		-webkit-backface-visibility: hidden; /* hide back of pane during swap */
-		-moz-backface-visibility: hidden;
-		-ms-backface-visibility: hidden;
-		backface-visibility: hidden;
-	}
+    .flip-container {
+        float: left;
+        margin: 0 10px 0 0;
+        .perspective(1000); /* entire container, keeps perspective */
+    }
 
-	.front {
-		z-index: 2; /* front pane, placed above back */
-	}
+    .line:hover,
+    .line.hover {
+        color: #fafafa;
 
-	.back {
-		padding-top: 82px;
-		text-align: center;
-		.rotateY(180deg); /* back, initially hidden pane */
-	}
+        .flip-container .flipper,
+        .flip-container .flipper {
+            .rotateY(180deg);
+        }
+    }
 
-	.donate {
-		text-decoration: none;
-		color: #CCD2DA;
-		border-width: 0 0 1px 0;
-		border-style: dotted;
-		border-color: #CCD2DA;
+    .flip-container,
+    .front,
+    .back {
+        width: 100px;
+        height: 100px;
+    }
 
-		&:hover {
-			color: #fff;
-			border-color: #fff;
-		}
-	}
+    .flipper {
+        position: relative;
+        .transition-delay(0.1s);
+        .transition-duration(0.6s);
 
-	.lineBody {
-		margin-top: -4px;
-		.transition(color .3s linear);
-	}
-	.humanName {
-		font-size: 14px;
-	}
-	.humanAbout {
-		font-size: 12px;
-	}
+        -webkit-transform-style: preserve-3d;
+        -moz-transform-style: preserve-3d;
+        -ms-transform-style: preserve-3d;
+        transform-style: preserve-3d;
+    }
+
+    .front,
+    .back {
+        position: absolute;
+        top: 0;
+        left: 0;
+        -webkit-backface-visibility: hidden; /* hide back of pane during swap */
+        -moz-backface-visibility: hidden;
+        -ms-backface-visibility: hidden;
+        backface-visibility: hidden;
+    }
+
+    .front {
+        z-index: 2; /* front pane, placed above back */
+    }
+
+    .back {
+        padding-top: 82px;
+        text-align: center;
+        .rotateY(180deg); /* back, initially hidden pane */
+    }
+
+    .donate {
+        text-decoration: none;
+        color: #ccd2da;
+        border-width: 0 0 1px;
+        border-style: dotted;
+        border-color: #ccd2da;
+
+        &:hover {
+            color: #fff;
+            border-color: #fff;
+        }
+    }
+
+    .lineBody {
+        margin-top: -4px;
+        .transition(color 0.3s linear);
+    }
+
+    .humanName {
+        font-size: 14px;
+    }
+
+    .humanAbout {
+        font-size: 12px;
+    }
 }
