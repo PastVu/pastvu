@@ -175,12 +175,12 @@
             background-color: fade(#aaa, 60%);
             pointer-events: none; //Чтобы клик пробивал до yearSlider и менял год
 
-            &.L {
+            &.L { /* stylelint-disable-line selector-class-pattern */
                 left: 36px;
                 border-width: 1px 0 1px 1px;
             }
 
-            &.R {
+            &.R { /* stylelint-disable-line selector-class-pattern */
                 right: 36px;
                 border-width: 1px 1px 1px 0;
             }
@@ -200,14 +200,14 @@
                 color: #fff;
             }
 
-            &.L {
+            &.L { /* stylelint-disable-line selector-class-pattern */
                 width: 34px;
                 margin-left: -32px;
                 padding-right: 3px;
                 background: url(/img/misc/slidel.png) 0 0 no-repeat;
             }
 
-            &.R {
+            &.R { /* stylelint-disable-line selector-class-pattern */
                 width: 34px;
                 margin-left: -2px;
                 padding-left: 2px;
@@ -226,6 +226,8 @@
         .transition(none);
 
         .leaflet-popup-content-wrapper {
+            padding-left: 0;
+            padding-right: 0;
             border-radius: 0;
             .box-shadow(0 1px 12px rgba(0, 0, 0, 0.6));
 
@@ -237,11 +239,6 @@
         .leaflet-popup-content-wrapper,
         .leaflet-popup-tip {
             background-color: darken(@MainBlueColor, 3%);
-        }
-
-        .leaflet-popup-content-wrapper {
-            padding-left: 0;
-            padding-right: 0;
         }
 
         .leaflet-popup-content {
@@ -638,7 +635,7 @@
         line-height: 12px;
         font-size: 11px;
         font-weight: bold;
-        font-family: Arial;
+        font-family: Arial, sans-serif;
         text-align: center;
         border-radius: 50%;
         .box-shadow(0 0 1px 1px #fff);
