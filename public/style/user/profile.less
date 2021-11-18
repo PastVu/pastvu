@@ -1,29 +1,31 @@
-@import "../_vars.less";
-@import "../bs/variables.less";
-@import "../bs/mixins.less";
+@import '../_vars.less';
+@import '../bs/variables.less';
+@import '../bs/mixins.less';
 
-.user_profile .form-horizontal{
-	padding: 0 0 0 20px;
+.user_profile .form-horizontal {
+    padding: 0 0 0 20px;
 
-	.control-label {
-		padding-right: 10px;
-	}
+    .control-label {
+        padding-right: 10px;
+    }
 
-	&.canBeEdit {
-	}
+    &.canBeEdit {
+    }
 
-	&.cannotBeEdit {
-		.control-label {
-			text-align: left;
-		}
-		.form-control {
-			box-shadow: none;
-			border: none;
-			background-color: transparent;
-			cursor: default;
-		}
-		textarea {
-			width: 90%;
-		}
-	}
+    &.cannotBeEdit {
+        .control-label {
+            text-align: left;
+        }
+
+        .form-control {
+            box-shadow: none;
+            border: none;
+            background-color: transparent;
+            cursor: default;
+        }
+
+        textarea {
+            width: 90%;
+        }
+    }
 }

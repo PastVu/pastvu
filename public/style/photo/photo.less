@@ -1,13 +1,13 @@
-@import "../_vars.less";
-@import "../bs/variables.less";
-@import "../bs/mixins.less";
+@import '../_vars.less';
+@import '../bs/variables.less';
+@import '../bs/mixins.less';
 
 @toolColor: #677A8F;
 @toolColorHover: @MainBlueColor;
 
 .photo {
     position: relative;
-    padding: 7px .2% 0 .5%;
+    padding: 7px 0.2% 0 0.5%;
 
     .spanner {
         height: 80px;
@@ -17,7 +17,7 @@
         display: block;
         margin-bottom: 5px;
         opacity: 0.8;
-        transition: opacity .2s linear;
+        transition: opacity 0.2s linear;
 
         &:hover {
             opacity: 1;
@@ -37,9 +37,10 @@
             }
         }
     }
+
     .photoMsg {
         display: inline-block;
-        margin: 0 0 3px 0;
+        margin: 0 0 3px;
         font-size: @font-size-small;
         font-weight: normal;
         cursor: default;
@@ -67,6 +68,7 @@
         max-width: 100%;
         padding-right: 24px;
     }
+
     .imgMiddleWrap {
         position: relative;
         max-width: 100%;
@@ -84,6 +86,7 @@
         .fragsWrap {
             position: static;
         }
+
         .photoFrag {
             position: absolute;
             display: none;
@@ -91,43 +94,55 @@
             cursor: pointer;
             border: 1px solid transparent;
         }
+
         &.fragSensitive {
             .photoFrag {
                 display: block;
             }
 
-            &:hover .photoFrag, .photoFrag.hl {
+            &:hover .photoFrag,
+            .photoFrag.hl {
                 .box-shadow(0 0 0 1px #000);
             }
+
             &:hover .photoFrag {
                 border-color: #fff;
-                background-color: rgba(255, 255, 255, 0.1);
+                background-color: rgba(255, 255, 255, 10%);
             }
-            &:hover .photoFrag.hl, .photoFrag.hl {
+
+            &:hover .photoFrag.hl,
+            .photoFrag.hl {
                 border-color: #ffbe00;
                 background-color: transparent;
             }
             //Такая отмена стилей требуется IE9
             &.fragHover {
-                &:hover .photoFrag, .photoFrag.hl {
+                &:hover .photoFrag,
+                .photoFrag.hl {
                     .box-shadow(none);
                 }
+
                 &:hover .photoFrag {
                     border-color: transparent;
                     background-color: transparent;
                 }
-                &:hover .photoFrag.hl, .photoFrag.hl {
+
+                &:hover .photoFrag.hl,
+                .photoFrag.hl {
                     border-color: transparent;
                     background-color: transparent;
                 }
             }
-            &:hover .photoFrag:hover, &:hover .photoFrag.hl:hover {
+
+            &:hover .photoFrag:hover,
+            &:hover .photoFrag.hl:hover {
                 border-color: #fff !important;
             }
         }
 
         .popover {
             z-index: 10010;
+
             .popover-content {
                 max-height: 195px;
                 text-overflow: ellipsis;
@@ -138,15 +153,18 @@
             .photoLoading {
                 display: block;
             }
+
             .photoFrag {
                 display: none;
             }
         }
     }
+
     .imgWrap {
         max-width: 100%;
         overflow: hidden;
     }
+
     .photoImg {
         display: block;
         max-width: 100%;
@@ -157,8 +175,8 @@
         top: 0;
         right: 0;
         width: 24px;
-        opacity: .95;
-        .transition(opacity .1s linear);
+        opacity: 0.95;
+        .transition(opacity 0.1s linear);
 
         &:hover {
             opacity: 1;
@@ -170,12 +188,12 @@
             width: 100%;
             margin-bottom: -4px;
             font-size: 12px;
-            color: #F5F5F5;
+            color: #f5f5f5;
             cursor: default;
             white-space: nowrap;
             text-decoration: none;
             background-color: @toolColor;
-            transition: all .25s ease-out;
+            transition: all 0.25s ease-out;
 
             &:hover {
                 color: #fff;
@@ -186,16 +204,19 @@
                 cursor: help;
             }
         }
+
         .type {
             .glyphicon {
                 padding-top: 3px;
                 font-size: 15px;
             }
         }
+
         .watched {
             padding-top: 2px;
 
-            > .watch, > .glyphicon {
+            > .watch,
+            > .glyphicon {
                 padding: 1px 0;
 
                 &:hover {
@@ -218,7 +239,11 @@
             line-height: 17px;
             cursor: default;
         }
-        .tltp-wrap, .sizeThis, .sizeStandard, .sizeOrigin {
+
+        .tltp-wrap,
+        .sizeThis,
+        .sizeStandard,
+        .sizeOrigin {
             display: inline-block;
             white-space: nowrap;
         }
@@ -230,7 +255,7 @@
     }
 
     .downloadByRole {
-        color: #29C729;
+        color: #29c729;
     }
 
     /*
@@ -253,19 +278,25 @@
             background: url(/img/misc/border-anim-h.gif) repeat-x left bottom;
         }
     }
-    .imgareaselect-border1, .imgareaselect-border2,
-    .imgareaselect-border3, .imgareaselect-border4 {
+
+    .imgareaselect-border1,
+    .imgareaselect-border2,
+    .imgareaselect-border3,
+    .imgareaselect-border4 {
         opacity: 0.6;
     }
+
     .imgareaselect-handle {
         background-color: #fff;
         border: solid 1px #000;
         opacity: 0.6;
     }
+
     .imgareaselect-outer {
         background-color: #000;
         opacity: 0.6;
     }
+
     .imgareaselect-selection {
     }
 
@@ -275,21 +306,25 @@
         float: right;
         z-index: 2; //Чтобы был "сверху" комментариев
     }
+
     .rightrow {
-        margin: 0 0 5px 0;
+        margin: 0 0 5px;
 
         &:last-child {
             margin-bottom: 0;
         }
+
         .lineBehind {
             margin-bottom: 1px;
         }
     }
+
     .tableUser {
         width: 100%;
-        margin-top: 0px;
-        border-width: 0px;
+        margin-top: 0;
+        border-width: 0;
     }
+
     .avatar {
         display: inline-block;
         vertical-align: top;
@@ -301,6 +336,7 @@
             opacity: 0;
         }
     }
+
     .userInfo {
         white-space: nowrap;
         overflow: hidden;
@@ -308,13 +344,15 @@
         .rank {
             width: 57px;
             height: 14px;
-            margin: 0px 0 3px 5px;
+            margin: 0 0 3px 5px;
         }
     }
+
     .photoMap {
         height: 500px;
         margin-bottom: 1px;
     }
+
     .userRibbon {
         height: 60px;
         overflow: hidden;
@@ -330,12 +368,14 @@
             &:last-child {
                 margin-right: 0 !important;
             }
+
             .status {
                 bottom: 2px;
                 font-size: @font-size-small;
             }
         }
     }
+
     .nearesTiles {
         display: flex;
         height: auto;
@@ -364,7 +404,7 @@
                 font-weight: bold;
                 font-size: 18px;
                 line-height: 22px;
-                text-rendering: optimizelegibility;
+                text-rendering: optimizeLegibility;
             }
 
             .infoName {
@@ -375,7 +415,7 @@
     }
 
     .changed {
-        color: #DA8300;
+        color: #da8300;
     }
 
     .region {
@@ -383,13 +423,13 @@
         white-space: nowrap;
 
         &.err {
-            color: #E49F0D;
+            color: #e49f0d;
         }
 
         .region-type-stat {
             display: inline-block;
-            margin: 0 4px 1px 4px;
-            padding: 1px 1px 0 1px;
+            margin: 0 4px 1px;
+            padding: 1px 1px 0;
             cursor: default;
             line-height: 13px;
             color: @MainLigthColor;
@@ -415,12 +455,14 @@
             }
         }
     }
+
     .regionEdit {
         margin-left: 3px;
         font-size: @font-size-mini;
         font-weight: bold;
         line-height: 19px;
     }
+
     .yregion {
         white-space: nowrap;
 
@@ -450,6 +492,7 @@
             bottom: -5px;
         }
     }
+
     .rytltp-wrap:hover {
         > .rytltp.tltp-animate-move {
             transform: translate(-50%, 2px);
@@ -469,6 +512,7 @@
             transform: translateX(14px);
         }
     }
+
     .ytltpBetween {
         margin-left: -35px;
         padding-left: 6px;
@@ -478,6 +522,7 @@
             transform: translateX(35px);
         }
     }
+
     .ytltp2 {
         margin-left: -9.5px;
         padding-left: 6px;
@@ -493,7 +538,7 @@
             .fieldWrap {
                 position: relative;
                 margin-top: 5px;
-                .transition(margin-top .15s ease-in-out);
+                .transition(margin-top 0.15s ease-in-out);
 
                 > label {
                     position: absolute;
@@ -502,7 +547,7 @@
                     color: #888;
                     opacity: 0;
                     font-size: @font-size-mini;
-                    .transition(all .15s ease-in-out);
+                    .transition(all 0.15s ease-in-out);
 
                     &.on {
                         color: #64ace5;
@@ -516,6 +561,7 @@
                         top: -15px;
                         opacity: 1;
                     }
+
                     > .form-control {
                         .box-shadow(none);
                     }
@@ -525,12 +571,13 @@
                     line-height: 19px;
                 }
             }
+
             .form-control {
                 position: relative;
                 padding: 1px 2px;
                 height: 22px;
                 color: #333;
-                background-color: #F0F0F0;
+                background-color: #f0f0f0;
 
                 &.title {
                     height: 24px;
@@ -538,6 +585,7 @@
                     font-size: 18px;
                     line-height: 24px;
                 }
+
                 &.year {
                     display: inline-block;
                     width: 38px;
@@ -558,12 +606,15 @@
                 line-height: 20px;
             }
 
-            .yearsEdit, .regions {
+            .yearsEdit,
+            .regions {
                 display: inline-block;
             }
+
             .yearsEdit {
                 margin-right: 10px;
             }
+
             .regions {
                 &.loading {
                     padding-right: 72px;
@@ -588,9 +639,10 @@
                     background-color: #fdfdfd;
                 }
             }
+
             .descInput {
                 min-height: 40px;
-                .transition(all .2s);
+                .transition(all 0.2s);
 
                 &::-webkit-scrollbar-button:decrement {
                     height: 0;
@@ -598,9 +650,10 @@
             }
         }
     }
+
     .mandatory:not(.hasContent) {
         .form-control {
-            border-color: #E49F0D;
+            border-color: #e49f0d;
         }
     }
 
@@ -608,8 +661,8 @@
         display: block;
         padding: 0 4px;
         margin: 0;
-        background-color: #F5F5F5;
-        border: 1px solid #E2E2E2;
+        background-color: #f5f5f5;
+        border: 1px solid #e2e2e2;
     }
 
     .commentsContainer {
@@ -623,7 +676,7 @@
         margin-top: 10px;
 
         &.deny {
-            opacity: .6;
+            opacity: 0.6;
 
             &::after {
                 content: '';
@@ -653,11 +706,12 @@
 
 @media (max-width: @screen-xs-max) {
     .photo {
-        padding: 5px 2px 0 2px;
+        padding: 5px 2px 0;
 
         .rightPanel {
             float: none;
         }
+
         .commentsContainer {
             clear: both;
         }

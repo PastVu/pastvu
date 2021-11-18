@@ -14,11 +14,11 @@ module.exports = {
         'ecmaVersion': 2020,
         'sourceType': 'module',
         'ecmaFeatures': {
-            'objectLiteralDuplicateProperties': false
+            'objectLiteralDuplicateProperties': false,
         },
         'codeFrame': true, // Show the code frame in the reporter
         'babelOptions': {
-            'configFile': "./babel/server.config.js",
+            'configFile': './babel/server.config.js',
         },
     },
 
@@ -30,12 +30,12 @@ module.exports = {
         '@babel',
     ],
 
-    "extends": [
-        "plugin:jsdoc/recommended",
+    'extends': [
+        'plugin:jsdoc/recommended',
     ],
 
     // Warn about unused eslint-disable and eslint-disable-line comments
-    "reportUnusedDisableDirectives": true,
+    'reportUnusedDisableDirectives': true,
 
     'settings': {
     },
@@ -48,9 +48,9 @@ module.exports = {
         'jsdoc/require-returns': 0,
         'jsdoc/require-returns-description': 0,
         'jsdoc/no-undefined-types': [1, {
-                // Ideally this should be defined using typedef and refer to
-                // mongoose.Types.ObjectId.
-                'definedTypes': ['ObjectId'],
+            // Ideally this should be defined using typedef and refer to
+            // mongoose.Types.ObjectId.
+            'definedTypes': ['ObjectId'],
         }],
 
         // babel inserts `'use strict';` for us
@@ -217,7 +217,7 @@ module.exports = {
         // disallow magic numbers
         'no-magic-numbers': 0,
         // disallow use of multiple spaces
-        'no-multi-spaces': [2, {'ignoreEOLComments': true}],
+        'no-multi-spaces': [2, { 'ignoreEOLComments': true }],
         // disallow use of multiline strings
         'no-multi-str': 2,
         // disallow use of new operator when not part of the assignment or comparison
@@ -429,7 +429,7 @@ module.exports = {
         // require camel case names
         'camelcase': [0, { 'properties': 'never', 'ignoreDestructuring': true, allow: [] }],
         // enforce or disallow capitalization of the first letter of a comment
-        'capitalized-comments': [0, 'always', {'ignoreInlineComments': true, 'ignoreConsecutiveComments': true}],
+        'capitalized-comments': [0, 'always', { 'ignoreInlineComments': true, 'ignoreConsecutiveComments': true }],
         // enforce spacing before and after comma
         'comma-spacing': [2, { 'before': false, 'after': true }],
         // enforce one true comma style
@@ -489,7 +489,7 @@ module.exports = {
                 'return': { 'after': true },
                 'throw': { 'after': true },
                 'case': { 'after': true },
-            }
+            },
         }],
         // enforce position of line comments
         'line-comment-position': 0,
@@ -511,7 +511,7 @@ module.exports = {
             'applyDefaultIgnorePatterns': true,
         }],
         // require or disallow an empty line between class members
-        'lines-between-class-members': [2, 'always', {'exceptAfterSingleLine': true}],
+        'lines-between-class-members': [2, 'always', { 'exceptAfterSingleLine': true }],
         // specify the maximum depth that blocks can be nested
         'max-depth': [0, 4],
         // maximum length of a line in your program
@@ -608,27 +608,26 @@ module.exports = {
         // require assignment operator shorthand where possible or prohibit it entirely
         'operator-assignment': 0,
         // enforce operators to be placed before or after line breaks
-        'operator-linebreak': [2, 'after', {overrides: {'|>': 'before'}}],
+        'operator-linebreak': [2, 'after', { overrides: { '|>': 'before' } }],
         // enforce padding within blocks
-        'padded-blocks': [2, {'blocks': 'never', 'classes': 'never', 'switches': 'never'}, {allowSingleLineBlocks: false}],
+        'padded-blocks': [2, { 'blocks': 'never', 'classes': 'never', 'switches': 'never' }, { allowSingleLineBlocks: false }],
         // require or disallow padding lines between statements
         'padding-line-between-statements': [2,
             // Always require blank lines after directive (like 'use-strict'), except between directives
-            {blankLine: 'always', prev: 'directive', next: '*'},
-            {blankLine: 'any',    prev: 'directive', next: 'directive'},
+            { blankLine: 'always', prev: 'directive', next: '*' },
+            { blankLine: 'any', prev: 'directive', next: 'directive' },
             // Always require blank lines after import, except between imports
-            {blankLine: 'always', prev: 'import', next: '*'},
-            {blankLine: 'any',    prev: 'import', next: 'import'},
+            { blankLine: 'always', prev: 'import', next: '*' },
+            { blankLine: 'any', prev: 'import', next: 'import' },
             // Always require blank lines before and after every sequence of variable declarations and export
-            {blankLine: 'always', prev: '*', next: ['const', 'let', 'var', 'export']},
-            {blankLine: 'always', prev: ['const', 'let', 'var', 'export'], next: '*'},
-            {blankLine: 'any',    prev: ['const', 'let', 'var', 'export'], next: ['const', 'let', 'var', 'export']},
+            { blankLine: 'always', prev: '*', next: ['const', 'let', 'var', 'export'] },
+            { blankLine: 'always', prev: ['const', 'let', 'var', 'export'], next: '*' },
+            { blankLine: 'any', prev: ['const', 'let', 'var', 'export'], next: ['const', 'let', 'var', 'export'] },
             // Always require blank lines before and after class declaration, if, do/while, switch, try, iife
-            {blankLine: 'always', prev: '*', next: ['if', 'class', 'for', 'do', 'while', 'switch', 'try', 'iife']},
-            {blankLine: 'always', prev: ['if', 'class', 'for', 'do', 'while', 'switch', 'try', 'iife'], next: '*'},
+            { blankLine: 'always', prev: '*', next: ['if', 'class', 'for', 'do', 'while', 'switch', 'try', 'iife'] },
+            { blankLine: 'always', prev: ['if', 'class', 'for', 'do', 'while', 'switch', 'try', 'iife'], next: '*' },
             // Always require blank lines before return statements
-            {blankLine: 'always', prev: '*', next: 'return'},
-        ],
+            { blankLine: 'always', prev: '*', next: 'return' }],
         // disallow the use of Math.pow in favor of the ** operator
         'prefer-exponentiation-operator': 0,
         // disallow using Object.assign with an object literal as the first argument and prefer the use of object spread instead
@@ -646,7 +645,7 @@ module.exports = {
         // enforce location of semicolons
         'semi-style': [2, 'last'],
         // require use of semicolons where they are valid instead of ASI
-        'semi': [2, 'always', {'omitLastInOneLineBlock': false}],
+        'semi': [2, 'always', { 'omitLastInOneLineBlock': false }],
         // requires object keys to be sorted
         'sort-keys': 0,
         // sort variables within the same declaration block
@@ -667,7 +666,7 @@ module.exports = {
             'markers': ['=', '!'],           // space here to support sprockets directives
         }],
         // enforce spacing around colons of switch statements
-        'switch-colon-spacing': [2, {'after': true, 'before': false}],
+        'switch-colon-spacing': [2, { 'after': true, 'before': false }],
         // require or disallow spacing between template tags and their literals
         'template-tag-spacing': [2, 'never'],
         // files must not begin with the Unicode Byte Order Mark (BOM)
@@ -694,7 +693,7 @@ module.exports = {
                 'object-shorthand': [2, 'consistent'],
                 // don't complain about private members of object
                 'no-underscore-dangle': 0,
-            }
-        }
-    ]
+            },
+        },
+    ],
 };

@@ -1,27 +1,24 @@
-@import "../_vars.less";
-@import "../bs/variables.less";
-@import "../bs/mixins.less";
+@import '../_vars.less';
+@import '../bs/variables.less';
+@import '../bs/mixins.less';
 
 @maxThumbDimension: 164px; // 246x164
 
 .gallery {
-	position: relative;
-	text-align: center;
+    position: relative;
+    text-align: center;
 
-	.rowoffset {
-		position: relative;
-		margin: 11px 8px 0 5px;
-	}
-
-	.filter {
-		line-height: 20px;
-	}
+    .rowoffset {
+        position: relative;
+        margin: 11px 8px 0 5px;
+    }
 
     .rowFilter {
         text-align: center;
     }
 
     .filter {
+        line-height: 20px;
         position: relative;
         display: inline-flex;
         margin: 0 20px;
@@ -32,21 +29,24 @@
         border: 1px solid #ccc;
         background-color: #fff;
     }
+
     .inactive {
-        &, * {
+        &,
+        * {
             cursor: default;
             user-select: none;
             pointer-events: none;
             color: @gray-light;
         }
 
-        .fVars .yearsSet > .years, .fVars .ccountSet {
+        .fVars .yearsSet > .years,
+        .fVars .ccountSet {
             font-weight: normal;
             color: @gray-light;
         }
 
-        input[type="checkbox"] {
-            opacity: .7;
+        input[type='checkbox'] {
+            opacity: 0.7;
         }
 
         .region {
@@ -58,7 +58,8 @@
         }
     }
 
-    .fToggle, .fExpand {
+    .fToggle,
+    .fExpand {
         position: absolute;
         top: -1px;
         width: 20px;
@@ -75,15 +76,18 @@
             color: @gray-darker;
         }
     }
+
     .fToggle {
         left: -21px;
         color: #008805;
         padding: 2px 4px 1px 3px;
         border-right-width: 0;
     }
+
     .fToggleInactive {
-        color: #AA4A4A;
+        color: #aa4a4a;
     }
+
     .fExpand {
         right: -21px;
         padding: 2px 3px 1px 4px;
@@ -110,10 +114,10 @@
         margin: 0 5px 0 -5px;
         padding: 0 5px;
         cursor: default;
-        border-color: #EEE;
+        border-color: #eee;
         border-style: solid;
         border-width: 0 1px 0 0;
-        background-color: #F5F5F5;
+        background-color: #f5f5f5;
     }
 
     .fNameRegion {
@@ -140,19 +144,21 @@
             line-height: 20px;
             vertical-align: baseline;
 
-            > input[type="checkbox"] {
+            > input[type='checkbox'] {
                 margin-left: -17px;
             }
         }
 
-        .years, .ccount {
+        .years,
+        .ccount {
             display: inline-block;
             width: 50px;
             height: 21px;
             text-align: center;
         }
 
-        &.yearsSet > .years, .ccountSet {
+        &.yearsSet > .years,
+        .ccountSet {
             font-weight: bold;
             color: @MainBlueColor;
         }
@@ -183,65 +189,69 @@
         cursor: pointer;
         border-width: 1px;
         border-style: solid;
-        background-color: #E4E4E4;
+        background-color: #e4e4e4;
         user-select: none;
-        transition: border-color ease-in-out .1s, color ease-in-out .1s;
+        transition: border-color ease-in-out 0.1s, color ease-in-out 0.1s;
 
         &.edit {
             color: #f09800;
-            border-color: rgba(255, 165, 0, 0.2);
+            border-color: rgba(255, 165, 0, 20%);
 
             > a {
                 display: block;
                 color: orange;
-                transition: color ease-in-out .1s;
+                transition: color ease-in-out 0.1s;
             }
 
             &:hover {
                 color: #ffbc06;
-                border-color: rgba(255, 165, 0, 0.5);
+                border-color: rgba(255, 165, 0, 50%);
 
                 > a {
                     color: #ffbc06;
                 }
             }
         }
+
         &.only {
             color: #2a961a;
-            border-color: rgba(4, 233, 11, 0.2);
+            border-color: rgba(4, 233, 11, 20%);
 
             &:hover {
                 color: #31b71e;
-                border-color: rgba(4, 233, 11, 0.5);
+                border-color: rgba(4, 233, 11, 50%);
             }
         }
+
         &.dis {
             color: #bd8a0d;
-            border-color: rgba(233, 157, 10, .2);
+            border-color: rgba(233, 157, 10, 20%);
 
             &:hover {
                 color: #f7a900;
-                border-color: rgba(233, 157, 10, .5);
+                border-color: rgba(233, 157, 10, 50%);
             }
         }
+
         &.del {
             color: #880824;
-            border-color: rgba(136, 12, 56, 0.2);
+            border-color: rgba(136, 12, 56, 20%);
 
             &:hover {
                 color: #ad0a2e;
-                border-color: rgba(136, 12, 56, 0.5);
+                border-color: rgba(136, 12, 56, 50%);
             }
         }
+
         &.select {
             width: auto;
             padding: 0 2px;
             color: #192063;
-            border-color: rgba(25, 32, 99, 0.15);
+            border-color: rgba(25, 32, 99, 15%);
 
             &:hover {
                 color: #2938c4;
-                border-color: rgba(61, 76, 203, 0.45);
+                border-color: rgba(61, 76, 203, 45%);
             }
 
             > .glyphicon {
@@ -266,19 +276,19 @@
         line-height: 20px;
         text-align: center;
         cursor: default;
-        background-color: #E4E4E4;
+        background-color: #e4e4e4;
 
         &.dis {
-            color: #D1D1D1;
+            color: #d1d1d1;
             background-color: #f1f1f1;
 
             .rtgl.dis {
-                color: #2A9C1A;
-                border-color: rgba(4, 233, 11, 0.2);
+                color: #2a9c1a;
+                border-color: rgba(4, 233, 11, 20%);
 
                 &:hover {
                     color: #31b71e;
-                    border-color: rgba(4, 233, 11, 0.5);
+                    border-color: rgba(4, 233, 11, 50%);
                 }
             }
         }
@@ -308,117 +318,122 @@
         }
     }
 
-	.switch {
-		text-align: right;
+    .switch {
+        text-align: right;
 
-		> .btn-group {
-			margin-left: 10px;
-		}
-	}
-	.pag {
-		margin-top: 2px;
-		margin-bottom: 16px;
-		min-height: 24px;
-		text-align: center;
-		background-repeat: no-repeat;
-		background-position: 50% 50%;
+        > .btn-group {
+            margin-left: 10px;
+        }
+    }
 
-		&.loading {
-			background-image: url(/img/misc/load.gif);
-		}
-		&.hasPag {
-			margin-bottom: 4px;
-			padding-bottom: 12px;
-			background-position: 50% 100%;
-		}
-	}
-	.brief {
-		line-height: 24px;
-		white-space: nowrap;
-	}
-	.pagination {
-		margin-top: 0;
-		margin-bottom: 0;
-	}
-	.brief, .pagination {
-		vertical-align: middle;
-	}
+    .pag {
+        margin-top: 2px;
+        margin-bottom: 16px;
+        min-height: 24px;
+        text-align: center;
+        background-repeat: no-repeat;
+        background-position: 50% 50%;
 
-	.thumbs {
-		display: inline-block;
-		min-width: 470px;
-		text-align: left;
-	}
+        &.loading {
+            background-image: url(/img/misc/load.gif);
+        }
 
-	.photoPreview {
-		&.addPhoto {
-			color: #B9B9B9;
-			opacity: 1;
+        &.hasPag {
+            margin-bottom: 4px;
+            padding-bottom: 12px;
+            background-position: 50% 100%;
+        }
+    }
 
-			.plusPhoto {
-				position: absolute;
-				top: 50%;
-				left: 50%;
-				margin-top: -20px;
-				margin-left: -30px;
-				width: 62px;
-				height: 16px;
-				background-color: #B9B9B9;
+    .brief {
+        line-height: 24px;
+        white-space: nowrap;
+    }
 
-				&::after {
-					content: '';
-					position: absolute;
-					top: -23px;
-					left: 23px;
-					width: 16px;
-					height: 62px;
-					background-color: inherit;
-				}
-			}
+    .pagination {
+        margin-top: 0;
+        margin-bottom: 0;
+    }
 
-			.desc {
-				position: absolute;
-				top: auto;
-				left: 14px;
-				right: 5px;
-				bottom: 19%;
-				text-align: center;
-				font-size: 21px;
-			}
+    .brief,
+    .pagination {
+        vertical-align: middle;
+    }
 
-			&:hover {
-				color: @MainLigthColor;
+    .thumbs {
+        display: inline-block;
+        min-width: 470px;
+        text-align: left;
+    }
 
-				.plusPhoto {
-					background-color: @MainLigthColor;
-				}
-			}
+    .photoPreview {
+        &.addPhoto {
+            color: #b9b9b9;
+            opacity: 1;
 
-		}
+            .plusPhoto {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                margin-top: -20px;
+                margin-left: -30px;
+                width: 62px;
+                height: 16px;
+                background-color: #b9b9b9;
 
-		&.loadingPhoto {
-			position: relative;
-			visibility: visible;
-			opacity: 1;
-			color: #555E85;
-			text-align: center;
-			vertical-align: top;
+                &::after {
+                    content: '';
+                    position: absolute;
+                    top: -23px;
+                    left: 23px;
+                    width: 16px;
+                    height: 62px;
+                    background-color: inherit;
+                }
+            }
 
-			.loadPhoto {
-				position: absolute;
-				top: 50%;
-				left: 50%;
-				width: 107px;
-				margin-top: -10px;
-				margin-left: -53px;
-				padding-top: 10px;
-				font-size: 14px;
-				background-image: url(/img/misc/load.gif);
-				background-position: 50% 0;
-				background-repeat: no-repeat;
-			}
-		}
-	}
+            .desc {
+                position: absolute;
+                top: auto;
+                left: 14px;
+                right: 5px;
+                bottom: 19%;
+                text-align: center;
+                font-size: 21px;
+            }
+
+            &:hover {
+                color: @MainLigthColor;
+
+                .plusPhoto {
+                    background-color: @MainLigthColor;
+                }
+            }
+        }
+
+        &.loadingPhoto {
+            position: relative;
+            visibility: visible;
+            opacity: 1;
+            color: #555e85;
+            text-align: center;
+            vertical-align: top;
+
+            .loadPhoto {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                width: 107px;
+                margin-top: -10px;
+                margin-left: -53px;
+                padding-top: 10px;
+                font-size: 14px;
+                background-image: url(/img/misc/load.gif);
+                background-position: 50% 0;
+                background-repeat: no-repeat;
+            }
+        }
+    }
 }
 
 //Chrome до 29 версии считает ширину для @media с вычитанием ширины скрола
@@ -426,157 +441,169 @@
 
 //Задаем размеры шрифтов с перекрытием границ размеров изображений превью
 @media (min-width: 1281px) and (max-width: 1540px) {
-	.gallery {
-		.photoPreview {
-			font-size: 12px;
-			padding-bottom: @PhotoInfoHeight - 3;
+    .gallery {
+        .photoPreview {
+            font-size: 12px;
+            padding-bottom: @PhotoInfoHeight - 3;
 
-			&.addPhoto {
-				.desc {
-					font-size: 16px;
-				}
-			}
-			.rightBlocks {
-				bottom: @PhotoInfoHeight + 6 - 3;
-			}
-			.info {
-				height: @PhotoInfoHeight - 3;
-				padding-left: 2px;
-				> .title {
-					padding-top: 2px;
-					font-size: 15px;
-					line-height: 17px;
-				}
-				> .regions {
-					font-size: 14px;
-					line-height: 15px;
-				}
-			}
-		}
-	}
+            &.addPhoto {
+                .desc {
+                    font-size: 16px;
+                }
+            }
+
+            .rightBlocks {
+                bottom: @PhotoInfoHeight + 6 - 3;
+            }
+
+            .info {
+                height: @PhotoInfoHeight - 3;
+                padding-left: 2px;
+
+                > .title {
+                    padding-top: 2px;
+                    font-size: 15px;
+                    line-height: 17px;
+                }
+
+                > .regions {
+                    font-size: 14px;
+                    line-height: 15px;
+                }
+            }
+        }
+    }
 }
 
 @media (min-width: 900px) and (max-width: 1280px) {
-	.gallery {
-		.photoPreview {
-			font-size: @font-size-small;
-			padding-bottom: @PhotoInfoHeight - 5;
+    .gallery {
+        .photoPreview {
+            font-size: @font-size-small;
+            padding-bottom: @PhotoInfoHeight - 5;
 
-			&.addPhoto {
-				.desc {
-					font-size: 14px;
-				}
-			}
-			.rightBlocks {
-				bottom: @PhotoInfoHeight + 6 - 5;
-			}
-			.info {
-				height: @PhotoInfoHeight - 5;
-				padding-left: 2px;
-				> .title {
-					padding-top: 1px;
-					font-size: 14px;
-					line-height: 17px;
-				}
-				> .regions {
-					font-size: 13px;
-					line-height: 15px;
-				}
-			}
-		}
-	}
+            &.addPhoto {
+                .desc {
+                    font-size: 14px;
+                }
+            }
+
+            .rightBlocks {
+                bottom: @PhotoInfoHeight + 6 - 5;
+            }
+
+            .info {
+                height: @PhotoInfoHeight - 5;
+                padding-left: 2px;
+
+                > .title {
+                    padding-top: 1px;
+                    font-size: 14px;
+                    line-height: 17px;
+                }
+
+                > .regions {
+                    font-size: 13px;
+                    line-height: 15px;
+                }
+            }
+        }
+    }
 }
 
 @media (max-width: 899px) {
-	.gallery {
+    .gallery {
         // Make filter in one column
         .filter {
             display: inline-block;
         }
 
-		.photoPreview {
-			font-size: @font-size-mini;
-			padding-bottom: @PhotoInfoHeight - 7;
+        .photoPreview {
+            font-size: @font-size-mini;
+            padding-bottom: @PhotoInfoHeight - 7;
 
-			&.addPhoto {
-				.desc {
-					font-size: 13px;
-				}
-			}
-			.rightBlocks {
-				min-width: 12px;
-				bottom: @PhotoInfoHeight + 6 - 7;
-				font-size: @font-size-mini;
-				line-height: 13px;
-			}
-			.info {
-				height: @PhotoInfoHeight - 7;
-				padding-left: 1px;
-				> .title {
-					padding-top: 1px;
-					font-size: 13px;
-					line-height: 16px;
-				}
-				> .regions {
-					font-size: 12px;
-					line-height: 13px;
-				}
-			}
-		}
-	}
+            &.addPhoto {
+                .desc {
+                    font-size: 13px;
+                }
+            }
+
+            .rightBlocks {
+                min-width: 12px;
+                bottom: @PhotoInfoHeight + 6 - 7;
+                font-size: @font-size-mini;
+                line-height: 13px;
+            }
+
+            .info {
+                height: @PhotoInfoHeight - 7;
+                padding-left: 1px;
+
+                > .title {
+                    padding-top: 1px;
+                    font-size: 13px;
+                    line-height: 16px;
+                }
+
+                > .regions {
+                    font-size: 12px;
+                    line-height: 13px;
+                }
+            }
+        }
+    }
 }
 
 //Задаем размеры отступов изображений превью
 @media (min-width: 1000px) and (max-width: 1440px) {
-	.gallery {
-		.photoPreview {
-			margin-left: 5px;
-			margin-right: 5px;
+    .gallery {
+        .photoPreview {
+            margin-left: 5px;
+            margin-right: 5px;
 
-			&.addPhoto {
-				.plusPhoto {
-					margin-top: -19px;
-					margin-left: -26px;
-					width: 52px;
-					height: 14px;
+            &.addPhoto {
+                .plusPhoto {
+                    margin-top: -19px;
+                    margin-left: -26px;
+                    width: 52px;
+                    height: 14px;
 
-					&::after {
-						content: '';
-						position: absolute;
-						top: -19px;
-						left: 19px;
-						width: 14px;
-						height: 52px;
-					}
-				}
-			}
-		}
-	}
+                    &::after {
+                        content: '';
+                        position: absolute;
+                        top: -19px;
+                        left: 19px;
+                        width: 14px;
+                        height: 52px;
+                    }
+                }
+            }
+        }
+    }
 }
 
 @media (max-width: 999px) {
-	.gallery {
-		.photoPreview {
-			margin-left: 4px;
-			margin-right: 4px;
+    .gallery {
+        .photoPreview {
+            margin-left: 4px;
+            margin-right: 4px;
 
-			&.addPhoto {
-				.plusPhoto {
-					margin-top: -18px;
-					margin-left: -21px;
-					width: 41px;
-					height: 12px;
+            &.addPhoto {
+                .plusPhoto {
+                    margin-top: -18px;
+                    margin-left: -21px;
+                    width: 41px;
+                    height: 12px;
 
-					&::after {
-						content: '';
-						position: absolute;
-						top: -15px;
-						left: 15px;
-						width: 12px;
-						height: 41px;
-					}
-				}
-			}
-		}
-	}
+                    &::after {
+                        content: '';
+                        position: absolute;
+                        top: -15px;
+                        left: 15px;
+                        width: 12px;
+                        height: 41px;
+                    }
+                }
+            }
+        }
+    }
 }

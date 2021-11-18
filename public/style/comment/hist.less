@@ -1,88 +1,99 @@
-@import "../_vars.less";
-@import "../bs/variables.less";
-@import "../bs/mixins.less";
+@import '../_vars.less';
+@import '../bs/variables.less';
+@import '../bs/mixins.less';
 
 .commentHist {
-	padding: 8px 0;
+    padding: 8px 0;
 
-	.hist {
-		position: relative;
-		display: block;
-		margin: 5px 0 9px 0;
+    .hist {
+        position: relative;
+        display: block;
+        margin: 5px 0 9px;
 
-		.pull-left {
-			padding: 2px 0 3px 0;
-		}
-		.media-object {
-			width: 50px;
-			height: 50px;
-		}
-		.histHead {
-			margin-bottom: 2px;
-			line-height: 14px;
-		}
-		.author {
-			display: inline-block;
-			cursor: pointer;
-		}
-		.role {
-			display: inline-block;
-			font-size: @font-size-mini;
-			color: #888;
-			cursor: default;
-		}
-		.histStamp {
-			display: inline-block;
-			font-size: @font-size-mini;
-			color: #888;
-			cursor: default;
-		}
+        .pull-left {
+            padding: 2px 0 3px;
+        }
 
-		.info, .txtSwitch {
-			display: inline-block;
-			margin-bottom: 2px;
-			color: @gray;
-			font-size: @font-size-small;
-			line-height: 16px;
-			border-color: @gray;
-		}
-		.info {
-			margin-right: 7px;
-			padding-left: 3px;
-			border-style: solid;
-			border-width: 0 0 1px 1px;
+        .media-object {
+            width: 50px;
+            height: 50px;
+        }
 
-			&.red {
-				color: @MainRedColor;
-			}
-			&.green {
-				color: @MainGreenColor;
-			}
-		}
-		.txtSwitch {
-			margin-left: -2px;
-			cursor: pointer;
-			border-style: dotted;
-			border-width: 0 0 1px 0;
+        .histHead {
+            margin-bottom: 2px;
+            line-height: 14px;
+        }
 
-			&:hover {
-				color: @MainBlueColor;
-				border-color: @MainBlueColor;
-			}
-		}
+        .author {
+            display: inline-block;
+            cursor: pointer;
+        }
 
-		.histCat {
-			display: inline;
-			font-weight: bold;
-		}
-		.histText {
-			max-width: 1000px;
-			color: @text-color;
-			line-height: 18px;
-		}
-		.histDel {
-			max-width: 1000px;
-			color: @text-color;
-		}
-	}
+        .role {
+            display: inline-block;
+            font-size: @font-size-mini;
+            color: #888;
+            cursor: default;
+        }
+
+        .histStamp {
+            display: inline-block;
+            font-size: @font-size-mini;
+            color: #888;
+            cursor: default;
+        }
+
+        .info,
+        .txtSwitch {
+            display: inline-block;
+            margin-bottom: 2px;
+            color: @gray;
+            font-size: @font-size-small;
+            line-height: 16px;
+            border-color: @gray;
+        }
+
+        .info {
+            margin-right: 7px;
+            padding-left: 3px;
+            border-style: solid;
+            border-width: 0 0 1px 1px;
+
+            &.red {
+                color: @MainRedColor;
+            }
+
+            &.green {
+                color: @MainGreenColor;
+            }
+        }
+
+        .txtSwitch {
+            margin-left: -2px;
+            cursor: pointer;
+            border-style: dotted;
+            border-width: 0 0 1px;
+
+            &:hover {
+                color: @MainBlueColor;
+                border-color: @MainBlueColor;
+            }
+        }
+
+        .histCat {
+            display: inline;
+            font-weight: bold;
+        }
+
+        .histText {
+            max-width: 1000px;
+            color: @text-color;
+            line-height: 18px;
+        }
+
+        .histDel {
+            max-width: 1000px;
+            color: @text-color;
+        }
+    }
 }

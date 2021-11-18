@@ -1,6 +1,6 @@
-@import "../_vars.less";
-@import "../bs/variables.less";
-@import "../bs/mixins.less";
+@import '../_vars.less';
+@import '../bs/variables.less';
+@import '../bs/mixins.less';
 
 .comments {
     position: relative;
@@ -23,25 +23,30 @@
         margin-top: 2px;
         margin-bottom: 4px;
     }
+
     .pag {
         margin-top: 2px;
         margin-bottom: 14px;
         text-align: center;
     }
+
     .brief {
         line-height: 24px;
         white-space: nowrap;
 
         &.pageLoading {
             padding-right: 75px;
-            background: url(/img/misc/load.gif) 100% 50% no-repeat;;
+            background: url(/img/misc/load.gif) 100% 50% no-repeat;
         }
     }
+
     .pagination {
         margin-top: 0;
         margin-bottom: 0;
     }
-    .brief, .pagination {
+
+    .brief,
+    .pagination {
         vertical-align: middle;
     }
 
@@ -63,6 +68,7 @@
                 width: 90px;
                 height: 60px;
             }
+
             &.fail::after {
                 margin: -17px 0 0 -14px;
                 font-size: 28px;
@@ -78,26 +84,32 @@
             line-height: 14px;
             margin-bottom: 1px;
         }
+
         .photoName {
             display: inline;
             cursor: pointer;
         }
+
         .photoYear {
             font-size: @font-size-small;
             white-space: nowrap;
         }
-        .commentStamp, .commentChanged {
+
+        .commentStamp,
+        .commentChanged {
             display: inline;
             font-size: @font-size-mini;
             cursor: pointer;
             color: #888;
             white-space: nowrap;
         }
+
         .commentChanged {
             &:hover {
                 color: @MainBlueColor;
             }
         }
+
         .commentText {
             display: block;
             margin-left: 101px;
@@ -107,7 +119,7 @@
 
         &.delopen {
             box-shadow: -1px 0 0 0 @MainRedColor;
-            background-color: rgba(255, 99, 0, .1);
+            background-color: rgba(255, 99, 0, 10%);
         }
     }
 }

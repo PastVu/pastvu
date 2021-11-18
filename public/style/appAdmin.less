@@ -1,28 +1,32 @@
-@import "_vars.less";
-@import "bs/variables.less";
-@import "bs/mixins.less";
+@import '_vars.less';
+@import 'bs/variables.less';
+@import 'bs/mixins.less';
 
 #topContainer {
-	position: fixed;
-	top: 0;
-	left: 0;
-	right: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
     flex: none;
     z-index: @zindex-navbar-fixed;
 }
+
 .page-wrap {
     display: flex;
 }
+
 #subMenuContainer {
     width: 12%;
-	padding: 39px 4px 0;
+    padding: 39px 4px 0;
 }
+
 #mainContainer {
     width: 88%;
-	padding: 0 4px 0;
+    padding: 0 4px;
 }
+
 #auth {
-	position: fixed;
+    position: fixed;
     flex: none;
     z-index: @zindex-modal-background;
 }

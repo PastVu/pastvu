@@ -1,157 +1,166 @@
-@import "../_vars.less";
-@import "../bs/variables.less";
-@import "../bs/mixins.less";
+@import '../_vars.less';
+@import '../bs/variables.less';
+@import '../bs/mixins.less';
 
 .user_photoUpload {
-	padding-top: 15px;
+    padding-top: 15px;
 
-	.toptext, .canCount {
-		color: lighten(@MainDarkColor, 10%);
-		margin-bottom: 5px;
-	}
-	.warn {
-		display: inline-block;
-		margin-bottom: 5px;
-		font-size: @font-size-small;
-		color: #9b7030;
-	}
-	.uploadForm {
-		margin-bottom: 11px;
-	}
+    .toptext,
+    .canCount {
+        color: lighten(@MainDarkColor, 10%);
+        margin-bottom: 5px;
+    }
 
-	#addFiles {
-		position: relative;
-		margin: 7px 0;
+    .warn {
+        display: inline-block;
+        margin-bottom: 5px;
+        font-size: @font-size-small;
+        color: #9b7030;
+    }
 
-		.fileInput {
-			position: absolute;
-			display: block;
-			width: 0;
-			height: 0;
-			border: 0;
-			padding: 0;
-			opacity: 0;
-			overflow: hidden;
-		}
-		.fileSelect {
-			width: 130px;
-		}
+    .uploadForm {
+        margin-bottom: 11px;
+    }
 
-		.addfiles_area {
-			position: absolute;
-			border: 1px dashed @gray-darker;
-			left: 170px;
-			top: 0;
-			right: 0;
-			bottom: 0;
-			opacity: .7;
+    #addFiles {
+        position: relative;
+        margin: 7px 0;
 
-			&:hover, &.dragover {
-				top: -8px;
-				bottom: -8px;
-				opacity: 1;
-				background-color: @gray-lighter;
-			}
+        .fileInput {
+            position: absolute;
+            display: block;
+            width: 0;
+            height: 0;
+            border: 0;
+            padding: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
 
-			span {
-				vertical-align: middle;
-			}
+        .fileSelect {
+            width: 130px;
+        }
 
-			#or {
-				position: absolute;
-				left: -30px;
-				width: 25px;
-				top: 0;
-				bottom: 0;
-			}
+        .addfiles_area {
+            position: absolute;
+            border: 1px dashed @gray-darker;
+            left: 170px;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            opacity: 0.7;
 
-			#dropzone {
-				position: absolute;
-				top: 0;
-				left: 0;
-				right: 0;
-				bottom: 0;
-			}
-		}
-	}
-	#commonButtons {
-		margin: 15px 0 10px 0;
+            &:hover,
+            &.dragover {
+                top: -8px;
+                bottom: -8px;
+                opacity: 1;
+                background-color: @gray-lighter;
+            }
 
-		button {
-			width: 140px;
-		}
-	}
+            span {
+                vertical-align: middle;
+            }
 
-	.allprogress .progress-bar {
-		background-color: #2171CC;
-	}
+            #or {
+                position: absolute;
+                left: -30px;
+                width: 25px;
+                top: 0;
+                bottom: 0;
+            }
 
-	.filesTable {
-		td.preview {
-			width: 210px;
+            #dropzone {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+            }
+        }
+    }
 
-			.forcanvas {
-				position: relative;
-				display: block;
-				width: 210px;
-				height: 140px;
-				overflow: hidden;
-				background: url(/img/caps/image_upload.png) 50% 50% no-repeat;
-				//.transition(all .5s linear);
+    #commonButtons {
+        margin: 15px 0 10px;
 
-				&.tooBig {
-					height: 80px;
-					background: #2171CC url(/img/caps/preview.png) 50% 35% no-repeat;
+        button {
+            width: 140px;
+        }
+    }
 
-					.msg {
-						color: #F2F2F2;
-						vertical-align: bottom;
-						bottom: 7px;
-						position: absolute;
-						width: 100%;
-						text-align: center;
-						display: block;
-					}
-				}
+    .allprogress .progress-bar {
+        background-color: #2171cc;
+    }
 
-				&.noValid {
-					height: 40px;
-					background: #F84B4B url(/img/misc/imgw.png) 50% 50% no-repeat;
-				}
-			}
-		}
-		td.fileButtons {
-			width: 150px;
-			text-align: right;
-			white-space: nowrap;
-		}
-	}
+    .filesTable {
+        td.preview {
+            width: 210px;
 
-	.progress {
-		margin-bottom: 3px;
-	}
-	.progress-extended {
-		margin-bottom: 3px;
-	}
+            .forcanvas {
+                position: relative;
+                display: block;
+                width: 210px;
+                height: 140px;
+                overflow: hidden;
+                background: url(/img/caps/image_upload.png) 50% 50% no-repeat;
+                //.transition(all .5s linear);
 
+                &.tooBig {
+                    height: 80px;
+                    background: #2171cc url(/img/caps/preview.png) 50% 35% no-repeat;
 
-	.template-download .preview img {
-		max-width: 210px;
-		max-height: 140px;
-	}
+                    .msg {
+                        color: #f2f2f2;
+                        vertical-align: bottom;
+                        bottom: 7px;
+                        position: absolute;
+                        width: 100%;
+                        text-align: center;
+                        display: block;
+                    }
+                }
 
-	.files .progress {
-		width: auto;
-	}
-	.fileupload-loading {
-		position: absolute;
-		left: 50%;
-		width: 128px;
-		height: 128px;
-		background: url(../img/loading.gif) center no-repeat;
-		display: none;
-	}
-	.fileupload-processing .fileupload-loading {
-		display: block;
-	}
+                &.noValid {
+                    height: 40px;
+                    background: #f84b4b url(/img/misc/imgw.png) 50% 50% no-repeat;
+                }
+            }
+        }
+
+        td.fileButtons {
+            width: 150px;
+            text-align: right;
+            white-space: nowrap;
+        }
+    }
+
+    .progress {
+        margin-bottom: 3px;
+    }
+
+    .progress-extended {
+        margin-bottom: 3px;
+    }
+
+    .template-download .preview img {
+        max-width: 210px;
+        max-height: 140px;
+    }
+
+    .files .progress {
+        width: auto;
+    }
+
+    .fileupload-loading {
+        position: absolute;
+        left: 50%;
+        width: 128px;
+        height: 128px;
+        background: url(../img/loading.gif) center no-repeat;
+        display: none;
+    }
+
+    .fileupload-processing .fileupload-loading {
+        display: block;
+    }
 }
