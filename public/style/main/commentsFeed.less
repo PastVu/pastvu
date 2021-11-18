@@ -1,94 +1,102 @@
-@import "../_vars.less";
-@import "../bs/variables.less";
-@import "../bs/mixins.less";
+@import '../_vars.less';
+@import '../bs/variables.less';
+@import '../bs/mixins.less';
 
 .commentsFeed {
-	position: absolute;
-	top: 0;
-	left: 4px;
-	right: 0;
-	height: 100%;
-	overflow: hidden;
+    position: absolute;
+    top: 0;
+    left: 4px;
+    right: 0;
+    height: 100%;
+    overflow: hidden;
 
-	.help {
-		display: block;
-		max-width: 100%;
-		text-align: center;
+    .help {
+        display: block;
+        max-width: 100%;
+        text-align: center;
 
-		.helpimg {
-			display: inline-block;
-		}
-	}
+        .helpimg {
+            display: inline-block;
+        }
+    }
 
-	.ribbonHead {
-		margin: 4px 0 2px 0;
-		text-align: center;
-		font-weight: bold;
-	}
+    .ribbonHead {
+        margin: 4px 0 2px;
+        text-align: center;
+        font-weight: bold;
+    }
 
-	hr {
-		margin: 0;
-	}
+    hr {
+        margin: 0;
+    }
 
-	.cPhoto {
-		position: relative;
-		display: block;
-		padding: 0 0 4px 2px;
-		font-size: 12px;
-		line-height: 15px;
-		text-decoration: none;
-		overflow: hidden;
+    .cPhoto {
+        position: relative;
+        display: block;
+        padding: 0 0 4px 2px;
+        font-size: 12px;
+        line-height: 15px;
+        text-decoration: none;
+        overflow: hidden;
 
-		&:hover {
-			background-color: #fff;
-		}
-	}
-	.imgLoad {
-		float: left;
-		margin: 1px 5px 0 0;
-		.img {
-			width: 60px;
-			height: 60px;
-		}
-	}
+        &:hover {
+            background-color: #fff;
+        }
+    }
 
-	.photoName, .authorName, .cRegions {
-		.text-overflow();
-	}
-	.photoName {
-		display: block;
-		padding-top: 3px;
-		font-weight: bold;
-		line-height: 16px;
-		text-decoration: none;
-	}
-	.authorName {
-		display: inline-block;
-		padding-bottom: 2px;
-		font-size: @font-size-small;
-		line-height: 14px;
-		text-decoration: none;
-	}
-	.commentText {
-		display: block;
-		min-height: 15px;
-		max-height: 46px;
-		color: @text-color;
-		text-decoration: none;
-		overflow: hidden;
+    .imgLoad {
+        float: left;
+        margin: 1px 5px 0 0;
 
-		&:not(:first-child) {
-			padding-top: 2px;
-			clear: left;
-		}
-		&:hover {
-			color: #2A5081;
-		}
-	}
-	.cRegions {
-		margin: 0 0 1px 0;
-		color: #888;
-		line-height: 16px;
-	}
+        .img {
+            width: 60px;
+            height: 60px;
+        }
+    }
 
+    .photoName,
+    .authorName,
+    .cRegions {
+        .text-overflow();
+    }
+
+    .photoName {
+        display: block;
+        padding-top: 3px;
+        font-weight: bold;
+        line-height: 16px;
+        text-decoration: none;
+    }
+
+    .authorName {
+        display: inline-block;
+        padding-bottom: 2px;
+        font-size: @font-size-small;
+        line-height: 14px;
+        text-decoration: none;
+    }
+
+    .commentText {
+        display: block;
+        min-height: 15px;
+        max-height: 46px;
+        color: @text-color;
+        text-decoration: none;
+        overflow: hidden;
+
+        &:not(:first-child) {
+            padding-top: 2px;
+            clear: left;
+        }
+
+        &:hover {
+            color: #2a5081;
+        }
+    }
+
+    .cRegions {
+        margin: 0 0 1px;
+        color: #888;
+        line-height: 16px;
+    }
 }

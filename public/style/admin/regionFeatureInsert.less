@@ -1,10 +1,10 @@
-@import "../_vars.less";
-@import "../bs/variables.less";
+@import '../_vars.less';
+@import '../bs/variables.less';
 
 .regfi {
-	position: relative;
-	padding: 0 3px;
-	color: @gray;
+    position: relative;
+    padding: 0 3px;
+    color: @gray;
 
     > .loading {
         padding-top: 25px;
@@ -16,7 +16,7 @@
 
     .feature {
         display: flex;
-        border-width: 1px 1px 0 1px;
+        border-width: 1px 1px 0;
         border-style: solid;
 
         &.add {
@@ -26,6 +26,7 @@
                 background-color: @brand-success;
             }
         }
+
         &.edit {
             border-color: @brand-warning;
 
@@ -33,6 +34,7 @@
                 background-color: @brand-warning;
             }
         }
+
         &.fail {
             border-color: @brand-danger;
 
@@ -46,7 +48,7 @@
             border-bottom-width: 1px;
         }
 
-        &:not(:last-child) .status{
+        &:not(:last-child) .status {
             box-shadow: 0 1px 0 0 #e5e5e5;
         }
     }

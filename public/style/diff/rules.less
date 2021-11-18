@@ -1,30 +1,30 @@
-@import "../_vars";
-@import "../bs/variables";
-@import "../bs/mixins";
+@import '../_vars';
+@import '../bs/variables';
+@import '../bs/mixins';
 
 /**
  * ABOUT
  */
 .rules {
-	position: relative;
-	min-height: 770px;
-	margin: 0;
-	padding: 3px 0;
+    position: relative;
+    min-height: 770px;
+    margin: 0;
+    padding: 3px 0;
 
-	hr {
+    hr {
         display: inline-block;
         width: 100%;
         margin: 8px 0;
         border-color: #555;
-	}
+    }
 
-	header {
+    header {
         display: block;
         margin: 8px 0;
-		font-size: 16px;
-		cursor: default;
-		text-align: center;
-	}
+        font-size: 16px;
+        cursor: default;
+        text-align: center;
+    }
 
     ol {
         counter-reset: item;
@@ -35,13 +35,15 @@
             counter-increment: item;
 
             &::before {
-                content: counters(item, ".") ". ";
+                content: counters(item, '.') '. ';
             }
 
             > ol {
                 padding-left: 15px;
+
                 > li > ol {
                     padding-left: 26px;
+
                     &.long {
                         padding-left: 31px;
                     }
@@ -58,7 +60,7 @@
 
             > li {
                 padding-bottom: 10px;
-                
+
                 &::before {
                     font-weight: bold;
                 }

@@ -1,87 +1,91 @@
-@import "../_vars.less";
-@import "../bs/variables.less";
-@import "../bs/mixins.less";
+@import '../_vars.less';
+@import '../bs/variables.less';
+@import '../bs/mixins.less';
 
 .newsApart {
-	position: relative;
-	padding: 0 0 7px 0;
+    position: relative;
+    padding: 0 0 7px;
 
-	.newsHeader {
-		margin: 7px 0 10px 1%;
-		font-size: 20px;
-	}
+    .newsHeader {
+        margin: 7px 0 10px 1%;
+        font-size: 20px;
+    }
 
-	> hr {
-		margin: 0;
-	}
+    > hr {
+        margin: 0;
+    }
 
-	.news {
-		position: relative;
+    .news {
+        position: relative;
 
-		.newsBody {
-			vertical-align: top;
-		}
-		.newsHead {
-			margin-bottom: 14px;
+        .newsBody {
+            vertical-align: top;
+        }
 
-			.newsTitle {
-				display: inline-block;
-				font-weight: bold;
-				font-size: 23px;
-			}
-		}
-		.newsTxt {
-			font-size: 14px;
-			line-height: 20px;
+        .newsHead {
+            margin-bottom: 14px;
 
-			> p:last-child {
-				margin-bottom: 0;
-			}
+            .newsTitle {
+                display: inline-block;
+                font-weight: bold;
+                font-size: 23px;
+            }
+        }
 
-			* {
-			  max-width: 100%;
-			}
-		}
+        .newsTxt {
+            font-size: 14px;
+            line-height: 20px;
 
-		.novel {
-			margin: 0;
-			padding: 100px 2% 12px 1%;
-			cursor: default;
-			background-color: #FFF;
-		}
-	}
+            > p:last-child {
+                margin-bottom: 0;
+            }
 
-	.novelAuthor {
-		position: absolute;
-		top: 2px;
-		left: 1%;
-		width: 400px;
+            * {
+                max-width: 100%;
+            }
+        }
 
-		.avatar {
-			margin-top: 3px;
-			margin-right: 8px;
+        .novel {
+            margin: 0;
+            padding: 100px 2% 12px 1%;
+            cursor: default;
+            background-color: #fff;
+        }
+    }
 
-			img {
-				width: 75px;
-				height: 75px;
-				opacity: 0;
-			}
-		}
+    .novelAuthor {
+        position: absolute;
+        top: 2px;
+        left: 1%;
+        width: 400px;
 
-		.authorInfo {
-			position: relative;
-			margin-left: 86px;
-		}
-		.authorName {
+        .avatar {
+            margin-top: 3px;
+            margin-right: 8px;
 
-		}
-		.newsDate {
-			line-height: 15px;
-		}
-	}
+            img {
+                width: 75px;
+                height: 75px;
+                opacity: 0;
+            }
+        }
 
-	.commentsContainer {
-		position: relative;
-		padding: 10px 2% 12px 1%;
-	}
+        .authorInfo {
+            position: relative;
+            margin-left: 86px;
+        }
+
+        .authorName {
+
+        }
+
+        .newsDate {
+            line-height: 15px;
+        }
+    }
+
+    .commentsContainer {
+        position: relative;
+        padding: 10px 2% 12px 1%;
+    }
 }
