@@ -1,255 +1,273 @@
-@import "../_vars";
-@import "../bs/variables";
-@import "../bs/mixins";
+@import '../_vars';
+@import '../bs/variables';
+@import '../bs/mixins';
 
 @authFormWidth: 300px;
 
-#auth_curtain {
-	position: fixed;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	background-color: rgba(0,0,0,0.3);
-	z-index: @zindex-modal;
+#auth_curtain { /* stylelint-disable-line selector-id-pattern */
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 30%);
+    z-index: @zindex-modal;
 
-	form {
-		position: relative;
-		display: inline-block;
-		vertical-align: middle;
-		text-align: left;
-		padding: 0 15px;
-		color: @MainBlueColor;
-		border-color: darken(@MainLigthColor, 5%);
-		background-color: darken(@MainLigthColor, 5%);
-		@shadow: 0 2px 4px 0px #222, inset 0 0 15px 3px darken(@MainLigthColor, 17%);
-		.box-shadow(@shadow);
-		z-index: @zindex-popover;
+    form {
+        position: relative;
+        display: inline-block;
+        vertical-align: middle;
+        text-align: left;
+        padding: 0 15px;
+        color: @MainBlueColor;
+        border-color: darken(@MainLigthColor, 5%);
+        background-color: darken(@MainLigthColor, 5%);
+        @shadow: 0 2px 4px 0px #222, inset 0 0 15px 3px darken(@MainLigthColor, 17%);
+        .box-shadow(@shadow);
 
-		.footnote {
-			width: @authFormWidth;
-			font-size: @font-size-mini;
-			color: #7391B3;
-			margin: 5px 0 6px;
+        z-index: @zindex-popover;
 
-			.lll {
-				color: inherit;
-				border-color: #7696BC;
-				border-width: 0 0 1px 0;
-				border-style: dashed;
-				text-decoration: none;
-				&:hover {
-					color: #93A5BA;
-					border-color: #93A5BA;
-				}
-			}
-		}
+        .footnote {
+            width: @authFormWidth;
+            font-size: @font-size-mini;
+            color: #7391b3;
+            margin: 5px 0 6px;
 
-		&::after {
-			position: absolute;
-			display: none;
-			content: "";
-			top: 0;
-			left: 0;
-			right: 0;
-			bottom: 0;
-			z-index: @zindex-tooltip;
-		}
+            .lll {
+                color: inherit;
+                border-color: #7696bc;
+                border-width: 0 0 1px;
+                border-style: dashed;
+                text-decoration: none;
 
-		&.working::after {
-			display: block;
-		}
+                &:hover {
+                    color: #93a5ba;
+                    border-color: #93a5ba;
+                }
+            }
+        }
 
-		.head {
-			position: relative;
-			margin: 13px 0 16px;
-			white-space: nowrap;
-			font-weight: bold;
-			font-size: 20px;
-			line-height: 24px;
-			text-align: center;
-			text-shadow: 0 1px 0 white, 0 -1px 0 #BBB;
+        &::after {
+            position: absolute;
+            display: none;
+            content: '';
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: @zindex-tooltip;
+        }
 
-			&::after {
-				background: -webkit-linear-gradient(left, rgba(229,229,229,0) 0%,rgba(183,183,183,0.8) 16%,rgba(10,67,128,1) 49%,fade(@MainBlueColor,99%) 50%,rgba(183,183,183,0.8) 85%,rgba(229,229,229,0) 100%); /* Chrome10+,Safari5.1+ */
-				background: linear-gradient(to right, rgba(229,229,229,0) 0%,rgba(183,183,183,0.8) 16%,rgba(10,67,128,1) 49%,fade(@MainBlueColor,99%) 50%,rgba(183,183,183,0.8) 85%,rgba(229,229,229,0) 100%); /* W3C */
-				content: '';
-				display: block;
-				bottom: -4px;
-				height: 1px;
-				position: absolute;
-				width: 100%;
-			}
-		}
-		&.working .head::after {
-			background: url(/img/misc/load.gif) no-repeat 50% 0;
-			height: 10px;
-			bottom: -13px;
-		}
+        &.working::after {
+            display: block;
+        }
 
-		.userTitle {
-			display: block;
-			margin: 13px 0 10px 0;
-			line-height: 14px;
+        .head {
+            position: relative;
+            margin: 13px 0 16px;
+            white-space: nowrap;
+            font-weight: bold;
+            font-size: 20px;
+            line-height: 24px;
+            text-align: center;
+            text-shadow: 0 1px 0 white, 0 -1px 0 #bbb;
 
-			.userTitlePreview {
-				display: block;
-				float: left;
-				width: 50px;
-				height: 50px;
-				margin: 1px 5px 0 1px;
-			}
-			.userTitleName {
-				display: block;
-				margin-bottom: 2px;
-				max-height: 40px;
-				overflow: hidden;
-			}
-			.userTitleLogin {
-				display: block;
-				color: @text-color;
-			}
-		}
+            &::after {
+                background: -webkit-linear-gradient(left, rgba(229, 229, 229, 0%) 0%, rgba(183, 183, 183, 80%) 16%, rgba(10, 67, 128, 100%) 49%, fade(@MainBlueColor, 99%) 50%, rgba(183, 183, 183, 80%) 85%, rgba(229, 229, 229, 0%) 100%); /* Chrome10+,Safari5.1+ */
+                background: linear-gradient(to right, rgba(229, 229, 229, 0%) 0%, rgba(183, 183, 183, 80%) 16%, rgba(10, 67, 128, 100%) 49%, fade(@MainBlueColor, 99%) 50%, rgba(183, 183, 183, 80%) 85%, rgba(229, 229, 229, 0%) 100%); /* W3C */
+                content: '';
+                display: block;
+                bottom: -4px;
+                height: 1px;
+                position: absolute;
+                width: 100%;
+            }
+        }
 
-		dl {
-			margin: 0;
-			font-size: 12px;
-		}
-		dt {
-			width: auto;
-			font-weight: normal;
-			text-align: left;
-		}
-		dd {
-			margin-right: 2px;
-			text-align: right;
+        &.working .head::after {
+            background: url(/img/misc/load.gif) no-repeat 50% 0;
+            height: 10px;
+            bottom: -13px;
+        }
 
-			span {
-				border-color: #7696BC;
-				border-width: 0 0 1px 0;
-				border-style: dashed;
-				cursor: pointer;
-				&:hover {
-					color: #8a9aae;
-					border-color: #8a9aae;
-				}
-			}
-		}
+        .userTitle {
+            display: block;
+            margin: 13px 0 10px;
+            line-height: 14px;
 
-		.cantLoging {
-			position: absolute;
-			bottom: 1px;
-			right: 12px;
-			font-size: @font-size-mini;
-			> a {
-				padding: 2px 4px;
-			}
-		}
+            .userTitlePreview {
+                display: block;
+                float: left;
+                width: 50px;
+                height: 50px;
+                margin: 1px 5px 0 1px;
+            }
 
-		.inputwrap {
-			position: relative;
-			margin-top: 5px;
+            .userTitleName {
+                display: block;
+                margin-bottom: 2px;
+                max-height: 40px;
+                overflow: hidden;
+            }
 
-			> .glyphicon {
-				position: absolute;
-				display: block;
-				top: 9px;
-				left: 6px;
-				color: #666;
-			}
-		}
-		input.form-control {
-			height: 30px;
-			outline: medium none !important;
-			border-color: #8C8C8C;
-			color: #000;
-			padding: 5px 5px 4px 21px;
-			background-color: rgba(255, 255, 255, 0.6);
-			.box-shadow(~'inset 0 1px 4px 0 #A8A8A8');
-			.transition(background-color 0.2s ease-out);
-			.placeholder(#adabab, italic);
+            .userTitleLogin {
+                display: block;
+                color: @text-color;
+            }
+        }
 
-			&[disabled] {
-				.box-shadow(none);
-				background-color: rgba(255, 255, 255, 0.2);
-			}
+        dl {
+            margin: 0;
+            font-size: 12px;
+        }
 
-			&:focus {
-				background: #FFF;
-				&:invalid {
-					color: #777777;
-				}
-			}
+        dt {
+            width: auto;
+            font-weight: normal;
+            text-align: left;
+        }
 
-			&:required:invalid {
-			}
-			/* The entire area of the popup including area outside the bubble shape&nbsp;*/
-			&::-webkit-validation-bubble{}
-			/* Portion above the bubble behind top arrow&nbsp;*/
-			&::-webkit-validation-bubble-arrow-clipper{}
-			/* The arrow at the top of the bubble */
-			&::-webkit-validation-bubble-arrow{
-				border: 1px solid @MainBlueColor;
-				background-color: darken(@MainLigthColor, 1%);
+        dd {
+            margin-right: 2px;
+            text-align: right;
 
-			}
-			/* The area containing the validation message&nbsp;*/
-			&::-webkit-validation-bubble-message {
-				font: 11px/14px @font-family-base;
-				color: @MainBlueColor;
-				border-radius: 0;
-				border: 1px solid @MainBlueColor;
-				background-color: darken(@MainLigthColor, 1%);
-				.box-shadow(0 1px 4px 0px #222);
-			}
+            span {
+                border-color: #7696bc;
+                border-width: 0 0 1px;
+                border-style: dashed;
+                cursor: pointer;
 
-		}
-		.col-xs-6 {
-			&.colright {
-				text-align: right;
-			}
-		}
-		.col-xs-12 {
-			&.colcent {
-				text-align: center;
-			}
-		}
+                &:hover {
+                    color: #8a9aae;
+                    border-color: #8a9aae;
+                }
+            }
+        }
 
-		button {
-			text-shadow: 0 1px 1px #000;
-			font-weight: bold;
-			width: 90px;
-		}
+        .cantLoging {
+            position: absolute;
+            bottom: 1px;
+            right: 12px;
+            font-size: @font-size-mini;
 
-		.mess, .caps-warn{
-			position: relative;
-			width: @authFormWidth;
-			height: 0;
-			margin: 0 0 1px;
-			font-weight: bold;
-			font-size: 12px;
-			line-height: 15px;
-			white-space: normal;
-			overflow: hidden;
-			.transition(height 0.4s ease-out);
-		}
+            > a {
+                padding: 2px 4px;
+            }
+        }
 
-		.caps-warn {
-			padding-left: 2px; //Край glyphicon обрезается слева - исправляем
-			line-height: 20px;
-		}
+        .inputwrap {
+            position: relative;
+            margin-top: 5px;
 
-		.btnsFinish {
-			display: none;
-		}
+            > .glyphicon {
+                position: absolute;
+                display: block;
+                top: 9px;
+                left: 6px;
+                color: #666;
+            }
+        }
 
-		&.finish {
-			.btnsAction {
-				display: none;
-			}
-			.btnsFinish {
-				display: block;
-			}
-		}
-	}
+        input.form-control {
+            height: 30px;
+            outline: medium none !important;
+            border-color: #8c8c8c;
+            color: #000;
+            padding: 5px 5px 4px 21px;
+            background-color: rgba(255, 255, 255, 60%);
+            .box-shadow(~'inset 0 1px 4px 0 #A8A8A8');
+            .transition(background-color 0.2s ease-out);
+            .placeholder(#adabab, italic);
+
+            &[disabled] {
+                .box-shadow(none);
+
+                background-color: rgba(255, 255, 255, 20%);
+            }
+
+            &:focus {
+                background: #fff;
+
+                &:invalid {
+                    color: #777;
+                }
+            }
+
+            &:required:invalid {
+            }
+
+            /* The entire area of the popup including area outside the bubble shape&nbsp; */
+            &::-webkit-validation-bubble{}
+
+            /* Portion above the bubble behind top arrow&nbsp; */
+            &::-webkit-validation-bubble-arrow-clipper{}
+
+            /* The arrow at the top of the bubble */
+            &::-webkit-validation-bubble-arrow {
+                border: 1px solid @MainBlueColor;
+                background-color: darken(@MainLigthColor, 1%);
+            }
+
+            /* The area containing the validation message&nbsp; */
+            &::-webkit-validation-bubble-message {
+                font: 11px/14px @font-family-base;
+                color: @MainBlueColor;
+                border-radius: 0;
+                border: 1px solid @MainBlueColor;
+                background-color: darken(@MainLigthColor, 1%);
+                .box-shadow(0 1px 4px 0px #222);
+            }
+        }
+
+        .col-xs-6 {
+            &.colright {
+                text-align: right;
+            }
+        }
+
+        .col-xs-12 {
+            &.colcent {
+                text-align: center;
+            }
+        }
+
+        button {
+            text-shadow: 0 1px 1px #000;
+            font-weight: bold;
+            width: 90px;
+        }
+
+        .mess,
+        .caps-warn {
+            position: relative;
+            width: @authFormWidth;
+            height: 0;
+            margin: 0 0 1px;
+            font-weight: bold;
+            font-size: 12px;
+            line-height: 15px;
+            white-space: normal;
+            overflow: hidden;
+            .transition(height 0.4s ease-out);
+        }
+
+        .caps-warn {
+            padding-left: 2px; //Край glyphicon обрезается слева - исправляем
+            line-height: 20px;
+        }
+
+        .btnsFinish {
+            display: none;
+        }
+
+        &.finish {
+            .btnsAction {
+                display: none;
+            }
+
+            .btnsFinish {
+                display: block;
+            }
+        }
+    }
 }

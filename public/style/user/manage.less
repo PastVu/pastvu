@@ -1,6 +1,6 @@
-@import "../_vars.less";
-@import "../bs/variables.less";
-@import "../bs/mixins.less";
+@import '../_vars.less';
+@import '../bs/variables.less';
+@import '../bs/mixins.less';
 
 .user_manage {
     padding: 0 5px;
@@ -15,6 +15,7 @@
         color: @gray-light;
         font-size: 14px;
         font-weight: bold;
+
         &:not(:first-child) {
             margin-top: 15px;
         }
@@ -25,17 +26,18 @@
         margin-right: 15px;
         padding-left: 0;
 
-        > input[type="radio"] {
+        > input[type='radio'] {
             margin-top: 2px;
-            margin-left: 0px;
+            margin-left: 0;
             margin-right: 3px;
         }
     }
+
     label.checkbox-inline {
         margin-right: 10px;
         padding-left: 17px;
 
-        > input[type="checkbox"] {
+        > input[type='checkbox'] {
             margin-top: 3px;
             margin-left: -17px;
         }
@@ -48,16 +50,16 @@
         padding: 0 4px;
         line-height: 22px;
         cursor: default;
-        border: 1px solid #E4E4E4;
-        background-color: #E4E4E4;
+        border: 1px solid #e4e4e4;
+        background-color: #e4e4e4;
 
         &.candrop {
             cursor: pointer;
 
             &:hover {
                 color: #b9b9b9;
-                border-color: rgba(233, 142, 142, .3);
-                background-color: rgba(214, 64, 64, .1);
+                border-color: rgba(233, 142, 142, 30%);
+                background-color: rgba(214, 64, 64, 10%);
 
                 &::after {
                     position: absolute;
@@ -67,15 +69,16 @@
                     left: 50%;
                     width: 14px;
                     margin-left: -6px;
-                    color: #DA2B2B;
+                    color: #da2b2b;
                     font: normal normal 14px/22px 'Glyphicons Halflings';
-                    text-shadow: 1px 1px rgba(68, 3, 0, 0.75);
+                    text-shadow: 1px 1px rgba(68, 3, 0, 75%);
                     -webkit-font-smoothing: antialiased;
                     -moz-osx-font-smoothing: grayscale;
                 }
             }
         }
     }
+
     .regionEdit {
         margin-left: 3px;
         padding: 3px 0 0;
@@ -89,14 +92,14 @@
 
     #photoLimit:invalid {
         border-color: @brand-danger;
-        background-color: #FBE8E8;
+        background-color: #fbe8e8;
     }
 
     .helpexists {
         overflow: visible;
 
         > .help {
-            display:inline-block;
+            display: inline-block;
             cursor: help;
             position: relative;
             margin-left: -16px;
@@ -113,7 +116,7 @@
 
     dl.dl-horizontal {
         position: relative; //Для позиционирования helpico
-        margin: 10px 0 0 0;
+        margin: 10px 0 0;
 
         &:first-child {
             margin: 0;
@@ -122,6 +125,7 @@
         &.dl-tight {
             margin-top: 4px;
         }
+
         &.forMod {
             color: @ColorMod;
         }
@@ -132,6 +136,7 @@
             text-align: left;
             font-weight: normal;
         }
+
         dd {
             margin-left: 305px;
             text-align: left;
@@ -141,7 +146,8 @@
                 margin-bottom: 9px;
             }
         }
-        input[type="radio"] {
+
+        input[type='radio'] {
             margin-top: 3px;
         }
     }

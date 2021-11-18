@@ -1,106 +1,116 @@
-@import "../_vars.less";
-@import "../bs/variables.less";
-@import "../bs/mixins.less";
+@import '../_vars.less';
+@import '../bs/variables.less';
+@import '../bs/mixins.less';
 
 /**
  * User Brief
  */
 .user_brief {
-	position: relative;
-	text-align: center;
+    position: relative;
+    text-align: center;
 
-	.briefBlock {
-		display: inline-block;
-		min-width: 170px;
-		width: 240px;
-		max-width: 100%;
-		margin-bottom: 10px;
-		padding: 0 0 0 5px;
-		text-align: center;
-		vertical-align: top;
-	}
+    .briefBlock {
+        display: inline-block;
+        min-width: 170px;
+        width: 240px;
+        max-width: 100%;
+        margin-bottom: 10px;
+        padding: 0 0 0 5px;
+        text-align: center;
+        vertical-align: top;
+    }
 
-	.briefTable {
-		width: 100%;
+    .briefTable {
+        width: 100%;
 
-		tr {
-			> td:first-child {
-				text-align: left;
-			}
-			> td:last-child {
-				text-align: right;
-			}
-		}
-	}
+        tr {
+            > td:first-child {
+                text-align: left;
+            }
 
-	.avatar {
-		position: relative;
-		display: inline-block;
+            > td:last-child {
+                text-align: right;
+            }
+        }
+    }
 
-		img {
-			width: 100px;
-			height: 100px;
-			opacity: 0;
-		}
-		.avaLoadCurtain {
-			position: absolute;
-			top: 0;
-			left: 0;
-			width: 100px;
-			height: 100px;
-			background: fade(@body-bg, 85) url(/img/misc/load.gif) 50% 50% no-repeat;
-		}
-		.avaEdit {
-			position: absolute;
-			top: -1px;
-			left: 102px;
-			height: 22px;
-			padding-left: 5px;
-			padding-right: 5px;
-		}
-		.avaAction {
-			position: absolute;
-			left: 102px;
-			top: 22px;
-			width: 92px;
+    .avatar {
+        position: relative;
+        display: inline-block;
 
-			.avaInput {
-				position: absolute;
-				display: block;
-				width: 0;
-				height: 0;
-				border: 0;
-				padding: 0;
-				opacity: 0;
-				overflow: hidden;
-			}
-			.btn {
-				display: block;
-				width: 100%;
-				margin-bottom: 1px;
-				padding: 0 2px 0 6px;
-				text-align: left;
-			}
-		}
-	}
+        img {
+            width: 100px;
+            height: 100px;
+            opacity: 0;
+        }
 
-	.head {
-		color: rgb(5, 63, 126);
-	}
+        .avaLoadCurtain {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100px;
+            height: 100px;
+            background: fade(@body-bg, 85) url(/img/misc/load.gif) 50% 50% no-repeat;
+        }
 
-	.userName, .roleName {
-		line-height: 18px;
-	}
-	.userName {
-		margin-top: 3px;
-	}
-	.roleName {
-		margin-top: 1px;
-		&.adm {
-			color: @ColorAdmin;
-		}
-		&.mod {
-			color: @ColorMod;
-		}
-	}
+        .avaEdit {
+            position: absolute;
+            top: -1px;
+            left: 102px;
+            height: 22px;
+            padding-left: 5px;
+            padding-right: 5px;
+        }
+
+        .avaAction {
+            position: absolute;
+            left: 102px;
+            top: 22px;
+            width: 92px;
+
+            .avaInput {
+                position: absolute;
+                display: block;
+                width: 0;
+                height: 0;
+                border: 0;
+                padding: 0;
+                opacity: 0;
+                overflow: hidden;
+            }
+
+            .btn {
+                display: block;
+                width: 100%;
+                margin-bottom: 1px;
+                padding: 0 2px 0 6px;
+                text-align: left;
+            }
+        }
+    }
+
+    .head {
+        color: rgb(5, 63, 126);
+    }
+
+    .userName,
+    .roleName {
+        line-height: 18px;
+    }
+
+    .userName {
+        margin-top: 3px;
+    }
+
+    .roleName {
+        margin-top: 1px;
+
+        &.adm {
+            color: @ColorAdmin;
+        }
+
+        &.mod {
+            color: @ColorMod;
+        }
+    }
 }

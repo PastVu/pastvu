@@ -15,23 +15,23 @@
 @logoH: 57px;
 
 .simple_gradient(@start: #fff, @stop: #000) {
-	background: @start; /* Old browser */
-	background: -webkit-linear-gradient(top, @start 0%, @stop 100%); /* Chrome10+ Safari5.1+ */
-	background: linear-gradient(to bottom, @start 0%, @stop 100%); /* W3C: FF16+ IE10+ Chrome26+ Safari6.1+ Opera12.10+ Android4.4+ */
+    background: @start; /* Old browser */
+    background: -webkit-linear-gradient(top, @start 0%, @stop 100%); /* Chrome10+ Safari5.1+ */
+    background: linear-gradient(to bottom, @start 0%, @stop 100%); /* W3C: FF16+ IE10+ Chrome26+ Safari6.1+ Opera12.10+ Android4.4+ */
 }
 
 .triple_gradient(@start: #fff, @middle: #ccc, @stop: #000, @from: top, @to: bottom) {
-	background: @middle;
-	background: -webkit-linear-gradient(@from, @start 0%,@middle 50%,@stop 100%);
-	background: linear-gradient(to @to, @start 0%,@middle 50%,@stop 100%);
+    background: @middle;
+    background: -webkit-linear-gradient(@from, @start 0%, @middle 50%, @stop 100%);
+    background: linear-gradient(to @to, @start 0%, @middle 50%, @stop 100%);
 }
 
 .five_gradient(@start: #fff, @middle1: #ccc, @middle2: #ccc, @middle3: #ccc, @stop: #000, @from: left, @to: right) {
-	background: @middle2;
-	background: -webkit-linear-gradient(@from, @start 0%, @middle1 20%, @middle2 50%, @middle3 80%, @stop 100%);
-	background: linear-gradient(to @to,  @start 0%, @middle1 20%, @middle2 50%, @middle3 80%, @stop 100%);
+    background: @middle2;
+    background: -webkit-linear-gradient(@from, @start 0%, @middle1 20%, @middle2 50%, @middle3 80%, @stop 100%);
+    background: linear-gradient(to @to, @start 0%, @middle1 20%, @middle2 50%, @middle3 80%, @stop 100%);
 }
 
 .reflect(@length: 50%, @opacity: 0.2) {
-	-webkit-box-reflect: below 0 px -webkit-gradient(linear, left top, left bottom, from(transparent), color-stop(@length, transparent), to(rgba(255, 255, 255, @opacity)));
+    -webkit-box-reflect: below 0 px -webkit-gradient(linear, left top, left bottom, from(transparent), color-stop(@length, transparent), to(rgba(255, 255, 255, @opacity)));
 }

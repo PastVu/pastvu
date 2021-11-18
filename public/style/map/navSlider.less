@@ -1,289 +1,309 @@
-@import "../_vars.less";
-@import "../bs/variables.less";
-@import "../bs/mixins.less";
+@import '../_vars.less';
+@import '../bs/variables.less';
+@import '../bs/mixins.less';
 
 .mapNavigator {
-	position: absolute;
-	width: 72px;
-	z-index: @zindex-popover;
-	.user-select(none);
+    position: absolute;
+    width: 72px;
+    z-index: @zindex-popover;
+    .user-select(none);
 
-	.stateWrap {
-		position: relative;
-		background-color: rgba(0,0,0,0); //IE9-хак. В противном случае hover не видет элемента, а только его видимых потомков
-	}
+    .stateWrap {
+        position: relative;
+        background-color: rgba(0, 0, 0, 0%); //IE9-хак. В противном случае hover не видет элемента, а только его видимых потомков
+    }
 
-	.butt {
-		position: absolute;
-		height: 28px;
-		width: 30px;
-		color: #e4e4e4;
-		font-size: @font-size-small;
-		cursor: pointer;
-		.transition(all 0.25s ease-out 1s);
+    .butt {
+        position: absolute;
+        height: 28px;
+        width: 30px;
+        color: #e4e4e4;
+        font-size: @font-size-small;
+        cursor: pointer;
+        .transition(all 0.25s ease-out 1s);
 
-		&:hover {
-			color: #fff;
-			border-color: #EFF2FF;
-		}
+        &:hover {
+            color: #fff;
+            border-color: #eff2ff;
+        }
 
-		&.inout {
-			left: 20px;
-			line-height: 22px;
-			text-align: center;
+        &.inout {
+            left: 20px;
+            line-height: 22px;
+            text-align: center;
 
-			> .glyphicon {
-				vertical-align: middle;
-			}
-		}
-	}
+            > .glyphicon {
+                vertical-align: middle;
+            }
+        }
+    }
 
-	.mup {
-		display: none;
-		height: 15px;
-		left: 20px;
-		top: 19px;
-		text-align: center;
-		opacity: 0;
+    .mup {
+        display: none;
+        height: 15px;
+        left: 20px;
+        top: 19px;
+        text-align: center;
+        opacity: 0;
 
-		> .glyphicon {
-			vertical-align: top;
-		}
-	}
-	.mright {
-		display: none;
-		height: 28px;
-		left: 35px;
-		top: 20px;
-		width: 15px;
-		line-height: 22px;
-		text-align: left;
-		opacity: 0;
+        > .glyphicon {
+            vertical-align: top;
+        }
+    }
 
-		> .glyphicon {
-			vertical-align: middle;
-		}
-	}
-	.mdown {
-		display: none;
-		height: 15px;
-		left: 20px;
-		top: 33px;
-		text-align: center;
-		opacity: 0;
+    .mright {
+        display: none;
+        height: 28px;
+        left: 35px;
+        top: 20px;
+        width: 15px;
+        line-height: 22px;
+        text-align: left;
+        opacity: 0;
 
-		> .glyphicon {
-			vertical-align: top;
-		}
-	}
-	.mleft {
-		display: none;
-		height: 28px;
-		left: 20px;
-		top: 20px;
-		width: 15px;
-		line-height: 22px;
-		text-align: right;
-		opacity: 0;
+        > .glyphicon {
+            vertical-align: middle;
+        }
+    }
 
-		> .glyphicon {
-			vertical-align: middle;
-		}
-	}
-	.mhome {
-		left: 20px;
-		top: 38px;
-		height: 28px;
-		line-height: 22px;
-		text-align: center;
-		.transition(top 0.25s ease-out 1.3s);
+    .mdown {
+        display: none;
+        height: 15px;
+        left: 20px;
+        top: 33px;
+        text-align: center;
+        opacity: 0;
 
-		> .glyphicon {
-			vertical-align: middle;
-		}
-	}
+        > .glyphicon {
+            vertical-align: top;
+        }
+    }
 
-	.zoomin {
-		top: 72px;
-	}
-	.zoomout {
-		bottom: 0;
-	}
+    .mleft {
+        display: none;
+        height: 28px;
+        left: 20px;
+        top: 20px;
+        width: 15px;
+        line-height: 22px;
+        text-align: right;
+        opacity: 0;
 
-	.stick {
-		position: absolute;
-		display: none;
-		left: 31px;
-		top: 99px;
-		bottom: 29px;
-		width: 7px;
-		border-top-width: 0;
-		border-bottom-width: 0;
-		@shadow: 0 1px 0 0 @MainBlueColor, 1px 1px 0 0 #000, -1px 1px 0 0 #000;
-		.box-shadow(@shadow);
+        > .glyphicon {
+            vertical-align: middle;
+        }
+    }
 
-		&::after {
-			content: '';
-			position: absolute;
-			height: 2px;
-			left: -1px;
-			right: -1px;
-			bottom: -2px;
-			border-width: 0 1px;
-			border-style: solid;
-			border-color: @FringeBorder;
-			background-color: @MainBlueColor;
-		}
-	}
+    .mhome {
+        left: 20px;
+        top: 38px;
+        height: 28px;
+        line-height: 22px;
+        text-align: center;
+        .transition(top 0.25s ease-out 1.3s);
 
-	.sliderArea {
-		position: absolute;
-		display: none;
-		width: 100%;
-		left: 0;
-		top: 103px;
-		bottom: 31px;
-		overflow: hidden;
-		padding: 3px 0 2px;
-		opacity: 0;
-		.transition(opacity 0.25s ease-out 1.3s);
+        > .glyphicon {
+            vertical-align: middle;
+        }
+    }
 
-		.dash, .slider {
-			cursor: pointer;
-		}
+    .zoomin {
+        top: 72px;
+    }
 
-		.dash {
-			position: relative;
-			background-image: url(/img/map/ZoomDash.png);
-			background-position: 50% 50%;
-			background-repeat: no-repeat;
-			width: 71px;
-			-webkit-tap-highlight-color: #939393;
+    .zoomout {
+        bottom: 0;
+    }
 
-			&:hover {
-				background-image: url(/img/map/ZoomDashAct.png);
-			}
-		}
+    .stick {
+        position: absolute;
+        display: none;
+        left: 31px;
+        top: 99px;
+        bottom: 29px;
+        width: 7px;
+        border-top-width: 0;
+        border-bottom-width: 0;
+        @shadow: 0 1px 0 0 @MainBlueColor, 1px 1px 0 0 #000, -1px 1px 0 0 #000;
+        .box-shadow(@shadow);
 
-		.slider {
-			position: absolute;
-			bottom: 2px;
-			left: 20px;
-			width: 30px;
-			height: 12px;
-			font-family: @font-family-alt;
-			font-size: 11px;
-			line-height: 11px;
-			text-align: center;
-			background-color: darken(@MainBlueColor, 6%);
-			.transition(bottom 0.25s linear);
+        &::after {
+            content: '';
+            position: absolute;
+            height: 2px;
+            left: -1px;
+            right: -1px;
+            bottom: -2px;
+            border-width: 0 1px;
+            border-style: solid;
+            border-color: @FringeBorder;
+            background-color: @MainBlueColor;
+        }
+    }
 
-			&:hover {
-				border-color: #EFF2FF;
-				color: #fff;
-			}
-		}
+    .sliderArea {
+        position: absolute;
+        display: none;
+        width: 100%;
+        left: 0;
+        top: 103px;
+        bottom: 31px;
+        overflow: hidden;
+        padding: 3px 0 2px;
+        opacity: 0;
+        .transition(opacity 0.25s ease-out 1.3s);
 
-		&.sliding {
-			cursor: url(/img/map/closehand.gif), pointer;
+        .dash,
+        .slider {
+            cursor: pointer;
+        }
 
-			.dash, .slider {
-				cursor: url(/img/map/closehand.gif), pointer;
-			}
+        .dash {
+            position: relative;
+            background-image: url(/img/map/ZoomDash.png);
+            background-position: 50% 50%;
+            background-repeat: no-repeat;
+            width: 71px;
+            -webkit-tap-highlight-color: #939393;
 
-			.slider {
-				.transition(none);
-			}
-		}
-	}
+            &:hover {
+                background-image: url(/img/map/ZoomDashAct.png);
+            }
+        }
 
-	.navpanel {
-		position: relative;
-		width: 100%;
-		z-index: 2;
-		.transition(height 0.25s ease-out 1s);
-	}
+        .slider {
+            position: absolute;
+            bottom: 2px;
+            left: 20px;
+            width: 30px;
+            height: 12px;
+            font-family: @font-family-alt;
+            font-size: 11px;
+            line-height: 11px;
+            text-align: center;
+            background-color: darken(@MainBlueColor, 6%);
+            .transition(bottom 0.25s linear);
 
-	.pinArea {
-		position: relative;
-		display: none;
-		margin-top: -29px;
-		opacity: 1;
-		overflow: hidden;
-		z-index: 1;
-		.transition(~"margin-top 0.25s ease-out 1s, opacity 0.25s ease-out 1s");
+            &:hover {
+                border-color: #eff2ff;
+                color: #fff;
+            }
+        }
 
-		.pin {
-			position: relative;
-			left: 24px;
-			top: 2px;
-			width: 22px;
-			height: 22px;
-			margin-bottom: 7px;
-			cursor: pointer;
-			background-image: url(/img/map/pin.png);
-			background-position: 50% 3px;
-			background-repeat: no-repeat;
-		}
-	}
+        &.sliding {
+            cursor: url(/img/map/closehand.gif), pointer;
 
-	.stateWrap.canOpen {
-		.sliderArea, .pinArea, .stick, .mup, .mright, .mdown, .mleft {
-			display: block;
-		}
+            .dash,
+            .slider {
+                cursor: url(/img/map/closehand.gif), pointer;
+            }
 
-		&.hover, &.pinned {
-			zoom: 1;
+            .slider {
+                .transition(none);
+            }
+        }
+    }
 
-			.navpanel {
-				.transition(height 0.25s ease-out);
-			}
+    .navpanel {
+        position: relative;
+        width: 100%;
+        z-index: 2;
+        .transition(height 0.25s ease-out 1s);
+    }
 
-			.butt {
-				.transition(all 0.25s ease-out 0.3s);
-			}
+    .pinArea {
+        position: relative;
+        display: none;
+        margin-top: -29px;
+        opacity: 1;
+        overflow: hidden;
+        z-index: 1;
+        .transition(~'margin-top 0.25s ease-out 1s, opacity 0.25s ease-out 1s');
 
-			.mup {
-				top: 1px;
-				opacity: 1;
-			}
-			.mright {
-				left: 54px;
-				opacity: 1;
-			}
-			.mdown {
-				top: 52px;
-				opacity: 1;
-			}
-			.mleft {
-				left: 1px;
-				opacity: 1;
-			}
-			.mhome {
-				top: 20px;
-				.transition(top 0.25s ease-out);
-			}
-			.sliderArea {
-				opacity: 1;
-				.transition(opacity 0.25s ease-out 0.3s);
-			}
-		}
-		&.hover {
-			.pinArea {
-				margin-top: 0;
-				opacity: 1;
-				.transition(~"margin-top 0.25s ease-out 0.3s, opacity 0.25s ease-out 0.3s");
-			}
-		}
-		&.pinned.hover .pinArea{
-			.transition(~"margin-top 0.25s ease-out, opacity 0.25s ease-out");
-		}
-		&.pinned {
-			.pinArea .pin {
-				background-color: @MainGreenColor;
-			}
-		}
-	}
+        .pin {
+            position: relative;
+            left: 24px;
+            top: 2px;
+            width: 22px;
+            height: 22px;
+            margin-bottom: 7px;
+            cursor: pointer;
+            background-image: url(/img/map/pin.png);
+            background-position: 50% 3px;
+            background-repeat: no-repeat;
+        }
+    }
+
+    .stateWrap.canOpen {
+        .sliderArea,
+        .pinArea,
+        .stick,
+        .mup,
+        .mright,
+        .mdown,
+        .mleft {
+            display: block;
+        }
+
+        &.hover,
+        &.pinned {
+            zoom: 1;
+
+            .navpanel {
+                .transition(height 0.25s ease-out);
+            }
+
+            .butt {
+                .transition(all 0.25s ease-out 0.3s);
+            }
+
+            .mup {
+                top: 1px;
+                opacity: 1;
+            }
+
+            .mright {
+                left: 54px;
+                opacity: 1;
+            }
+
+            .mdown {
+                top: 52px;
+                opacity: 1;
+            }
+
+            .mleft {
+                left: 1px;
+                opacity: 1;
+            }
+
+            .mhome {
+                top: 20px;
+                .transition(top 0.25s ease-out);
+            }
+
+            .sliderArea {
+                opacity: 1;
+                .transition(opacity 0.25s ease-out 0.3s);
+            }
+        }
+
+        &.hover {
+            .pinArea {
+                margin-top: 0;
+                opacity: 1;
+                .transition(~'margin-top 0.25s ease-out 0.3s, opacity 0.25s ease-out 0.3s');
+            }
+        }
+
+        &.pinned.hover .pinArea {
+            .transition(~'margin-top 0.25s ease-out, opacity 0.25s ease-out');
+        }
+
+        &.pinned {
+            .pinArea .pin {
+                background-color: @MainGreenColor;
+            }
+        }
+    }
 }
-
-

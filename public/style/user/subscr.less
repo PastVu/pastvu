@@ -1,146 +1,161 @@
-@import "../_vars.less";
-@import "../bs/variables.less";
-@import "../bs/mixins.less";
+@import '../_vars.less';
+@import '../bs/variables.less';
+@import '../bs/mixins.less';
 
 @countColor: #677A8F;
 @countColorHover: @MainBlueColor;
 
 .subscr {
-	position: relative;
-	padding: 0 5px;
+    position: relative;
+    padding: 0 5px;
 
-	.topcol {
-		margin-top: 2px;
-		margin-bottom: 4px;
-	}
-	.pag {
-		margin-top: 2px;
-		margin-bottom: 14px;
-		text-align: center;
-	}
-	.brief {
-		line-height: 24px;
-		white-space: nowrap;
+    .topcol {
+        margin-top: 2px;
+        margin-bottom: 4px;
+    }
 
-		&.pageLoading {
-			padding-right: 75px;
-			background: url(/img/misc/load.gif) 100% 50% no-repeat;;
-		}
-	}
-	.pagination {
-		margin-top: 0;
-		margin-bottom: 0;
-	}
-	.brief, .pagination {
-		vertical-align: middle;
-	}
+    .pag {
+        margin-top: 2px;
+        margin-bottom: 14px;
+        text-align: center;
+    }
 
-	.navContent {
-		margin: 7px 0 0 5px;
-	}
+    .brief {
+        line-height: 24px;
+        white-space: nowrap;
 
-	.object {
-		display: inline-block;
-		min-width: 330px;
-		width: 33%;
-		margin: 5px 0 5px 0;
-		vertical-align: top;
-	}
+        &.pageLoading {
+            padding-right: 75px;
+            background: url(/img/misc/load.gif) 100% 50% no-repeat;
+        }
+    }
 
-	.pagOverTop {
-		margin-bottom: 5px;
-	}
+    .pagination {
+        margin-top: 0;
+        margin-bottom: 0;
+    }
 
-	.newsObjs {
-		.object {
-	   	    height: 60px;
-		}
-	}
+    .brief,
+    .pagination {
+        vertical-align: middle;
+    }
 
-	.photoPreview {
-		float: left;
-		margin: 2px 8px 3px 0;
+    .navContent {
+        margin: 7px 0 0 5px;
+    }
 
-		.img {
-			width: 120px;
-			height: 80px;
-		}
-		&.fail::after {
-			margin: -20px 0 0 -17px;
-			font-size: 34px;
-		}
+    .object {
+        display: inline-block;
+        min-width: 330px;
+        width: 33%;
+        margin: 5px 0;
+        vertical-align: top;
+    }
+
+    .pagOverTop {
+        margin-bottom: 5px;
+    }
+
+    .newsObjs {
+        .object {
+            height: 60px;
+        }
+    }
+
+    .photoPreview {
+        float: left;
+        margin: 2px 8px 3px 0;
+
+        .img {
+            width: 120px;
+            height: 80px;
+        }
+
+        &.fail::after {
+            margin: -20px 0 0 -17px;
+            font-size: 34px;
+        }
+
         .status > .glyphicon {
             top: 0;
         }
-	}
+    }
 
-	.count, .planed, .nextNoty {
-		display: inline-block;
-	}
-	.planed, .nextNoty {
-		width: 24px;
-		height: 19px;
-		color: @MainLigthColor;
-		text-align: center;
-		background-color: @countColor;
-	}
-	.nextNoty {
-		margin-left: 2px;
-		margin-right: 5px;
-	}
-	.planed {
-		cursor: help;
+    .count,
+    .planed,
+    .nextNoty {
+        display: inline-block;
+    }
 
-		&:hover {
-			background-color: #6A71A3;
-		}
-	}
-	.count {
-		position: relative;
-		display: inline-block;
-		min-width: 15px;
-		margin: 0 1px 8px 0;
-		padding: 0 5px 0 5px;
-		font-size: 13px;
-		line-height: 19px;
-		color: #F5F5F5;
-		text-align: center;
-		text-decoration: none;
-		background-color: @countColor;
+    .planed,
+    .nextNoty {
+        width: 24px;
+        height: 19px;
+        color: @MainLigthColor;
+        text-align: center;
+        background-color: @countColor;
+    }
 
-		&::after {
-			position: absolute;
-			display: block;
-			content: '';
-			left: 20%;
-			bottom: -8px;
-			width: 0;
-			height: 0;
-			border-top: 8px solid @countColor;
-			border-right: 8px solid transparent;
-		}
-		&:hover {
-			color: #fff;
-			background-color: @countColorHover;
+    .nextNoty {
+        margin-left: 2px;
+        margin-right: 5px;
+    }
 
-			&::after {
-				border-top-color: @countColorHover;
-			}
-		}
+    .planed {
+        cursor: help;
 
-		.cnew {
-			color: #88FF91;
-			font-weight: bold;
-		}
-	}
+        &:hover {
+            background-color: #6a71a3;
+        }
+    }
+
+    .count {
+        position: relative;
+        display: inline-block;
+        min-width: 15px;
+        margin: 0 1px 8px 0;
+        padding: 0 5px;
+        font-size: 13px;
+        line-height: 19px;
+        color: #f5f5f5;
+        text-align: center;
+        text-decoration: none;
+        background-color: @countColor;
+
+        &::after {
+            position: absolute;
+            display: block;
+            content: '';
+            left: 20%;
+            bottom: -8px;
+            width: 0;
+            height: 0;
+            border-top: 8px solid @countColor;
+            border-right: 8px solid transparent;
+        }
+
+        &:hover {
+            color: #fff;
+            background-color: @countColorHover;
+
+            &::after {
+                border-top-color: @countColorHover;
+            }
+        }
+
+        .cnew {
+            color: #88ff91;
+            font-weight: bold;
+        }
+    }
 }
 
 @media (min-width: 1000px) {
-	.subscr {
-		.pagTop .pagination {
-			display: inline-block;
-			vertical-align: top;
-			margin: 2px 0 0 15px;
-		}
-	}
+    .subscr {
+        .pagTop .pagination {
+            display: inline-block;
+            vertical-align: top;
+            margin: 2px 0 0 15px;
+        }
+    }
 }

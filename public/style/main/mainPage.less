@@ -1,73 +1,78 @@
-@import "../_vars";
-@import "../bs/variables";
-@import "../bs/mixins";
+@import '../_vars';
+@import '../bs/variables';
+@import '../bs/mixins';
 
 .mainPage {
-	position: relative;
-	width: 100%;
-	max-width: 100%;
+    position: relative;
+    width: 100%;
+    max-width: 100%;
 
-	#mapContainer {
-		position: relative;
-	}
+    #mapContainer {
+        position: relative;
+    }
 
-	.mainL {
-		position: relative;
-		width: 83%;
-	}
-	.mainR {
-		position: absolute;
-		top: 0;
-		right: 0;
-		width: 17%;
-		height: 100%;
-		box-shadow: -1px -5px 7px #333;
-	}
+    .mainL {
+        position: relative;
+        width: 83%;
+    }
+
+    .mainR {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 17%;
+        height: 100%;
+        box-shadow: -1px -5px 7px #333;
+    }
 }
 
 @media (max-width: 1520px) {
-	.mainPage {
-		.mainL {
-			width: 79%;
-		}
-		.mainR {
-			width: 21%;
-		}
-	}
+    .mainPage {
+        .mainL {
+            width: 79%;
+        }
+
+        .mainR {
+            width: 21%;
+        }
+    }
 }
 
 @media (max-width: 1200px) {
-	.mainPage {
-		.mainL {
-			width: 75%;
-		}
-		.mainR {
-			width: 25%;
-		}
-	}
+    .mainPage {
+        .mainL {
+            width: 75%;
+        }
+
+        .mainR {
+            width: 25%;
+        }
+    }
 }
 
 @media (max-width: 950px) {
-	.mainPage {
-		.mainL {
-			width: 73%;
-		}
-		.mainR {
-			width: 27%;
-		}
-	}
+    .mainPage {
+        .mainL {
+            width: 73%;
+        }
+
+        .mainR {
+            width: 27%;
+        }
+    }
 }
 
 @media (max-width: 767px) {
-	.mainPage {
-		.mainL {
-			width: 100%;
-		}
-		.mainR {
-			position: relative;
-			width: 100%;
-			height: 800px;
-			box-shadow: none;
-		}
-	}
+    .mainPage {
+        .mainL {
+            width: 100%;
+        }
+
+        .mainR {
+            position: relative;
+            width: 100%;
+            height: 800px;
+            box-shadow: none;
+        }
+    }
 }

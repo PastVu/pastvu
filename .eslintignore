@@ -9,3 +9,7 @@ logs/**
 misc/**
 views/**
 basepatch/**
+
+# Lint configs
+!.eslintrc.js
+!.stylelintrc.js

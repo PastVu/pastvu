@@ -1,47 +1,54 @@
-@import "../_vars.less";
-@import "../bs/variables.less";
-@import "../bs/mixins.less";
+@import '../_vars.less';
+@import '../bs/variables.less';
+@import '../bs/mixins.less';
 
 .adminRegion {
-	position: relative;
-	height: 100%;
+    position: relative;
+    height: 100%;
 
-	.form-group {
-		margin-bottom: 5px;
-	}
-	.control-label {
-		padding-right: 10px;
-	}
+    .form-group {
+        margin-bottom: 5px;
+    }
+
+    .control-label {
+        padding-right: 10px;
+    }
+
     .maprow {
         display: flex;
     }
-    .actions, .maprow {
+
+    .actions,
+    .maprow {
         margin-left: -13%;
     }
-	.map {
+
+    .map {
         flex: 3 3 70%;
-		position: relative;
-		min-height: 300px;
-		max-height: 1200px;
-		background-color: #eee;
-	}
+        position: relative;
+        min-height: 300px;
+        max-height: 1200px;
+        background-color: #eee;
+    }
+
     .mapPanel {
         flex: 1 1 30%;
         min-width: 300px;
         padding: 0 2px 0 7px;
     }
 
-	.regionInfo {
-		margin-top: 8px;
-	}
+    .regionInfo {
+        margin-top: 8px;
+    }
 
-	.path {
-		.current {
-			color: #0ea300;
-			cursor: default;
-		}
-	}
-	.children {
+    .path {
+        .current {
+            color: #0ea300;
+            cursor: default;
+        }
+    }
+
+    .children {
         position: relative;
         display: inline-block;
         width: 100%;
@@ -63,9 +70,9 @@
         &.expanded {
             white-space: normal;
 
-            .expand:before {
+            .expand::before {
                 white-space: pre;
-                content: "\A";
+                content: '\A';
             }
         }
 
@@ -77,42 +84,47 @@
                 bottom: 0;
                 background-color: @body-bg;
 
-                &:before {
+                &::before {
                     white-space: pre;
-                    content: "..., ";
+                    content: '..., ';
                 }
             }
         }
-	}
+    }
 
-	.dopparam {
-		display: inline-block;
-		margin: 0 6px 6px 0;
+    .dopparam {
+        display: inline-block;
+        margin: 0 6px 6px 0;
 
-		> input[type="text"] {
-			margin-left: 4px;
-			margin-right: 2px;
-		}
-		> .btn-group {
-			margin-left: 6px;
-			margin-right: 4px;
-		}
-	}
+        > input[type='text'] {
+            margin-left: 4px;
+            margin-right: 2px;
+        }
 
-	input.center, input.bbox {
-		display: inline-block;
-		text-align: center;
-		cursor: default;
-	}
-	input.center {
-		width: 150px;
-	}
-	input.bbox {
-		width: 290px;
-	}
-	input.invalid {
-		border-color: #f00;
-	}
+        > .btn-group {
+            margin-left: 6px;
+            margin-right: 4px;
+        }
+    }
+
+    input.center,
+    input.bbox {
+        display: inline-block;
+        text-align: center;
+        cursor: default;
+    }
+
+    input.center {
+        width: 150px;
+    }
+
+    input.bbox {
+        width: 290px;
+    }
+
+    input.invalid {
+        border-color: #f00;
+    }
 
     .stats-head {
         font-size: @font-size-h4;
@@ -130,6 +142,7 @@
         display: inline;
         color: @MainDarkColor;
     }
+
     a:hover > .sn {
         color: @link-hover-color;
     }
@@ -147,9 +160,7 @@
         margin-top: 3px;
         cursor: pointer;
         color: darken(@link-hover-color, 30%);
-        text-decoration-line: underline;
-        text-decoration-style: dotted;
-        text-decoration-color: darken(@link-hover-color, 30%);
+        text-decoration: underline dotted darken(@link-hover-color, 30%);
 
         &:hover {
             color: @link-hover-color;
@@ -171,8 +182,8 @@
 
         .region-type-stat {
             display: inline-block;
-            margin: 0 4px 1px 4px;
-            padding: 1px 1px 0 1px;
+            margin: 0 4px 1px;
+            padding: 1px 1px 0;
             cursor: default;
             line-height: 13px;
             color: @MainLigthColor;
@@ -207,6 +218,7 @@
             bottom: -5px;
         }
     }
+
     .rytltp-wrap:hover {
         > .rytltp.tltp-animate-move {
             transform: translate(-50%, 2px);
@@ -217,5 +229,3 @@
         }
     }
 }
-
-
