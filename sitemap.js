@@ -5,7 +5,7 @@ import zlib from 'zlib';
 import log4js from 'log4js';
 import makeDir from 'make-dir';
 import config from './config';
-import { times, hhmmssms } from './commons/time';
+import Utils from './commons/Utils';
 import { ready as regionsReady, getObjRegionList, giveListPublic as giveRegionsListPublic } from './controllers/region';
 
 import connectDb from './controllers/connection';
@@ -37,7 +37,7 @@ const schedule = (function () {
             timeout = 4;
         } else {
             // Next run must be next interval after last midnight
-            const a = (Date.now() - times.midnight) / sitemapInterval;
+            const a = (Date.now() - new Date().setHours(0, 0, 0, 0)) / sitemapInterval;
 
             timeout = Math.ceil(
                 a > 1 ? sitemapInterval - sitemapInterval * (a - Math.floor(a)) : sitemapInterval - sitemapInterval * a
@@ -48,7 +48,7 @@ const schedule = (function () {
 
         logger.info(
             'Next sitemap generation has been scheduled on ' +
-            `${next.getFullYear()}-${next.getMonth() + 1}-${next.getDate()} ${hhmmssms(next)}`
+            `${next.getFullYear()}-${next.getMonth() + 1}-${next.getDate()} ${Utils.hh_mm_ss(next)}`
         );
 
         setTimeout(run, timeout);
