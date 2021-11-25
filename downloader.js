@@ -34,11 +34,11 @@ export async function configure(startStamp) {
 
         function memInfo() {
             let elapsedMs = Date.now() - startStamp;
-            const elapsedDays = Math.floor(elapsedMs / Utils.times.msDay);
+            const elapsedDays = Math.floor(elapsedMs / ms('1d'));
             const memory = process.memoryUsage();
 
             if (elapsedDays) {
-                elapsedMs -= elapsedDays * Utils.times.msDay;
+                elapsedMs -= elapsedDays * ms('1d');
             }
 
             logger.info(

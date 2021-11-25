@@ -5,7 +5,7 @@ module.exports = {
     only: [ // May be array of regexp, or github.com/isaacs/node-glob
         /(app|downloader|uploader|sitemap|notifier|worker).js/,
         /controllers\/((?!systemjs|api|apilog).)+\.js$/,
-        'commons/time.js',
+        'commons/Utils.js',
         /models\/.+\.js$/,
         /app\/.+\.js$/,
     ],

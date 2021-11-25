@@ -348,8 +348,8 @@ define([
 
         var self = this;
         var newZoom = this.map.getZoom(),
-            willLocalWork = newZoom >= this.firstClientWorkZoom,
-            crossingLocalWorkZoom = (this.currZoom < this.firstClientWorkZoom && willLocalWork) || (this.currZoom >= this.firstClientWorkZoom && !willLocalWork),
+            localWork = newZoom >= this.firstClientWorkZoom,
+            crossingLocalWorkZoom = (this.currZoom < this.firstClientWorkZoom && localWork) || (this.currZoom >= this.firstClientWorkZoom && !localWork),
             direction = newZoom - this.currZoom,
             bound = L.latLngBounds(this.calcBound.getSouthWest(), this.calcBound.getNorthEast()), // copy this.calcBound current values.
             queryGeometry,
@@ -359,7 +359,7 @@ define([
 
         this.currZoom = newZoom;
 
-        if (!init && willLocalWork && !crossingLocalWorkZoom) {
+        if (!init && localWork && !crossingLocalWorkZoom) {
             // Local work level. We are expecting photo object at those zoom
             // levels, so we need to fetch photos for area that become visible
             // as result of zoom change.
@@ -389,7 +389,7 @@ define([
             }
         } else {
             // При пересечении границы "вверх" обнуляем массив всех фото на клиенте
-            if (crossingLocalWorkZoom && !willLocalWork) {
+            if (crossingLocalWorkZoom && !localWork) {
                 this.photosAll = [];
             }
             // Query objects for new .
@@ -398,7 +398,7 @@ define([
 
         if (pollServer) {
             if (this.visBound) {
-                this.drawBounds(queryGeometry, true, willLocalWork);
+                this.drawBounds(queryGeometry, true, localWork);
             }
 
             socket.run('photo.getByBounds',
@@ -409,11 +409,10 @@ define([
                     year: this.year,
                     year2: this.year2,
                     isPainting: this.isPainting,
-                    localWork: willLocalWork
+                    localWork: localWork
                 }
             ).then(function (data) {
-                var localWork, // Находимся ли мы на уровне локальной работы
-                    localCluster, // Смотрим нужно ли использовать клиентскую кластеризацию
+                var localCluster, // Смотрим нужно ли использовать клиентскую кластеризацию
                     boundChanged; // Если к моменту получения входящих данных нового зума, баунд изменился, значит мы успели подвигать картой, поэтому надо проверить пришедшие точки на вхождение в актуальный баунд
 
                 // Данные устарели и должны быть отброшены,
@@ -425,7 +424,6 @@ define([
                 }
 
                 boundChanged = !bound.equals(self.calcBound);
-                localWork = self.currZoom >= self.firstClientWorkZoom;
                 localCluster = localWork && self.clientClustering;
 
                 self.processIncomingDataZoom(data, boundChanged, localWork, localCluster);
@@ -440,8 +438,8 @@ define([
      * Visualise bounds for debugging purposes.
      */
     MarkerManager.prototype.drawBounds = function (geometry, zoom, localWork) {
-        const summary = (zoom === true) ? `Refresh by Zoom, localWork=${localWork}` : 'Refresh by Move';
-        console.log(summary + ', ' + turf.getType(geometry) + ' (Lng,Lat):', JSON.stringify(turf.getCoords(geometry)));
+        const summary = (zoom === true) ? `Refresh by Zoom` : 'Refresh by Move';
+        console.log(summary + `, localWork=${localWork}, ` + turf.getType(geometry) + ' (Lng,Lat):', JSON.stringify(turf.getCoords(geometry)));
         // Remove previous drawings.
         if (this['b'] !== undefined) {
             this.map.removeLayer(this['b']);
@@ -463,11 +461,12 @@ define([
             i;
 
         //Очищаем кластеры, если они вдруг успели появится при быстром измении зума.
-        //Это произойдет, если мы быстро уменьшили зум и опять увеличили - перед moveEnd фазы увеличения придут данные от уменьшения и они успеют кластеризоваться
+        //Это произойдет, если мы быстро уменьшили зум и опять увеличили - перед moveEnd
+        //фазы увеличения придут данные от уменьшения и они успеют кластеризоваться.
         //Или при быстром переходе вверх с пересечением границы локальной работы
         this.clearClusters();
 
-        // На уровне локальной работы этот медот учавствует только в "поднятии" зума,
+        // На уровне локальной работы этот метод учавствует только в "поднятии" зума,
         // когда сервер отдает только фотографии "в рамке, обрамляющей предыдущий баунд", следовательно,
         // полученные фото мы должны присоединить к существующим и локально кластеризовать их объединение (т.к. изменился зум)
         if (localWork) {
@@ -535,6 +534,7 @@ define([
         var self = this;
         var zoom = this.currZoom,
             bound = L.latLngBounds(this.calcBound.getSouthWest(), this.calcBound.getNorthEast()),
+            localWork = zoom >= this.firstClientWorkZoom,
             curr,
             i;
 
@@ -550,7 +550,7 @@ define([
         if (this.visBound) {
             // We expect L-shape polygon here in most cases (or rectangle if map is moved
             // by pressing arrow keys).
-            this.drawBounds(queryGeometry);
+            this.drawBounds(queryGeometry, false, localWork);
         }
 
         socket
@@ -559,11 +559,11 @@ define([
                 geometry: turf.getGeom(queryGeometry),
                 year: this.year,
                 year2: this.year2,
-                isPainting: this.isPainting
+                isPainting: this.isPainting,
+                localWork: localWork
             })
             .then(function (data) {
-                var localWork, // Находимся ли мы на уровне локальной работы
-                    localCluster, // Смотрим нужно ли использовать клиентскую кластеризацию
+                var localCluster, // Смотрим нужно ли использовать клиентскую кластеризацию
                     boundChanged; // Если к моменту получения входящих данных нового зума, баунд изменился, значит мы успели подвигать картой, поэтому надо проверить пришедшие точки на вхождение в актуальный баунд
 
                 // Данные устарели и должны быть отброшены,
@@ -573,7 +573,6 @@ define([
                     return;
                 }
 
-                localWork = self.currZoom >= self.firstClientWorkZoom;
                 localCluster = localWork && self.clientClustering;
                 boundChanged = !bound.equals(self.calcBound);
 
