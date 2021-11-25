@@ -1,7 +1,7 @@
 import { User } from '../../models/User';
-import setupDB from '../../test-setup';
+import setupDB from '../../tests/setup';
 
-setupDB('endpoint-testing', true);
+setupDB();
 
 test('should save user to database', async () => {
     // Searches the user in the database

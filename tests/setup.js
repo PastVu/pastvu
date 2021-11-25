@@ -1,5 +1,5 @@
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import connectDb, { waitDb } from './controllers/connection';
+import connectDb, { waitDb } from '../controllers/connection';
 import mongoose from 'mongoose';
 
 let mongoServer;
