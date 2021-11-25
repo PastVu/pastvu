@@ -252,10 +252,10 @@ export async function configure(startStamp) {
         function memInfo() {
             let memory = process.memoryUsage();
             let elapsedMs = Date.now() - startStamp;
-            let elapsedDays = Math.floor(elapsedMs / Utils.times.msDay);
+            let elapsedDays = Math.floor(elapsedMs / ms('1d'));
 
             if (elapsedDays) {
-                elapsedMs -= elapsedDays * Utils.times.msDay;
+                elapsedMs -= elapsedDays * ms('1d');
             }
 
             logger.info(
@@ -273,7 +273,7 @@ export async function configure(startStamp) {
 
                 memory = process.memoryUsage();
                 elapsedMs = Date.now() - startStamp;
-                elapsedDays = Math.floor(elapsedMs / Utils.times.msDay);
+                elapsedDays = Math.floor(elapsedMs / ms('1d'));
 
                 logger.info(
                     `+${elapsedDays}.${Utils.hh_mm_ss(elapsedMs, true)} `,

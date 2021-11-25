@@ -8,6 +8,7 @@ const useragent = require('useragent');
 const DMP = require('diff-match-patch');
 const regexpUrl = require('./regex-weburl');
 const turf = require('@turf/turf');
+const ms = require('ms');
 
 Utils.isEven = function (n) {
     return n % 2 === 0;
@@ -846,67 +847,30 @@ Utils.addLeftZero = function (num) {
     return str.substr(str.length - 2, 2);
 };
 
-const times = (function () {
-    const msDay = 864e5;
-    const times = {
-        msDay, // Кол-во миллисекунд в дне
-        msWeek: 6048e5, // Кол-во миллисекунд в неделе
-        msYear: 0, // Кол-во миллисекунд в текущем году, вычисляется
-
-        midnight: null, // Миллисекунды полуночи текущего дня
-        midnightWeekAgo: null, // Миллисекунды полуночи семи дней назад
-        yearStart: null, // Миллисекунды начала текущего года
-        yearDays: null, // Кол-во дней в текущем году
-    };
-
-    // Считаем переменные времен
-    (function timesRecalc() {
-        const current = new Date();
-        const currentYear = current.getFullYear();
-
-        times.midnight = new Date().setHours(0, 0, 0, 0);
-        times.midnightWeekAgo = times.midnight - times.msWeek;
-        times.yearStart = new Date(currentYear, 0, 1);
-        times.msYear = new Date(currentYear + 1, 0, 1) - times.yearStart;
-        times.yearDays = Math.floor(times.msYear / msDay);
-
-        // Планируем пересчет на первую миллисекунду следующего дня
-        setTimeout(timesRecalc, times.midnight + times.msDay - Date.now() + 1);
-    }());
-
-    return times;
-}());
-
-Utils.times = times;
-
 Utils.isThisYear = function (date) {
     return new Date(date).getFullYear() === new Date().getFullYear();
 };
 
 Utils.isYesterday = function (date) {
-    return date >= times.midnight - times.msDay && date < times.midnight;
+    return date >= new Date().setHours(0, 0, 0, 0) - ms('1d') && date < new Date().setHours(0, 0, 0, 0);
 };
 
 Utils.isToday = function (date) {
-    return date >= times.midnight && date < times.midnight + times.msDay;
+    return date >= new Date().setHours(0, 0, 0, 0) && date < new Date().setHours(0, 0, 0, 0) + ms('1d');
 };
 
-Utils.hh_mm_ss = function (ms, utc, delimeter) {
-    if (!_.isDate(ms)) {
-        ms = new Date(ms);
+Utils.hh_mm_ss = function (millisec, utc = false) {
+    if (!_.isDate(millisec)) {
+        millisec = new Date(millisec);
     }
 
-    if (!delimeter) {
-        delimeter = ':';
+    const options = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+
+    if (utc) {
+        options.timeZone = 'UTC';
     }
 
-    const hours = ms[utc ? 'getUTCHours' : 'getHours']();
-    const minutes = ms[utc ? 'getUTCMinutes' : 'getMinutes']();
-    const seconds = ms[utc ? 'getUTCSeconds' : 'getSeconds']();
-
-    return (hours > 9 ? hours : '0' + hours) +
-        delimeter + (minutes > 9 ? minutes : '0' + minutes) +
-        delimeter + (seconds > 9 ? seconds : '0' + seconds);
+    return millisec.toLocaleTimeString([], options);
 };
 
 Utils.format = (function () {
