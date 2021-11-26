@@ -8,6 +8,7 @@ module.exports = {
         'node': true,
         'browser': true,
         'serviceworker': true,
+        'jest/globals': true,
     },
 
     'parserOptions': {
@@ -705,7 +706,8 @@ module.exports = {
                 'plugin:jest-formatting/strict',
             ],
             'rules': {
-                // Jest rules cofiguration go here.
+                // Ensure async test has expect.assertions
+                'jest/prefer-expect-assertions': [1, { 'onlyFunctionsWithAsyncKeyword': true }],
             },
         },
     ],

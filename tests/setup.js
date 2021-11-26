@@ -1,29 +1,29 @@
 import connectDb, { waitDb } from '../controllers/connection';
 import mongoose from 'mongoose';
 
-let mongoServer;
+jest.setTimeout(10000);
 
-export default function setupDB(databaseName) {
+beforeAll(async () => {
+    await connectDb({ mongo: { uri: process.env.MONGO_INSTANCE_URI } });
+    await waitDb;
+});
 
-    beforeAll(async () => {
-        await connectDb({ mongo: { uri: process.env.MONGO_INSTANCE_URI } });
-    });
+beforeEach(async () => {
+    //await seedDatabase()
+});
 
-    beforeEach(async () => {
-        //await seedDatabase()
-    });
+// Cleans up database between each test
+afterEach(async () => {
+    const collections = mongoose.connection.collections;
 
-    // Cleans up database between each test
-    afterEach(async () => {
-        const collections = mongoose.connection.collections;
-        for (const collectionName in collections) {
-           const collection = collections[collectionName];
-           await collection.deleteMany();
-        }
-    });
+    for (const collectionName of Object.keys(collections)) {
+        const collection = collections[collectionName];
 
-    afterAll(async () => {
-        await mongoose.connection.db.dropDatabase();
-        await mongoose.connection.close();
-    });
-}
+        await collection.deleteMany();
+    }
+});
+
+afterAll(async () => {
+    await mongoose.connection.db.dropDatabase();
+    await mongoose.connection.close();
+});
