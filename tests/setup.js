@@ -1,4 +1,3 @@
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import connectDb, { waitDb } from '../controllers/connection';
 import mongoose from 'mongoose';
 
@@ -7,8 +6,7 @@ let mongoServer;
 export default function setupDB(databaseName) {
 
     beforeAll(async () => {
-        mongoServer = await MongoMemoryServer.create();
-        await connectDb({ mongo: { uri: mongoServer.getUri() } });
+        await connectDb({ mongo: { uri: process.env.MONGO_INSTANCE_URI } });
     });
 
     beforeEach(async () => {
@@ -27,6 +25,5 @@ export default function setupDB(databaseName) {
     afterAll(async () => {
         await mongoose.connection.db.dropDatabase();
         await mongoose.connection.close();
-        await mongoServer.stop();
     });
 }
