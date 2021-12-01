@@ -1,14 +1,14 @@
-const mongoose = require('mongoose');
+import { MongoMemoryServer } from 'mongodb-memory-server';
+import connectDb, { waitDb } from './controllers/connection';
+import mongoose from 'mongoose';
 
-mongoose.set('useCreateIndex', true);
-mongoose.promise = global.Promise;
+let mongoServer;
 
 export default function setupDB(databaseName) {
 
     beforeAll(async () => {
-        const url = `mongodb://127.0.0.1/${databaseName}`;
-
-        await mongoose.connect(url, { useNewUrlParser: true });
+        mongoServer = await MongoMemoryServer.create();
+        await connectDb({ mongo: { uri: mongoServer.getUri() } });
     });
 
     beforeEach(async () => {
@@ -27,5 +27,6 @@ export default function setupDB(databaseName) {
     afterAll(async () => {
         await mongoose.connection.db.dropDatabase();
         await mongoose.connection.close();
+        await mongoServer.stop();
     });
 }
