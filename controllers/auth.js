@@ -101,6 +101,10 @@ async function register({ login, email, pass, pass2 }) {
 
     email = email.toLowerCase();
 
+    if (!Utils.validateEmail(email)) {
+        throw new InputError(constants.MAIL_WRONG);
+    }
+
     if (!pass) {
         throw new InputError(constants.INPUT_PASS_REQUIRED);
     }

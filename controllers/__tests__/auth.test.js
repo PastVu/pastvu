@@ -45,7 +45,7 @@ describe('authentication', () => {
             expect(userConfirm).toBeTruthy();
         });
 
-        it('throws on email problem', async () => {
+        it('throws on emailing problem', async () => {
             expect.assertions(2);
 
             // Mocked send function should reject.
@@ -75,6 +75,7 @@ describe('authentication', () => {
                 ['empty email field', { 'email': '' }, InputError, constants.INPUT_EMAIL_REQUIRED],
                 ['empty password field', { 'pass': '' }, InputError, constants.INPUT_PASS_REQUIRED],
                 ['passwords don\'t match', { 'pass2': 'pass2' }, AuthenticationError, constants.AUTHENTICATION_PASSWORDS_DONT_MATCH],
+                ['invalid email', { 'email': 'user1@test' }, InputError, constants.MAIL_WRONG],
             ];
 
             it.each(testData)('%s', async (descr, modifier, ErrorClass, errorMessage) => {

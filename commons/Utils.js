@@ -117,6 +117,18 @@ Utils.isType = function (type, obj) {
 };
 
 /**
+ * Checks if email is of valid format.
+ *
+ * @param {string} email
+ * @returns {boolean}
+ */
+Utils.validateEmail = function (email) {
+    const emailRegexp = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@(([[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+
+    return email.toLowerCase().match(emailRegexp);
+};
+
+/**
  * Проверяет что в объекте нет собственный свойств
  *
  * @param {object} obj Проверяемый объект.
