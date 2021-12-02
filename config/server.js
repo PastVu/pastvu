@@ -40,7 +40,8 @@ module.exports = (function () {
         const argvConfigPath = argv.config && path.resolve(argv.config);
 
         if (argvConfigPath && fs.existsSync(argvConfigPath)) {
-            // If alternate config exists, call it
+            // If alternate config exists, call it. We also use this feature
+            // in test environment setup.
             config = execConfig(argvConfigPath, config);
         } else if (fs.existsSync(localConfigPath)) {
             // If local config exists, call it
@@ -52,8 +53,8 @@ module.exports = (function () {
 
         // Read version from package.json
         const version = readJSON('./package.json').version;
-        // Read build parameters, if it is not development enviroment
-        const hash = config.env === 'development' ? version : readJSON('./build.json').hash;
+        // Read build parameters for production enviroment
+        const hash = config.env === 'production' ? readJSON('./build.json').hash : version;
 
         Object.assign(config, { version, hash });
     } catch (err) {
