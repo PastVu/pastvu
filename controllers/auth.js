@@ -91,7 +91,7 @@ async function register({ login, email, pass, pass2 }) {
         throw new InputError(constants.INPUT_LOGIN_REQUIRED);
     }
 
-    if (login !== 'anonymous' && !login.match(/^[.\w-]{3,15}$/i) || !login.match(/^[A-za-z].+$/i)) {
+    if (login !== 'anonymous' && !login.match(/^[.\w-]{3,15}$/i) || !login.match(/^[A-Za-z].+$/i)) {
         throw new AuthenticationError(constants.INPUT_LOGIN_CONSTRAINT);
     }
 
@@ -112,10 +112,6 @@ async function register({ login, email, pass, pass2 }) {
     let user = await User.findOne({ $or: [{ login: new RegExp(`^${_.escapeRegExp(login)}$`, 'i') }, { email }] }).exec();
 
     if (user) {
-        if (user.login.toLowerCase() === login.toLowerCase()) {
-            throw new AuthenticationError(constants.AUTHENTICATION_USER_EXISTS);
-        }
-
         if (user.email === email) {
             throw new AuthenticationError(constants.AUTHENTICATION_EMAIL_EXISTS);
         }
@@ -129,6 +125,11 @@ async function register({ login, email, pass, pass2 }) {
 
     if (regionHome.length) {
         regionHome = regionHome[0]._id;
+    } else {
+        // config.regionHome is not in list of regions.
+        // This may happen in test environment when regions collection was not
+        // populated.
+        regionHome = undefined;
     }
 
     user = new User({
@@ -151,7 +152,7 @@ async function register({ login, email, pass, pass2 }) {
 
         await new UserConfirm({ key: confirmKey, user: user._id }).save();
 
-        sendMail({
+        await sendMail({
             sender: 'noreply',
             receiver: { alias: login, email },
             bcc: config.admin.email,

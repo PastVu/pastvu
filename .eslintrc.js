@@ -708,6 +708,8 @@ module.exports = {
             'rules': {
                 // Ensure async test has expect.assertions
                 'jest/prefer-expect-assertions': [1, { 'onlyFunctionsWithAsyncKeyword': true }],
+                // We need hooks.
+                'jest/no-hooks': 0,
             },
         },
     ],
