@@ -52,63 +52,56 @@ describe('user registration', () => {
         // Register user.
         const data = { 'login': 'user1', 'email': 'user1@test.com', 'pass': 'pass1', 'pass2': 'pass1' };
 
-        return auth.register(data).catch(e => {
-            // Restore original mock.
-            send.mockResolvedValue();
+        await expect(auth.register(data)).rejects.toThrow(new AuthenticationError(constants.AUTHENTICATION_REGISTRATION));
 
-            expect(e).toEqual(new AuthenticationError(constants.AUTHENTICATION_REGISTRATION));
-            // Check user record was deleted.
-            expect(User.findOne({ 'login': data.login })).resolves.toBeNull();
-        });
+        // Restore original mock.
+        send.mockResolvedValue();
+
+        // Check user record was deleted.
+        await expect(User.findOne({ 'login': data.login })).resolves.toBeNull();
     });
 
     describe('throws on invalid input values', () => {
         it('empty login field', async () => {
             expect.assertions(1);
 
-            return auth.register({ 'login': '' }).catch(e => {
-                expect(e).toEqual(new InputError(constants.INPUT_LOGIN_REQUIRED));
-            });
+            await expect(auth.register({ 'login': '' })).rejects.toThrow(new InputError(constants.INPUT_LOGIN_REQUIRED));
         });
 
         it('login field starts with digit', async () => {
             expect.assertions(1);
 
-            return auth.register({ 'login': '1user' }).catch(e => {
-                expect(e).toEqual(new AuthenticationError(constants.INPUT_LOGIN_CONSTRAINT));
-            });
+            await expect(auth.register({ 'login': '1user' })).rejects.toThrow(new AuthenticationError(constants.INPUT_LOGIN_CONSTRAINT));
         });
 
         it('login field is shorter than 3 characters', async () => {
             expect.assertions(1);
 
-            return auth.register({ 'login': 'u' }).catch(e => {
-                expect(e).toEqual(new AuthenticationError(constants.INPUT_LOGIN_CONSTRAINT));
-            });
+            await expect(auth.register({ 'login': 'u' })).rejects.toThrow(new AuthenticationError(constants.INPUT_LOGIN_CONSTRAINT));
         });
 
         it('login field is longer than 15 characters', async () => {
             expect.assertions(1);
 
-            return auth.register({ 'login': 'user'.repeat(5) }).catch(e => {
-                expect(e).toEqual(new AuthenticationError(constants.INPUT_LOGIN_CONSTRAINT));
-            });
+            const data = { 'login': 'user'.repeat(5) };
+
+            await expect(auth.register(data)).rejects.toThrow(new AuthenticationError(constants.INPUT_LOGIN_CONSTRAINT));
         });
 
         it('empty email field', async () => {
             expect.assertions(1);
 
-            return auth.register({ 'login': 'user', 'email': '' }).catch(e => {
-                expect(e).toEqual(new InputError(constants.INPUT_EMAIL_REQUIRED));
-            });
+            const data = { 'login': 'user', 'email': '' };
+
+            await expect(auth.register(data)).rejects.toThrow(new InputError(constants.INPUT_EMAIL_REQUIRED));
         });
 
         it('empty password field', async () => {
             expect.assertions(1);
 
-            return auth.register({ 'login': 'user', 'email': 'user1@test.com', 'pass': '' }).catch(e => {
-                expect(e).toEqual(new InputError(constants.INPUT_PASS_REQUIRED));
-            });
+            const data = { 'login': 'user', 'email': 'user1@test.com', 'pass': '' };
+
+            await expect(auth.register(data)).rejects.toThrow(new InputError(constants.INPUT_PASS_REQUIRED));
         });
 
         it('passwords don\'t match', async () => {
@@ -116,9 +109,7 @@ describe('user registration', () => {
 
             const data = { 'login': 'user1', 'email': 'user1@test.com', 'pass': 'pass1', 'pass2': 'pass2' };
 
-            return auth.register(data).catch(e => {
-                expect(e).toEqual(new AuthenticationError(constants.AUTHENTICATION_PASSWORDS_DONT_MATCH));
-            });
+            await expect(auth.register(data)).rejects.toThrow(new AuthenticationError(constants.AUTHENTICATION_PASSWORDS_DONT_MATCH));
         });
 
         it('user login exists', async () => {
@@ -131,9 +122,7 @@ describe('user registration', () => {
             // Change email and register again.
             data.email = 'user2@test.com';
 
-            return auth.register(data).catch(e => {
-                expect(e).toEqual(new AuthenticationError(constants.AUTHENTICATION_USER_EXISTS));
-            });
+            await expect(auth.register(data)).rejects.toThrow(new AuthenticationError(constants.AUTHENTICATION_USER_EXISTS));
         });
 
         it('user email exists', async () => {
@@ -146,9 +135,7 @@ describe('user registration', () => {
             // Change login and register again.
             data.login = 'user2';
 
-            return auth.register(data).catch(e => {
-                expect(e).toEqual(new AuthenticationError(constants.AUTHENTICATION_EMAIL_EXISTS));
-            });
+            await expect(auth.register(data)).rejects.toThrow(new AuthenticationError(constants.AUTHENTICATION_EMAIL_EXISTS));
         });
     });
 });
