@@ -66,7 +66,7 @@ const configFile = {
 
 module.exports = function (config) {
     // Set default log level.
-    configDefault.categories.default.level = config.env === 'development' ? 'ALL' : 'INFO';
+    configDefault.categories.default.level = config.env === 'production' ? 'INFO' : 'ALL';
 
     if (config.logPath) {
         // Logging to filesystem.
