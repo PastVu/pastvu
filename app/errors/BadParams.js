@@ -3,7 +3,7 @@ import constants from './constants';
 import ApplicationError from './Application';
 
 export default class BadParamsError extends ApplicationError {
-    constructor(data, rid) {
+    constructor(data = {}, rid) {
         if (typeof data === 'string') {
             data = { code: data };
         }
