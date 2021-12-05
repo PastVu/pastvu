@@ -1927,7 +1927,20 @@ async function giveUserPhotosAround({ cid, limitL, limitR }) {
     return { left, right };
 }
 
-// Returns array of nearest photos
+/**
+ * Returns array of photos nearest to specified point.
+ *
+ * @param {object} obj
+ * @param {Array} obj.geo Point coordinate pair
+ * @param {number} obj.type
+ * @param {number} obj.year
+ * @param {number} obj.year2
+ * @param {number} obj.except cid to exclude
+ * @param {number} obj.distance distance in radians
+ * @param {number} obj.limit
+ * @param {number} obj.skip
+ * @returns {object[]} photos
+ */
 async function giveNearestPhotos({ geo, type, year, year2, except, distance, limit, skip }) {
     if (!Utils.geo.checkLatLng(geo)) {
         throw new BadParamsError();
@@ -1964,10 +1977,11 @@ async function giveNearestPhotos({ geo, type, year, year2, except, distance, lim
         query.cid = { $ne: except };
     }
 
+    // For 2dsphere GeoJSON point $maxDistance is specified in meters.
     if (_.isNumber(distance) && distance > 0 && distance < 7) {
-        query.geo.$nearSphere.$maxDistance = distance;
+        query.geo.$nearSphere.$maxDistance = Utils.geo.rad2meter(distance);
     } else {
-        query.geo.$nearSphere.$maxDistance = 2;
+        query.geo.$nearSphere.$maxDistance = Utils.geo.rad2meter(2);
     }
 
     if (_.isNumber(limit) && limit > 0 && limit < 30) {

@@ -702,8 +702,24 @@ Utils.geo = (function () {
         return d;
     }
 
+    /**
+     * Degrees to radians
+     *
+     * @param {number} deg
+     * @returns {number}
+     */
     function deg2rad(deg) {
         return deg * (Math.PI / 180);
+    }
+
+    /**
+     * Radians to meters (assuming a spherical Earth)
+     *
+     * @param {number} rad
+     * @returns {number}
+     */
+    function rad2meter(rad) {
+        return turf.radiansToLength(rad, 'metres');
     }
 
     function geoToPrecision(geo, precision) {
@@ -813,6 +829,7 @@ Utils.geo = (function () {
 
     return {
         deg2rad,
+        rad2meter,
         geoToPrecision,
         geoToPrecisionRound,
         getDistanceFromLatLonInKm,
