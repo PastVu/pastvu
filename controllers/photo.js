@@ -1977,11 +1977,11 @@ async function giveNearestPhotos({ geo, type, year, year2, except, distance, lim
         query.cid = { $ne: except };
     }
 
-    // For 2dsphere GeoJSON point $maxDistance is specified in meters.
-    if (_.isNumber(distance) && distance > 0 && distance < 7) {
+    if (_.isNumber(distance) && distance > 0 && distance < Math.PI) {
         query.geo.$nearSphere.$maxDistance = Utils.geo.rad2meter(distance);
     } else {
-        query.geo.$nearSphere.$maxDistance = Utils.geo.rad2meter(2);
+        // By default restrict distance to hemisphere with the center at the point.
+        query.geo.$nearSphere.$maxDistance = Utils.geo.rad2meter(Math.PI / 2);
     }
 
     if (_.isNumber(limit) && limit > 0 && limit < 30) {
