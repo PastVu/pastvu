@@ -65,65 +65,29 @@ describe('authentication', () => {
         describe('throws on invalid input values', () => {
             const data = { 'login': 'user1', 'email': 'user1@test.com', 'pass': 'pass1', 'pass2': 'pass1' };
 
-            it('empty login field', async () => {
+            // Define test data
+            const testData = [
+                ['empty login field', { 'login': '' }, InputError, constants.INPUT_LOGIN_REQUIRED],
+                ['login field starts with digit', { 'login': '1user' }, AuthenticationError, constants.INPUT_LOGIN_CONSTRAINT],
+                ['login field < 3 characters', { 'login': 'u' }, AuthenticationError, constants.INPUT_LOGIN_CONSTRAINT],
+                ['login field > 15 characters', { 'login': 'user'.repeat(5) }, AuthenticationError, constants.INPUT_LOGIN_CONSTRAINT],
+                ['empty email field', { 'email': '' }, InputError, constants.INPUT_EMAIL_REQUIRED],
+                ['empty password field', { 'pass': '' }, InputError, constants.INPUT_PASS_REQUIRED],
+                ['passwords don\'t match', { 'pass2': 'pass2' }, AuthenticationError, constants.AUTHENTICATION_PASSWORDS_DONT_MATCH],
+            ];
+
+            it.each(testData)('%s', async (descr, modifier, ErrorClass, errorMessage) => {
                 expect.assertions(1);
 
-                const testData = _.defaults({ 'login': '' }, data);
+                const testData = _.defaults(modifier, data);
 
-                await expect(auth.register(testData)).rejects.toThrow(new InputError(constants.INPUT_LOGIN_REQUIRED));
-            });
-
-            it('login field starts with digit', async () => {
-                expect.assertions(1);
-
-                const testData = _.defaults({ 'login': '1user' }, data);
-
-                await expect(auth.register(testData)).rejects.toThrow(new AuthenticationError(constants.INPUT_LOGIN_CONSTRAINT));
-            });
-
-            it('login field is shorter than 3 characters', async () => {
-                expect.assertions(1);
-
-                const testData = _.defaults({ 'login': 'u' }, data);
-
-                await expect(auth.register(testData)).rejects.toThrow(new AuthenticationError(constants.INPUT_LOGIN_CONSTRAINT));
-            });
-
-            it('login field is longer than 15 characters', async () => {
-                expect.assertions(1);
-
-                const testData = _.defaults({ 'login': 'user'.repeat(5) }, data);
-
-                await expect(auth.register(testData)).rejects.toThrow(new AuthenticationError(constants.INPUT_LOGIN_CONSTRAINT));
-            });
-
-            it('empty email field', async () => {
-                expect.assertions(1);
-
-                const testData = _.defaults({ 'email': '' }, data);
-
-                await expect(auth.register(testData)).rejects.toThrow(new InputError(constants.INPUT_EMAIL_REQUIRED));
-            });
-
-            it('empty password field', async () => {
-                expect.assertions(1);
-
-                const testData = _.defaults({ 'pass': '' }, data);
-
-                await expect(auth.register(testData)).rejects.toThrow(new InputError(constants.INPUT_PASS_REQUIRED));
-            });
-
-            it('passwords don\'t match', async () => {
-                expect.assertions(1);
-
-                const testData = _.defaults({ 'pass2': 'pass2' }, data);
-
-                await expect(auth.register(testData)).rejects.toThrow(new AuthenticationError(constants.AUTHENTICATION_PASSWORDS_DONT_MATCH));
+                await expect(auth.register(testData)).rejects.toThrow(new ErrorClass(errorMessage));
             });
 
             it('user login exists', async () => {
                 expect.assertions(1);
 
+                // Register user.
                 await auth.register(data);
 
                 // Change email and register again.
@@ -135,6 +99,7 @@ describe('authentication', () => {
             it('user email exists', async () => {
                 expect.assertions(1);
 
+                // Register user.
                 await auth.register(data);
 
                 // Change login and register again.
