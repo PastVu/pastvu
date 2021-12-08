@@ -14,6 +14,9 @@ let auth;
 describe('authentication', () => {
     beforeAll(() => {
         auth = require('../auth').default;
+        // Mocking this.call for auth.
+        auth.call = jest.fn(() => true); //eslint-disable-line jest/prefer-spy-on
+
         send.mockClear();
     });
 
@@ -151,6 +154,129 @@ describe('authentication', () => {
         it.each(testData)('throws on key %s', async (desc, key, errorString) => {
             expect.assertions(1);
             await expect(auth.checkConfirm(key)).rejects.toThrow(new BadParamsError(errorString));
+        });
+    });
+
+    describe('user login', () => {
+        it('login with correct credentials', async () => {
+            expect.assertions(2);
+
+            // Register user and confirm.
+            const data = { 'login': 'user1', 'email': 'user1@test.com', 'pass': 'pass1', 'pass2': 'pass1' };
+
+            await auth.register(data);
+
+            const user = await User.findOne({ 'login': data.login });
+            const { key } = await UserConfirm.findOne({ 'user': user._id });
+
+            await auth.checkConfirm({ key });
+
+            // Login.
+            const login = await auth.login({ 'login': 'user1', 'pass': 'pass1' });
+
+            expect(login).toHaveProperty('message');
+            expect(login).toHaveProperty('youAre');
+        });
+
+        it('throws on empty fields', async () => {
+            expect.assertions(2);
+            await expect(auth.login({ 'login': '', 'pass': 'pass1' })).rejects.toThrow(new InputError(constants.INPUT_LOGIN_REQUIRED));
+            await expect(auth.login({ 'login': 'user1', 'pass': '' })).rejects.toThrow(new InputError(constants.INPUT_PASS_REQUIRED));
+        });
+
+        it('throws when user does not exist', async () => {
+            expect.assertions(1);
+
+            // Login.
+            const error = new AuthenticationError(constants.AUTHENTICATION_DOESNT_MATCH);
+
+            await expect(auth.login({ 'login': 'user1', 'pass': 'pass1' })).rejects.toThrow(error);
+        });
+
+        it('throws when user is not confirmed', async () => {
+            expect.assertions(1);
+
+            // Register user.
+            const data = { 'login': 'user1', 'email': 'user1@test.com', 'pass': 'pass1', 'pass2': 'pass1' };
+
+            await auth.register(data);
+
+            // Login.
+            const error = new AuthenticationError(constants.AUTHENTICATION_DOESNT_MATCH);
+
+            await expect(auth.login({ 'login': 'user1', 'pass': 'pass1' })).rejects.toThrow(error);
+        });
+
+        it('throws if password is wrong', async () => {
+            expect.assertions(1);
+
+            // Register user and confirm.
+            const data = { 'login': 'user1', 'email': 'user1@test.com', 'pass': 'pass1', 'pass2': 'pass1' };
+
+            await auth.register(data);
+
+            const user = await User.findOne({ 'login': data.login });
+            const { key } = await UserConfirm.findOne({ 'user': user._id });
+
+            await auth.checkConfirm({ key });
+
+            // Login.
+            const error = new AuthenticationError(constants.AUTHENTICATION_DOESNT_MATCH);
+
+            await expect(auth.login({ 'login': 'user1', 'pass': 'pass111' })).rejects.toThrow(error);
+        });
+
+        it('throws on max login attempts', async () => {
+            expect.assertions(11);
+
+            // Register user and confirm.
+            const data = { 'login': 'user1', 'email': 'user1@test.com', 'pass': 'pass1', 'pass2': 'pass1' };
+
+            await auth.register(data);
+
+            const user = await User.findOne({ 'login': data.login });
+            const { key } = await UserConfirm.findOne({ 'user': user._id });
+
+            await auth.checkConfirm({ key });
+
+            // Login 10 times with incorrect password.
+            let n = 0;
+
+            let error = new AuthenticationError(constants.AUTHENTICATION_DOESNT_MATCH);
+
+            while (n < 10) {
+                n++;
+
+                await expect(auth.login({ 'login': 'user1', 'pass': 'pass111' })).rejects.toThrow(error);
+            }
+
+            // Login with correct password.
+            error = new AuthenticationError(constants.AUTHENTICATION_MAX_ATTEMPTS);
+
+            await expect(auth.login({ 'login': 'user1', 'pass': 'pass1' })).rejects.toThrow(error);
+        });
+
+        it('throws on login not allowed', async () => {
+            expect.assertions(1);
+
+            // Register user and confirm.
+            const data = { 'login': 'user1', 'email': 'user1@test.com', 'pass': 'pass1', 'pass2': 'pass1' };
+
+            await auth.register(data);
+
+            const user = await User.findOne({ 'login': data.login });
+            const { key } = await UserConfirm.findOne({ 'user': user._id });
+
+            await auth.checkConfirm({ key });
+
+            // Disable login (ideally we need to use profile.changeRestrictions).
+            user.nologin = true;
+            await user.save();
+
+            // Login with correct password.
+            const error = new AuthenticationError(constants.AUTHENTICATION_NOT_ALLOWED);
+
+            await expect(auth.login({ 'login': 'user1', 'pass': 'pass1' })).rejects.toThrow(error);
         });
     });
 });
