@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import { User, UserConfirm } from '../../models/User';
 import { send } from '../mail';
-import { AuthenticationError, InputError, BadParamsError } from '../../app/errors';
+import { AuthenticationError, InputError, BadParamsError, AuthorizationError } from '../../app/errors';
 import constants from '../../app/errors/constants';
 
 jest.mock('../mail', () => ({
@@ -277,6 +277,72 @@ describe('authentication', () => {
             const error = new AuthenticationError(constants.AUTHENTICATION_NOT_ALLOWED);
 
             await expect(auth.login({ 'login': 'user1', 'pass': 'pass1' })).rejects.toThrow(error);
+        });
+    });
+
+    describe('user changes password by entering current password', () => {
+        beforeEach(async () => {
+            // Register user and confirm.
+            const data = { 'login': 'user1', 'email': 'user1@test.com', 'pass': 'pass1', 'pass2': 'pass1' };
+
+            await auth.register(data);
+
+            const user = await User.findOne({ 'login': data.login });
+            const { key } = await UserConfirm.findOne({ 'user': user._id });
+
+            await auth.checkConfirm({ key });
+
+            // Mock handshake.
+            auth.handshake = { 'usObj': { 'user': user, 'registered': true } };
+        });
+
+        afterEach(() => {
+            // Delete handshake.
+            delete auth.handshake;
+        });
+
+        it('changes password', async () => {
+            expect.assertions(2);
+
+            // Change password.
+            const result = await auth.passChange({ 'login': 'user1', 'pass': 'pass1', 'passNew': 'pass2', 'passNew2': 'pass2' });
+
+            expect(result).toHaveProperty('message');
+
+            // Validate login with new password..
+            await expect(auth.login({ 'login': 'user1', 'pass': 'pass2' })).resolves.toHaveProperty('message');
+        });
+
+        it('throws on unauthenticated', async () => {
+            expect.assertions(1);
+
+            // Unregister user.
+            auth.handshake.usObj.registered = false;
+
+            // Change password.
+            const changeData = { 'login': 'user1', 'pass': 'pass1', 'passNew': 'pass2', 'passNew2': 'pass2' };
+
+            await expect(auth.passChange(changeData)).rejects.toThrow(new AuthorizationError());
+        });
+
+        // Define test data
+        const testData = [
+            ['login mismatch', { 'login': 'user2' }, AuthorizationError, undefined],
+            ['empty current pass', { 'pass': '' }, InputError, constants.INPUT_PASS_REQUIRED],
+            ['empty new pass', { 'passNew': '' }, InputError, constants.INPUT_PASS_REQUIRED],
+            ['empty new pass confirm', { 'passNew2': '' }, InputError, constants.INPUT_PASS_REQUIRED],
+            ['new passwords are not matchig', { 'passNew2': 'pass22' }, AuthenticationError, constants.AUTHENTICATION_PASSWORDS_DONT_MATCH],
+            ['current password wrong', { 'pass': 'pass111' }, AuthenticationError, constants.AUTHENTICATION_CURRPASS_WRONG],
+        ];
+
+        const changeData = { 'login': 'user1', 'pass': 'pass1', 'passNew': 'pass2', 'passNew2': 'pass2' };
+
+        it.each(testData)('throws on %s', async (descr, modifier, ErrorClass, errorMessage) => {
+            expect.assertions(1);
+
+            const testData = _.defaults(modifier, changeData);
+
+            await expect(auth.passChange(testData)).rejects.toThrow(new ErrorClass(errorMessage));
         });
     });
 });
