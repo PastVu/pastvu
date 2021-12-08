@@ -158,9 +158,7 @@ describe('authentication', () => {
     });
 
     describe('user login', () => {
-        it('login with correct credentials', async () => {
-            expect.assertions(2);
-
+        beforeEach(async () => {
             // Register user and confirm.
             const data = { 'login': 'user1', 'email': 'user1@test.com', 'pass': 'pass1', 'pass2': 'pass1' };
 
@@ -170,6 +168,10 @@ describe('authentication', () => {
             const { key } = await UserConfirm.findOne({ 'user': user._id });
 
             await auth.checkConfirm({ key });
+        });
+
+        it('login with correct credentials', async () => {
+            expect.assertions(2);
 
             // Login.
             const login = await auth.login({ 'login': 'user1', 'pass': 'pass1' });
@@ -190,35 +192,25 @@ describe('authentication', () => {
             // Login.
             const error = new AuthenticationError(constants.AUTHENTICATION_DOESNT_MATCH);
 
-            await expect(auth.login({ 'login': 'user1', 'pass': 'pass1' })).rejects.toThrow(error);
+            await expect(auth.login({ 'login': 'user2', 'pass': 'pass2' })).rejects.toThrow(error);
         });
 
         it('throws when user is not confirmed', async () => {
             expect.assertions(1);
 
             // Register user.
-            const data = { 'login': 'user1', 'email': 'user1@test.com', 'pass': 'pass1', 'pass2': 'pass1' };
+            const data = { 'login': 'user2', 'email': 'user2@test.com', 'pass': 'pass2', 'pass2': 'pass2' };
 
             await auth.register(data);
 
             // Login.
             const error = new AuthenticationError(constants.AUTHENTICATION_DOESNT_MATCH);
 
-            await expect(auth.login({ 'login': 'user1', 'pass': 'pass1' })).rejects.toThrow(error);
+            await expect(auth.login({ 'login': 'user2', 'pass': 'pass2' })).rejects.toThrow(error);
         });
 
         it('throws if password is wrong', async () => {
             expect.assertions(1);
-
-            // Register user and confirm.
-            const data = { 'login': 'user1', 'email': 'user1@test.com', 'pass': 'pass1', 'pass2': 'pass1' };
-
-            await auth.register(data);
-
-            const user = await User.findOne({ 'login': data.login });
-            const { key } = await UserConfirm.findOne({ 'user': user._id });
-
-            await auth.checkConfirm({ key });
 
             // Login.
             const error = new AuthenticationError(constants.AUTHENTICATION_DOESNT_MATCH);
@@ -228,16 +220,6 @@ describe('authentication', () => {
 
         it('throws on max login attempts', async () => {
             expect.assertions(11);
-
-            // Register user and confirm.
-            const data = { 'login': 'user1', 'email': 'user1@test.com', 'pass': 'pass1', 'pass2': 'pass1' };
-
-            await auth.register(data);
-
-            const user = await User.findOne({ 'login': data.login });
-            const { key } = await UserConfirm.findOne({ 'user': user._id });
-
-            await auth.checkConfirm({ key });
 
             // Login 10 times with incorrect password.
             let n = 0;
@@ -259,17 +241,9 @@ describe('authentication', () => {
         it('throws on login not allowed', async () => {
             expect.assertions(1);
 
-            // Register user and confirm.
-            const data = { 'login': 'user1', 'email': 'user1@test.com', 'pass': 'pass1', 'pass2': 'pass1' };
-
-            await auth.register(data);
-
-            const user = await User.findOne({ 'login': data.login });
-            const { key } = await UserConfirm.findOne({ 'user': user._id });
-
-            await auth.checkConfirm({ key });
-
             // Disable login (ideally we need to use profile.changeRestrictions).
+            const user = await User.findOne({ 'login': 'user1' });
+
             user.nologin = true;
             await user.save();
 
