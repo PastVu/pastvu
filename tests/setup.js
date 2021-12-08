@@ -12,6 +12,9 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
+    // Clear all mocks before each test.
+    jest.clearAllMocks();
+
     // This would be the place to seed database, but we only have UserSettings
     // required so far, so no point to re-seed it before each test unless we
     // start modifying those settings one day.

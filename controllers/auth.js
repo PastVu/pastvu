@@ -190,17 +190,17 @@ async function recall({ login }) {
         throw new InputError(constants.INPUT_LOGIN_REQUIRED);
     }
 
+    // If user logged in and trying to restore not own account, he must be admin
+    if (iAm.registered && iAm.user.login !== login && !iAm.isAdmin) {
+        throw new AuthorizationError();
+    }
+
     const user = await User.findOne({
         $or: [{ login: new RegExp(`^${_.escapeRegExp(login)}$`, 'i') }, { email: login.toLowerCase() }],
     }, null, { lean: true }).exec();
 
     if (!user) {
         throw new AuthenticationError(constants.AUTHENTICATION_REGISTRATION);
-    }
-
-    // If user logged in and trying to restore not own account, he must be admin
-    if (iAm.registered && iAm.user.login !== login && !iAm.isAdmin) {
-        throw new AuthorizationError();
     }
 
     const confirmKey = Utils.randomString(8);
@@ -211,7 +211,7 @@ async function recall({ login }) {
 
     sendMail({
         sender: 'noreply',
-        receiver: { alias: login, email: user.email },
+        receiver: { alias: user.login, email: user.email },
         subject: 'Запрос на восстановление пароля',
         head: true,
         body: recallTpl({

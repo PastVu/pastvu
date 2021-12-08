@@ -9,15 +9,13 @@ jest.mock('../mail', () => ({
     ready: jest.fn().mockResolvedValue(),
 }));
 
-let auth;
-
 describe('authentication', () => {
+    let auth;
+
     beforeAll(() => {
         auth = require('../auth').default;
         // Mocking this.call for auth.
         auth.call = jest.fn(() => true); //eslint-disable-line jest/prefer-spy-on
-
-        send.mockClear();
     });
 
     describe('user registration', () => {
@@ -266,7 +264,7 @@ describe('authentication', () => {
 
             await auth.checkConfirm({ key });
 
-            // Mock handshake.
+            // Mock registered user handshake.
             auth.handshake = { 'usObj': { 'user': user, 'registered': true } };
         });
 
@@ -317,6 +315,130 @@ describe('authentication', () => {
             const testData = _.defaults(modifier, changeData);
 
             await expect(auth.passChange(testData)).rejects.toThrow(new ErrorClass(errorMessage));
+        });
+    });
+
+    describe('password recall', () => {
+        beforeEach(async () => {
+            // Register user and confirm.
+            const data = { 'login': 'user1', 'email': 'user1@test.com', 'pass': 'pass1', 'pass2': 'pass1' };
+
+            await auth.register(data);
+
+            const user = await User.findOne({ 'login': data.login });
+            const { key } = await UserConfirm.findOne({ 'user': user._id });
+
+            await auth.checkConfirm({ key });
+
+            // Mock non-registerd user handshake.
+            auth.handshake = { 'usObj': { 'user': user, 'registered': false } };
+
+            // Send is called once already at user registering, clear this call.
+            send.mockClear();
+        });
+
+        afterEach(() => {
+            // Delete handshake.
+            delete auth.handshake;
+        });
+
+        it('should recall by login and send email', async () => {
+            expect.assertions(4);
+
+            // Recall password.
+            const result = await auth.recall({ 'login': 'user1' });
+
+            expect(result).toHaveProperty('message');
+
+            // Expect email has been dispatched.
+            expect(send).toHaveBeenCalledTimes(1);
+            expect(send).toHaveBeenCalledWith(expect.objectContaining({
+                receiver: { 'alias': 'user1', 'email': 'user1@test.com' },
+            }));
+
+            // Check confirmation key record exists.
+            const user = await User.findOne({ 'login': 'user1' });
+            const userConfirm = await UserConfirm.findOne({ 'user': user._id });
+
+            expect(userConfirm).toBeTruthy();
+        });
+
+        it('should recall by email and send email', async () => {
+            expect.assertions(4);
+
+            // Recall password.
+            const result = await auth.recall({ 'login': 'user1@test.com' });
+
+            expect(result).toHaveProperty('message');
+
+            // Expect email has been dispatched.
+            expect(send).toHaveBeenCalledTimes(1);
+            expect(send).toHaveBeenCalledWith(expect.objectContaining({
+                receiver: { 'alias': 'user1', 'email': 'user1@test.com' },
+            }));
+
+            // Check confirmation key record exists.
+            const user = await User.findOne({ 'login': 'user1' });
+            const userConfirm = await UserConfirm.findOne({ 'user': user._id });
+
+            expect(userConfirm).toBeTruthy();
+        });
+
+        it('should admin recall other user by login and send email', async () => {
+            expect.assertions(4);
+
+            // Register another user and confirm.
+            const data = { 'login': 'user2', 'email': 'user2@test.com', 'pass': 'pass2', 'pass2': 'pass2' };
+
+            await auth.register(data);
+
+            const user = await User.findOne({ 'login': data.login });
+            let { key } = await UserConfirm.findOne({ 'user': user._id });
+
+            await auth.checkConfirm({ key });
+
+            send.mockClear();
+
+            // Make current user registered and admin.
+            auth.handshake.usObj.registered = true;
+            auth.handshake.usObj.isAdmin = true;
+
+            // Recall password.
+            const result = await auth.recall({ 'login': 'user2' });
+
+            expect(result).toHaveProperty('message');
+
+            // Expect email has been dispatched.
+            expect(send).toHaveBeenCalledTimes(1);
+            expect(send).toHaveBeenCalledWith(expect.objectContaining({
+                receiver: { 'alias': 'user2', 'email': 'user2@test.com' },
+            }));
+
+            // Check confirmation key record exists.
+            ({ key } = await UserConfirm.findOne({ 'user': user._id }));
+
+            expect(key).toHaveLength(8);
+        });
+
+        // Define test data
+        const testData = [
+            ['empty login', { 'login': '' }, InputError, constants.INPUT_LOGIN_REQUIRED],
+            ['non existing user', { 'login': 'user2' }, InputError, constants.AUTHENTICATION_REGISTRATION],
+        ];
+
+        it.each(testData)('throws on %s', async (descr, data, ErrorClass, errorMessage) => {
+            expect.assertions(1);
+
+            await expect(auth.recall(data)).rejects.toThrow(new ErrorClass(errorMessage));
+        });
+
+        it('throws on registered non-admin user is recalling for other use', async () => {
+            expect.assertions(1);
+
+            // Make user registered.
+            auth.handshake.usObj.registered = true;
+
+            await expect(auth.recall({ 'login': 'user2' })).rejects.toThrow(new AuthorizationError());
         });
     });
 });
