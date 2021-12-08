@@ -358,9 +358,9 @@ describe('authentication', () => {
 
             // Check confirmation key record exists.
             const user = await User.findOne({ 'login': 'user1' });
-            const userConfirm = await UserConfirm.findOne({ 'user': user._id });
+            const { key } = await UserConfirm.findOne({ 'user': user._id });
 
-            expect(userConfirm).toBeTruthy();
+            expect(key).toHaveLength(8);
         });
 
         it('should recall by email and send email', async () => {
@@ -379,9 +379,9 @@ describe('authentication', () => {
 
             // Check confirmation key record exists.
             const user = await User.findOne({ 'login': 'user1' });
-            const userConfirm = await UserConfirm.findOne({ 'user': user._id });
+            const { key } = await UserConfirm.findOne({ 'user': user._id });
 
-            expect(userConfirm).toBeTruthy();
+            expect(key).toHaveLength(8);
         });
 
         it('should admin recall other user by login and send email', async () => {
@@ -439,6 +439,120 @@ describe('authentication', () => {
             auth.handshake.usObj.registered = true;
 
             await expect(auth.recall({ 'login': 'user2' })).rejects.toThrow(new AuthorizationError());
+        });
+    });
+
+    describe('user changes password by entering recall key', () => {
+        let recallKey;
+
+        beforeEach(async () => {
+            // Register user and confirm.
+            const data = { 'login': 'user1', 'email': 'user1@test.com', 'pass': 'pass1', 'pass2': 'pass1' };
+
+            await auth.register(data);
+
+            const user = await User.findOne({ 'login': data.login });
+            const { key } = await UserConfirm.findOne({ 'user': user._id });
+
+            await auth.checkConfirm({ key });
+
+            // Mock non-registered user handshake.
+            auth.handshake = { 'usObj': { 'user': user, 'registered': false } };
+
+            // Recall password.
+            await auth.recall({ 'login': 'user1' });
+
+            // Get confirmation key record.
+            recallKey = (await UserConfirm.findOne({ 'user': user._id })).key;
+        });
+
+        afterEach(() => {
+            // Delete handshake.
+            delete auth.handshake;
+        });
+
+        it('unregistered user changes password', async () => {
+            expect.assertions(2);
+
+            // Change password.
+            const result = await auth.passChangeRecall({ 'key': recallKey, 'pass': 'pass2', 'pass2': 'pass2' });
+
+            expect(result).toHaveProperty('message');
+
+            // Validate login with new password.
+            await expect(auth.login({ 'login': 'user1', 'pass': 'pass2' })).resolves.toHaveProperty('message');
+        });
+
+        it('registered user changes password', async () => {
+            expect.assertions(2);
+
+            // Make user registered.
+            auth.handshake.usObj.registered = true;
+
+            // Change password.
+            const result = await auth.passChangeRecall({ 'key': recallKey, 'pass': 'pass2', 'pass2': 'pass2' });
+
+            expect(result).toHaveProperty('message');
+
+            // Validate login with new password.
+            await expect(auth.login({ 'login': 'user1', 'pass': 'pass2' })).resolves.toHaveProperty('message');
+        });
+
+        it('unconfirmed user changes password and gets confirmed', async () => {
+            expect.assertions(5);
+
+            // Register user but don't confirm.
+            const data = { 'login': 'user2', 'email': 'user2@test.com', 'pass': 'pass2', 'pass2': 'pass2' };
+
+            await auth.register(data);
+
+            // Delete registration confirmation.
+            let user = await User.findOne({ 'login': data.login });
+
+            await UserConfirm.deleteOne({ user: user._id }).exec();
+
+            // Mock non-registered user handshake.
+            auth.handshake = { 'usObj': { 'user': user, 'registered': false } };
+
+            // Recall password.
+            await auth.recall({ 'login': data.login });
+
+            // Get password change confirmation key record.
+            const { key } = await UserConfirm.findOne({ 'user': user._id });
+
+            // Change password.
+            const result = await auth.passChangeRecall({ 'key': key, 'pass': 'pass222', 'pass2': 'pass222' });
+
+            expect(result).toHaveProperty('message');
+
+            // Check that user became active
+            user = await User.findOne({ 'login': data.login });
+
+            expect(user.active).toBeTruthy();
+            expect(user.activatedate).toBeTruthy();
+
+            // Check that confirmation was deleted.
+            await expect(UserConfirm.findOne({ 'user': user._id })).resolves.toBeNull();
+
+            // Validate login with new password.
+            await expect(auth.login({ 'login': data.login, 'pass': 'pass222' })).resolves.toHaveProperty('message');
+        });
+
+        // Define test data
+        const testData = [
+            ['empty key', { 'key': '' }, BadParamsError, undefined],
+            ['empty new pass', { 'pass': '' }, InputError, constants.INPUT_PASS_REQUIRED],
+            ['empty new pass confirm', { 'pass2': '' }, InputError, constants.INPUT_PASS_REQUIRED],
+            ['new passwords are not matchig', { 'pass2': 'pass22' }, AuthenticationError, constants.AUTHENTICATION_PASSWORDS_DONT_MATCH],
+            ['key does not exist', { 'key': 'abcdefgh' }, AuthenticationError, constants.AUTHENTICATION_PASSCHANGE],
+        ];
+
+        it.each(testData)('throws on %s', async (descr, modifier, ErrorClass, errorMessage) => {
+            expect.assertions(1);
+
+            const testData = _.defaults(modifier, { 'key': recallKey, 'pass': 'pass2', 'pass2': 'pass2' });
+
+            await expect(auth.passChangeRecall(testData)).rejects.toThrow(new ErrorClass(errorMessage));
         });
     });
 });

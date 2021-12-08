@@ -228,7 +228,7 @@ async function recall({ login }) {
     };
 }
 
-// Password hange by recall request from email
+// Password change by recall request from email
 async function passChangeRecall({ key, pass, pass2 }) {
     const { handshake: { usObj: iAm } } = this;
 
@@ -236,7 +236,7 @@ async function passChangeRecall({ key, pass, pass2 }) {
         throw new BadParamsError();
     }
 
-    if (!_.isString(pass) || !pass) {
+    if (!_.isString(pass) || !pass || !_.isString(pass2) || !pass2) {
         throw new InputError(constants.INPUT_PASS_REQUIRED);
     }
 
