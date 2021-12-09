@@ -73,6 +73,15 @@ to the logic:
 - Write logs of level `ERROR` and above to `errors.log`
 - Write Express logs of level `ERROR` and above to `http-errors.log`
 
+
+### Tests
+
+We are using [Jest](https://jestjs.io/) testing framework. Although, we are in
+early stages of adding tests for existing code. It is generally a good idea to
+supply your contribution along with tests where posible. To run tests locally,
+execute `npm run jest`. If you need to supply any [CLI
+options](https://jestjs.io/docs/cli), call it as `npm run jest -- --verbose=true`.
+
 ### Debugging
 
 The `DEBUG` environment variable is used to enable debug output and filter it.
@@ -92,7 +101,7 @@ x-defaults: &app-image
 For more information on syntax refer to `debug` package
 [docs](https://www.npmjs.com/package/debug#wildcards).
 
-#### Using inpector client
+#### Using inspector client
 
 It is possible to debug application using Node.js inspector client when
 required. There are several [clients
@@ -148,7 +157,8 @@ to existing migrations or `migrate-mongo` documentation.
 
 * When you upgrade continers to newer image, you may experience an issue when any CSS requests in the app result in 500 error and layout is severley broken. This happens when container is not able to overwrite CSS files (they are generated alongside `.less` files at `public/style/` directory). To fix the issue run `npx grunt clean:publicCss` from project directory and then start application.
 
+## Maintenance
 
 ### How to release
 
-See `npm version --help`. Don't forget to manually tag the `en` branch.
+Running `npm version v2.0.1` will produce a release commit and tag it as `v2.0.1`, following this step, you need to push branch HEAD and tag directly to `master` (not using PR). Don't forget to manually tag the `en` branch after master has been automerged to it, pull its latest state and tag `git tag v2.0.1-en`, then push tag upstream as well. Pushing tags should automatically build docker image for each tag and publish them in registry.
