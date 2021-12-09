@@ -34,7 +34,7 @@
         "worker": "node --max-old-space-size=2048 bin/run.js --script ./worker.js",
         "lint": "./node_modules/.bin/eslint .",
         "lintfix": "./node_modules/.bin/eslint . --fix",
-        "jest": "jest --verbose=true",
+        "jest": "jest --runInBand",
         "build": "grunt",
         "test": "grunt test",
         "migrate": "npm run migrate:up",

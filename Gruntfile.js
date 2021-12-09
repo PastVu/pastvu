@@ -79,7 +79,7 @@ module.exports = function (grunt) {
                 stderr: true,
             },
             jest: {
-                command: 'npm run jest',
+                command: 'npm run jest -- --ci',
                 stdout: true,
                 stderr: true,
             },
