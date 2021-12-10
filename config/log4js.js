@@ -66,7 +66,12 @@ const configFile = {
 
 module.exports = function (config) {
     // Set default log level.
-    configDefault.categories.default.level = config.env === 'development' ? 'ALL' : 'INFO';
+    configDefault.categories.default.level = config.env === 'production' ? 'INFO' : 'ALL';
+
+    if (config.env === 'test') {
+        // Supress logging colours in test env.
+        configDefault.appenders.out.layout = { type: 'basic' };
+    }
 
     if (config.logPath) {
         // Logging to filesystem.

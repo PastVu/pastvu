@@ -78,6 +78,11 @@ module.exports = function (grunt) {
                 stdout: true,
                 stderr: true,
             },
+            jest: {
+                command: 'npm run jest -- --ci',
+                stdout: true,
+                stderr: true,
+            },
         },
         concat: {
             options: {
@@ -227,6 +232,7 @@ module.exports = function (grunt) {
                         'config/!(local.config).js',
                         'config/*example',
                         'migrations/*.js',
+                        'tests/*.js',
                         // Add here public/js/ files that have been modified
                         // in PRs, so we gradually get them all covered and
                         // then refactor into smaller list.
@@ -286,6 +292,7 @@ module.exports = function (grunt) {
         'exec:testNodeVersionDockerfile:./docker/frontend.Dockerfile',
         'eslint',
         'stylelint',
+        'exec:jest',
     ]);
 
     // Записываем параметры сборки, например hash, из которых запуск в prod возьмет данные

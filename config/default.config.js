@@ -2,7 +2,7 @@
 const ms = require('ms');
 
 module.exports = {
-    env: 'development', // Enviroment: development, testing, production
+    env: 'development', // Enviroment: development, test, production
     locales: ['en', 'ru'], // List of supported locales. First one is the default locale, if user transferred nothing
     lang: 'en', // Language: ru, en
 

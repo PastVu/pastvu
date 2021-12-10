@@ -98,10 +98,10 @@ export const ready = new Promise((resolve, reject) => {
             SES: new aws.SES(mailConf.SESConfig),
         });
     } else {
-        logger.error('Mail not configured. Unknow transport type', mailConf.type);
+        logger.error('Mail not configured. Unknown transport type', mailConf.type);
 
         /* eslint-disable-next-line prefer-promise-reject-errors */
-        return reject({ message: 'Mail not configured. Unknow transport type' });
+        return reject({ message: 'Mail not configured. Unknown transport type' });
     }
 
     logger.info('Mail configured with %s transport', mailConf.type);
