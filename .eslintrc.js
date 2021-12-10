@@ -8,6 +8,7 @@ module.exports = {
         'node': true,
         'browser': true,
         'serviceworker': true,
+        'jest/globals': true,
     },
 
     'parserOptions': {
@@ -693,6 +694,22 @@ module.exports = {
                 'object-shorthand': [2, 'consistent'],
                 // don't complain about private members of object
                 'no-underscore-dangle': 0,
+            },
+        },
+        {
+            // eslint-plugin-jest rules are defined via overrides to apply
+            // them to test files only.
+            'files': ['**/__tests__/*.js'],
+            'plugins': ['jest'],
+            'extends': [
+                'plugin:jest/all',
+                'plugin:jest-formatting/strict',
+            ],
+            'rules': {
+                // Ensure async test has expect.assertions
+                'jest/prefer-expect-assertions': [1, { 'onlyFunctionsWithAsyncKeyword': true }],
+                // We need hooks.
+                'jest/no-hooks': 0,
             },
         },
     ],

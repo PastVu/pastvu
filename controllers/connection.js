@@ -29,6 +29,8 @@ export const registerModel = modelPromise => {
     return waitDb;
 };
 
+export default option => connectionPromises || init(option);
+
 /**
  * Ensures that the indexes defined in model schemas match the indexes
  * in respective MongoDB collections.
@@ -41,8 +43,15 @@ export async function syncAllIndexes() {
     return Promise.all(syncPromises);
 }
 
-export default option => connectionPromises || init(option);
-
+/**
+ * Init databases.
+ *
+ * @param {object} obj
+ * @param {object} obj.mongo Mongo configuration.
+ * @param {object} obj.redis Redis configuration.
+ * @param {object} obj.logger Logger object.
+ * @returns {Promise} Promise that resolves to array of connection handlers.
+ */
 function init({ mongo, redis, logger = log4js.getLogger('app') }) {
     connectionPromises = [];
 
@@ -80,42 +89,44 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
                 db = mongoose.connection;
                 dbNative = db.db;
 
-                const adminDb = db.db.admin(); // Use the admin database for some operation
-                const [buildInfo, serverStatus, listDatabases] = await Promise.all([adminDb.buildInfo(),
-                    adminDb.serverStatus(), adminDb.listDatabases()]);
+                if (process.env.NODE_ENV !== 'test') {
+                    const adminDb = db.db.admin(); // Use the admin database for some operation
+                    const [buildInfo, serverStatus, listDatabases] = await Promise.all([adminDb.buildInfo(),
+                        adminDb.serverStatus(), adminDb.listDatabases()]);
 
-                if (!listDatabases.databases.some(r => r.name === db.name)) {
-                    // MongoDB allows connection to non-existing databases,
-                    // it is not an error, but we require database to exist
-                    // for operation.
-                    return errFirstHandler(`Database ${db.name} does not exist.`);
-                }
+                    if (!listDatabases.databases.some(r => r.name === db.name)) {
+                        // MongoDB allows connection to non-existing databases,
+                        // it is not an error, but we require database to exist
+                        // for operation.
+                        return errFirstHandler(`Database ${db.name} does not exist.`);
+                    }
 
-                logger.info(
-                    `MongoDB[${buildInfo.version}, ${serverStatus.storageEngine.name}, x${buildInfo.bits},`,
-                    `pid ${serverStatus.pid}] connected through Mongoose[${mongoose.version}]`,
-                    `with poolsize ${poolSize} at ${uri}`
-                );
+                    logger.info(
+                        `MongoDB[${buildInfo.version}, ${serverStatus.storageEngine.name}, x${buildInfo.bits},`,
+                        `pid ${serverStatus.pid}] connected through Mongoose[${mongoose.version}]`,
+                        `with poolsize ${poolSize} at ${uri}`
+                    );
 
-                // Hook on events.
-                db.on('error', err => {
-                    logger.error(`MongoDB connection error to ${uri}`, err);
-                });
-                db.on('disconnected', () => {
-                    logger.log(connErrorLogLevel, 'MongoDB disconnected!');
-                });
-                db.on('close', () => {
-                    logger.log(connErrorLogLevel, 'MongoDB connection closed and onClose executed on all of this connections models!');
-                });
-                db.on('reconnected', () => {
-                    logger.info('MongoDB reconnected at ' + uri);
-                });
+                    // Hook on events.
+                    db.on('error', err => {
+                        logger.error(`MongoDB connection error to ${uri}`, err);
+                    });
+                    db.on('disconnected', () => {
+                        logger.log(connErrorLogLevel, 'MongoDB disconnected!');
+                    });
+                    db.on('close', () => {
+                        logger.log(connErrorLogLevel, 'MongoDB connection closed and onClose executed on all of this connections models!');
+                    });
+                    db.on('reconnected', () => {
+                        logger.info('MongoDB reconnected at ' + uri);
+                    });
 
-                if (! await checkPendingMigrations()) {
-                    const err = 'DB migration is required, make sure that worker instance is started or migrate manually';
+                    if (! await checkPendingMigrations()) {
+                        const err = 'DB migration is required, make sure that worker instance is started or migrate manually';
 
-                    getDBReject(err);
-                    reject(err);
+                        getDBReject(err);
+                        reject(err);
+                    }
                 }
 
                 await Promise.all(modelPromises.map(modelPromise => modelPromise(db)));

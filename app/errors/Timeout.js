@@ -20,12 +20,12 @@ export default class TimeoutError extends ApplicationError {
             data = { timeout: data };
         }
 
-        const { timeout, ...details } = data;
+        const { timeout = 0, ...details } = data;
 
         _.defaults(details, {
             code: constants.TIMEOUT,
             statusCode: 408,
-            message: `${errorMsgs[constants.TIMEOUT]} (${ms(timeout, { long: true })})`,
+            message: `${errorMsgs[constants.TIMEOUT]}` + (timeout ? ` (${ms(timeout, { long: true })})` : ''),
         });
 
         super(details, rid);
