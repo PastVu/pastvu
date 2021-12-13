@@ -6,6 +6,7 @@ import constants from '../app/errors/constants';
 import NotFoundError from '../app/errors/NotFound';
 import AuthenticationError from '../app/errors/Authentication';
 import { registerModel } from '../controllers/connection';
+import Utils from '../commons/Utils';
 
 const SALT_ROUNDS = 10;
 const MAX_LOGIN_ATTEMPTS = 10;
@@ -32,7 +33,7 @@ registerModel(db => {
             required: true,
             index: { unique: true },
             lowercase: true,
-            validate: [/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@(([[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/, 'incorrect email'],
+            validate: [Utils.validateEmail, 'incorrect email'],
         },
 
         pass: { type: String, required: true },
