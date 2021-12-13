@@ -22,7 +22,6 @@ const incomeDir = path.join(config.storePath, 'incoming/');
 const privateDir = path.join(config.storePath, 'private/avatars/');
 const publicDir = path.join(config.storePath, 'public/avatars/');
 const execAsync = util.promisify(childProcess.exec);
-const emailRegexp = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@(([[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 
 const restrictions = new Map([
     ['nologin', { val: false, vars: new Set([true, false]) }],
@@ -362,7 +361,7 @@ async function changeEmail({ login, email, pass }) {
 
     email = email.toLowerCase();
 
-    if (!email.match(emailRegexp)) {
+    if (!Utils.validateEmail(email)) {
         throw new InputError(constantsError.MAIL_WRONG);
     }
 
