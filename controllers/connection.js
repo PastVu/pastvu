@@ -147,61 +147,73 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
     if (redis) {
         const { maxReconnectTime, ...config } = redis;
         let totalRetryTime = 0;
+        let connectedOnce = false;
 
         connectionPromises.push(new Promise((resolve, reject) => {
             const Redis = require('ioredis');
 
             config.retryStrategy = function (times) {
-                // End reconnecting after a specific timeout and flush all commands with a individual error
+                if (!totalRetryTime) {
+                    // Log warning on loosing connection.
+                    const uri = `${config.host}:${config.port}`;
+                    const message = connectedOnce ? `Lost connection to Redis server at ${uri}. Trying to reconnect.` : `Can't establish connection to Redis server at ${uri}. Trying to reconnect.`;
+
+                    logger.warn(message);
+                }
+
+                // End reconnecting after a specific timeout and terminate application.
                 if (totalRetryTime > maxReconnectTime) {
                     const error = new ApplicationError(constantsError.REDIS_MAX_CONNECTION_ATTEMPS);
 
                     logger.error(error.message);
-                    reject(error); // Reject if it's first time, not doesn't matter in loosing connections in runtime
 
-                    return ''; // Return non-number to stop retrying.
+                    process.exit(1);
                 }
 
                 const delay = Math.min(Math.max(times * 100, 1000), 4000);
 
                 totalRetryTime += delay;
 
-                // Reconnect after delay.
+                // Try to reconnect after delay.
                 return delay;
             };
 
             dbRedis = new Redis(config)
                 .on('ready', () => {
-                    // Reset retries.
-                    totalRetryTime = 0;
+                    const uri = `${config.host}:${config.port}`;
+
+                    if (totalRetryTime && connectedOnce) {
+                        // Successful reconnection after loosing connection.
+                        logger.info(`Connection to Redis server at ${uri} is restored`);
+
+                        // Reset retries.
+                        totalRetryTime = 0;
+
+                        return;
+                    }
 
                     // Report success to log.
                     const server = dbRedis.serverInfo;
-                    const uri = `${config.host}:${server.tcp_port}`;
 
                     logger.info(
                         `Redis[${server.redis_version}, gcc ${server.gcc_version}, x${server.arch_bits},`,
                         `pid ${server.process_id}, ${server.redis_mode} mode] connected at ${uri}`
                     );
+
+                    // Reset retries and flag initial connection established.
+                    totalRetryTime = 0;
+                    connectedOnce = true;
+
                     resolve(dbRedis);
                 })
                 .on('error', error => {
                     // Log error and reject promise if it is different to
                     // connection issue.  For connection issue we record error
                     // when retries limit is reached.
-                    if (error.code !== 'ENOTFOUND') {
+                    if (! ['ECONNREFUSED', 'ENOTFOUND'].includes(error.code)) {
                         logger.error(error.message);
                         reject(error);
                     }
-                })
-                .on('reconnecting', () => {
-                    const uri = `${config.host}:${config.port}`;
-                    const time = Math.max((maxReconnectTime - totalRetryTime) / 1000, 0);
-
-                    logger.warn(
-                        `Redis reconnection attempt at ${uri}.`,
-                        `Time to stop trying ${time}s`
-                    );
                 });
 
             exitHook(cb => {
