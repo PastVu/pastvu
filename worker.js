@@ -53,7 +53,7 @@ function setupSessionQueue() {
 
         // Add archiveExpiredSessions periodic job.
         sessionQueue.add('archiveExpiredSessions', {}, {
-            removeOnComplete: 2, // Needed to be able to retrieve it on global even listener (in different runner).
+            removeOnComplete: 2, // Needed to be able to retrieve it on global event listener (in different runner).
             removeOnFail: true,
             repeat: { every: ms('5m') },
         });

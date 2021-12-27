@@ -78,7 +78,7 @@ module.exports = {
         host: 'localhost',
         port: '6379',
         autoResendUnfulfilledCommands: false,
-        maxReconnectTime: ms('30s'),
+        maxReconnectTime: ms('60s'),
     },
 
     // Lifetime of link to file of protected photo for user, that has right to see this photo
