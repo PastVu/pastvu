@@ -801,6 +801,16 @@ Utils.geo = (function () {
     }
 
     /**
+     * Computes GeoJSON Poligon from bbox.
+     *
+     * @param {Array} bbox
+     * @returns {object} polygon GeoJSON Polygon geometry object
+     */
+    function bboxPoly(bbox) {
+        return turf.bboxPolygon(bbox).geometry;
+    }
+
+    /**
      * Compensate map distortion in polygon geometry object used in geospacial
      * query.
      *
@@ -856,6 +866,7 @@ Utils.geo = (function () {
         checkbbox,
         checkbboxLatLng,
         bboxReverse,
+        bboxPoly,
         polygonFixMapDistortion,
     };
 }());

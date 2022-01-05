@@ -2501,7 +2501,19 @@ async function save(data) {
  * @returns {object} object containing result.
  */
 function getByBounds(data) {
-    const { geometry, z, startAt } = data;
+    let { geometry, z, startAt, bounds } = data;
+
+    if (Array.isArray(bounds) && !geometry) {
+        // For pre 2.0 compatibility convert bbox to Poligon if bounds
+        // attribute is provided. We also set localWork for zooms 17 onwards
+        // like it used to be.
+        const bbox = _.flattenDeep(bounds);
+
+        if (Utils.geo.checkbboxLatLng(bbox)) {
+            geometry = Utils.geo.bboxPoly(Utils.geo.bboxReverse(bbox));
+            data.localWork = !(z < 17);
+        }
+    }
 
     if (!['MultiPolygon', 'Polygon'].includes(geometry.type) || !_.isNumber(z) || z < 1) {
         throw new BadParamsError();
