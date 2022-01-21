@@ -69,7 +69,7 @@
         "ioredis": "4.19.2",
         "locale": "0.1.0",
         "lodash": "4.17.21",
-        "log4js": "6.3.0",
+        "log4js": "6.4.0",
         "lru-cache": "5.1.1",
         "make-dir": "3.0.0",
         "migrate-mongo": "8.2.2",
