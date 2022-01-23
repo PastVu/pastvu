@@ -1936,7 +1936,7 @@ async function giveUserPhotosAround({ cid, limitL, limitR }) {
  * @param {number} obj.year
  * @param {number} obj.year2
  * @param {number} obj.except cid to exclude
- * @param {number} obj.distance distance in radians
+ * @param {number} obj.distance distance in meters (1000km max)
  * @param {number} obj.limit
  * @param {number} obj.skip
  * @returns {object[]} photos
@@ -1977,11 +1977,11 @@ async function giveNearestPhotos({ geo, type, year, year2, except, distance, lim
         query.cid = { $ne: except };
     }
 
-    if (_.isNumber(distance) && distance > 0 && distance < Math.PI) {
-        query.geo.$nearSphere.$maxDistance = Utils.geo.rad2meter(distance);
+    if (_.isNumber(distance) && distance > 0) {
+        query.geo.$nearSphere.$maxDistance = Math.min(1000000, distance);
     } else {
-        // By default restrict distance to hemisphere with the center at the point.
-        query.geo.$nearSphere.$maxDistance = Utils.geo.rad2meter(Math.PI / 2);
+        // By default restrict distance to 10km.
+        query.geo.$nearSphere.$maxDistance = 10000;
     }
 
     if (_.isNumber(limit) && limit > 0 && limit < 30) {
