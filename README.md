@@ -11,10 +11,10 @@ This project was started in 2009 by Ilya Varlamov and Alexey Duk. Initially it
 was dedicated to historical photos of Moscow (oldmos.ru). As community was
 growing, soon a second site for historical photos of St. Petersburg was
 created (oldspb.ru). In 2013 two projects were merged and migrated into global
-scope site PastVu. Principal maintainer and software architect of the new
+scope platform PastVu. Principal maintainer and software architect of the new
 platform became [Pavel Klimashkin](https://github.com/klimashkin). In 2020 the
 project [became](https://pastvu.com/news/149) open source, this attracted more
-people to participate and contribute.  Over the years, many people have
+people to participate and contribute. Over the years, many people have
 uploaded, attributed and geo-located images (photographs, paintings,
 drawings), with support and leading by regional and global moderators and
 administrators team.
@@ -33,13 +33,15 @@ The are more ways one can participate in the project and make it evolve:
 
 If you think you have found a security issue, please email at [support@pastvu.com](mailto:support@pastvu.com).
 
-We expect all project participants to adhere to [Contributor Code of Conduct](CODE_OF_CONDUCT.md)
+We expect all project participants to follow [Contributor Code of Conduct](CODE_OF_CONDUCT.md)
 
 ### Developing
 
-We welcome any keen developer in helping us build the better PastVu! See
+We welcome any keen developer in helping us build the better PastVu. See
 [contributing guide](CONTRIBUTING.md) to learn about our development process
 and environment setup.
 
 ## License
+
+* Test database used for development setup is licensed under [ODbL 1.0](https://opendatacommons.org/licenses/odbl/summary/), geographic and adminstrative boundaries data it contains: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors.
 
