@@ -53,12 +53,17 @@
     .postrow
         div
             | Открытая разработка ведется&nbsp;
-            a.donate(target="_blank", href="https://github.com/PastVu") на GitHub
+            a(target="_blank", href="https://github.com/PastVu") на GitHub
             | . Следите за выполнением задач и присылайте свои идеи!
     .postrow
         div(style="margin-top: 10px;")
             | Версия&nbsp;
             span(data-bind="text: version")
+    .postrow
+        div(style="margin-top: 10px;")
+            | Данные по границам географических и административных регионов: ©&nbsp;
+            a(target="_blank", href="https://www.openstreetmap.org/copyright") OpenStreetMap contributors
+            | .
     .postrow
         div.img(style="margin-top:15px;")
             img.poster(src="/img/loading/Loading1.jpg")
