@@ -1,0 +1,29 @@
+@import '../_vars.less';
+@import '../bs/variables.less';
+@import '../bs/mixins.less';
+
+body {
+    overflow-y: hidden;
+}
+
+.mainApi {
+    position: relative;
+    width: 100%;
+    padding: 0 6px;
+    border-top: 5px solid @MainBlueColor;
+
+    h3.titlelogo {
+        &::before {
+            background: url(/img/misc/logob.png) no-repeat;
+            float: left;
+            display: block;
+            height: 30px;
+            width: 30px;
+            background-size: 30px;
+            content: '';
+            margin-right: 5px;
+            margin-top: -4px;
+            margin-left: -2px;
+        }
+    }
+}
