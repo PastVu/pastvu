@@ -32,7 +32,7 @@ docker compose up -d mongo
 # Import Pastvu database
 docker compose exec mongo initdb
 # Install node modules
-docker compose run app npm install
+docker compose run --rm app npm install
 # Start the application
 docker compose up
 ```
@@ -132,7 +132,7 @@ although most strightforward option is using Chrome DevTools. Open
 `localhost:9229` configured at "Discover network taget". Now you need to start
 application with inspector agent enabled:
 ```
-docker compose run -p 9229:9229 -p 3000:3000 app npm run inspect
+docker compose run --rm -p 9229:9229 -p 3000:3000 app npm run inspect
 ```
 
 Under "Remote target" section in inspector tab you will see a new running instance that you can use for debugging.
@@ -140,7 +140,7 @@ Under "Remote target" section in inspector tab you will see a new running instan
 In the case when appication can't be started at all, you can use inspector with an
 option to break before user code starts:
 ```
-docker compose run -p 9229:9229 -p 3000:3000 app npm run inspect-brk
+docker compose run --rm -p 9229:9229 -p 3000:3000 app npm run inspect-brk
 ```
 
 In this case execution will stop at the first line of code, allowing you to
@@ -159,7 +159,7 @@ We are using [`migrate-mongo`](https://github.com/seppevs/migrate-mongo) databas
 When upgrading manually in compose environment use:
 
 ```
-docker compose run app npm run migrate:status
+docker compose run --rm app npm run migrate:status
 ```
 This will bring up all app dependencies (mongoDb container) and execute
 required command.
