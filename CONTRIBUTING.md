@@ -24,28 +24,28 @@ allow you to start with development.
 
 ### Create development environment
 
-You need to have [docker](https://docs.docker.com/engine/install/) and [docker-compose](https://docs.docker.com/compose/install/) installed first.
+You need to have [docker](https://docs.docker.com/engine/install/) and [compose](https://docs.docker.com/compose/cli-command/) installed first.
 
 ```bash
 # Start Mongo container in background
-docker-compose up -d mongo
+docker compose up -d mongo
 # Import Pastvu database
-docker-compose exec mongo initdb
+docker compose exec mongo initdb
 # Install node modules
-docker-compose run app npm install
+docker compose run app npm install
 # Start the application
-docker-compose up
+docker compose up
 ```
 
 Navigate to http://localhost:3000 and login with the default user `admin`/`admin`.
 
 Mailcatcher web interface is listening on http://localhost:1080 to view emails which app has sent out.
 
-Data store and Mongo database are using persistent storage (located on volumes), so you can re-create containers without losing the data. If you change code related to server side operation, you will need to restart containers after change to take effect. If you need to delete volumes, execute `docker-compose down -v`.
+Data store and Mongo database are using persistent storage (located on volumes), so you can re-create containers without losing the data. If you change code related to server side operation, you will need to restart containers after change to take effect. If you need to delete volumes, execute `docker compose down -v`.
 
 #### Service instances
 
-Running `docker-compose up` starts all service instances according to
+Running `docker compose up` starts all service instances according to
 `docker-compose.yml` configuration:
 
 * MongoDB - database (required)
@@ -58,7 +58,7 @@ Running `docker-compose up` starts all service instances according to
 * sitemap - sitemap generator
 
 It's not strictly necessary to start all of them locally, only `app` is
-required, which can be started with databases using `docker-compose up app`,
+required, which can be started with databases using `docker compose up app`,
 but if you want to work with images make sure to start corresponding services
 as well.
 
@@ -76,7 +76,7 @@ It is important that `client.hostname` is matching hostname of machine where you
 
 As we run node in docker enivronment, each service container has own logs that
 can be accessed using `docker logs <container name>` command. Aggregated logs
-output is also shown in terminal where `docker-compose up` is executed.
+output is also shown in terminal where `docker compose up` is executed.
 
 Internally, each node instance outputs logs to `STDOUT`. Log level is set to `ALL` when run in development environment.
 
@@ -132,7 +132,7 @@ although most strightforward option is using Chrome DevTools. Open
 `localhost:9229` configured at "Discover network taget". Now you need to start
 application with inspector agent enabled:
 ```
-docker-compose run -p 9229:9229 -p 3000:3000 app npm run inspect
+docker compose run -p 9229:9229 -p 3000:3000 app npm run inspect
 ```
 
 Under "Remote target" section in inspector tab you will see a new running instance that you can use for debugging.
@@ -140,7 +140,7 @@ Under "Remote target" section in inspector tab you will see a new running instan
 In the case when appication can't be started at all, you can use inspector with an
 option to break before user code starts:
 ```
-docker-compose run -p 9229:9229 -p 3000:3000 app npm run inspect-brk
+docker compose run -p 9229:9229 -p 3000:3000 app npm run inspect-brk
 ```
 
 In this case execution will stop at the first line of code, allowing you to
@@ -156,10 +156,10 @@ We are using [`migrate-mongo`](https://github.com/seppevs/migrate-mongo) databas
 * `migrate:down` - alias for `migrate-mongo down`
 * `migrate` - alias for `migrate:up` script
 
-When upgrading manually in docker-compose environment use:
+When upgrading manually in compose environment use:
 
 ```
-docker-compose run app npm run migrate:status
+docker compose run app npm run migrate:status
 ```
 This will bring up all app dependencies (mongoDb container) and execute
 required command.
