@@ -252,7 +252,7 @@ export const handleHTTPAPIRequest = (function () {
         }
 
         if (_.isEmpty(query)) {
-            return res.set({ 'Cache-Control': 'no-cache' }).status(200).send('Welcome to PastVu Api');
+            return res.set({ 'Cache-Control': 'no-cache' }).status(200).render('api/api');
         }
 
         let params = query.params;
