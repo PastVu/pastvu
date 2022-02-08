@@ -13,11 +13,18 @@ growing, soon a second site for historical photos of St. Petersburg was
 created (oldspb.ru). In 2013 two projects were merged and migrated into global
 scope platform PastVu. Principal maintainer and software architect of the new
 platform became [Pavel Klimashkin](https://github.com/klimashkin). In 2020 the
-project [became](https://pastvu.com/news/149) open source, this attracted more
+project code [became](https://pastvu.com/news/149) open source, this attracted more
 people to participate and contribute. Over the years, many people have
 uploaded, attributed and geo-located images (photographs, paintings,
 drawings), with support and leading by regional and global moderators and
 administrators team.
+
+## Technology
+
+The project is built using JavaScript stack containing components: MongoDB,
+Redis, Node.js, Express, Socket.IO, Pug, Knockout and Leaflet.
+
+We are using GitHub tools for CI/CD pipeline and release management.
 
 ## Contributing
 
@@ -30,6 +37,9 @@ The are more ways one can participate in the project and make it evolve:
 * [Discussing the project](https://github.com/PastVu/pastvu/discussions)
 * [Report a bug](https://github.com/PastVu/pastvu/issues/new?labels=Bug)
 * [Propose a new feature](https://github.com/PastVu/pastvu/issues/new?labels=Feature%20Request)
+
+Before creating an issue, it might be a good idea to search if it has been
+reported already.
 
 If you think you have found a security issue, please email at [support@pastvu.com](mailto:support@pastvu.com).
 
