@@ -21,8 +21,15 @@ administrators team.
 
 ## Technology
 
-The project is built using JavaScript stack containing components: MongoDB,
-Redis, Node.js, Express, Socket.IO, Pug, Knockout and Leaflet.
+The project is built using JavaScript stack containing components:
+* [MongoDB](https://www.mongodb.com/) as data storage for main database,
+* [Redis](https://redis.io/) as cache,
+* [Node.js](https://nodejs.org/en/) as JavaScript server enviroment,
+* [Express](https://expressjs.com) for node.js web applications,
+* [Socket.IO](https://socket.io/) as runtime client-server communication,
+* [Pug](https://pugjs.org) as clientside UI components,
+* [Knockout](https://knockoutjs.com/) as Model-View-View-Model library and
+* [Leaflet](https://leafletjs.com/) for interactive maps.
 
 We are using GitHub tools for CI/CD pipeline and release management.
 
