@@ -630,6 +630,10 @@ async function giveForUser({ login, page = 1, type = 'photo', active = true, del
 
     const canSeeDel = iAm.registered && iAm.user.login === login || iAm.isAdmin;
 
+    if (!canSeeDel && del) {
+        throw new AuthorizationError();
+    }
+
     page = (Math.abs(Number(page)) || 1) - 1;
 
     let comments;
