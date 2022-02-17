@@ -10,7 +10,9 @@ can do whatever you want with this stuff. If we meet some day, and you think
 this stuff is worth it, you can buy me a beer in return.
 */
 
-import { LRUMap } from "./lru_map.js";
+//import { LRUMap } from "./lru_map.js";
+// We have to use requirejs to load module, ES6 syntax won't work here.
+const { LRUMap } = require('leaflet-plugins/lru');
 
 function waitForAPI(callback, context) {
 	let checkCounter = 0,
