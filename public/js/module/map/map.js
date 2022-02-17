@@ -237,28 +237,28 @@ define([
                             desc: 'Схема',
                             selected: ko.observable(false),
                             params: 'roadmap',
-                            maxZoom: 20
+                            maxZoom: 21
                         },
                         {
                             id: 'sat',
                             desc: 'Спутник',
                             selected: ko.observable(false),
                             params: 'satellite',
-                            maxZoom: 20
+                            maxZoom: 21
                         },
                         {
                             id: 'hyb',
                             desc: 'Гибрид',
                             selected: ko.observable(false),
                             params: 'hybrid',
-                            maxZoom: 20
+                            maxZoom: 21
                         },
                         {
                             id: 'land',
                             desc: 'Ландшафт',
                             selected: ko.observable(false),
                             params: 'terrain',
-                            maxZoom: 20
+                            maxZoom: 21
                         }
                     ])
                 });
