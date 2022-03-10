@@ -35,9 +35,11 @@
                 .text Log Out
                 .ico
             // /ko
-            #lang.labledIco.langFlag.strokeBefore(data-bind="style:{'backgroundImage': 'url(/img/misc/flags/' + lang() + '.svg)'}, click: langClick")
+            #lang.labledIco.strokeBefore(data-bind="click: langClick")
+                .text(data-bind="text: lang().toUpperCase()")
             // ko if: langAltShow()
-            #langAlt.langFlag(data-bind="style:{'backgroundImage': 'url(/img/misc/flags/' + langAlt() + '.svg)'}, click: langAltClick")
+            #langAlt(data-bind="click: langAltClick")
+                .text(data-bind="text: langAlt().toUpperCase()")
             // /ko
     //ko if: msg().length
     #appMsg(data-bind="css: msgCss()"): span(data-bind="text: msg()")

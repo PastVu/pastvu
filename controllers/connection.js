@@ -140,6 +140,7 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
                 logger.error('Connection error to MongoDB at ' + uri);
                 getDBReject(err);
                 reject(err);
+                process.exit(1);
             }
         }));
     }
