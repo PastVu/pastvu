@@ -8,5 +8,6 @@ RUN apt-get update && apt-get install -y \
 COPY ./imagick-policy.xml /etc/ImageMagick-6/policy.xml
 WORKDIR /code
 COPY ./dev-entrypoint.sh /usr/local/bin/
+RUN mkdir -p /store && chown -R node:node /store
 USER node
 ENTRYPOINT ["dev-entrypoint.sh"]
