@@ -19,3 +19,12 @@ Usually You also need to compile [mongo-c-driver](https://github.com/mongodb/mon
 *This interface isn't obligatory for PastVu debugging or contributing*
 
  The interface is experimental for admin's views, data analysis and API's experiments.
+
+## Access to PostgreSQL
+Use user's crediatails of a special user, created by "postgres"(admin user) for accessing to PastVu's MongoDB and the database name of DB with created mongo_fdw.
+
+Recommended programs:
+1. psql (text and CLI only)
+2. pgadmin
+3. DBeaver
+4. QGIS (useful for geodata from PostGIS only)
