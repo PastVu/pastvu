@@ -11,7 +11,6 @@ import config from '../config';
 import constants from './constants';
 import Utils from '../commons/Utils';
 import childProcess from 'child_process';
-import { waitDb } from './connection';
 import { Photo, PhotoConveyer, PhotoConveyerError, STPhotoConveyer } from '../models/Photo';
 import { User } from '../models/User';
 import constantsError from '../app/errors/constants';
@@ -227,7 +226,7 @@ function fillImgPrior(parent, level) {
 }
 
 // Собираем статистику конвейера на начало каждой 10-минутки
-function CollectConveyerStat() {
+function collectConveyerStat() {
     const st = new STPhotoConveyer({
         stamp: new Date(+moment.utc().startOf('minute')),
         clength: conveyerMaxLength,
@@ -242,7 +241,7 @@ function CollectConveyerStat() {
 
     conveyerMaxLength = conveyerLength;
     conveyerConverted = 0;
-    setTimeout(CollectConveyerStat, ms('10m'));
+    setTimeout(collectConveyerStat, ms('10m'));
 }
 
 // Clear conveyor except photos, which are converting now
@@ -786,21 +785,22 @@ export async function removePhotos(cids) {
     return removedCount;
 }
 
-(async function converterStarter() {
-    await waitDb;
+/**
+ * Start converter on instance startup.
+ */
+export async function converterStarter() {
+    logger.info('Initialise photo converter');
 
     // Запускаем конвейер после рестарта сервера, устанавливаем все недоконвертированные фото обратно в false
-    setTimeout(async () => {
-        try {
-            await PhotoConveyer.updateMany(
-                { converting: { $exists: true } }, { $unset: { converting: 1 } }
-            ).exec();
-        } catch (err) {
-            return logger.error(err);
-        }
+    try {
+        await PhotoConveyer.updateMany(
+            { converting: { $exists: true } }, { $unset: { converting: 1 } }
+        ).exec();
+    } catch (err) {
+        return logger.error(err);
+    }
 
-        conveyerControl();
-    }, 4000);
+    conveyerControl();
 
     const count = await PhotoConveyer.estimatedDocumentCount().exec();
 
@@ -810,8 +810,8 @@ export async function removePhotos(cids) {
     // Планируем запись статистики конвейера на начало следующей 10-минутки
     const hourStart = +moment.utc().startOf('hour');
 
-    setTimeout(CollectConveyerStat, hourStart + ms('10m') * Math.ceil((Date.now() - hourStart) / ms('10m')) - Date.now() + 10);
-}());
+    setTimeout(collectConveyerStat, hourStart + ms('10m') * Math.ceil((Date.now() - hourStart) / ms('10m')) - Date.now() + 10);
+}
 
 function conveyorStartStop({ value }) {
     if (_.isBoolean(value)) {

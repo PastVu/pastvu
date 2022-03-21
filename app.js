@@ -23,6 +23,7 @@ import { ready as subscrReady } from './controllers/subscr';
 import { ready as settingsReady } from './controllers/settings';
 import * as routes from './controllers/routes';
 import * as ourMiddlewares from './controllers/middleware';
+import { converterStarter } from './controllers/converter';
 
 import './models/_initValues';
 
@@ -323,5 +324,6 @@ export async function configure(startStamp) {
         listener.init();
 
         session.checkSessWaitingConnect();
+        converterStarter();
     });
 }
