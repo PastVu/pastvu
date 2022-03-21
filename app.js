@@ -24,6 +24,7 @@ import { ready as settingsReady } from './controllers/settings';
 import * as routes from './controllers/routes';
 import * as ourMiddlewares from './controllers/middleware';
 import { converterStarter } from './controllers/converter';
+import { ready as reasonsReady } from './controllers/reason';
 
 import './models/_initValues';
 
@@ -198,7 +199,7 @@ export async function configure(startStamp) {
         app.get(/^\/(?:_a|_prn)(?:\/.*)$/, static404);
     }
 
-    await Promise.all([authReady, settingsReady, regionReady, subscrReady, mailReady, photosReady]);
+    await Promise.all([authReady, settingsReady, regionReady, subscrReady, mailReady, photosReady, reasonsReady]);
 
     scheduleRegionStatQueueDrain();
 
@@ -323,6 +324,7 @@ export async function configure(startStamp) {
         listener.addCallback('calcUserStats', session.regetUsersAfterStatsUpdate);
         listener.init();
 
+        // Initialise various components.
         session.checkSessWaitingConnect();
         converterStarter();
     });
