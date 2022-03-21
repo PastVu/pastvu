@@ -4,10 +4,7 @@ import { send } from '../mail';
 import { AuthenticationError, InputError, BadParamsError, AuthorizationError } from '../../app/errors';
 import constants from '../../app/errors/constants';
 
-jest.mock('../mail', () => ({
-    send: jest.fn().mockResolvedValue(),
-    ready: jest.fn().mockResolvedValue(),
-}));
+jest.mock('../mail');
 
 describe('authentication', () => {
     let auth;
