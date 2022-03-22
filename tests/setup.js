@@ -9,6 +9,11 @@ beforeAll(async () => {
     await connectDb({ mongo: { uri: process.env.MONGO_INSTANCE_URI } });
     await waitDb;
     await seedDatabase();
+
+    // Make testHelpers globally available, so that it does not need to be
+    // imported in every test. e.g. just call `testHelpers.createUser()`
+    // where you need.
+    global.testHelpers = require('./testHelpers');
 });
 
 beforeEach(async () => {

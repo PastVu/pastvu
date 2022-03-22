@@ -3,14 +3,13 @@ import { User, UserConfirm } from '../../models/User';
 import { send } from '../mail';
 import { AuthenticationError, InputError, BadParamsError, AuthorizationError } from '../../app/errors';
 import constants from '../../app/errors/constants';
+import auth from '../auth';
+import testHelpers from '../../tests/testHelpers';
 
 jest.mock('../mail');
 
 describe('authentication', () => {
-    let auth;
-
     beforeAll(() => {
-        auth = require('../auth').default;
         // Mocking this.call for auth.
         auth.call = jest.fn(() => true); //eslint-disable-line jest/prefer-spy-on
     });
@@ -113,14 +112,10 @@ describe('authentication', () => {
         it('makes registered user active', async () => {
             expect.assertions(7);
 
-            // Register user.
-            const data = { 'login': 'user1', 'email': 'user1@test.com', 'pass': 'pass1', 'pass2': 'pass1' };
-
-            await auth.register(data);
+            // Register unconfirmed user.
+            let user = await testHelpers.createUser({ login: 'user1', confirmUser: false });
 
             // Check user is not active.
-            let user = await User.findOne({ 'login': data.login });
-
             expect(user.active).toBeFalsy();
             expect(user.activatedate).toBeFalsy();
 
@@ -132,7 +127,7 @@ describe('authentication', () => {
             expect(check.type).toBe('noty');
 
             // Check that user became active
-            user = await User.findOne({ 'login': data.login });
+            user = await User.findOne({ 'login': user.login });
 
             expect(user.active).toBeTruthy();
             expect(user.activatedate).toBeTruthy();
@@ -156,14 +151,7 @@ describe('authentication', () => {
     describe('user login', () => {
         beforeEach(async () => {
             // Register user and confirm.
-            const data = { 'login': 'user1', 'email': 'user1@test.com', 'pass': 'pass1', 'pass2': 'pass1' };
-
-            await auth.register(data);
-
-            const user = await User.findOne({ 'login': data.login });
-            const { key } = await UserConfirm.findOne({ 'user': user._id });
-
-            await auth.checkConfirm({ key });
+            await testHelpers.createUser({ login: 'user1', pass: 'pass1' });
         });
 
         it('login with correct credentials', async () => {
@@ -195,9 +183,7 @@ describe('authentication', () => {
             expect.assertions(1);
 
             // Register user.
-            const data = { 'login': 'user2', 'email': 'user2@test.com', 'pass': 'pass2', 'pass2': 'pass2' };
-
-            await auth.register(data);
+            await testHelpers.createUser({ login: 'user2', pass: 'pass2', confirmUser: false });
 
             // Login.
             const error = new AuthenticationError(constants.AUTHENTICATION_DOESNT_MATCH);
@@ -253,14 +239,7 @@ describe('authentication', () => {
     describe('user changes password by entering current password', () => {
         beforeEach(async () => {
             // Register user and confirm.
-            const data = { 'login': 'user1', 'email': 'user1@test.com', 'pass': 'pass1', 'pass2': 'pass1' };
-
-            await auth.register(data);
-
-            const user = await User.findOne({ 'login': data.login });
-            const { key } = await UserConfirm.findOne({ 'user': user._id });
-
-            await auth.checkConfirm({ key });
+            const user = await testHelpers.createUser({ login: 'user1', pass: 'pass1' });
 
             // Mock registered user handshake.
             auth.handshake = { 'usObj': { 'user': user, 'registered': true } };
@@ -317,16 +296,11 @@ describe('authentication', () => {
     });
 
     describe('password recall', () => {
+        let user;
+
         beforeEach(async () => {
             // Register user and confirm.
-            const data = { 'login': 'user1', 'email': 'user1@test.com', 'pass': 'pass1', 'pass2': 'pass1' };
-
-            await auth.register(data);
-
-            const user = await User.findOne({ 'login': data.login });
-            const { key } = await UserConfirm.findOne({ 'user': user._id });
-
-            await auth.checkConfirm({ key });
+            user = await testHelpers.createUser({ login: 'user1', pass: 'pass1' });
 
             // Mock non-registerd user handshake.
             auth.handshake = { 'usObj': { 'user': user, 'registered': false } };
@@ -351,11 +325,10 @@ describe('authentication', () => {
             // Expect email has been dispatched.
             expect(send).toHaveBeenCalledTimes(1);
             expect(send).toHaveBeenCalledWith(expect.objectContaining({
-                receiver: { 'alias': 'user1', 'email': 'user1@test.com' },
+                receiver: { 'alias': 'user1', 'email': 'user1@test.me' },
             }));
 
             // Check confirmation key record exists.
-            const user = await User.findOne({ 'login': 'user1' });
             const { key } = await UserConfirm.findOne({ 'user': user._id });
 
             expect(key).toHaveLength(8);
@@ -365,18 +338,17 @@ describe('authentication', () => {
             expect.assertions(4);
 
             // Recall password.
-            const result = await auth.recall({ 'login': 'user1@test.com' });
+            const result = await auth.recall({ 'login': 'user1@test.me' });
 
             expect(result).toHaveProperty('message');
 
             // Expect email has been dispatched.
             expect(send).toHaveBeenCalledTimes(1);
             expect(send).toHaveBeenCalledWith(expect.objectContaining({
-                receiver: { 'alias': 'user1', 'email': 'user1@test.com' },
+                receiver: { 'alias': 'user1', 'email': 'user1@test.me' },
             }));
 
             // Check confirmation key record exists.
-            const user = await User.findOne({ 'login': 'user1' });
             const { key } = await UserConfirm.findOne({ 'user': user._id });
 
             expect(key).toHaveLength(8);
@@ -386,14 +358,7 @@ describe('authentication', () => {
             expect.assertions(4);
 
             // Register another user and confirm.
-            const data = { 'login': 'user2', 'email': 'user2@test.com', 'pass': 'pass2', 'pass2': 'pass2' };
-
-            await auth.register(data);
-
-            const user = await User.findOne({ 'login': data.login });
-            let { key } = await UserConfirm.findOne({ 'user': user._id });
-
-            await auth.checkConfirm({ key });
+            const userTwo = await testHelpers.createUser({ login: 'user2', pass: 'pass2' });
 
             send.mockClear();
 
@@ -409,11 +374,11 @@ describe('authentication', () => {
             // Expect email has been dispatched.
             expect(send).toHaveBeenCalledTimes(1);
             expect(send).toHaveBeenCalledWith(expect.objectContaining({
-                receiver: { 'alias': 'user2', 'email': 'user2@test.com' },
+                receiver: { 'alias': 'user2', 'email': 'user2@test.me' },
             }));
 
             // Check confirmation key record exists.
-            ({ key } = await UserConfirm.findOne({ 'user': user._id }));
+            const { key } = await UserConfirm.findOne({ 'user': userTwo._id });
 
             expect(key).toHaveLength(8);
         });
@@ -445,14 +410,7 @@ describe('authentication', () => {
 
         beforeEach(async () => {
             // Register user and confirm.
-            const data = { 'login': 'user1', 'email': 'user1@test.com', 'pass': 'pass1', 'pass2': 'pass1' };
-
-            await auth.register(data);
-
-            const user = await User.findOne({ 'login': data.login });
-            const { key } = await UserConfirm.findOne({ 'user': user._id });
-
-            await auth.checkConfirm({ key });
+            const user = await testHelpers.createUser({ login: 'user1', pass: 'pass1' });
 
             // Mock non-registered user handshake.
             auth.handshake = { 'usObj': { 'user': user, 'registered': false } };
@@ -500,20 +458,16 @@ describe('authentication', () => {
             expect.assertions(5);
 
             // Register user but don't confirm.
-            const data = { 'login': 'user2', 'email': 'user2@test.com', 'pass': 'pass2', 'pass2': 'pass2' };
-
-            await auth.register(data);
+            let user = await testHelpers.createUser({ login: 'user2', pass: 'pass2', confirmUser: false });
 
             // Delete registration confirmation.
-            let user = await User.findOne({ 'login': data.login });
-
             await UserConfirm.deleteOne({ user: user._id }).exec();
 
             // Mock non-registered user handshake.
             auth.handshake = { 'usObj': { 'user': user, 'registered': false } };
 
             // Recall password.
-            await auth.recall({ 'login': data.login });
+            await auth.recall({ 'login': user.login });
 
             // Get password change confirmation key record.
             const { key } = await UserConfirm.findOne({ 'user': user._id });
@@ -524,7 +478,7 @@ describe('authentication', () => {
             expect(result).toHaveProperty('message');
 
             // Check that user became active
-            user = await User.findOne({ 'login': data.login });
+            user = await User.findOne({ 'login': user.login });
 
             expect(user.active).toBeTruthy();
             expect(user.activatedate).toBeTruthy();
@@ -533,7 +487,7 @@ describe('authentication', () => {
             await expect(UserConfirm.findOne({ 'user': user._id })).resolves.toBeNull();
 
             // Validate login with new password.
-            await expect(auth.login({ 'login': data.login, 'pass': 'pass222' })).resolves.toHaveProperty('message');
+            await expect(auth.login({ 'login': user.login, 'pass': 'pass222' })).resolves.toHaveProperty('message');
         });
 
         // Define test data
