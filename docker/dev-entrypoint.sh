@@ -3,7 +3,10 @@ set -e
 
 CONFIG="./config/local.config.js"
 
-[ ! -f "${CONFIG}" ] && cp "${CONFIG}.docker-example" "${CONFIG}"
+if [ ! -f "${CONFIG}" ]; then
+  echo "${CONFIG} is missing. Create one by running 'cp ${CONFIG}.docker-example ${CONFIG} "
+  exit 1;
+fi
 
 # 'run MODULE [options]' special command to run script directly with node, so that system signals are relayed to the process.
 if [ "$1" = 'run' -a -f "./${2}.js" ]; then
