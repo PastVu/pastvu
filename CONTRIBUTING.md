@@ -31,6 +31,8 @@ You need to have [docker](https://docs.docker.com/engine/install/) and [compose]
 docker compose up -d mongo
 # Import Pastvu database
 docker compose exec mongo initdb
+# Create config file
+cp ./config/local.config.js.docker-example ./config/local.config.js
 # Install node modules
 docker compose run --rm app npm install
 # Start the application
