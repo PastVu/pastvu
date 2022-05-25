@@ -104,7 +104,7 @@
         "eslint-plugin-jest": "25.3.0",
         "eslint-plugin-jest-formatting": "3.1.0",
         "eslint-plugin-jsdoc": "32.3.0",
-        "grunt": "1.4.0",
+        "grunt": "1.5.3",
         "grunt-babel": "8.0.0",
         "grunt-contrib-clean": "2.0.0",
         "grunt-contrib-compress": "2.0.0",
