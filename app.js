@@ -15,7 +15,7 @@ import { handleSocketConnection, registerSocketRequestHendler } from './app/requ
 import exitHook from 'async-exit-hook';
 import { JobCompletionListener } from './controllers/queue';
 
-import { photosReady } from './controllers/photo';
+import { schedulePhotosTasks } from './controllers/photo';
 import { ready as mailReady } from './controllers/mail';
 import { ready as authReady } from './controllers/auth';
 import { ready as regionReady, scheduleRegionStatQueueDrain } from './controllers/region';
@@ -199,7 +199,7 @@ export async function configure(startStamp) {
         app.get(/^\/(?:_a|_prn)(?:\/.*)$/, static404);
     }
 
-    await Promise.all([authReady, settingsReady, regionReady, subscrReady, mailReady, photosReady, reasonsReady]);
+    await Promise.all([authReady, settingsReady, regionReady, subscrReady, mailReady, reasonsReady]);
 
     scheduleRegionStatQueueDrain();
 
@@ -316,16 +316,17 @@ export async function configure(startStamp) {
     });
 
     // Once db is connected, register callbacks for some periodic jobs run in
-    // worker instance.
-    waitDb.then(() => {
+    // worker instance as well as other components jobs.
+    waitDb.then(async () => {
         const listener = new JobCompletionListener('session');
 
         listener.addCallback('archiveExpiredSessions', session.cleanArchivedSessions);
         listener.addCallback('calcUserStats', session.regetUsersAfterStatsUpdate);
         listener.init();
 
-        // Initialise various components.
+        // TODO: Review if any/all can be moved to worker.
         session.checkSessWaitingConnect();
-        converterStarter();
+        await converterStarter();
+        await schedulePhotosTasks();
     });
 }
