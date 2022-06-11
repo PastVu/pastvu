@@ -41,4 +41,10 @@ export default {
         watersignLength: 65,
         watersignPattern: /[\w.,:;()[\]\\|/№§©®℗℠™•?!@#$%^&*+\-={}"'<>~` ]/g,
     },
+
+    user: {
+        ranks: [
+            'mec', 'mec_silv', 'mec_gold', 'adviser',
+        ],
+    },
 };

@@ -51,7 +51,6 @@ async function seedDatabase() {
     await UserSettings.insertMany([
         { key: 'subscr_auto_reply', val: true, vars: [true, false], desc: 'Автоподписка при комментировании темы' },
         { key: 'subscr_throttle', val: 3 * 60 * 60 * 1000, vars: [5 * 60 * 1000, 30 * 60 * 1000, 60 * 60 * 1000, 3 * 60 * 60 * 1000, 6 * 60 * 60 * 1000, 24 * 60 * 60 * 1000], desc: 'Минимальный интервал между отправками письма с уведомлением' },
-        { key: 'ranks', vars: ['mec', 'mec_silv', 'mec_gold', 'adviser'], desc: 'Звания пользователя' },
         { key: 'r_f_photo_user_gal', val: true, vars: [true, false], desc: 'Фильтровать галерею пользователя на странице фото' },
         { key: 'r_f_user_gal', val: true, vars: [true, false], desc: 'Фильтровать галерею пользователя в его профиле' },
         { key: 'r_as_home', val: false, vars: [true, false], desc: 'Регион для фильтрации по умолчанию берётся из домашнего региона' },
