@@ -49,7 +49,7 @@ async function fillUserSettingsDef() {
 async function fillUserRanks() {
     const row = await UserSettings.findOne({ key: 'ranks' }, { _id: 0, vars: 1 }, { lean: true }).exec();
 
-    userRanks = row.vars;
+    userRanks = row?.vars || [];
     userRanksPromise = Promise.resolve(userRanks);
 
     for (const rank of userRanks) {

@@ -1,4 +1,3 @@
-import ms from 'ms';
 import _ from 'lodash';
 import { waitDb } from './connection';
 import { Reason } from '../models/Reason';
@@ -7,8 +6,15 @@ import { BadParamsError } from '../app/errors';
 
 let reasonsHash = {};
 
-// Periodically select all reasons from db and store them in memory
-async function periodicFetchReasons() {
+export const ready = waitDb.then(() => populateReasonsHash());
+
+/**
+ * Populate reasons hash from database.
+ *
+ * TODO: No clear reason why this need to be stored in database, consider
+ * moving reasons list to constants.
+ */
+async function populateReasonsHash() {
     const rsns = await Reason.find({}, { _id: 0 }, { lean: true }).exec();
 
     if (_.isEmpty(rsns)) {
@@ -20,10 +26,6 @@ async function periodicFetchReasons() {
             return result;
         }, {});
     }
-
-    setTimeout(periodicFetchReasons, ms('30s'));
-
-    return rsns;
 }
 
 /**
@@ -56,9 +58,6 @@ async function giveActionReasons({ action: key }) {
 export const giveReasonTitle = function ({ cid }) {
     return _.get(reasonsHash, `[${cid}].title`);
 };
-
-// After connection to db read reasons
-waitDb.then(periodicFetchReasons);
 
 giveActionReasons.isPublic = true;
 

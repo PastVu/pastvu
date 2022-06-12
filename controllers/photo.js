@@ -7,7 +7,7 @@ import log4js from 'log4js';
 import moment from 'moment';
 import config from '../config';
 import Utils from '../commons/Utils';
-import { waitDb, dbRedis } from './connection';
+import { dbRedis } from './connection';
 import constants from './constants';
 import constantsError from '../app/errors/constants';
 import * as session from './_session';
@@ -3519,9 +3519,10 @@ async function syncUnpublishedPhotosWithRedis() {
     setTimeout(syncUnpublishedPhotosWithRedis, ms('1h'));
 }
 
-export const photosReady = waitDb.then(() => {
+// TODO: Those needs to be moved to worker.
+export const schedulePhotosTasks = () => {
     planResetDisplayStat(); // Plan statistic clean up
 
     // Application start should wait cache and redis operations
     return Promise.all([resetPhotosAnticache(), syncUnpublishedPhotosWithRedis()]);
-});
+};
