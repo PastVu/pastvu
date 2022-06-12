@@ -13,7 +13,7 @@ import constants from './constants.js';
 import * as photoController from './photo';
 import { userThrottleChange } from './subscr';
 import constantsError from '../app/errors/constants';
-import { userSettingsDef, userSettingsVars, userRanksHash } from './settings';
+import { userSettingsDef, userSettingsVars } from './settings';
 import { AuthenticationError, AuthorizationError, BadParamsError, InputError, NotFoundError } from '../app/errors';
 
 import { User } from '../models/User';
@@ -529,7 +529,7 @@ async function saveUserRanks({ login, ranks }) {
 
     // Check that all values are allowed
     for (const rank of ranks) {
-        if (!userRanksHash[rank]) {
+        if (!constants.user.ranks.includes(rank)) {
             throw new BadParamsError();
         }
     }

@@ -102,6 +102,13 @@ supply your contribution along with tests where posible. To run tests locally,
 execute `npm run jest`. If you need to supply any [CLI
 options](https://jestjs.io/docs/cli), call it as `npm run jest -- --verbose=true`.
 
+In order to run test with a name that matches the regex, use `-t` (alias of
+`--testNamePattern=<regex>`) param. For example, to run tests containing 'auth' in the name execute:
+
+```
+npm run jest -- --verbose=true -t auth
+```
+
 You can also run entire test suite by executing `npm test`. This will include
 linters run to verify coding style.
 
