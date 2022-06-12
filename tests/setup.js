@@ -8,6 +8,7 @@ jest.setTimeout(10000);
 beforeAll(async () => {
     await connectDb({ mongo: { uri: process.env.MONGO_INSTANCE_URI } });
     await waitDb;
+    // Seed UserSettings collection.
     await seedDatabase();
 });
 
@@ -17,22 +18,23 @@ beforeEach(async () => {
 
     // This would be the place to seed database, but we only have UserSettings
     // required so far, so no point to re-seed it before each test unless we
-    // start modifying those settings one day.
-    //await seedDatabase();
+    // start modifying those settings one day in the tests.
 });
 
 // Cleans up database between each test.
 afterEach(async () => {
-    const collections = mongoose.connection.collections;
+    const { collections } = mongoose.connection;
 
-    for (const collectionName of Object.keys(collections)) {
-        // For now preserve UserSettings.
+    const promises = Object.keys(collections).map(collectionName => {
+        // Preserve UserSettings collection.
         if (collectionName !== 'UserSettings') {
-            const collection = collections[collectionName];
-
-            await collection.deleteMany();
+            return collections[collectionName].deleteMany({});
         }
-    }
+
+        return Promise.resolve();
+    });
+
+    await Promise.all(promises);
 });
 
 // Close connection when all tests in the file are completed.
