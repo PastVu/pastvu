@@ -710,6 +710,10 @@ module.exports = {
                 'jest/prefer-expect-assertions': [1, { 'onlyFunctionsWithAsyncKeyword': true }],
                 // We need hooks.
                 'jest/no-hooks': 0,
+                // Permit dangling underscores in rewire methods and others.
+                'no-underscore-dangle': [2, { 'allow': [
+                    '_id', '__get__', '__set__', '__RewireAPI__', '__Rewire__', '__ResetDependency__', '__GetDependency__',
+                ] }],
             },
         },
     ],

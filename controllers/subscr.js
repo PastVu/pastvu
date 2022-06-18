@@ -461,6 +461,37 @@ const photosFields = {
     ...regionController.regionsAllSelectHash,
 };
 
+
+/**
+ * Get subscription object relations for given user.
+ *
+ * @param {object} obj
+ * @param {string} obj.userId
+ * @param {number} obj.page
+ * @param {string} obj.type (photo or news)
+ * @returns {Promise}
+ */
+function getUserObjectRel({ userId, page, type }) {
+    const skip = page * subscrPerPage;
+
+    return UserObjectRel.aggregate([
+        { $match: { user: userId, type, sbscr_create: { $exists: true } } },
+        { $project: { _id: 0, obj: 1, sbscr_create: 1, sbscr_noty: 1, ccount_new: { $cond: { if: { $eq: [0, '$ccount_new'] }, then: '$$REMOVE', else: '$ccount_new' } } } },
+        { $sort: { ccount_new: -1, sbscr_create: -1 } },
+        { $skip: skip },
+        { $limit: subscrPerPage },
+    ]);
+}
+
+/**
+ * Returns user subscriptions data for Subscriptions tab.
+ *
+ * @param {object} obj
+ * @param {string} obj.login
+ * @param {number} obj.page
+ * @param {string} obj.type (photo or painting)
+ * @returns {object}
+ */
 async function giveUserSubscriptions({ login, page = 1, type = 'photo' }) {
     const { handshake: { usObj: iAm } } = this;
 
@@ -480,13 +511,7 @@ async function giveUserSubscriptions({ login, page = 1, type = 'photo' }) {
 
     page = (Math.abs(Number(page)) || 1) - 1;
 
-    const skip = page * subscrPerPage;
-
-    const rels = await UserObjectRel.find(
-        { user: userId, type, sbscr_create: { $exists: true } },
-        { _id: 0, user: 0, type: 0, sbscr_noty_change: 0 },
-        { lean: true, skip, limit: subscrPerPage, sort: { ccount_new: -1, sbscr_create: -1 } }
-    ).exec();
+    const rels = await getUserObjectRel({ userId, page, type }).exec();
 
     let objs = [];
     const objIds = [];
