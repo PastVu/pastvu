@@ -338,13 +338,9 @@ define(['module'], function (/* module */) {
 
         // Отправляет все emit, которые ожидали подключения
         function emitQueued() {
-            function emitNameData(data) {
-                manager.emit(name, data);
-            }
-
             for (const name in socket.emitQueue) {
                 if (socket.emitQueue.hasOwnProperty(name)) {
-                    socket.emitQueue[name].forEach(emitNameData);
+                    socket.emitQueue[name].forEach(({ data, cb }) => manager.emit(name, data, cb));
                 }
             }
 
