@@ -27,10 +27,8 @@ define(['module'], function (/* module */) {
             noconnect: true,
             message: 'Нет соединения с сервером, повторите после восстановления связи',
         };
-        const noConnWait = '<div class="noconn"><div class="inn">Нет соединения с сервером, пробую подключиться.. После восстановления связи сообщение пропадет автоматически</div></div>';
-        const noConnFail = '<div class="noconn fail"><div class="inn">Не удалось автоматически подключиться к серверу. <span class="repeat">Продолжать попытки</span></div></div>';
-        let $noConnWait;
-        let $noConnFail;
+        const noConnWait = '<div class="inn">Нет соединения с сервером, пробую подключиться.. После восстановления связи сообщение пропадет автоматически</div>';
+        const noConnFail = '<div class="inn">Не удалось автоматически подключиться к серверу. <span class="repeat">Продолжать попытки</span></div>';
 
         /**
          * Событие первого соединения с сервером
@@ -358,47 +356,42 @@ define(['module'], function (/* module */) {
 
         // Показывает сообщение о разрыве соединения
         function noConnWaitShow() {
-            if (!$noConnWait) {
-                $noConnWait = $(noConnWait).appendTo('#top');
-            }
+            const elem = document.createElement('div');
+
+            elem.setAttribute('class', 'noconn');
+            elem.innerHTML = noConnWait;
+            document.querySelector('#top').appendChild(elem);
         }
 
         // Скрывает сообщение о разрыве соединения
-        function noConnWaitHide() {
-            if ($noConnWait) {
-                $noConnWait.remove();
-                $noConnWait = null;
+        function noConnHide() {
+            const elem = document.querySelector('#top .noconn');
+
+            if (elem) {
+                elem.remove();
             }
         }
 
         // Начинает процедуру реконнектов сначала.
         // Вызывается по кнопке на сообщении о превышении попыток подключения
         function noConnRepeat() {
-            noConnFailHide();
-            noConnWaitShow();
+            noConnHide();
             manager.io.attempts = 0; // Вручную сбрасываем попытки
             manager.io.reconnect(); // Вызываем реконнекты
         }
 
         // Показывает сообщение о превышении попыток подключения
         function noConnFailShow() {
-            if (!$noConnFail) {
-                $noConnFail = $(noConnFail);
-                $('.repeat', $noConnFail).on('click', noConnRepeat);
-                $noConnFail.appendTo('#top');
-            }
+            const elem = document.createElement('div');
+
+            elem.setAttribute('class', 'noconn fail');
+            elem.innerHTML = noConnFail;
+            elem.querySelector('.repeat').addEventListener('click', noConnRepeat);
+            document.querySelector('#top').appendChild(elem);
         }
 
-        // Скрывает сообщение о превышении попыток подключения
-        function noConnFailHide() {
-            if ($noConnFail) {
-                $noConnFail.remove();
-                $noConnFail = null;
-            }
-        }
-
-        manager.on('connect_error', function (reason) {
-            console.log('Unable to connect socket: ', reason);
+        manager.on('connect_error', function (error) {
+            console.log('Unable to connect socket: ', error.message);
         });
         manager.on('connect', function () {
             if (!firstConnected) {
@@ -417,19 +410,19 @@ define(['module'], function (/* module */) {
         manager.io.on('reconnect_attempt', function (attempt) {
             console.log('Trying to reconnect to server %d time', attempt);
 
-            if (attempt > 1) {
+            if (attempt === 1) {
                 noConnWaitShow();
             }
         });
         manager.io.on('reconnect_failed', function () {
-            noConnWaitHide();
+            noConnHide();
             noConnFailShow();
             console.log('Failed to reconnect for %d attempts. Stopped trying', manager.io.reconnectionAttempts());
         });
         manager.io.on('reconnect', function (/* attempt */) {
             console.log('ReConnected to server');
             socket.connected = true;
-            noConnWaitHide(); // Скрываем сообщение об отсутствии соединения
+            noConnHide(); // Скрываем сообщение об отсутствии соединения
             emitQueued(); // Отправляем все сообщения emit, которые ожидали восстановления соединения
         });
 
