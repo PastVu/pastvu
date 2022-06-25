@@ -122,6 +122,21 @@ module.exports = function (grunt) {
                 },
             },
         },
+        uglify: {
+            'public-js': {
+                options: {
+                    output: {
+                        comments: false,
+                    },
+                },
+                files: [{
+                    expand: true,
+                    src: ['**/*.js', '!**/*.min.js'],
+                    dest: 'public-build/js',
+                    cwd: 'public-build/js',
+                }],
+            },
+        },
         copy: {
             main: {
                 files: [
@@ -266,13 +281,15 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-babel');
     grunt.loadNpmTasks('grunt-eslint');
     grunt.loadNpmTasks('grunt-stylelint');
+    grunt.loadNpmTasks('grunt-contrib-uglify');
 
-    // Default task(s).
+    // Build.
     grunt.registerTask('default', [
         'mkdir:target',
         'clean:target',
         'pug:compileTpls',
         'exec:buildjs',
+        'uglify',
         'string-replace',
         'concat',
         'copy:main',
@@ -285,6 +302,7 @@ module.exports = function (grunt) {
         'compress',
     ]);
 
+    // Tests.
     grunt.registerTask('test', [
         'exec:testNodeVersion:.node-version',
         'exec:testNodeVersion:.nvmrc',
