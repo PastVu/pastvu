@@ -59,7 +59,7 @@ requirejs.config({
         'knockout.postbox': 'lib/knockout/knockout-postbox',
         'knockout.bs': 'lib/knockout/knockout-bootstrap',
 
-        'leaflet': 'lib/leaflet/leaflet',
+        'leaflet': 'lib/leaflet/leaflet.min',
         'leaflet-plugins': 'lib/leaflet/plugins',
         'leaflet-extends': 'lib/leaflet/extends',
         'turf': 'lib/turf.min',
