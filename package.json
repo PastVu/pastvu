@@ -1,5 +1,5 @@
 {
-    "name": "pastvu",
+    "name": "PastVu",
     "version": "2.0.6",
     "description": "Retrospective topography of media content",
     "homepage": "https://github.com/pastvu/pastvu",
@@ -18,7 +18,7 @@
     },
     "bugs": {
         "url": "https://github.com/pastvu/pastvu/issues",
-        "email": "klimashkin@gmail.com"
+        "email": "support@pastvu.com"
     },
     "main": "app.js",
     "scripts": {
@@ -108,10 +108,10 @@
         "grunt-babel": "8.0.0",
         "grunt-contrib-clean": "2.0.0",
         "grunt-contrib-compress": "2.0.0",
-        "grunt-contrib-concat": "1.0.1",
         "grunt-contrib-copy": "1.0.0",
         "grunt-contrib-pug": "3.0.0",
         "grunt-contrib-requirejs": "1.0.0",
+        "grunt-contrib-uglify": "5.2.2",
         "grunt-eslint": "23.0.0",
         "grunt-exec": "3.0.0",
         "grunt-mkdir": "1.1.0",

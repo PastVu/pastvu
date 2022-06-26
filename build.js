@@ -25,36 +25,8 @@ const requireBuildConfig = {
     baseUrl: 'js',
     dir: 'public-build',
     keepBuildDir: false,
-    optimize: 'uglify2',
-    uglify: {
-        toplevel: false,
-        ascii_only: false,
-        beautify: false,
-        no_mangle: false,
-    },
-    // If using UglifyJS for script optimization, these config options can be
-    // used to pass configuration values to UglifyJS.
-    // https://github.com/mishoo/UglifyJS2
-    // http://lisperator.net/uglifyjs/codegen
-    // http://lisperator.net/uglifyjs/compress
-    uglify2: {
-        output: {
-            beautify: false,
-            max_line_len: 255000,
-        },
-        compress: {
-            sequences: true,
-            properties: true,
-            unused: true,
-            join_vars: true,
-            screw_ie8: true,
-            global_defs: {
-                DEBUG: false,
-            },
-        },
-        warnings: false,
-        mangle: true,
-    },
+    optimize: 'none', // We will minify the built files after the optimizer runs.
+    normalizeDirDefines: 'all', // Make define() calls normalized correctly to withstand post hoc minification.
     skipDirOptimize: false, //Оптимизировать только модули (modules array), не трогая остальные js
     optimizeCss: 'none', //Не трогаем css
     preserveLicenseComments: false, //Удаляем лицензионные комментарии
