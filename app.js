@@ -6,12 +6,12 @@ import makeDir from 'make-dir';
 import log4js from 'log4js';
 import config from './config';
 import express from 'express';
-import socketIO from 'socket.io';
+import { Server } from 'socket.io';
 import Utils from './commons/Utils';
 import connectDb, { waitDb } from './controllers/connection';
 import * as session from './controllers/_session';
 import CoreServer from './controllers/serviceConnector';
-import { handleSocketConnection, registerSocketRequestHendler } from './app/request';
+import { handleSocketConnection, registerSocketRequestHandler } from './app/request';
 import exitHook from 'async-exit-hook';
 import { JobCompletionListener } from './controllers/queue';
 
@@ -204,8 +204,8 @@ export async function configure(startStamp) {
     scheduleRegionStatQueueDrain();
 
     const httpServer = http.createServer(app);
-    const io = socketIO(httpServer, {
-        wsEngine: 'ws',
+    const io = new Server(httpServer, {
+        maxHttpBufferSize: 1e7, // Set buffer size to 10Mb handle large packets (e.g. region geometry)
         transports: ['websocket', 'polling'],
         path: '/socket.io',
         serveClient: false,
@@ -217,8 +217,8 @@ export async function configure(startStamp) {
     io.sockets.setMaxListeners(0);
     process.setMaxListeners(0);
 
-    io.use(handleSocketConnection); // Handler for esteblishing websocket connection
-    registerSocketRequestHendler(io); // Register router for socket.io events
+    io.use(handleSocketConnection); // Register middleware for establishing websocket connection
+    registerSocketRequestHandler(io); // Register handler for socket.io events
 
     if (env === 'development') {
         require('./controllers/tpl').loadController(app);
@@ -294,7 +294,7 @@ export async function configure(startStamp) {
         };
     }());
 
-    logger.info(`Socket.io engine: ${io.engine.wsEngine}`);
+    logger.info(`Socket.io engine: ${io.engine.opts.wsEngine.name}`);
     logger.info(`servePublic: ${config.servePublic}, serveStore ${config.serveStore}`);
     logger.info(`Host for users: [${config.client.host}]`);
 

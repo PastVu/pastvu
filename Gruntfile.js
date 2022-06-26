@@ -84,18 +84,34 @@ module.exports = function (grunt) {
                 stderr: true,
             },
         },
-        concat: {
-            options: {
-                separator: ';',
-                stripBanners: true,
-                banner: '/**\n' +
-                ' * Hello, inquiring mind!\n' +
-                ' * This is <%= pkg.name %> application of <%= pkg.description %>.\n' +
-                ' * Version: <%= pkg.version %>, <%= grunt.template.today("dd.mm.yyyy") %>\n' +
-                ' * Author: <%= pkg.author.name %> <<%=pkg.author.email%>>\n' +
-                ' */\n',
+        'string-replace': {
+            baseurl: {
+                options: {
+                    replacements: [
+                        { pattern: /__=__/ig, replacement: `__=${hash}` },
+                    ],
+                },
+                files: {
+                    'public-build/js/_mainConfig.js': 'public-build/js/_mainConfig.js',
+                },
             },
-            main: {
+        },
+        uglify: {
+            options: {
+                output: {
+                    comments: false,
+                },
+            },
+            publicApps: {
+                options: {
+                    banner: '/**\n' +
+                    ' * Hello, inquiring mind!\n' +
+                    ' * This is <%= pkg.name %> application of <%= pkg.description %>.\n' +
+                    ' * Explore its source code and contribute at <%= pkg.homepage %>\n' +
+                    ' * Version: <%= pkg.version %>, built <%= grunt.template.today("dd.mm.yyyy") %>\n' +
+                    ' * Author: <%= pkg.author.name %> <<%=pkg.author.email%>>\n' +
+                    ' */\n',
+                },
                 files: {
                     'public-build/js/module/appMain.js': [
                         'public-build/js/lib/require/require.js',
@@ -109,17 +125,13 @@ module.exports = function (grunt) {
                     ],
                 },
             },
-        },
-        'string-replace': {
-            baseurl: {
-                options: {
-                    replacements: [
-                        { pattern: /__=__/ig, replacement: `__=${hash}` },
-                    ],
-                },
-                files: {
-                    'public-build/js/_mainConfig.js': 'public-build/js/_mainConfig.js',
-                },
+            publicJs: {
+                files: [{
+                    expand: true,
+                    src: ['**/*.js', '!**/*.min.js', '!module/appMain.js', '!module/appAdmin.js'],
+                    dest: 'public-build/js',
+                    cwd: 'public-build/js',
+                }],
             },
         },
         copy: {
@@ -238,6 +250,7 @@ module.exports = function (grunt) {
                         // then refactor into smaller list.
                         'public/js/lib/leaflet/extends/*.js',
                         'public/js/module/admin/regionCheck.js',
+                        'public/js/socket.js',
                     ],
                 },
             },
@@ -256,7 +269,6 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-contrib-clean');
     grunt.loadNpmTasks('grunt-contrib-copy');
     grunt.loadNpmTasks('grunt-contrib-pug');
-    grunt.loadNpmTasks('grunt-contrib-concat');
     grunt.loadNpmTasks('grunt-contrib-compress');
     grunt.loadNpmTasks('grunt-contrib-requirejs');
     grunt.loadNpmTasks('grunt-string-replace');
@@ -265,15 +277,17 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-babel');
     grunt.loadNpmTasks('grunt-eslint');
     grunt.loadNpmTasks('grunt-stylelint');
+    grunt.loadNpmTasks('grunt-contrib-uglify');
 
-    // Default task(s).
+    // Build.
     grunt.registerTask('default', [
         'mkdir:target',
         'clean:target',
         'pug:compileTpls',
         'exec:buildjs',
+        'uglify:publicApps',
+        'uglify:publicJs',
         'string-replace',
-        'concat',
         'copy:main',
         'babel',
         'exec:movePublic',
@@ -284,6 +298,7 @@ module.exports = function (grunt) {
         'compress',
     ]);
 
+    // Tests.
     grunt.registerTask('test', [
         'exec:testNodeVersion:.node-version',
         'exec:testNodeVersion:.nvmrc',

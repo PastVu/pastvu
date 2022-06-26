@@ -5,7 +5,6 @@ import log4js from 'log4js';
 import config from '../config';
 import webApiCall from './webapi';
 import Utils from '../commons/Utils';
-import sioRouter from 'socket.io-events';
 import { ApplicationError } from './errors';
 import { send500 } from '../controllers/routes';
 import constantsError from './errors/constants';
@@ -290,12 +289,13 @@ export const handleHTTPAPIRequest = (function () {
  */
 export const handleSocketConnection = (function () {
     // On disconnetcion checks the necessity of keeping session and usObj in hashes
-    const onSocketDisconnection = function (connectionContext/* , reason */) {
+    const onSocketDisconnection = function (connectionContext, reason) {
         const socket = this;
         const session = socket.handshake.session;
         const usObj = socket.handshake.usObj;
 
         logger.info(`${connectionContext.ridMark} <- Socket disconnection`);
+        logger.debug(`Disconnection reason: ${reason}`);
         delete session.sockets[socket.id]; // Remove socket from session
 
         // If no more sockets in this session, remove session
@@ -354,16 +354,15 @@ export const handleSocketConnection = (function () {
 
 /**
  * Handler of all websocket requests
+ *
+ * @param {object} socket
+ * @param {...*} args arguments sent with event.
  */
-const handleSocketRequest = sioRouter();
-
-handleSocketRequest.on('*', async function handleSocketRequest(socket, args) {
+const handleSocketRequest = async function (socket, ...args) {
     const start = Date.now();
     const methodName = args[0];
     const params = args[1];
     const acknowledgementCallback = _.last(args);
-
-    socket = socket.sock;
 
     const context = genRequestContext({ handshake: socket.handshake, socket });
 
@@ -389,6 +388,15 @@ handleSocketRequest.on('*', async function handleSocketRequest(socket, args) {
     }
 
     logTrace(context, elapsed, methodName);
-});
+};
 
-export const registerSocketRequestHendler = io => io.use(handleSocketRequest);
+/**
+ * Helper to register Socket request handler
+ *
+ * @param {object} io Server
+ */
+export const registerSocketRequestHandler = io => {
+    io.on('connection', socket => {
+        socket.onAny(_.partial(handleSocketRequest, socket));
+    });
+};

@@ -159,7 +159,7 @@ function emitSocket({ socket, data, waitResponse = false, timeout = 10000 }) {
                 // reject(new TimeoutError({ timeout, data }));
             }, timeout);
 
-            socket.binary(false).emit(...data, result => {
+            socket.emit(...data, result => {
                 if (overdue) {
                     return;
                 }
@@ -175,7 +175,7 @@ function emitSocket({ socket, data, waitResponse = false, timeout = 10000 }) {
         });
     }
 
-    socket.binary(false).emit(...data);
+    socket.emit(...data);
 }
 
 // Send command to all session's sockets

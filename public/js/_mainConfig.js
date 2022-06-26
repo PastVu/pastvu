@@ -38,7 +38,7 @@ requirejs.config({
         'jquery-ui': 'lib/jquery/ui',
         'jquery-plugins': 'lib/jquery/plugins',
         'bs': 'lib/bootstrap',
-        'socket.io': 'lib/socket.io.slim.min',
+        'socket.io': 'lib/socket.io.min',
         'moment': 'lib/moment/moment',
         'momentlang': 'lib/moment/lang',
 
@@ -48,7 +48,6 @@ requirejs.config({
         'goog': 'lib/require/plugins/goog',
         'Utils': 'lib/Utils',
         'Browser': 'lib/Browser',
-        'JSON': 'lib/JSON',
 
         'lodash': 'lib/lodash',
         'underscore': 'lib/lodash',
@@ -60,7 +59,7 @@ requirejs.config({
         'knockout.postbox': 'lib/knockout/knockout-postbox',
         'knockout.bs': 'lib/knockout/knockout-bootstrap',
 
-        'leaflet': 'lib/leaflet/leaflet',
+        'leaflet': 'lib/leaflet/leaflet.min',
         'leaflet-plugins': 'lib/leaflet/plugins',
         'leaflet-extends': 'lib/leaflet/extends',
         'turf': 'lib/turf.min',
