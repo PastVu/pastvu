@@ -25,7 +25,7 @@ define(['module'], function (/* module */) {
         const disconnectionDataReturn = {
             error: true,
             noconnect: true,
-            message: 'No connection with the server, please try again after reconnecting'
+            message: 'No connection with the server, please try again after reconnecting',
         };
         const noConnWait = '<div class="inn">No connection with the server, trying to connect .. After the restoration of connection message will disappear automatically</div>';
         const noConnFail = '<div class="inn">Failed to connect to the server automatically. <span class="repeat">Keep trying</span></div>';
