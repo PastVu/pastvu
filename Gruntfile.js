@@ -91,7 +91,8 @@ module.exports = function (grunt) {
                 banner: '/**\n' +
                 ' * Hello, inquiring mind!\n' +
                 ' * This is <%= pkg.name %> application of <%= pkg.description %>.\n' +
-                ' * Version: <%= pkg.version %>, <%= grunt.template.today("dd.mm.yyyy") %>\n' +
+                ' * Explore its source code and contribute at <%= pkg.homepage %>\n' +
+                ' * Version: <%= pkg.version %>, built <%= grunt.template.today("dd.mm.yyyy") %>\n' +
                 ' * Author: <%= pkg.author.name %> <<%=pkg.author.email%>>\n' +
                 ' */\n',
             },
