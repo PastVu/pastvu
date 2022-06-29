@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { UserSettings } from '../models/UserSettings';
 
 jest.setTimeout(10000);
+jest.mock('../controllers/mail');
 
 // Runs before any of the tests in test file run.
 beforeAll(async () => {

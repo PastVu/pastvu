@@ -3,8 +3,6 @@ import { UserObjectRel, UserNoty } from '../../models/UserStates';
 import subscr, { commentAdded, commentViewed } from '../subscr';
 import testHelpers from '../../tests/testHelpers';
 
-jest.mock('../mail');
-
 describe('subscription', () => {
     describe('get subscription object relations for given user', () => {
         let user;
