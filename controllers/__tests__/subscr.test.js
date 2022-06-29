@@ -1,9 +1,21 @@
 import _ from 'lodash';
 import { UserObjectRel, UserNoty } from '../../models/UserStates';
 import subscr, { commentAdded, commentViewed } from '../subscr';
+import profile from '../profile';
 import testHelpers from '../../tests/testHelpers';
 
+// Mock user settings, they will be used in profile.changeSetting.
+jest.mock('../settings', () => ({
+    userSettingsDef: { 'subscr_disable_noty': false },
+    userSettingsVars: { 'subscr_disable_noty': [true, false] },
+}));
+
 describe('subscription', () => {
+    beforeAll(() => {
+        // Mocking this.call for profile.
+        profile.call = jest.fn(() => true); //eslint-disable-line jest/prefer-spy-on
+    });
+
     describe('get subscription object relations for given user', () => {
         let user;
 
@@ -136,6 +148,14 @@ describe('subscription', () => {
                 { obj: testHelpers.mongoObjectId(), user: users.user1._id, sbscr_create: new Date('2016-05-20'), type: 'news' },
                 { obj: testHelpers.mongoObjectId(), user: users.user2._id, sbscr_create: new Date('2022-06-18'), type: 'news' },
             ]);
+
+            // Mock admin user handshake.
+            profile.handshake = { 'usObj': { 'user': users.user1, 'registered': true, 'isAdmin': true } };
+        });
+
+        afterEach(() => {
+            // Delete handshake.
+            delete profile.handshake;
         });
 
         describe('on comment adding', () => {
@@ -164,6 +184,39 @@ describe('subscription', () => {
 
                 expect(usersNotyCount).toBe(3);
             });
+
+            it('should not schedule notification to restricted notifications users', async () => {
+                expect.assertions(7);
+
+                // User2 is not allowed to login.
+                await profile.changeRestrictions({ login: 'user2', key: 'nologin', val: true });
+
+                // User3 has disabled notifications.
+                await profile.changeSetting({ login: 'user3', key: 'subscr_disable_noty', val: true });
+
+                // Add comment by user1.
+                const notifiedUsers = await commentAdded(obj, users.user1);
+
+                // Check output.
+                expect(notifiedUsers).toHaveLength(1);
+                expect(notifiedUsers).not.toContain(users.user1._id);
+                expect(notifiedUsers).not.toContain(users.user2._id);
+                expect(notifiedUsers).not.toContain(users.user3._id);
+                expect(notifiedUsers).toStrictEqual(expect.arrayContaining([
+                    users.user4._id,
+                ]));
+
+                // Check UserObjectRel records notification flag has been set.
+                const count = await UserObjectRel.countDocuments({ obj, sbscr_noty: true }).exec();
+
+                expect(count).toBe(1);
+
+                // Check UserNoty records notification flag has been set.
+                const usersNotyCount = await UserNoty.countDocuments({ nextnoty: { $exists: true } }).exec();
+
+                expect(usersNotyCount).toBe(1);
+            });
+
 
             it('should do nothing for object with no subscriptions', async () => {
                 expect.assertions(2);
@@ -194,6 +247,58 @@ describe('subscription', () => {
 
             // User2 viewed the comments.
             await commentViewed(obj, users.user2, true);
+
+            // Check UserObjectRel records with notification flag do not contain user2 any more.
+            const rels = _.map(await UserObjectRel.find({ obj, sbscr_noty: true }).exec(), rec => rec.user);
+
+            expect(rels).toHaveLength(2);
+            expect(rels).not.toContain(users.user2._id);
+
+            // Check UserNoty records with notification flag do not contain user2 any more.
+            const usersNoty = _.map(await UserNoty.find({ nextnoty: { $exists: true } }).exec(), rec => rec.user);
+
+            expect(usersNoty).toHaveLength(2);
+            expect(usersNoty).not.toContain(users.user2._id);
+        });
+
+        it('on user login restriction scheduled notification has to be cancelled', async () => {
+            expect.assertions(6);
+
+            // Add comment by user1.
+            const notifiedUsers = await commentAdded(obj, users.user1);
+
+            // Check output.
+            expect(notifiedUsers).toHaveLength(3);
+            expect(notifiedUsers).toContainEqual(users.user2._id);
+
+            // User2 is not allowed to login.
+            await profile.changeRestrictions({ login: 'user2', key: 'nologin', val: true });
+
+            // Check UserObjectRel records with notification flag do not contain user2 any more.
+            const rels = _.map(await UserObjectRel.find({ obj, sbscr_noty: true }).exec(), rec => rec.user);
+
+            expect(rels).toHaveLength(2);
+            expect(rels).not.toContain(users.user2._id);
+
+            // Check UserNoty records with notification flag do not contain user2 any more.
+            const usersNoty = _.map(await UserNoty.find({ nextnoty: { $exists: true } }).exec(), rec => rec.user);
+
+            expect(usersNoty).toHaveLength(2);
+            expect(usersNoty).not.toContain(users.user2._id);
+        });
+
+        it('on user disabling notifications scheduled notification has to be cancelled', async () => {
+            expect.assertions(6);
+
+            // Add comment by user1.
+            const notifiedUsers = await commentAdded(obj, users.user1);
+
+            // Check output.
+            expect(notifiedUsers).toHaveLength(3);
+            expect(notifiedUsers).toContainEqual(users.user2._id);
+
+            // User2 has disabled notifications.
+            await profile.changeSetting({ login: 'user2', key: 'subscr_disable_noty', val: true });
 
             // Check UserObjectRel records with notification flag do not contain user2 any more.
             const rels = _.map(await UserObjectRel.find({ obj, sbscr_noty: true }).exec(), rec => rec.user);

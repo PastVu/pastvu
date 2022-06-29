@@ -60,5 +60,6 @@ async function seedDatabase() {
         { key: 'photo_filter_type', val: [1, 2], vars: [1, 2], desc: 'Default filtering by photos type' },
         { key: 'comment_show_deleted', val: false, vars: [true, false], desc: 'Показывать удаленные комментарии' },
         { key: 'photo_disallow_download_origin', val: false, vars: [true, false], desc: 'Disallow others users to download photo without watermark' },
+        { key: 'subscr_disable_noty', val: false, vars: [true, false], desc: 'Присылать уведомления по электронной почте' },
     ]);
 }
