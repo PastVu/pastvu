@@ -1,5 +1,6 @@
-import { UserObjectRel } from '../../models/UserStates';
-import subscr from '../subscr';
+import _ from 'lodash';
+import { UserObjectRel, UserNoty } from '../../models/UserStates';
+import subscr, { commentAdded, commentViewed } from '../subscr';
 import testHelpers from '../../tests/testHelpers';
 
 jest.mock('../mail');
@@ -113,6 +114,100 @@ describe('subscription', () => {
                 '2015-01-20',
                 '2012-12-17',
             ]);
+        });
+    });
+
+    describe('user notifications', () => {
+        const users = {}; let
+            obj;
+
+        beforeEach(async () => {
+            obj = testHelpers.mongoObjectId();
+            users.user1 = await testHelpers.createUser({ login: 'user1' });
+            users.user2 = await testHelpers.createUser({ login: 'user2' });
+            users.user3 = await testHelpers.createUser({ login: 'user3' });
+            users.user4 = await testHelpers.createUser({ login: 'user4' });
+
+            await UserObjectRel.insertMany([
+                // Photo record with 4 users subscribed to it.
+                { obj, user: users.user1._id, sbscr_create: new Date('2018-06-21'), type: 'photo' },
+                { obj, user: users.user2._id, sbscr_create: new Date('2022-06-17'), type: 'photo' },
+                { obj, user: users.user3._id, sbscr_create: new Date('2022-06-17'), type: 'photo' },
+                { obj, user: users.user4._id, sbscr_create: new Date('2022-06-17'), type: 'photo' },
+                // Add some more subscriptions.
+                { obj: testHelpers.mongoObjectId(), user: users.user1._id, sbscr_create: new Date('2016-05-20'), type: 'news' },
+                { obj: testHelpers.mongoObjectId(), user: users.user2._id, sbscr_create: new Date('2022-06-18'), type: 'news' },
+            ]);
+        });
+
+        describe('on comment adding', () => {
+            it('should schedule notification to subsribed users', async () => {
+                expect.assertions(5);
+
+                // Add comment by user1.
+                const notifiedUsers = await commentAdded(obj, users.user1);
+
+                // Check output.
+                expect(notifiedUsers).toHaveLength(3);
+                expect(notifiedUsers).not.toContain(users.user1._id);
+                expect(notifiedUsers).toStrictEqual(expect.arrayContaining([
+                    users.user2._id,
+                    users.user3._id,
+                    users.user4._id,
+                ]));
+
+                // Check UserObjectRel records notification flag has been set.
+                const count = await UserObjectRel.countDocuments({ obj, sbscr_noty: true }).exec();
+
+                expect(count).toBe(3);
+
+                // Check UserNoty records notification flag has been set.
+                const usersNotyCount = await UserNoty.countDocuments({ nextnoty: { $exists: true } }).exec();
+
+                expect(usersNotyCount).toBe(3);
+            });
+
+            it('should do nothing for object with no subscriptions', async () => {
+                expect.assertions(2);
+
+                // Add comment by user1.
+                const newObj = testHelpers.mongoObjectId();
+                const notifiedUsers = await commentAdded(newObj, users.user1);
+
+                // Check output.
+                expect(notifiedUsers).toHaveLength(0);
+
+                // Check records with notification flag.
+                const count = await UserObjectRel.countDocuments({ obj: newObj, sbscr_noty: true }).exec();
+
+                expect(count).toBe(0);
+            });
+        });
+
+        it('on comment view scheduled notification has to be cancelled', async () => {
+            expect.assertions(6);
+
+            // Add comment by user1.
+            const notifiedUsers = await commentAdded(obj, users.user1);
+
+            // Check output.
+            expect(notifiedUsers).toHaveLength(3);
+            expect(notifiedUsers).toContainEqual(users.user2._id);
+
+            // User2 viewed the comments.
+            await commentViewed(obj, users.user2, true);
+
+            // Check UserObjectRel records with notification flag do not contain user2 any more.
+            const rels = _.map(await UserObjectRel.find({ obj, sbscr_noty: true }).exec(), rec => rec.user);
+
+            expect(rels).toHaveLength(2);
+            expect(rels).not.toContain(users.user2._id);
+
+            // Check UserNoty records with notification flag do not contain user2 any more.
+            const usersNoty = _.map(await UserNoty.find({ nextnoty: { $exists: true } }).exec(), rec => rec.user);
+
+            expect(usersNoty).toHaveLength(2);
+            expect(usersNoty).not.toContain(users.user2._id);
         });
     });
 });

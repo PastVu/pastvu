@@ -150,7 +150,8 @@ export async function commentAdded(objId, user, stamp = new Date()) {
         { $set: { sbscr_noty_change: stamp, sbscr_noty: true } }
     ).exec();
 
-    scheduleUserNotice(users); // Call scheduler of notification sending for subscribed users
+    // Schedule notification sending for subscribed users.
+    await scheduleUserNotice(users);
 
     return users;
 }
