@@ -11,7 +11,7 @@ import Utils from '../commons/Utils';
 import * as session from './_session';
 import constants from './constants.js';
 import * as photoController from './photo';
-import { userThrottleChange } from './subscr';
+import { userThrottleChange, userCancelNotifications } from './subscr';
 import constantsError from '../app/errors/constants';
 import { userSettingsDef, userSettingsVars } from './settings';
 import { AuthenticationError, AuthorizationError, BadParamsError, InputError, NotFoundError } from '../app/errors';
@@ -193,13 +193,17 @@ async function changeSetting({ login, key, val }) {
 
     // Marking settings object as changed, because it has Mixed type
     user.markModified('settings');
+    await user.save();
 
     // If throttle value has changed, trying to reschedule next notification time
     if (key === 'subscr_throttle') {
         userThrottleChange(user._id, val);
     }
 
-    await user.save();
+    // If notifications are disabled, cancel all pending notifications.
+    if (key === 'subscr_disable_noty' && val) {
+        userCancelNotifications(user._id);
+    }
 
     if (usObjOnline) {
         if (regetNeeded) {
@@ -248,6 +252,8 @@ async function changeRestrictions({ login, key, val }) {
         if (val) {
             // If we forbidding the user to login, destroy their current active sessions (online and offline) as well
             await this.call('session.destroyUserSessions', { login });
+            // Reset pending notifications.
+            await userCancelNotifications(user._id);
         }
     } else if (usObjOnline) {
         session.emitUser({ usObj: usObjOnline, excludeSocket: socket });

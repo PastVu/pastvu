@@ -129,7 +129,7 @@ export async function commentAdded(objId, user, stamp = new Date()) {
         { obj: objId, user: { $ne: user._id }, sbscr_create: { $exists: true }, sbscr_noty: { $exists: false } },
         { _id: 1, user: 1 },
         { lean: true }
-    ).exec();
+    ).populate({ path: 'user', select: { _id: 1, nologin: 1, 'settings.subscr_disable_noty': 1 } }).exec();
 
     if (_.isEmpty(objs)) {
         return []; // If no one is subscribed to object - exit
@@ -139,8 +139,12 @@ export async function commentAdded(objId, user, stamp = new Date()) {
     const users = [];
 
     for (const obj of objs) {
-        ids.push(obj._id);
-        users.push(obj.user);
+        // Don't schedule notification if user is not permitted to login or
+        // notifications are disabled in user preferences.
+        if (!(obj.user.nologin || obj.user.settings.subscr_disable_noty)) {
+            ids.push(obj._id);
+            users.push(obj.user._id);
+        }
     }
 
     // Set flag of readiness of notification by object for subscribed users
@@ -149,7 +153,8 @@ export async function commentAdded(objId, user, stamp = new Date()) {
         { $set: { sbscr_noty_change: stamp, sbscr_noty: true } }
     ).exec();
 
-    scheduleUserNotice(users); // Call scheduler of notification sending for subscribed users
+    // Schedule notification sending for subscribed users.
+    await scheduleUserNotice(users);
 
     return users;
 }
@@ -208,6 +213,21 @@ export async function userThrottleChange(userId, newThrottle) {
         nearestNoticeTimeStamp;
 
     await UserNoty.updateOne({ user: userId }, { $set: { nextnoty: new Date(newNextNoty) } }).exec();
+}
+
+/**
+ * Cancel all scheduled notifications.
+ *
+ * @param {ObjectId} userId
+ */
+export async function userCancelNotifications(userId) {
+    // Reset notifications ready to send flag.
+    await UserObjectRel.updateMany(
+        { user: userId },
+        { $unset: { sbscr_noty: 1 }, $set: { sbscr_noty_change: new Date() } }
+    ).exec();
+    // Reset scheduled sending to user.
+    await UserNoty.updateOne({ user: userId }, { $unset: { nextnoty: 1 } }).exec();
 }
 
 /**

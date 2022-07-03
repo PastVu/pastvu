@@ -326,11 +326,26 @@
                     .help.tltp-wrap
                         span.glyphicon.glyphicon-info-sign
                         .tltp.tltp-top.tltp-animate-move
+                            | When disabled, email notification will not be sent.
+                            br
+                            | When enabled, notifications will be sent on comments
+                            br
+                            | created after the setting was enabled.
+                    | &nbsp;Send notifications
+                dd
+                    .btn-group.btn-group-sm
+                        button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.settings.subscr_disable_noty()}, click: disableNoty") Yes
+                        button.btn.btn-primary.no(type="button", data-bind="css: {active: u.settings.subscr_disable_noty()}, click: disableNoty") No
+            dl.dl-horizontal
+                dt.helpexists
+                    .help.tltp-wrap
+                        span.glyphicon.glyphicon-info-sign
+                        .tltp.tltp-top.tltp-animate-move
                             | Minimal amount of time between
                             br
                             | sending of notification emails
                     | &nbsp;Minimum interval between sendings
                 dd.throttle(data-bind="foreach: vars.subscr_throttle")
                     label.radio-inline
-                        input(type="radio", name="subscr_throttle_radios", data-bind="attr: {id: 'subscr_throttle_radios_' + $index(), value: ''+$data}, checked: $parent.u.settings.subscr_throttle")
+                        input(type="radio", name="subscr_throttle_radios", data-bind="attr: {disabled: $parent.u.settings.subscr_disable_noty(), id: 'subscr_throttle_radios_' + $index(), value: ''+$data}, checked: $parent.u.settings.subscr_throttle")
                         span(data-bind="text: ($data/60000 > 59 ? $data/3600000 + 'h' : $data/60000 + 'm')")
