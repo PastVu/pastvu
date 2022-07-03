@@ -3,8 +3,6 @@ import { User } from '../../models/User';
 import { BadParamsError, AuthorizationError } from '../../app/errors';
 import testHelpers from '../../tests/testHelpers';
 
-jest.mock('../mail');
-
 describe('profile', () => {
     describe('save user ranks', () => {
         beforeEach(async () => {

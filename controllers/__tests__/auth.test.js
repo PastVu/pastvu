@@ -6,8 +6,6 @@ import constants from '../../app/errors/constants';
 import auth from '../auth';
 import testHelpers from '../../tests/testHelpers';
 
-jest.mock('../mail');
-
 describe('authentication', () => {
     beforeAll(() => {
         // Mocking this.call for auth.

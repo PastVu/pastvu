@@ -1,8 +1,6 @@
 import { User, UserConfirm } from '../models/User';
 import auth from '../controllers/auth';
 
-jest.mock('../controllers/mail');
-
 /**
  * Create test user using auth controller for consistency.
  *

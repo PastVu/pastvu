@@ -341,6 +341,9 @@ define([
                 this.changeSetting('subscr_throttle', Number(val));
             }
         },
+        disableNoty: function (data, evt) {
+            this.changeSetting('subscr_disable_noty', !isYes(evt), true);
+        },
         changeSetting: function (key, val, checkValChange, cb, ctx) {
             if (!this.u.settings[key] || (checkValChange && val === this.u.settings[key]())) {
                 return;
