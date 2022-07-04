@@ -92,8 +92,8 @@
         background-color: #2171cc;
     }
 
-    .filesTable {
-        td.preview {
+    .filesTable td {
+        &.preview {
             width: 210px;
 
             .forcanvas {
@@ -127,8 +127,11 @@
             }
         }
 
-        td.fileButtons {
-            width: 150px;
+        &.desc {
+            overflow-wrap: anywhere;
+        }
+
+        &.fileButtons {
             text-align: right;
             white-space: nowrap;
         }
