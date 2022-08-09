@@ -608,7 +608,7 @@ export async function loginUser({ user }) {
     // Send user to all sockets of session, except current socket (auth-controller will send user there)
     _.forOwn(sessionNew.sockets, sock => {
         if (sock !== socket && _.isFunction(sock.emit)) {
-            sock.binary(false).emit('youAre', { user: userPlain, registered: true });
+            sock.emit('youAre', { user: userPlain, registered: true });
         }
     });
 
