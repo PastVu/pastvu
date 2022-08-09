@@ -91,7 +91,7 @@ async function register({ login, email, pass, pass2 }) {
         throw new InputError(constants.INPUT_LOGIN_REQUIRED);
     }
 
-    if (login !== 'anonymous' && !login.match(/^[.\w-]{3,15}$/i) || !login.match(/^[A-Za-z].+$/i)) {
+    if (login !== 'anonymous' && !login.match(/^[.\w-]{3,15}$/i) || !login.match(/^[A-Za-z].+$/i) || !login.match(/[a-zA-Z1-9]$/)) {
         throw new AuthenticationError(constants.INPUT_LOGIN_CONSTRAINT);
     }
 

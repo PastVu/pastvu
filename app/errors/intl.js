@@ -28,10 +28,10 @@ export default {
     INPUT: 'Input error',
     INPUT_FIELD_REQUIRED: 'Required input field',
     INPUT_LOGIN_REQUIRED: 'Fill in the username',
-    INPUT_LOGIN_CONSTRAINT: 'Имя пользователя должно содержать от 3 до 15 латинских символов и начинаться с буквы. ' +
-    'В состав слова могут входить цифры, точка, подчеркивание и тире',
-    INPUT_PASS_REQUIRED: 'Введите пароль',
-    INPUT_EMAIL_REQUIRED: 'Введите адрес email',
+    INPUT_LOGIN_CONSTRAINT: 'Username should be between 3 and 15 characters long, it should start with a letter and end with a letter or digit.' +
+    'Username may contain digits, dot, underline and hyphen characters.'
+    INPUT_PASS_REQUIRED: 'Enter password',
+    INPUT_EMAIL_REQUIRED: 'Enter email',
 
     AUTHENTICATION: 'Authentication error',
     AUTHENTICATION_REGISTRATION: 'Authentication error',
