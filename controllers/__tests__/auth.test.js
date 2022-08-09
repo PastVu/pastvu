@@ -67,6 +67,7 @@ describe('authentication', () => {
                 ['login field < 3 characters', { 'login': 'u' }, AuthenticationError, constants.INPUT_LOGIN_CONSTRAINT],
                 ['login field > 15 characters', { 'login': 'user'.repeat(5) }, AuthenticationError, constants.INPUT_LOGIN_CONSTRAINT],
                 ['login field ends on non-alphanumeric character', { 'login': 'user.' }, AuthenticationError, constants.INPUT_LOGIN_CONSTRAINT],
+                ['login field anonymous', { 'login': 'anonymous' }, AuthenticationError, constants.INPUT_LOGIN_CONSTRAINT],
                 ['empty email field', { 'email': '' }, InputError, constants.INPUT_EMAIL_REQUIRED],
                 ['empty password field', { 'pass': '' }, InputError, constants.INPUT_PASS_REQUIRED],
                 ['passwords don\'t match', { 'pass2': 'pass2' }, AuthenticationError, constants.AUTHENTICATION_PASSWORDS_DONT_MATCH],
