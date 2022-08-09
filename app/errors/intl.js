@@ -28,8 +28,8 @@ export default {
     INPUT: 'Input error',
     INPUT_FIELD_REQUIRED: 'Required input field',
     INPUT_LOGIN_REQUIRED: 'Fill in the username',
-    INPUT_LOGIN_CONSTRAINT: 'Username should be between 3 and 15 characters long, it should start with a letter and end with a letter or digit.' +
-    'Username may contain digits, dot, underline and hyphen characters.'
+    INPUT_LOGIN_CONSTRAINT: 'Username should be between 3 and 15 characters long, it should start with a letter and end with a letter or digit. ' +
+    'Username may contain digits, dot, underline and hyphen characters.',
     INPUT_PASS_REQUIRED: 'Enter password',
     INPUT_EMAIL_REQUIRED: 'Enter email',
 
