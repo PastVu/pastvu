@@ -172,7 +172,7 @@ define([
                 this.show();
             }
         },
-        deactivate: function () {
+        deactivate: function (isNewCid) {
             if (!this.showing) {
                 return;
             }
@@ -183,10 +183,18 @@ define([
             this.inViewport = false;
 
             if (this.auth.loggedIn() && this.showTree()) {
-                //Если зарегистрированы и уже есть комментарии, надо вынуть ответ первого уровня из dom,
-                //и положить после рендеринга заново, т.к. рендеринг заменяет innerHTML блока комментариев
-                this.inputZeroDetach();
-                //Удаляем через jquery остальные возможные поля ввода, чтобы снять с них события
+                if (isNewCid) {
+                    // Loading new photo or news item. Delete zero level input, to have it rendered again
+                    // to reflect subscription status of the new item.
+                    if (this.cZeroDetached) {
+                        this.cZeroDetached.remove();
+                    }
+                    this.cZeroCreated = false;
+                } else {
+                    // Likely photo page editing happens, detach zero level input and re-add it later.
+                    this.inputZeroDetach();
+                }
+                // Delete all comment inputs through jquery to detach events.
                 $('.cadd', this.$cmts).remove();
             }
             this.$cmts[0].innerHTML = ''; //Просто очищаем контент, чтобы при дестрое модуля jquery не пробегал по всем элеменат в поисках данных для удаления

@@ -84,7 +84,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }
 
             if (!this.news || (this.news && Utils.isType('function', this.news.cid) && this.news.cid() !== cid)) {
-                this.commentsVM.deactivate();
+                this.commentsVM.deactivate(true);
 
                 this.getNews(cid, function (data) {
                     Utils.title.setTitle({ title: data.news.title });

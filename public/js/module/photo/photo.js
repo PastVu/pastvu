@@ -383,7 +383,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
             if (self.p && _.isFunction(self.p.cid) && self.p.cid() !== cid) {
                 self.photoLoading(true);
-                self.commentsVM.deactivate();
+                self.commentsVM.deactivate(true);
 
                 this.receivePhoto(cid, false, function (data) {
                     var editModeCurr = self.edit();
