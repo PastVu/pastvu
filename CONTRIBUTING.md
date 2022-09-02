@@ -3,7 +3,7 @@
 We welcome any keen developer in helping us building the better PastVu! Any
 contributions are welcome, no matter how big or small.
 
-Before contributing, please read the [code of conduct](CODE_OF_CONDUCT.md).
+Contributors are expected to adhere to the [code of conduct](CODE_OF_CONDUCT.md).
 
 ## Where to start
 

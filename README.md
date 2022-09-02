@@ -29,7 +29,7 @@ The project is built using JavaScript stack containing components:
 * [Knockout](https://knockoutjs.com/) client-side library is implementing MVVM architecture pattern
 * [Leaflet](https://leafletjs.com/) is used for maps display and interaction
 
-Other dependencies can be found at package.json and `public/js/lib/`.
+Other dependencies can be found at `package.json` and `public/js/lib/`.
 
 We are using GitHub tools for CI/CD pipeline and release management.
 
@@ -37,7 +37,7 @@ We are using GitHub tools for CI/CD pipeline and release management.
 
 We are grateful to the PastVu users community for adding photos and discussing
 them, helping to identify locations, improving information accuracy, taking
-resposibility by moderating regions.
+resposibility by moderating uploaded content.
 
 The are more ways one can participate in the project and make it evolve:
 
@@ -55,8 +55,7 @@ We expect all project participants to follow [Contributor Code of Conduct](CODE_
 ### Developing
 
 We welcome any keen developer in helping us build the better PastVu. See
-[contributing guide](CONTRIBUTING.md) to learn about our development process
-and environment setup.
+[contributing guide](CONTRIBUTING.md) for more details.
 
 ## License
 
