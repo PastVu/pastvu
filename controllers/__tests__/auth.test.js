@@ -17,7 +17,7 @@ describe('authentication', () => {
             expect.assertions(5);
 
             // Register user.
-            const data = { 'login': 'user1', 'email': 'user1@test.com', 'pass': 'pass1', 'pass2': 'pass1' };
+            const data = { 'login': 'user0', 'email': 'user1@test.com', 'pass': 'pass1', 'pass2': 'pass1' };
             const result = await auth.register(data);
 
             expect(result).toHaveProperty('message');
