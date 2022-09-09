@@ -205,6 +205,7 @@ export async function configure(startStamp) {
 
     const httpServer = http.createServer(app);
     const io = new Server(httpServer, {
+        allowEIO3: true, // false by default, remove when client is updated from version 2.
         maxHttpBufferSize: 1e7, // Set buffer size to 10Mb handle large packets (e.g. region geometry)
         transports: ['websocket', 'polling'],
         path: '/socket.io',
