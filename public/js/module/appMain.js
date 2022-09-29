@@ -34,7 +34,7 @@ require([
             { route: /^\/u(?:\/([.\w-]+)(?:\/(\w+)(?:\/(\w+))?)?)?\/?$/, handler: 'userPage' },
             { route: /^\/news(?:\/([0-9]{1,5}))?\/?$/, handler: 'news' },
             { route: /^\/photoUpload\/?$/, handler: 'photoUpload' },
-            { route: /^\/(rules|about)\/?$/, handler: 'rules' },
+            { route: /^\/(about)\/?$/, handler: 'about' },
             { route: /^\/confirm\/(\w+)\/?$/, handler: 'confirm' }
         ],
         handlers: {
@@ -102,7 +102,7 @@ require([
                     ]
                 );
             },
-            rules: function (section) {
+            about: function (section) {
                 var params = router.params();
                 var footParams = {};
 
