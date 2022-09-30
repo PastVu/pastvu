@@ -72,10 +72,6 @@ const requireBuildConfig = {
             exclude: ['commonExcludes'],
         },
         {
-            name: 'm/diff/rules',
-            exclude: ['commonExcludes'],
-        },
-        {
             name: 'm/user/comments',
             exclude: ['commonExcludes'],
         },
