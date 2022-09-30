@@ -33,29 +33,21 @@ Other dependencies can be found at `package.json` and `public/js/lib/`.
 
 We are using GitHub tools for CI/CD pipeline and release management.
 
+## Documentation
+
+PastVu documentation is located at the dedicated project: https://docs.pastvu.com/en/
+
+All development and communication for this documentation resources takes place in [docs repository](https://github.com/PastVu/docs). We also welcome contributing to documentation, please read [Improve docs](https://docs.pastvu.com/en/contributing/docs) for details.
+
 ## Contributing
 
 We are grateful to the PastVu users community for adding photos and discussing
 them, helping to identify locations, improving information accuracy, taking
 resposibility by moderating uploaded content.
 
-The are more ways one can participate in the project and make it evolve:
-
-* [Discussing the project](https://github.com/PastVu/pastvu/discussions)
-* [Report a bug](https://github.com/PastVu/pastvu/issues/new?labels=Bug)
-* [Propose a new feature](https://github.com/PastVu/pastvu/issues/new?labels=Feature%20Request)
-
-Before creating an issue, it might be a good idea to search if it has been
-reported already.
-
-If you think you have found a security issue, please email at [support@pastvu.com](mailto:support@pastvu.com).
+Our [contributing guidance](https://docs.pastvu.com/en/contributing) contains more information how one can participate in the project including help with [development](https://docs.pastvu.com/en/contributing#development).
 
 We expect all project participants to follow [Contributor Code of Conduct](CODE_OF_CONDUCT.md)
-
-### Developing
-
-We welcome any keen developer in helping us build the better PastVu. See
-[contributing guide](CONTRIBUTING.md) for more details.
 
 ## License
 
