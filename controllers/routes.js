@@ -269,7 +269,7 @@ function getRegionForGallery(req, res, next) {
 export function bindRoutes(app) {
     [
         '/', // Root
-        /^\/(?:photoUpload|ps\/feed|ps\/coin|rules|about)\/?$/, // Strict paths (/example with or without trailing slash)
+        /^\/(?:photoUpload|ps\/feed|ps\/coin|about)\/?$/, // Strict paths (/example with or without trailing slash)
         /^\/(?:u|news)(?:\/.*)?$/, // Path with possible continuation (/example/*)
         /^\/(?:confirm)\/.+$/, // Path with mandatory continuation (/example/*)
     ]
