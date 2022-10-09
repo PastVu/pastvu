@@ -1,3 +1,8 @@
+/**
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
+ */
+
 define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'model/User', 'model/Region', 'm/photo/status'],
     function ($, _, ko, koMapping, Utils, User, Region, statuses) {
         'use strict';

@@ -1,4 +1,9 @@
 /**
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
+ */
+
+/**
  * Share dialog for social networks
  */
 define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'globalVM', 'knockout', 'm/_moduleCliche', 'text!tpl/common/share.pug', 'css!style/common/share'], function (_, $, Utils, socket, P, globalVM, ko, Cliche, pug) {

@@ -1,6 +1,9 @@
 /**
- * Модель проверки региона по координате
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
+
+// Module for checking region by geo coordianates.
 define([
     'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
     'noties', 'leaflet', 'lib/doT',

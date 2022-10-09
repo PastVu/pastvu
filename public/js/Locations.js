@@ -1,3 +1,8 @@
+/**
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
+ */
+
 define(['jquery', 'Browser', 'knockout.mapping', 'Params'/*, 'http://www.geoplugin.net/javascript.gp'*/], function ($, Browser, koMapping, P) {
     'use strict';
 

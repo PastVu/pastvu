@@ -1,6 +1,8 @@
 /**
- * Модель просмотра сессий пользователя
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
+
 define([
     'underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
     'renderer', 'noties', 'model/User', 'model/storage',

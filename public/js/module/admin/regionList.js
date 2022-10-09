@@ -1,6 +1,8 @@
 /**
- * Модель списка регионов
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
+
 define([
     'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM',
     'model/storage', 'noties', 'text!tpl/admin/regionList.pug', 'css!style/admin/regionList',
