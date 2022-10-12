@@ -181,7 +181,6 @@ define(
         function vmCreate(data) {
             var vm = koMapping.fromJS(data);
 
-            User.vmAdditional(vm.user);
             return vm;
         }
 

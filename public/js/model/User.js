@@ -100,16 +100,9 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params
     function vmCreate(data) {
         delete data.fullname; // удаляем, так как во viewmodel это будет computed
 
-        var vm = ko_mapping.fromJS(data);
-        vmAdditional(vm);
-        return vm;
-    }
+        const vm = ko_mapping.fromJS(data);
 
-    /**
-     * Расширение для модели
-     * @param vm ViewModel
-     */
-    function vmAdditional(/*vm*/) {
+        return vm;
     }
 
     /**
@@ -132,5 +125,5 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params
         return vmExist;
     }
 
-    return { factory: factory, vm: vm, vmAdditional: vmAdditional, def: defaults };
+    return { factory: factory, vm: vm, def: defaults };
 });
