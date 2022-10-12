@@ -250,8 +250,9 @@ module.exports = function (grunt) {
                         // then refactor into smaller list.
                         'public/js/lib/leaflet/extends/*.js',
                         'public/js/module/admin/regionCheck.js',
-                        'public/js/socket.js',
                         'public/js/module/common/*.js',
+                        'public/js/model/*.js',
+                        'public/js/socket.js',
                     ],
                 },
             },
