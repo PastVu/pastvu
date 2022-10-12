@@ -251,6 +251,7 @@ module.exports = function (grunt) {
                         'public/js/lib/leaflet/extends/*.js',
                         'public/js/module/admin/regionCheck.js',
                         'public/js/socket.js',
+                        'public/js/module/common/*.js',
                     ],
                 },
             },

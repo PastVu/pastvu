@@ -25,6 +25,7 @@ module.exports = {
 
     'globals': {
         '__DEV__': 'readonly',
+        'ga': 'readonly',
     },
 
     'plugins': [

@@ -1,30 +1,27 @@
-/*global define:true*/
-/**
- */
 define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'renderer', 'text!tpl/common/foot.pug', 'css!style/common/foot'], function (_, P, ko, Cliche, globalVM, renderer, pug) {
-	'use strict';
+    'use strict';
 
-	return Cliche.extend({
-		pug: pug,
-		create: function () {
-			ko.applyBindings(globalVM, this.$dom[0]);
+    return Cliche.extend({
+        pug: pug,
+        create: function () {
+            ko.applyBindings(globalVM, this.$dom[0]);
 
-			window.setTimeout(function () {
+            window.setTimeout(function () {
                 this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandler, this);
                 this.routeHandler();
                 this.show();
             }.bind(this), 800);
-		},
-		show: function () {
-			globalVM.func.showContainer(this.$container);
-			this.showing = true;
-		},
-		hide: function () {
-			globalVM.func.hideContainer(this.$container);
-			this.showing = false;
-		},
+        },
+        show: function () {
+            globalVM.func.showContainer(this.$container);
+            this.showing = true;
+        },
+        hide: function () {
+            globalVM.func.hideContainer(this.$container);
+            this.showing = false;
+        },
         routeHandler: function () {
-            var params = globalVM.router.params();
+            const params = globalVM.router.params();
 
             if (params.about) {
                 this.showAbout();
@@ -36,34 +33,34 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'rend
         navigateAbout: function () {
             globalVM.router.navigate('/about');
         },
-		showAbout: function () {
-			if (!this.aboutVM) {
-				renderer(
-					[
-						{
-							module: 'm/diff/about',
-							modal: {
-								topic: 'О проекте',
-								initWidth: '1000px',
-								//animateScale: true,
-								curtainClick: {click: this.closePopup, ctx: this},
-								offIcon: {text: 'Закрыть', click: this.closePopup, ctx: this},
-								btns: [
-									{css: 'btn-primary', text: 'Закрыть', click: this.closePopup, ctx: this}
-								]
-							},
-							callback: function (vm) {
-								this.aboutVM = this.childModules[vm.id] = vm;
-							}.bind(this)
-						}
-					],
-					{
-						parent: this,
-						level: this.level + 2
-					}
-				);
-			}
-		},
+        showAbout: function () {
+            if (!this.aboutVM) {
+                renderer(
+                    [
+                        {
+                            module: 'm/diff/about',
+                            modal: {
+                                topic: 'О проекте',
+                                initWidth: '1000px',
+                                //animateScale: true,
+                                curtainClick: { click: this.closePopup, ctx: this },
+                                offIcon: { text: 'Закрыть', click: this.closePopup, ctx: this },
+                                btns: [
+                                    { css: 'btn-primary', text: 'Закрыть', click: this.closePopup, ctx: this },
+                                ],
+                            },
+                            callback: function (vm) {
+                                this.aboutVM = this.childModules[vm.id] = vm;
+                            }.bind(this),
+                        },
+                    ],
+                    {
+                        parent: this,
+                        level: this.level + 2,
+                    }
+                );
+            }
+        },
         destroyAbout: function () {
             if (this.aboutVM) {
                 this.aboutVM.destroy();
