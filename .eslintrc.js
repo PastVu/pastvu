@@ -686,7 +686,7 @@ module.exports = {
     },
     'overrides': [
         {
-            // Old-school rules for public code.
+            // Old-school rules for ES5 public code.
             'files': ['public/js/**/*.js'],
             'rules': {
                 // no complains about using function for callback.
@@ -695,6 +695,9 @@ module.exports = {
                 'object-shorthand': [2, 'consistent'],
                 // don't complain about private members of object
                 'no-underscore-dangle': 0,
+                // No rest or spread
+                'prefer-spread': 0,
+                'prefer-rest-params': 0,
             },
         },
         {

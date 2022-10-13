@@ -1,20 +1,22 @@
+/*global init:true*/
 /**
  * Params
  */
 define(['jquery', 'underscore', 'socket!', 'Utils', 'knockout', 'knockout.mapping'], function ($, _, socket, Utils, ko, koMapping) {
     'use strict';
-    var head = document.head;
-    var $window = $(window);
 
-    var Params = {
+    const head = document.head;
+    const $window = $(window);
+
+    let Params = {
         window: {
             w: $window.width(),
             h: $window.height(),
             head: 35, // Top bar height
-            square: null
+            square: null,
         },
         settings: {
-            appName: (head.dataset && head.dataset.appname) || head.getAttribute('data-appname') || 'Main',
+            appName: head.dataset && head.dataset.appname || head.getAttribute('data-appname') || 'Main',
 
             USE_OSM_API: true,
             USE_GOOGLE_API: true,
@@ -28,8 +30,8 @@ define(['jquery', 'underscore', 'socket!', 'Utils', 'knockout', 'knockout.mappin
             locDefRange: ['gpsip', '_def_'],
             locDefRangeUser: ['last', 'home', 'gpsip', '_def_'],
 
-            REGISTRATION_ALLOWED: false
-        }
+            REGISTRATION_ALLOWED: false,
+        },
     };
 
     Params.window.square = Params.window.w * Params.window.h;
@@ -41,8 +43,9 @@ define(['jquery', 'underscore', 'socket!', 'Utils', 'knockout', 'knockout.mappin
 
     // Пересчитываем размеры при ресайзе окна
     $window.on('resize', _.debounce(function () {
-        var w = $window.width();
-        var h = $window.height();
+        const w = $window.width();
+        const h = $window.height();
+
         Params.window.w(w);
         Params.window.h(h);
         Params.window.square(w * h);

@@ -252,7 +252,7 @@ module.exports = function (grunt) {
                         'public/js/module/admin/regionCheck.js',
                         'public/js/module/common/*.js',
                         'public/js/model/*.js',
-                        'public/js/socket.js',
+                        'public/js/*.js',
                     ],
                 },
             },

@@ -1,4 +1,3 @@
-/*global define:true*/
 /**
  * globalVM
  */
@@ -10,17 +9,18 @@ define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'intl', 'i18n', 'k
             target.parentNode.classList.add('showPrv');
         },
         imgLoadFail: function (target) {
-            var classList = target.parentNode.classList;
+            const classList = target.parentNode.classList;
+
             classList.add('fail'); //Множестенная установка пока не работает в ie<=11
             classList.add('showPrv');
-        }
+        },
     };
 
     window.moment = moment;
 
     // Отключает скроллинг body путем задания overflow:hidden и правого marging равного ширине скроллинга
     function bodyScrollOff($body) {
-        var bodyWidth;
+        let bodyWidth;
 
         if (!$body) {
             $body = $(document.body);
@@ -43,6 +43,7 @@ define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'intl', 'i18n', 'k
         if (!$body) {
             $body = $(document.body);
         }
+
         if ($body.hasClass('modal') && $('.neoModalCurtain').length <= 1) {
             $(document.documentElement).removeClass('modal');
             $body
@@ -68,16 +69,16 @@ define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'intl', 'i18n', 'k
             mec: { src: '/img/rank/bronse.jpg', title: 'Меценат' },
             mec_silv: { src: '/img/rank/silver.jpg', title: 'Серебряный меценат' },
             mec_gold: { src: '/img/rank/gold.jpg', title: 'Золотой меценат' },
-            adviser: { src: '/img/rank/adviser.jpg', title: 'Советник' }
+            adviser: { src: '/img/rank/adviser.jpg', title: 'Советник' },
         },
 
         func: {
             showContainer: function ($container, cb, ctx) {
-                var container = $container[0];
-                var isModal = container.classList.contains('neoModalContainer');
-                var noDisplay = container.classList.contains('mNoDisplay');
-                var hidden = container.classList.contains('mHidden');
-                var fade = container.classList.contains('mFadeIn');
+                const container = $container[0];
+                const isModal = container.classList.contains('neoModalContainer');
+                const noDisplay = container.classList.contains('mNoDisplay');
+                const hidden = container.classList.contains('mHidden');
+                const fade = container.classList.contains('mFadeIn');
 
                 if (isModal) {
                     // Отключаем скроллинг body, если это модальное окно
@@ -89,12 +90,14 @@ define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'intl', 'i18n', 'k
                         // Меняем по таймауту, чтобы класс успел удалится с этого контейнера, если для него меняется модуль
                         window.setTimeout(function () {
                             container.classList.add('mShow');
+
                             if (Utils.isType('function', cb)) {
                                 window.setTimeout(cb.bind(ctx || window), 310);
                             }
                         }, 50);
                     } else {
                         container.classList.add('mShow');
+
                         if (Utils.isType('function', cb)) {
                             cb.call(ctx || window);
                         }
@@ -104,10 +107,10 @@ define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'intl', 'i18n', 'k
                 }
             },
             hideContainer: function ($container, cb, ctx) {
-                var container = $container[0];
-                var isModal = container.classList.contains('neoModalContainer');
-                var noDisplay = container.classList.contains('mNoDisplay');
-                var hidden = container.classList.contains('mHidden');
+                const container = $container[0];
+                const isModal = container.classList.contains('neoModalContainer');
+                const noDisplay = container.classList.contains('mNoDisplay');
+                const hidden = container.classList.contains('mHidden');
 
                 if (noDisplay || hidden) {
                     container.classList.remove('mShow');
@@ -123,7 +126,7 @@ define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'intl', 'i18n', 'k
                 }
             },
             bodyScrollOff: bodyScrollOff,
-            bodyScrollOn: bodyScrollOn
-        }
+            bodyScrollOn: bodyScrollOn,
+        },
     };
 });
