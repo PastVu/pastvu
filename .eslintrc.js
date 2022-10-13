@@ -3,7 +3,6 @@ module.exports = {
     'parser': '@babel/eslint-parser',
 
     'env': {
-        'amd': true,
         'es6': true,
         'node': true,
         'browser': true,
@@ -687,6 +686,10 @@ module.exports = {
         {
             // Old-school rules for ES5 public code.
             'files': ['public/js/**/*.js'],
+            'env': {
+                'jquery': true,
+                'amd': true,
+            },
             'rules': {
                 // no complains about using function for callback.
                 'prefer-arrow-callback': 0,
