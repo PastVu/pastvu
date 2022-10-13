@@ -287,6 +287,12 @@ export function bindRoutes(app) {
         app.use('/api2', require('body-parser').json({ limit: '4mb' }), handleHTTPRequest, handleHTTPAPIRequest);
     }
 
+    // Rules
+    app.get('/rules', (req, res) => {
+        // This used to be a modal popup, we have to keep redirect to documentation page.
+        res.redirect(301, config.docs.rulesUrl);
+    });
+
     // Admin section
     app.get(/^\/(?:admin)(?:\/.*)?$/, handleHTTPRequest, setStaticHeaders, appAdminHandler);
 
