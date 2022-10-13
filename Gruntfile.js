@@ -257,6 +257,7 @@ module.exports = function (grunt) {
                         'public/js/intl/*.js',
                         'public/js/module/admin/*.js',
                         'public/js/module/user/*.js',
+                        'public/js/module/comment/*.js',
                     ],
                 },
             },

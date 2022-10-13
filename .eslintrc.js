@@ -518,13 +518,13 @@ module.exports = {
         'max-len': [2, {
             'code': 140, // The character count to use whenever a tab character is encountered
             'comments': 140, // Maximum line length for comments; defaults to value of code
-            'tabWidth': 2, // The character count to use whenever a tab character is encountered
             'ignoreUrls': true, // Ignores lines that contain a URL
             'ignoreStrings': true, // Ignores lines that contain a double-quoted or single-quoted string
             'ignoreComments': false, // Ignores all trailing comments and comments on their own line
             'ignoreTrailingComments': true, // Ignores only trailing comments
             'ignoreTemplateLiterals': true, // Ignores lines that contain a template literal
             'ignoreRegExpLiterals': true, // Ignores lines that contain a RegExp literal
+            'ignorePattern': '^\\s*if\\s*\\(', // Ignores if statements.
         }],
         // enforce a maximum file length
         'max-lines': [0, { 'max': 300, 'skipBlankLines': true, 'skipComments': true }],
