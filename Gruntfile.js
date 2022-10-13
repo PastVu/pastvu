@@ -259,6 +259,7 @@ module.exports = function (grunt) {
                         'public/js/module/user/*.js',
                         'public/js/module/comment/*.js',
                         'public/js/module/diff/*.js',
+                        'public/js/module/map/*.js',
                     ],
                 },
             },

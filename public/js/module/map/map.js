@@ -5,16 +5,16 @@ define([
     'underscore', 'Browser', 'Utils', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'renderer',
     'model/User', 'model/storage', 'Locations', 'leaflet', 'leaflet-extends/L.neoMap', 'm/map/marker',
     'm/photo/status', 'text!tpl/map/map.pug', 'css!style/map/map', 'jquery-ui/draggable', 'jquery-ui/slider',
-    'jquery-ui/effect-highlight', 'css!style/jquery/ui/core', 'css!style/jquery/ui/theme', 'css!style/jquery/ui/slider'
+    'jquery-ui/effect-highlight', 'css!style/jquery/ui/core', 'css!style/jquery/ui/theme', 'css!style/jquery/ui/slider',
 ], function (_, Browser, Utils, P, ko, Cliche, globalVM, renderer, User, storage, Locations, L, Map, MarkerManager, statuses, pug) {
     'use strict';
 
-    var defaults = {
+    const defaults = {
         sys: 'osm',
         type: 'mapnik',
         minZoom: 3,
         maxZoom: 18,
-        zoom: 17
+        zoom: 17,
     };
 
     return Cliche.extend({
@@ -24,17 +24,17 @@ define([
             embedded: undefined, // Режим встроенной карты
             editing: undefined, // Режим редактирования
             point: undefined,
-            center: undefined
+            center: undefined,
         },
         create: function () {
-            var self = this;
-            var qParams = globalVM.router.params();
-            var qType = Number(qParams.type);
+            const self = this;
+            const qParams = globalVM.router.params();
+            const qType = Number(qParams.type);
 
             this.destroy = _.wrap(this.destroy, this.localDestroy);
 
             // Promise witch will be resolved when map ready
-            this.readyPromise = new Promise(function(resolve) {
+            this.readyPromise = new Promise(function (resolve) {
                 self.readyPromiseResolve = resolve;
             });
             this.changeSubscribers = [];
@@ -47,9 +47,11 @@ define([
                 this.options.isPainting :
                 !!Utils.getLocalStorage(this.embedded ? 'map.embedded.isPainting' : 'map.isPainting')
             );
+
             if (!this.embedded && qType && _.values(statuses.type).includes(qType)) {
                 this.isPainting(qType === statuses.type.PAINTING);
             }
+
             this.type = this.co.typeComputed = ko.computed(function () {
                 return self.isPainting() ? statuses.type.PAINTING : statuses.type.PHOTO;
             });
@@ -73,12 +75,13 @@ define([
 
                 this.geoInputComputed = this.co.geoInputComputed = ko.computed({
                     read: function () {
-                        var geo = this.point.geo();
+                        const geo = this.point.geo();
+
                         return _.isEmpty(geo) ? '' : geo.join(',');
                     },
                     write: function (value) {
-                        var geo = this.point.geo();
-                        var inputGeo;
+                        const geo = this.point.geo();
+                        let inputGeo;
 
                         if (_.isEmpty(value)) {
                             this.delPointGeo();
@@ -87,6 +90,7 @@ define([
                                 .split(',')
                                 .filter(function (val) {
                                     val = val.trim();
+
                                     return val && val[0] !== '.' && val[val.length - 1] !== '.';
                                 })
                                 .map(Number);
@@ -100,15 +104,16 @@ define([
                                 } else {
                                     this.pointEditMarkerCreate();
                                 }
+
                                 this.map.panTo(inputGeo);
                             }
                         }
                     },
-                    owner: this
+                    owner: this,
                 });
             }
 
-            var type = this.type();
+            const type = this.type();
 
             this.setYears(
                 !this.embedded && (Number(qParams.y) || Utils.getLocalStorage('map.year.' + type)),
@@ -125,6 +130,7 @@ define([
                 desc: 'OSM',
                 selected: ko.observable(false),
                 types: ko.observableArray([
+
                     /* Define map types (layers).
                      *
                      * For fixed max zoom: specify maxZoom in TileLayer and in
@@ -151,11 +157,11 @@ define([
                             attribution: '&copy; <a href="https://kosmosnimki.ru/">ООО ИТЦ "СКАНЭКС"</a> | &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
                             updateWhenIdle: false,
                             maxZoom: 18,
-                            maxNativeZoom: 17
+                            maxNativeZoom: 17,
                         }),
                         maxZoom: 18,
                         limitZoom: 17,
-                        maxAfter: 'osm.mapnik'
+                        maxAfter: 'osm.mapnik',
                     },
                     {
                         id: 'mapnik',
@@ -164,9 +170,9 @@ define([
                         obj: new L.TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                             attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
                             updateWhenIdle: false,
-                            maxZoom: 19
+                            maxZoom: 19,
                         }),
-                        maxZoom: 19
+                        maxZoom: 19,
                     },
                     {
                         id: 'mapnik_de',
@@ -176,11 +182,11 @@ define([
                             updateWhenIdle: false,
                             maxZoom: 19,
                             maxNativeZoom: 18,
-                            attribution: 'OSM Deutsch | &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                            attribution: 'OSM Deutsch | &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
                         }),
                         maxZoom: 19,
                         limitZoom: 18,
-                        maxAfter: 'osm.mapnik'
+                        maxAfter: 'osm.mapnik',
                     },
                     {
                         id: 'mapnik_fr',
@@ -190,11 +196,11 @@ define([
                             updateWhenIdle: false,
                             maxZoom: 19,
                             maxNativeZoom: 18,
-                            attribution: 'OSM Française | &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                            attribution: 'OSM Française | &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
                         }),
                         maxZoom: 19,
                         limitZoom: 18,
-                        maxAfter: 'osm.mapnik'
+                        maxAfter: 'osm.mapnik',
                     },
                     {
                         id: 'opentopomap',
@@ -204,11 +210,11 @@ define([
                             updateWhenIdle: false,
                             maxZoom: 18,
                             maxNativeZoom: 17,
-                            attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | <a href="http://viewfinderpanoramas.org">SRTM</a> | Стиль карты: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+                            attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | <a href="http://viewfinderpanoramas.org">SRTM</a> | Стиль карты: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)',
                         }),
                         maxZoom: 18,
                         limitZoom: 17,
-                        maxAfter: 'osm.mapnik'
+                        maxAfter: 'osm.mapnik',
                     },
                     {
                         id: 'stamen_bw',
@@ -219,12 +225,13 @@ define([
                             subdomains: 'abcd',
                             maxZoom: 20,
                             ext: 'png',
-                            updateWhenIdle: false
+                            updateWhenIdle: false,
                         }),
-                        maxZoom: 20
-                    }
-                ])
+                        maxZoom: 20,
+                    },
+                ]),
             });
+
             if (P.settings.USE_GOOGLE_API()) {
                 this.layers.push({
                     id: 'google',
@@ -237,32 +244,33 @@ define([
                             desc: 'Схема',
                             selected: ko.observable(false),
                             params: 'roadmap',
-                            maxZoom: 21
+                            maxZoom: 21,
                         },
                         {
                             id: 'sat',
                             desc: 'Спутник',
                             selected: ko.observable(false),
                             params: 'satellite',
-                            maxZoom: 21
+                            maxZoom: 21,
                         },
                         {
                             id: 'hyb',
                             desc: 'Гибрид',
                             selected: ko.observable(false),
                             params: 'hybrid',
-                            maxZoom: 21
+                            maxZoom: 21,
                         },
                         {
                             id: 'land',
                             desc: 'Ландшафт',
                             selected: ko.observable(false),
                             params: 'terrain',
-                            maxZoom: 21
-                        }
-                    ])
+                            maxZoom: 21,
+                        },
+                    ]),
                 });
             }
+
             if (P.settings.USE_YANDEX_API()) {
                 this.layers.push({
                     id: 'yandex',
@@ -275,25 +283,26 @@ define([
                             desc: 'Схема',
                             selected: ko.observable(false),
                             params: 'map',
-                            maxZoom: 20
+                            maxZoom: 20,
                         },
                         {
                             id: 'sat',
                             desc: 'Спутник',
                             selected: ko.observable(false),
                             params: 'satellite',
-                            maxZoom: 19
+                            maxZoom: 19,
                         },
                         {
                             id: 'hyb',
                             desc: 'Гибрид',
                             selected: ko.observable(false),
                             params: 'hybrid',
-                            maxZoom: 19
-                        }
-                    ])
+                            maxZoom: 19,
+                        },
+                    ]),
                 });
             }
+
             this.layers.push({
                 id: 'other',
                 desc: 'Прочие',
@@ -307,9 +316,9 @@ define([
                             attribution: '&copy; Esri &mdash; Источники: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, и ГИС сообщество',
                             updateWhenIdle: false,
                             maxZoom: 20,
-                            maxNativeZoom: 19
+                            maxNativeZoom: 19,
                         }),
-                        maxZoom: 20
+                        maxZoom: 20,
                     },
                     {
                         id: 'mtb',
@@ -319,11 +328,11 @@ define([
                             attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | <a href="http://mtbmap.cz/">mtbmap.cz</a>',
                             updateWhenIdle: false,
                             maxZoom: 19,
-                            maxNativeZoom: 18
+                            maxNativeZoom: 18,
                         }),
                         maxZoom: 19,
                         limitZoom: 18,
-                        maxAfter: 'osm.mapnik'
+                        maxAfter: 'osm.mapnik',
                     },
                     {
                         id: 'warfly',
@@ -334,12 +343,12 @@ define([
                             updateWhenIdle: false,
                             minZoom: 9,
                             maxZoom: 19,
-                            maxNativeZoom: 17
+                            maxNativeZoom: 17,
                         }),
                         maxZoom: 19,
-                        minZoom: 9
-                    }
-                ])
+                        minZoom: 9,
+                    },
+                ]),
             });
 
             this.showLinkBind = this.showLink.bind(this);
@@ -353,13 +362,14 @@ define([
                 if (this.markerManager) {
                     this.markerManager.openNewTab = val;
                 }
+
                 this.setLocalState();
             }, this);
 
             this.show();
         },
         setLocalState: function () {
-            var layerActive = this.layerActive();
+            const layerActive = this.layerActive();
 
             Utils.setLocalStorage(this.embedded ? 'map.embedded.opennew' : 'map.opennew', this.openNewTab());
             Utils.setLocalStorage(this.embedded ? 'map.embedded.sys' : 'map.sys', layerActive.sys.id);
@@ -370,8 +380,8 @@ define([
                 Utils.setLocalStorage('map.center', Utils.geo.latlngToArr(this.map.getCenter()));
                 Utils.setLocalStorage('map.zoom', this.map.getZoom());
 
-                var type = this.type();
-                var years = statuses.years[this.type()];
+                const type = this.type();
+                const years = statuses.years[this.type()];
 
                 if (this.yearLow > years.min) {
                     Utils.setLocalStorage('map.year.' + type, this.yearLow);
@@ -384,18 +394,18 @@ define([
                 } else {
                     Utils.removeLocalStorage('map.year2.' + type);
                 }
-
             }
         },
         setYears: function (y, y2) {
-            var type = this.type();
-            var years = statuses.years[type] || statuses.years[statuses.type.PHOTO];
+            const type = this.type();
+            const years = statuses.years[type] || statuses.years[statuses.type.PHOTO];
 
             if (_.isNumber(y) && y !== 0 && y > years.min && y <= years.max) {
                 this.yearLow = y;
             } else {
                 this.yearLow = years.min;
             }
+
             if (_.isNumber(y2) && y2 !== 0 && y2 >= this.yearLow && y2 < years.max) {
                 this.yearHigh = y2;
             } else {
@@ -406,14 +416,17 @@ define([
             this.isPainting(val);
 
             this.yearSliderRefresh();
+
             if (this.markerManager) {
                 this.markerManager.changePainting(val, this.yearLow, this.yearHigh, true);
             }
+
             this.notifySubscribers();
             this.setLocalState();
         },
         notifySubscribers: function () {
-            var data = this.getStatusData();
+            const data = this.getStatusData();
+
             this.changeSubscribers.forEach(function (item) {
                 item.callback.call(item.ctx, data);
             }, this);
@@ -422,19 +435,19 @@ define([
             return {
                 isPainting: this.isPainting(),
                 year: this.yearLow, year2: this.yearHigh,
-                center: this.getCenter()
+                center: this.getCenter(),
             };
         },
 
         show: function () {
-            var region;
-            var center;
-            var bbox;
-            var fitBounds;
-            var qParams = globalVM.router.params();
-            var zoom = Number(qParams.z) || (this.embedded ? defaults.zoom : (Utils.getLocalStorage('map.zoom') || Locations.current.z));
-            var system = qParams.s || Utils.getLocalStorage(this.embedded ? 'map.embedded.sys' : 'map.sys') || defaults.sys;
-            var type = qParams.t || Utils.getLocalStorage(this.embedded ? 'map.embedded.type' : 'map.type') || defaults.type;
+            let region;
+            let center;
+            let bbox;
+            let fitBounds;
+            const qParams = globalVM.router.params();
+            const zoom = Number(qParams.z) || (this.embedded ? defaults.zoom : Utils.getLocalStorage('map.zoom') || Locations.current.z);
+            const system = qParams.s || Utils.getLocalStorage(this.embedded ? 'map.embedded.sys' : 'map.sys') || defaults.sys;
+            const type = qParams.t || Utils.getLocalStorage(this.embedded ? 'map.embedded.type' : 'map.type') || defaults.type;
 
             if (this.embedded) {
                 if (this.point) {
@@ -447,10 +460,11 @@ define([
 
                         if (region.bboxhome || region.bbox) {
                             bbox = region.bboxhome() || region.bbox();
+
                             if (Utils.geo.checkbbox(bbox)) {
                                 fitBounds = [
                                     [bbox[1], bbox[0]],
-                                    [bbox[3], bbox[2]]
+                                    [bbox[3], bbox[2]],
                                 ];
                             }
                         }
@@ -460,18 +474,22 @@ define([
                 }
             } else {
                 center = qParams.g;
+
                 if (center) {
                     center = center.split(',').map(function (element) {
                         return parseFloat(element);
                     });
+
                     if (!Utils.geo.checkLatLng(center)) {
                         center = null;
                     }
                 }
+
                 if (!center) {
                     center = Utils.getLocalStorage('map.center');
                 }
             }
+
             if (!center || !Utils.geo.checkLatLng(center)) {
                 center = this.mapDefCenter;
             }
@@ -484,16 +502,18 @@ define([
                 zoomControl: false, // Remove default zoom control (we use our own)
                 tap: false, // TODO: Prevent double click in Safari, remove when Leaflet/Leaflet#7255 is addressed.
             });
+
             if (fitBounds) {
                 this.map.fitBounds(fitBounds, { maxZoom: defaults.maxZoom });
             }
+
             this.markerManager = new MarkerManager(this.map, {
                 enabled: false,
                 openNewTab: this.openNewTab(),
                 isPainting: this.isPainting(),
                 embedded: this.embedded,
                 year: this.yearLow,
-                year2: this.yearHigh
+                year2: this.yearHigh,
             });
             this.selectLayer(system, type);
 
@@ -510,18 +530,18 @@ define([
                         options: {
                             map: this.map,
                             maxZoom: this.layerActive().type.limitZoom || this.layerActive().type.maxZoom,
-                            canOpen: !this.embedded
+                            canOpen: !this.embedded,
                         },
                         ctx: this,
                         callback: function (vm) {
                             this.childModules[vm.id] = vm;
                             this.navSliderVM = vm;
-                        }.bind(this)
-                    }
+                        }.bind(this),
+                    },
                 ],
                 {
                     parent: this,
-                    level: this.level + 1
+                    level: this.level + 1,
                 }
             );
 
@@ -533,6 +553,7 @@ define([
                     } else {
                         this.map.on('moveend', this.saveCenterZoom, this);
                     }
+
                     this.map.on('moveend', function () {
                         this.notifySubscribers();
                     }, this);
@@ -578,28 +599,33 @@ define([
         // Включает режим редактирования
         editPointOn: function () {
             this.editing(true);
+
             return this;
         },
         // Выключает режим редактирования
         editPointOff: function () {
             this.editing(false);
+
             return this;
         },
 
         setPoint: function (point, isPainting) {
-            var geo = point.geo();
-            var bbox;
-            var zoom;
-            var region = _.last(point.regions());
+            const geo = point.geo();
+            let bbox;
+            let zoom;
+            const region = _.last(point.regions());
 
             this.point = point;
+
             if (isPainting !== this.isPainting()) {
                 this.isPainting(isPainting);
                 this.yearSliderRefresh();
+
                 if (this.markerManager) {
                     this.markerManager.changePainting(isPainting, this.yearLow, this.yearHigh);
                 }
             }
+
             if (this.editing()) {
                 if (this.pointMarkerEdit) {
                     if (geo) {
@@ -619,22 +645,24 @@ define([
             } else if (region && region.center) {
                 if (region.bboxhome || region.bbox) {
                     bbox = region.bboxhome() || region.bbox();
+
                     if (Utils.geo.checkbbox(bbox)) {
                         zoom = this.map.getBoundsZoom([
                             [bbox[1], bbox[0]],
-                            [bbox[3], bbox[2]]
+                            [bbox[3], bbox[2]],
                         ], false);
                     }
                 }
+
                 this.map.setView([region.center()[1], region.center()[0]], zoom || this.map.getZoom());
             }
 
             return this;
         },
         geoInputBlur: function (vm, evt) {
-            var geo = this.point.geo();
-            var $inputGeo = $(evt.target);
-            var inputGeo = $inputGeo.val();
+            let geo = this.point.geo();
+            const $inputGeo = $(evt.target);
+            const inputGeo = $inputGeo.val();
 
             // При выходе фокуса с поля координаты, вставляем актуальное в него значение geo, например, если оно в поле не валидное
             if (_.isEmpty(geo)) {
@@ -643,6 +671,7 @@ define([
                 }
             } else {
                 geo = geo.join(',');
+
                 if (geo !== inputGeo) {
                     $inputGeo.val(geo);
                 }
@@ -655,10 +684,11 @@ define([
         // Создает подсвечивающий маркер для point, если координаты точки есть
         pointHighlightCreate: function () {
             this.pointHighlightDestroy();
+
             if (this.point && this.point.geo()) {
-                var divIcon = L.divIcon({
+                const divIcon = L.divIcon({
                     className: 'photoIcon highlight ' + 'y' + this.point.year() + ' ' + this.point.dir(),
-                    iconSize: new L.Point(8, 8)
+                    iconSize: new L.Point(8, 8),
                 });
 
                 this.pointMarkerHL = L.marker(this.point.geo(), {
@@ -666,10 +696,11 @@ define([
                     draggable: false,
                     title: this.point.title(),
                     icon: divIcon,
-                    riseOnHover: true
+                    riseOnHover: true,
                 });
                 this.pointLayer.addLayer(this.pointMarkerHL);
             }
+
             return this;
         },
         pointHighlightDestroy: function () {
@@ -677,18 +708,21 @@ define([
                 this.pointLayer.removeLayer(this.pointMarkerHL);
                 delete this.pointMarkerHL;
             }
+
             return this;
         },
 
         // Создает редактирующий маркер, если координаты точки есть, а если нет, то создает по клику на карте
         pointEditCreate: function () {
             this.pointEditDestroy();
+
             if (this.point) {
                 if (this.point.geo()) {
                     this.pointEditMarkerCreate();
                 }
+
                 this.map.on('click', function (e) {
-                    var geo = Utils.geo.geoToPrecision([e.latlng.lat, e.latlng.lng]);
+                    const geo = Utils.geo.geoToPrecision([e.latlng.lat, e.latlng.lng]);
 
                     this.point.geo(geo);
 
@@ -699,15 +733,18 @@ define([
                     }
                 }, this);
             }
+
             return this;
         },
         pointEditDestroy: function () {
             this.pointEditMarkerDestroy();
             this.map.off('click');
+
             return this;
         },
         pointEditMarkerCreate: function () {
-            var self = this;
+            const self = this;
+
             this.pointMarkerEdit = L.marker(this.point.geo(),
                 {
                     draggable: true,
@@ -716,14 +753,16 @@ define([
                         iconSize: [26, 43],
                         iconAnchor: [13, 36],
                         iconUrl: '/img/map/pinEdit.png',
-                        className: 'pointMarkerEdit'
-                    })
+                        className: 'pointMarkerEdit',
+                    }),
                 })
                 .on('dragend', function () {
-                    var latlng = Utils.geo.geoToPrecision(this.getLatLng());
+                    const latlng = Utils.geo.geoToPrecision(this.getLatLng());
+
                     self.point.geo([latlng.lat, latlng.lng]);
                 })
                 .addTo(this.pointLayer);
+
             return this;
         },
         pointEditMarkerDestroy: function () {
@@ -732,6 +771,7 @@ define([
                 this.pointLayer.removeLayer(this.pointMarkerEdit);
                 delete this.pointMarkerEdit;
             }
+
             return this;
         },
 
@@ -742,11 +782,12 @@ define([
             this.setLocalState();
         },
         zoomEndCheckLayer: function () {
-            var limitZoom = this.layerActive().type.limitZoom;
-            var maxAfter = this.layerActive().type.maxAfter;
+            const limitZoom = this.layerActive().type.limitZoom;
+            const maxAfter = this.layerActive().type.maxAfter;
 
             if (limitZoom !== undefined && maxAfter !== undefined && this.map.getZoom() > limitZoom) {
-                var layers = maxAfter.split('.');
+                const layers = maxAfter.split('.');
+
                 window.setTimeout(_.bind(this.selectLayer, this, layers[0], layers[1]), 300);
             }
         },
@@ -765,20 +806,21 @@ define([
         },
         showLink: function () {
             if (!this.linkShow()) {
-                var center = Utils.geo.geoToPrecision(Utils.geo.latlngToArr(this.map.getCenter()));
-                var layerActive = this.layerActive();
+                const center = Utils.geo.geoToPrecision(Utils.geo.latlngToArr(this.map.getCenter()));
+                const layerActive = this.layerActive();
 
                 setTimeout(function () {
                     this.$dom.find('.inputLink').focus().select();
                     document.addEventListener('click', this.showLinkBind);
                 }.bind(this), 100);
 
-                var years = statuses.years[this.type()];
-                var y = '';
+                const years = statuses.years[this.type()];
+                let y = '';
 
                 if (this.yearLow > years.min) {
                     y += '&y=' + this.yearLow;
                 }
+
                 if (this.yearHigh < years.max) {
                     y += '&y2=' + this.yearHigh;
                 }
@@ -806,18 +848,20 @@ define([
             document.removeEventListener('click', this.showLinkBind);
         },
         linkClick: function (data, evt) {
-            var input = evt.target;
+            const input = evt.target;
+
             if (input) {
                 input.select();
             }
+
             evt.stopPropagation();
+
             return false;
         },
         selectLayer: function (sysId, typeId) {
-            var layerActive = this.layerActive();
-            var system;
-            var type;
-            var setLayer;
+            const layerActive = this.layerActive();
+            let system;
+            let type;
 
             if (layerActive.sys && layerActive.sys.id === sysId && layerActive.type.id === typeId) {
                 return;
@@ -825,6 +869,7 @@ define([
 
             system = this.getSysById(sysId || defaults.sys) || this.getSysById(defaults.sys);
             type = this.getTypeById(system, typeId || defaults.type) || this.getTypeById(system, defaults.type);
+
             if (type === undefined) {
                 // It is likely that required type does not exist in this
                 // system, fallback to default system and type.
@@ -832,16 +877,19 @@ define([
                 type = this.getTypeById(system, defaults.type);
             }
 
-            setLayer = function (type) {
+            const setLayer = function (type) {
                 this.map.addLayer(type.obj);
                 this.markerManager.layerChange();
                 this.map.options.maxZoom = type.maxZoom;
                 this.map.options.minZoom = type.minZoom || defaults.minZoom;
+
                 if (this.navSliderVM && Utils.isType('function', this.navSliderVM.recalcZooms)) {
                     this.navSliderVM.recalcZooms(type.limitZoom || type.maxZoom, true);
                 }
+
                 // If curent map zoom is out of range of layer settings, adjust accordingly.
-                let center = this.map.getCenter();
+                const center = this.map.getCenter();
+
                 if (type.limitZoom !== undefined && this.map.getZoom() > type.limitZoom) {
                     this.map.setView(center, type.limitZoom);
                 } else if (this.map.getZoom() > type.maxZoom) {
@@ -875,23 +923,24 @@ define([
             }
         },
         onChange: function (callback, ctx) {
-            this.changeSubscribers.push({callback: callback, ctx: ctx});
+            this.changeSubscribers.push({ callback: callback, ctx: ctx });
         },
         offChange: function (callback, ctx) {
-            this.changeSubscribers = _.remove(this.changeSubscribers, {callback: callback, ctx: ctx});
+            this.changeSubscribers = _.remove(this.changeSubscribers, { callback: callback, ctx: ctx });
         },
         getCenter: function () {
             return Utils.geo.latlngToArr(this.map.getCenter());
         },
 
         yearSliderRefresh: function () {
-            var $slider = this.$dom.find('.yearSlider');
+            const $slider = this.$dom.find('.yearSlider');
+
             $slider.slider('destroy');
 
             //P.window.square.unsubscribe();
             window.clearTimeout(this.yearRefreshMarkersTimeout);
 
-            var type = this.type();
+            const type = this.type();
 
             this.setYears(
                 Utils.getLocalStorage('map.year.' + type),
@@ -907,25 +956,26 @@ define([
             this.yearSliderCreate();
         },
         yearSliderCreate: function () {
-            var self = this;
-            var years = statuses.years[this.type()];
-            var yearLowOrigin = years.min;
-            var yearHighOrigin = years.max;
-            var yearsDelta = yearHighOrigin - yearLowOrigin;
-            var $slider = this.$dom.find('.yearSlider');
-            var sliderStep = $slider.width() / yearsDelta;
-            var slideOuterL = this.$dom.find('.yearOuter.L')[0];
-            var slideOuterR = this.$dom.find('.yearOuter.R')[0];
-            var handleL = $slider[0].querySelector('.ui-slider-handle.L');
-            var handleR = $slider[0].querySelector('.ui-slider-handle.R');
-            var currMin;
-            var currMax;
-            var culcSlider = function (min, max) {
+            const self = this;
+            const years = statuses.years[this.type()];
+            const yearLowOrigin = years.min;
+            const yearHighOrigin = years.max;
+            const yearsDelta = yearHighOrigin - yearLowOrigin;
+            const $slider = this.$dom.find('.yearSlider');
+            let sliderStep = $slider.width() / yearsDelta;
+            const slideOuterL = this.$dom.find('.yearOuter.L')[0];
+            const slideOuterR = this.$dom.find('.yearOuter.R')[0];
+            const handleL = $slider[0].querySelector('.ui-slider-handle.L');
+            const handleR = $slider[0].querySelector('.ui-slider-handle.R');
+            let currMin;
+            let currMax;
+            const culcSlider = function (min, max) {
                 if (currMin !== min) {
                     slideOuterL.style.width = (sliderStep * Math.abs(min - yearLowOrigin) >> 0) + 'px';
                     currMin = min;
                     handleL.innerHTML = min || 1;
                 }
+
                 if (currMax !== max) {
                     slideOuterR.style.width = (sliderStep * Math.abs(yearHighOrigin - max) >> 0) + 'px';
                     currMax = max;
@@ -940,7 +990,8 @@ define([
                 step: 1,
                 values: [this.yearLow, this.yearHigh],
                 create: function () {
-                    var values = $slider.slider('values');
+                    const values = $slider.slider('values');
+
                     culcSlider(values[0], values[1]);
                 },
                 start: function () {
@@ -955,12 +1006,12 @@ define([
                     self.yearLow = currMin;
                     self.yearHigh = currMax;
                     self.yearRefreshMarkersTimeout = window.setTimeout(self.yearRefreshMarkersBind, 400);
-                }
+                },
             });
 
             //Подписываемся на изменение размеров окна для пересчета шага и позиций покрывал
             this.subscriptions.sizeSlider = P.window.square.subscribe(function () {
-                var values = $slider.slider('values');
+                const values = $slider.slider('values');
 
                 sliderStep = $slider.width() / yearsDelta;
                 slideOuterL.style.width = (sliderStep * Math.abs(values[0] - yearLowOrigin) >> 0) + 'px';
@@ -971,6 +1022,6 @@ define([
             this.markerManager.setYearLimits(this.yearLow || 1, this.yearHigh || 1);
             this.setLocalState();
             this.notifySubscribers();
-        }
+        },
     });
 });
