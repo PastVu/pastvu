@@ -258,6 +258,7 @@ module.exports = function (grunt) {
                         'public/js/module/admin/*.js',
                         'public/js/module/user/*.js',
                         'public/js/module/comment/*.js',
+                        'public/js/module/diff/*.js',
                     ],
                 },
             },

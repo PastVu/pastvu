@@ -1,12 +1,10 @@
-/*global define:true, ga:true*/
-
 /**
  * Модель Списка новостей
  */
 define([
     'underscore', 'jquery', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
     'model/User', 'model/storage',
-    'text!tpl/diff/newsList.pug', 'css!style/diff/newsList'
+    'text!tpl/diff/newsList.pug', 'css!style/diff/newsList',
 ], function (_, $, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, User, storage, pug) {
     'use strict';
 
@@ -21,9 +19,11 @@ define([
             // Вызовется один раз в начале 700мс и в конце один раз, если за эти 700мс были другие вызовы
             this.routeHandlerDebounced = _.debounce(this.routeHandler, 700, { leading: true, trailing: true });
             this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandlerDebounced, this);
+
             if (!this.auth.loggedIn()) {
                 this.subscriptions.loggedIn = this.auth.loggedIn.subscribe(this.loggedInHandler, this);
             }
+
             ko.applyBindings(globalVM, this.$dom[0]);
             this.routeHandler();
             this.show();
@@ -43,13 +43,13 @@ define([
             delete this.subscriptions.loggedIn;
         },
         routeHandler: function () {
-            this.getAllNews(function (data) {
+            this.getAllNews(function (/*data*/) {
                 Utils.title.setTitle({ title: 'Новости' });
                 ga('send', 'pageview');
             });
         },
         getAllNews: function (cb, ctx) {
-            var self = this;
+            const self = this;
 
             socket.run('index.giveAllNews', undefined, true).then(function (data) {
                 data.news.forEach(function (novel) {
@@ -70,6 +70,6 @@ define([
                     cb.call(ctx, data);
                 }
             });
-        }
+        },
     });
 });
