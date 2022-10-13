@@ -256,6 +256,7 @@ module.exports = function (grunt) {
                         'public/js/errors/*.js',
                         'public/js/intl/*.js',
                         'public/js/module/admin/*.js',
+                        'public/js/module/user/*.js',
                     ],
                 },
             },

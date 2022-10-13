@@ -1,4 +1,3 @@
-/*global define:true*/
 /**
  * Модель профиля пользователя
  */
@@ -8,7 +7,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
     return Cliche.extend({
         pug: pug,
         options: {
-            userVM: null
+            userVM: null,
         },
         create: function () {
             this.auth = globalVM.repository['m/common/auth'];
@@ -39,12 +38,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             if (this.$dom.find('#inBirthdate').datepicker) {
                 this.$dom.find('#inBirthdate').datepicker('remove');
             }
+
             globalVM.func.hideContainer(this.$container);
             this.showing = false;
         },
         editModeHandler: function (val) {
             if (val) {
-                require(['bs/ext/datepicker/datepicker', 'bs/ext/datepicker/lang/ru', 'css!style/bsext/datepicker'], function (Construct) {
+                require(['bs/ext/datepicker/datepicker', 'bs/ext/datepicker/lang/ru', 'css!style/bsext/datepicker'], function () {
                     if (this.$dom instanceof jQuery) {
                         this.$dom
                             .find('#inBirthdate')
@@ -52,26 +52,26 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                                 language: 'ru',
                                 format: 'dd.mm.yyyy',
                                 startView: 'decade',
-                                startDate: moment("1920-01-01").toDate(),
-                                endDate: moment().subtract('years', 13).toDate()
+                                startDate: moment('1920-01-01').toDate(),
+                                endDate: moment().subtract('years', 13).toDate(),
                             })
-                            .on('changeDate', function (evt) {
+                            .on('changeDate', function () {
                                 this.u.birthdate(this.$dom.find('#inBirthdate').val());
                             }.bind(this));
                     }
                 }.bind(this));
             } else {
-                var $dp = this.$dom.find('#inBirthdate');
+                const $dp = this.$dom.find('#inBirthdate');
+
                 if ($dp.datepicker) {
                     $dp.datepicker('remove');
                     delete $dp.datepicker;
-
                 }
             }
         },
         saveUser: function () {
-            var target = _.pick(ko_mapping.toJS(this.u), 'firstName', 'lastName', 'birthdate', 'sex', 'country', 'city', 'work', 'www', 'icq', 'skype', 'aim', 'lj', 'flickr', 'blogger', 'aboutme'),
-                key;
+            const target = _.pick(ko_mapping.toJS(this.u), 'firstName', 'lastName', 'birthdate', 'sex', 'country', 'city', 'work', 'www', 'icq', 'skype', 'aim', 'lj', 'flickr', 'blogger', 'aboutme');
+            let key;
 
             for (key in target) {
                 if (target.hasOwnProperty(key)) {
@@ -82,6 +82,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     }
                 }
             }
+
             if (Utils.getObjectPropertyLength(target) > 0) {
                 target.login = this.u.login();
 
@@ -99,6 +100,6 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }.bind(this));
 
             this.edit(false);
-        }
+        },
     });
 });

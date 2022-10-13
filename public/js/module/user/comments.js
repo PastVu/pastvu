@@ -1,18 +1,17 @@
-/*global define:true*/
 /**
  * Модель списка комментариев пользователя
  */
 define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/Photo', 'model/storage', 'text!tpl/user/comments.pug', 'css!style/user/comments'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, Photo, storage, pug) {
     'use strict';
 
-    var imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
+    const imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
 
     return Cliche.extend({
         pug: pug,
         options: {
             userVM: null,
             type: 'photo', // Тип объекта по умолчанию (фото, новость и т.д.)
-            statuses: ['active'] // Default statuses (active, del)
+            statuses: ['active'], // Default statuses (active, del)
         },
         create: function () {
             this.auth = globalVM.repository['m/common/auth'];
@@ -31,7 +30,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 photo_persist: ko.observable(0),
                 news_persist: ko.observable(0),
                 photo: ko.observable(0),
-                news: ko.observable(0)
+                news: ko.observable(0),
             };
 
             this.statuses = {
@@ -62,11 +61,11 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 return Math.min(this.pageFirstItem() + this.pageSize() - 1, this.u.ccount());
             }, this);
             this.pages = this.co.pages = ko.computed(function () {
-                var pageCount = this.pageLast(),
-                    pageFrom = Math.max(1, this.page() - this.pageSlide()),
-                    pageTo = Math.min(pageCount, this.page() + this.pageSlide()),
-                    result = [],
-                    i;
+                const pageCount = this.pageLast();
+                let pageFrom = Math.max(1, this.page() - this.pageSlide());
+                let pageTo = Math.min(pageCount, this.page() + this.pageSlide());
+                const result = [];
+                let i;
 
                 pageFrom = Math.max(1, Math.min(pageTo - 2 * this.pageSlide(), pageFrom));
                 pageTo = Math.min(pageCount, Math.max(pageFrom + 2 * this.pageSlide(), pageTo));
@@ -74,6 +73,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 for (i = pageFrom; i <= pageTo; i++) {
                     result.push(i);
                 }
+
                 return result;
             }, this);
             this.paginationShow = this.co.paginationShow = ko.computed(function () {
@@ -81,13 +81,15 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }, this);
 
             this.briefText = this.co.briefText = ko.computed(function () {
-                var count = this.types[this.type() + '_persist'](),
-                    txt = '';
+                const count = this.types[this.type() + '_persist']();
+                let txt = '';
+
                 if (count) {
                     txt = 'Показаны ' + globalVM.intl.num(this.pageFirstItem()) + '&nbsp;&ndash;&nbsp;' + globalVM.intl.num(this.pageLastItem()) + ' из ' + globalVM.intl.num(count);
                 } else {
                     txt = 'Пользователь пока не оставил комментариев в данной категории';
                 }
+
                 return txt;
             }, this);
 
@@ -132,12 +134,12 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
 
         routeHandler: function () {
-            var self = this;
-            var params = globalVM.router.params();
-            var page = Math.abs(Number(params.page)) || 1;
-            var type = params.type || self.options.type;
-            var rowStatuses = params.statuses ? params.statuses.split('!').filter(s => s === '0' || s === '1').map(Number).sort() : [];
-            var statuses = params.statuses ? self.decodeStatuses(rowStatuses) : self.statusesCheckboxed();
+            const self = this;
+            const params = globalVM.router.params();
+            const page = Math.abs(Number(params.page)) || 1;
+            const type = params.type || self.options.type;
+            const rowStatuses = params.statuses ? params.statuses.split('!').filter(s => s === '0' || s === '1').map(Number).sort() : [];
+            const statuses = params.statuses ? self.decodeStatuses(rowStatuses) : self.statusesCheckboxed();
 
             if (params.page && page < 2 || !self.types[type] || params.statuses && rowStatuses.join('!') !== params.statuses) {
                 setTimeout(function () {
@@ -167,6 +169,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 setTimeout(function () {
                     this.statusesCheckboxed(['active']);
                 }.bind(this), 10);
+
                 return;
             }
 
@@ -185,8 +188,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             return statuses.map(s => s === 0 ? 'del' : 'active');
         },
 
-        getUrlParams(page, type, statuses) {
-            var paramsArr = [];
+        getUrlParams: function (page, type, statuses) {
+            const paramsArr = [];
 
 
             if (this.types[type] && type !== 'photo') {
@@ -201,17 +204,18 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
 
         getPage: function (page, type, cb, ctx) {
-            var self = this;
-            var statuses = this.statusesCheckboxed().slice();
+            const self = this;
+            const statuses = this.statusesCheckboxed().slice();
+
             self.loadingComments(true);
 
             socket.run('comment.giveForUser', {
                 login: self.u.login(), type: type, page: page,
-                active: statuses.indexOf('active') >= 0, del: statuses.indexOf('del') >= 0
+                active: statuses.indexOf('active') >= 0, del: statuses.indexOf('del') >= 0,
             }, true)
                 .then(function (data) {
-                    var objs;
-                    var comments;
+                    let objs;
+                    let comments;
 
                     if (data.page === page && data.type === type) {
                         objs = data.objs;
@@ -241,7 +245,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                                 Photo.factory(obj, {
                                     type: 'compact',
                                     pic: 'q',
-                                    can: { 'protected': obj.protected }
+                                    can: { 'protected': obj.protected },
                                 });
                                 obj.link = '/p/' + obj.cid;
                                 obj.title += ' (' + obj.y + ')';
@@ -254,7 +258,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             // If comment was removed because its parent was removed,
                             // then link to that parent since the tree of deleted comments on the object page is collapsed.
                             // If it's not removed then link directly to the comment
-                            var cid = comment.del && comment.del.origin ? comment.del.origin : comment.cid;
+                            const cid = comment.del && comment.del.origin ? comment.del.origin : comment.cid;
 
                             comment.obj = objs[comment.obj];
                             comment.link = comment.obj.link + '?hl=comment-' + cid;
@@ -265,6 +269,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     }
 
                     this.loadingComments(false);
+
                     if (_.isFunction(cb)) {
                         cb.call(ctx || this, data);
                     }
@@ -282,19 +287,19 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                                 curtainClick: { click: this.closeHistory, ctx: this },
                                 offIcon: { text: 'Закрыть', click: this.closeHistory, ctx: this },
                                 btns: [
-                                    { css: 'btn-primary', text: 'Закрыть', click: this.closeHistory, ctx: this }
-                                ]
+                                    { css: 'btn-primary', text: 'Закрыть', click: this.closeHistory, ctx: this },
+                                ],
                             },
                             options: { objCid: objCid, cid: cid, type: this.type() },
                             callback: function (vm) {
                                 this.histVM = vm;
                                 this.childModules[vm.id] = vm;
-                            }.bind(this)
-                        }
+                            }.bind(this),
+                        },
                     ],
                     {
                         parent: this,
-                        level: this.level + 2
+                        level: this.level + 2,
                     }
                 );
             }
@@ -309,17 +314,17 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             event.target.parentNode.parentNode.classList.add('showPrv');
         },
         onPreviewErr: function (data, event) {
-            var $photoBox = $(event.target.parentNode),
-                parent = $photoBox[0].parentNode,
-                content = '';
+            const $photoBox = $(event.target.parentNode);
+            const parent = $photoBox[0].parentNode;
+            let content = '';
 
             event.target.style.visibility = 'hidden';
             content = imgFailTpl({
                 style: 'width: 100%;margin-top:7px;padding-top:25px;background: url(/img/misc/imgw.png) 50% 0 no-repeat;',
-                txt: ' '
+                txt: ' ',
             });
             $photoBox.find('.img').after(content);
             parent.classList.add('showPrv');
-        }
+        },
     });
 });
