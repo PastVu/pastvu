@@ -8,7 +8,6 @@ module.exports = {
         'node': true,
         'browser': true,
         'serviceworker': true,
-        'jest/globals': true,
     },
 
     'parserOptions': {
@@ -703,8 +702,11 @@ module.exports = {
         {
             // eslint-plugin-jest rules are defined via overrides to apply
             // them to test files only.
-            'files': ['**/__tests__/*.js'],
+            'files': ['**/__tests__/*.js', '**/__mocks__/*.js'],
             'plugins': ['jest'],
+            'env': {
+                'jest/globals': true,
+            },
             'extends': [
                 'plugin:jest/all',
                 'plugin:jest-formatting/strict',
