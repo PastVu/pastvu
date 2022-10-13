@@ -1,4 +1,3 @@
-/*global define:true*/
 /**
  * Модель истории комментария
  */
@@ -6,19 +5,20 @@ define(
     ['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/storage', 'm/photo/fields', 'm/photo/status', 'lib/doT', 'text!tpl/photo/hist.pug', 'css!style/photo/hist'],
     function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, storage, fields, statuses, doT, pug) {
         'use strict';
-        var tplHist;
-        var tplRegions;
-        var tplRegionsDiff;
-        var maxRegionLevel = 5;
-        var statusNums = statuses.nums;
-        var txtFields = ['title', 'geo', 'type', 'regions', 'y', 'desc', 'source', 'author', 'address', 'dir', 'watersignText'];
+
+        let tplHist;
+        let tplRegions;
+        let tplRegionsDiff;
+        const maxRegionLevel = 5;
+        const statusNums = statuses.nums;
+        const txtFields = ['title', 'geo', 'type', 'regions', 'y', 'desc', 'source', 'author', 'address', 'dir', 'watersignText'];
 
         return Cliche.extend({
             pug: pug,
             options: {
                 cid: 0,
                 scroll: 0,
-                newSince: null
+                newSince: null,
             },
             create: function () {
                 this.cid = this.options.cid;
@@ -32,9 +32,11 @@ define(
                 if (!tplHist) {
                     tplHist = doT.template(document.getElementById('dothist').text);
                 }
+
                 if (!tplRegions) {
                     tplRegions = doT.template(document.getElementById('dotRegions').text);
                 }
+
                 if (!tplRegionsDiff) {
                     tplRegionsDiff = doT.template(document.getElementById('dotRegionsDiff').text);
                 }
@@ -44,12 +46,13 @@ define(
                         ko.applyBindings(globalVM, this.$dom[0]);
                         this.renderHist(data);
                     }
-                    this.show();
 
+                    this.show();
                 }, this);
             },
             show: function () {
-                var self = this;
+                const self = this;
+
                 globalVM.func.showContainer(self.$container);
 
                 self.scrollByParams();
@@ -57,6 +60,7 @@ define(
                 if (self.modal) {
                     self.modal.$curtain.addClass('showModalCurtain');
                 }
+
                 self.showing = true;
             },
             hide: function () {
@@ -73,14 +77,14 @@ define(
                 }, this);
             },
             scrollByParams: function (soft) {
-                var self = this;
-                var dom = self.$dom[0];
-                var $container = self.$container;
-                var viewHeight = $container.height();
-                var contentHeight = $container[0].scrollHeight;
-                var element;
-                var elementHeight;
-                var elementTop;
+                const self = this;
+                const dom = self.$dom[0];
+                const $container = self.$container;
+                const viewHeight = $container.height();
+                const contentHeight = $container[0].scrollHeight;
+                let element;
+                let elementHeight;
+                let elementTop;
 
                 if (self.scroll > 1) {
                     element = self.setHl(self.scroll);
@@ -95,6 +99,7 @@ define(
                         //Если высота комментария меньше высоты контейнера, позиционируем комментарий по центру контейнера
                         elementHeight = element.outerHeight();
                         elementTop = element.position().top;
+
                         if (elementHeight < viewHeight) {
                             elementTop += elementHeight / 2 - viewHeight / 2;
                         }
@@ -104,10 +109,12 @@ define(
                     // Навигируемся к первой новой записи
                     if (self.newSince > 0 && !element) {
                         element = dom.querySelector('.isnew');
+
                         if (element) {
                             elementTop = $(element).position().top - 10;
                         }
                     }
+
                     // Если на предыдцщих шагах ничего не нашли и стоит значение скроллить в конец, скроллимся
                     if (self.scroll === 1 && !element) {
                         elementTop = contentHeight;
@@ -129,34 +136,36 @@ define(
                 this.scrollByParams(true);
             },
             setHl: function (stamp) {
-                var element = this.$dom[0].querySelector('#h' + stamp);
+                const element = this.$dom[0].querySelector('#h' + stamp);
+
                 if (element) {
                     element.classList.add('hl');
                 }
+
                 return element;
             },
             renderHist: function (data) {
-                var regionsHash = data.regions;
-                var reasonsHash = data.reasons;
-                var showDiff = this.showDiff();
-                var regionsPrev;
-                var regionsArr;
-                var regionCids;
-                var regionPrev;
-                var regionCurr;
-                var regionsBase;
-                var regionsDel;
-                var regionsAdd;
-                var addHash;
-                var field;
-                var value;
-                var hist;
-                var j;
+                const regionsHash = data.regions;
+                const reasonsHash = data.reasons;
+                const showDiff = this.showDiff();
+                let regionsPrev;
+                let regionsArr;
+                let regionCids;
+                let regionPrev;
+                let regionCurr;
+                let regionsBase;
+                let regionsDel;
+                let regionsAdd;
+                let addHash;
+                let field;
+                let value;
+                let hist;
+                let j;
 
-                var newSince = this.newSince;
-                var hightlightNew = newSince > 0;
+                const newSince = this.newSince;
+                const hightlightNew = newSince > 0;
 
-                for (var i = 0; i < data.hists.length; i++) {
+                for (let i = 0; i < data.hists.length; i++) {
                     hist = data.hists[i];
 
                     // Если указано время последнего просмотра объекта и это не первая запись,
@@ -176,7 +185,6 @@ define(
                     if (!hist.values) {
                         hist.values = {};
                     } else {
-
                         if (hist.values.s !== undefined) {
                             hist.values.s = statusNums[hist.values.s];
                         }
@@ -210,6 +218,7 @@ define(
                                         if (regionPrev) {
                                             regionsDel.push(regionPrev);
                                         }
+
                                         if (regionCurr) {
                                             regionsAdd.push(regionCurr);
                                         }
@@ -219,7 +228,7 @@ define(
                                 hist.values.regions = tplRegionsDiff({
                                     base: tplRegions(regionsBase),
                                     del: tplRegions(regionsDel),
-                                    add: tplRegions(regionsAdd)
+                                    add: tplRegions(regionsAdd),
                                 });
                             } else {
                                 hist.values.regions = tplRegions(regionsArr);
@@ -238,6 +247,7 @@ define(
 
                         if (hist.add) {
                             addHash = {};
+
                             for (j = 0; j < hist.add.length; j++) {
                                 addHash[hist.add[j]] = true;
                             }
@@ -246,12 +256,13 @@ define(
                         for (j = 0; j < txtFields.length; j++) {
                             field = txtFields[j];
                             value = hist.values[field];
+
                             if (value) {
                                 // doT не умеет итерироваться по объектам, превращаем в массив
                                 hist.textValuesArr.push({
                                     field: field,
                                     val: value,
-                                    add: addHash && addHash[field]
+                                    add: addHash && addHash[field],
                                 });
                             }
                         }
@@ -265,18 +276,19 @@ define(
                     fields: fields,
                     hists: data.hists,
                     reasonsHash: reasonsHash,
-                    fDate: Utils.format.date.relative
+                    fDate: Utils.format.date.relative,
                 });
             },
             getHist: function (cb, ctx) {
-                var self = this;
+                const self = this;
+
                 self.fetchId += 1;
 
                 socket
                     .run('photo.giveObjHist', {
                         cid: self.cid,
                         fetchId: self.fetchId,
-                        showDiff: self.showDiff()
+                        showDiff: self.showDiff(),
                     }, true)
                     .then(function (result) {
                         // Проверяем что запрос не устарел
@@ -287,6 +299,7 @@ define(
                         if (result.haveDiff === true) {
                             self.haveDiff(result.haveDiff);
                         }
+
                         self.switchDiff2(result.hists.length > 4);
 
                         cb.call(ctx, null, result);
@@ -294,6 +307,6 @@ define(
                     .catch(function (err) {
                         cb.call(ctx, err);
                     });
-            }
+            },
         });
     });

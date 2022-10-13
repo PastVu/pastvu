@@ -260,6 +260,7 @@ module.exports = function (grunt) {
                         'public/js/module/comment/*.js',
                         'public/js/module/diff/*.js',
                         'public/js/module/map/*.js',
+                        'public/js/module/photo/*.js',
                     ],
                 },
             },
