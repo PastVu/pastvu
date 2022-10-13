@@ -253,6 +253,7 @@ module.exports = function (grunt) {
                         'public/js/module/common/*.js',
                         'public/js/model/*.js',
                         'public/js/*.js',
+                        'public/js/errors/*.js',
                     ],
                 },
             },
