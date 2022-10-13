@@ -78,6 +78,9 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'rend
             } else {
                 globalVM.router.navigate('/');
             }
-        }
-	});
+        },
+        getRulesUrl: function () {
+            return P.settings.docs.rulesUrl;
+        },
+    });
 });

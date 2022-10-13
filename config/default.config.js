@@ -105,4 +105,8 @@ module.exports = {
     // Interval between sitemap complete regeneration. First run - next interval after last midnight
     sitemapInterval: ms('12h'),
     sitemapGenerateOnStart: false, // First run must be on server start
+
+    docs: {
+        rulesUrl: 'https://docs.pastvu.com/rules', // Rules document location.
+    },
 };
