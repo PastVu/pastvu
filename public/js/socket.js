@@ -268,16 +268,16 @@ define(['module'], function (/* module */) {
                 nameStack.push(stackRecord);
             } else {
                 socket.ons[name] = [stackRecord];
-                manager.on(name, function (...args) {
-                    const data = _.head(args);
+                manager.on(name, function () {
+                    const data = _.head(arguments);
                     let acknowledgementCallback;
                     let acknowledgementCallbackCallResult;
-                    const acknowledgementCallbackOrigin = _.last(args);
+                    const acknowledgementCallbackOrigin = _.last(arguments);
 
                     if (_.isFunction(acknowledgementCallbackOrigin)) {
                         acknowledgementCallbackCallResult = { data: [] };
                         acknowledgementCallback = function () {
-                            acknowledgementCallbackCallResult.data = acknowledgementCallbackCallResult.data.concat(_.toArray(args));
+                            acknowledgementCallbackCallResult.data = acknowledgementCallbackCallResult.data.concat(_.toArray(arguments));
                         };
                     }
 

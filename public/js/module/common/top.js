@@ -1,15 +1,16 @@
-/*global define:true*/
 /**
  * Модель управляет верхней панелью
  */
 define(['underscore', 'Params', 'socket!', 'jquery', 'knockout', 'm/_moduleCliche', 'globalVM', 'text!tpl/common/top.pug', 'css!style/common/top', 'm/common/auth'], function (_, P, socket, $, ko, Cliche, globalVM, pug) {
     'use strict';
-    var langs = ['en', 'ru'];
+
+    const langs = ['en', 'ru'];
 
     return Cliche.extend({
         pug: pug,
         create: function () {
-            var self = this;
+            const self = this;
+
             this.auth = globalVM.repository['m/common/auth'];
             this.lang = ko.observable(P.settings.lang);
             this.langAlt = ko.observable(_.without(langs, P.settings.lang)[0]);
@@ -24,41 +25,41 @@ define(['underscore', 'Params', 'socket!', 'jquery', 'knockout', 'm/_moduleClich
                 read: function () {
                     return P.settings.REGISTRATION_ALLOWED();
                 },
-                owner: this
+                owner: this,
             });
             this.can = {
                 mod: this.co.canmod = ko.computed({
                     read: function () {
                         return this.auth.loggedIn() && this.auth.iAm.role() > 4 && this.auth.iAm.role() < 10;
                     },
-                    owner: this
+                    owner: this,
                 }).extend({ throttle: 50 }),
                 adm: this.co.canmod = ko.computed({
                     read: function () {
                         return this.auth.loggedIn() && this.auth.iAm.role() > 9;
                     },
-                    owner: this
-                }).extend({ throttle: 50 })
+                    owner: this,
+                }).extend({ throttle: 50 }),
             };
             this.profile = this.co.profile = ko.computed({
                 read: function () {
                     if (this.auth.loggedIn()) {
                         return this.auth.iAm.disp();
-                    } else {
-                        return '';
                     }
+
+                    return '';
                 },
-                owner: this
+                owner: this,
             }).extend({ throttle: 50 });
             this.profileAvatar = this.co.profileAvatar = ko.computed({
                 read: function () {
                     if (this.auth.loggedIn()) {
                         return this.auth.iAm.avatarth();
-                    } else {
-                        return '';
                     }
+
+                    return '';
                 },
-                owner: this
+                owner: this,
             });
 
             this.msg = ko.observable('');
@@ -71,7 +72,8 @@ define(['underscore', 'Params', 'socket!', 'jquery', 'knockout', 'm/_moduleClich
         },
         show: function () {
             globalVM.pb.subscribe('/top/message', function (text, type) {
-                var css = '';
+                let css = '';
+
                 switch (type) {
                     case 'error':
                         css = 'text-error';
@@ -104,13 +106,13 @@ define(['underscore', 'Params', 'socket!', 'jquery', 'knockout', 'm/_moduleClich
             this.showing = false;
         },
         routeHandler: function () {
-            var params = globalVM.router.params();
+            const params = globalVM.router.params();
 
             this.pageTitle("Retro View of Mankind's Habitat" + (params._handler === 'gallery' ? '&ensp;–&ensp;Gallery' : ''));
         },
 
         langClick: function (data, evt) {
-            var langAltShow = !this.langAltShow();
+            const langAltShow = !this.langAltShow();
 
             evt.stopPropagation();
             evt.preventDefault();
@@ -120,7 +122,7 @@ define(['underscore', 'Params', 'socket!', 'jquery', 'knockout', 'm/_moduleClich
         },
 
         langAltClick: (function () {
-            var changing;
+            let changing;
 
             return function () {
                 if (changing) {
@@ -130,13 +132,14 @@ define(['underscore', 'Params', 'socket!', 'jquery', 'knockout', 'm/_moduleClich
                 changing = true;
                 ga('send', 'event', 'lang', 'lang change');
 
-                var lang = this.langAlt();
+                const lang = this.langAlt();
+
                 this.lang();
 
                 this.lang(lang);
                 this.langAlt(this.lang());
                 socket.emit('session.langChange', { lang: lang });
             };
-        }())
+        }()),
     });
 });

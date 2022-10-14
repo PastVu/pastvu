@@ -4,30 +4,30 @@
 define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/Photo', 'model/User', 'model/storage', 'm/photo/status', 'text!tpl/main/bottomPanel.pug', 'css!style/main/bottomPanel'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, Photo, User, storage, statuses, pug) {
     'use strict';
 
-    var catsObj = {
-            photosToApprove: { name: 'Ожидают подтверждения', tpl: 'photosTpl' },
-            photos: { name: 'Новые фото', tpl: 'photosTpl' },
-            photosNoGeo: { name: 'Где это?', tpl: 'photosTpl' },
-            ratings: { name: 'Рейтинги', tpl: 'ratingsTpl' },
-            stats: { name: 'Статистика', tpl: 'statsTpl' }
-        },
-        cats = [
-            'photos',
-            'photosNoGeo',
-            'ratings',
-            'stats'
-        ],
-        catsMod = [
-            'photosToApprove'
-        ],
-        imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>'),
-        declension = {
-            user: [' пользователь', ' пользователя', ' пользователей'],
-            reg: [' зарегистрирован', ' зарегистрированых', ' зарегистрированых'],
-            photo: [' фотография', ' фотографии', ' фотографий'],
-            comment: [' комментарий', ' комментария', ' комментариев'],
-            view: [' просмотр', ' просмотра', ' просмотров']
-        };
+    const catsObj = {
+        photosToApprove: { name: 'Ожидают подтверждения', tpl: 'photosTpl' },
+        photos: { name: 'Новые фото', tpl: 'photosTpl' },
+        photosNoGeo: { name: 'Где это?', tpl: 'photosTpl' },
+        ratings: { name: 'Рейтинги', tpl: 'ratingsTpl' },
+        stats: { name: 'Статистика', tpl: 'statsTpl' },
+    };
+    const cats = [
+        'photos',
+        'photosNoGeo',
+        'ratings',
+        'stats',
+    ];
+    let catsMod = [
+        'photosToApprove',
+    ];
+    const imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
+    const declension = {
+        user: [' пользователь', ' пользователя', ' пользователей'],
+        reg: [' зарегистрирован', ' зарегистрированых', ' зарегистрированых'],
+        photo: [' фотография', ' фотографии', ' фотографий'],
+        comment: [' комментарий', ' комментария', ' комментариев'],
+        view: [' просмотр', ' просмотра', ' просмотров'],
+    };
 
     return Cliche.extend({
         pug: pug,
@@ -37,10 +37,12 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 
             this.catsObj = catsObj;
             this.cats = ko.observableArray(cats);
+
             if (this.auth.loggedIn() && this.auth.iAm.role() > 4 && catsMod.length) {
                 this.cats.concat(catsMod, true);
                 catsMod = []; //FIXME: Конкат изменяет исходный массив
             }
+
             this.catLoading = ko.observable('');
             this.catActive = ko.observable('');
             this.moreLink = ko.observable('');
@@ -51,26 +53,26 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                     day: ko.observableArray(),
                     week: ko.observableArray(),
                     all: ko.observableArray(),
-                    selected: ko.observable('day')
+                    selected: ko.observable('day'),
                 },
                 pbycomm: {
                     day: ko.observableArray(),
                     week: ko.observableArray(),
                     all: ko.observableArray(),
-                    selected: ko.observable('day')
+                    selected: ko.observable('day'),
                 },
                 ubycomm: {
                     day: ko.observableArray(),
                     week: ko.observableArray(),
                     all: ko.observableArray(),
-                    selected: ko.observable('day')
+                    selected: ko.observable('day'),
                 },
                 ubyphoto: {
                     day: ko.observableArray(),
                     week: ko.observableArray(),
                     all: ko.observableArray(),
-                    selected: ko.observable('day')
-                }
+                    selected: ko.observable('day'),
+                },
             };
             this.stats = {
                 all: {
@@ -83,12 +85,12 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                     callCount: 0,
                     cpubCount: 0,
                     cdayCount: 0,
-                    cweekCount: 0
+                    cweekCount: 0,
                 },
                 common: {
                     onall: 0,
-                    onreg: 0
-                }
+                    onreg: 0,
+                },
             };
 
             this.catClickBind = this.catClick.bind(this);
@@ -145,17 +147,17 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
         catActivate: function (success, scroll) {
             if (success) {
                 if (scroll) {
-                    var $catMenu = this.$dom.find('.catMenu'),
-                        catContentHeight = this.$dom.find('.catContent').height(),
-                        cBottom = $catMenu.offset().top + $catMenu.height() + 60,
-                        wTop = $(window).scrollTop(),
-                        wFold = $(window).height() + wTop;
+                    const $catMenu = this.$dom.find('.catMenu');
+                    const catContentHeight = this.$dom.find('.catContent').height();
+                    const cBottom = $catMenu.offset().top + $catMenu.height() + 60;
+                    const wTop = $(window).scrollTop();
+                    const wFold = $(window).height() + wTop;
 
                     if (wFold < cBottom) {
                         $(window).scrollTo('+=' + (cBottom - wFold + catContentHeight / 2 >> 0) + 'px', {
                             axis: 'y', duration: 200, onAfter: function () {
                                 this.catSetLoading();
-                            }.bind(this)
+                            }.bind(this),
                         });
                     } else {
                         this.catSetLoading();
@@ -172,12 +174,15 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
             this.catLoading('');
         },
         getNews: function (cb, ctx, scroll) {
-            var self = this;
+            const self = this;
+
             socket.run('index.giveIndexNews', undefined, true).then(function (data) {
-                var success = false;
+                let success = false;
+
                 data.news.forEach(function (news) {
                     news.ccount = news.ccount || 0;
                     news.ccount_new = news.ccount_new || 0;
+
                     if (news.notice) {
                         news.expand = true;
                     } else {
@@ -187,63 +192,73 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 
                 self.news(data.news);
                 success = true;
+
                 if (_.isFunction(cb)) {
                     cb.call(ctx, success, scroll);
                 }
             });
         },
         getPhotos: function (cb, ctx, scroll) {
-            var self = this;
+            const self = this;
+
             socket.run('photo.givePublicIndex', undefined, true).then(function (data) {
-                var success = false;
+                let success = false;
+
                 if (self.catLoading() === 'photos') {
                     self.processPhotos(data.photos, data.rhash, Photo.picFormats.m);
                     self.photos(data.photos);
                     self.moreLink('/ps/2');
                     success = true;
                 }
+
                 if (Utils.isType('function', cb)) {
                     cb.call(ctx, success, scroll);
                 }
             });
         },
         getPhotosNoGeo: function (cb, ctx, scroll) {
-            var self = this;
+            const self = this;
 
             socket.run('photo.givePublicNoGeoIndex', undefined, true).then(function (data) {
-                var success = false;
+                let success = false;
+
                 if (self.catLoading() === 'photosNoGeo') {
                     self.processPhotos(data.photos, data.rhash, Photo.picFormats.m);
                     self.photos(data.photos);
                     self.moreLink('/ps/2?f=geo!0');
                     success = true;
                 }
+
                 if (Utils.isType('function', cb)) {
                     cb.call(ctx, success, scroll);
                 }
             });
         },
         getPhotosToApprove: function (cb, ctx, scroll) {
-            var self = this;
+            const self = this;
 
             socket.run('photo.giveForApprove', { skip: 0, limit: 42 }, true).then(function (data) {
-                var success = false;
+                let success = false;
+
                 if (self.catLoading() === 'photosToApprove') {
                     self.processPhotos(data.photos, data.rhash, Photo.picProtectedFormats.m);
                     self.photos(data.photos);
                     self.moreLink('/ps/2?f=r!0_s!' + statuses.keys.READY);
                     success = true;
                 }
+
                 if (Utils.isType('function', cb)) {
                     cb.call(ctx, success, scroll);
                 }
             });
         },
         getRatings: function (cb, ctx, scroll) {
-            var success = false;
-            var self = this;
+            let success = false;
+            const self = this;
+
             socket.run('index.giveRatings', { limit: 24 }, true).then(function (data) {
-                var ratings = self.ratings;
+                const ratings = self.ratings;
+
                 if (self.catLoading() === 'ratings') {
                     ratings.pbyview.day(self.processPhotos(data.pday, data.rhash, Photo.picFormats.s, 'vdcount', declension.view));
                     ratings.pbyview.week(self.processPhotos(data.pweek, data.rhash, Photo.picFormats.s, 'vwcount', declension.view));
@@ -262,14 +277,15 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                     ratings.ubyphoto.all(self.processUsers(data.upall, 'photo', 'pcount', declension.photo));
                     success = true;
                 }
+
                 if (Utils.isType('function', cb)) {
                     cb.call(ctx, success, scroll);
                 }
             });
         },
         getStats: function (cb, ctx, scroll) {
-            var success = false;
-            var self = this;
+            let success = false;
+            const self = this;
 
             socket.run('index.giveIndexStats', undefined, true).then(function (data) {
                 if (self.catLoading() === 'stats') {
@@ -280,6 +296,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                         ', из них ' + globalVM.intl.num(data.common.onreg) + Utils.format.wordEndOfNum(data.common.onall, declension.reg);
                     success = true;
                 }
+
                 if (Utils.isType('function', cb)) {
                     cb.call(ctx, success, scroll);
                 }
@@ -287,15 +304,16 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
         },
 
         ratSelect: function (data, event) {
-            var group = $(event.target).parents('.btn-group').attr('id');
-            var id = $(event.target).attr('data-time');
+            const group = $(event.target).parents('.btn-group').attr('id');
+            const id = $(event.target).attr('data-time');
+
             this.ratings[group].selected(id);
         },
         processPhotos: function (photos, regionsHash, picFormat, numField, numFormat) {
-            var photo;
-            var j;
+            let photo;
+            let j;
 
-            for (var i = photos.length; i--;) {
+            for (let i = photos.length; i--;) {
                 photo = photos[i];
 
                 photo.sfile = picFormat + photo.file;
@@ -304,29 +322,35 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                 if (!photo.title) {
                     photo.title = 'Без названия';
                 }
+
                 if (numField && numFormat) {
                     photo.amount = globalVM.intl.num(photo[numField]) + Utils.format.wordEndOfNum(photo[numField], numFormat);
                 }
+
                 if (regionsHash && photo.rs !== undefined) {
                     for (j = photo.rs.length; j--;) {
                         photo.rs[j] = regionsHash[photo.rs[j]];
                     }
                 }
             }
+
             return photos;
         },
         processUsers: function (users, linkSection, numField, numFormat) {
-            var i = users.length;
-            var user;
+            let i = users.length;
+            let user;
+
             while (i) {
                 user = users[--i];
                 user.sfile = user.avatar ? '/_a/d/' + user.avatar : User.def.full.avatar;
                 user.link = '/u/' + user.login + (linkSection ? '/' + linkSection : '');
                 user.title = user.disp;
+
                 if (numField && numFormat) {
                     user.amount = globalVM.intl.num(user[numField]) + Utils.format.wordEndOfNum(user[numField], numFormat);
                 }
             }
+
             return users;
         },
 
@@ -334,29 +358,31 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
             event.target.parentNode.parentNode.classList.add('showPrv');
         },
         onPreviewErr: function (data, event) {
-            var $photoBox = $(event.target.parentNode),
-                parent = $photoBox[0].parentNode,
-                content = '';
+            const $photoBox = $(event.target.parentNode);
+            const parent = $photoBox[0].parentNode;
+            let content = '';
 
             event.target.style.visibility = 'hidden';
+
             if (data.conv) {
                 content = imgFailTpl({
                     style: 'margin-top:7px;padding-top:20px; background: url(/img/misc/photoConvWhite.png) 50% 0 no-repeat;',
-                    txt: 'Превью уже создается<br>пожалуйста, обновите позже'
+                    txt: 'Превью уже создается<br>пожалуйста, обновите позже',
                 });
             } else if (data.convqueue) {
                 content = imgFailTpl({
                     style: 'margin-top:7px;',
-                    txt: '<span class="glyphicon glyphicon-road"></span><br>Превью скоро будет создано'
+                    txt: '<span class="glyphicon glyphicon-road"></span><br>Превью скоро будет создано',
                 });
             } else {
                 content = imgFailTpl({
                     style: 'margin-top:7px;padding-top:25px; background: url(/img/misc/imgw.png) 50% 0 no-repeat;',
-                    txt: 'Превью недоступно'
+                    txt: 'Превью недоступно',
                 });
             }
+
             $photoBox.append(content);
             parent.classList.add('showPrv');
-        }
+        },
     });
 });

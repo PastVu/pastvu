@@ -1,4 +1,3 @@
-/*global define:true*/
 /**
  * Модель просмотра сессии
  */
@@ -30,9 +29,11 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         show: function () {
             ko.applyBindings(globalVM, this.$dom[0]);
             globalVM.func.showContainer(this.$container);
+
             if (this.modal) {
                 this.modal.$curtain.addClass('showModalCurtain');
             }
+
             this.showing = true;
         },
         hide: function () {
@@ -40,7 +41,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.showing = false;
         },
         toggleIPs: function () {
-            var newVal = !this.ipsHist();
+            const newVal = !this.ipsHist();
+
             this.ipsHist(newVal);
 
             if (newVal) {
@@ -73,6 +75,6 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 .catch(function (error) {
                     cb.call(ctx, error);
                 });
-        }
+        },
     });
 });

@@ -3,14 +3,15 @@
  */
 define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'model/Photo', 'model/storage', 'text!tpl/diff/news.pug', 'css!style/diff/news'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, Photo, storage, pug) {
     'use strict';
-    var newsDefault = {
+
+    const newsDefault = {
         pdate: new Date(),
         title: 'Нет заголовка',
         txt: '',
         ccount: 0,
         ccount_new: 0,
         nocomments: false,
-        subscr: false
+        subscr: false,
     };
 
     return Cliche.extend({
@@ -33,10 +34,11 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     ctx: this,
                     callback: function (vm) {
                         this.commentsVM = this.childModules[vm.id] = vm;
-                        // Так как при первом заходе, когда модуль еще не зареквайрен, нужно вызвать самостоятельно, а последующие будут выстреливать сразу
+                        // Так как при первом заходе, когда модуль еще не зареквайрен,
+                        // нужно вызвать самостоятельно, а последующие будут выстреливать сразу.
                         this.routeHandler();
-                    }
-                }
+                    },
+                },
             ];
 
             // Вызовется один раз в начале 700мс и в конце один раз, если за эти 700мс были другие вызовы
@@ -44,6 +46,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
             // Subscriptions
             this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandlerDebounced, this);
+
             if (!this.auth.loggedIn()) {
                 this.subscriptions.loggedIn = this.auth.loggedIn.subscribe(this.loggedInHandler, this);
             }
@@ -65,12 +68,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 ko.applyBindings(globalVM, this.$dom[0]);
                 this.binded = true;
             }
+
             this.show();
         },
 
         routeHandler: function () {
-            var cid = Number(globalVM.router.params().cid),
-                hl = globalVM.router.params().hl;
+            const cid = Number(globalVM.router.params().cid);
+            const hl = globalVM.router.params().hl;
 
             this.toComment = undefined;
             window.clearTimeout(this.scrollTimeout);
@@ -83,7 +87,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 }
             }
 
-            if (!this.news || (this.news && Utils.isType('function', this.news.cid) && this.news.cid() !== cid)) {
+            if (!this.news || this.news && Utils.isType('function', this.news.cid) && this.news.cid() !== cid) {
                 this.commentsVM.deactivate(true);
 
                 this.getNews(cid, function (data) {
@@ -91,7 +95,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     $(window).scrollTo($('body'), {
                         offset: -P.window.head, duration: 400, onAfter: function () {
                             this.commentsActivate();
-                        }.bind(this)
+                        }.bind(this),
                     });
 
                     this.makeBinding();
@@ -108,7 +112,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             delete this.subscriptions.loggedIn;
         },
         getNews: function (cid, cb, ctx) {
-            var self = this;
+            const self = this;
+
             socket.run('index.giveNewsPublic', { cid: cid }, true).then(function (data) {
                 _.defaults(data.news, newsDefault);
                 data.news.user.avatar = data.news.user.avatar ? '/_a/d/' + data.news.user.avatar :
@@ -139,11 +144,11 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     count: this.news.ccount(),
                     countNew: this.news.ccount_new(),
                     subscr: this.news.subscr(),
-                    nocomments: this.news.nocomments()
+                    nocomments: this.news.nocomments(),
                 },
                 _.defaults(options || {}, {
                     instant: !!this.toComment,
-                    checkTimeout: this.news.ccount() > 30 ? 600 : 410
+                    checkTimeout: this.news.ccount() > 30 ? 600 : 410,
                 }),
                 function () {
                     //На случай наличия параметра подсветки фрагментов или комментариев вызываем scrollTo, после окончания receive
@@ -157,6 +162,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             if (this.toComment) {
                 this.commentsVM.scrollTo(this.toComment);
             }
+
             this.toComment = undefined;
         },
 
@@ -173,6 +179,6 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         onImgLoad: function (data, event) {
             $(event.target).animate({ opacity: 1 });
             data = event = null;
-        }
+        },
     });
 });

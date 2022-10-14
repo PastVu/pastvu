@@ -1,3 +1,4 @@
+/* eslint-env jest */
 import connectDb, { waitDb } from '../controllers/connection';
 import mongoose from 'mongoose';
 import { UserSettings } from '../models/UserSettings';

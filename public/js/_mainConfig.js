@@ -1,4 +1,4 @@
-/*global requirejs:true, require:true*/
+/*global requirejs:true*/
 requirejs.config({
     baseUrl: '/js',
     urlArgs: '__=__',
@@ -8,25 +8,25 @@ requirejs.config({
     shim: {
         'highstock': {
             deps: [
-                'jquery'
+                'jquery',
             ],
-            exports: 'Highcharts'
+            exports: 'Highcharts',
         },
         'jquery-plugins/redactor/redactor.min': {
             deps: [
-                'jquery'
-            ]
+                'jquery',
+            ],
         },
         'jquery-plugins/redactor/lang/ru': {
             deps: [
-                'jquery-plugins/redactor/redactor.min'
-            ]
-        }
+                'jquery-plugins/redactor/redactor.min',
+            ],
+        },
     },
     map: {
         '*': {
-            'css': 'lib/require/plugins/require-css/css'
-        }
+            'css': 'lib/require/plugins/require-css/css',
+        },
     },
     paths: {
         'tpl': '../tpl',
@@ -76,7 +76,7 @@ requirejs.config({
         'noty.layouts': 'lib/jquery/plugins/noty/layouts',
         'noty.themes': 'lib/jquery/plugins/noty/themes',
 
-        'intl': 'intl/intl'
-    }
+        'intl': 'intl/intl',
+    },
 });
 require(['lib/JSExtensions']); //Делаем require вместо deps чтобы модуль заинлайнился во время оптимизации не в каждый модуль, а только в этот файл

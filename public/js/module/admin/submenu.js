@@ -7,24 +7,25 @@ define(['underscore', 'knockout', 'm/_moduleCliche', 'globalVM', 'text!tpl/admin
     return Cliche.extend({
         pug: pug,
         create: function () {
-            var self = this;
+            const self = this;
+
             this.auth = globalVM.repository['m/common/auth'];
 
             this.submenus = {
                 index: [
                     { name: 'Главная', href: '/admin', section: 'main' },
-                    { name: 'Новости', href: '/admin/news', section: 'news' }
+                    { name: 'Новости', href: '/admin/news', section: 'news' },
                 ],
                 map: [
-                    { name: 'Кластеры', href: '/admin/map/cluster', section: 'cluster' }
+                    { name: 'Кластеры', href: '/admin/map/cluster', section: 'cluster' },
                 ],
                 photo: [
-                    { name: 'Конвейер конвертаций', href: '/admin/photo/conveyer', section: 'conveyer' }
+                    { name: 'Конвейер конвертаций', href: '/admin/photo/conveyer', section: 'conveyer' },
                 ],
                 region: [
                     { name: 'Список и просмотр', href: '/admin/region', section: 'region' },
-                    { name: 'Проверка по точке', href: '/admin/region/check', section: 'regionCheck' }
-                ]
+                    { name: 'Проверка по точке', href: '/admin/region/check', section: 'regionCheck' },
+                ],
             };
 
             this.topmenu = ko.observable('');
@@ -33,7 +34,7 @@ define(['underscore', 'knockout', 'm/_moduleCliche', 'globalVM', 'text!tpl/admin
                 read: function () {
                     return this.submenus[this.topmenu()] || [];
                 },
-                owner: this
+                owner: this,
             });
 
             // Subscriptions
@@ -58,10 +59,10 @@ define(['underscore', 'knockout', 'm/_moduleCliche', 'globalVM', 'text!tpl/admin
             }
         },
         routeHandler: function () {
-            var params = globalVM.router.params();
+            const params = globalVM.router.params();
 
             this.topmenu(params._handler);
             this.section(params.section);
-        }
+        },
     });
 });

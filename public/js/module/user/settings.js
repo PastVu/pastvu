@@ -4,7 +4,7 @@
 define([
     'underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
     'renderer', 'noties', 'm/photo/fields', 'model/Region', 'model/User', 'model/storage',
-    'text!tpl/user/settings.pug', 'css!style/user/settings', 'bs/collapse'
+    'text!tpl/user/settings.pug', 'css!style/user/settings', 'bs/collapse',
 ], function (_, Utils, socket, P, ko, koMapping, Cliche, globalVM, renderer, noties, fields, Region, User, storage, pug) {
     function isYes(evt) {
         return !!evt.target.classList.contains('yes');
@@ -13,7 +13,7 @@ define([
     return Cliche.extend({
         pug: pug,
         options: {
-            userVM: null
+            userVM: null,
         },
         create: function () {
             this.auth = globalVM.repository['m/common/auth'];
@@ -37,14 +37,16 @@ define([
                     read: function () {
                         if (this.u.settings.r_as_home()) {
                             return 'home';
-                        } else if (!this.u.regions().length) {
-                            return 'all';
-                        } else {
-                            return 'list';
                         }
+
+                        if (!this.u.regions().length) {
+                            return 'all';
+                        }
+
+                        return 'list';
                     },
                     write: function (valNew) {
-                        var valPrev = this.regfiltercheck();
+                        const valPrev = this.regfiltercheck();
 
                         if (valNew === 'home') {
                             // Если устанавляаем фильтрацию по Домашнему региону,
@@ -56,39 +58,38 @@ define([
                                         // Обновляем регионы в текущей вкладке вручную
                                         User.vm({ regions: this.originUser.regions }, this.u, true);
                                     }
+
                                     ga('send', 'event', 'region', 'update', 'region update ' + (err ? 'error' : 'success'), 1);
                                 }, this);
                             }, this);
-                        } else {
-                            if (valNew === 'all') {
-                                this.saveFilterRegions([], function () {
-                                    this.originUser.regions = [];
-                                    // Обновляем регионы в текущей вкладке вручную
-                                    User.vm({ regions: this.originUser.regions }, this.u, true);
-                                    ga('send', 'event', 'region', 'update', 'region update success', 1);
-
-                                    // Если был установлена фильтрация по Домашнему региону, отменяем её
-                                    if (valPrev === 'home') {
-                                        this.changeSetting('r_as_home', false, true);
-                                    }
-                                }, this);
-                            } else if (valNew === 'list') {
-                                this.regionFilterSelect();
+                        } else if (valNew === 'all') {
+                            this.saveFilterRegions([], function () {
+                                this.originUser.regions = [];
+                                // Обновляем регионы в текущей вкладке вручную
+                                User.vm({ regions: this.originUser.regions }, this.u, true);
+                                ga('send', 'event', 'region', 'update', 'region update success', 1);
 
                                 // Если был установлена фильтрация по Домашнему региону, отменяем её
                                 if (valPrev === 'home') {
                                     this.changeSetting('r_as_home', false, true);
                                 }
+                            }, this);
+                        } else if (valNew === 'list') {
+                            this.regionFilterSelect();
+
+                            // Если был установлена фильтрация по Домашнему региону, отменяем её
+                            if (valPrev === 'home') {
+                                this.changeSetting('r_as_home', false, true);
                             }
                         }
                     },
-                    owner: this
+                    owner: this,
                 });
 
                 this.photo_watermark_add_sign = ko.observable();
                 this.watersigncheck = this.co.watersigncheck = ko.computed({
                     read: function () {
-                        var current = this.photo_watermark_add_sign() || this.u.settings.photo_watermark_add_sign();
+                        const current = this.photo_watermark_add_sign() || this.u.settings.photo_watermark_add_sign();
 
                         if (!current) {
                             return false;
@@ -100,19 +101,21 @@ define([
                         if (valNew === 'true') {
                             valNew = true;
                         }
+
                         // If clicked custom, but it value haven't been set yet, do not save change.
                         if (valNew !== 'custom' || this.u.watersignCustom()) {
                             this.changeSetting('photo_watermark_add_sign', valNew, true);
                         }
+
                         this.photo_watermark_add_sign(valNew);
                     },
-                    owner: this
+                    owner: this,
                 });
                 this.watersignCustomChanged = this.co.watersignCustomChanged = ko.computed({
                     read: function () {
                         return this.u.watersignCustom() !== this.originUser.watersignCustom;
                     },
-                    owner: this
+                    owner: this,
                 });
                 this.resetwatersigncheck = ko.observable('all');
                 this.resetDisallowDownloadOrigin = ko.observable('all');
@@ -143,7 +146,7 @@ define([
         },
         show: function () {
             this.$dom.find('#accordion').collapse({
-                toggle: false
+                toggle: false,
             });
             globalVM.func.showContainer(this.$container);
             this.showing = true;
@@ -167,9 +170,9 @@ define([
             this.changeSetting('photo_show_watermark', isYes(evt), true);
         },
         watersignAdd: function (data, evt) {
-            var flag = isYes(evt);
-            var watersignCustom = this.u.watersignCustom();
-            var newVal = !flag ? false : watersignCustom ? 'custom' : true;
+            const flag = isYes(evt);
+            const watersignCustom = this.u.watersignCustom();
+            const newVal = !flag ? false : watersignCustom ? 'custom' : true;
 
             this.changeSetting('photo_watermark_add_sign', newVal, true);
         },
@@ -177,11 +180,12 @@ define([
             if (!this.watersignCustomChanged()) {
                 return;
             }
+
             socket.run(
                 'profile.setWatersignCustom', { login: this.u.login(), watersign: this.u.watersignCustom() }, true
             ).then(function (result) {
-                var photoWatermarkAddSign = result.photo_watermark_add_sign || false;
-                var watersignCustom = result.watersignCustom || '';
+                const photoWatermarkAddSign = result.photo_watermark_add_sign || false;
+                const watersignCustom = result.watersignCustom || '';
 
                 this.u.settings.photo_watermark_add_sign(photoWatermarkAddSign);
                 this.originUser.settings.photo_watermark_add_sign = photoWatermarkAddSign;
@@ -197,11 +201,12 @@ define([
             this.photo_watermark_add_sign(this.u.settings.photo_watermark_add_sign());
         },
         reconvertPhotos: function () {
-            var self = this;
+            const self = this;
+
             this.reconvertingPhotos(true);
 
-            var option = this.reconvertcheck();
-            var region = option === 'region' && $('#reconvertRegion', this.$dom).val();
+            const option = this.reconvertcheck();
+            let region = option === 'region' && $('#reconvertRegion', this.$dom).val();
 
             if (region) {
                 region = Number(region) || undefined;
@@ -209,14 +214,14 @@ define([
 
             socket.run('photo.convertByUser', { login: this.u.login(), r: region }, true)
                 .then(function (result) {
-                    var warning = !result.updated;
+                    const warning = !result.updated;
 
                     noties.alert({
                         message: warning ? 'Ни одной фотографии не отправлено на конвертацию' :
                         result.updated + ' фотографий отправлено на повторную конвертацию',
                         type: warning ? 'warning' : 'success',
                         layout: 'topRight',
-                        timeout: 4000
+                        timeout: 4000,
                     });
                 })
                 .catch(_.noop)
@@ -225,12 +230,12 @@ define([
                 });
         },
         individualWatersignReset: function () {
-            var self = this;
+            const self = this;
 
             self.reconvertingPhotos(true);
 
-            var option = self.resetwatersigncheck();
-            var region = option === 'region' && $('#resetwatersignRegion', self.$dom).val();
+            const option = self.resetwatersigncheck();
+            let region = option === 'region' && $('#resetwatersignRegion', self.$dom).val();
 
             if (region) {
                 region = Number(region) || undefined;
@@ -244,14 +249,14 @@ define([
                 onOk: function (confirmer) {
                     socket.run('photo.convertByUser', { login: self.u.login(), r: region, resetIndividual: true }, true)
                         .then(function (result) {
-                            var warning = !result.updated;
+                            const warning = !result.updated;
 
                             noties.alert({
                                 message: warning ? 'Не найдено ни одной фотографии с индивидуальными настройками подписи' :
                                 'У ' + result.updated + ' фотографий сброшены индивидуальные настройки подписи и они отправлены на повторную конвертацию',
                                 type: warning ? 'warning' : 'success',
                                 layout: 'topRight',
-                                timeout: 4000
+                                timeout: 4000,
                             });
                         })
                         .catch(_.noop)
@@ -262,19 +267,19 @@ define([
                 },
                 onCancel: function () {
                     self.reconvertingPhotos(false);
-                }
+                },
             });
         },
         disallowDownloadOrigin: function (data, evt) {
             this.changeSetting('photo_disallow_download_origin', !isYes(evt), true);
         },
         individualDisallowDownloadOriginReset: function () {
-            var self = this;
+            const self = this;
 
             self.reconvertingPhotos(true);
 
-            var option = self.resetDisallowDownloadOrigin();
-            var region = option === 'region' && $('#resetDisallowDownloadOriginRegion', self.$dom).val();
+            const option = self.resetDisallowDownloadOrigin();
+            let region = option === 'region' && $('#resetDisallowDownloadOriginRegion', self.$dom).val();
 
             if (region) {
                 region = Number(region) || undefined;
@@ -288,14 +293,14 @@ define([
                 onOk: function (confirmer) {
                     socket.run('photo.resetIndividualDownloadOrigin', { login: self.u.login(), r: region }, true)
                         .then(function (result) {
-                            var warning = !result.updated;
+                            const warning = !result.updated;
 
                             noties.alert({
                                 message: warning ? 'Не найдено ни одной фотографии с индивидуальными настройками скачивания' :
                                 'У ' + result.updated + ' фотографий сброшены индивидуальные настройки скачивания',
                                 type: warning ? 'warning' : 'success',
                                 layout: 'topRight',
-                                timeout: 4000
+                                timeout: 4000,
                             });
                         })
                         .catch(_.noop)
@@ -306,7 +311,7 @@ define([
                 },
                 onCancel: function () {
                     self.reconvertingPhotos(false);
-                }
+                },
             });
         },
         autoReply: function (data, evt) {
@@ -319,14 +324,15 @@ define([
             this.changeSetting('r_f_photo_user_gal', isYes(evt), true);
         },
         photo_filter_typeHandler: function (val) {
-            var valNumbers = _.sortBy(val.map(Number)); // Stable number sort
-            var valNumbersCurrent = _.sortBy(this.u.settings.photo_filter_type());
+            let valNumbers = _.sortBy(val.map(Number)); // Stable number sort
+            const valNumbersCurrent = _.sortBy(this.u.settings.photo_filter_type());
 
             if (!_.isEqual(valNumbers, valNumbersCurrent)) {
                 if (_.isEmpty(valNumbers) && !_.isEmpty(valNumbersCurrent)) {
                     // If user takes off last checkbox, select another one
                     valNumbers = _.difference(this.vars.photo_filter_type, valNumbersCurrent);
                 }
+
                 this.changeSetting('photo_filter_type', valNumbers);
             }
         },
@@ -345,9 +351,10 @@ define([
             this.changeSetting('subscr_disable_noty', !isYes(evt), true);
         },
         changeSetting: function (key, val, checkValChange, cb, ctx) {
-            if (!this.u.settings[key] || (checkValChange && val === this.u.settings[key]())) {
+            if (!this.u.settings[key] || checkValChange && val === this.u.settings[key]()) {
                 return;
             }
+
             socket.run('profile.changeSetting', { login: this.u.login(), key: key, val: val }, true)
                 .then(function (result) {
                     this.u.settings[result.key](result.val);
@@ -431,7 +438,9 @@ define([
                 this.u.regions.remove(function (item) {
                     return item.cid() === cid;
                 });
-                var regions = koMapping.toJS(this.u.regions);
+
+                const regions = koMapping.toJS(this.u.regions);
+
                 this.saveFilterRegions(_.map(regions, 'cid'), function (/*err*/) {
                     this.originUser.regions = regions;
                     ga('send', 'event', 'region', 'update', 'photo update success', regions.length);
@@ -445,14 +454,14 @@ define([
                         this.regHomeselectVM = vm;
                     },
                     function () {
-                        var regions = this.regHomeselectVM.getSelectedRegions(['cid', 'title_local']);
+                        const regions = this.regHomeselectVM.getSelectedRegions(['cid', 'title_local']);
 
                         if (regions.length !== 1) {
                             return noties.alert({
                                 message: 'Необходимо выбрать один регион',
                                 type: 'warning',
                                 timeout: 4000,
-                                ok: true
+                                ok: true,
                             });
                         }
 
@@ -479,14 +488,14 @@ define([
                         this.regselectVM = vm;
                     },
                     function () {
-                        var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']);
+                        const regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']);
 
                         if (regions.length > 10) {
                             return noties.alert({
                                 message: 'Допускается выбирать до 10 регионов',
                                 type: 'warning',
                                 timeout: 4000,
-                                ok: true
+                                ok: true,
                             });
                         }
 
@@ -514,7 +523,7 @@ define([
                         options: {
                             min: min,
                             max: max,
-                            selectedInit: selected
+                            selectedInit: selected,
                         },
                         modal: {
                             topic: title,
@@ -529,22 +538,22 @@ define([
                                     text: 'Применить',
                                     glyphicon: 'glyphicon-ok',
                                     click: onApply,
-                                    ctx: ctx
+                                    ctx: ctx,
                                 },
-                                { css: 'btn-warning', text: 'Отмена', click: onCancel, ctx: ctx }
-                            ]
+                                { css: 'btn-warning', text: 'Отмена', click: onCancel, ctx: ctx },
+                            ],
                         },
                         callback: function (vm) {
                             this.childModules[vm.id] = vm;
                             onRender.call(ctx, vm);
-                        }.bind(this)
-                    }
+                        }.bind(this),
+                    },
                 ],
                 {
                     parent: this,
-                    level: this.level + 1
+                    level: this.level + 1,
                 }
             );
-        }
+        },
     });
 });

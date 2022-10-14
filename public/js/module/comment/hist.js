@@ -1,22 +1,22 @@
-/*global define:true*/
 /**
  * Модель истории комментария
  */
 define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/storage', 'lib/doT', 'text!tpl/comment/hist.pug', 'css!style/comment/hist'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, storage, doT, pug) {
     'use strict';
-    var tplHist,
-        changeFragTexts = {
-            f1: '<span class="glyphicon glyphicon-plus"></span> Добавлен фрагмент',
-            f2: '<span class="glyphicon glyphicon-retweet"></span> Изменен фрагмент',
-            f3: '<span class="glyphicon glyphicon-minus"></span> Удален фрагмент'
-        };
+
+    let tplHist;
+    const changeFragTexts = {
+        f1: '<span class="glyphicon glyphicon-plus"></span> Добавлен фрагмент',
+        f2: '<span class="glyphicon glyphicon-retweet"></span> Изменен фрагмент',
+        f3: '<span class="glyphicon glyphicon-minus"></span> Удален фрагмент',
+    };
 
     return Cliche.extend({
         pug: pug,
         options: {
             cid: 0,
             objCid: 0,
-            type: 'photo'
+            type: 'photo',
         },
         create: function () {
             this.cid = this.options.cid;
@@ -30,18 +30,22 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
             this.getHist(function (err, hists) {
                 if (hists && hists.length) {
-                    var link = '/' + (this.type === 'photo' ? 'p' : 'news') + '/' + this.objCid;
+                    const link = '/' + (this.type === 'photo' ? 'p' : 'news') + '/' + this.objCid;
+
                     this.$dom[0].innerHTML = tplHist({ hists: hists, fDate: Utils.format.date.relative, link: link });
                 }
+
                 this.show();
             }, this);
         },
         show: function () {
             ko.applyBindings(globalVM, this.$dom[0]);
             globalVM.func.showContainer(this.$container);
+
             if (this.modal) {
                 this.modal.$curtain.addClass('showModalCurtain');
             }
+
             this.showing = true;
         },
         hide: function () {
@@ -49,13 +53,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.showing = false;
         },
         getHist: function (cb, ctx) {
-            var self = this;
+            const self = this;
 
             socket.run('comment.giveHist', { cid: this.cid, type: this.type }, true)
                 .then(function (data) {
-                    var i = data.hists.length,
-                        hist,
-                        user;
+                    let i = data.hists.length;
+                    let hist;
+                    let user;
 
                     while (i--) {
                         hist = data.hists[i];
@@ -66,9 +70,11 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         if (hist.txt && hist.txtd) {
                             hist.showdiff = ko.observable(true);
                         }
+
                         if (hist.frag) {
                             hist.frag = changeFragTexts['f' + hist.frag];
                         }
+
                         user = hist.user;
                         user.avatar = user.avatar ? '/_a/h/' + user.avatar : '/img/caps/avatarth.png';
                     }
@@ -78,6 +84,6 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 .catch(function (error) {
                     cb.call(ctx, error);
                 });
-        }
+        },
     });
 });

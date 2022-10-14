@@ -2,21 +2,21 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
     'use strict';
 
     function getPosition(params) {
-        var layout = params.layout || 'center';
-        var animation = params.animation;
-        var modal = null;
+        const layout = params.layout || 'center';
+        let animation = params.animation;
+        let modal = null;
 
         if (animation === undefined) {
             if (layout === 'center') {
                 animation = {
                     open: 'animated fadeIn',
-                    close: 'animated fadeOut'
+                    close: 'animated fadeOut',
                 };
                 modal = true;
             } else if (layout === 'topRight') {
                 animation = {
                     open: 'animated bounceInRight',
-                    close: 'animated bounceOutRight'
+                    close: 'animated bounceOutRight',
                 };
             } else {
                 animation = false;
@@ -27,7 +27,7 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
     }
 
     function getErrorMessage(error) {
-        var message = 'Возникла ошибка';
+        let message = 'Возникла ошибка';
 
         if (!_.isEmpty(error)) {
             if (_.isString(error)) {
@@ -45,10 +45,10 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
     }
 
     function notyConfirm(params) {
-        var okClass = 'btn ' + (params.okClass || 'btn-danger');
-        var okClassSelector = '.' + okClass.trim().split(' ').join('.');
-        var cancelClass = 'btn ' + (params.cancelClass || 'btn-primary');
-        var cancelClassSelector = '.' + cancelClass.trim().split(' ').join('.');
+        const okClass = 'btn ' + (params.okClass || 'btn-danger');
+        const okClassSelector = '.' + okClass.trim().split(' ').join('.');
+        const cancelClass = 'btn ' + (params.cancelClass || 'btn-primary');
+        const cancelClassSelector = '.' + cancelClass.trim().split(' ').join('.');
 
         return window.noty({
             text: params.message,
@@ -66,23 +66,26 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
 
                         if (!params.onOk) {
                             $noty.close();
+
                             return;
                         }
 
-                        var $buttons = $noty.$buttons;
-                        var finish = function (onFinish, ctx) {
+                        const $buttons = $noty.$buttons;
+                        const finish = function (onFinish, ctx) {
                             $buttons.find(okClassSelector).remove();
+
                             return $buttons.find(cancelClassSelector)
                                 .off('click')
                                 .attr('disabled', false)
                                 .on('click', function () {
                                     $noty.close();
+
                                     if (onFinish) {
                                         onFinish.call(ctx);
                                     }
                                 });
                         };
-                        var methods = {
+                        const methods = {
                             close: function () {
                                 $noty.close();
                             },
@@ -99,13 +102,15 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
                                 if (okText) {
                                     $(okClassSelector, $buttons).text(okText);
                                 }
+
                                 if (cancelText) {
                                     $(cancelClassSelector, $buttons).text(cancelText);
                                 }
                             },
                             success: function (message, buttonText, countdown, onFinish, ctx) {
                                 this.replaceTexts(message, null, buttonText);
-                                var finishButton = finish(onFinish, ctx);
+
+                                const finishButton = finish(onFinish, ctx);
 
                                 if (_.isNumber(countdown) && countdown > 0) {
                                     finishButton.text(buttonText + ' (' + (countdown - 1) + ')');
@@ -123,7 +128,8 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
                             },
                             error: function (error, buttonText, countdown, onFinish, ctx) {
                                 this.replaceTexts(getErrorMessage(error), null, buttonText);
-                                var finishButton = finish(onFinish, ctx);
+
+                                const finishButton = finish(onFinish, ctx);
 
                                 if (_.isNumber(countdown) && countdown > 0) {
                                     finishButton.text(buttonText + ' (' + (countdown - 1) + ')');
@@ -138,32 +144,33 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
                                         }
                                     );
                                 }
-                            }
+                            },
                         };
 
                         params.onOk.call(params.ctx, methods);
-                    }
+                    },
                 },
                 {
                     addClass: cancelClass, text: params.cancelText || 'Отмена',
                     onClick: function ($noty) {
                         $noty.close();
+
                         if (params.onCancel) {
                             params.onCancel.call(params.ctx);
                         }
-                    }
-                }
-            ]
+                    },
+                },
+            ],
         });
     }
 
     function notyAlert(params) {
-        var type = params.type || 'confirm';
-        var okText = params.text || 'Ok';
-        var okClass = 'btn ';
-        var countdown = params.countdown > 0 ? params.countdown : null;
-        var timeout = null;
-        var buttons = null;
+        const type = params.type || 'confirm';
+        const okText = params.text || 'Ok';
+        let okClass = 'btn ';
+        const countdown = params.countdown > 0 ? params.countdown : null;
+        let timeout = null;
+        let buttons = null;
 
         if (!countdown) {
             if (params.timeout !== undefined) {
@@ -192,25 +199,26 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
                     // this = button element, $noty = $noty element
 
                     $noty.close();
+
                     if (params.onOk) {
                         params.onOk.call(params.ctx);
                     }
-                }
+                },
             }];
         } else if (params.buttons) {
             buttons = params.buttons;
         }
 
-        var $noty = window.noty(_.assign({
+        const $noty = window.noty(_.assign({
             text: params.message,
             timeout: timeout,
             type: params.type || 'confirm',
             force: true,
-            buttons: buttons
+            buttons: buttons,
         }, getPosition(params), params.override));
 
         if (params.ok && (countdown || timeout)) {
-            var okButton = $('.btn', $noty.$bar);
+            const okButton = $('.btn', $noty.$bar);
 
             if (countdown) {
                 okButton.text(okText + ' (' + (countdown - 1) + ')');
@@ -235,16 +243,17 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
         if (!params) {
             params = {};
         }
+
         notyAlert({
             message: getErrorMessage(error),
             type: 'error', timeout: params.timeout || 120000,
-            ok: true, text: 'Закрыть'
+            ok: true, text: 'Закрыть',
         });
     }
 
     return {
         alert: notyAlert,
         error: notyError,
-        confirm: notyConfirm
+        confirm: notyConfirm,
     };
 });

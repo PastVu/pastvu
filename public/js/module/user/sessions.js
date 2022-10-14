@@ -4,13 +4,12 @@
 define([
     'underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
     'renderer', 'noties', 'model/User', 'model/storage',
-    'text!tpl/user/sessions.pug', 'css!style/user/sessions', 'bs/collapse'
+    'text!tpl/user/sessions.pug', 'css!style/user/sessions', 'bs/collapse',
 ], function (_, Utils, socket, P, ko, koMapping, Cliche, globalVM, renderer, noties, User, storage, pug) {
-
     return Cliche.extend({
         pug: pug,
         options: {
-            userVM: null
+            userVM: null,
         },
         create: function () {
             this.auth = globalVM.repository['m/common/auth'];
@@ -43,7 +42,7 @@ define([
         },
         show: function () {
             this.$dom.find('#accordion').collapse({
-                toggle: false
+                toggle: false,
             });
             globalVM.func.showContainer(this.$container);
             this.showing = true;
@@ -54,7 +53,7 @@ define([
             this.showing = false;
         },
 
-        applySessions(sessions) {
+        applySessions: function (sessions) {
             this.onlines(sessions.reduce(function (result, session) {
                 if (session.isCurrent) {
                     result.unshift(session);
@@ -76,7 +75,7 @@ define([
                 this.nextGetSessionTimeout = null;
             }
 
-            socket.run('session.giveUserSessions', {login: this.u.login(), withArchive: this.archivedShow()}, true)
+            socket.run('session.giveUserSessions', { login: this.u.login(), withArchive: this.archivedShow() }, true)
                 .then(function (result) {
                     this.applySessions(result.sessions);
 
@@ -96,7 +95,7 @@ define([
                 }.bind(this));
         },
 
-        toggleArchive() {
+        toggleArchive: function () {
             if (this.archivedFetching()) {
                 return;
             }
@@ -115,14 +114,14 @@ define([
         },
 
         handleSessionDestroy: function (data, evt) {
-            var key = data.key;
+            const key = data.key;
 
             evt.stopPropagation();
             clearTimeout(this.nextGetSessionTimeout);
             this.nextGetSessionTimeout = null;
             this.removing.push(key);
 
-            socket.run('session.destroyUserSession', { login: this.u.login(), key }, true)
+            socket.run('session.destroyUserSession', { login: this.u.login(), key: key }, true)
                 .then(function (result) {
                     this.applySessions(result.sessions);
 
@@ -134,7 +133,7 @@ define([
                 }.bind(this))
                 .finally(function () {
                     this.removing.remove(key);
-                }.bind(this))
+                }.bind(this));
         },
 
         handleShowSession: function (key, archive, online) {
@@ -152,18 +151,18 @@ define([
                                 curtainClick: { click: this.handleCloseSession, ctx: this },
                                 offIcon: { text: 'Закрыть', click: this.handleCloseSession, ctx: this },
                                 btns: [
-                                    { css: 'btn-primary', text: 'Закрыть', click: this.handleCloseSession, ctx: this }
-                                ]
+                                    { css: 'btn-primary', text: 'Закрыть', click: this.handleCloseSession, ctx: this },
+                                ],
                             },
                             callback: function (vm) {
                                 this.detailVM = this.childModules[vm.id] = vm;
                                 ga('send', 'event', 'user', 'session');
-                            }.bind(this)
-                        }
+                            }.bind(this),
+                        },
                     ],
                     {
                         parent: this,
-                        level: this.level + 2
+                        level: this.level + 2,
                     }
                 );
             }
