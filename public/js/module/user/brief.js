@@ -4,23 +4,23 @@
  */
 define([
     'underscore', 'Params', 'knockout', 'socket!', 'm/_moduleCliche', 'globalVM', 'model/storage', 'model/User',
-    'noties', 'text!tpl/user/brief.pug', 'css!style/user/brief'
+    'noties', 'text!tpl/user/brief.pug', 'css!style/user/brief',
 ], function (_, P, ko, socket, Cliche, globalVM, storage, User, noties, pug) {
     'use strict';
 
-	var mess = {
-		ftype: 'File type does not correspond site rules',
-		fmax: 'File is bigger then allowed',
-		fmin: 'File is too small',
-		fpx: 'According the rules, image size must be at least 100px for each sides',
-		finvalid: 'The file has not passed validation' //Сообщение по умолчанию для валидации
-	};
+    const mess = {
+        ftype: 'File type does not correspond site rules',
+        fmax: 'File is bigger then allowed',
+        fmin: 'File is too small',
+        fpx: 'According the rules, image size must be at least 100px for each sides',
+        finvalid: 'The file has not passed validation', //Сообщение по умолчанию для валидации
+    };
 
     return Cliche.extend({
         pug: pug,
         options: {
             userVM: null,
-            userLogin: ''
+            userLogin: '',
         },
         create: function () {
             this.userInited = false;
@@ -38,11 +38,13 @@ define([
                 this.updateUserDepends();
                 this.makeBinding();
             } else {
-                this.options.userLogin = this.options.userLogin || globalVM.router.params().user || (this.auth.loggedIn() && this.auth.iAm.login());
+                this.options.userLogin = this.options.userLogin || globalVM.router.params().user || this.auth.loggedIn() && this.auth.iAm.login();
+
                 if (this.options.userLogin) {
                     this.updateUser(this.options.userLogin);
                 }
             }
+
             this.subscriptions.userChange = undefined;
         },
         show: function () {
@@ -62,11 +64,13 @@ define([
                         this.subscriptions.userChange.dispose();
                         delete this.subscriptions.userChange;
                     }
+
                     if (this.auth.loggedIn() && data.vm.login() === this.auth.iAm.login()) {
                         this.subscriptions.userChange = data.vm._v_.subscribe(function () {
                             this.updateUserVM(login);
                         }, this);
                     }
+
                     this.updateUserVM(login);
 
                     if (!this.userInited) {
@@ -80,12 +84,12 @@ define([
             this.updateUserDepends();
         },
         updateUserDepends: function () {
-            this.rc(this.user.role() > 9 ? 'adm' : (this.user.role() > 4 ? 'mod' : ''));
-            this.rn(this.user.role() > 9 ? '[Administrator]' : (this.user.role() > 4 ? '[Moderator]' : ''));
+            this.rc(this.user.role() > 9 ? 'adm' : this.user.role() > 4 ? 'mod' : '');
+            this.rn(this.user.role() > 9 ? '[Administrator]' : this.user.role() > 4 ? '[Moderator]' : '');
         },
         makeBinding: function () {
             this.can_pm = this.co.can_pm = ko.computed(function () {
-                return this.auth.loggedIn() && (this.auth.iAm.login() !== this.user.login());
+                return this.auth.loggedIn() && this.auth.iAm.login() !== this.user.login();
             }, this);
 
             this.avaExists = this.co.avaExists = ko.computed(function () {
@@ -102,8 +106,8 @@ define([
         },
 
         avaActionToggle: function (vm, e) {
-            var currentStatus = this.avaction(),
-                event = e || vm; //Среагировав на клик vm будет событием
+            const currentStatus = this.avaction();
+            const event = e || vm; //Среагировав на клик vm будет событием
 
             if (currentStatus) {
                 this.avaUploadDestroy();
@@ -122,20 +126,23 @@ define([
                         //add: this.avaAdd.bind(this),
                         submit: this.avaSubmit.bind(this),
                         done: this.avaDone.bind(this),
-                        fail: this.avaFail.bind(this)
+                        fail: this.avaFail.bind(this),
                     });
                     $(document).on('click', this.avaActionToggleBind);
                 }.bind(this));
             }
+
             if (event.stopPropagation) {
                 event.stopPropagation();
             }
+
             return false;
         },
         avaUploadDestroy: function () {
             if (this.$fileupload && this.$fileupload.fileupload) {
                 this.$dom.find('.avaInput').fileupload('destroy');
             }
+
             delete this.$fileupload;
             $(document).off('click', this.avaActionToggleBind);
         },
@@ -143,11 +150,13 @@ define([
             if (e.stopPropagation) {
                 e.stopPropagation();
             }
+
             //Генерируем клик по инпуту, выключив перед этим клик по документу,
             //а потом опять его включив, чтобы не сработал его хендлер и не закрыл кнопки
             $(document).off('click', this.avaActionToggleBind);
             this.$dom.find('.avaInput').trigger('click');
             $(document).on('click', this.avaActionToggleBind);
+
             return false;
         },
 
@@ -155,12 +164,12 @@ define([
             this.avaexe(true);
         },
         avaDone: function (e, data) {
-            var receivedFile = (data && data.result && data.result.files || [])[0];
+            const receivedFile = (data && data.result && data.result.files || [])[0];
 
             if (receivedFile && receivedFile.file) {
                 if (receivedFile.error) {
                     noties.error({
-                        message: mess[receivedFile.error] || mess.finvalid || 'Failed to load avatar'
+                        message: mess[receivedFile.error] || mess.finvalid || 'Failed to load avatar',
                     });
                     this.avaexe(false);
                     ga('send', 'event', 'avatar', 'upload', 'avatar upload error');
@@ -171,18 +180,20 @@ define([
                             login: this.user.login(),
                             file: receivedFile.file,
                             mime: receivedFile.type,
-                            size: receivedFile.size
+                            size: receivedFile.size,
                         },
                         true
                     ).then(function (result) {
                         if (this.user.login() !== this.auth.iAm.login()) {
                             // Если меняем не себе, обновляем модель вручную. Себе обновления пришлет _session
-                            var origin = storage.userImmediate(this.user.login()).origin;
+                            const origin = storage.userImmediate(this.user.login()).origin;
+
                             origin.avatar = '/_a/d/' + result.avatar;
                             origin.avatarth = '/_a/h/' + result.avatar;
                             this.user.avatar(origin.avatar);
                             this.user.avatarth(origin.avatarth);
                         }
+
                         ga('send', 'event', 'avatar', 'upload', 'avatar upload success');
 
                         this.avaexe(false);
@@ -192,7 +203,7 @@ define([
         },
         avaFail: function (e, data) {
             noties.error({
-                message: data && data.message || 'Failed to load avatar'
+                message: data && data.message || 'Failed to load avatar',
             });
             this.avaexe(false);
         },
@@ -203,12 +214,14 @@ define([
                 .then(function () {
                     if (this.user.login() !== this.auth.iAm.login()) {
                         // Если меняем не себе, обновляем модель вручную. Себе обновления пришлет _session
-                        var origin = storage.userImmediate(this.user.login()).origin;
+                        const origin = storage.userImmediate(this.user.login()).origin;
+
                         origin.avatar = User.def.full.avatar;
                         origin.avatarth = User.def.full.avatarth;
                         this.user.avatar(origin.avatar);
                         this.user.avatarth(origin.avatarth);
                     }
+
                     ga('send', 'event', 'avatar', 'delete', 'avatar delete');
 
                     this.avaexe(false);
@@ -217,6 +230,7 @@ define([
             if (e.stopPropagation) {
                 e.stopPropagation();
             }
+
             return false;
         },
 
@@ -225,6 +239,6 @@ define([
         },
         onAvaError: function (data, event) {
             $(event.target).attr('src', '/img/caps/avatar.png');
-        }
+        },
     });
 });

@@ -3,12 +3,10 @@ module.exports = {
     'parser': '@babel/eslint-parser',
 
     'env': {
-        'amd': true,
         'es6': true,
         'node': true,
         'browser': true,
         'serviceworker': true,
-        'jest/globals': true,
     },
 
     'parserOptions': {
@@ -25,6 +23,7 @@ module.exports = {
 
     'globals': {
         '__DEV__': 'readonly',
+        'ga': 'readonly',
     },
 
     'plugins': [
@@ -519,13 +518,13 @@ module.exports = {
         'max-len': [2, {
             'code': 140, // The character count to use whenever a tab character is encountered
             'comments': 140, // Maximum line length for comments; defaults to value of code
-            'tabWidth': 2, // The character count to use whenever a tab character is encountered
             'ignoreUrls': true, // Ignores lines that contain a URL
             'ignoreStrings': true, // Ignores lines that contain a double-quoted or single-quoted string
             'ignoreComments': false, // Ignores all trailing comments and comments on their own line
             'ignoreTrailingComments': true, // Ignores only trailing comments
             'ignoreTemplateLiterals': true, // Ignores lines that contain a template literal
             'ignoreRegExpLiterals': true, // Ignores lines that contain a RegExp literal
+            'ignorePattern': '^\\s*if\\s*\\(', // Ignores if statements.
         }],
         // enforce a maximum file length
         'max-lines': [0, { 'max': 300, 'skipBlankLines': true, 'skipComments': true }],
@@ -685,8 +684,12 @@ module.exports = {
     },
     'overrides': [
         {
-            // Old-school rules for public code.
+            // Old-school rules for ES5 public code.
             'files': ['public/js/**/*.js'],
+            'env': {
+                'jquery': true,
+                'amd': true,
+            },
             'rules': {
                 // no complains about using function for callback.
                 'prefer-arrow-callback': 0,
@@ -694,13 +697,19 @@ module.exports = {
                 'object-shorthand': [2, 'consistent'],
                 // don't complain about private members of object
                 'no-underscore-dangle': 0,
+                // No rest or spread
+                'prefer-spread': 0,
+                'prefer-rest-params': 0,
             },
         },
         {
             // eslint-plugin-jest rules are defined via overrides to apply
             // them to test files only.
-            'files': ['**/__tests__/*.js'],
+            'files': ['**/__tests__/*.js', '**/__mocks__/*.js'],
             'plugins': ['jest'],
+            'env': {
+                'jest/globals': true,
+            },
             'extends': [
                 'plugin:jest/all',
                 'plugin:jest-formatting/strict',

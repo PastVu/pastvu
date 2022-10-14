@@ -5,12 +5,12 @@
  */
 define([
     'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM',
-    'model/storage', 'noties', 'text!tpl/admin/regionList.pug', 'css!style/admin/regionList'
+    'model/storage', 'noties', 'text!tpl/admin/regionList.pug', 'css!style/admin/regionList',
 ], function (_, $, Utils, socket, P, ko, Cliche, globalVM, storage, noties, pug) {
     'use strict';
 
-    var collator = new Intl.Collator('en', { numeric: true, sensitivity: 'base' });
-    var months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const collator = new Intl.Collator('en', { numeric: true, sensitivity: 'base' });
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
     return Cliche.extend({
         pug: pug,
@@ -44,7 +44,8 @@ define([
         scrolltoHighLight: function () {
             if (this.reallyHL) {
                 window.setTimeout(function () {
-                    var element = this.$dom.find('.lirow.hl');
+                    const element = this.$dom.find('.lirow.hl');
+
                     if (element && element.length) {
                         $(window).scrollTo(this.$dom.find('.lirow.hl'), { offset: -P.window.head - 8, duration: 400 });
                     }
@@ -81,7 +82,7 @@ define([
             this.scrolltoHighLight();
         },
         handleSortChange: function (val) {
-            var mode = this.mode();
+            const mode = this.mode();
 
             if (mode === 'inheritence') {
                 this.sortInheritanceMode();
@@ -93,7 +94,7 @@ define([
             this.scrolltoHighLight();
         },
         sortInheritanceMode: function () {
-            var sort = this.sort();
+            const sort = this.sort();
 
             (function recursiveSort(arr) {
                 arr.sort(function (a, b) {
@@ -101,18 +102,19 @@ define([
                 });
 
                 arr = arr();
-                for (var i = 0; i < arr.length; i++) {
+
+                for (let i = 0; i < arr.length; i++) {
                     recursiveSort(arr[i].regions);
                 }
             }(this.regions));
         },
         treeBuild: function (arr) {
-            var i = 0;
-            var len = arr.length;
-            var hash = {};
-            var region;
-            var results = [];
-            var cidHL = Number(globalVM.router.params().hl);
+            let i = 0;
+            const len = arr.length;
+            const hash = {};
+            let region;
+            const results = [];
+            const cidHL = Number(globalVM.router.params().hl);
 
             this.reallyHL = false;
 
@@ -126,15 +128,17 @@ define([
             });
 
             function incrementParentsChildLen(region, deepestLevel) {
-                var parentRegion = region.parent;
-                var parentChildsArrPosition = deepestLevel - parentRegion.level - 1;
+                const parentRegion = region.parent;
+                const parentChildsArrPosition = deepestLevel - parentRegion.level - 1;
 
                 //Если открыт дочерний, надо открыть и родителя
                 if (region.opened()) {
                     parentRegion.opened(true);
                 }
+
                 parentRegion.childLenAll += 1;
                 parentRegion.childLenArr[parentChildsArrPosition] = -~parentRegion.childLenArr[parentChildsArrPosition];
+
                 if (parentRegion.parent) {
                     incrementParentsChildLen(parentRegion, deepestLevel);
                 }
@@ -144,18 +148,22 @@ define([
                 region = arr[i];
                 region.regions = ko.observableArray();
                 region.cdateDate = new Date(region.cdate);
+
                 if (region.udate) {
                     region.udateDate = new Date(region.udate);
                 }
+
                 if (region.gdate) {
                     region.gdateDate = new Date(region.gdate);
                 }
+
                 region.level = region.parents.length;
                 region.childLen = 0; //Количество непосредственных потомков
                 region.childLenAll = 0; //Количество всех потомков
                 region.childLenArr = [0]; //Массив количеств потомков
                 region.hl = cidHL === region.cid; //Подсветка региона по переданному параметру
                 region.opened = ko.observable(region.hl); //Подсвеченный регион должен быть открыт
+
                 if (region.level) {
                     region.parent = hash[region.parents[region.level - 1]];
                     region.parent.regions.push(region);
@@ -164,40 +172,47 @@ define([
                 } else {
                     results.push(region);
                 }
+
                 if (region.hl) {
                     this.reallyHL = true;
                 }
+
                 hash[region.cid] = region;
             }
 
             return results;
         },
         treeBuildDate: function (field) {
-            var date;
-            var year;
-            var month;
-            var region;
-            var result = {};
-            var fieldDate = field + 'Date';
+            let date;
+            let year;
+            let month;
+            let region;
+            const result = {};
+            const fieldDate = field + 'Date';
 
-            var sort = this.sort();
-            var regions = this.regionsFlat.slice();
+            const sort = this.sort();
+            const regions = this.regionsFlat.slice();
+
             this.dateItemsFlat = [];
 
             // Sort by given date, undefined values to the end
             regions.sort(function (a, b) {
-                var aval = a[field];
+                const aval = a[field];
+
                 if (!aval) {
                     return sort;
                 }
-                var bval = b[field];
+
+                const bval = b[field];
+
                 if (!bval) {
                     return -sort;
                 }
+
                 return aval > bval ? sort : -sort;
             });
 
-            for (var i = 0; i < regions.length; i++) {
+            for (let i = 0; i < regions.length; i++) {
                 region = regions[i];
 
                 if (region[field]) {
@@ -210,6 +225,7 @@ define([
                         result[year] = { sort: year, title: year, count: 0, children: {}, opened: ko.observable(false), level: 0 };
                         this.dateItemsFlat.push(result[year]);
                     }
+
                     if (!result[year].children[month]) {
                         result[year].children[month] = { sort: month, title: months[month], count: 0, regions: [], opened: ko.observable(false), level: 1 };
                         this.dateItemsFlat.push(result[year].children[month]);
@@ -231,6 +247,7 @@ define([
 
                     result.no.count++;
                     result.no.regions.push(region);
+
                     if (region.hl) {
                         result.no.opened(true);
                     }
@@ -244,7 +261,6 @@ define([
                     if (item.children) {
                         item.children = toArray(item.children);
                     }
-
                 }, []).sort(function (a, b) {
                     return a.sort > b.sort ? sort : -sort;
                 });
@@ -262,14 +278,15 @@ define([
             this.collapseToggleAll(false);
         },
         collapseToggleAll: function (expand) {
-            var items = this.mode() === 'inheritence' ? this.regionsFlat : this.dateItemsFlat;
-            for (var i = items.length - 1; i >= 0; i--) {
+            const items = this.mode() === 'inheritence' ? this.regionsFlat : this.dateItemsFlat;
+
+            for (let i = items.length - 1; i >= 0; i--) {
                 items[i].opened(expand);
             }
         },
 
         recalcStats: function () {
-            var that = this;
+            const that = this;
 
             noties.confirm({
                 message: 'Перерасчет статистики регионов займет ~5 минут. Продолжить?',
@@ -280,7 +297,7 @@ define([
 
                     socket.run('region.recalcStatistics', {})
                         .then(function (data) {
-                            var msg;
+                            let msg;
 
                             if (data.running) {
                                 msg = 'В данный момент статистика уже пересчитывается';

@@ -4,19 +4,19 @@ require([
     'domReady!', 'jquery', 'Browser', 'Utils', 'socket!', 'underscore', 'knockout', 'moment',
     'globalVM', 'Params', 'renderer', 'router', 'model/Photo', 'model/User', 'noties',
     'text!tpl/appMain.pug', 'css!style/appMain', 'momentlang/ru', 'bs/transition', 'bs/popover',
-    'knockout.extends', 'noty', 'noty.layouts', 'noty.themes/pastvu', 'jquery-plugins/scrollto'
+    'knockout.extends', 'noty', 'noty.layouts', 'noty.themes/pastvu', 'jquery-plugins/scrollto',
 ], function (domReady, $, Browser, Utils, socket, _, ko, moment, globalVM, P, renderer, router, Photo, User, noties, html) {
     'use strict';
 
     Utils.title.setPostfix('Retro photos');
 
-    var routerDeferred = $.Deferred();
+    const routerDeferred = $.Deferred();
     var routerAnatomy = {
         globalModules: {
             modules: [
                 { module: 'm/common/auth', container: '#auth', global: true },
                 { module: 'm/common/top', container: '#topContainer', global: true },
-                { module: 'm/common/foot', container: '#footContainer', global: true }
+                { module: 'm/common/foot', container: '#footContainer', global: true },
             ],
             options: {
                 parent: globalVM,
@@ -24,8 +24,8 @@ require([
                 callback: function (auth, top) {
                     top.show();
                     routerDeferred.resolve();
-                }
-            }
+                },
+            },
         },
         routes: [
             { route: /^\/?$/, handler: 'index' },
@@ -35,7 +35,7 @@ require([
             { route: /^\/news(?:\/([0-9]{1,5}))?\/?$/, handler: 'news' },
             { route: /^\/photoUpload\/?$/, handler: 'photoUpload' },
             { route: /^\/(about)\/?$/, handler: 'about' },
-            { route: /^\/confirm\/(\w+)\/?$/, handler: 'confirm' }
+            { route: /^\/confirm\/(\w+)\/?$/, handler: 'confirm' },
         ],
         handlers: {
             index: function (qparams) {
@@ -44,20 +44,22 @@ require([
 
                 renderer(
                     [
-                        { module: 'm/main/mainPage', container: '#bodyContainer' }
+                        { module: 'm/main/mainPage', container: '#bodyContainer' },
                     ]
                 );
             },
             photo: function (cid, qparams) {
                 cid = Number(cid);
+
                 if (!cid) {
                     return globalVM.router.navigate('/ps');
                 }
+
                 router.params(_.assign({ cid: cid, _handler: 'photo' }, qparams));
                 ga('set', 'page', '/p' + (cid ? '/' + cid : ''));
                 renderer(
                     [
-                        { module: 'm/photo/photo', container: '#bodyContainer' }
+                        { module: 'm/photo/photo', container: '#bodyContainer' },
                     ]
                 );
             },
@@ -66,29 +68,32 @@ require([
                 ga('set', 'page', '/ps' + (page ? '/' + page : ''));
                 renderer(
                     [
-                        { module: 'm/photo/gallery', container: '#bodyContainer', options: { } }
+                        { module: 'm/photo/gallery', container: '#bodyContainer', options: { } },
                     ]
                 );
             },
             userPage: function (login, section, page, qparams) {
-                var auth = globalVM.repository['m/common/auth'];
+                const auth = globalVM.repository['m/common/auth'];
+
                 if (!login && !auth.loggedIn()) {
                     return globalVM.router.navigate('/');
                 }
+
                 if (!section) {
                     section = 'profile';
                 }
+
                 router.params(_.assign({
                     user: login,
                     section: section,
                     page: page,
-                    _handler: 'profile'
+                    _handler: 'profile',
                 }, qparams));
 
                 ga('set', 'page', '/u' + (login ? '/' + login + (section ? '/' + section : '') : ''));
                 renderer(
                     [
-                        { module: 'm/user/userPage', container: '#bodyContainer' }
+                        { module: 'm/user/userPage', container: '#bodyContainer' },
                     ]
                 );
             },
@@ -98,13 +103,13 @@ require([
                 ga('set', 'page', '/photoUpload');
                 renderer(
                     [
-                        { module: 'm/user/userPage', container: '#bodyContainer' }
+                        { module: 'm/user/userPage', container: '#bodyContainer' },
                     ]
                 );
             },
             about: function (section) {
-                var params = router.params();
-                var footParams = {};
+                const params = router.params();
+                const footParams = {};
 
                 footParams[section] = true;
 
@@ -116,18 +121,20 @@ require([
             },
             news: function (cid, qparams) {
                 cid = Number(cid);
-                var mName = cid ? 'm/diff/news' : 'm/diff/newsList';
+
+                const mName = cid ? 'm/diff/news' : 'm/diff/newsList';
 
                 router.params(_.assign({ cid: cid, _handler: 'news' }, qparams));
                 ga('set', 'page', '/news' + (cid ? '/' + cid : ''));
                 renderer(
                     [
-                        { module: mName, container: '#bodyContainer' }
+                        { module: mName, container: '#bodyContainer' },
                     ]
                 );
             },
             confirm: function (key, qparams) {
-                var auth = globalVM.repository['m/common/auth'];
+                const auth = globalVM.repository['m/common/auth'];
+
                 router.params(_.assign({ key: key, _handler: 'confirm' }, qparams));
 
                 socket.run('auth.checkConfirm', { key: key })
@@ -147,7 +154,7 @@ require([
                                 okClass: 'btn-success',
                                 onOk: function () {
                                     globalVM.router.navigate('/');
-                                }
+                                },
                             });
                         } else if (data.type === 'authPassChange' && data.login) {
                             auth.showPassChangeRecall(data, key, function (/*result*/) {
@@ -159,8 +166,8 @@ require([
                         console.error('checkConfirmResult', error);
                         globalVM.router.navigate('/');
                     });
-            }
-        }
+            },
+        },
     };
 
     moment.locale('en');
@@ -171,9 +178,11 @@ require([
     globalVM.router = router.init(routerAnatomy);
     $.when(routerDeferred.promise()).then(function () {
         router.start();
+
         // App info in console.
         const string = `PastVu App v${P.settings.version()} loaded. Bug reports and contribs are welcome at https://github.com/PastVu/pastvu`;
-        console.log("%c ✪ %c" + string, "color: #E07C79; font-size: 1.5em;", "color: #3585F7; font-family: monospace;");
+
+        console.log('%c ✪ %c' + string, 'color: #E07C79; font-size: 1.5em;', 'color: #3585F7; font-family: monospace;');
     });
     // window.appRouter = globalVM.router;
     // window.glob = globalVM;

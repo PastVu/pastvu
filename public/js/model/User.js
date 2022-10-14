@@ -1,5 +1,5 @@
 define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params', 'model/Region'], function ($, _, Utils, ko, ko_mapping, P, Region) {
-    var defaults = {
+    const defaults = {
         base: {
             login: 'anonymous',
 
@@ -9,7 +9,7 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params
 
             ranks: [],
 
-            online: false
+            online: false,
         },
         middle: {
             settings: {},
@@ -55,8 +55,8 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params
             ccount: 0,
             dateFormat: 'dd.mm.yyyy',
 
-            _v_: 0
-        }
+            _v_: 0,
+        },
     };
 
     _.assign(defaults.middle, defaults.base);
@@ -64,10 +64,11 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params
 
     /**
      * Фабрика. Из входящих данных создает полноценный объект, в котором недостающие поля заполнены дефолтными значениями
+     *
      * @param origin входящий объект
      * @param defType название дефолтного объекта для сляния
      * @param customDefaults собственные свойства, заменяющие аналогичные в дефолтном объекте
-     * @return {*}
+     * @returns {*}
      */
     function factory(origin, defType, customDefaults) {
         origin = origin || {};
@@ -80,6 +81,7 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params
             origin.avatarth = '/_a/h/' + origin.ava;
             origin.avatar = '/_a/d/' + origin.ava;
         }
+
         if (!origin.disp) {
             origin.disp = origin.login;
         }
@@ -100,13 +102,16 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params
     function vmCreate(data) {
         delete data.fullname; // удаляем, так как во viewmodel это будет computed
 
-        var vm = ko_mapping.fromJS(data);
+        const vm = ko_mapping.fromJS(data);
+
         vmAdditional(vm);
+
         return vm;
     }
 
     /**
      * Расширение для модели
+     *
      * @param vm ViewModel
      */
     function vmAdditional(/*vm*/) {
@@ -115,20 +120,23 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params
     /**
      * Создает из объекта viewmodel
      * если указана текущая viewmodel, то обновляет её новыми данными
+     *
      * @param data данные
      * @param vmExist существующая viewmodel
      * @param withoutFactory флаг, указывающий что не надо применять к данным фабрику
-     * @return {*}
+     * @returns {*}
      */
     function vm(data, vmExist, withoutFactory) {
         if (!withoutFactory) {
             data = factory(data, 'full');
         }
+
         if (!vmExist) {
             vmExist = vmCreate(data);
         } else {
             ko_mapping.fromJS(data, vmExist);
         }
+
         return vmExist;
     }
 

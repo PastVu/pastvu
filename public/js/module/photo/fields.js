@@ -16,7 +16,7 @@ define(['m/photo/status'], function (statuses) {
         dir: 'Shooting direction',
         typeVals: {
             1: 'Photograph',
-            2: 'Painting'
+            2: 'Painting',
         },
         types: ['1', '2'],
         dirVals: {
@@ -28,7 +28,7 @@ define(['m/photo/status'], function (statuses) {
             sw: 'Southwest',
             w: 'West',
             nw: 'Northwest',
-            aero: 'Aero/Satellite'
+            aero: 'Aero/Satellite',
         },
         dirValsArr: ['w', 'nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'aero'],
         watersign: {
@@ -37,7 +37,7 @@ define(['m/photo/status'], function (statuses) {
             'individual': 'Individually',
             'option': 'Add text to picture\'s watermark',
             'default': 'System setting',
-            'text': 'Text'
+            'text': 'Text',
         },
         watersignText: 'Text on watermark',
         watersignLength: 65,
@@ -46,11 +46,11 @@ define(['m/photo/status'], function (statuses) {
             title: 'Origin download',
             profile: 'As specified in profile',
             individual: 'Individually',
-            option: 'Allow other users to download original'
+            option: 'Allow other users to download original',
         },
 
         painting: {
-            title: 'Title'
-        }
+            title: 'Title',
+        },
     };
 });

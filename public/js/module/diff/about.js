@@ -12,7 +12,7 @@ define(['underscore', 'Params', 'socket!', 'knockout', 'm/_moduleCliche', 'globa
             this.version = P.settings.version();
         },
         show: function () {
-            var self = this;
+            const self = this;
 
             socket.run('index.giveAbout').then(function (result) {
                 ga('send', 'event', 'about', 'open', 'about open');
@@ -32,6 +32,6 @@ define(['underscore', 'Params', 'socket!', 'knockout', 'm/_moduleCliche', 'globa
         hide: function () {
             globalVM.func.hideContainer(this.$container);
             this.showing = false;
-        }
+        },
     });
 });

@@ -3,48 +3,52 @@
  * Klimashkin
  */
 define(['jquery', 'underscore', 'knockout'], function ($, _, ko) {
-
     /**
      * Создает новый дочерний контекст у дочерних элементов
-     * @type {Object}
+     *
+     * @type {object}
      */
     ko.bindingHandlers.newChildContext = {
         init: function (element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
-            var flag = valueAccessor(),
-                childBindingContext = bindingContext.createChildContext(viewModel);
+            const flag = valueAccessor();
+            const childBindingContext = bindingContext.createChildContext(viewModel);
+
             ko.applyBindingsToDescendants(childBindingContext, element);
 
             // Also tell KO *not* to bind the descendants itself, otherwise they will be bound twice
             return { controlsDescendantBindings: true };
-        }
+        },
     };
     ko.virtualElements.allowedBindings.newChildContext = true;
 
     /**
      * Позволяет отменить байндинг у элемента и его потомков
-     * @type {Object}
+     *
+     * @type {object}
      */
     ko.bindingHandlers.allowBindings = {
         init: function (elem, valueAccessor) {
             // Let bindings proceed as normal *only if* my value is false
-            var shouldAllowBindings = ko.unwrap(valueAccessor());
+            const shouldAllowBindings = ko.unwrap(valueAccessor());
+
             return { controlsDescendantBindings: !shouldAllowBindings };
-        }
+        },
     };
     ko.virtualElements.allowedBindings.allowBindings = true;
 
     /**
      * Объединяет два массива
+     *
      * @param arr Массив для объединения
      * @param before Флаг, означающий что надо вставить в начало
-     * @return {*}
+     * @returns {*}
      */
     ko.observableArray.fn.concat = function (arr, before) {
-        var underlyingArray = this(),
-            methodCallResult;
+        const underlyingArray = this();
+        let methodCallResult;
 
         this.valueWillMutate();
-        methodCallResult = Array.prototype[(before ? 'unshift' : 'push')][(Array.isArray(arr) ? 'apply' : 'call')](underlyingArray, arr);
+        methodCallResult = Array.prototype[before ? 'unshift' : 'push'][Array.isArray(arr) ? 'apply' : 'call'](underlyingArray, arr);
         this.valueHasMutated();
 
         return methodCallResult;
@@ -52,31 +56,36 @@ define(['jquery', 'underscore', 'knockout'], function ($, _, ko) {
 
     /**
      * Вызывает переданную функцию по нажатию enter
-     * @type {Object}
+     *
+     * @type {object}
      */
     ko.bindingHandlers.executeOnEnter = {
         init: function (element, valueAccessor, allBindingsAccessor, viewModel) {
-            var allBindings = allBindingsAccessor();
+            const allBindings = allBindingsAccessor();
+
             $(element).keypress(function (event) {
-                var keyCode = event.which || event.keyCode;
+                const keyCode = event.which || event.keyCode;
+
                 if (keyCode === 13) {
                     allBindings.executeOnEnter.call(viewModel);
+
                     return false;
                 }
+
                 return true;
             });
-        }
+        },
     };
 
-    var specialKeyCodes = [8, 13, 16, 17, 18, 20, 27, 35, 36, 37, 38, 39, 40, 46, 123, 144];
+    const specialKeyCodes = [8, 13, 16, 17, 18, 20, 27, 35, 36, 37, 38, 39, 40, 46, 123, 144];
 
     // Возвращает и устанавливает позицию курсора на input/textarea/contenteditable элементов
     // Пример: caret(element) - взять позицию, caret(element, 7) - установить позицию
     // Адаптированно с http://code.accursoft.com/caret/src
-    var caret = function (target, pos) {
-        var isContentEditable = target.contentEditable === 'true';
-        var range1;
-        var range2;
+    const caret = function (target, pos) {
+        const isContentEditable = target.contentEditable === 'true';
+        let range1;
+        let range2;
 
         // GET
         if (pos === undefined) {
@@ -87,11 +96,13 @@ define(['jquery', 'underscore', 'knockout'], function ($, _, ko) {
                     range2 = range1.cloneRange();
                     range2.selectNodeContents(target);
                     range2.setEnd(range1.endContainer, range1.endOffset);
+
                     return range2.toString().length;
-                } else {
-                    return target.selectionStart; //textarea
                 }
+
+                return target.selectionStart; //textarea
             }
+
             //not supported
             return 0;
         }
@@ -100,6 +111,7 @@ define(['jquery', 'underscore', 'knockout'], function ($, _, ko) {
         if (pos === -1) {
             pos = $(target)[isContentEditable ? 'text' : 'val']().length;
         }
+
         if (window.getSelection) {
             if (isContentEditable) { //contenteditable
                 target.focus();
@@ -108,9 +120,11 @@ define(['jquery', 'underscore', 'knockout'], function ($, _, ko) {
                 target.setSelectionRange(pos, pos); //textarea
             }
         }
+
         if (!isContentEditable) {
             target.focus();
         }
+
         return pos;
     };
 
@@ -130,24 +144,24 @@ define(['jquery', 'underscore', 'knockout'], function ($, _, ko) {
      * symbols: {pattern: new RegExp('\\\d', 'g'), allow: false, watch: someobservable, noMultiplySpace: false, maxLength: 15}
      */
     ko.bindingHandlers.symbols = (function () {
-        var validateRegexp = function (regex, str) {
+        const validateRegexp = function (regex, str) {
             return regex.test(str);
         };
-        var validateIndexOf = function (values, str) {
+        const validateIndexOf = function (values, str) {
             return values.indexOf(str) > -1;
         };
 
         return {
             init: function (element, valueAccessor) {
-                var $element = $(element);
-                var param = ko.utils.unwrapObservable(valueAccessor());
-                var pattern = param.pattern || param;
-                var disallow = param.allow === false;
-                var maxLength = param.maxLength || false;
-                var noMultiplySpace = !!param.noMultiplySpace;
-                var validator = _.partial(_.isRegExp(pattern) ? validateRegexp : validateIndexOf, pattern);
-                var watchSubscription;
-                var downKey;
+                const $element = $(element);
+                const param = ko.utils.unwrapObservable(valueAccessor());
+                const pattern = param.pattern || param;
+                const disallow = param.allow === false;
+                const maxLength = param.maxLength || false;
+                const noMultiplySpace = !!param.noMultiplySpace;
+                const validator = _.partial(_.isRegExp(pattern) ? validateRegexp : validateIndexOf, pattern);
+                let watchSubscription;
+                let downKey;
 
                 $element.on('keydown', onkeydown);
                 $element.on('keypress', onkeypress);
@@ -159,7 +173,7 @@ define(['jquery', 'underscore', 'knockout'], function ($, _, ko) {
                             return;
                         }
 
-                        var valueOnlyAllowed = value.match(pattern).join(''); // TODO: for symbols, not only regexp
+                        let valueOnlyAllowed = value.match(pattern).join(''); // TODO: for symbols, not only regexp
 
                         if (noMultiplySpace) {
                             valueOnlyAllowed = valueOnlyAllowed.replace(/ {2,}/g, ' ');
@@ -177,18 +191,19 @@ define(['jquery', 'underscore', 'knockout'], function ($, _, ko) {
 
                 // Некоторые символы мы можем определить только на этапе keycode
                 function onkeydown(evt) {
-                    var key = evt.keyCode || evt.which;
+                    const key = evt.keyCode || evt.which;
 
                     //console.log('onkeydown', key, String.fromCharCode(key));
                     downKey = key;
+
                     return true;
                 }
 
                 function onkeypress(evt) {
-                    var key = evt.keyCode || evt.which;
-                    var cancelInput;
-                    var fullValue;
-                    var valid;
+                    let key = evt.keyCode || evt.which;
+                    let cancelInput;
+                    let fullValue;
+                    let valid;
 
                     // console.log('onkeypress', key, String.fromCharCode(key));
                     // Если keycode определился и нажат shift или код не совпадает с keydowm
@@ -197,6 +212,7 @@ define(['jquery', 'underscore', 'knockout'], function ($, _, ko) {
                         cancelInput = function () {
                             evt.stopImmediatePropagation();
                             evt.preventDefault();
+
                             return false;
                         };
 
@@ -214,7 +230,7 @@ define(['jquery', 'underscore', 'knockout'], function ($, _, ko) {
                             }
 
                             if (noMultiplySpace && key === ' ' && !_.isEmpty(fullValue)) {
-                                var cursorPosition = caret(this);
+                                const cursorPosition = caret(this);
 
                                 if (fullValue.charAt(cursorPosition - 1) === ' ' || fullValue.charAt(cursorPosition) === ' ') {
                                     return cancelInput();
@@ -229,18 +245,20 @@ define(['jquery', 'underscore', 'knockout'], function ($, _, ko) {
                 ko.utils.domNodeDisposal.addDisposeCallback(element, function () {
                     $element.off('keydown', onkeydown);
                     $element.off('keypress', onkeypress);
+
                     if (watchSubscription) {
                         watchSubscription.dispose();
                     }
                 });
-            }
+            },
         };
     }());
 
     /**
      * Редактирование содержимого элементов с помошью contenteditable
      * Inspired by https://groups.google.com/forum/#!topic/knockoutjs/Mh0w_cEMqOk
-     * @type {Object}
+     *
+     * @type {object}
      */
     //ko.bindingHandlers.cEdit = {
     //    init: function (element, valueAccessor) {

@@ -2,11 +2,12 @@
  * Класс управления маркерами
  */
 define([
-    'underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'globalVM', 'leaflet', 'model/Photo', 'turf'
+    'underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'globalVM', 'leaflet', 'model/Photo', 'turf',
 ], function (_, Utils, socket, P, ko, ko_mapping, globalVM, L, Photo, turf) {
     'use strict';
 
-    var paintingDivisionYear = Math.floor(1688 / 5) * 5;
+    const paintingDivisionYear = Math.floor(1688 / 5) * 5;
+
     function getYearClass(year, isPainting) {
         if (isPainting) {
             if (year < paintingDivisionYear) {
@@ -14,6 +15,7 @@ define([
             } else {
                 year = Math.floor(year / 5) * 5;
             }
+
             year = 'p' + year;
         }
 
@@ -21,7 +23,7 @@ define([
     }
 
     function MarkerManager(map, options) {
-        var _this = this;
+        const _this = this;
 
         this.map = map;
 
@@ -68,7 +70,7 @@ define([
             offset: new L.Point(0, -14),
             autoPan: false,
             zoomAnimation: false,
-            closeButton: false
+            closeButton: false,
         });
         this.popupPhotoTpl = _.template('<img class="popupImg" src="${ img }"/><div class="popupCap">${ txt }</div><div class="popupYear">${ year }</div>');
 
@@ -79,7 +81,7 @@ define([
             offset: new L.Point(0, -21),
             autoPan: false,
             zoomAnimation: false,
-            closeButton: false
+            closeButton: false,
         });
         this.popupClusterPhotom = new L.Popup({
             className: 'popupClusterPhoto',
@@ -88,7 +90,7 @@ define([
             offset: new L.Point(0, -26),
             autoPan: false,
             zoomAnimation: false,
-            closeButton: false
+            closeButton: false,
         });
         this.popupClusterPhotob = new L.Popup({
             className: 'popupClusterPhoto',
@@ -97,7 +99,7 @@ define([
             offset: new L.Point(0, -31),
             autoPan: false,
             zoomAnimation: false,
-            closeButton: false
+            closeButton: false,
         });
         this.popupClusterPhotoTpl = _.template('<div class="popupCap">${ txt }</div><div class="popupYear">${ year }</div>');
 
@@ -109,7 +111,7 @@ define([
             autoPan: true,
             autoPanPadding: new L.Point(10, 10),
             zoomAnimation: false,
-            closeButton: false
+            closeButton: false,
         });
         this.popupClusterFive = new L.Popup({
             className: 'popupCluster five',
@@ -119,7 +121,7 @@ define([
             autoPan: true,
             autoPanPadding: new L.Point(10, 10),
             zoomAnimation: false,
-            closeButton: false
+            closeButton: false,
         });
         this.popupClusterFiveScroll = new L.Popup({
             className: 'popupCluster five scroll',
@@ -129,7 +131,7 @@ define([
             autoPan: true,
             autoPanPadding: new L.Point(10, 10),
             zoomAnimation: false,
-            closeButton: false
+            closeButton: false,
         });
         this.popupClusterClickFN = '_' + Utils.randomString(10);
         this.popupClusterOverFN = '_' + Utils.randomString(10);
@@ -139,17 +141,18 @@ define([
             'src="${ img }" data-cid="${ cid }" data-sfile="${ sfile }" data-title="${ title }" data-href="${ href }" data-year="${ year }"/>'
         );
         window[this.popupClusterClickFN] = function (element) {
-            var url = element.getAttribute('data-href');
+            const url = element.getAttribute('data-href');
+
             if (Utils.isType('string', url) && url.length > 0) {
                 _this.photoNavigate(url);
             }
         };
         window[this.popupClusterOverFN] = function (element) {
-            var root = element.parentNode.parentNode,
-                div = root.querySelector('.popupPoster'),
-                img = root.querySelector('.popupImg'),
-                title = root.querySelector('.popupCap'),
-                year = root.querySelector('.popupYear');
+            const root = element.parentNode.parentNode;
+            const div = root.querySelector('.popupPoster');
+            const img = root.querySelector('.popupImg');
+            const title = root.querySelector('.popupCap');
+            const year = root.querySelector('.popupYear');
 
             div.setAttribute('data-href', element.getAttribute('data-href'));
             img.setAttribute('src', element.getAttribute('data-sfile'));
@@ -164,6 +167,7 @@ define([
         this.popupTimeout = null;
 
         this.enabled = false;
+
         if (options.enabled) {
             this.enable();
         }
@@ -183,6 +187,7 @@ define([
             this.refreshDataByZoom(true);
             this.enabled = true;
         }
+
         return this;
     };
     MarkerManager.prototype.disable = function () {
@@ -202,6 +207,7 @@ define([
 
             this.enabled = false;
         }
+
         return this;
     };
     MarkerManager.prototype.changePainting = function (val, year, year2, fetch) {
@@ -220,6 +226,7 @@ define([
                 this.refreshDataByZoom(true);
             }
         }
+
         return this;
     };
     MarkerManager.prototype.destroy = function () {
@@ -232,12 +239,14 @@ define([
     /**
      * Обновляет границы области отображения маркеров.
      * Если расчитанная ранее область включает текущую, обновление не происходит.
+     *
      * @param {?boolean=} force Принудительный пересчет области. Например, при изменении масштаба в +, текущая область будет содержаться в предыдущей, тем не менее пересчет нужен.
-     * @return {boolean} Флаг того, что границы изменились.
+     * @returns {boolean} Флаг того, что границы изменились.
      */
     MarkerManager.prototype.reCalcBound = function (force) {
-        var result = false,
-            localWork = this.map.getZoom() >= this.firstClientWorkZoom;
+        let result = false;
+        const localWork = this.map.getZoom() >= this.firstClientWorkZoom;
+
         if (force || !this.calcBound || !this.calcBound.contains(this.map.getBounds())) {
             this.calcBoundPrev = this.calcBound;
             this.calcBound = this.map.getBounds().pad(localWork ? 0.1 : 0.25);
@@ -262,11 +271,14 @@ define([
             if (this.calcBound._southWest.lat <= -85.06) {
                 this.calcBound._southWest.lat = -90;
             }
+
             if (this.calcBound._northEast.lat >= 85.06) {
                 this.calcBound._northEast.lat = 90;
             }
+
             result = true;
         }
+
         return result;
     };
 
@@ -331,11 +343,10 @@ define([
             } else {
                 this.refreshByZoomTimeout = window.setTimeout(this.refreshDataByZoomBind, 400);
             }
+
             this.zoomChanged = false;
-        } else {
-            if (this.reCalcBound()) {
-                this.refreshDataByMove();
-            }
+        } else if (this.reCalcBound()) {
+            this.refreshDataByMove();
         }
     };
 
@@ -346,16 +357,16 @@ define([
         this.reCalcBound(true);
         this.startPendingAt = Date.now();
 
-        var self = this;
-        var newZoom = this.map.getZoom(),
-            localWork = newZoom >= this.firstClientWorkZoom,
-            crossingLocalWorkZoom = (this.currZoom < this.firstClientWorkZoom && localWork) || (this.currZoom >= this.firstClientWorkZoom && !localWork),
-            direction = newZoom - this.currZoom,
-            bound = L.latLngBounds(this.calcBound.getSouthWest(), this.calcBound.getNorthEast()), // copy this.calcBound current values.
-            queryGeometry,
-            pollServer = true,
-            curr,
-            i;
+        const self = this;
+        let newZoom = this.map.getZoom();
+        const localWork = newZoom >= this.firstClientWorkZoom;
+        const crossingLocalWorkZoom = this.currZoom < this.firstClientWorkZoom && localWork || this.currZoom >= this.firstClientWorkZoom && !localWork;
+        const direction = newZoom - this.currZoom;
+        let bound = L.latLngBounds(this.calcBound.getSouthWest(), this.calcBound.getNorthEast()); // copy this.calcBound current values.
+        let queryGeometry;
+        let pollServer = true;
+        let curr;
+        let i;
 
         this.currZoom = newZoom;
 
@@ -365,11 +376,13 @@ define([
             // as result of zoom change.
             const poly = turf.bboxPolygon(bound.toBBoxString().split(','));
             const prevPoly = turf.bboxPolygon(this.calcBoundPrev.toBBoxString().split(','));
+
             // Если на клиенте уже есть все фотографии для данного зума
             if (!direction) {
                 //Если зум не изменился, то считаем дополнительные баунды, если они есть, запрашиваем их
                 //а если их нет (т.е. баунд тоже не изменился), то просто пересчитываем локальные кластеры
                 queryGeometry = turf.difference(poly, prevPoly);
+
                 if (queryGeometry !== null) {
                     this.cropByBound(null, true);
                 } else {
@@ -392,6 +405,7 @@ define([
             if (crossingLocalWorkZoom && !localWork) {
                 this.photosAll = [];
             }
+
             // Query objects for new .
             queryGeometry = turf.bboxPolygon(bound.toBBoxString().split(','));
         }
@@ -409,17 +423,18 @@ define([
                     year: this.year,
                     year2: this.year2,
                     isPainting: this.isPainting,
-                    localWork: localWork
+                    localWork: localWork,
                 }
             ).then(function (data) {
-                var localCluster, // Смотрим нужно ли использовать клиентскую кластеризацию
-                    boundChanged; // Если к моменту получения входящих данных нового зума, баунд изменился, значит мы успели подвигать картой, поэтому надо проверить пришедшие точки на вхождение в актуальный баунд
+                let localCluster; // Смотрим нужно ли использовать клиентскую кластеризацию
+                let boundChanged; // Если к моменту получения входящих данных нового зума, баунд изменился, значит мы успели подвигать картой, поэтому надо проверить пришедшие точки на вхождение в актуальный баунд
 
                 // Данные устарели и должны быть отброшены,
                 // если зум изменился или уже был отправлен другой запрос на данные по зуму или
                 // текущий баунд уже успел выйти за пределы запрашиваемого
                 if (self.map.getZoom() !== data.z || self.startPendingAt !== data.startAt || !bound.intersects(self.calcBound)) {
                     console.log('Полученные данные нового зума устарели');
+
                     return;
                 }
 
@@ -438,27 +453,30 @@ define([
      * Visualise bounds for debugging purposes.
      */
     MarkerManager.prototype.drawBounds = function (geometry, zoom, localWork) {
-        const summary = (zoom === true) ? `Refresh by Zoom` : 'Refresh by Move';
+        const summary = zoom === true ? 'Refresh by Zoom' : 'Refresh by Move';
+
         console.log(summary + `, localWork=${localWork}, ` + turf.getType(geometry) + ' (Lng,Lat):', JSON.stringify(turf.getCoords(geometry)));
+
         // Remove previous drawings.
-        if (this['b'] !== undefined) {
-            this.map.removeLayer(this['b']);
-            this['b'] = undefined;
+        if (this.b !== undefined) {
+            this.map.removeLayer(this.b);
+            this.b = undefined;
         }
+
         // Draw new polygon, reverse coordinates.
-        this['b'] = L.polygon(turf.getCoords(turf.flip(geometry)), { color: '#25CE00', weight: 1 }).addTo(this.map);
+        this.b = L.polygon(turf.getCoords(turf.flip(geometry)), { color: '#25CE00', weight: 1 }).addTo(this.map);
     };
 
     /**
      * Обрабатывает входящие данные по зуму
      */
     MarkerManager.prototype.processIncomingDataZoom = function (data, boundChanged, localWork, localCluster) {
-        var isPainting = this.isPainting;
-        var photos = {}, //новый хэш фотографий
-            divIcon,
-            curr,
-            existing,
-            i;
+        const isPainting = this.isPainting;
+        let photos = {}; //новый хэш фотографий
+        let divIcon;
+        let curr;
+        let existing;
+        let i;
 
         //Очищаем кластеры, если они вдруг успели появится при быстром измении зума.
         //Это произойдет, если мы быстро уменьшили зум и опять увеличили - перед moveEnd
@@ -473,6 +491,7 @@ define([
             if (data) {
                 this.photosAll = this.photosAll.concat(data.photos);
             }
+
             if (localCluster) {
                 data = this.createClusters(this.photosAll, true); //Кластеризуем. На выходе - массив кластеров и фотографий, которые туда не попали
             } else {
@@ -482,9 +501,11 @@ define([
 
         // Заполняем новый объект фото
         i = data.photos.length;
+
         while (i) { // while loop, reversed
             curr = data.photos[--i];
             existing = this.mapObjects.photos[curr.cid];
+
             if (existing !== undefined) {
                 // Если такое фото уже есть, то просто записываем его в новый объект
                 photos[curr.cid] = existing;
@@ -495,14 +516,14 @@ define([
                     curr.sfile = Photo.picFormats.m + curr.file;
                     divIcon = L.divIcon({
                         className: 'photoIcon ' + getYearClass(curr.year, isPainting) + ' ' + curr.dir,
-                        iconSize: this.sizePoint
+                        iconSize: this.sizePoint,
                     });
                     curr.marker =
                         L.marker(curr.geo, {
-                                icon: divIcon,
-                                riseOnHover: true,
-                                data: { cid: curr.cid, type: 'photo', obj: curr }
-                            })
+                            icon: divIcon,
+                            riseOnHover: true,
+                            data: { cid: curr.cid, type: 'photo', obj: curr },
+                        })
                             .on('click', this.clickMarker, this)
                             .on('mouseover', this.popupPhotoOver, this);
                     this.layerPhotos.addLayer(curr.marker);
@@ -528,15 +549,16 @@ define([
 
     /**
      * Обновление данных маркеров.
+     *
      * @param {?boolean=} reposExisting Пересчитывать позиции существующих маркеров. Например, при изменении масштаба надо пересчитывать.
      */
     MarkerManager.prototype.refreshDataByMove = function (/*reposExisting*/) {
-        var self = this;
-        var zoom = this.currZoom,
-            bound = L.latLngBounds(this.calcBound.getSouthWest(), this.calcBound.getNorthEast()),
-            localWork = zoom >= this.firstClientWorkZoom,
-            curr,
-            i;
+        const self = this;
+        let zoom = this.currZoom;
+        let bound = L.latLngBounds(this.calcBound.getSouthWest(), this.calcBound.getNorthEast());
+        const localWork = zoom >= this.firstClientWorkZoom;
+        let curr;
+        let i;
 
         const poly = turf.bboxPolygon(bound.toBBoxString().split(','));
         const prevPoly = turf.bboxPolygon(this.calcBoundPrev.toBBoxString().split(','));
@@ -560,16 +582,17 @@ define([
                 year: this.year,
                 year2: this.year2,
                 isPainting: this.isPainting,
-                localWork: localWork
+                localWork: localWork,
             })
             .then(function (data) {
-                var localCluster, // Смотрим нужно ли использовать клиентскую кластеризацию
-                    boundChanged; // Если к моменту получения входящих данных нового зума, баунд изменился, значит мы успели подвигать картой, поэтому надо проверить пришедшие точки на вхождение в актуальный баунд
+                let localCluster; // Смотрим нужно ли использовать клиентскую кластеризацию
+                let boundChanged; // Если к моменту получения входящих данных нового зума, баунд изменился, значит мы успели подвигать картой, поэтому надо проверить пришедшие точки на вхождение в актуальный баунд
 
                 // Данные устарели и должны быть отброшены,
                 // если текущий зум не равен запрашиваемомоу или текущий баунд уже успел выйти за пределы запрашиваемого
                 if (self.map.getZoom() !== data.z || !bound.intersects(self.calcBound)) {
                     console.log('Полученные данные перемещения устарели');
+
                     return;
                 }
 
@@ -588,11 +611,11 @@ define([
      * Обрабатывает входящие данные
      */
     MarkerManager.prototype.processIncomingDataMove = function (data, boundChanged, localWork, localCluster) {
-        var isPainting = this.isPainting;
-        var photos = {},
-            divIcon,
-            curr,
-            i;
+        const isPainting = this.isPainting;
+        let photos = {};
+        let divIcon;
+        let curr;
+        let i;
 
         // На уровне локальных кластеризаций,
         // сервер отдает только фотографии в новых баундах, следовательно,
@@ -600,6 +623,7 @@ define([
         if (localWork) {
             this.photosAll = this.photosAll.concat(data.photos);
         }
+
         if (localCluster) {
             data = this.createClusters(data.photos, true);
         }
@@ -607,8 +631,10 @@ define([
         // Заполняем новый объект фото
         if (Array.isArray(data.photos) && data.photos.length > 0) {
             i = data.photos.length;
+
             while (i) {
                 curr = data.photos[--i];
+
                 if (!this.mapObjects.photos[curr.cid]) {
                     // Если оно новое - создаем его объект и маркер
                     if (!boundChanged || this.calcBound.contains(curr.geo)) {
@@ -616,15 +642,15 @@ define([
                         divIcon = L.divIcon(
                             {
                                 className: 'photoIcon ' + getYearClass(curr.year, isPainting) + ' ' + curr.dir,
-                                iconSize: this.sizePoint
+                                iconSize: this.sizePoint,
                             }
                         );
                         curr.marker =
                             L.marker(curr.geo, {
-                                    icon: divIcon,
-                                    riseOnHover: true,
-                                    data: { cid: curr.cid, type: 'photo', obj: curr }
-                                })
+                                icon: divIcon,
+                                riseOnHover: true,
+                                data: { cid: curr.cid, type: 'photo', obj: curr },
+                            })
                                 .on('click', this.clickMarker, this)
                                 .on('mouseover', this.popupPhotoOver, this);
                         this.layerPhotos.addLayer(curr.marker);
@@ -633,6 +659,7 @@ define([
                 }
             }
         }
+
         _.assign(this.mapObjects.photos, photos);
 
         // Создаем маркеры кластеров
@@ -651,28 +678,29 @@ define([
      * Локальная кластеризация камер, пришедших клиенту. Проверяем на совпадение координат камер с учетом дельты. Связываем такие камеры
      */
     MarkerManager.prototype.createClusters = function (data, withGravity) {
-        var start = Date.now(),
-            delta = this.clientClusteringDelta[this.currZoom] || this.clientClusteringDelta['default'],
-            clusterW = Utils.math.toPrecision(Math.abs(this.map.layerPointToLatLng(new L.Point(delta, 1)).lng - this.map.layerPointToLatLng(new L.Point(0, 1)).lng)),
-            clusterH = Utils.math.toPrecision(Math.abs(this.map.layerPointToLatLng(new L.Point(1, delta)).lat - this.map.layerPointToLatLng(new L.Point(1, 0)).lat)),
-            clusterWHalf = Utils.math.toPrecision(clusterW / 2),
-            clusterHHalf = Utils.math.toPrecision(clusterH / 2),
-            result = { photos: [], clusters: [] },
-            i,
+        const start = Date.now();
+        const delta = this.clientClusteringDelta[this.currZoom] || this.clientClusteringDelta.default;
+        const clusterW = Utils.math.toPrecision(Math.abs(this.map.layerPointToLatLng(new L.Point(delta, 1)).lng - this.map.layerPointToLatLng(new L.Point(0, 1)).lng));
+        const clusterH = Utils.math.toPrecision(Math.abs(this.map.layerPointToLatLng(new L.Point(1, delta)).lat - this.map.layerPointToLatLng(new L.Point(1, 0)).lat));
+        const clusterWHalf = Utils.math.toPrecision(clusterW / 2);
+        const clusterHHalf = Utils.math.toPrecision(clusterH / 2);
+        const result = { photos: [], clusters: [] };
+        let i;
 
-            photo,
-            geoPhoto,
-            geoPhotoCorrection,
+        let photo;
+        let geoPhoto;
+        let geoPhotoCorrection;
 
-            geo,
-            cluster,
-            clusters = {},
-            clustCoordId,
-            clustCoordIdS = [],
+        let geo;
+        let cluster;
+        const clusters = {};
+        let clustCoordId;
+        const clustCoordIdS = [];
 
-            precisionDivider = 1e+6;
+        const precisionDivider = 1e+6;
 
         i = data.length;
+
         while (i) {
             photo = data[--i];
             geoPhoto = photo.geo;
@@ -681,6 +709,7 @@ define([
             geo = [~~(clusterH * (~~(geoPhoto[0] / clusterH) + geoPhotoCorrection[0]) * precisionDivider) / precisionDivider, ~~(clusterW * (~~(geoPhoto[1] / clusterW) + geoPhotoCorrection[1]) * precisionDivider) / precisionDivider];
             clustCoordId = geo[0] + '@' + geo[1];
             cluster = clusters[clustCoordId];
+
             if (cluster === undefined) {
                 //При создании объекта в year надо присвоить минимум значащую цифру,
                 //иначе v8(>=3.19) видимо не выделяет память и при добавлении очередного photo.year крэшится через несколько итераций
@@ -691,22 +720,26 @@ define([
                     lngs: geo[1] + clusterWHalf,
                     year: 1,
                     c: 1,
-                    photos: []
+                    photos: [],
                 };
                 clustCoordIdS.push(clustCoordId);
                 cluster = clusters[clustCoordId];
             }
+
             cluster.c += 1;
             cluster.year += photo.year;
+
             if (withGravity) {
                 cluster.lats += photo.geo[0];
                 cluster.lngs += photo.geo[1];
             }
+
             cluster.photos.push(photo);
         }
 
         // Заполняем массивы кластеров и фото
         i = clustCoordIdS.length;
+
         while (i) {
             clustCoordId = clustCoordIdS[--i];
             cluster = clusters[clustCoordId];
@@ -715,6 +748,7 @@ define([
                 if (withGravity) {
                     cluster.geo = [~~(cluster.lats / cluster.c * precisionDivider) / precisionDivider, ~~(cluster.lngs / cluster.c * precisionDivider) / precisionDivider];
                 }
+
                 cluster.c -= 1;
                 cluster.year = --cluster.year / cluster.c >> 0; //Из суммы лет надо вычесть единицу, т.к. прибавили её при создании кластера для v8
                 cluster.lats = undefined;
@@ -726,24 +760,28 @@ define([
         }
 
         console.log('Clustered in ' + (Date.now() - start));
+
         return result;
     };
 
     MarkerManager.prototype.drawClusters = function (clusters, boundChanged, add) {
-        var i,
-            size,
-            measure,
-            picFormat,
-            cluster,
-            divIcon,
-            result = {};
+        let i;
+        let size;
+        let measure;
+        let picFormat;
+        let cluster;
+        let divIcon;
+        const result = {};
 
         if (Array.isArray(clusters) && clusters.length) {
             i = clusters.length;
+
             while (i) {
                 cluster = clusters[--i];
+
                 if (!boundChanged || this.calcBound.contains(cluster.geo)) {
                     cluster.cid = cluster.geo[0] + '@' + cluster.geo[1];
+
                     if (cluster.c > 499) {
                         if (cluster.c > 2999) {
                             size = this.sizeClusterb;
@@ -764,15 +802,15 @@ define([
                     divIcon = L.divIcon({
                         className: 'clusterIcon fringe ' + measure,
                         iconSize: size,
-                        html: '<img class="clusterImg" onload="if (this.parentNode && this.parentNode.classList) {this.parentNode.classList.add(\'show\');}" src="' + cluster.p.sfile + '"/><div class="clusterFoot"><span class="clusterCount">' + cluster.c + '</span></div>'
+                        html: '<img class="clusterImg" onload="if (this.parentNode && this.parentNode.classList) {this.parentNode.classList.add(\'show\');}" src="' + cluster.p.sfile + '"/><div class="clusterFoot"><span class="clusterCount">' + cluster.c + '</span></div>',
                     });
                     cluster.measure = measure;
                     cluster.marker =
                         L.marker(cluster.geo, {
-                                icon: divIcon,
-                                riseOnHover: true,
-                                data: { type: 'clust', obj: cluster }
-                            })
+                            icon: divIcon,
+                            riseOnHover: true,
+                            data: { type: 'clust', obj: cluster },
+                        })
                             .on('click', this.clickMarker, this)
                             .on('mouseover', this.popupPhotoOver, this);
                     this.layerClusters.addLayer(cluster.marker);
@@ -780,6 +818,7 @@ define([
                 }
             }
         }
+
         if (add) {
             _.assign(this.mapObjects.clusters, result);
         } else {
@@ -788,18 +827,20 @@ define([
     };
 
     MarkerManager.prototype.drawClustersLocal = function (clusters, boundChanged, add) {
-        var isPainting = this.isPainting;
-        var i,
-            size,
-            measure,
-            cluster,
-            divIcon,
-            result = {};
+        const isPainting = this.isPainting;
+        let i;
+        let size;
+        let measure;
+        let cluster;
+        let divIcon;
+        const result = {};
 
         if (Array.isArray(clusters) && clusters.length > 0) {
             i = clusters.length;
+
             while (i) {
                 cluster = clusters[--i];
+
                 if (!boundChanged || this.calcBound.contains(cluster.geo)) {
                     if (cluster.c > 9) {
                         if (cluster.c > 49) {
@@ -813,23 +854,25 @@ define([
                         size = this.sizeClusterL;
                         measure = '';
                     }
+
                     divIcon = L.divIcon({
                         className: 'clusterIconLocal ' + getYearClass(cluster.year, isPainting) + ' ' + measure,
                         iconSize: size,
-                        html: cluster.c
+                        html: cluster.c,
                     });
                     cluster.marker =
                         L.marker(cluster.geo, {
-                                icon: divIcon,
-                                riseOnHover: true,
-                                data: { type: 'clust', obj: cluster }
-                            })
+                            icon: divIcon,
+                            riseOnHover: true,
+                            data: { type: 'clust', obj: cluster },
+                        })
                             .on('click', this.clickMarker, this);
                     this.layerClusters.addLayer(cluster.marker);
                     result[cluster.cid] = cluster;
                 }
             }
         }
+
         if (add) {
             _.assign(this.mapObjects.clusters, result);
         } else {
@@ -851,16 +894,18 @@ define([
 
     /**
      * Очищает объекты хэша с удалением маркера с карты и чисткой критических для памяти свойств
+     *
      * @param objHash Хэш объектов
      * @param layer Слой, с которого удаляются маркеры
      * @param onlyOutBound Баунд, при выходе за который надо удалять. Если не указан, удаляется всё из хэша
      */
     MarkerManager.prototype.clearObjHash = function (objHash, layer, onlyOutBound) {
-        var obj,
-            i;
+        let obj;
+        let i;
 
         for (i in objHash) {
             obj = objHash[i];
+
             if (obj !== undefined && (!onlyOutBound || !onlyOutBound.contains(obj.geo))) {
                 layer.removeLayer(obj.marker.clearAllEventListeners());
                 delete obj.marker.options.data.obj;
@@ -876,20 +921,24 @@ define([
      */
     MarkerManager.prototype.cropByBound = function (bound, localWork) {
         bound = bound || this.calcBound;
-        var i,
-            curr,
-            arr;
+
+        let i;
+        let curr;
+        let arr;
 
         // На уровнях локальной кластеризации обрезаем массив всех фотографий
         if (localWork) {
             arr = [];
             i = this.photosAll.length;
+
             while (i) {
                 curr = this.photosAll[--i];
+
                 if (bound.contains(curr.geo)) {
                     arr.push(curr);
                 }
             }
+
             this.photosAll = arr;
         }
 
@@ -901,15 +950,16 @@ define([
 
     /**
      * Zoom animation to mouse pointer position.
+     *
      * @param point
      * @param newZoom
-     * @return {*}
+     * @returns {*}
      */
     MarkerManager.prototype.zoomApproachToPoint = function (point, newZoom) {
-        var scale = this.map.getZoomScale(newZoom),
-            viewHalf = this.map.getSize().divideBy(2),
-            centerOffset = point.subtract(viewHalf).multiplyBy(1 - 1 / scale),
-            newCenterPoint = this.map._getTopLeftPoint().add(viewHalf).add(centerOffset);
+        const scale = this.map.getZoomScale(newZoom);
+        const viewHalf = this.map.getSize().divideBy(2);
+        const centerOffset = point.subtract(viewHalf).multiplyBy(1 - 1 / scale);
+        const newCenterPoint = this.map._getTopLeftPoint().add(viewHalf).add(centerOffset);
 
         return this.map.unproject(newCenterPoint);
     };
@@ -918,23 +968,21 @@ define([
      * @param evt
      */
     MarkerManager.prototype.clickMarker = function (evt) {
-        var marker = evt.target,
-            object = marker.options.data.obj,
-            eventPoint = this.map.mouseEventToContainerPoint(evt.originalEvent),
-            nextZoom;
+        const marker = evt.target;
+        const object = marker.options.data.obj;
+        const eventPoint = this.map.mouseEventToContainerPoint(evt.originalEvent);
+        let nextZoom;
 
         if (marker.options.data.type === 'photo' && object.cid) {
             this.photoNavigate('/p/' + object.cid);
         } else if (marker.options.data.type === 'clust') {
             if (evt.originalEvent.target.classList.contains('clusterImg')) {
                 this.photoNavigate('/p/' + object.p.cid);
+            } else if (this.map.getZoom() === this.map.getMaxZoom()) {
+                this.popupClusterLocalOpen(marker);
             } else {
-                if (this.map.getZoom() === this.map.getMaxZoom()) {
-                    this.popupClusterLocalOpen(marker);
-                } else {
-                    nextZoom = this.map.getZoom() + 1;
-                    this.map.setView(this.zoomApproachToPoint(eventPoint, nextZoom), nextZoom);
-                }
+                nextZoom = this.map.getZoom() + 1;
+                this.map.setView(this.zoomApproachToPoint(eventPoint, nextZoom), nextZoom);
             }
         }
     };
@@ -947,23 +995,25 @@ define([
     };
 
     MarkerManager.prototype.popupClusterLocalOpen = function (marker) {
-        var photos = marker.options.data.obj.photos,
-            photo,
-            photoPrevFile,
-            photoPosterFile,
-            i = -1,
-            len = photos.length,
-            small = len <= 3,
-            popup = small ? this.popupCluster : (len <= 15 ? this.popupClusterFive : this.popupClusterFiveScroll),
-            content = '<div class="popupPreviews">';
+        const photos = marker.options.data.obj.photos;
+        let photo;
+        let photoPrevFile;
+        let photoPosterFile;
+        let i = -1;
+        const len = photos.length;
+        const small = len <= 3;
+        const popup = small ? this.popupCluster : len <= 15 ? this.popupClusterFive : this.popupClusterFiveScroll;
+        let content = '<div class="popupPreviews">';
 
         photos.sort(function (a, b) {
-            var result = 0;
+            let result = 0;
+
             if (a.year > b.year) {
                 result = -1;
             } else if (a.year < b.year) {
                 result = 1;
             }
+
             return result;
         });
 
@@ -984,14 +1034,15 @@ define([
                 sfile: photoPosterFile,
                 title: photo.title,
                 href: '/p/' + photo.cid,
-                year: this.makeTextYear(photo)
+                year: this.makeTextYear(photo),
             });
         }
+
         content += '</div><div class="popupPoster" data-href="' + '/p/' + photos[photos.length - 1].cid + '" onclick="' + this.popupClusterClickFN + '(this)" >' + this.popupPhotoTpl({
-                img: photoPosterFile,
-                year: this.makeTextYear(photos[photos.length - 1]),
-                txt: photos[photos.length - 1].title
-            }) + '<div class="h_separatorWhite"></div> ' + '</div>';
+            img: photoPosterFile,
+            year: this.makeTextYear(photos[photos.length - 1]),
+            txt: photos[photos.length - 1].title,
+        }) + '<div class="h_separatorWhite"></div> ' + '</div>';
         popup
             .setLatLng(marker.getLatLng())
             .setContent(content);
@@ -1001,7 +1052,8 @@ define([
 
 
     MarkerManager.prototype.makeTextYear = function (photo) {
-        var year = String(Math.abs(photo.year));
+        let year = String(Math.abs(photo.year));
+
         if (photo.year < 0) {
             year += ' BC';
         } else if (photo.year < 1000) {
@@ -1021,9 +1073,10 @@ define([
         return year;
     };
     MarkerManager.prototype.popupPhotoOpen = function () {
-        var popup,
-            type = this.markerToPopup.options.data.type,
-            obj = this.markerToPopup.options.data.obj;
+        let popup;
+        const type = this.markerToPopup.options.data.type;
+        const obj = this.markerToPopup.options.data.obj;
+
         if (this.markerToPopup) {
             if (type === 'photo') {
                 popup = this.popupPhoto
@@ -1032,19 +1085,20 @@ define([
                 popup = this['popupClusterPhoto' + obj.measure]
                     .setContent(this.popupClusterPhotoTpl({ txt: obj.p.title, year: this.makeTextYear(obj.p) }));
             }
+
             popup.setLatLng(this.markerToPopup.getLatLng());
             this.popupOpen(popup);
         }
     };
     MarkerManager.prototype.popupPhotoOver = function (evt) {
-        var type = evt.target.options.data.type;
+        const type = evt.target.options.data.type;
 
         window.clearTimeout(this.popupTimeout);
-        if (type === 'photo' || (type === 'clust' && evt.originalEvent.target.classList.contains('clusterImg'))) {
+
+        if (type === 'photo' || type === 'clust' && evt.originalEvent.target.classList.contains('clusterImg')) {
             this.popupTimeout = window.setTimeout(this.popupPhotoOpenBind, 200);
             this.markerToPopup = evt.target.on('mouseout', this.popupPhotoOut, this);
         }
-
     };
 
     MarkerManager.prototype.popupPhotoOut = function (evt) {
@@ -1052,6 +1106,7 @@ define([
         if (this.popupOpened !== this.popupCluster && this.popupOpened !== this.popupClusterFive && this.popupOpened !== this.popupClusterFiveScroll) {
             this.popupClose();
         }
+
         this.markerToPopup = null;
         window.clearTimeout(this.popupTimeout);
         evt.target.off('mouseout', this.popupPhotoOut, this);

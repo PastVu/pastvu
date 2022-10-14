@@ -5,7 +5,7 @@
 define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/storage', 'load-image', 'text!tpl/user/photoUpload.pug', 'css!style/user/photoUpload', 'jfileupload/jquery.iframe-transport', 'jfileupload/jquery.fileupload'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, storage, loadImage, pug) {
     'use strict';
 
-    var mess = {
+    const mess = {
         fsuccess: 'File has been successfully uploaded',
         fcount: 'Allowed count of files exceeded',
 
@@ -13,7 +13,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
         fmax: 'File is bigger then allowed',
         fmin: 'File is too small',
         fpx: 'According the rules, image size must be at least 350px on the smaller side and 700 on the larger side',
-        finvalid: 'The file has not passed validation' //Сообщение по умолчанию для валидации
+        finvalid: 'The file has not passed validation', //Сообщение по умолчанию для валидации
     };
 
     return Cliche.extend({
@@ -41,7 +41,8 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
             this.previewToGen = 0;
             this.filesToSubmit = [];
 
-            var user = this.auth.iAm.login();
+            const user = this.auth.iAm.login();
+
             if (this.auth.loggedIn() && !this.auth.iAm.nophotoupload()) {
                 storage.user(user, function (data) {
                     if (data) {
@@ -68,7 +69,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                                     previewMaxSize: 10485760, //10MB The maximum file size of images that are to be displayed as preview:
                                     previewMaxWidth: 210, // The maximum width of the preview images:
                                     //previewMaxHeight: 120, // The maximum height of the preview images:
-                                    prependFiles: false
+                                    prependFiles: false,
                                 };
                             }
 
@@ -109,7 +110,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                         start: this.onFilesStart.bind(this),
                         stop: this.onFilesStop.bind(this),
                         progress: this.onFileProgress.bind(this),
-                        progressall: this.onFileProgressAll.bind(this)
+                        progressall: this.onFileProgressAll.bind(this),
                     });
 
                     $(document)
@@ -144,8 +145,10 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
             if (e.stopPropagation) {
                 e.stopPropagation();
             }
+
             //Генерируем клик по инпуту
             this.$dom.find('.fileInput').trigger('click');
+
             return false;
         },
 
@@ -163,6 +166,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
             } else if (file.ext.jqXHR && file.ext.jqXHR.abort) {
                 file.ext.jqXHR.abort();
             }
+
             this.destroyFile(file);
         },
         destroyFile: function (file) {
@@ -175,9 +179,9 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                 .then(cb.bind(ctx));
         },
         onFileAdd: function (e, data) {
-            var options = this.fileOptions,
+            const options = this.fileOptions;
             //optionsPlugin = (this.$fileupload.data('blueimp-fileupload') || this.$fileupload.data('fileupload') || {}).options,
-                files = data.files;
+            const files = data.files;
 
             this.$dom.find('.addfiles_area')[0].classList.remove('dragover');
 
@@ -192,10 +196,11 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                     valid: true,
                     error: ko.observable(false),
                     msg: ko.observable(''),
-                    msgCss: ko.observable('')
+                    msgCss: ko.observable(''),
                 };
 
                 this.validate(file, options);
+
                 if (file.ext.valid) {
                     this.canCount(Math.max(0, this.canCount() - 1));
 
@@ -213,6 +218,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
         },
         queueAfterPreview: function (file) {
             this.filesToSubmit.push(file);
+
             if (!file.ext.tooBigPreview) {
                 this.previewToGen += 1;
                 this.filePreview(file, this.submitQueue.bind(this));
@@ -224,6 +230,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
             if (file) {
                 this.previewToGen -= 1;
             }
+
             if (this.previewToGen < 1) {
                 this.filesToSubmit.forEach(function (file, index) {
                     this.startFile(file);
@@ -260,8 +267,8 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
             }
         },
         onFileDone: function (e, data) {
-            var result = JSON.parse(data.result),
-                receivedFiles = result.files || [];
+            const result = JSON.parse(data.result);
+            const receivedFiles = result.files || [];
 
             receivedFiles.forEach(function (receivedFileInfo) {
                 if (receivedFileInfo.file) {
@@ -288,7 +295,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
             }, this);
         },
         createPhotos: function (cb, ctx) {
-            var toSaveArr = [];
+            const toSaveArr = [];
 
             _.forEach(this.fileUploaded, function (file) {
                 toSaveArr.push(file);
@@ -310,7 +317,8 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
             }, this);
         },
         onFileProgress: function (e, data) {
-            var progress = data.loaded / data.total * 100 >> 0;
+            let progress = data.loaded / data.total * 100 >> 0;
+
             data.files.forEach(function (file, index) {
                 file.ext.progress(progress);
             }, this);
@@ -334,6 +342,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                 file.ext.valid = false;
                 this.setMessage(file, mess.fcount, 'error'); //Maximum number of files exceeded
             }
+
             // Files are accepted if either the file type or the file name matches against the acceptFileTypes regular expression,
             // as only browsers with support for the File API report the type:
             if (!(options.acceptTypes.test(file.type) || options.acceptTypes.test(file.name))) {
@@ -341,11 +350,13 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                 file.ext.valid = false;
                 this.setMessage(file, mess.ftype, 'error'); //Filetype not allowed
             }
+
             if (options.maxSize && file.size > options.maxSize) {
                 file.ext.error(true);
                 file.ext.valid = false;
                 this.setMessage(file, mess.fmax, 'error');
             }
+
             if (typeof file.size === 'number' && file.size < options.minSize) {
                 file.ext.error(true);
                 file.ext.valid = false;
@@ -353,39 +364,42 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
             }
         },
         filePreview: function (file, cb) {
-            var that = this,
-                options = this.fileOptions;
+            const that = this;
+            const options = this.fileOptions;
 
             this.setMessage(file, 'Preparing file..', 'muted');
             loadImage(
                 file,
                 function (img) {
-                    var node = that.$dom.find('.forcanvas[data-fileuid="' + file.ext.uid + '"]');
+                    let node = that.$dom.find('.forcanvas[data-fileuid="' + file.ext.uid + '"]');
+
                     if (node && node.length > 0) {
                         node.append(img);
                         node.css({ height: img.height, opacity: 1 });
+
                         if (cb) {
                             window.setTimeout(function () {
                                 cb(file, true);
                             }, 600);
                         }
+
                         img = node = null;
-                    } else {
-                        if (cb) {
-                            cb(file, false);
-                        }
+                    } else if (cb) {
+                        cb(file, false);
                     }
+
                     this.setMessage(file, '', 'muted');
                 }.bind(this),
                 {
                     maxWidth: options.previewMaxWidth,
                     maxHeight: options.previewMaxHeight,
-                    canvas: options.previewAsCanvas
+                    canvas: options.previewAsCanvas,
                 }
             );
         },
         setMessage: function (file, text, type) {
-            var css = '';
+            let css = '';
+
             switch (type) {
                 case 'error':
                     css = 'text-error';
@@ -408,6 +422,6 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
             file.ext.msgCss(css);
 
             text = type = css = null;
-        }
+        },
     });
 });

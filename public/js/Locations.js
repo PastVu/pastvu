@@ -1,7 +1,7 @@
 define(['jquery', 'Browser', 'knockout.mapping', 'Params'/*, 'http://www.geoplugin.net/javascript.gp'*/], function ($, Browser, koMapping, P) {
     'use strict';
 
-    var Locations = {
+    const Locations = {
         types: { '_def_': koMapping.toJS(P.settings.locDef) },
         range: P.settings.locDefRange(),
 
@@ -29,12 +29,12 @@ define(['jquery', 'Browser', 'knockout.mapping', 'Params'/*, 'http://www.geoplug
             }, this);
         },
         get: function () {
-            for (var i = 0; i < this.range.length; i++) {
+            for (let i = 0; i < this.range.length; i++) {
                 if (this.types[this.range[i]]) {
                     return this.types[this.range[i]];
                 }
             }
-        }
+        },
     };
 
     /**

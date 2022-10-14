@@ -4,7 +4,7 @@
 define([
     'underscore', 'jquery', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping',
     'm/_moduleCliche', 'globalVM', 'renderer', 'model/User', 'model/storage', 'noties',
-    'highstock/highstock.src', 'text!tpl/admin/conveyer.pug', 'css!style/admin/conveyer', 'bs/ext/multiselect'
+    'highstock/highstock.src', 'text!tpl/admin/conveyer.pug', 'css!style/admin/conveyer', 'bs/ext/multiselect',
 ], function (_, $, Browser, Utils, socket, P, ko, koMapping, Cliche,
              globalVM, renderer, User, storage, noties, Highcharts, pug) {
     'use strict';
@@ -13,33 +13,33 @@ define([
     Highcharts.theme = {
         colors: [
             '#DDDF0D', '#7798BF', '#55BF3B', '#DF5353', '#aaeeee', '#ff0066', '#eeaaee',
-            '#55BF3B', '#DF5353', '#7798BF', '#aaeeee'
+            '#55BF3B', '#DF5353', '#7798BF', '#aaeeee',
         ],
         chart: {
             backgroundColor: {
                 linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
                 stops: [
                     [0, 'rgb(96, 96, 96)'],
-                    [1, 'rgb(16, 16, 16)']
-                ]
+                    [1, 'rgb(16, 16, 16)'],
+                ],
             },
             borderWidth: 0,
             borderRadius: 0,
             plotBackgroundColor: null,
             plotShadow: false,
-            plotBorderWidth: 0
+            plotBorderWidth: 0,
         },
         title: {
             style: {
                 color: '#FFF',
-                font: '16px Lucida Grande, Lucida Sans Unicode, Verdana, Arial, Helvetica, sans-serif'
-            }
+                font: '16px Lucida Grande, Lucida Sans Unicode, Verdana, Arial, Helvetica, sans-serif',
+            },
         },
         subtitle: {
             style: {
                 color: '#DDD',
-                font: '12px Lucida Grande, Lucida Sans Unicode, Verdana, Arial, Helvetica, sans-serif'
-            }
+                font: '12px Lucida Grande, Lucida Sans Unicode, Verdana, Arial, Helvetica, sans-serif',
+            },
         },
         xAxis: {
             gridLineWidth: 0,
@@ -47,15 +47,15 @@ define([
             tickColor: '#999',
             labels: {
                 style: {
-                    color: '#BBB'
-                }
+                    color: '#BBB',
+                },
             },
             title: {
                 style: {
                     color: '#AAA',
-                    font: 'bold 12px Lucida Grande, Lucida Sans Unicode, Verdana, Arial, Helvetica, sans-serif'
-                }
-            }
+                    font: 'bold 12px Lucida Grande, Lucida Sans Unicode, Verdana, Arial, Helvetica, sans-serif',
+                },
+            },
         },
         yAxis: {
             alternateGridColor: null,
@@ -65,74 +65,74 @@ define([
             tickWidth: 0,
             labels: {
                 style: {
-                    color: '#BBB'
-                }
+                    color: '#BBB',
+                },
             },
             title: {
                 style: {
                     color: '#AAA',
-                    font: 'bold 12px Lucida Grande, Lucida Sans Unicode, Verdana, Arial, Helvetica, sans-serif'
-                }
-            }
+                    font: 'bold 12px Lucida Grande, Lucida Sans Unicode, Verdana, Arial, Helvetica, sans-serif',
+                },
+            },
         },
         legend: {
             itemStyle: {
-                color: '#CCC'
+                color: '#CCC',
             },
             itemHoverStyle: {
-                color: '#FFF'
+                color: '#FFF',
             },
             itemHiddenStyle: {
-                color: '#333'
-            }
+                color: '#333',
+            },
         },
         labels: {
             style: {
-                color: '#CCC'
-            }
+                color: '#CCC',
+            },
         },
         tooltip: {
             backgroundColor: {
                 linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
                 stops: [
                     [0, 'rgba(96, 96, 96, .8)'],
-                    [1, 'rgba(16, 16, 16, .8)']
-                ]
+                    [1, 'rgba(16, 16, 16, .8)'],
+                ],
             },
             borderWidth: 0,
             style: {
-                color: '#FFF'
-            }
+                color: '#FFF',
+            },
         },
 
         plotOptions: {
             line: {
                 dataLabels: {
-                    color: '#CCC'
+                    color: '#CCC',
                 },
                 marker: {
-                    lineColor: '#333'
-                }
+                    lineColor: '#333',
+                },
             },
             spline: {
                 marker: {
-                    lineColor: '#333'
-                }
+                    lineColor: '#333',
+                },
             },
             scatter: {
                 marker: {
-                    lineColor: '#333'
-                }
+                    lineColor: '#333',
+                },
             },
             candlestick: {
-                lineColor: 'white'
-            }
+                lineColor: 'white',
+            },
         },
 
         toolbar: {
             itemStyle: {
-                color: '#CCC'
-            }
+                color: '#CCC',
+            },
         },
 
         navigation: {
@@ -141,24 +141,24 @@ define([
                     linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
                     stops: [
                         [0.4, '#606060'],
-                        [0.6, '#333333']
-                    ]
+                        [0.6, '#333333'],
+                    ],
                 },
                 borderColor: '#000000',
                 symbolStroke: '#C0C0C0',
-                hoverSymbolStroke: '#FFFFFF'
-            }
+                hoverSymbolStroke: '#FFFFFF',
+            },
         },
 
         exporting: {
             buttons: {
                 exportButton: {
-                    symbolFill: '#55BE3B'
+                    symbolFill: '#55BE3B',
                 },
                 printButton: {
-                    symbolFill: '#7797BE'
-                }
-            }
+                    symbolFill: '#7797BE',
+                },
+            },
         },
 
         // scroll charts
@@ -168,12 +168,12 @@ define([
                     linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
                     stops: [
                         [0.4, '#888'],
-                        [0.6, '#555']
-                    ]
+                        [0.6, '#555'],
+                    ],
                 },
                 stroke: '#000000',
                 style: {
-                    color: '#CCC'
+                    color: '#CCC',
                 },
                 states: {
                     hover: {
@@ -181,49 +181,49 @@ define([
                             linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
                             stops: [
                                 [0.4, '#BBB'],
-                                [0.6, '#888']
-                            ]
+                                [0.6, '#888'],
+                            ],
                         },
                         stroke: '#000000',
                         style: {
-                            color: 'white'
-                        }
+                            color: 'white',
+                        },
                     },
                     select: {
                         fill: {
                             linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
                             stops: [
                                 [0.1, '#000'],
-                                [0.3, '#333']
-                            ]
+                                [0.3, '#333'],
+                            ],
                         },
                         stroke: '#000000',
                         style: {
-                            color: 'yellow'
-                        }
-                    }
-                }
+                            color: 'yellow',
+                        },
+                    },
+                },
             },
             inputStyle: {
                 backgroundColor: '#333',
-                color: 'silver'
+                color: 'silver',
             },
             labelStyle: {
-                color: 'silver'
-            }
+                color: 'silver',
+            },
         },
 
         navigator: {
             handles: {
                 backgroundColor: '#666',
-                borderColor: '#AAA'
+                borderColor: '#AAA',
             },
             outlineColor: '#CCC',
             maskFill: 'rgba(16, 16, 16, 0.5)',
             series: {
                 color: '#7798BF',
-                lineColor: '#A6C7ED'
-            }
+                lineColor: '#A6C7ED',
+            },
         },
 
         scrollbar: {
@@ -231,8 +231,8 @@ define([
                 linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
                 stops: [
                     [0.4, '#888'],
-                    [0.6, '#555']
-                ]
+                    [0.6, '#555'],
+                ],
             },
             barBorderColor: '#CCC',
             buttonArrowColor: '#CCC',
@@ -240,8 +240,8 @@ define([
                 linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
                 stops: [
                     [0.4, '#888'],
-                    [0.6, '#555']
-                ]
+                    [0.6, '#555'],
+                ],
             },
             buttonBorderColor: '#CCC',
             rifleColor: '#FFF',
@@ -249,10 +249,10 @@ define([
                 linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
                 stops: [
                     [0, '#000'],
-                    [1, '#333']
-                ]
+                    [1, '#333'],
+                ],
             },
-            trackBorderColor: '#666'
+            trackBorderColor: '#666',
         },
 
         // special colors for some of the demo examples
@@ -260,7 +260,7 @@ define([
         legendBackgroundColorSolid: 'rgb(70, 70, 70)',
         dataLabelsColor: '#444',
         textColor: '#E0E0E0',
-        maskColor: 'rgba(255,255,255,0.3)'
+        maskColor: 'rgba(255,255,255,0.3)',
     };
 
     Highcharts.setOptions(Highcharts.theme);
@@ -268,7 +268,7 @@ define([
     return Cliche.extend({
         pug: pug,
         options: {
-            deferredWhenReady: null // Deffered wich will be resolved when map ready
+            deferredWhenReady: null, // Deffered wich will be resolved when map ready
         },
         create: function () {
             this.destroy = _.wrap(this.destroy, this.localDestroy);
@@ -294,7 +294,7 @@ define([
 
             this.chartsOptions = {
                 yAxis: {
-                    min: 0
+                    min: 0,
                 },
                 rangeSelector: {
                     selected: 1,
@@ -302,65 +302,65 @@ define([
                         {
                             type: 'minute',
                             count: 60,
-                            text: 'H'
+                            text: 'H',
                         },
                         {
                             type: 'minute',
                             count: 12 * 60,
-                            text: '12H'
+                            text: '12H',
                         },
                         {
                             type: 'day',
                             count: 1,
-                            text: 'D'
+                            text: 'D',
                         },
                         {
                             type: 'week',
                             count: 1,
-                            text: 'W'
+                            text: 'W',
                         },
                         {
                             type: 'month',
                             count: 1,
-                            text: 'M'
+                            text: 'M',
                         },
                         {
                             type: 'month',
                             count: 6,
-                            text: 'H-Y'
+                            text: 'H-Y',
                         },
                         {
                             type: 'ytd',
-                            text: 'YTD'
+                            text: 'YTD',
                         },
                         {
                             type: 'year',
                             count: 1,
-                            text: 'Year'
+                            text: 'Year',
                         },
                         {
                             type: 'all',
-                            text: 'All'
-                        }
-                    ]
-                }
+                            text: 'All',
+                        },
+                    ],
+                },
             };
 
             ko.applyBindings(globalVM, this.$dom[0]);
             this.show();
         },
         show: function () {
-            var self = this;
+            const self = this;
 
             this.statFast();
             globalVM.func.showContainer(self.$container, function () {
                 socket.run('converter.conveyorStat', undefined, true)
                     .then(function (result) {
-                        var data = result.data;
+                        const data = result.data;
 
-                        var timeZoneOffset = -((new Date()).getTimezoneOffset()) * 60000;
-                        var stampLocal;
-                        var i = 0;
+                        const timeZoneOffset = -new Date().getTimezoneOffset() * 60000;
+                        let stampLocal;
+                        let i = 0;
 
                         while (++i < data.length) {
                             stampLocal = data[i].stamp + timeZoneOffset;
@@ -371,33 +371,34 @@ define([
                                 [stampLocal, data[i].converted]
                             );
                         }
+
                         self.conveyerLengthChart = new Highcharts.StockChart(_.assign({
                             chart: {
-                                renderTo: 'conveyerLengthGraph'
+                                renderTo: 'conveyerLengthGraph',
                             },
                             series: [
                                 {
                                     name: 'Photos in the queue',
                                     data: self.conveyerLengthData,
                                     tooltip: {
-                                        valueDecimals: 0
-                                    }
-                                }
-                            ]
+                                        valueDecimals: 0,
+                                    },
+                                },
+                            ],
                         }, self.chartsOptions));
                         self.conveyerConvertChart = new Highcharts.StockChart(_.assign({
                             chart: {
-                                renderTo: 'conveyerConvertGraph'
+                                renderTo: 'conveyerConvertGraph',
                             },
                             series: [
                                 {
                                     name: 'Converted photos',
                                     data: self.conveyerConvertData,
                                     tooltip: {
-                                        valueDecimals: 0
-                                    }
-                                }
-                            ]
+                                        valueDecimals: 0,
+                                    },
+                                },
+                            ],
                         }, self.chartsOptions));
                     });
             }, this);
@@ -421,11 +422,13 @@ define([
                     if (result && _.isBoolean(result.conveyerEnabled)) {
                         this.conveyerEnabled(result.conveyerEnabled);
                     }
+
                     this.exe(false);
                 }.bind(this));
         },
         clearConveyer: function () {
-            var self = this;
+            const self = this;
+
             this.exe(true);
 
             noties.confirm({
@@ -446,19 +449,20 @@ define([
                 },
                 onCancel: function () {
                     self.exe(false);
-                }
+                },
             });
         },
 
         toConvert: function () {
-            var self = this;
+            const self = this;
+
             self.exe(true);
             socket
                 .run('photo.convertAll', {
                     min: Number(self.reconvertCidMin()),
                     max: Number(self.reconvertCidMax()),
                     r: Number(self.reconvertRegion()),
-                    s: _.chain(self.reconvertStatuses() || '').split(',').map(_.trim).compact().map(Number).value()
+                    s: _.chain(self.reconvertStatuses() || '').split(',').map(_.trim).compact().map(Number).value(),
                 }, true)
                 .then(function () {
                     self.exe(false);
@@ -478,8 +482,9 @@ define([
                         this.cmaxlength(data.conveyerMaxLength);
                         this.converted(data.conveyerConverted);
                     }
+
                     this.timeoutUpdate = window.setTimeout(this.statFast.bind(this), 2000);
                 }.bind(this));
-        }
+        },
     });
 });

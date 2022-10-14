@@ -7,7 +7,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'globalVM', 'knock
     return Cliche.extend({
         pug: pug,
         options: {
-            action: ''
+            action: '',
         },
         create: function () {
             this.auth = globalVM.repository['m/common/auth'];
@@ -18,16 +18,19 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'globalVM', 'knock
             this.selections = ko.observableArray();
             this.selectedCid = ko.observable();
             this.selected = this.co.selected = ko.computed(function () {
-                var selectedCid = this.selectedCid();
+                const selectedCid = this.selectedCid();
+
                 return _.find(this.selections(), function (item) {
                     return item.cid === selectedCid;
                 });
             }, this);
             this.minLength = this.co.minLength = ko.computed(function () {
-                var selected = this.selected();
+                const selected = this.selected();
+
                 if (!selected) {
                     return 0;
                 }
+
                 return selected.desc.min || (selected.desc.required ? 3 : 0);
             }, this);
 
@@ -40,9 +43,11 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'globalVM', 'knock
         },
         show: function () {
             globalVM.func.showContainer(this.$container);
+
             if (this.modal) {
                 this.modal.$curtain.addClass('showModalCurtain');
             }
+
             this.showing = true;
         },
         hide: function () {
@@ -70,18 +75,19 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'globalVM', 'knock
                 }.bind(this));
         },
         getReason: function () {
-            var selected = this.selected(),
-                cid = Number(selected.cid),
-                desc = this.desc(),
-                descmin = this.minLength(),
-                descmax = selected.desc.max || 1000;
+            const selected = this.selected();
+            const cid = Number(selected.cid);
+            const desc = this.desc();
+            const descmin = this.minLength();
+            const descmax = selected.desc.max || 1000;
 
             if (desc.length < descmin || desc.length > descmax) {
                 this.errMsg('Description length must be between ' + descmin + ' and ' + descmax + ' symbols');
+
                 return false;
             }
-            return { cid: cid, desc: desc };
-        }
-    });
 
+            return { cid: cid, desc: desc };
+        },
+    });
 });

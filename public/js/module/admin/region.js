@@ -6,12 +6,12 @@
 define([
     'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
     'leaflet', 'noties', 'm/photo/status', 'renderer',
-    'text!tpl/admin/region.pug', 'css!style/admin/region', 'css!style/leaflet/leaflet'
+    'text!tpl/admin/region.pug', 'css!style/admin/region', 'css!style/leaflet/leaflet',
 ], function (_, $, Utils, socket, P, ko, koMapping, Cliche, globalVM, L, noties, statuses, renderer, pug) {
     'use strict';
 
-    var collator = new Intl.Collator('en', { numeric: true, sensitivity: 'base' });
-    var regionDef = {
+    const collator = new Intl.Collator('en', { numeric: true, sensitivity: 'base' });
+    const regionDef = {
         cid: 0,
         parents: [],
         geo: '',
@@ -22,12 +22,12 @@ define([
         bbox: undefined,
         bboxhome: undefined,
         title_en: '',
-        title_local: ''
+        title_local: '',
     };
 
     ko.bindingHandlers.centerInput = {
         init: function (element, valueAccessor, allBindingsAccessor, viewModel) {
-            var $element = $(element);
+            const $element = $(element);
 
             setFromObserve(viewModel.region.center());
             subscrObserve();
@@ -37,7 +37,8 @@ define([
                     if (!viewModel.region.centerAuto()) {
                         viewModel.subscriptions.centerInput.dispose();
                         $(element).on('keyup', function () {
-                            var geo = '[' + $element.val() + ']';
+                            let geo = '[' + $element.val() + ']';
+
                             try {
                                 geo = JSON.parse(geo);
                             } catch (err) {
@@ -66,11 +67,11 @@ define([
             function setFromObserve(val) {
                 $element.val(Utils.geo.checkLatLng(val) ? val.join(', ') : '');
             }
-        }
+        },
     };
     ko.bindingHandlers.bboxhomeInput = {
         init: function (element, valueAccessor, allBindingsAccessor, viewModel) {
-            var $element = $(element);
+            const $element = $(element);
 
             setFromObserve(viewModel.region.bboxhome());
             subscrObserve();
@@ -80,7 +81,8 @@ define([
                     if (!viewModel.bboxAuto()) {
                         viewModel.subscriptions.bboxhomeInput.dispose();
                         $(element).on('keyup', function () {
-                            var bbox = '[' + $element.val() + ']';
+                            let bbox = '[' + $element.val() + ']';
+
                             try {
                                 bbox = JSON.parse(bbox);
                             } catch (err) {
@@ -109,7 +111,7 @@ define([
             function setFromObserve(val) {
                 $element.val(Utils.geo.checkbboxLatLng(val) ? val.join(', ') : '');
             }
-        }
+        },
     };
 
     return Cliche.extend({
@@ -145,7 +147,7 @@ define([
                 read: function () {
                     return !this.region.bboxhome();
                 },
-                owner: this
+                owner: this,
             });
 
             this.map = null;
@@ -197,9 +199,10 @@ define([
             }
         },
         mapCalc: function () {
-            var height = P.window.h() - this.$dom.find('.map').offset().top >> 0;
+            const height = P.window.h() - this.$dom.find('.map').offset().top >> 0;
 
             this.mh(height + 'px');
+
             if (this.map) {
                 //Самостоятельно обновляем размеры карты
                 this.map.whenReady(function () {
@@ -207,21 +210,20 @@ define([
                     this.map.fitBounds(this.bboxLBound);
                 }, this);
             }
-
         },
         childrenCalc: function () {
             if (this.region.parents().length >= this.maxRegionLevel) {
                 return;
             }
 
-            var $children = this.$dom.find('.children');
-            var childrenExpand = this.childrenExpand();
+            const $children = this.$dom.find('.children');
+            const childrenExpand = this.childrenExpand();
 
             if (!childrenExpand && $children[0].scrollWidth > $children.width()) {
                 this.childrenExpand(1);
             } else if (childrenExpand && $children[0].scrollWidth <= $children.width()) {
-                var $expand = this.$dom.find('.expand');
-                var childrenHight = $children.height();
+                const $expand = this.$dom.find('.expand');
+                let childrenHight = $children.height();
 
                 if (childrenExpand === 2 && $expand.length) {
                     childrenHight -= $expand.height() / 2 + 2;
@@ -234,22 +236,27 @@ define([
         },
         routeHandler: function () {
             this.exe(true);
-            var cid = globalVM.router.params().cid;
+
+            let cid = globalVM.router.params().cid;
 
             if (cid === 'create') {
                 this.createMode(true);
                 this.resetData();
+
                 if (Number(globalVM.router.params().parent)) {
                     this.parentCid(Number(globalVM.router.params().parent));
                     this.haveParent('1');
                 }
+
                 this.createMap();
                 this.exe(false);
             } else {
                 cid = Number(cid);
+
                 if (!cid) {
                     return globalVM.router.navigate('/admin/region');
                 }
+
                 this.createMode(false);
                 this.getOneRegion(cid, function () {
                     this.exe(false);
@@ -271,10 +278,12 @@ define([
         },
         removeLayers: function () {
             this.centerMarkerDestroy().bboxhomeLayerDestroy();
+
             if (this.layerGeo) {
                 this.map.removeLayer(this.layerGeo);
                 this.layerGeo = null;
             }
+
             if (this.layerBBOX) {
                 this.map.removeLayer(this.layerBBOX);
                 this.layerBBOX = null;
@@ -282,7 +291,7 @@ define([
         },
 
         fillData: function (data, needRedraw) {
-            var region = data.region;
+            const region = data.region;
 
             this.regionOrigin = region;
             koMapping.fromJS(region, this.region);
@@ -290,7 +299,7 @@ define([
             if (region.bbox) {
                 this.bboxLBound = [
                     [region.bbox[0], region.bbox[1]],
-                    [region.bbox[2], region.bbox[3]]
+                    [region.bbox[2], region.bbox[3]],
                 ];
             } else {
                 this.bboxLBound = null;
@@ -304,6 +313,7 @@ define([
 
             this.children(data.children || []);
             this.childLenArr(data.childLenArr || []);
+
             if (data.region.parents && data.region.parents.length) {
                 this.parentCidOrigin = data.region.parents[data.region.parents.length - 1].cid;
                 this.haveParent('1');
@@ -311,10 +321,12 @@ define([
                 this.haveParent('0');
                 this.parentCidOrigin = 0;
             }
+
             this.parentCid(this.parentCidOrigin);
 
             if (region.geo) {
                 this.geoStringOrigin = region.geo;
+
                 try {
                     this.geoObj = JSON.parse(region.geo);
                 } catch (err) {
@@ -322,13 +334,14 @@ define([
                     noties.error({ message: 'GeoJSON client parse error!<br>' + err.message });
                     this.geoStringOrigin = null;
                     this.geoObj = null;
+
                     return false;
                 }
             }
 
-            var photostat = region.photostat || {};
-            var paintstat = region.paintstat || {};
-            var imagestat = _.mergeWith(_.cloneDeep(photostat), paintstat, function (photoval, paintval) {
+            const photostat = region.photostat || {};
+            const paintstat = region.paintstat || {};
+            const imagestat = _.mergeWith(_.cloneDeep(photostat), paintstat, function (photoval, paintval) {
                 return (photoval || 0) + (paintval || 0);
             });
 
@@ -353,13 +366,16 @@ define([
             }, []);
             imagestat.icon = 'camera';
             imagestat.title = 'Images';
+
             if (paintstat.all) {
                 imagestat.alterAll = globalVM.intl.num(imagestat.all) + ' (' + globalVM.intl.num(paintstat.all) + ' paintings)';
             }
+
             imagestat.linkprefix = '/ps?f=r!' + region.cid;
             this.imagestat(imagestat);
 
-            var cstat = region.cstat || {};
+            const cstat = region.cstat || {};
+
             cstat.statuses = _.transform(statuses.keys, function (result, status, key) {
                 if (_.isNumber(cstat['s' + status])) {
                     result.push({ status: status, count: cstat['s' + status], title: statuses[key].filter_title });
@@ -372,18 +388,19 @@ define([
             if (needRedraw) {
                 this.drawData();
             }
+
             this.childrenCalc();
 
             return true;
         },
         drawData: function () {
-            var mapInit = !this.map;
+            const mapInit = !this.map;
 
             this.createMap();
             this.removeLayers();
 
             this.map.whenReady(function () {
-                var addLayers = function () {
+                const addLayers = function () {
                     if (this.bboxLBound) {
                         this.layerBBOX = L.rectangle(this.bboxLBound,
                             { color: '#F70', weight: 1, opacity: 0.9, fillOpacity: 0.1, clickable: false }
@@ -392,9 +409,10 @@ define([
 
                     if (this.geoObj) {
                         this.layerGeo = L.geoJson(this.geoObj, {
-                            style: { color: '#F00', weight: 2, opacity: 0.8, clickable: false }
+                            style: { color: '#F00', weight: 2, opacity: 0.8, clickable: false },
                         }).addTo(this.map);
                     }
+
                     if (this.region.bboxhome()) {
                         this.bboxhomeSet(this.region.bboxhome());
                     }
@@ -423,8 +441,9 @@ define([
                 zoom: 3,
                 minZoom: 2,
                 maxZoom: 16,
-                trackResize: false
+                trackResize: false,
             });
+
             if (this.bboxLBound) {
                 this.map.fitBounds(this.bboxLBound);
             }
@@ -432,7 +451,7 @@ define([
             this.map
                 .addLayer(this.markerLayer)
                 .on('click', function (e) {
-                    var geo = Utils.geo.geoToPrecision([e.latlng.lat, e.latlng.lng]);
+                    const geo = Utils.geo.geoToPrecision([e.latlng.lat, e.latlng.lng]);
 
                     this.centerSet(geo);
                     this.region.centerAuto(false);
@@ -442,7 +461,8 @@ define([
         },
         //Создание маркера центра региона
         centerMarkerCreate: function () {
-            var _this = this;
+            const _this = this;
+
             this.centerMarker = L.marker(this.region.center(),
                 {
                     draggable: true,
@@ -451,8 +471,8 @@ define([
                         iconSize: [26, 43],
                         iconAnchor: [13, 36],
                         iconUrl: '/img/map/pinEdit.png',
-                        className: 'centerMarker'
-                    })
+                        className: 'centerMarker',
+                    }),
                 })
                 .on('dragstart', function () {
                     _this.region.centerAuto(false);
@@ -462,6 +482,7 @@ define([
                     _this.region.center(Utils.geo.geoToPrecision(Utils.geo.latlngToArr(this.getLatLng())));
                 })
                 .addTo(this.markerLayer);
+
             return this;
         },
         //Удаление маркера центра
@@ -471,11 +492,13 @@ define([
                 this.markerLayer.removeLayer(this.centerMarker);
                 delete this.centerMarker;
             }
+
             return this;
         },
         centerSet: function (geo) {
             this.region.center(geo);
             this.centerValid(true);
+
             if (this.centerMarker) {
                 this.centerMarker.setLatLng(geo);
             } else {
@@ -484,7 +507,8 @@ define([
         },
         //Переключаем задание центра Авто/Вручную
         centerAutoToggle: function () {
-            var newCenterAuto = !this.region.centerAuto();
+            const newCenterAuto = !this.region.centerAuto();
+
             this.region.centerAuto(newCenterAuto);
 
             if (newCenterAuto) {
@@ -527,9 +551,10 @@ define([
                     opacity: 1,
                     fillColor: '#F70',
                     fillOpacity: 0.1,
-                    clickable: false
+                    clickable: false,
                 }
             ).addTo(this.map);
+
             return this;
         },
         //Удаление прямоугольника bboxhome
@@ -538,6 +563,7 @@ define([
                 this.map.removeLayer(this.layerBBOXHome);
                 this.layerBBOXHome = null;
             }
+
             return this;
         },
         bboxhomeSet: function (bbox) {
@@ -546,17 +572,20 @@ define([
             } else if (bbox[1] > 180) {
                 bbox[1] -= 360;
             }
+
             if (bbox[3] < -180) {
                 bbox[3] += 360;
             } else if (bbox[3] > 180) {
                 bbox[3] -= 360;
             }
+
             this.region.bboxhome(bbox);
             this.bboxhomeLBound = [
                 [bbox[0], bbox[1]],
-                [bbox[2], bbox[3]]
+                [bbox[2], bbox[3]],
             ];
             this.bboxhomeValid(true);
+
             if (this.layerBBOXHome) {
                 this.layerBBOXHome.setBounds(this.bboxhomeLBound);
             } else {
@@ -584,7 +613,8 @@ define([
                 .then(function (data) {
                     // Выборке региона подставляем дефолтные значения
                     _.defaults(data.region, regionDef);
-                    var error = !this.fillData(data, true);
+
+                    const error = !this.fillData(data, true);
 
                     if (Utils.isType('function', cb)) {
                         cb.call(ctx, data, error);
@@ -596,18 +626,20 @@ define([
                 return false;
             }
 
-            var saveData = koMapping.toJS(this.region);
-            var needRedraw;
-            var parentIsChanged;
+            const saveData = koMapping.toJS(this.region);
+            let needRedraw;
+            let parentIsChanged;
 
             if (!saveData.geo) {
                 noties.alert({
                     message: 'GeoJSON is required!',
                     type: 'warning',
-                    timeout: 2000
+                    timeout: 2000,
                 });
+
                 return false;
             }
+
             if (saveData.geo === this.geoStringOrigin) {
                 delete saveData.geo;
             }
@@ -616,8 +648,9 @@ define([
                 noties.alert({
                     message: 'It is necessary to fill in English name',
                     type: 'warning',
-                    timeout: 2000
+                    timeout: 2000,
                 });
+
                 return false;
             }
 
@@ -626,17 +659,19 @@ define([
             }
 
             //Перерисовка будет нужна, если изменился geojson(сл-во и bbox) или расчет центра поставили auto
-            needRedraw = !!saveData.geo || (saveData.centerAuto && !this.regionOrigin.centerAuto);
+            needRedraw = !!saveData.geo || saveData.centerAuto && !this.regionOrigin.centerAuto;
 
             if (this.haveParent() === '1') {
                 saveData.parent = Number(this.parentCid());
+
                 if (!saveData.parent) {
                     noties.alert({
                         message: 'If the level is below the country level, you must specify the id of the parent region!',
                         type: 'warning',
                         timeout: 5000,
-                        ok: true
+                        ok: true,
                     });
+
                     return false;
                 }
             } else {
@@ -657,15 +692,15 @@ define([
             function processSave(confirmer) {
                 this.exe(true);
                 this.sendSave(saveData, needRedraw, function (data, error) {
-                    var resultStat = data && data.resultStat;
+                    const resultStat = data && data.resultStat;
 
                     if (confirmer) {
                         confirmer.close();
                     }
 
                     if (!error) {
-                        var msg = 'Region <b>' + this.region.title_en() + '</b> has been successfully ' + (parentIsChanged ? 'transferred and ' : '') + 'saved<br>';
-                        var geoChangePhotosCount;
+                        let msg = 'Region <b>' + this.region.title_en() + '</b> has been successfully ' + (parentIsChanged ? 'transferred and ' : '') + 'saved<br>';
+                        let geoChangePhotosCount;
 
                         if (resultStat && Object.keys(resultStat).length) {
                             if (typeof resultStat.photosCountBefore === 'number' && typeof resultStat.photosCountAfter === 'number') {
@@ -675,6 +710,7 @@ define([
                                     msg += '<br><b>' + Math.abs(geoChangePhotosCount) + '</b> photos are ' + (geoChangePhotosCount > 0 ? 'added to the region' : 'removed from the region') + ' because of polygon coordinates changing.';
                                 }
                             }
+
                             if (typeof resultStat.commentsCountBefore === 'number' && typeof resultStat.commentsCountAfter === 'number') {
                                 geoChangePhotosCount = resultStat.commentsCountAfter - resultStat.commentsCountBefore;
 
@@ -682,25 +718,31 @@ define([
                                     msg += '<br><b>' + Math.abs(geoChangePhotosCount) + '</b> comments are ' + (geoChangePhotosCount > 0 ? 'added to the region' : 'removed from the region') + ' because of photos transfer.';
                                 }
                             }
+
                             if (resultStat.affectedPhotos) {
                                 msg += '<br><b>' + resultStat.affectedPhotos + '</b> photos have been moved following the region.';
                             }
+
                             if (resultStat.affectedComments) {
                                 msg += '<br><b>' + resultStat.affectedComments + '</b> comments have been moved following their photos. ';
                             }
+
                             if (resultStat.affectedUsers) {
                                 msg += '<br><b>' + resultStat.affectedUsers + '</b> users have been reduced in "my regions" count.';
                             }
+
                             if (resultStat.affectedMods) {
                                 msg += '<br><b>' + resultStat.affectedMods + '</b> moderators have been reduced moderators regions.';
                             }
                         }
+
                         noties.alert({
                             message: msg,
                             type: 'alert',
-                            ok: true
+                            ok: true,
                         });
                     }
+
                     this.exe(false);
                 }, this);
             }
@@ -725,6 +767,7 @@ define([
                     if (error.code === 'REGION_GEOJSON_PARSE') {
                         error.message += '<br/>' + _.get(error, 'details.why');
                     }
+
                     noties.error(error);
                     cb.call(ctx, null, error);
                 });
@@ -733,14 +776,15 @@ define([
             if (this.exe()) {
                 return false;
             }
+
             this.exe(true);
 
-            var cid = this.region.cid();
-            var title = this.region.title_en();
-            var regionParent;
-            var that = this;
-            var childLenArr = this.childLenArr();
-            var msg = 'Регион <b>' + title + '</b> будет удален<br>';
+            const cid = this.region.cid();
+            const title = this.region.title_en();
+            let regionParent;
+            const that = this;
+            const childLenArr = this.childLenArr();
+            let msg = 'Регион <b>' + title + '</b> будет удален<br>';
 
             if (childLenArr.length) {
                 msg += '<br>Also <b>' +
@@ -748,13 +792,16 @@ define([
                         return previousValue + currentValue;
                     }) + '</b> children regions will be removed<br>';
             }
+
             msg += 'All objects within the region and it children, ';
+
             if (!this.region.parents().length) {
                 msg += 'will be assigned to the <b>Open sea</b><br>';
             } else {
                 regionParent = _.last(this.region.parents());
                 msg += 'will remain in upper region <b>' + regionParent.title_en() + '</b><br>';
             }
+
             msg += '<br>It may take a few minutes. Confirm?<br>' +
                 '<small><i>The operation continues to run even if you close your browser</i></small>';
 
@@ -774,38 +821,47 @@ define([
                             socket.run('region.remove', { cid: cid })
                                 .then(function (data) {
                                     msg = 'Region <b>' + title + '</b> removed successfully<br>';
+
                                     if (data.affectedPhotos) {
                                         msg += '<b>' + data.affectedPhotos + '</b> ' +
                                             'photo have been changed their regions.<br>';
                                     }
+
                                     if (data.affectedComments) {
                                         msg += '<b>' + data.affectedComments + '</b> ' +
                                             'comments have been moved following their photos.<br>';
                                     }
+
                                     if (data.homeAffectedUsers) {
                                         msg += '<b>' + data.homeAffectedUsers + '</b> ' +
                                             'users chenged theire home regions to ' + data.homeReplacedWith.title_en +
                                             ' (id ' + data.homeReplacedWith.cid + ').<br>';
                                     }
+
                                     if (data.affectedUsers) {
                                         msg += '<b>' + data.affectedUsers + '</b> ' +
                                             'users have been reduced in "my regions" count.<br>';
                                     }
+
                                     if (data.affectedMods) {
                                         msg += '<b>' + data.affectedMods + '</b> ' +
                                             'moderators have been reduced moderators regions.';
+
                                         if (data.affectedModsLose) {
                                             msg += '<b>' + data.affectedModsLose + '</b> ' +
                                                 'of them lost moderation status.';
                                         }
+
                                         msg += '<br>';
                                     }
 
                                     confirmer.success(msg, 'Ok', null, function () {
-                                        var href = '/admin/region';
+                                        let href = '/admin/region';
+
                                         if (regionParent) {
                                             href += '?hl=' + regionParent.cid();
                                         }
+
                                         document.location.href = href;
                                     });
                                 })
@@ -815,19 +871,18 @@ define([
                                         that.exe(false);
                                     });
                                 });
-
                         },
                         cancelText: 'No',
                         cancelClass: 'btn-success',
                         onCancel: function () {
                             that.exe(false);
-                        }
+                        },
                     });
                 },
                 cancelText: 'Cancel',
                 onCancel: function () {
                     that.exe(false);
-                }
+                },
             });
 
             return false;
@@ -837,15 +892,16 @@ define([
             if (this.exe()) {
                 return false;
             }
+
             this.exe(true);
 
-            var that = this;
-            var cid = this.region.cid();
-            var title = this.region.title_en();
+            const that = this;
+            const cid = this.region.cid();
+            const title = this.region.title_en();
 
             socket.run('region.recalcStatistics', { cids: [cid] })
                 .then(function (data) {
-                    var msg;
+                    let msg;
 
                     if (data.running) {
                         msg = 'Statistics is being recalculated for all regions at this moment';
@@ -868,7 +924,7 @@ define([
                             that.getOneRegion(cid, function () {
                                 that.exe(false);
                             });
-                        }
+                        },
                     });
                 })
                 .catch(function (error) {
@@ -878,8 +934,8 @@ define([
         },
 
         changeParentWarn: function (cb, ctx) {
-            var msg = 'You want to change the position of the region in the hierarchy.';
-            var childLenArr = this.childLenArr();
+            let msg = 'You want to change the position of the region in the hierarchy.';
+            const childLenArr = this.childLenArr();
 
             if (childLenArr.length) {
                 msg += '<br>Also will be moved <b>' +
@@ -887,6 +943,7 @@ define([
                         return previousValue + currentValue;
                     }) + '</b> child regions<br>';
             }
+
             msg += '<br>Users, who signed on moved regions and their new parents, ' +
                 'subscription on moved will be removed, because subscription includes parent and child regions. ' +
                 'The same applies to regional moderator permissions.';
@@ -905,7 +962,7 @@ define([
                 cancelClass: 'btn-success',
                 onCancel: function () {
                     cb.call(ctx, false);
-                }
+                },
             });
         },
 
@@ -925,17 +982,17 @@ define([
                                 fullHeight: true,
                                 withScroll: true,
                                 offIcon: { text: 'Закрыть', click: this.closeFeatures, ctx: this },
-                                btns: [{ css: 'btn-primary', text: 'Закрыть', click: this.closeFeatures, ctx: this }]
+                                btns: [{ css: 'btn-primary', text: 'Закрыть', click: this.closeFeatures, ctx: this }],
                             },
                             callback: function (vm) {
                                 this.regfiVM = vm;
                                 this.childModules[vm.id] = vm;
-                            }.bind(this)
-                        }
+                            }.bind(this),
+                        },
                     ],
                     {
                         parent: this,
-                        level: this.level + 3 //Чтобы не удалился модуль карты
+                        level: this.level + 3, //Чтобы не удалился модуль карты
                     }
                 );
             }

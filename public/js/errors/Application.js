@@ -1,8 +1,8 @@
 define(['Utils'], function (Utils) {
-    var CAPTURE_STACK_TRACE_SUPPORT = Boolean(Error.captureStackTrace);
-    var FIREFOX_ERROR_INFO = /@(.+?):(\d+):(\d+)$/;
+    const CAPTURE_STACK_TRACE_SUPPORT = Boolean(Error.captureStackTrace);
+    const FIREFOX_ERROR_INFO = /@(.+?):(\d+):(\d+)$/;
 
-    var ApplicationError = function () {
+    const ApplicationError = function () {
         Error.apply(this, arguments);
 
         // Ensure we get a proper stack trace in most Javascript environments
@@ -11,13 +11,14 @@ define(['Utils'], function (Utils) {
             Error.captureStackTrace(this, this.constructor);
         } else {
             // Firefox workaround
-            var stack = new Error().stack;
+            let stack = new Error().stack;
 
             if (stack) {
                 // Skipping first line in stack (it's the line where we have create our `new Error`)
                 stack = stack.split('\n').slice(1);
+
                 // Trying to get file name, line number and column number from the first line in stack
-                var match = FIREFOX_ERROR_INFO.exec(stack[0] || '');
+                const match = FIREFOX_ERROR_INFO.exec(stack[0] || '');
 
                 this.stack = stack.join('\n');
                 this.fileName = match ? match[1] : undefined;

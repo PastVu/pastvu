@@ -3,26 +3,26 @@
  */
 define([
     'underscore', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'noties',
-    'renderer', 'model/User', 'model/storage', 'text!tpl/user/manage.pug', 'css!style/user/manage', 'bs/collapse'
+    'renderer', 'model/User', 'model/storage', 'text!tpl/user/manage.pug', 'css!style/user/manage', 'bs/collapse',
 ], function (_, Utils, socket, P, ko, Cliche, globalVM, noties, renderer, User, storage, pug) {
     function isYes(evt) {
         return !!evt.target.classList.contains('yes');
     }
 
-    var ranksLang = {
+    const ranksLang = {
         mec: 'Maecenas',
         mec_silv: 'Silver maecenas',
         mec_gold: 'Gold maecenas',
-        adviser: 'Counselor'
+        adviser: 'Counselor',
     };
 
     return Cliche.extend({
         pug: pug,
         options: {
-            userVM: null
+            userVM: null,
         },
         create: function () {
-            var that = this;
+            const that = this;
 
             this.auth = globalVM.repository['m/common/auth'];
             this.u = this.options.userVM;
@@ -38,7 +38,7 @@ define([
                 { cat: 'reg', name: 'Regular user' },
                 { cat: 'mod', name: 'Moderator' },
                 { cat: 'adm', name: 'Administrator' },
-                { cat: 'sadm', name: 'Superadministrator' }
+                { cat: 'sadm', name: 'Superadministrator' },
             ];
             this.roleCategory = ko.computed({
                 read: function () {
@@ -74,7 +74,7 @@ define([
                             this.role('0');
                     }
                 },
-                owner: this
+                owner: this,
             });
             this.regions = ko.observableArray(this.u_origin.mod_regions);
             this.credentialsChanged = this.co.credentialsChanged = ko.computed(function () {
@@ -92,7 +92,7 @@ define([
                 },
                 write: function (value) {
                     that.photoNewLimit(value === 'manual' ? '0' : null);
-                }
+                },
             });
 
             Promise.all([that.getAllRanks(), that.getRules()]).then(function () {
@@ -105,7 +105,7 @@ define([
         },
         show: function () {
             this.$dom.find('#accordion').collapse({
-                toggle: false
+                toggle: false,
             });
             globalVM.func.showContainer(this.$container);
             this.showing = true;
@@ -116,19 +116,22 @@ define([
         },
 
         getAllRanks: function () {
-            var self = this;
+            const self = this;
+
             return new Promise(function (resolve) {
                 socket.run('settings.getUserRanks')
                     .then(function (result) {
-                        for (var i = 0; i < result.length; i++) {
+                        for (let i = 0; i < result.length; i++) {
                             self.ranks.push({ key: result[i], desc: ranksLang[result[i]] || i });
                         }
+
                         resolve(result);
                     });
             });
         },
         getRules: function () {
-            var self = this;
+            const self = this;
+
             return new Promise(function (resolve) {
                 socket.run('profile.giveUserRules', { login: self.u.login() }, true)
                     .then(function (result) {
@@ -145,12 +148,14 @@ define([
                 this.photoNewLimit(null);
                 this.photoNewLimitOrigin('Auto');
             }
+
             this.photoNewCan(info.canPhotoNew || 0);
         },
 
         saveCredentials: function () {
-            var regionsCids;
-            var role = Number(this.role());
+            let regionsCids;
+            const role = Number(this.role());
+
             if (role === 5 && !_.isEqual(this.u_origin.mod_regions, this.regions())) {
                 regionsCids = _.map(this.regions(), 'cid');
             }
@@ -158,8 +163,8 @@ define([
             this.exe(true);
             socket.run('admin.saveUserCredentials', { login: this.u.login(), role: role, regions: regionsCids }, true)
                 .then(function (/*data*/) {
-                    var regions = regionsCids ? this.regions() : [];
-                    var updatedProps = { role: role, mod_regions: regions };
+                    const regions = regionsCids ? this.regions() : [];
+                    const updatedProps = { role: role, mod_regions: regions };
 
                     _.assign(this.u_origin, updatedProps);
                     User.vm(updatedProps, this.u, true);
@@ -190,7 +195,7 @@ define([
                         options: {
                             min: 0,
                             max: 20,
-                            selectedInit: this.regions()
+                            selectedInit: this.regions(),
                         },
                         modal: {
                             topic: 'Change the list of regions for moderation',
@@ -203,31 +208,32 @@ define([
                                 {
                                     css: 'btn-success', text: 'Apply', glyphicon: 'glyphicon-ok',
                                     click: function () {
-                                        var regions = this.regselectVM.getSelectedRegions(['cid', 'title_en']);
+                                        const regions = this.regselectVM.getSelectedRegions(['cid', 'title_en']);
 
                                         if (regions.length > 20) {
                                             return noties.alert({
                                                 message: 'Allowed to select up to 20 regions',
                                                 type: 'warning',
-                                                timeout: 3000
+                                                timeout: 3000,
                                             });
                                         }
+
                                         this.regions(regions);
                                         this.closeRegionSelect();
                                     },
-                                    ctx: this
+                                    ctx: this,
                                 },
-                                { css: 'btn-warning', text: 'Cancel', click: this.closeRegionSelect, ctx: this }
-                            ]
+                                { css: 'btn-warning', text: 'Cancel', click: this.closeRegionSelect, ctx: this },
+                            ],
                         },
                         callback: function (vm) {
                             this.regselectVM = vm;
                             this.childModules[vm.id] = vm;
-                        }.bind(this)
+                        }.bind(this),
                     }],
                     {
                         parent: this,
-                        level: this.level + 1
+                        level: this.level + 1,
                     }
                 );
             }
@@ -303,6 +309,7 @@ define([
             socket.run('profile.saveUserRanks', { login: this.u.login(), ranks: this.u.ranks() }, true)
                 .then(function (result) {
                     this.u_origin.ranks = result.ranks;
+
                     if (Utils.isType('function', cb)) {
                         cb.call(ctx, result);
                     }
@@ -312,6 +319,7 @@ define([
         photoLimitHandler: function (val) {
             if (this.photoNewLimitOption() === 'manual') {
                 val = Number(val);
+
                 if (isNaN(val)) {
                     return false;
                 }
@@ -323,6 +331,6 @@ define([
                 .then(function (result) {
                     this.setRules(result.rules || {}, result.info || {});
                 }.bind(this));
-        }
+        },
     });
 });

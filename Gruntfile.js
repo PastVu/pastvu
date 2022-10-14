@@ -245,12 +245,16 @@ module.exports = function (grunt) {
                         'config/*example',
                         'migrations/*.js',
                         'tests/*.js',
-                        // Add here public/js/ files that have been modified
-                        // in PRs, so we gradually get them all covered and
-                        // then refactor into smaller list.
+                        'public/js/**/*.js',
+                        '!public/js/shape2geojson/*.js',
+                        // public/js/lib lib contains third-party libs, with some
+                        // exceptions listed below.
+                        '!public/js/lib/**',
                         'public/js/lib/leaflet/extends/*.js',
-                        'public/js/module/admin/regionCheck.js',
-                        'public/js/socket.js',
+                        'public/js/lib/Browser.js',
+                        'public/js/lib/JSExtensions.js',
+                        'public/js/lib/Utils.js',
+                        'public/js/lib/knockout/extends.js',
                     ],
                 },
             },

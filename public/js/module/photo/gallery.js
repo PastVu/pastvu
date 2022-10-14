@@ -4,18 +4,19 @@
 define([
     'underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche',
     'globalVM', 'renderer', 'model/Photo', 'model/storage', 'm/photo/status', 'lib/jsuri',
-    'noties', 'text!tpl/photo/gallery.pug', 'css!style/photo/gallery'
+    'noties', 'text!tpl/photo/gallery.pug', 'css!style/photo/gallery',
 ], function (_, Browser, Utils, socket, P, ko, koMapping, Cliche, globalVM,
              renderer, Photo, storage, statuses, Uri, noties, pug) {
     'use strict';
-    var $window = $(window);
-    var imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
-    var statusNums = statuses.nums;
 
-    var filterS = _.transform(statusNums, function (result, status, num) {
+    const $window = $(window);
+    const imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
+    const statusNums = statuses.nums;
+
+    const filterS = _.transform(statusNums, function (result, status, num) {
         result.push({ s: num, title: status.filter_title });
     }, []);
-    var filterSPublic = filterS.filter(function (filter) {
+    const filterSPublic = filterS.filter(function (filter) {
         return filter.s >= statuses.keys.PUBLIC;
     });
 
@@ -25,7 +26,7 @@ define([
             addPossible: false,
             userVM: null,
             goUpload: false,
-            filter: {}
+            filter: {},
         },
         create: function () {
             this.auth = globalVM.repository['m/common/auth'];
@@ -73,14 +74,14 @@ define([
                     redis: ko.observableArray(), // Array of cids of inactive excluded regions, because of inactive parents
                     geo: ko.observableArray(),
                     year: ko.observable(this.year),
-                    year2: ko.observable(this.year2)
+                    year2: ko.observable(this.year2),
                 },
                 active: ko.observable(true),
                 inactivateString: '',
                 can: {
                     s: this.co.filtercans = ko.computed(function () {
                         return this.auth.loggedIn();
-                    }, this)
+                    }, this),
                 },
                 available: {
                     s: this.co.filteravailables = ko.computed(function () {
@@ -89,15 +90,17 @@ define([
                             if (this.auth.iAm.role() > 4 || this.itsMine()) {
                                 return filterS;
                             }
+
                             // Зарегистрированные видят статусы однажды опубликованных
                             return filterSPublic;
                         }
+
                         return [];
-                    }, this)
+                    }, this),
                 },
                 admin: ko.computed(function () {
                     return this.auth.loggedIn() && this.auth.iAm.role() >= 10;
-                }, this)
+                }, this),
             };
 
             this.panelW = ko.observable('0px');
@@ -124,11 +127,11 @@ define([
                 return Math.min(this.pageFirstItem() + this.pageSize() - 1, this.count());
             }, this);
             this.pages = this.co.pages = ko.computed(function () {
-                var pageCount = this.pageLast();
-                var pageFrom = Math.max(1, this.page() - this.pageSlide());
-                var pageTo = Math.min(pageCount, this.page() + this.pageSlide());
-                var result = [];
-                var i;
+                const pageCount = this.pageLast();
+                let pageFrom = Math.max(1, this.page() - this.pageSlide());
+                let pageTo = Math.min(pageCount, this.page() + this.pageSlide());
+                const result = [];
+                let i;
 
                 pageFrom = Math.max(1, Math.min(pageTo - 2 * this.pageSlide(), pageFrom));
                 pageTo = Math.min(pageCount, Math.max(pageFrom + 2 * this.pageSlide(), pageTo));
@@ -136,6 +139,7 @@ define([
                 for (i = pageFrom; i <= pageTo; i++) {
                     result.push(i);
                 }
+
                 return result;
             }, this);
             this.paginationShow = this.co.paginationShow = ko.computed(function () {
@@ -149,6 +153,7 @@ define([
             this.rHash = this.co.rHash = ko.computed(function () {
                 return this.filter.disp.r().reduce(function (result, region) {
                     result[region.cid] = region;
+
                     return result;
                 }, {});
             }, this);
@@ -156,24 +161,27 @@ define([
             this.rHashPlusParents = this.co.rHash = ko.computed(function () {
                 return this.filter.disp.r().reduce(function (result, region) {
                     result[region.cid] = region;
+
                     if (region.parentRegionsArr) {
                         region.parentRegionsArr.forEach(function (region) {
                             result[region.cid] = region;
                         });
                     }
+
                     return result;
                 }, {});
             }, this);
 
             this.rsIsPossible = this.co.rsIsPossible = ko.computed(function () {
-                var rLen = this.filter.disp.r().length;
-                var rdisLen = this.filter.disp.rdis().length;
+                const rLen = this.filter.disp.r().length;
+                const rdisLen = this.filter.disp.rdis().length;
+
                 return rLen > 0 && rdisLen < rLen;
             }, this);
 
             this.activeChildLen = this.co.activeChildLen = ko.computed(function () {
-                var r = this.filter.disp.r();
-                var rdis = this.filter.disp.rdis();
+                const r = this.filter.disp.r();
+                const rdis = this.filter.disp.rdis();
 
                 if (!this.rsIsPossible()) {
                     return Infinity;
@@ -197,8 +205,8 @@ define([
             }, this);
 
             this.briefText = this.co.briefText = ko.computed(function () {
-                var count = this.count();
-                var txt = '';
+                const count = this.count();
+                let txt = '';
 
                 if (count) {
                     if (this.feed() || this.coin()) {
@@ -219,6 +227,7 @@ define([
             } else {
                 this.pageUrl = ko.observable('/ps');
             }
+
             this.pageQuery = ko.observable('');
 
             this.routeHandlerDebounced = _.throttle(this.routeHandler, 700, { leading: true, trailing: true });
@@ -240,9 +249,11 @@ define([
         },
         show: function () {
             globalVM.func.showContainer(this.$container);
+
             if (this.u && this.options.goUpload) {
                 window.setTimeout(this.showUpload.bind(this), 500);
             }
+
             this.showing = true;
         },
         hide: function () {
@@ -256,6 +267,7 @@ define([
             }, this);
 
             this.subscriptions.login = this.u.login.subscribe(this.changeUserHandler, this); //Срабатывает при смене пользователя
+
             if (!this.auth.loggedIn()) {
                 this.subscriptions.loggedIn = this.auth.loggedIn.subscribe(this.loggedInHandler, this);
             }
@@ -280,13 +292,13 @@ define([
             }
         },
         routeHandler: function () {
-            var params = globalVM.router.params();
-            var page = params.page;
-            var filterString = params.f || '';
-            var filterChange = false;
-            var currPhotoLength = this.photos().length;
-            var needRecieve = true;
-            var preTitle = '';
+            const params = globalVM.router.params();
+            let page = params.page;
+            const filterString = params.f || '';
+            let filterChange = false;
+            const currPhotoLength = this.photos().length;
+            let needRecieve = true;
+            const preTitle = '';
 
             // Если сразу открываем загрузку, то обрабатываем галерею как обычный запуск, т.е. page будет 1
             // Если галерея уже загружена и затем открываем загрузку, то ничего делать не надо
@@ -298,6 +310,7 @@ define([
             // значит мы вернулись из загрузки в галерею и должны загрузку просто закрыть
             if (this.uploadVM && !params.photoUpload) {
                 this.destroyUpload();
+
                 return;
             }
 
@@ -329,6 +342,7 @@ define([
                 if (this.u) {
                     // Users gallery can't have random gallery due to some mongodb indexes problem
                     globalVM.router.navigate(this.pageUrl() + this.pageQuery());
+
                     return;
                 }
 
@@ -347,6 +361,7 @@ define([
 
                 if (!this.coin() && page === 1 && this.page() === 1 && currPhotoLength) {
                     needRecieve = false; //Если переключаемся на страницы с ленты, то оставляем её данные для первой страницы
+
                     if (currPhotoLength > this.limit) {
                         this.photos.splice(this.limit);
                     }
@@ -357,6 +372,7 @@ define([
                 this.feed(false);
                 this.scrollDeActivate();
             }
+
             this.page(page);
 
             if (!this.u) {
@@ -371,38 +387,41 @@ define([
             }
         },
         buildFilterString: function () {
-            var filterString = '';
-            var t = this.filter.disp.t().map(Number).sort();
-            var c = this.filter.disp.c().map(Number).sort();
-            var r = this.filter.disp.r();
-            var re = this.filter.disp.re();
-            var s = this.filter.disp.s().map(Number);
-            var geo = this.filter.disp.geo();
-            var year = Number(this.filter.disp.year());
-            var year2 = Number(this.filter.disp.year2());
-            var ccount = Number(this.filter.disp.ccount());
-            var yearsRange = this.getTypeYearsRange();
-            var i;
+            let filterString = '';
+            const t = this.filter.disp.t().map(Number).sort();
+            const c = this.filter.disp.c().map(Number).sort();
+            const r = this.filter.disp.r();
+            const re = this.filter.disp.re();
+            let s = this.filter.disp.s().map(Number);
+            const geo = this.filter.disp.geo();
+            const year = Number(this.filter.disp.year());
+            const year2 = Number(this.filter.disp.year2());
+            const ccount = Number(this.filter.disp.ccount());
+            const yearsRange = this.getTypeYearsRange();
+            let i;
 
             if (r.length) {
                 filterString += (filterString ? '_' : '') + 'r';
+
                 for (i = 0; i < r.length; i++) {
                     filterString += '!' + r[i].cid;
                 }
 
-                var rhash = this.rHash();
-                var rp = _.sortBy(this.filter.disp.rdis().filter(function (cid) {
+                const rhash = this.rHash();
+                const rp = _.sortBy(this.filter.disp.rdis().filter(function (cid) {
                     return rhash.hasOwnProperty(cid);
                 }));
 
                 if (rp.length) {
                     filterString += (filterString ? '_' : '') + 'rp';
+
                     for (i = 0; i < rp.length; i++) {
                         filterString += '!' + rp[i];
                     }
                 }
 
-                var rs = this.filter.disp.rs();
+                const rs = this.filter.disp.rs();
+
                 if (rs.length === 1) {
                     filterString += (filterString ? '_' : '') + 'rs!' + rs[0];
                 }
@@ -412,6 +431,7 @@ define([
 
             if (re.length) {
                 filterString += (filterString ? '_' : '') + 're';
+
                 for (i = 0; i < re.length; i++) {
                     filterString += '!' + re[i].cid;
                 }
@@ -420,8 +440,9 @@ define([
             if (geo.length === 1) {
                 filterString += (filterString ? '_' : '') + 'geo!' + geo[0];
             }
+
             if (s.length && this.auth.iAm && !_.isEqual(s, [statuses.keys.PUBLIC])) {
-                var allowedS;
+                let allowedS;
 
                 if (this.auth.iAm.role() > 4 || this.itsMine()) {
                     // Владелец или модератор видят все статусы, можно регулировать
@@ -442,31 +463,37 @@ define([
                         filterString += '!all';
                     } else {
                         s.sort();
+
                         for (i = 0; i < s.length; i++) {
                             filterString += '!' + s[i];
                         }
                     }
                 }
-
             }
+
             if (t.length && !_.isEqual(t, [1, 2])) {
                 filterString += (filterString ? '_' : '') + 't';
+
                 for (i = 0; i < t.length; i++) {
                     filterString += '!' + t[i];
                 }
             }
+
             if (year > yearsRange.min || year2 < yearsRange.max) {
                 this.year = year;
                 this.year2 = year2;
                 filterString += (filterString ? '_' : '') + 'y!' + year + '!' + year2;
             }
+
             if (c.length && (!_.isEqual(c, [0, 1]) || ccount > 1)) {
                 this.ccount = ccount;
 
                 filterString += (filterString ? '_' : '') + 'c';
+
                 if (_.includes(c, 0)) {
                     filterString += '!0';
                 }
+
                 if (_.includes(c, 1)) {
                     filterString += '!' + (ccount > 1 ? ccount : 1);
                 }
@@ -478,6 +505,7 @@ define([
             if (this.filterActiveChangeBlock) {
                 return;
             }
+
             if (val) {
                 this.filter.origin = this.filter.inactivateString;
                 this.filter.inactivateString = '';
@@ -485,12 +513,14 @@ define([
                 this.filter.inactivateString = this.filter.origin;
                 this.filter.origin = this.itsMine() ? '' : 'r!0'; //Своя галерея всегда отдается по всем по умолчанию
             }
+
             this.refreshPhotos();
         },
         filterChangeHandle: function () {
             if (this.filterChangeHandleBlock) {
                 return;
             }
+
             //Если фильтр не активен, то "тихо" активируем, без рефреша
             if (!this.filter.active()) {
                 this.filterActiveChangeBlock = true;
@@ -504,21 +534,26 @@ define([
                 this.filter.disp.rs(['0', '1']);
             }
 
-            var newFilter = this.buildFilterString();
+            const newFilter = this.buildFilterString();
+
             if (newFilter !== this.filter.origin) {
                 this.updateFilterUrl(newFilter);
             }
         },
         filterRHandle: function () {
-            var rhash = this.rHash();
+            const rhash = this.rHash();
 
             // Check if we need to delete some excluded regions if some parent have been removed
-            var re = this.filter.disp.re();
+            const re = this.filter.disp.re();
+
             if (re.length) {
-                var reNew = re.reduce(function (result, region) {
-                    if (region.parents && region.parents.some(function (cid) {return rhash[cid] !== undefined;})) {
+                const reNew = re.reduce(function (result, region) {
+                    if (region.parents && region.parents.some(function (cid) {
+                        return rhash[cid] !== undefined;
+                    })) {
                         result.push(region);
                     }
+
                     return result;
                 }, []);
 
@@ -528,12 +563,14 @@ define([
             }
 
             // Check if we need to delete some rdis
-            var rdis = this.filter.disp.rdis();
+            const rdis = this.filter.disp.rdis();
+
             if (rdis.length) {
-                var rdisNew = rdis.reduce(function (result, cid) {
+                const rdisNew = rdis.reduce(function (result, cid) {
                     if (rhash[cid]) {
                         result.push(cid);
                     }
+
                     return result;
                 }, []);
 
@@ -545,20 +582,22 @@ define([
             this.filterChangeHandle();
         },
         filterRdisHandle: function (val) {
-            var re = this.filter.disp.re();
+            const re = this.filter.disp.re();
 
             if (re.length) {
                 // Check if we need to change array of inactive excluded regions
-                var redisNew = re.reduce(function (result, region) {
-                    if (region.parents && region.parents.some(function (cid) {return val.includes(cid);})) {
+                const redisNew = re.reduce(function (result, region) {
+                    if (region.parents && region.parents.some(function (cid) {
+                        return val.includes(cid);
+                    })) {
                         result.push(region.cid);
                     }
+
                     return result;
                 }, []);
 
                 this.filter.disp.redis(redisNew);
             }
-
         },
         filterSHandle: function (val) {
             if (_.isEmpty(val)) {
@@ -573,7 +612,8 @@ define([
             if (this.loading() || !cid) {
                 return false;
             }
-            var diss = [];
+
+            const diss = [];
 
             this.filter.disp.r().forEach(function (item) {
                 if (item.cid !== cid) {
@@ -588,6 +628,7 @@ define([
             if (this.loading()) {
                 return false;
             }
+
             this.filter.disp.rdis([]);
             this.filterChangeHandle();
         },
@@ -596,16 +637,19 @@ define([
             if (this.loading()) {
                 return false;
             }
+
             if (cid) {
-                var region = _.find(this.filter.disp.r(), function (item) {
+                const region = _.find(this.filter.disp.r(), function (item) {
                     return item.cid === cid;
                 }, this);
+
                 if (region) {
                     if (_.includes(this.filter.disp.rdis(), cid)) {
                         this.filter.disp.rdis.remove(cid);
                     } else {
                         this.filter.disp.rdis.push(cid);
                     }
+
                     this.filterChangeHandle();
                 }
             }
@@ -615,6 +659,7 @@ define([
             if (this.loading()) {
                 return false;
             }
+
             this.filter.disp.rdis(this.filter.disp.r().map(function (region) {
                 return region.cid;
             }));
@@ -625,6 +670,7 @@ define([
             if (this.loading() || !cid) {
                 return false;
             }
+
             this.filter.disp.r.remove(function (item) {
                 return item.cid === cid;
             });
@@ -634,6 +680,7 @@ define([
             if (this.loading()) {
                 return false;
             }
+
             this.filter.disp.r.removeAll();
         },
         // Удаляет из фильтра все регионы кроме переданного
@@ -641,6 +688,7 @@ define([
             if (this.loading() || !cid) {
                 return false;
             }
+
             this.filter.disp.rdis([]);
             this.filter.disp.r.remove(function (item) {
                 return item.cid !== cid;
@@ -656,9 +704,12 @@ define([
                     if (parentRegion.parents) {
                         parentRegion.parentRegionsArr = region.parentRegionsArr.slice(parentRegion.parents.length);
                     }
-                } else if (!region.parents || region.parents.every(function (cid) {return cid !== parentRegion.cid;})) {
+                } else if (!region.parents || region.parents.every(function (cid) {
+                    return cid !== parentRegion.cid;
+                })) {
                     result.push(region);
                 }
+
                 return result;
             }, []));
         },
@@ -666,6 +717,7 @@ define([
             if (this.rHashPlusParents()[parentRegion.cid]) {
                 return;
             }
+
             // Replace hovered region with clicked parent and remove all other selected children on that parent (if they exist)
             this.filter.disp.re(this.filter.disp.re().reduce(function (result, region) {
                 if (region.cid === regionCidToReplace) {
@@ -675,9 +727,12 @@ define([
                     if (parentRegion.parents) {
                         parentRegion.parentRegionsArr = region.parentRegionsArr.slice(parentRegion.parents.length);
                     }
-                } else if (!region.parents || region.parents.every(function (cid) {return cid !== parentRegion.cid;})) {
+                } else if (!region.parents || region.parents.every(function (cid) {
+                    return cid !== parentRegion.cid;
+                })) {
                     result.push(region);
                 }
+
                 return result;
             }, []));
             this.filterChangeHandle();
@@ -687,6 +742,7 @@ define([
             if (this.loading() || !cid) {
                 return false;
             }
+
             this.filter.disp.re.remove(function (item) {
                 return item.cid === cid;
             });
@@ -697,6 +753,7 @@ define([
             if (this.loading()) {
                 return false;
             }
+
             this.filter.disp.re.removeAll();
             this.filterChangeHandle();
         },
@@ -705,6 +762,7 @@ define([
             if (this.loading() || !cid) {
                 return false;
             }
+
             this.filter.disp.re.remove(function (item) {
                 return item.cid !== cid;
             });
@@ -713,8 +771,8 @@ define([
         //Обработка клика вариантов присутствия координат в фильтре
         //Чтобы постаыить вторую галку, если обе сняты, т.к. должно быть хотя-бы одно из состояний
         fgeoclk: function (data, event) {
-            var currDispGeo = data.filter.disp.geo();
-            var clickedGeo = event.target.value;
+            const currDispGeo = data.filter.disp.geo();
+            const clickedGeo = event.target.value;
 
             if (!currDispGeo.length) {
                 //Если все варианты сняты, делаем активным второй вариант
@@ -724,13 +782,14 @@ define([
                     data.filter.disp.geo(['0']);
                 }
             }
+
             this.filterChangeHandle(); //Вручную вызываем обработку фильтра
 
             return true; //Возвращаем true, чтобы галка в браузере переключилась
         },
         ftclick: function (data, event) {
-            var currDispType = data.filter.disp.t();
-            var clickedType = event.target.value;
+            const currDispType = data.filter.disp.t();
+            const clickedType = event.target.value;
 
             if (!currDispType.length) {
                 //Если все варианты сняты, делаем активным второй вариант
@@ -741,11 +800,11 @@ define([
                 }
             }
 
-            var currentYearsRange = this.getTypeYearsRange(this.t);
+            const currentYearsRange = this.getTypeYearsRange(this.t);
 
             if (Number(this.filter.disp.year()) === currentYearsRange.min && Number(this.filter.disp.year2()) === currentYearsRange.max) {
                 // If current years range is filling all possible range, also set new whole possible range
-                var newYearsRange = this.getTypeYearsRange();
+                const newYearsRange = this.getTypeYearsRange();
 
                 this.filter.disp.year(newYearsRange.min);
                 this.yearHandle(newYearsRange.min);
@@ -765,8 +824,8 @@ define([
             return true; //Возвращаем true, чтобы галка в браузере переключилась
         },
         frsclick: function (data, event) {
-            var currDisp = data.filter.disp.rs();
-            var clicked = event.target.value;
+            const currDisp = data.filter.disp.rs();
+            const clicked = event.target.value;
 
             if (!currDisp.length) {
                 //Если все варианты сняты, делаем активным второй вариант
@@ -776,6 +835,7 @@ define([
                     data.filter.disp.rs(['0']);
                 }
             }
+
             this.filterChangeHandle(); //Вручную вызываем обработку фильтра
 
             return true; //Возвращаем true, чтобы галка в браузере переключилась
@@ -783,7 +843,7 @@ define([
 
         getTypeYearsRange: function (t) {
             return (t || this.filter.disp.t()).reduce(function (result, type) {
-                var typeYears = statuses.years[type];
+                const typeYears = statuses.years[type];
 
                 result.min = Math.min(result.min, typeYears.min);
                 result.max = Math.max(result.max, typeYears.max);
@@ -795,24 +855,32 @@ define([
             clearTimeout(this.yearApplyTimeout);
 
             year = Number(year);
-            var yearsRange = this.getTypeYearsRange();
+
+            const yearsRange = this.getTypeYearsRange();
 
             // There is no zero year, people often muddle it up with 1 A.D.
             // https://en.wikipedia.org/wiki/0_(year)
             if (year === 0) {
                 this.filter.disp.year(1);
+
                 return;
             }
+
             if (!year || year < yearsRange.min) {
                 this.filter.disp.year(yearsRange.min);
+
                 return;
             }
+
             if (year > yearsRange.max) {
                 this.filter.disp.year(yearsRange.max);
+
                 return;
             }
+
             if (year > Number(this.filter.disp.year2())) {
                 this.filter.disp.year2(year);
+
                 return;
             }
 
@@ -825,24 +893,32 @@ define([
             clearTimeout(this.yearApplyTimeout);
 
             year2 = Number(year2);
-            var yearsRange = this.getTypeYearsRange();
+
+            const yearsRange = this.getTypeYearsRange();
 
             // There is no zero year, people often muddle it up with 1 A.D.
             // https://en.wikipedia.org/wiki/0_(year)
             if (year2 === 0) {
                 this.filter.disp.year2(1);
+
                 return;
             }
+
             if (!year2 || year2 < yearsRange.min) {
                 this.filter.disp.year2(yearsRange.min);
+
                 return;
             }
+
             if (year2 > yearsRange.max) {
                 this.filter.disp.year2(yearsRange.max);
+
                 return;
             }
+
             if (year2 < Number(this.filter.disp.year())) {
                 this.filter.disp.year(year2);
+
                 return;
             }
 
@@ -852,9 +928,9 @@ define([
             }
         },
         yearArrow: function (data, evt) {
-            var yearsRange = this.getTypeYearsRange();
-            var year = Number(this.filter.disp.year());
-            var year2 = Number(this.filter.disp.year2());
+            const yearsRange = this.getTypeYearsRange();
+            let year = Number(this.filter.disp.year());
+            const year2 = Number(this.filter.disp.year2());
 
             switch (evt.key) {
                 case 'ArrowUp':
@@ -866,26 +942,29 @@ define([
                             this.filter.disp.year2(year);
                         }
                     }
+
                     break;
                 case 'ArrowDown':
                     if (year > yearsRange.min) {
                         this.filter.disp.year(year - 1);
                     }
+
                     break;
                 default:
                     return true;
             }
         },
         year2Arrow: function (data, evt) {
-            var yearsRange = this.getTypeYearsRange();
-            var year = Number(this.filter.disp.year());
-            var year2 = Number(this.filter.disp.year2());
+            const yearsRange = this.getTypeYearsRange();
+            const year = Number(this.filter.disp.year());
+            let year2 = Number(this.filter.disp.year2());
 
             switch (evt.key) {
                 case 'ArrowUp':
                     if (year2 < yearsRange.max) {
                         this.filter.disp.year2(year2 + 1);
                     }
+
                     break;
                 case 'ArrowDown':
                     if (year2 > yearsRange.min) {
@@ -896,6 +975,7 @@ define([
                             this.filter.disp.year(year2);
                         }
                     }
+
                     break;
                 default:
                     return true;
@@ -903,7 +983,8 @@ define([
         },
         yearsReset: function () {
             clearTimeout(this.yearApplyTimeout);
-            var yearsRange = this.getTypeYearsRange();
+
+            const yearsRange = this.getTypeYearsRange();
 
             this.filter.disp.year(yearsRange.min);
             this.filter.disp.year2(yearsRange.max);
@@ -911,8 +992,8 @@ define([
             this.filterChangeHandle();
         },
         fcclick: function (data, event) {
-            var currC = data.filter.disp.c();
-            var clicked = event.target.value;
+            const currC = data.filter.disp.c();
+            const clicked = event.target.value;
 
             if (!currC.length) {
                 //Если все варианты сняты, делаем активным второй вариант
@@ -932,10 +1013,13 @@ define([
 
             if (!ccount || ccount < 1) {
                 this.filter.disp.ccount('1');
+
                 return;
             }
+
             if (ccount > 9999) {
                 this.filter.disp.ccount('9999');
+
                 return;
             }
 
@@ -945,7 +1029,7 @@ define([
             }
         },
         ccountArrow: function (data, evt) {
-            var ccount = Number(this.filter.disp.ccount());
+            let ccount = Number(this.filter.disp.ccount());
 
             switch (evt.key) {
                 case 'ArrowUp':
@@ -953,23 +1037,27 @@ define([
                         ccount = ccount + 1;
                         this.filter.disp.ccount(String(ccount));
                     }
+
                     break;
                 case 'ArrowDown':
                     if (ccount > 1) {
                         this.filter.disp.ccount(String(ccount - 1));
                     }
+
                     break;
                 default:
                     return true;
             }
         },
         updateFilterUrl: function (filterString) {
-            var uri = new Uri(location.pathname + location.search);
+            const uri = new Uri(location.pathname + location.search);
+
             if (filterString) {
                 uri.replaceQueryParam('f', filterString);
             } else {
                 uri.deleteQueryParam('f');
             }
+
             globalVM.router.navigate(uri.toString());
         },
 
@@ -977,13 +1065,14 @@ define([
             globalVM.router.navigate(this.pageUrl() + (feed ? '/feed' : '') + this.pageQuery());
         },
         modeSelect: function (mode) {
-            var modifier = '';
+            let modifier = '';
 
             switch (mode) {
                 case 2:
                     if (this.feed()) {
                         return;
                     }
+
                     ga('send', 'event', 'gallery', 'mode', 'mode feed');
                     modifier = '/feed';
                     break;
@@ -991,6 +1080,7 @@ define([
                     if (this.coin()) {
                         return;
                     }
+
                     ga('send', 'event', 'gallery', 'mode', 'mode coin');
                     modifier = '/coin';
                     break;
@@ -998,6 +1088,7 @@ define([
                     if (!this.feed() && !this.coin()) {
                         return;
                     }
+
                     ga('send', 'event', 'gallery', 'mode', 'mode page');
             }
 
@@ -1042,7 +1133,9 @@ define([
                 if (!data || data.error) {
                     return;
                 }
+
                 this.count(data.count); //Вводим полное кол-во фотографий для пересчета пагинации
+
                 if (this.page() > this.pageLast()) {
                     //Если вызванная страница больше максимальной, выходим и навигируемся на максимальную
                     return window.setTimeout(function () {
@@ -1058,12 +1151,14 @@ define([
                             this.photos.concat(data.photos, false);
                         }
                     }
+
                     if (this.scrollActive && limit > data.photos.length) {
                         this.scrollDeActivate();
                     }
                 } else {
                     this.photos(data.photos);
                 }
+
                 this.loading(false);
 
                 if (_.isFunction(cb)) {
@@ -1072,7 +1167,7 @@ define([
             }, this);
         },
         receivePhotos: function (skip, limit, cb, ctx) {
-            var params = { skip: skip, limit: limit, filter: this.filter.origin };
+            const params = { skip: skip, limit: limit, filter: this.filter.origin };
 
             if (this.u) {
                 params.login = this.u.login();
@@ -1097,13 +1192,14 @@ define([
                         this.filter.disp.rs(data.filter.rs && data.filter.rs.length ? data.filter.rs : ['0', '1']);
 
                         // Treat current re order. First insert re that already on page, then new ones (if exist)
-                        var reCurrent = this.filter.disp.re();
-                        var reNewHash = _.transform(data.filter.re, function (result, cid) {
+                        const reCurrent = this.filter.disp.re();
+                        const reNewHash = _.transform(data.filter.re, function (result, cid) {
                             result[cid] = cid;
                         }, {});
-                        var reNew = reCurrent.reduce(function (result, re) {
+                        const reNew = reCurrent.reduce(function (result, re) {
                             if (reNewHash[re.cid]) {
-                                var region = data.filter.rhash[re.cid];
+                                const region = data.filter.rhash[re.cid];
+
                                 result.push(region);
 
                                 if (region.parents) {
@@ -1114,10 +1210,13 @@ define([
 
                                 delete reNewHash[re.cid];
                             }
+
                             return result;
                         }, []);
+
                         _.forOwn(reNewHash, function (cid) {
-                            var region = data.filter.rhash[cid];
+                            const region = data.filter.rhash[cid];
+
                             reNew.push(region);
 
                             if (region.parents) {
@@ -1132,12 +1231,12 @@ define([
 
                         // Если количество регионов равно, они пусты или массивы их cid равны,
                         // то и заменять их не надо, чтобы небыло "прыжка"
-                        var rEquals = this.filter.disp.r().length === data.filter.r.length &&
+                        const rEquals = this.filter.disp.r().length === data.filter.r.length &&
                             (!data.filter.r.length || _.isEqual(_.map(this.filter.disp.r(), 'cid'), data.filter.r));
 
                         if (!rEquals) {
                             this.filter.disp.r(data.filter.r.map(function (cid) {
-                                var region = data.filter.rhash[cid];
+                                const region = data.filter.rhash[cid];
 
                                 if (region.parents) {
                                     region.parentRegionsArr = region.parents.map(function (cid) {
@@ -1154,6 +1253,7 @@ define([
                         if (!data.filter.t || !data.filter.t.length) {
                             data.filter.t = [1, 2];
                         }
+
                         if (!data.filter.geo || !data.filter.geo.length) {
                             data.filter.geo = ['0', '1'];
                         }
@@ -1163,20 +1263,25 @@ define([
                         this.filter.disp.geo(data.filter.geo);
 
                         if (_.isEmpty(data.filter.y)) {
-                            var yearsRange = this.getTypeYearsRange();
+                            const yearsRange = this.getTypeYearsRange();
+
                             data.filter.y = [yearsRange.min, yearsRange.max];
                         }
+
                         this.year = data.filter.y[0];
                         this.year2 = data.filter.y[1];
                         this.filter.disp.year(String(this.year));
                         this.filter.disp.year2(String(this.year2));
 
-                        var c;
+                        let c;
+
                         if (!_.isEmpty(data.filter.c)) {
                             c = [];
+
                             if (data.filter.c.no) {
                                 c.push(0);
                             }
+
                             if (data.filter.c.min > 0) {
                                 c.push(1);
                                 this.ccount = data.filter.c.min;
@@ -1187,6 +1292,7 @@ define([
                             this.ccount = 1;
                             this.filter.disp.ccount(String(this.ccount));
                         }
+
                         this.filter.disp.c(c.map(String));
 
                         this.filterChangeHandleBlock = false;
@@ -1198,9 +1304,9 @@ define([
                 }.bind(this));
         },
         processPhotos: function (arr, regionsHash) {
-            var photo;
-            var i = arr.length;
-            var j;
+            let photo;
+            let i = arr.length;
+            let j;
 
             while (i--) {
                 photo = arr[i];
@@ -1208,8 +1314,9 @@ define([
                     type: 'compact',
                     pic: 'h',
                     customDefaults: { title: 'Without title' },
-                    can: { 'protected': photo.protected }
+                    can: { 'protected': photo.protected },
                 });
+
                 if (regionsHash && photo.rs !== undefined) {
                     for (j = photo.rs.length; j--;) {
                         photo.rs[j] = regionsHash[photo.rs[j]];
@@ -1219,14 +1326,14 @@ define([
         },
 
         sizesCalc: function () {
-            var windowW = window.innerWidth; //В @media ширина считается с учетом ширины скролла (кроме chrome<29), поэтому мы тоже должны брать этот размер
-            var domW = this.$dom.width();
-            var thumbW;
-            var thumbH;
-            var thumbN;
-            var thumbWMin = 120;
-            var thumbWMax = 246;
-            var marginMin;
+            const windowW = window.innerWidth; //В @media ширина считается с учетом ширины скролла (кроме chrome<29), поэтому мы тоже должны брать этот размер
+            const domW = this.$dom.width();
+            let thumbW;
+            let thumbH;
+            let thumbN;
+            const thumbWMin = 120;
+            const thumbWMax = 246;
+            let marginMin;
 
             if (windowW < 1000) {
                 marginMin = 8;
@@ -1235,6 +1342,7 @@ define([
             } else {
                 marginMin = 14;
             }
+
             if (domW < 900) {
                 thumbN = 4;
             } else if (domW < 1300) {
@@ -1246,10 +1354,12 @@ define([
             }
 
             thumbW = Math.min(domW / thumbN - marginMin - 4, thumbWMax) >> 0;
+
             if (thumbW < thumbWMin) {
                 thumbN = domW / (thumbWMin + marginMin) >> 0;
                 thumbW = Math.min(domW / thumbN - marginMin - 4, thumbWMax) >> 0;
             }
+
             thumbH = thumbW / 1.5 >> 0;
             //margin = ((domW % thumbW) / (domW / thumbW >> 0)) / 2 >> 0;
 
@@ -1272,7 +1382,7 @@ define([
                                 offIcon: {
                                     text: 'Cancel', click: function () {
                                         this.closeUpload();
-                                    }, ctx: this
+                                    }, ctx: this,
                                 },
                                 btns: [
                                     {
@@ -1286,25 +1396,25 @@ define([
                                                     ga('send', 'event', 'photo', 'create', 'photo create error');
                                                 }
                                             }, this);
-                                        }, ctx: this
+                                        }, ctx: this,
                                     },
                                     {
                                         css: 'btn-warning', text: 'Cancel',
                                         click: function () {
                                             this.closeUpload();
-                                        }, ctx: this
-                                    }
-                                ]
+                                        }, ctx: this,
+                                    },
+                                ],
                             },
                             callback: function (vm) {
                                 this.uploadVM = vm;
                                 this.childModules[vm.id] = vm;
-                            }.bind(this)
-                        }
+                            }.bind(this),
+                        },
                     ],
                     {
                         parent: this,
-                        level: this.level + 1
+                        level: this.level + 1,
                     }
                 );
             }
@@ -1330,6 +1440,7 @@ define([
                                     if (!this.feed() && this.photos().length + data.photos.length > this.limit) {
                                         this.photos.splice(this.limit - data.photos.length);
                                     }
+
                                     this.photos.concat(data.photos, true);
                                 }
                             }
@@ -1337,12 +1448,13 @@ define([
                             this.loading(false);
                         }.bind(this));
                 }
+
                 this.closeUpload();
             }
         },
         closeUpload: function () {
             //Закрытие будет вызвано автоматиечски после срабатывания routeHandler
-            globalVM.router.navigate(this.pageUrl() + (this.feed() ? '/feed' : (this.page() > 1 ? '/' + this.page() : '')) + this.pageQuery());
+            globalVM.router.navigate(this.pageUrl() + (this.feed() ? '/feed' : this.page() > 1 ? '/' + this.page() : '') + this.pageQuery());
         },
         destroyUpload: function () {
             if (this.uploadVM) {
@@ -1356,27 +1468,29 @@ define([
             event.target.parentNode.parentNode.classList.add('showPrv');
         },
         onPreviewErr: function (data, event) {
-            var $photoBox = $(event.target.parentNode);
-            var parent = $photoBox[0].parentNode;
-            var content = '';
+            const $photoBox = $(event.target.parentNode);
+            const parent = $photoBox[0].parentNode;
+            let content = '';
 
             event.target.style.visibility = 'hidden';
+
             if (data.conv) {
                 content = imgFailTpl({
                     style: 'margin-top:7px;padding-top:20px; background: url(/img/misc/photoConvWhite.png) 50% 0 no-repeat;',
-                    txt: 'Preview is being created <br>please update later'
+                    txt: 'Preview is being created <br>please update later',
                 });
             } else if (data.convqueue) {
                 content = imgFailTpl({
                     style: 'margin-top:7px;',
-                    txt: '<span class="glyphicon glyphicon-road"></span><br>Preview will be created soon'
+                    txt: '<span class="glyphicon glyphicon-road"></span><br>Preview will be created soon',
                 });
             } else {
                 content = imgFailTpl({
                     style: 'margin-top:7px;padding-top:25px; background: url(/img/misc/imgw.png) 50% 0 no-repeat;',
-                    txt: 'Preview is unavailable'
+                    txt: 'Preview is unavailable',
                 });
             }
+
             $photoBox.find('.curtain').after(content);
             parent.classList.add('showPrv');
         },
@@ -1390,7 +1504,7 @@ define([
                             options: {
                                 min: 0,
                                 max: 10,
-                                selectedInit: this.filter.disp.r()
+                                selectedInit: this.filter.disp.r(),
                             },
                             modal: {
                                 topic: 'Select regions for filtration',
@@ -1405,14 +1519,14 @@ define([
                                         text: 'Apply',
                                         glyphicon: 'glyphicon-ok',
                                         click: function () {
-                                            var regions = this.regselectVM.getSelectedRegions(['cid', 'parents', 'title_en', 'childLen']);
+                                            const regions = this.regselectVM.getSelectedRegions(['cid', 'parents', 'title_en', 'childLen']);
 
                                             if (regions.length > 10) {
                                                 return noties.alert({
                                                     message: 'Allowed to select up to 10 regions',
                                                     type: 'warning',
                                                     timeout: 4000,
-                                                    ok: true
+                                                    ok: true,
                                                 });
                                             }
 
@@ -1428,20 +1542,20 @@ define([
 
                                             this.closeRegionSelect();
                                         },
-                                        ctx: this
+                                        ctx: this,
                                     },
-                                    { css: 'btn-warning', text: 'Cancel', click: this.closeRegionSelect, ctx: this }
-                                ]
+                                    { css: 'btn-warning', text: 'Cancel', click: this.closeRegionSelect, ctx: this },
+                                ],
                             },
                             callback: function (vm) {
                                 this.regselectVM = vm;
                                 this.childModules[vm.id] = vm;
-                            }.bind(this)
-                        }
+                            }.bind(this),
+                        },
                     ],
                     {
                         parent: this,
-                        level: this.level + 1
+                        level: this.level + 1,
                     }
                 );
             }
@@ -1458,14 +1572,15 @@ define([
                 return;
             }
 
-            var topcids;
-            var r = this.filter.disp.r();
+            let topcids;
+            const r = this.filter.disp.r();
 
             if (r.length) {
                 topcids = r.reduce(function (result, region) {
                     if (region.childLen) {
                         result.push(region.cid);
                     }
+
                     return result;
                 }, []);
 
@@ -1483,7 +1598,7 @@ define([
                             max: 10,
                             selectedInit: this.filter.disp.re(),
                             topCidsFilter: topcids,
-                            neverSelectable: topcids
+                            neverSelectable: topcids,
                         },
                         modal: {
                             topic: 'Select regions to exclude from filtration',
@@ -1498,14 +1613,14 @@ define([
                                     text: 'Apply',
                                     glyphicon: 'glyphicon-ok',
                                     click: function () {
-                                        var regions = this.regselectVM.getSelectedRegions(['cid', 'parents', 'title_en']);
+                                        const regions = this.regselectVM.getSelectedRegions(['cid', 'parents', 'title_en']);
 
                                         if (regions.length > 10) {
                                             return noties.alert({
                                                 message: 'Allowed to select up to 10 regions',
                                                 type: 'warning',
                                                 timeout: 4000,
-                                                ok: true
+                                                ok: true,
                                             });
                                         }
 
@@ -1523,20 +1638,20 @@ define([
                                         // Вручную вызываем обработку фильтра
                                         this.filterChangeHandle();
                                     },
-                                    ctx: this
+                                    ctx: this,
                                 },
-                                { css: 'btn-warning', text: 'Cancel', click: this.closeRegionExcludeSelect, ctx: this }
-                            ]
+                                { css: 'btn-warning', text: 'Cancel', click: this.closeRegionExcludeSelect, ctx: this },
+                            ],
                         },
                         callback: function (vm) {
                             this.regselectVM = vm;
                             this.childModules[vm.id] = vm;
-                        }.bind(this)
-                    }
+                        }.bind(this),
+                    },
                 ],
                 {
                     parent: this,
-                    level: this.level + 1
+                    level: this.level + 1,
                 }
             );
         },
@@ -1545,6 +1660,6 @@ define([
                 this.regselectVM.destroy();
                 delete this.regselectVM;
             }
-        }
+        },
     });
 });

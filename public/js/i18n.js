@@ -4,7 +4,8 @@
  */
 define(['knockout', 'knockout.mapping'], function (ko, koMapping) {
     'use strict';
-    var i18n = {
+
+    const i18n = {
         en: {
             login: 'Log In',
             logout: 'Log Out',
@@ -12,7 +13,7 @@ define(['knockout', 'knockout.mapping'], function (ko, koMapping) {
             mod: 'Moderation',
             admin: 'Administration',
             gallery: 'Gallery',
-            image_upload: 'Upload'
+            image_upload: 'Upload',
         },
         ru: {
             login: 'Вход',
@@ -21,8 +22,9 @@ define(['knockout', 'knockout.mapping'], function (ko, koMapping) {
             mod: 'Модерирование',
             admin: 'Админ',
             gallery: 'Галерея',
-            image_upload: 'Загрузить фото'
-        }
+            image_upload: 'Загрузить фото',
+        },
     };
+
     return koMapping.fromJS(i18n.ru);
 });
