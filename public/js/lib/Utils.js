@@ -1,245 +1,271 @@
-/*global escape:true, unescape:true*/
 /**
  * Utils
+ *
  * @author Klimashkin P.
  */
-define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/plugins/extends'], function ($, _, _s, Uri) {
-	var Utils = {
+define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/plugins/extends'], function ($, _, _s) {
+    const Utils = {
 
-		/**
-		 * Class powers the OOP facilities of the library. Thanks to John Resig and Dean Edwards for inspiration!
-		 */
-		Class: (function () {
-			/**
-			 * Merge src properties into dest
-			 * @param {!Object} dest
-			 * @return {!Object}
-			 */
-			function extend(dest) {
-				var sources = Array.prototype.slice.call(arguments, 1), src, i, j = 0, len = sources.length;
-				for (; j < len; j++) {
-					src = sources[j] || {};
-					for (i in src) {
-						if (src.hasOwnProperty(i)) {
-							dest[i] = src[i];
-						}
-					}
-				}
-				return dest;
-			}
+        /**
+         * Class powers the OOP facilities of the library. Thanks to John Resig and Dean Edwards for inspiration!
+         */
+        Class: (function () {
+            /**
+             * Merge src properties into dest
+             *
+             * @param {!object} dest
+             * @returns {!object}
+             */
+            function extend(dest) {
+                const sources = Array.prototype.slice.call(arguments, 1); let src; let i; let j = 0; const
+                    len = sources.length;
 
-			var Class = function () {
-			};
+                for (; j < len; j++) {
+                    src = sources[j] || {};
 
-			/**
-			 *
-			 * @param {!Object} props
-			 * @return {Function} Class
-			 */
-			Class.extend = function (props) {
-				var NewClass, F, proto, i;
+                    for (i in src) {
+                        if (src.hasOwnProperty(i)) {
+                            dest[i] = src[i];
+                        }
+                    }
+                }
 
-				// extended class with the new prototype
-				NewClass = function () {
-					if (this.initialize) {
-						this.initialize.apply(this, arguments);
-					}
-				};
+                return dest;
+            }
 
-				// instantiate class without calling constructor
-				F = function () {
-				};
-				F.prototype = this.prototype;
+            // eslint-disable-next-line no-empty-function
+            const Class = function () {
+            };
 
-				proto = new F();
-				proto.constructor = NewClass;
+            /**
+             *
+             * @param {!object} props
+             * @returns {Function} Class
+             */
+            Class.extend = function (props) {
+                let i;
 
-				NewClass.prototype = proto;
+                // extended class with the new prototype
+                const NewClass = function () {
+                    if (this.initialize) {
+                        this.initialize.apply(this, arguments);
+                    }
+                };
 
-				//inherit parent's statics
-				for (i in this) {
-					if (this.hasOwnProperty(i) && i !== 'prototype') {
-						NewClass[i] = this[i];
-					}
-				}
+                // instantiate class without calling constructor
+                // eslint-disable-next-line no-empty-function
+                const F = function () {
+                };
 
-				// mix static properties into the class
-				if (props.statics) {
-					extend(NewClass, props.statics);
-					delete props.statics;
-				}
+                F.prototype = this.prototype;
 
-				// mix includes into the prototype
-				if (props.includes) {
-					extend.apply(null, [proto].concat(props.includes));
-					delete props.includes;
-				}
+                const proto = new F();
 
-				// merge options
-				if (props.options && proto.options) {
-					props.options = extend({}, proto.options, props.options);
-				}
+                proto.constructor = NewClass;
 
-				// mix given properties into the prototype
-				extend(proto, props);
+                NewClass.prototype = proto;
 
-				return NewClass;
-			};
+                //inherit parent's statics
+                for (i in this) {
+                    if (this.hasOwnProperty(i) && i !== 'prototype') {
+                        NewClass[i] = this[i];
+                    }
+                }
+
+                // mix static properties into the class
+                if (props.statics) {
+                    extend(NewClass, props.statics);
+                    delete props.statics;
+                }
+
+                // mix includes into the prototype
+                if (props.includes) {
+                    extend.apply(null, [proto].concat(props.includes));
+                    delete props.includes;
+                }
+
+                // merge options
+                if (props.options && proto.options) {
+                    props.options = extend({}, proto.options, props.options);
+                }
+
+                // mix given properties into the prototype
+                extend(proto, props);
+
+                return NewClass;
+            };
 
 
-			// method for adding properties to prototype
-			Class.include = function (props) {
-				extend(this.prototype, props);
-			};
+            // method for adding properties to prototype
+            Class.include = function (props) {
+                extend(this.prototype, props);
+            };
 
-			Class.mergeOptions = function (options) {
-				extend(this.prototype.options, options);
-			};
+            Class.mergeOptions = function (options) {
+                extend(this.prototype.options, options);
+            };
 
-			return Class;
-		}()),
+            return Class;
+        }()),
 
         inherit: (function () {
-            var F = function () {};
+            // eslint-disable-next-line no-empty-function
+            const F = function () {};
 
             return function (child, parent) {
                 F.prototype = parent.prototype;
-                child.prototype = new F;
+                child.prototype = new F();
                 child.prototype.constructor = child;
                 child.superproto = parent.prototype;
+
                 return child;
             };
         }()),
 
-		/**
-		 * Проверяет на соответствие объекта типу (вместо typeof)
-		 * @param {string} type Имя типа.
-		 * @param {Object} obj Проверяемый объект.
-		 * @return {boolean}
-		 */
-		isType: function (type, obj) {
-			return Object.prototype.toString.call(obj).slice(8, -1).toUpperCase() === type.toUpperCase();
-		},
+        /**
+         * Проверяет на соответствие объекта типу (вместо typeof)
+         *
+         * @param {string} type Имя типа.
+         * @param {object} obj Проверяемый объект.
+         * @returns {boolean}
+         */
+        isType: function (type, obj) {
+            return Object.prototype.toString.call(obj).slice(8, -1).toUpperCase() === type.toUpperCase();
+        },
 
-		isObjectEmpty: function (obj) {
-			return this.getObjectPropertyLength(obj) === 0;
-		},
+        isObjectEmpty: function (obj) {
+            return this.getObjectPropertyLength(obj) === 0;
+        },
 
-		isObjectsEqual: function (obj1, obj2) {
-			var p1 = this.getOwnPropertyNames(obj1), i = p1.length, prop,
-				p2 = this.getOwnPropertyNames(obj2);
-			if (i === p2.length) {
-				while (i--) {
-					prop = p1[i];
-					if (!obj2.hasOwnProperty(prop)) {
-						return false;
-					}
-				}
-				return true;
-			}
-			return false;
-		},
+        isObjectsEqual: function (obj1, obj2) {
+            const p1 = this.getOwnPropertyNames(obj1); let i = p1.length; let prop;
+            const p2 = this.getOwnPropertyNames(obj2);
+
+            if (i === p2.length) {
+                while (i--) {
+                    prop = p1[i];
+
+                    if (!obj2.hasOwnProperty(prop)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            return false;
+        },
 
         clickElement: function (element) {
             if (typeof element.click === 'function') {
                 element.click();
             } else if (document.createEvent) {
-                var eventObj = document.createEvent('MouseEvents');
+                const eventObj = document.createEvent('MouseEvents');
+
                 eventObj.initEvent('click', true, true);
                 element.dispatchEvent(eventObj);
             }
         },
 
-		getObjectPropertyLength: (function () {
-			function ecma5(obj) {
-				return Object.keys(obj).length;
-			}
+        getObjectPropertyLength: (function () {
+            function ecma5(obj) {
+                return Object.keys(obj).length;
+            }
 
-			function ecma3(obj) {
-				var result = 0, prop;
-				for (prop in obj) {
-					if (obj.hasOwnProperty(prop)) {
-						result += 1;
-					}
-				}
-				return result;
-			}
+            function ecma3(obj) {
+                let result = 0; let
+                    prop;
 
-			return Object.keys ? ecma5 : ecma3;
-		}()),
+                for (prop in obj) {
+                    if (obj.hasOwnProperty(prop)) {
+                        result += 1;
+                    }
+                }
 
-		getObjectOneOwnProperty: (function () {
-			function ecma5(obj) {
-				return Object.keys(obj)[0];
-			}
+                return result;
+            }
 
-			function ecma3(obj) {
-				var prop;
-				for (prop in obj) {
-					if (obj.hasOwnProperty(prop)) {
-						return prop;
-					}
-				}
-			}
+            return Object.keys ? ecma5 : ecma3;
+        }()),
 
-			return Object.keys ? ecma5 : ecma3;
-		}()),
+        getObjectOneOwnProperty: (function () {
+            function ecma5(obj) {
+                return Object.keys(obj)[0];
+            }
 
-		printObject: function (o) {
-			var out = '', p;
-			for (p in o) {
-				if (o.hasOwnProperty(p)) {
-					out += p + ': ' + o[p] + '\n';
-				}
-			}
-			return out;
-		},
+            function ecma3(obj) {
+                let prop;
 
-		getLocalStorage: function (key) {
-			var result;
-			var val = localStorage[key];
+                for (prop in obj) {
+                    if (obj.hasOwnProperty(prop)) {
+                        return prop;
+                    }
+                }
+            }
 
-			if (val) {
-				try {
-					result = JSON.parse(localStorage[key]);
-				} catch (e) {
-					console.warn('Can not parse ' + key);
-				}
-			}
-			return result;
-		},
-		setLocalStorage: function (key, val) {
-			if (val !== undefined) {
-				//undefined не stringify'ется в строку, а вернёт просто undefined,
-				//который localStorage преобразует в строку "localStorage" и затем не парсится и сохранять в localStorage undefined бессмысленно
-				localStorage[key] = JSON.stringify(val);
-			}
-		},
-		removeLocalStorage: function (key) {
+            return Object.keys ? ecma5 : ecma3;
+        }()),
+
+        printObject: function (o) {
+            let out = ''; let
+                p;
+
+            for (p in o) {
+                if (o.hasOwnProperty(p)) {
+                    out += p + ': ' + o[p] + '\n';
+                }
+            }
+
+            return out;
+        },
+
+        getLocalStorage: function (key) {
+            let result;
+            const val = localStorage[key];
+
+            if (val) {
+                try {
+                    result = JSON.parse(localStorage[key]);
+                } catch (e) {
+                    console.warn('Can not parse ' + key);
+                }
+            }
+
+            return result;
+        },
+        setLocalStorage: function (key, val) {
+            if (val !== undefined) {
+                // undefined не stringify'ется в строку, а вернёт просто undefined,
+                // который localStorage преобразует в строку "localStorage" и затем
+                // не парсится и сохранять в localStorage undefined бессмысленно.
+                localStorage[key] = JSON.stringify(val);
+            }
+        },
+        removeLocalStorage: function (key) {
             try {
                 localStorage.removeItem(key);
             } catch (e) {
                 console.warn('Can not remove localStorage item' + key + '. Set null');
                 Utils.setLocalStorage(key, null);
             }
-		},
+        },
 
         // Not yet supported
-        copyTextSupported: (function () {
+        copyTextSupported: function () {
             try {
-                alert(!!document.execCommand && !!document.queryCommandSupported &&
+                console.log(!!document.execCommand && !!document.queryCommandSupported &&
                     document.queryCommandSupported('copy') && document.execCommand('copy'));
             } catch (e) {
                 return false;
             }
-
-        }),
+        },
         // http://habrahabr.ru/post/256027/
         copyText: function (element) {
-            var successful = false;
+            let successful = false;
 
             if (element) {
-                var range = document.createRange();
+                const range = document.createRange();
+
                 range.selectNode(element);
                 window.getSelection().addRange(range);
             }
@@ -248,7 +274,7 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
                 // Теперь, когда мы выбрали текст ссылки, выполним команду копирования
                 successful = document.execCommand('copy');
                 console.log('Copy command was ' + (successful ? 'successful' : 'unsuccessful'));
-            } catch(err) {
+            } catch (err) {
                 console.log('Oops, unable to copy');
             }
 
@@ -263,15 +289,15 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
 
         popupCenter: function (url, title, w, h) {
             // Fixes dual-screen position
-            var dualScreenLeft = window.screenLeft !== undefined ? window.screenLeft : screen.left;
-            var dualScreenTop = window.screenTop !== undefined ? window.screenTop : screen.top;
+            const dualScreenLeft = window.screenLeft !== undefined ? window.screenLeft : screen.left;
+            const dualScreenTop = window.screenTop !== undefined ? window.screenTop : screen.top;
 
-            var width = window.innerWidth ? window.innerWidth : document.documentElement.clientWidth ? document.documentElement.clientWidth : screen.width;
-            var height = window.innerHeight ? window.innerHeight : document.documentElement.clientHeight ? document.documentElement.clientHeight : screen.height;
+            const width = window.innerWidth ? window.innerWidth : document.documentElement.clientWidth ? document.documentElement.clientWidth : screen.width; // eslint-disable-line max-len
+            const height = window.innerHeight ? window.innerHeight : document.documentElement.clientHeight ? document.documentElement.clientHeight : screen.height; // eslint-disable-line max-len
 
-            var left = (((width / 2) - (w / 2)) + dualScreenLeft) >> 0;
-            var top = (((height / 2) - (h / 2)) + dualScreenTop) >> 0;
-            var newWindow = window.open(
+            const left = width / 2 - w / 2 + dualScreenLeft >> 0;
+            const top = height / 2 - h / 2 + dualScreenTop >> 0;
+            const newWindow = window.open(
                 url,
                 title,
                 'menubar=no,toolbar=0,status=0,width=' + w + ',height=' + h + ',top=' + top + ',left=' + left
@@ -286,894 +312,974 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
         },
 
         /**
-		 * Загружает изображение и по завешению загрузки вызывает callback
-		 * @param url
-		 * @param callback
-		 * @param ctx
-		 * @param callbackParam
-		 */
-		loadImage: function (url, callback, ctx, callbackParam) {
-			var loadImg = new Image();
-			loadImg.onload = function (evt) {
-				if (Utils.isType('function', callback)) {
-					callback.call(ctx, callbackParam);
-				}
-				loadImg = null;
-			};
-			loadImg.src = url;
-		},
+         * Загружает изображение и по завешению загрузки вызывает callback
+         *
+         * @param {string} url
+         * @param {Function} callback
+         * @param {object} ctx
+         * @param {*} callbackParam
+         */
+        loadImage: function (url, callback, ctx, callbackParam) {
+            let loadImg = new Image();
 
-		//Парсинг url через ahref. Возвращает объект со свойствами как window.location
-		parseUrl: (function () {
-			var a = document.createElement('a'),
-				ahrefProperties,
-				ahrefLen;
+            loadImg.onload = function (/*evt*/) {
+                if (Utils.isType('function', callback)) {
+                    callback.call(ctx, callbackParam);
+                }
 
-			a.href = location.href;
-			if (a.hostname) {
-				//Parse properties from href element http://stackoverflow.com/a/12470263/1309851
-				ahrefProperties = ['href', 'protocol', 'host', 'hostname', 'port', 'origin', 'pathname', 'search', 'hash'];
-				ahrefLen = ahrefProperties.length;
-				return function (url, ahref) {
-					var i = ahrefLen,
-						result = {};
+                loadImg = null;
+            };
+            loadImg.src = url;
+        },
 
-					if (!ahref) {
-						ahref = a;
-						ahref.href = url;
-					}
+        //Парсинг url через ahref. Возвращает объект со свойствами как window.location
+        parseUrl: (function () {
+            const a = document.createElement('a');
+            let ahrefProperties;
+            let ahrefLen;
 
-					while (i--) {
-						result[ahrefProperties[i]] = ahref[ahrefProperties[i]];
-					}
-					if (!result.pathname) {
-						result.pathname = '/';
-					}
-					//console.dir(result);
-					return result;
-				};
-			} else {
-				console.error('Can\'t parse url with ahref');
-			}
-		}()),
+            a.href = location.href;
 
-		/**
-		 * Возвращает значение параметра из строки адреса, содержащей параметры, или переданной строки
-		 * @param name Имя параметра
-		 * @param url Часть строки, начиная со знака ?
-		 * @return {String|null}
-		 */
-		getURLParameter: function (name, url) {
-			return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(url || location.search) || [undefined, ""])[1].replace(/\+/g, '%20')) || null;
-		},
+            if (a.hostname) {
+                //Parse properties from href element http://stackoverflow.com/a/12470263/1309851
+                ahrefProperties = ['href', 'protocol', 'host', 'hostname', 'port', 'origin', 'pathname', 'search', 'hash'];
+                ahrefLen = ahrefProperties.length;
 
-		getURLParameters: (function () {
-			var decode = decodeURIComponent,
-				regexpPlus = /\+/g,
-				replacePlus = '%20',
-				maxKeys = 100, // maxKeys <= 0 means that we should not limit keys count
-				sep = '&',
-				eq = '=';
+                return function (url, ahref) {
+                    let i = ahrefLen;
+                    const result = {};
 
-			return function (url) {
-				var queryStart = url.indexOf("?"),
-					fragmentStart = url.indexOf("#"),
-					query,
-					param,
-					len,
-					key, val, i,
-					result = {};
+                    if (!ahref) {
+                        ahref = a;
+                        ahref.href = url;
+                    }
 
-				if (queryStart > -1) {
-					query = url.substr(queryStart + 1, fragmentStart > -1 ? fragmentStart - queryStart - 1 : undefined);
-					if (query) {
-						query = query.split(sep);
+                    while (i--) {
+                        result[ahrefProperties[i]] = ahref[ahrefProperties[i]];
+                    }
 
-						len = query.length;
-						if (maxKeys > 0 && len > maxKeys) {
-							len = maxKeys;
-						}
+                    if (!result.pathname) {
+                        result.pathname = '/';
+                    }
 
-						for (i = 0; i < len; i++) {
-							//decodeURIComponent в определенных кейсах может сломаться, нужен try
-							try {
-								param = query[i].replace(regexpPlus, replacePlus).split(eq);
-								key = decode(param[0]);
-								val = param[1] ? decode(param[1]) : '';
-							} catch (e) {
-								continue;
-							}
+                    //console.dir(result);
+                    return result;
+                };
+            }
 
-							if (!result.hasOwnProperty(key)) {
-								result[key] = val;
-							} else if (Array.isArray(result[key])) {
-								result[key].push(val);
-							} else {
-								result[key] = [result[key], val];
-							}
-						}
-					}
-				}
+            console.error('Can\'t parse url with ahref');
+        }()),
 
-				return result;
-			};
-		}()),
+        /**
+         * Возвращает значение параметра из строки адреса, содержащей параметры, или переданной строки
+         *
+         * @param {string} name Имя параметра
+         * @param {string} url Часть строки, начиная со знака ?
+         * @returns {string | null}
+         */
+        getURLParameter: function (name, url) {
+            return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(url || location.search) || [undefined, ''])[1].replace(/\+/g, '%20')) || null;
+        },
 
-		urlReplaceParameterValue: function (url, param, value) {
-			return url.replace(new RegExp('(' + param + '=).*?(&)'), '$1' + value + '$2');
-		},
+        getURLParameters: (function () {
+            const decode = decodeURIComponent;
+            const regexpPlus = /\+/g;
+            const replacePlus = '%20';
+            const maxKeys = 100; // maxKeys <= 0 means that we should not limit keys count
+            const sep = '&';
+            const eq = '=';
 
-		randomString: (function () {
-			'use strict';
-			var charsAll = String('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz').split(''),
-				charsLow = String('0123456789abcdefghijklmnopqrstuvwxyz').split('');
+            return function (url) {
+                const queryStart = url.indexOf('?');
+                const fragmentStart = url.indexOf('#');
+                let query;
+                let param;
+                let len;
+                let key; let val; let i;
+                const result = {};
 
-			return function (resultLen, lowOnly) {
-				var chars = lowOnly ? charsLow : charsAll,
-					charsLen = chars.length,
-					str = '';
+                if (queryStart > -1) {
+                    query = url.substr(queryStart + 1, fragmentStart > -1 ? fragmentStart - queryStart - 1 : undefined);
 
-				if (!resultLen) {
-					resultLen = Math.random() * charsLen + 1 >> 0;
-				}
+                    if (query) {
+                        query = query.split(sep);
 
-				while (resultLen--) {
-					str += chars[Math.random() * charsLen >> 0];
-				}
+                        len = query.length;
 
-				return str;
-			};
-		}()),
+                        if (maxKeys > 0 && len > maxKeys) {
+                            len = maxKeys;
+                        }
 
-		txtHtmlToPlain: function (txt, brShrink) {
-			var result = txt;
+                        for (i = 0; i < len; i++) {
+                            //decodeURIComponent в определенных кейсах может сломаться, нужен try
+                            try {
+                                param = query[i].replace(regexpPlus, replacePlus).split(eq);
+                                key = decode(param[0]);
+                                val = param[1] ? decode(param[1]) : '';
+                            } catch (e) {
+                                continue;
+                            }
 
-			result = result.replace(/<br\s*[\/]?>/gi, brShrink ? ' ' : '\n'); // Заменяем <br> на \n или ничего
-			result = _s.stripTags(result); //Убираем обрамляющие тэги ahref
-			result = _s.unescapeHTML(result); //Возвращаем эскейпленные
-			return result;
-		},
+                            if (!result.hasOwnProperty(key)) {
+                                result[key] = val;
+                            } else if (Array.isArray(result[key])) {
+                                result[key].push(val);
+                            } else {
+                                result[key] = [result[key], val];
+                            }
+                        }
+                    }
+                }
 
-		cutStringByWord: function (text, n) {
-			"use strict";
-			var cut = text.lastIndexOf(' ', n);
-			if (cut === -1) {
-				return text.substr(0, n);
-			}
-			return text.substring(0, cut);
-		},
-		capitalizeFirst: function (str) {
-			return str ? str[0].toUpperCase() + str.substr(1) : '';
-		},
+                return result;
+            };
+        }()),
 
-		/**
-		 *
-		 * @param time Время в миллисекундах
-		 * @param update Колбэк, вызываемый каждую секунду. Передается параметр - секунд осталось
-		 * @param complete
-		 */
-		timer: function timer(time, update, complete) {
-			var start = Date.now(),
-				interval = setInterval(function () {
-					var now = time - (Date.now() - start);
-					if (now <= 1) {
-						clearInterval(interval);
-						if (complete) {
-							complete();
-						}
-					} else if (update) {
-						update(now / 1000 >> 0);
-					}
-				}, 200); // the smaller this number, the more accurate the timer will be
-		},
-		times: (function () {
-			var times = {
-				msDay: 864e5,
-				msWeek: 6048e5,
+        urlReplaceParameterValue: function (url, param, value) {
+            return url.replace(new RegExp('(' + param + '=).*?(&)'), '$1' + value + '$2');
+        },
 
-				midnight: null, // Миллисекунды полуночи текущего дня
-				midnightWeekAgo: null // Миллисекунды полуночи семи дней назад
-			};
+        randomString: (function () {
+            'use strict';
 
-			// Считаем переменные времен
-			(function timesRecalc() {
-				var dateMidnight = new Date();
+            const charsAll = String('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz').split('');
+            const charsLow = String('0123456789abcdefghijklmnopqrstuvwxyz').split('');
 
-				times.midnight = dateMidnight.setHours(0, 0, 0, 0);
-				times.midnightWeekAgo = times.midnight - times.msWeek;
+            return function (resultLen, lowOnly) {
+                const chars = lowOnly ? charsLow : charsAll;
+                const charsLen = chars.length;
+                let str = '';
 
-				// Планируем пересчет на первую миллисекунду следующего дня
-				setTimeout(timesRecalc, times.midnight + times.msDay - Date.now() + 1);
-			}());
+                if (!resultLen) {
+                    resultLen = Math.random() * charsLen + 1 >> 0;
+                }
 
-			return times;
-		}()),
+                while (resultLen--) {
+                    str += chars[Math.random() * charsLen >> 0];
+                }
 
-		format: (function () {
-			var dateFormat = (function () {
-				var months = [
-						'января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
-					],
-					weekDays = [
-						'Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'
-					],
-					weekDaysIn = [
-						'в воскресенье', 'в понедельник', 'во вторник', 'в среду', 'в четверг', 'в пятницу', 'в субботу'
-					];
+                return str;
+            };
+        }()),
 
-				function dMMYYYYhhmm(date) {
-					var hours = date.getHours(),
-						mintues = date.getMinutes();
-					return date.getDate() + ' ' + months[date.getMonth()] + ' ' + date.getFullYear() + ', ' + (hours > 9 ? hours : '0' + hours) + ':' + (mintues > 9 ? mintues : '0' + mintues);
-				}
+        txtHtmlToPlain: function (txt, brShrink) {
+            let result = txt;
 
-				function hhmm(date) {
-					var hours = date.getHours(),
-						mintues = date.getMinutes();
-					return (hours > 9 ? hours : '0' + hours) + ':' + (mintues > 9 ? mintues : '0' + mintues);
-				}
+            result = result.replace(/<br\s*[/]?>/gi, brShrink ? ' ' : '\n'); // Заменяем <br> на \n или ничего
+            result = _s.stripTags(result); //Убираем обрамляющие тэги ahref
+            result = _s.unescapeHTML(result); //Возвращаем эскейпленные
 
-				// Возвращает дату относительно переданной в формате "Сегодня в 12:15"
-				function relative(date) {
-					var dateMs = date.getTime(),
-						result;
+            return result;
+        },
 
-					if (dateMs < Utils.times.midnightWeekAgo) {
-						result = dateFormat.dMMYYYYhhmm(date);
-					} else if (dateMs < Utils.times.midnight) {
-						if (dateMs < Utils.times.midnight - Utils.times.msDay) {
-							result = weekDays[date.getDay()] + ', ' + dateFormat.hhmm(date);
-						} else {
-							result = 'Вчера в ' + dateFormat.hhmm(date);
-						}
-					} else {
-						result = 'Сегодня в ' + dateFormat.hhmm(date);
-					}
+        cutStringByWord: function (text, n) {
+            'use strict';
 
-					return result;
-				}
+            const cut = text.lastIndexOf(' ', n);
 
-				function relativeIn(date) {
-					var dateMs = date.getTime(),
-						result;
+            if (cut === -1) {
+                return text.substr(0, n);
+            }
 
-					if (dateMs < Utils.times.midnightWeekAgo) {
-						result = dateFormat.dMMYYYYhhmm(date);
-					} else if (dateMs < Utils.times.midnight) {
-						if (dateMs < Utils.times.midnight - Utils.times.msDay) {
-							result = weekDaysIn[date.getDay()] + ', ' + dateFormat.hhmm(date);
-						} else {
-							result = 'вчера в ' + dateFormat.hhmm(date);
-						}
-					} else {
-						result = 'сегодня в ' + dateFormat.hhmm(date);
-					}
+            return text.substring(0, cut);
+        },
+        capitalizeFirst: function (str) {
+            return str ? str[0].toUpperCase() + str.substr(1) : '';
+        },
 
-					return result;
-				}
+        /**
+         *
+         * @param {number} time Время в миллисекундах
+         * @param {Function} update Колбэк, вызываемый каждую секунду. Передается параметр - секунд осталось
+         * @param {Function} complete
+         */
+        timer: function timer(time, update, complete) {
+            const start = Date.now();
+            const interval = setInterval(function () {
+                const now = time - (Date.now() - start);
 
-				return {
-					dMMYYYYhhmm: dMMYYYYhhmm,
-					hhmm: hhmm,
-					relative: relative,
-					relativeIn: relativeIn
-				};
-			}());
+                if (now <= 1) {
+                    clearInterval(interval);
 
-			function formatFileSize(bytes) {
-				if (typeof bytes !== 'number') {
-					return '';
-				}
-				if (bytes >= 1000000000) {
-					return (bytes / 1000000000).toFixed(2) + ' GB';
-				}
-				if (bytes >= 1000000) {
-					return (bytes / 1000000).toFixed(2) + ' MB';
-				}
-				return (bytes / 1000).toFixed(2) + ' KB';
-			}
+                    if (complete) {
+                        complete();
+                    }
+                } else if (update) {
+                    update(now / 1000 >> 0);
+                }
+            }, 200); // the smaller this number, the more accurate the timer will be
+        },
+        times: (function () {
+            const times = {
+                msDay: 864e5,
+                msWeek: 6048e5,
 
-			function formatBitrate(bits) {
-				if (typeof bits !== 'number') {
-					return '';
-				}
-				if (bits >= 1000000000) {
-					return (bits / 1000000000).toFixed(2) + ' Gbit/s';
-				}
-				if (bits >= 1000000) {
-					return (bits / 1000000).toFixed(2) + ' Mbit/s';
-				}
-				if (bits >= 1000) {
-					return (bits / 1000).toFixed(2) + ' kbit/s';
-				}
-				return bits.toFixed(2) + ' bit/s';
-			}
+                midnight: null, // Миллисекунды полуночи текущего дня
+                midnightWeekAgo: null, // Миллисекунды полуночи семи дней назад
+            };
 
-			function secondsToTime(secs) {
-				"use strict";
-				if (secs < 60) {
-					return '0:' + (secs > 9 ? secs : '0' + secs);
-				}
+            // Считаем переменные времен
+            (function timesRecalc() {
+                const dateMidnight = new Date();
 
-				var hours = (secs / (60 * 60)) >> 0,
-					divisor_for_minutes = secs % (60 * 60),
-					minutes = (divisor_for_minutes / 60) >> 0,
-					divisor_for_seconds = divisor_for_minutes % 60,
-					seconds = Math.ceil(divisor_for_seconds);
+                times.midnight = dateMidnight.setHours(0, 0, 0, 0);
+                times.midnightWeekAgo = times.midnight - times.msWeek;
 
-				return (hours > 0 ? hours + ':' + (minutes > 9 ? minutes : '0' + minutes) : minutes) + ':' + (seconds > 9 ? seconds : '0' + seconds);
-			}
+                // Планируем пересчет на первую миллисекунду следующего дня
+                setTimeout(timesRecalc, times.midnight + times.msDay - Date.now() + 1);
+            }());
 
-			function formatPercentage(floatValue) {
-				return (floatValue * 100).toFixed(2) + ' %';
-			}
+            return times;
+        }()),
 
-			//Разделяет число по тысячам переданной строкой(если не передана - пробелом)
-			//http://stackoverflow.com/a/2901298/1309851
+        format: (function () {
+            const dateFormat = (function () {
+                const months = [
+                    'января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря',
+                ];
+                const weekDays = [
+                    'Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота',
+                ];
+                const weekDaysIn = [
+                    'в воскресенье', 'в понедельник', 'во вторник', 'в среду', 'в четверг', 'в пятницу', 'в субботу',
+                ];
+
+                function dMMYYYYhhmm(date) {
+                    const hours = date.getHours();
+                    const mintues = date.getMinutes();
+
+                    return date.getDate() + ' ' + months[date.getMonth()] + ' ' + date.getFullYear() + ', ' + (hours > 9 ? hours : '0' + hours) + ':' + (mintues > 9 ? mintues : '0' + mintues);
+                }
+
+                function hhmm(date) {
+                    const hours = date.getHours();
+                    const mintues = date.getMinutes();
+
+                    return (hours > 9 ? hours : '0' + hours) + ':' + (mintues > 9 ? mintues : '0' + mintues);
+                }
+
+                // Возвращает дату относительно переданной в формате "Сегодня в 12:15"
+                function relative(date) {
+                    const dateMs = date.getTime();
+                    let result;
+
+                    if (dateMs < Utils.times.midnightWeekAgo) {
+                        result = dateFormat.dMMYYYYhhmm(date);
+                    } else if (dateMs < Utils.times.midnight) {
+                        if (dateMs < Utils.times.midnight - Utils.times.msDay) {
+                            result = weekDays[date.getDay()] + ', ' + dateFormat.hhmm(date);
+                        } else {
+                            result = 'Вчера в ' + dateFormat.hhmm(date);
+                        }
+                    } else {
+                        result = 'Сегодня в ' + dateFormat.hhmm(date);
+                    }
+
+                    return result;
+                }
+
+                function relativeIn(date) {
+                    const dateMs = date.getTime();
+                    let result;
+
+                    if (dateMs < Utils.times.midnightWeekAgo) {
+                        result = dateFormat.dMMYYYYhhmm(date);
+                    } else if (dateMs < Utils.times.midnight) {
+                        if (dateMs < Utils.times.midnight - Utils.times.msDay) {
+                            result = weekDaysIn[date.getDay()] + ', ' + dateFormat.hhmm(date);
+                        } else {
+                            result = 'вчера в ' + dateFormat.hhmm(date);
+                        }
+                    } else {
+                        result = 'сегодня в ' + dateFormat.hhmm(date);
+                    }
+
+                    return result;
+                }
+
+                return {
+                    dMMYYYYhhmm: dMMYYYYhhmm,
+                    hhmm: hhmm,
+                    relative: relative,
+                    relativeIn: relativeIn,
+                };
+            }());
+
+            function formatFileSize(bytes) {
+                if (typeof bytes !== 'number') {
+                    return '';
+                }
+
+                if (bytes >= 1000000000) {
+                    return (bytes / 1000000000).toFixed(2) + ' GB';
+                }
+
+                if (bytes >= 1000000) {
+                    return (bytes / 1000000).toFixed(2) + ' MB';
+                }
+
+                return (bytes / 1000).toFixed(2) + ' KB';
+            }
+
+            function formatBitrate(bits) {
+                if (typeof bits !== 'number') {
+                    return '';
+                }
+
+                if (bits >= 1000000000) {
+                    return (bits / 1000000000).toFixed(2) + ' Gbit/s';
+                }
+
+                if (bits >= 1000000) {
+                    return (bits / 1000000).toFixed(2) + ' Mbit/s';
+                }
+
+                if (bits >= 1000) {
+                    return (bits / 1000).toFixed(2) + ' kbit/s';
+                }
+
+                return bits.toFixed(2) + ' bit/s';
+            }
+
+            function secondsToTime(secs) {
+                'use strict';
+
+                if (secs < 60) {
+                    return '0:' + (secs > 9 ? secs : '0' + secs);
+                }
+
+                const hours = secs / (60 * 60) >> 0;
+                const divisor_for_minutes = secs % (60 * 60);
+                const minutes = divisor_for_minutes / 60 >> 0;
+                const divisor_for_seconds = divisor_for_minutes % 60;
+                const seconds = Math.ceil(divisor_for_seconds);
+
+                return (hours > 0 ? hours + ':' + (minutes > 9 ? minutes : '0' + minutes) : minutes) + ':' + (seconds > 9 ? seconds : '0' + seconds);
+            }
+
+            function formatPercentage(floatValue) {
+                return (floatValue * 100).toFixed(2) + ' %';
+            }
+
+            //Разделяет число по тысячам переданной строкой(если не передана - пробелом)
+            //http://stackoverflow.com/a/2901298/1309851
             //DEPRECATED. Use intl instead
-			function numberByThousands(val, divider) {
-				return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, divider || ' ');
-			}
+            function numberByThousands(val, divider) {
+                return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, divider || ' ');
+            }
 
-			var wordEndOfNumCases = [2, 0, 1, 1, 1, 2];
+            const wordEndOfNumCases = [2, 0, 1, 1, 1, 2];
 
-			function declOfNum(number, titles) {
-				return titles[ (number % 100 > 4 && number % 100 < 20) ? 2 : wordEndOfNumCases[(number % 10 < 5) ? number % 10 : 5] ];
-			}
+            function declOfNum(number, titles) {
+                return titles[number % 100 > 4 && number % 100 < 20 ? 2 : wordEndOfNumCases[number % 10 < 5 ? number % 10 : 5]];
+            }
 
-			return {
-				date: dateFormat,
-				fileSize: formatFileSize,
-				bitrate: formatBitrate,
-				secondsToTime: secondsToTime,
-				percentage: formatPercentage,
-				numberByThousands: numberByThousands,
-				wordEndOfNum: declOfNum
-			};
-		}()),
+            return {
+                date: dateFormat,
+                fileSize: formatFileSize,
+                bitrate: formatBitrate,
+                secondsToTime: secondsToTime,
+                percentage: formatPercentage,
+                numberByThousands: numberByThousands,
+                wordEndOfNum: declOfNum,
+            };
+        }()),
 
-		mousePageXY: function (e) {
-			var x = 0, y = 0, et;
-			if (!e) {
-				e = window.event;
-			}
-			if (e.touches && e.touches.item && e.touches.item(0)) {
-				et = e.touches.item(0);
-				if (et.pageX || et.pageY) {
-					x = et.pageX;
-					y = et.pageY;
-				} else if (et.clientX || et.clientY) {
-					x = et.clientX + (document.documentElement.scrollLeft || document.body.scrollLeft) - document.documentElement.clientLeft;
-					y = et.clientY + (document.documentElement.scrollTop || document.body.scrollTop) - document.documentElement.clientTop;
-				}
-			} else if (e.pageX || e.pageY) {
-				x = e.pageX;
-				y = e.pageY;
-			} else if (e.clientX || e.clientY) {
-				x = e.clientX + (document.documentElement.scrollLeft || document.body.scrollLeft) - document.documentElement.clientLeft;
-				y = e.clientY + (document.documentElement.scrollTop || document.body.scrollTop) - document.documentElement.clientTop;
-			}
-			return {"x": x, "y": y};
-		},
+        mousePageXY: function (e) {
+            let x = 0; let y = 0; let
+                et;
 
-		/**
-		 * Caps Lock Detector 1.0
-		 * @author Igor Tigirlas, last update 05.08.2005
-		 * @param evt
-		 */
-		capsLockDetect: function (evt) {
-			if (!evt) {
-				evt = window.event || null;
-			}
-			if (!evt) {
-				return;
-			}
+            if (!e) {
+                e = window.event;
+            }
 
-			var n = evt.keyCode || evt.charCode,
-				c,
-				cUC,
-				cLC;
+            if (e.touches && e.touches.item && e.touches.item(0)) {
+                et = e.touches.item(0);
 
-			if (evt.type === "keypress") {
-				c = String.fromCharCode(n);
-				cUC = c.toUpperCase();
-				cLC = c.toLowerCase();
+                if (et.pageX || et.pageY) {
+                    x = et.pageX;
+                    y = et.pageY;
+                } else if (et.clientX || et.clientY) {
+                    x = et.clientX + (document.documentElement.scrollLeft || document.body.scrollLeft) - document.documentElement.clientLeft; // eslint-disable-line max-len
+                    y = et.clientY + (document.documentElement.scrollTop || document.body.scrollTop) - document.documentElement.clientTop;
+                }
+            } else if (e.pageX || e.pageY) {
+                x = e.pageX;
+                y = e.pageY;
+            } else if (e.clientX || e.clientY) {
+                x = e.clientX + (document.documentElement.scrollLeft || document.body.scrollLeft) - document.documentElement.clientLeft;
+                y = e.clientY + (document.documentElement.scrollTop || document.body.scrollTop) - document.documentElement.clientTop;
+            }
 
-				if (cUC !== cLC) {
-					return ((evt.shiftKey && cLC === c) || (!evt.shiftKey && cUC === c));
-				}
-			} else if (evt.type === "keydown" && n === 20) {
-				return false;
-			}
-		},
+            return { 'x': x, 'y': y };
+        },
 
-		getElementComputedStyle: function (elem, prop) {
-			if (typeof elem !== "object") {
-				elem = document.getElementById(elem);
-			}
-			// external stylesheet for Mozilla, Opera 7+ and Safari 1.3+
-			if (document.defaultView && document.defaultView.getComputedStyle) {
-				if (prop.match(/[A-Z]/)) {
-					prop = prop.replace(/([A-Z])/g, "-$1").toLowerCase();
-				}
-				return document.defaultView.getComputedStyle(elem, "").getPropertyValue(prop);
-			}
-			// external stylesheet for Explorer and Opera 9
-			if (elem.currentStyle) {
-				var i;
-				while ((i = prop.indexOf("-")) !== -1) {
-					prop = prop.substr(0, i) + prop.substr(i + 1, 1).toUpperCase() + prop.substr(i + 2);
-				}
-				return elem.currentStyle[prop];
-			}
-			return "";
-		},
+        /**
+         * Caps Lock Detector 1.0
+         *
+         * @author Igor Tigirlas, last update 05.08.2005
+         * @param {Event} evt
+         */
+        capsLockDetect: function (evt) {
+            if (!evt) {
+                evt = window.event || null;
+            }
 
-		/**
-		 * @param {!HTMLElement} elem HTML Element.
-		 * @return {{top: number, left: number}} Element's position related to the
-		 * window.
-		 */
-		getOffset: function (elem) {
-			return elem.getBoundingClientRect ? getOffsetRect(elem) : getOffsetSum(elem);
-		},
+            if (!evt) {
+                return;
+            }
 
-		getDistance: function (x1, x2, y1, y2) {
-			return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
-		},
+            const n = evt.keyCode || evt.charCode;
+            let c;
+            let cUC;
+            let cLC;
 
-		/**
-		 * A complete cookies reader/writer framework with full unicode support.
-		 *
-		 * https://developer.mozilla.org/en-US/docs/DOM/document.cookie
-		 * This framework is released under the GNU Public License, version 3 or later.
-		 *
-		 * Syntaxes:
-		 *
-		 * docCookies.setItem(name, value[, end[, path[, domain[, secure]]]])
-		 * docCookies.getItem(name)
-		 * docCookies.removeItem(name[, path])
-		 * docCookies.hasItem(name)
-		 * docCookies.keys()
-		 */
-		cookie: {
-			getItem: function (sKey) {
-				return unescape(document.cookie.replace(new RegExp("(?:(?:^|.*;)\\s*" + escape(sKey).replace(/[\-\.\+\*]/g, "\\$&") + "\\s*\\=\\s*([^;]*).*$)|^.*$"), "$1")) || null;
-			},
-			setItem: function (sKey, sValue, vEnd, sPath, sDomain, bSecure) {
-				if (!sKey || /^(?:expires|max\-age|path|domain|secure)$/i.test(sKey)) {
-					return false;
-				}
-				var sExpires = "";
-				if (vEnd) {
-					switch (vEnd.constructor) {
-						case Number:
-							if (vEnd === Infinity) {
-								sExpires = "; expires=Fri, 31 Dec 9999 23:59:59 GMT";
-							} else {
-								sExpires = "; expires=" + new Date(Date.now() + vEnd * 1000).toUTCString() + "; max-age=" + vEnd;
-							}
-							break;
-						case String:
-							sExpires = "; expires=" + vEnd;
-							break;
-						case Date:
-							sExpires = "; expires=" + vEnd.toGMTString();
-							break;
-					}
-				}
-				document.cookie = escape(sKey) + "=" + escape(sValue) + sExpires + (sDomain ? "; domain=" + sDomain : "") + (sPath ? "; path=" + sPath : "") + (bSecure ? "; secure" : "");
-				return true;
-			},
-			removeItem: function (sKey, sPath) {
-				if (!sKey || !this.hasItem(sKey)) {
-					return false;
-				}
-				document.cookie = escape(sKey) + "=; expires=Thu, 01 Jan 1970 00:00:00 GMT" + (sPath ? "; path=" + sPath : "");
-				return true;
-			},
-			hasItem: function (sKey) {
-				return (new RegExp("(?:^|;\\s*)" + escape(sKey).replace(/[\-\.\+\*]/g, "\\$&") + "\\s*\\=")).test(document.cookie);
-			},
-			keys: /* optional method: you can safely remove it! */ function () {
-				var aKeys = document.cookie.replace(/((?:^|\s*;)[^\=]+)(?=;|$)|^\s*|\s*(?:\=[^;]*)?(?:\1|$)/g, "").split(/\s*(?:\=[^;]*)?;\s*/),
-					nIdx;
-				for (nIdx = 0; nIdx < aKeys.length; nIdx++) {
-					aKeys[nIdx] = unescape(aKeys[nIdx]);
-				}
-				return aKeys;
-			}
-		},
+            if (evt.type === 'keypress') {
+                c = String.fromCharCode(n);
+                cUC = c.toUpperCase();
+                cLC = c.toLowerCase();
 
-		title: (function () {
-			'use strict';
+                if (cUC !== cLC) {
+                    return evt.shiftKey && cLC === c || !evt.shiftKey && cUC === c;
+                }
+            } else if (evt.type === 'keydown' && n === 20) {
+                return false;
+            }
+        },
 
-			var titlePostfix = '',
-				titlePre = '',
-				titleVal = '',
-				titlePost = '';
+        getElementComputedStyle: function (elem, prop) {
+            if (typeof elem !== 'object') {
+                elem = document.getElementById(elem);
+            }
 
-			function updateTitle() {
-				document.title = titlePre + titleVal + titlePost + (titlePostfix ? ' - ' + titlePostfix : '');
-				return document.title;
-			}
+            // external stylesheet for Mozilla, Opera 7+ and Safari 1.3+
+            if (document.defaultView && document.defaultView.getComputedStyle) {
+                if (prop.match(/[A-Z]/)) {
+                    prop = prop.replace(/([A-Z])/g, '-$1').toLowerCase();
+                }
 
-			return {
-				setPostfix: function (val) {
-					titlePostfix = val || '';
-				},
-				setTitle: function (options) {
-					titlePre = options.pre || titlePre;
-					titleVal = options.title || titleVal;
-					titlePost = options.post || titlePost;
-					if (options.postfix) {
-						titlePostfix = String(options.postfix);
-					}
-					return updateTitle();
-				},
-				addPre: function (val) {
-					titlePre = val || '';
-					return updateTitle();
-				},
-				removePre: function () {
-					titlePre = '';
-					return updateTitle();
-				},
-				addPost: function (val) {
-					titlePost = val || '';
-					return updateTitle();
-				},
-				removePost: function () {
-					titlePost = '';
-					return updateTitle();
-				}
-			};
-		}()),
+                return document.defaultView.getComputedStyle(elem, '').getPropertyValue(prop);
+            }
 
-		math: (function () {
-			'use strict';
+            // external stylesheet for Explorer and Opera 9
+            if (elem.currentStyle) {
+                let i = prop.indexOf('-');
 
-			/**
-			 * Обрезание числа с плавающей запятой до указанного количества знаков после запятой
-			 * http://jsperf.com/math-round-vs-tofixed-with-decimals/2
-			 * @param number Число для обрезания
-			 * @param precision Точность
-			 * @return {Number}
-			 */
-			function toPrecision(number, precision) {
-				var divider = Math.pow(10, precision || 6);
-				return ~~(number * divider) / divider;
-			}
+                while (i !== -1) {
+                    prop = prop.substr(0, i) + prop.substr(i + 1, 1).toUpperCase() + prop.substr(i + 2);
+                    i = prop.indexOf('-');
+                }
 
-			/**
-			 * Обрезание с округлением числа с плавающей запятой до указанного количества знаков после запятой
-			 * @param number Число
-			 * @param precision Точность
-			 * @return {Number}
-			 */
-			function toPrecisionRound(number, precision) {
-				var divider = Math.pow(10, precision || 6);
-				return Math.round(number * divider) / divider;
-			}
+                return elem.currentStyle[prop];
+            }
 
-			return {
-				toPrecision: toPrecision,
-				toPrecisionRound: toPrecisionRound,
-				toPrecision6: function (number) {
-					return toPrecision(number, 6);
-				},
-				toPrecisionRound6: function (number) {
-					return toPrecisionRound(number, 6);
-				}
-			};
-		}()),
+            return '';
+        },
 
-		geo: (function () {
-			'use strict';
+        /**
+         * @param {!HTMLElement} elem HTML Element.
+         * @returns {{top: number, left: number}} Element's position related to the
+         * window.
+         */
+        getOffset: function (elem) {
+            return elem.getBoundingClientRect ? getOffsetRect(elem) : getOffsetSum(elem);
+        },
 
-			/**
-			 * Haversine formula to calculate the distance
-			 * @param lat1
-			 * @param lon1
-			 * @param lat2
-			 * @param lon2
-			 * @return {Number}
-			 */
-			function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
-				var R = 6371, // Mean radius of the earth in km
-					dLat = deg2rad(lat2 - lat1), // deg2rad below
-					dLon = deg2rad(lon2 - lon1),
-					a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-						Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2),
-					c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)),
-					d = R * c; // Distance in km
-				return d;
-			}
+        getDistance: function (x1, x2, y1, y2) {
+            return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
+        },
 
-			function deg2rad(deg) {
-				return deg * (Math.PI / 180);
-			}
+        /**
+         * A complete cookies reader/writer framework with full unicode support.
+         *
+         * https://developer.mozilla.org/en-US/docs/DOM/document.cookie
+         * This framework is released under the GNU Public License, version 3 or later.
+         *
+         * Syntaxes:
+         *
+         * docCookies.setItem(name, value[, end[, path[, domain[, secure]]]])
+         * docCookies.getItem(name)
+         * docCookies.removeItem(name[, path])
+         * docCookies.hasItem(name)
+         * docCookies.keys()
+         */
+        cookie: {
+            getItem: function (sKey) {
+                return unescape(document.cookie.replace(new RegExp('(?:(?:^|.*;)\\s*' + escape(sKey).replace(/[\-\.\+\*]/g, '\\$&') + '\\s*\\=\\s*([^;]*).*$)|^.*$'), '$1')) || null; //eslint-disable-line no-useless-escape
+            },
+            setItem: function (sKey, sValue, vEnd, sPath, sDomain, bSecure) {
+                if (!sKey || /^(?:expires|max-age|path|domain|secure)$/i.test(sKey)) {
+                    return false;
+                }
 
-			function geoToPrecision(geo, precision) {
-				_.forEach(geo, function (item, index, array) {
-					array[index] = Utils.math.toPrecision(item, precision || 6);
-				});
-				return geo;
-			}
+                let sExpires = '';
 
-			function geoToPrecisionRound(geo, precision) {
-				_.forEach(geo, function (item, index, array) {
-					array[index] = Utils.math.toPrecisionRound(item, precision || 6);
-				});
-				return geo;
-			}
+                if (vEnd) {
+                    switch (vEnd.constructor) {
+                        case Number:
+                            if (vEnd === Infinity) {
+                                sExpires = '; expires=Fri, 31 Dec 9999 23:59:59 GMT';
+                            } else {
+                                sExpires = '; expires=' + new Date(Date.now() + vEnd * 1000).toUTCString() + '; max-age=' + vEnd;
+                            }
 
-			function spinLng(geo) {
-				if (geo[0] < -180) {
-					geo[0] += 360;
-				} else if (geo[0] > 180) {
-					geo[0] -= 360;
-				}
-			}
+                            break;
+                        case String:
+                            sExpires = '; expires=' + vEnd;
+                            break;
+                        case Date:
+                            sExpires = '; expires=' + vEnd.toGMTString();
+                            break;
+                    }
+                }
 
-			function latlngToArr(ll, lngFirst) {
-				return lngFirst ? [ll.lng, ll.lat] : [ll.lat, ll.lng];
-			}
+                document.cookie = escape(sKey) + '=' + escape(sValue) + sExpires + (sDomain ? '; domain=' + sDomain : '') + (sPath ? '; path=' + sPath : '') + (bSecure ? '; secure' : '');
 
-			//Проверка на валидность geo [lng, lat]
-			function check(geo) {
-				return Array.isArray(geo) && geo.length === 2 && (geo[0] || geo[1]) && geo[0] > -180 && geo[0] < 180 && geo[1] > -90 && geo[1] < 90;
-			}
+                return true;
+            },
+            removeItem: function (sKey, sPath) {
+                if (!sKey || !this.hasItem(sKey)) {
+                    return false;
+                }
 
-			//Проверка на валидность geo [lat, lng]
-			function checkLatLng(geo) {
-				return Array.isArray(geo) && geo.length === 2 && (geo[0] || geo[1]) && geo[1] > -180 && geo[1] < 180 && geo[0] > -90 && geo[0] < 90;
-			}
+                document.cookie = escape(sKey) + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT' + (sPath ? '; path=' + sPath : '');
 
-			//Проверка на валидность bbox [leftlng, bottomlat, rightlng, toplat]
-			function checkbbox(bbox) {
-				return Array.isArray(bbox) && bbox.length === 4 && check([bbox[0], bbox[1]]) && check([bbox[2], bbox[3]]) && bbox[1] < bbox[3];
-			}
+                return true;
+            },
+            hasItem: function (sKey) {
+                return new RegExp('(?:^|;\\s*)' + escape(sKey).replace(/[\-\.\+\*]/g, '\\$&') + '\\s*\\=').test(document.cookie); //eslint-disable-line no-useless-escape
+            },
+            keys: /* optional method: you can safely remove it! */ function () {
+                //eslint-disable-next-line no-useless-escape
+                const aKeys = document.cookie.replace(/((?:^|\s*;)[^\=]+)(?=;|$)|^\s*|\s*(?:\=[^;]*)?(?:\1|$)/g, '').split(/\s*(?:\=[^;]*)?;\s*/);
+                let nIdx;
 
-			//Проверка на валидность bbox [bottomlat, leftlng, toplat, rightlng]
-			function checkbboxLatLng(bbox) {
-				return Array.isArray(bbox) && bbox.length === 4 && checkLatLng([bbox[0], bbox[1]]) && checkLatLng([bbox[2], bbox[3]]) && bbox[0] < bbox[2];
-			}
+                for (nIdx = 0; nIdx < aKeys.length; nIdx++) {
+                    aKeys[nIdx] = unescape(aKeys[nIdx]);
+                }
 
-			//Переставляет местами lat и lng в bbox
-			function bboxReverse(bbox) {
-				return [bbox[1], bbox[0], bbox[3], bbox[2]];
-			}
+                return aKeys;
+            },
+        },
 
-			return {
-				deg2rad: deg2rad,
-				geoToPrecision: geoToPrecision,
-				geoToPrecisionRound: geoToPrecisionRound,
-				getDistanceFromLatLonInKm: getDistanceFromLatLonInKm,
-				spinLng: spinLng,
-				latlngToArr: latlngToArr,
-				check: check,
-				checkLatLng: checkLatLng,
-				checkbbox: checkbbox,
-				checkbboxLatLng: checkbboxLatLng,
-				bboxReverse: bboxReverse
-			};
-		}()),
+        title: (function () {
+            'use strict';
 
-		color: {
-			/**
-			 * Converts an RGB in hex color value to HSL. Conversion formula
-			 * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
-			 * Assumes HTMLcolor (like '00ff99') and
-			 * returns h, s, and l in the set [0, 1].
-			 */
-			hex2hsl: function (HTMLcolor) {
-				var r = parseInt(HTMLcolor.substring(0, 2), 16) / 255,
-					g = parseInt(HTMLcolor.substring(2, 4), 16) / 255,
-					b = parseInt(HTMLcolor.substring(4, 6), 16) / 255,
-					max = Math.max(r, g, b),
-					min = Math.min(r, g, b),
-					d = max - min,
-					h,
-					s,
-					l = (max + min) / 2;
-				if (max === min) {
-					h = s = 0;
-				} else {
-					s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-					switch (max) {
-						case r:
-							h = (g - b) / d + (g < b ? 6 : 0);
-							break;
-						case g:
-							h = (b - r) / d + 2;
-							break;
-						case b:
-							h = (r - g) / d + 4;
-							break;
-					}
-					h /= 6;
-				}
-				return {h: h, s: s, l: l};
-			},
+            let titlePostfix = '';
+            let titlePre = '';
+            let titleVal = '';
+            let titlePost = '';
 
-			/**
-			 * Converts an HSL color value to RGB. Conversion formula
-			 * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
-			 * Assumes h, s, and l are contained in the set [0, 1] and
-			 * returns r, g, and b in the set [0, 255].
-			 */
-			hslToRgb: function (h, s, l) {
-				var r, g, b, hue2rgb, q, p;
+            function updateTitle() {
+                document.title = titlePre + titleVal + titlePost + (titlePostfix ? ' - ' + titlePostfix : '');
 
-				if (s === 0) {
-					r = g = b = l; // achromatic
-				} else {
-					hue2rgb = function (p, q, t) {
-						if (t < 0) {
-							t += 1;
-						}
-						if (t > 1) {
-							t -= 1;
-						}
-						if (t < 1 / 6) {
-							return p + (q - p) * 6 * t;
-						}
-						if (t < 1 / 2) {
-							return q;
-						}
-						if (t < 2 / 3) {
-							return p + (q - p) * (2 / 3 - t) * 6;
-						}
-						return p;
-					};
+                return document.title;
+            }
 
-					q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-					p = 2 * l - q;
-					r = hue2rgb(p, q, h + 1 / 3);
-					g = hue2rgb(p, q, h);
-					b = hue2rgb(p, q, h - 1 / 3);
-				}
+            return {
+                setPostfix: function (val) {
+                    titlePostfix = val || '';
+                },
+                setTitle: function (options) {
+                    titlePre = options.pre || titlePre;
+                    titleVal = options.title || titleVal;
+                    titlePost = options.post || titlePost;
 
-				return {r: r * 255, g: g * 255, b: b * 255};
-			},
+                    if (options.postfix) {
+                        titlePostfix = String(options.postfix);
+                    }
 
-			/**
-			 * Converts an RGB color value to HSV. Conversion formula
-			 * adapted from http://en.wikipedia.org/wiki/HSV_color_space.
-			 * Assumes HTMLcolor and
-			 * returns h, s, and v in the set [0, 1].
-			 */
-			rgbToHsv: function (HTMLcolor) {
-				var r = parseInt(HTMLcolor.substring(0, 2), 16) / 255,
-					g = parseInt(HTMLcolor.substring(2, 4), 16) / 255,
-					b = parseInt(HTMLcolor.substring(4, 6), 16) / 255,
-					max = Math.max(r, g, b),
-					min = Math.min(r, g, b),
-					d = max - min,
-					h,
-					s = max === 0 ? 0 : d / max;
+                    return updateTitle();
+                },
+                addPre: function (val) {
+                    titlePre = val || '';
 
-				if (max === min) {
-					h = 0; // achromatic
-				} else {
-					switch (max) {
-						case r:
-							h = (g - b) / d + (g < b ? 6 : 0);
-							break;
-						case g:
-							h = (b - r) / d + 2;
-							break;
-						case b:
-							h = (r - g) / d + 4;
-							break;
-					}
-					h /= 6;
-				}
+                    return updateTitle();
+                },
+                removePre: function () {
+                    titlePre = '';
 
-				return [h, s, max];
-			},
+                    return updateTitle();
+                },
+                addPost: function (val) {
+                    titlePost = val || '';
 
-			/**
-			 * Converts an HSV color value to RGB. Conversion formula
-			 * adapted from http://en.wikipedia.org/wiki/HSV_color_space.
-			 * Assumes h, s, and v are contained in the set [0, 1] and
-			 * returns r, g, and b in the set [0, 255].
-			 */
-			hsvToRgb: function (h, s, v) {
-				var r, g, b,
-					i = h * 6 >> 0,
-					f = h * 6 - i,
-					p = v * (1 - s),
-					q = v * (1 - f * s),
-					t = v * (1 - (1 - f) * s);
+                    return updateTitle();
+                },
+                removePost: function () {
+                    titlePost = '';
 
-				switch (i % 6) {
-					case 0:
-						r = v;
-						g = t;
-						b = p;
-						break;
-					case 1:
-						r = q;
-						g = v;
-						b = p;
-						break;
-					case 2:
-						r = p;
-						g = v;
-						b = t;
-						break;
-					case 3:
-						r = p;
-						g = q;
-						b = v;
-						break;
-					case 4:
-						r = t;
-						g = p;
-						b = v;
-						break;
-					case 5:
-						r = v;
-						g = p;
-						b = q;
-						break;
-				}
+                    return updateTitle();
+                },
+            };
+        }()),
 
-				return [r * 255, g * 255, b * 255];
-			}
-		}
-	};
+        math: (function () {
+            'use strict';
+
+            /**
+             * Обрезание числа с плавающей запятой до указанного количества знаков после запятой
+             * http://jsperf.com/math-round-vs-tofixed-with-decimals/2
+             *
+             * @param {number} number Число для обрезания
+             * @param {number} precision Точность
+             * @returns {number}
+             */
+            function toPrecision(number, precision) {
+                const divider = Math.pow(10, precision || 6);
+
+                return ~~(number * divider) / divider;
+            }
+
+            /**
+             * Обрезание с округлением числа с плавающей запятой до указанного количества знаков после запятой
+             *
+             * @param {number} number Число
+             * @param {number} precision Точность
+             * @returns {number}
+             */
+            function toPrecisionRound(number, precision) {
+                const divider = Math.pow(10, precision || 6);
+
+                return Math.round(number * divider) / divider;
+            }
+
+            return {
+                toPrecision: toPrecision,
+                toPrecisionRound: toPrecisionRound,
+                toPrecision6: function (number) {
+                    return toPrecision(number, 6);
+                },
+                toPrecisionRound6: function (number) {
+                    return toPrecisionRound(number, 6);
+                },
+            };
+        }()),
+
+        geo: (function () {
+            'use strict';
+
+            /**
+             * Haversine formula to calculate the distance
+             *
+             * @param {number} lat1
+             * @param {number} lon1
+             * @param {number} lat2
+             * @param {number} lon2
+             * @returns {number}
+             */
+            function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+                const R = 6371; // Mean radius of the earth in km
+                const dLat = deg2rad(lat2 - lat1); // deg2rad below
+                const dLon = deg2rad(lon2 - lon1);
+                // eslint-disable-next-line max-len
+                const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                const d = R * c; // Distance in km
+
+                return d;
+            }
+
+            function deg2rad(deg) {
+                return deg * (Math.PI / 180);
+            }
+
+            function geoToPrecision(geo, precision) {
+                _.forEach(geo, function (item, index, array) {
+                    array[index] = Utils.math.toPrecision(item, precision || 6);
+                });
+
+                return geo;
+            }
+
+            function geoToPrecisionRound(geo, precision) {
+                _.forEach(geo, function (item, index, array) {
+                    array[index] = Utils.math.toPrecisionRound(item, precision || 6);
+                });
+
+                return geo;
+            }
+
+            function spinLng(geo) {
+                if (geo[0] < -180) {
+                    geo[0] += 360;
+                } else if (geo[0] > 180) {
+                    geo[0] -= 360;
+                }
+            }
+
+            function latlngToArr(ll, lngFirst) {
+                return lngFirst ? [ll.lng, ll.lat] : [ll.lat, ll.lng];
+            }
+
+            //Проверка на валидность geo [lng, lat]
+            function check(geo) {
+                // eslint-disable-next-line max-len
+                return Array.isArray(geo) && geo.length === 2 && (geo[0] || geo[1]) && geo[0] > -180 && geo[0] < 180 && geo[1] > -90 && geo[1] < 90;
+            }
+
+            //Проверка на валидность geo [lat, lng]
+            function checkLatLng(geo) {
+                // eslint-disable-next-line max-len
+                return Array.isArray(geo) && geo.length === 2 && (geo[0] || geo[1]) && geo[1] > -180 && geo[1] < 180 && geo[0] > -90 && geo[0] < 90;
+            }
+
+            //Проверка на валидность bbox [leftlng, bottomlat, rightlng, toplat]
+            function checkbbox(bbox) {
+                // eslint-disable-next-line max-len
+                return Array.isArray(bbox) && bbox.length === 4 && check([bbox[0], bbox[1]]) && check([bbox[2], bbox[3]]) && bbox[1] < bbox[3];
+            }
+
+            //Проверка на валидность bbox [bottomlat, leftlng, toplat, rightlng]
+            function checkbboxLatLng(bbox) {
+                // eslint-disable-next-line max-len
+                return Array.isArray(bbox) && bbox.length === 4 && checkLatLng([bbox[0], bbox[1]]) && checkLatLng([bbox[2], bbox[3]]) && bbox[0] < bbox[2];
+            }
+
+            //Переставляет местами lat и lng в bbox
+            function bboxReverse(bbox) {
+                return [bbox[1], bbox[0], bbox[3], bbox[2]];
+            }
+
+            return {
+                deg2rad: deg2rad,
+                geoToPrecision: geoToPrecision,
+                geoToPrecisionRound: geoToPrecisionRound,
+                getDistanceFromLatLonInKm: getDistanceFromLatLonInKm,
+                spinLng: spinLng,
+                latlngToArr: latlngToArr,
+                check: check,
+                checkLatLng: checkLatLng,
+                checkbbox: checkbbox,
+                checkbboxLatLng: checkbboxLatLng,
+                bboxReverse: bboxReverse,
+            };
+        }()),
+
+        color: {
+            /**
+             * Converts an RGB in hex color value to HSL. Conversion formula
+             * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
+             * Assumes HTMLcolor (like '00ff99') and
+             * returns h, s, and l in the set [0, 1].
+             */
+            hex2hsl: function (HTMLcolor) {
+                const r = parseInt(HTMLcolor.substring(0, 2), 16) / 255;
+                const g = parseInt(HTMLcolor.substring(2, 4), 16) / 255;
+                const b = parseInt(HTMLcolor.substring(4, 6), 16) / 255;
+                const max = Math.max(r, g, b);
+                const min = Math.min(r, g, b);
+                const d = max - min;
+                let h;
+                let s;
+                const l = (max + min) / 2;
+
+                if (max === min) {
+                    h = s = 0;
+                } else {
+                    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
+                    switch (max) {
+                        case r:
+                            h = (g - b) / d + (g < b ? 6 : 0);
+                            break;
+                        case g:
+                            h = (b - r) / d + 2;
+                            break;
+                        case b:
+                            h = (r - g) / d + 4;
+                            break;
+                    }
+
+                    h /= 6;
+                }
+
+                return { h: h, s: s, l: l };
+            },
+
+            /**
+             * Converts an HSL color value to RGB. Conversion formula
+             * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
+             * Assumes h, s, and l are contained in the set [0, 1] and
+             * returns r, g, and b in the set [0, 255].
+             */
+            hslToRgb: function (h, s, l) {
+                let r; let g; let b; let hue2rgb; let q; let
+                    p;
+
+                if (s === 0) {
+                    r = g = b = l; // achromatic
+                } else {
+                    hue2rgb = function (p, q, t) {
+                        if (t < 0) {
+                            t += 1;
+                        }
+
+                        if (t > 1) {
+                            t -= 1;
+                        }
+
+                        if (t < 1 / 6) {
+                            return p + (q - p) * 6 * t;
+                        }
+
+                        if (t < 1 / 2) {
+                            return q;
+                        }
+
+                        if (t < 2 / 3) {
+                            return p + (q - p) * (2 / 3 - t) * 6;
+                        }
+
+                        return p;
+                    };
+
+                    q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                    p = 2 * l - q;
+                    r = hue2rgb(p, q, h + 1 / 3);
+                    g = hue2rgb(p, q, h);
+                    b = hue2rgb(p, q, h - 1 / 3);
+                }
+
+                return { r: r * 255, g: g * 255, b: b * 255 };
+            },
+
+            /**
+             * Converts an RGB color value to HSV. Conversion formula
+             * adapted from http://en.wikipedia.org/wiki/HSV_color_space.
+             * Assumes HTMLcolor and
+             * returns h, s, and v in the set [0, 1].
+             */
+            rgbToHsv: function (HTMLcolor) {
+                const r = parseInt(HTMLcolor.substring(0, 2), 16) / 255;
+                const g = parseInt(HTMLcolor.substring(2, 4), 16) / 255;
+                const b = parseInt(HTMLcolor.substring(4, 6), 16) / 255;
+                const max = Math.max(r, g, b);
+                const min = Math.min(r, g, b);
+                const d = max - min;
+                let h;
+                const s = max === 0 ? 0 : d / max;
+
+                if (max === min) {
+                    h = 0; // achromatic
+                } else {
+                    switch (max) {
+                        case r:
+                            h = (g - b) / d + (g < b ? 6 : 0);
+                            break;
+                        case g:
+                            h = (b - r) / d + 2;
+                            break;
+                        case b:
+                            h = (r - g) / d + 4;
+                            break;
+                    }
+
+                    h /= 6;
+                }
+
+                return [h, s, max];
+            },
+
+            /**
+             * Converts an HSV color value to RGB. Conversion formula
+             * adapted from http://en.wikipedia.org/wiki/HSV_color_space.
+             * Assumes h, s, and v are contained in the set [0, 1] and
+             * returns r, g, and b in the set [0, 255].
+             */
+            hsvToRgb: function (h, s, v) {
+                let r; let g; let b;
+                const i = h * 6 >> 0;
+                const f = h * 6 - i;
+                const p = v * (1 - s);
+                const q = v * (1 - f * s);
+                const t = v * (1 - (1 - f) * s);
+
+                switch (i % 6) {
+                    case 0:
+                        r = v;
+                        g = t;
+                        b = p;
+                        break;
+                    case 1:
+                        r = q;
+                        g = v;
+                        b = p;
+                        break;
+                    case 2:
+                        r = p;
+                        g = v;
+                        b = t;
+                        break;
+                    case 3:
+                        r = p;
+                        g = q;
+                        b = v;
+                        break;
+                    case 4:
+                        r = t;
+                        g = p;
+                        b = v;
+                        break;
+                    case 5:
+                        r = v;
+                        g = p;
+                        b = q;
+                        break;
+                }
+
+                return [r * 255, g * 255, b * 255];
+            },
+        },
+    };
 
 
-	/**
-	 * @param {!HTMLElement} elem HTML Element.
-	 * @return {{top: number, left: number}} Element's position related to the
-	 * window using the offsets sum (obsolete way).
-	 */
-	function getOffsetSum(elem) {
-		var top = 0, left = 0, html = document.getElementsByTagName('html')[0];
-		while (elem) {
-			top = top + parseInt(elem.offsetTop, 10);
-			left = left + parseInt(elem.offsetLeft, 10);
-			elem = elem.offsetParent;
-		}
+    /**
+     * @param {!HTMLElement} elem HTML Element.
+     * @returns {{top: number, left: number}} Element's position related to the
+     * window using the offsets sum (obsolete way).
+     */
+    function getOffsetSum(elem) {
+        let top = 0; let left = 0; const
+            html = document.getElementsByTagName('html')[0];
 
-		if (html) { // маргины html не учитываются при суммировании оффсетов
-			top += parseInt(Utils.getElementComputedStyle(html, 'margin-top'), 10);
-			left += parseInt(Utils.getElementComputedStyle(html, 'margin-left'), 10);
-		}
-		return {top: top, left: left};
-	}
+        while (elem) {
+            top = top + parseInt(elem.offsetTop, 10);
+            left = left + parseInt(elem.offsetLeft, 10);
+            elem = elem.offsetParent;
+        }
 
-	/**
-	 * @param {!HTMLElement} elem HTML Element.
-	 * @return {{top: number, left: number}} Element's position related to the
-	 * window using getBoundingClientRect (proper way).
-	 */
-	function getOffsetRect(elem) {
-		var box = elem.getBoundingClientRect(),
+        if (html) { // маргины html не учитываются при суммировании оффсетов
+            top += parseInt(Utils.getElementComputedStyle(html, 'margin-top'), 10);
+            left += parseInt(Utils.getElementComputedStyle(html, 'margin-left'), 10);
+        }
 
-			body = document.body,
-			docElem = document.documentElement,
+        return { top: top, left: left };
+    }
 
-			scrollTop = window.pageYOffset ||
-				docElem.scrollTop ||
-				body.scrollTop,
+    /**
+     * @param {!HTMLElement} elem HTML Element.
+     * @returns {{top: number, left: number}} Element's position related to the
+     * window using getBoundingClientRect (proper way).
+     */
+    function getOffsetRect(elem) {
+        const box = elem.getBoundingClientRect();
 
-			scrollLeft = window.pageXOffset ||
-				docElem.scrollLeft ||
-				body.scrollLeft,
+        const body = document.body;
+        const docElem = document.documentElement;
 
-			clientTop = docElem.clientTop || body.clientTop || 0,
-			clientLeft = docElem.clientLeft || body.clientLeft || 0,
+        const scrollTop = window.pageYOffset || docElem.scrollTop || body.scrollTop;
 
-			top = box.top + scrollTop - clientTop,
-			left = box.left + scrollLeft - clientLeft;
+        const scrollLeft = window.pageXOffset || docElem.scrollLeft || body.scrollLeft;
 
-		return {top: Math.round(top), left: Math.round(left)};
-	}
+        const clientTop = docElem.clientTop || body.clientTop || 0;
+        const clientLeft = docElem.clientLeft || body.clientLeft || 0;
 
-	return Utils;
+        const top = box.top + scrollTop - clientTop;
+        const left = box.left + scrollLeft - clientLeft;
+
+        return { top: Math.round(top), left: Math.round(left) };
+    }
+
+    return Utils;
 });
