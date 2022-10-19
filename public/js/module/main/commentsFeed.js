@@ -43,7 +43,7 @@ define([
                 let photo;
                 let user;
                 let comment;
-                let regions;
+                const regions = data.regions;
                 const photoCommentsToInsert = [];
                 let i;
                 let j;
@@ -54,8 +54,6 @@ define([
                         user.link = '/u/' + user.login;
                     }
                 }
-
-                regions = data.regions;
 
                 for (i = 0; i < data.comments.length; i++) {
                     comment = data.comments[i];

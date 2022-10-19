@@ -1,4 +1,3 @@
-/*global define:true*/
 /**
  * Модель списка комментариев пользователя
  */
@@ -189,7 +188,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             return statuses.map(s => s === 0 ? 'del' : 'active');
         },
 
-        getUrlParams(page, type, statuses) {
+        getUrlParams: function (page, type, statuses) {
             const paramsArr = [];
 
 

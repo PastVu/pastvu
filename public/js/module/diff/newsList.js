@@ -1,5 +1,3 @@
-/*global define:true, ga:true*/
-
 /**
  * Модель Списка новостей
  */
@@ -45,7 +43,7 @@ define([
             delete this.subscriptions.loggedIn;
         },
         routeHandler: function () {
-            this.getAllNews(function (data) {
+            this.getAllNews(function (/*data*/) {
                 Utils.title.setTitle({ title: 'News' });
                 ga('send', 'pageview');
             });

@@ -34,7 +34,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     ctx: this,
                     callback: function (vm) {
                         this.commentsVM = this.childModules[vm.id] = vm;
-                        // Так как при первом заходе, когда модуль еще не зареквайрен, нужно вызвать самостоятельно, а последующие будут выстреливать сразу
+                        // Так как при первом заходе, когда модуль еще не зареквайрен,
+                        // нужно вызвать самостоятельно, а последующие будут выстреливать сразу.
                         this.routeHandler();
                     },
                 },

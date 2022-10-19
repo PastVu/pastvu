@@ -1,7 +1,7 @@
 /**
  * Модель статусов фотографии
  */
-define(['m/photo/status'], function (statuses) {
+define(['m/photo/status'], function () {
     return {
         s: 'Status',
         y: 'Year',
@@ -41,7 +41,7 @@ define(['m/photo/status'], function (statuses) {
         },
         watersignText: 'Text on watermark',
         watersignLength: 65,
-        watersignPattern: /[\w\.,:;\(\)\[\]\\\|/№§©®℗℠™•\?!@#\$%\^&\*\+\-={}"'<>~` ]/g,
+        watersignPattern: /[\w\.,:;\(\)\[\]\\\|/№§©®℗℠™•\?!@#\$%\^&\*\+\-={}"'<>~` ]/g, //eslint-disable-line no-useless-escape
         downloadOrigin: {
             title: 'Origin download',
             profile: 'As specified in profile',

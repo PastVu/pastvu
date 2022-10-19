@@ -1,4 +1,3 @@
-/*global define:true, ga:true*/
 /**
  * Модель загрузки фотографии
  */
@@ -232,27 +231,27 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
             }
 
             if (this.previewToGen < 1) {
-                this.filesToSubmit.forEach(function (file, index) {
+                this.filesToSubmit.forEach(function (file) {
                     this.startFile(file);
                 }, this);
                 this.previewToGen = 0;
                 this.filesToSubmit = [];
             }
         },
-        onFilesStart: function (e) {
+        onFilesStart: function (/*e*/) {
             //console.log('start');
             window.clearTimeout(this.filesUploadingTimeout);
             this.fileProgressAll(0);
             this.filesUploading(true);
         },
-        onFilesStop: function (e) {
+        onFilesStop: function (/*e*/) {
             //console.log('stop');
             this.filesUploadingTimeout = window.setTimeout(function () {
                 this.filesUploading(false);
             }.bind(this), 600);
         },
         onFileSubmit: function (e, data) {
-            data.files.forEach(function (file, index) {
+            data.files.forEach(function (file) {
                 file.ext.uploading(true);
                 file.ext.uploaded(false);
                 this.setMessage(file, 'Wait please. Loading..', 'muted'); //Please wait. Loading..
@@ -309,7 +308,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
         },
         onFileFail: function (e, data) {
             //console.log('onFileFail ', 'data.errorThrown', data.errorThrown, 'data.textStatus', data.textStatus);
-            data.files.forEach(function (file, index) {
+            data.files.forEach(function (file) {
                 file.ext.uploading(false);
                 file.ext.uploaded(false);
                 file.ext.error(true);
@@ -319,7 +318,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
         onFileProgress: function (e, data) {
             let progress = data.loaded / data.total * 100 >> 0;
 
-            data.files.forEach(function (file, index) {
+            data.files.forEach(function (file) {
                 file.ext.progress(progress);
             }, this);
             e = data = progress = null;

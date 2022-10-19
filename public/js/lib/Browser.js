@@ -1,11 +1,10 @@
-/*global define*/
 /**
  * Browser Detect
  *
  * @author Klimashkin P.
- * @returns {{name: string, version:string, versionN: number,
- *           engine: string, e_version: string, e_versionN: number,
- *              platform: string, support: Object.<string, boolean>}}
+ * returns object containing {name: string, version:string, versionN: number,
+ *     engine: string, e_version: string, e_versionN: number,
+ *     platform: string, support: Object.<string, boolean>}
  */
 define([], function () {
     'use strict';
@@ -24,7 +23,7 @@ define([], function () {
         /**
          * Индикаторы поддержки технологий
          *
-         * @type Object.<string, boolean>
+         * @type {object.<string, boolean>}
          */
         support: {
             video: !!document.createElement('video').canPlayType,
@@ -86,10 +85,10 @@ define([], function () {
         b.engine = 'PRESTO';
         b.version = getSubstrUntilSpace(navigator.userAgent, uA.indexOf('VERSION/') + 8);
 
-        res = uA.match(/VERSION\/([\d\.]+)/i) || uA.match(/OPERA.([\d\.]+)/i);
+        res = uA.match(/VERSION\/([\d\.]+)/i) || uA.match(/OPERA.([\d\.]+)/i); // eslint-disable-line no-useless-escape
         b.versionN = parseFloat(res[1]);
 
-        res = uA.match(/PRESTO\/([\d\.]+)/i);
+        res = uA.match(/PRESTO\/([\d\.]+)/i); // eslint-disable-line no-useless-escape
 
         if (res) {
             b.e_version = res[1];
@@ -97,7 +96,7 @@ define([], function () {
     } else if (uA.indexOf('WEBKIT') >= 0) {
         b.engine = 'WEBKIT';
 
-        res = uA.match(/WEBKIT\/([\d\.]+)/i);
+        res = uA.match(/WEBKIT\/([\d\.]+)/i); // eslint-disable-line no-useless-escape
 
         if (res) {
             b.e_version = res[1];
@@ -115,7 +114,7 @@ define([], function () {
         b.engine = 'GECKO';
         b.version = getSubstrUntilSpace(navigator.userAgent, uA.indexOf('FIREFOX/') + 8); //uA.match(/FIREFOX\/([\d\.]+)/i)[1]
 
-        res = uA.match(/RV:([\d\.]+)/i);
+        res = uA.match(/RV:([\d\.]+)/i); // eslint-disable-line no-useless-escape
 
         if (res) {
             b.e_version = res[1];

@@ -1,11 +1,10 @@
-/*global escape:true, unescape:true*/
 /**
  * Utils
  *
  * @author Klimashkin P.
  */
-define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/plugins/extends'], function ($, _, _s, Uri) {
-    var Utils = {
+define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/plugins/extends'], function ($, _, _s) {
+    const Utils = {
 
         /**
          * Class powers the OOP facilities of the library. Thanks to John Resig and Dean Edwards for inspiration!
@@ -34,6 +33,7 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
                 return dest;
             }
 
+            // eslint-disable-next-line no-empty-function
             const Class = function () {
             };
 
@@ -43,22 +43,24 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
              * @returns {Function} Class
              */
             Class.extend = function (props) {
-                let NewClass; let F; let proto; let
-                    i;
+                let i;
 
                 // extended class with the new prototype
-                NewClass = function () {
+                const NewClass = function () {
                     if (this.initialize) {
                         this.initialize.apply(this, arguments);
                     }
                 };
 
                 // instantiate class without calling constructor
-                F = function () {
+                // eslint-disable-next-line no-empty-function
+                const F = function () {
                 };
+
                 F.prototype = this.prototype;
 
-                proto = new F();
+                const proto = new F();
+
                 proto.constructor = NewClass;
 
                 NewClass.prototype = proto;
@@ -107,6 +109,7 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
         }()),
 
         inherit: (function () {
+            // eslint-disable-next-line no-empty-function
             const F = function () {};
 
             return function (child, parent) {
@@ -232,8 +235,9 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
         },
         setLocalStorage: function (key, val) {
             if (val !== undefined) {
-                //undefined не stringify'ется в строку, а вернёт просто undefined,
-                //который localStorage преобразует в строку "localStorage" и затем не парсится и сохранять в localStorage undefined бессмысленно
+                // undefined не stringify'ется в строку, а вернёт просто undefined,
+                // который localStorage преобразует в строку "localStorage" и затем
+                // не парсится и сохранять в localStorage undefined бессмысленно.
                 localStorage[key] = JSON.stringify(val);
             }
         },
@@ -249,7 +253,7 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
         // Not yet supported
         copyTextSupported: function () {
             try {
-                alert(!!document.execCommand && !!document.queryCommandSupported &&
+                console.log(!!document.execCommand && !!document.queryCommandSupported &&
                     document.queryCommandSupported('copy') && document.execCommand('copy'));
             } catch (e) {
                 return false;
@@ -288,8 +292,8 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
             const dualScreenLeft = window.screenLeft !== undefined ? window.screenLeft : screen.left;
             const dualScreenTop = window.screenTop !== undefined ? window.screenTop : screen.top;
 
-            const width = window.innerWidth ? window.innerWidth : document.documentElement.clientWidth ? document.documentElement.clientWidth : screen.width;
-            const height = window.innerHeight ? window.innerHeight : document.documentElement.clientHeight ? document.documentElement.clientHeight : screen.height;
+            const width = window.innerWidth ? window.innerWidth : document.documentElement.clientWidth ? document.documentElement.clientWidth : screen.width; // eslint-disable-line max-len
+            const height = window.innerHeight ? window.innerHeight : document.documentElement.clientHeight ? document.documentElement.clientHeight : screen.height; // eslint-disable-line max-len
 
             const left = width / 2 - w / 2 + dualScreenLeft >> 0;
             const top = height / 2 - h / 2 + dualScreenTop >> 0;
@@ -310,15 +314,15 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
         /**
          * Загружает изображение и по завешению загрузки вызывает callback
          *
-         * @param url
-         * @param callback
-         * @param ctx
-         * @param callbackParam
+         * @param {string} url
+         * @param {Function} callback
+         * @param {object} ctx
+         * @param {*} callbackParam
          */
         loadImage: function (url, callback, ctx, callbackParam) {
             let loadImg = new Image();
 
-            loadImg.onload = function (evt) {
+            loadImg.onload = function (/*evt*/) {
                 if (Utils.isType('function', callback)) {
                     callback.call(ctx, callbackParam);
                 }
@@ -369,8 +373,8 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
         /**
          * Возвращает значение параметра из строки адреса, содержащей параметры, или переданной строки
          *
-         * @param name Имя параметра
-         * @param url Часть строки, начиная со знака ?
+         * @param {string} name Имя параметра
+         * @param {string} url Часть строки, начиная со знака ?
          * @returns {string | null}
          */
         getURLParameter: function (name, url) {
@@ -461,7 +465,7 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
         txtHtmlToPlain: function (txt, brShrink) {
             let result = txt;
 
-            result = result.replace(/<br\s*[\/]?>/gi, brShrink ? ' ' : '\n'); // Заменяем <br> на \n или ничего
+            result = result.replace(/<br\s*[/]?>/gi, brShrink ? ' ' : '\n'); // Заменяем <br> на \n или ничего
             result = _s.stripTags(result); //Убираем обрамляющие тэги ahref
             result = _s.unescapeHTML(result); //Возвращаем эскейпленные
 
@@ -485,13 +489,13 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
 
         /**
          *
-         * @param time Время в миллисекундах
-         * @param update Колбэк, вызываемый каждую секунду. Передается параметр - секунд осталось
-         * @param complete
+         * @param {number} time Время в миллисекундах
+         * @param {Function} update Колбэк, вызываемый каждую секунду. Передается параметр - секунд осталось
+         * @param {Function} complete
          */
         timer: function timer(time, update, complete) {
             const start = Date.now();
-            var interval = setInterval(function () {
+            const interval = setInterval(function () {
                 const now = time - (Date.now() - start);
 
                 if (now <= 1) {
@@ -529,7 +533,7 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
         }()),
 
         format: (function () {
-            var dateFormat = (function () {
+            const dateFormat = (function () {
                 const months = [
                     'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december',
                 ];
@@ -711,7 +715,7 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
                     x = et.pageX;
                     y = et.pageY;
                 } else if (et.clientX || et.clientY) {
-                    x = et.clientX + (document.documentElement.scrollLeft || document.body.scrollLeft) - document.documentElement.clientLeft;
+                    x = et.clientX + (document.documentElement.scrollLeft || document.body.scrollLeft) - document.documentElement.clientLeft; // eslint-disable-line max-len
                     y = et.clientY + (document.documentElement.scrollTop || document.body.scrollTop) - document.documentElement.clientTop;
                 }
             } else if (e.pageX || e.pageY) {
@@ -729,7 +733,7 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
          * Caps Lock Detector 1.0
          *
          * @author Igor Tigirlas, last update 05.08.2005
-         * @param evt
+         * @param {Event} evt
          */
         capsLockDetect: function (evt) {
             if (!evt) {
@@ -774,10 +778,11 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
 
             // external stylesheet for Explorer and Opera 9
             if (elem.currentStyle) {
-                let i;
+                let i = prop.indexOf('-');
 
-                while ((i = prop.indexOf('-')) !== -1) {
+                while (i !== -1) {
                     prop = prop.substr(0, i) + prop.substr(i + 1, 1).toUpperCase() + prop.substr(i + 2);
+                    i = prop.indexOf('-');
                 }
 
                 return elem.currentStyle[prop];
@@ -815,10 +820,10 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
          */
         cookie: {
             getItem: function (sKey) {
-                return unescape(document.cookie.replace(new RegExp('(?:(?:^|.*;)\\s*' + escape(sKey).replace(/[\-\.\+\*]/g, '\\$&') + '\\s*\\=\\s*([^;]*).*$)|^.*$'), '$1')) || null;
+                return unescape(document.cookie.replace(new RegExp('(?:(?:^|.*;)\\s*' + escape(sKey).replace(/[\-\.\+\*]/g, '\\$&') + '\\s*\\=\\s*([^;]*).*$)|^.*$'), '$1')) || null; //eslint-disable-line no-useless-escape
             },
             setItem: function (sKey, sValue, vEnd, sPath, sDomain, bSecure) {
-                if (!sKey || /^(?:expires|max\-age|path|domain|secure)$/i.test(sKey)) {
+                if (!sKey || /^(?:expires|max-age|path|domain|secure)$/i.test(sKey)) {
                     return false;
                 }
 
@@ -857,9 +862,10 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
                 return true;
             },
             hasItem: function (sKey) {
-                return new RegExp('(?:^|;\\s*)' + escape(sKey).replace(/[\-\.\+\*]/g, '\\$&') + '\\s*\\=').test(document.cookie);
+                return new RegExp('(?:^|;\\s*)' + escape(sKey).replace(/[\-\.\+\*]/g, '\\$&') + '\\s*\\=').test(document.cookie); //eslint-disable-line no-useless-escape
             },
             keys: /* optional method: you can safely remove it! */ function () {
+                //eslint-disable-next-line no-useless-escape
                 const aKeys = document.cookie.replace(/((?:^|\s*;)[^\=]+)(?=;|$)|^\s*|\s*(?:\=[^;]*)?(?:\1|$)/g, '').split(/\s*(?:\=[^;]*)?;\s*/);
                 let nIdx;
 
@@ -930,8 +936,8 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
              * Обрезание числа с плавающей запятой до указанного количества знаков после запятой
              * http://jsperf.com/math-round-vs-tofixed-with-decimals/2
              *
-             * @param number Число для обрезания
-             * @param precision Точность
+             * @param {number} number Число для обрезания
+             * @param {number} precision Точность
              * @returns {number}
              */
             function toPrecision(number, precision) {
@@ -943,8 +949,8 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
             /**
              * Обрезание с округлением числа с плавающей запятой до указанного количества знаков после запятой
              *
-             * @param number Число
-             * @param precision Точность
+             * @param {number} number Число
+             * @param {number} precision Точность
              * @returns {number}
              */
             function toPrecisionRound(number, precision) {
@@ -971,18 +977,18 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
             /**
              * Haversine formula to calculate the distance
              *
-             * @param lat1
-             * @param lon1
-             * @param lat2
-             * @param lon2
+             * @param {number} lat1
+             * @param {number} lon1
+             * @param {number} lat2
+             * @param {number} lon2
              * @returns {number}
              */
             function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
                 const R = 6371; // Mean radius of the earth in km
                 const dLat = deg2rad(lat2 - lat1); // deg2rad below
                 const dLon = deg2rad(lon2 - lon1);
-                const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-						Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                // eslint-disable-next-line max-len
+                const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
                 const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
                 const d = R * c; // Distance in km
 
@@ -1023,21 +1029,25 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
 
             //Проверка на валидность geo [lng, lat]
             function check(geo) {
+                // eslint-disable-next-line max-len
                 return Array.isArray(geo) && geo.length === 2 && (geo[0] || geo[1]) && geo[0] > -180 && geo[0] < 180 && geo[1] > -90 && geo[1] < 90;
             }
 
             //Проверка на валидность geo [lat, lng]
             function checkLatLng(geo) {
+                // eslint-disable-next-line max-len
                 return Array.isArray(geo) && geo.length === 2 && (geo[0] || geo[1]) && geo[1] > -180 && geo[1] < 180 && geo[0] > -90 && geo[0] < 90;
             }
 
             //Проверка на валидность bbox [leftlng, bottomlat, rightlng, toplat]
             function checkbbox(bbox) {
+                // eslint-disable-next-line max-len
                 return Array.isArray(bbox) && bbox.length === 4 && check([bbox[0], bbox[1]]) && check([bbox[2], bbox[3]]) && bbox[1] < bbox[3];
             }
 
             //Проверка на валидность bbox [bottomlat, leftlng, toplat, rightlng]
             function checkbboxLatLng(bbox) {
+                // eslint-disable-next-line max-len
                 return Array.isArray(bbox) && bbox.length === 4 && checkLatLng([bbox[0], bbox[1]]) && checkLatLng([bbox[2], bbox[3]]) && bbox[0] < bbox[2];
             }
 
@@ -1273,13 +1283,9 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
         const body = document.body;
         const docElem = document.documentElement;
 
-        const scrollTop = window.pageYOffset ||
-				docElem.scrollTop ||
-				body.scrollTop;
+        const scrollTop = window.pageYOffset || docElem.scrollTop || body.scrollTop;
 
-        const scrollLeft = window.pageXOffset ||
-				docElem.scrollLeft ||
-				body.scrollLeft;
+        const scrollLeft = window.pageXOffset || docElem.scrollLeft || body.scrollLeft;
 
         const clientTop = docElem.clientTop || body.clientTop || 0;
         const clientLeft = docElem.clientLeft || body.clientLeft || 0;

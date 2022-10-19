@@ -1,5 +1,3 @@
-//require(['jquery'], function(jQuery){jQuery.noConflict(true); delete window.jQuery; delete window.$;}); //Убираем jquery из глобальной области видимости
-
 require([
     'domReady!', 'jquery', 'Browser', 'Utils', 'socket!', 'underscore', 'knockout', 'moment',
     'globalVM', 'Params', 'renderer', 'router', 'model/Photo', 'model/User', 'noties',
@@ -11,7 +9,7 @@ require([
     Utils.title.setPostfix('Retro photos');
 
     const routerDeferred = $.Deferred();
-    var routerAnatomy = {
+    const routerAnatomy = {
         globalModules: {
             modules: [
                 { module: 'm/common/auth', container: '#auth', global: true },

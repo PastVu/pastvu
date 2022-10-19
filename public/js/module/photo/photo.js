@@ -1,3 +1,4 @@
+/* global init:true */
 /**
  * Модель страницы фотографии
  */
@@ -71,7 +72,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
                 if (this.edit()) {
                     this.setMessage('Photo in editing mode', 'Put necessary information and save changes', 'warning');
-                    //globalVM.pb.publish('/top/message', ['Photo is in edit mode. Please fill in the underlying fields and save the changes', 'warn']);
+                    //globalVM.pb.publish('/top/message',
+                    //    ['Photo is in edit mode. Please fill in the underlying fields and save the changes', 'warn']);
                 } else if (status && status.title) {
                     this.setMessage(this.IOwner() ? status.title_owner : status.title, '', status.label, link);
                 } else {
@@ -542,21 +544,15 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             const userRibbonW = rightPanelW - 85;
 
             let thumbW;
-            let thumbH;
-
             const thumbWV1 = 84; //Минимальная ширина thumb
             const thumbWV2 = 90; //Максимальная ширина thumb
             const thumbMarginMin = 1;
             const thumbMarginMax = 7;
-            let thumbMargin;
             const thumbNMin = 2;
-            let thumbNV1;
-            let thumbNV2;
-            let thumbNV1User;
 
-            thumbNV1 = Math.max(thumbNMin, (rightPanelW + thumbMarginMin) / (thumbWV1 + thumbMarginMin) >> 0);
-            thumbNV2 = Math.max(thumbNMin, (rightPanelW + thumbMarginMin) / (thumbWV2 + thumbMarginMin) >> 0);
-            thumbNV1User = Math.max(thumbNMin, (userRibbonW + thumbMarginMin) / (thumbWV1 + thumbMarginMin) >> 0);
+            const thumbNV1 = Math.max(thumbNMin, (rightPanelW + thumbMarginMin) / (thumbWV1 + thumbMarginMin) >> 0);
+            const thumbNV2 = Math.max(thumbNMin, (rightPanelW + thumbMarginMin) / (thumbWV2 + thumbMarginMin) >> 0);
+            const thumbNV1User = Math.max(thumbNMin, (userRibbonW + thumbMarginMin) / (thumbWV1 + thumbMarginMin) >> 0);
 
             if (thumbNV1 === thumbNV2) {
                 thumbW = thumbWV2;
@@ -564,8 +560,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 thumbW = thumbWV1;
             }
 
-            thumbH = thumbW / 1.5 >> 0;
-            thumbMargin = Math.min((rightPanelW - thumbNV1 * thumbW) / (thumbNV1 - 1) >> 0, thumbMarginMax);
+            const thumbH = thumbW / 1.5 >> 0;
+            const thumbMargin = Math.min((rightPanelW - thumbNV1 * thumbW) / (thumbNV1 - 1) >> 0, thumbMarginMax);
 
             this.mapH(Math.max(350, Math.min(700, P.window.h() - this.$dom.find('.photoMap').offset().top - 84)) + 'px');
             this.thumbW(thumbW + 'px');
@@ -2021,7 +2017,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
 
         fragAreasActivate: function () {
-            var $wrap = $('.imgMiddleWrap', this.$dom)
+            const $wrap = $('.imgMiddleWrap', this.$dom)
                 .on('mouseenter', '.photoFrag', function (evt) {
                     const $frag = $(evt.target);
                     const fragOffset = $frag.offset();

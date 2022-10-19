@@ -1,6 +1,7 @@
-define(
-    ['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params', 'model/User', 'model/Region', 'm/photo/status'],
-    function ($, _, ko, koMapping, Utils, P, User, Region, statuses) {
+define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'model/User', 'model/Region', 'm/photo/status'],
+    function ($, _, ko, koMapping, Utils, User, Region, statuses) {
+        'use strict';
+
         const defaults = {
             // Следующие типы включают друг друга по нарастающей
             base: {
@@ -116,11 +117,12 @@ define(
         /**
          * Фабрика. Из входящих данных создает полноценный объект, в котором недостающие поля заполнены дефолтными значениями
          *
-         * @param origin Входящий объект
-         * @param type Название дефолтного объекта для сляния
-         * @param pic Тим картинки
-         * @param customDefaults Собственные свойства, заменяющие аналогичные в дефолтном объекте
-         * @returns {*}
+         * @param {object} origin Входящий объект
+         * @param {object} options
+         * @param {string} options.type Название дефолтного объекта для сляния
+         * @param {string} options.pic Тим картинки
+         * @param {object} options.customDefaults Собственные свойства, заменяющие аналогичные в дефолтном объекте
+         * @returns {object}
          */
         function factory(origin, options) {
             if (origin === undefined) {
@@ -189,8 +191,6 @@ define(
         function vmCreate(data) {
             const vm = koMapping.fromJS(data);
 
-            User.vmAdditional(vm.user);
-
             return vm;
         }
 
@@ -198,10 +198,10 @@ define(
          * Создает из объекта ViewModel
          * Если указана текущая ViewModel, то обновляет её новыми данными
          *
-         * @param data Данные
-         * @param vmExist Существующая ViewModel
-         * @param withoutFactory Флаг, указывающий что не надо применять к данным фабрику
-         * @returns {*}
+         * @param {object} data Данные
+         * @param {object} vmExist Существующая ViewModel
+         * @param {boolean} withoutFactory Флаг, указывающий что не надо применять к данным фабрику
+         * @returns {object}
          */
         function vm(data, vmExist, withoutFactory, can) {
             if (!withoutFactory) {

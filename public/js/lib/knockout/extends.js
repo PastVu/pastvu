@@ -1,6 +1,5 @@
-/*global requirejs:true, require:true, define:true*/
 /**
- * Klimashkin
+ * @author Klimashkin
  */
 define(['jquery', 'underscore', 'knockout'], function ($, _, ko) {
     /**
@@ -10,7 +9,6 @@ define(['jquery', 'underscore', 'knockout'], function ($, _, ko) {
      */
     ko.bindingHandlers.newChildContext = {
         init: function (element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
-            const flag = valueAccessor();
             const childBindingContext = bindingContext.createChildContext(viewModel);
 
             ko.applyBindingsToDescendants(childBindingContext, element);
@@ -39,16 +37,17 @@ define(['jquery', 'underscore', 'knockout'], function ($, _, ko) {
     /**
      * Объединяет два массива
      *
-     * @param arr Массив для объединения
-     * @param before Флаг, означающий что надо вставить в начало
+     * @param {Array} arr Массив для объединения
+     * @param {boolean} before Флаг, означающий что надо вставить в начало
      * @returns {*}
      */
     ko.observableArray.fn.concat = function (arr, before) {
         const underlyingArray = this();
-        let methodCallResult;
 
         this.valueWillMutate();
-        methodCallResult = Array.prototype[before ? 'unshift' : 'push'][Array.isArray(arr) ? 'apply' : 'call'](underlyingArray, arr);
+
+        const methodCallResult = Array.prototype[before ? 'unshift' : 'push'][Array.isArray(arr) ? 'apply' : 'call'](underlyingArray, arr);
+
         this.valueHasMutated();
 
         return methodCallResult;

@@ -1329,7 +1329,6 @@ define([
             const windowW = window.innerWidth; //В @media ширина считается с учетом ширины скролла (кроме chrome<29), поэтому мы тоже должны брать этот размер
             const domW = this.$dom.width();
             let thumbW;
-            let thumbH;
             let thumbN;
             const thumbWMin = 120;
             const thumbWMax = 246;
@@ -1360,7 +1359,7 @@ define([
                 thumbW = Math.min(domW / thumbN - marginMin - 4, thumbWMax) >> 0;
             }
 
-            thumbH = thumbW / 1.5 >> 0;
+            const thumbH = thumbW / 1.5 >> 0;
             //margin = ((domW % thumbW) / (domW / thumbW >> 0)) / 2 >> 0;
 
             //Ширина для центрируемого холста с превьюшками для переносов. 4 прибавляем, чтобы учесть возможную погрешность

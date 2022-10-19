@@ -285,7 +285,8 @@ define([
                 .on('afterCreateToken', this.onCreateToken.bind(this)) //При создании токена добавляем выбор
                 .on('beforeEditToken removeToken', this.onRemoveToken.bind(this)); //При удалении или редиктировании токена удаляем выбор
         },
-        //Событие создания токена. Вызовется как при создании в поле, так и при удалении из дерева (потому что при этом пересоздаются неудаляемые токены)
+        // Событие создания токена. Вызовется как при создании в поле,
+        // так и при удалении из дерева (потому что при этом пересоздаются неудаляемые токены).
         onCreateToken: function (e) {
             const title = e.token.value;
             const region = this.regionsHashByTitle[title];
@@ -317,11 +318,10 @@ define([
         //Ручное удаление токена, работает полной заменой токенов, кроме удаляемого.
         //Поэтому для удаляемого токена событие onRemoveToken не сработает, но сработает onCreateToken для каждого неудаляемого
         removeToken: function (region) {
-            const title = region.title_en;
+            const title = region.title_local;
             const tkn = this.$dom.find('.regionstkn');
-            let tokensExists;
+            const tokensExists = tkn.tokenfield('getTokens');
 
-            tokensExists = tkn.tokenfield('getTokens');
             _.remove(tokensExists, function (item) {
                 return item.value === title;
             });
@@ -431,7 +431,8 @@ define([
             const selectedRegions = [];
             const result = ko.observableArray();
 
-            const homeRegionsCids = this.pinHomeAllowed && this.auth.iAm.regionHome.parents().concat(this.auth.iAm.regionHome.cid()) || false;
+            const homeRegionsCids = this.pinHomeAllowed &&
+                this.auth.iAm.regionHome.parents().concat(this.auth.iAm.regionHome.cid()) || false;
             let homeCountryCidFound = false;
 
             function openRegionParents(region) {
@@ -533,7 +534,7 @@ define([
             return result;
         },
 
-        sortTree(tree) {
+        sortTree: function (tree) {
             const sortBy = this.sortBy();
             let sortOrder = this.sortOrder();
             const pinHome = this.pinHome();
@@ -620,10 +621,10 @@ define([
         /**
          * Открывает/закрывает узел дерева. Возможно рекурсивное переключение
          *
-         * @param region Стартовый регион
-         * @param expandSelf Открыть/закрыть непосредственно переданный узел (true/false)
-         * @param cascadeExpand Открыть/закрыть рекурсивные узлы (true/false)
-         * @param cascadeDir Направление рекурсивного переключения ('up'/'down')
+         * @param {object} region Стартовый регион
+         * @param {boolean} expandSelf Открыть/закрыть непосредственно переданный узел (true/false)
+         * @param {boolean} cascadeExpand Открыть/закрыть рекурсивные узлы (true/false)
+         * @param {string} cascadeDir Направление рекурсивного переключения ('up'/'down')
          */
         nodeToggle: function (region, expandSelf, cascadeExpand, cascadeDir) {
             let nextRegions;
@@ -674,19 +675,19 @@ define([
 
             Utils.setLocalStorage('regionSelect.sortOrder', this.sortOrder());
         },
-        sortByAlphabet() {
+        sortByAlphabet: function () {
             this.sortBy('alphabet');
         },
-        sortBySub() {
+        sortBySub: function () {
             this.sortBy('sub');
         },
-        sortByPhoto() {
+        sortByPhoto: function () {
             this.sortBy('photo');
         },
-        sortByPic() {
+        sortByPic: function () {
             this.sortBy('pic');
         },
-        sortByComment() {
+        sortByComment: function () {
             this.sortBy('comment');
         },
     });

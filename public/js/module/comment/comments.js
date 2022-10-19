@@ -67,7 +67,8 @@ define([
             this.subscr = ko.observable(this.options.subscr || false);
             this.nocomments = ko.observable(this.options.nocomments);
             this.canReply = ko.observable(this.options.canReply);
-            this.showDelComments = ko.observable(this.auth.loggedIn() && (this.auth.iAm.settings.comment_show_deleted() || globalVM.router.params().hl));
+            this.showDelComments = ko.observable(this.auth.loggedIn() &&
+                (this.auth.iAm.settings.comment_show_deleted() || globalVM.router.params().hl));
 
             this.loading = ko.observable(false);
             this.showTree = ko.observable(false);
@@ -302,7 +303,9 @@ define([
                             }
                         });
                     } else {
-                        this.receiveTimeout = window.setTimeout(this.receive.bind(this, cb || null, ctx || null), this.count() > 50 ? 750 : 400);
+                        const delay = this.count() > 50 ? 750 : 400;
+
+                        this.receiveTimeout = window.setTimeout(this.receive.bind(this, cb || null, ctx || null), delay);
                     }
                 } else {
                     //Если после первая проверка отрицательна, вешаем следующую проверку на скроллинг
@@ -323,7 +326,7 @@ define([
             tplCommentAdd = doT.template(dotCommentAdd);
 
             if (!this.inViewport) {
-                this.inViewportCheck(null, null, true);	//Если еще не во вьюпорте, форсируем
+                this.inViewportCheck(null, null, true); //Если еще не во вьюпорте, форсируем
             } else {
                 this.receive(); //Если во вьюпорте, просто заново перезапрашиаваем
             }
@@ -457,7 +460,7 @@ define([
             let rank;
             let r;
 
-            for (const i in users) {
+            for (const i in users) { //eslint-disable-line guard-for-in
                 user = users[i];
 
                 if (user !== undefined && user.ranks && user.ranks.length) {
@@ -640,7 +643,8 @@ define([
                 this.cZeroDetached = $('.cadd[data-level="0"]', this.$cmts).detach();
             }
         },
-        //Активирует поле ввода. Навешивает события, проверяет вхождение во вьюпорт и устанавливает фокус, если переданы соответствующие флаги
+        // Активирует поле ввода. Навешивает события, проверяет вхождение во вьюпорт и
+        // устанавливает фокус, если переданы соответствующие флаги
         inputActivate: function ($cadd, scrollDuration, checkViewport, focus, cb, ctx) {
             const $input = $('.cinput', $cadd);
 
@@ -797,14 +801,13 @@ define([
                 }
 
                 const commentToEdit = this.commentsHash[cid];
-                let frag;
 
                 if (!commentToEdit) {
                     return;
                 }
 
                 //Выбор фрагмента из this.p.frags. Если он есть у комментария, делаем его редактирование
-                frag = this.canFrag && commentToEdit.frag && ko.toJS(this.parentModule.fragGetByCid(cid));
+                const frag = this.canFrag && commentToEdit.frag && ko.toJS(this.parentModule.fragGetByCid(cid));
 
                 if (frag) {
                     this.commentEditingFragChanged = false;
@@ -853,6 +856,7 @@ define([
                 socket.run('comment.remove', { type: this.type, cid: cid, reason: reason }, true)
                     .then(function (result) {
                         const count = Number(result.countComments);
+                        let $cdel;
 
                         if (!count) {
                             return;
@@ -884,7 +888,7 @@ define([
                         if (this.showDelComments()) {
                             // If user wants to see removed comments,
                             // then replace root removed comment with the collapsed one
-                            var $cdel = $(tplCommentDel(comment, {
+                            $cdel = $(tplCommentDel(comment, {
                                 fDate: formatDateRelative,
                                 fDateIn: formatDateRelativeIn,
                             }));
@@ -915,7 +919,7 @@ define([
                         }
 
                         // Если после "схлопывания" ветки корневой удалемый оказался выше вьюпорта, скроллим до него
-                        if ($cdel.offset().top < (window.pageYOffset || $window.scrollTop())) {
+                        if ($cdel && $cdel.offset().top < (window.pageYOffset || $window.scrollTop())) {
                             $window.scrollTo($cdel, { offset: -P.window.head, duration: 600 });
                         }
 
@@ -982,7 +986,7 @@ define([
                                 //Заменяем комментарии потомки, которые были удалены вместе с корневым
                                 let c;
 
-                                for (const i in that.commentsHash) {
+                                for (const i in that.commentsHash) { //eslint-disable-line guard-for-in
                                     c = that.commentsHash[i];
 
                                     if (c !== undefined && c.del !== undefined && c.del.origin === cid) {
@@ -1172,7 +1176,6 @@ define([
             const cid = Number($cadd.data('cid'));
             const content = $input.val(); //Операции с текстом сделает сервер
             let dataInput;
-            let dataToSend;
 
             if (_s.isBlank(content)) {
                 $input.val('');
@@ -1184,7 +1187,7 @@ define([
                 dataInput = this.commentsHash[cid];
             }
 
-            dataToSend = {
+            const dataToSend = {
                 type: vm.type, //тип объекта
                 obj: vm.cid, //cid объекта
                 txt: content,

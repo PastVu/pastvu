@@ -200,8 +200,6 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 });
         },
 
-        unSubsc: function (/*pass*/) {
-        },
         onPreviewLoad: function (data, event) {
             event.target.parentNode.parentNode.classList.add('showPrv');
         },

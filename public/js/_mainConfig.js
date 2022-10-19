@@ -1,4 +1,4 @@
-/*global requirejs:true, require:true*/
+/*global requirejs:true*/
 requirejs.config({
     baseUrl: '/js',
     urlArgs: '__=__',

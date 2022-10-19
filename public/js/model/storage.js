@@ -1,5 +1,7 @@
 define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket!', 'globalVM', 'model/User', 'model/Photo', 'noties'], function ($, _, ko, ko_mapping, Utils, socket, globalVM, User, Photo, noties) {
-    var storage = {
+    'use strict';
+
+    const storage = {
         users: {},
         photos: {},
         waitings: {},
@@ -76,7 +78,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
         },
         photoCan: function (cid, callback, context) {
             if (storage.photos[cid] === undefined) {
-                storage.photo(cid, function (data) {
+                storage.photo(cid, function (/*data*/) {
                     storage.photoCan(cid, callback, context);
                 });
 

@@ -183,7 +183,7 @@ define([
 
             return false;
         },
-        SnatchOff: function ($e) {
+        SnatchOff: function () {
             this.sliding(false);
             this.$sliderArea
                 .off('mouseenter', '.dash', this.dashOverBind);

@@ -1,4 +1,6 @@
 define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params', 'model/Region'], function ($, _, Utils, ko, ko_mapping, P, Region) {
+    'use strict';
+
     const defaults = {
         base: {
             login: 'anonymous',
@@ -65,10 +67,10 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params
     /**
      * Фабрика. Из входящих данных создает полноценный объект, в котором недостающие поля заполнены дефолтными значениями
      *
-     * @param origin входящий объект
-     * @param defType название дефолтного объекта для сляния
-     * @param customDefaults собственные свойства, заменяющие аналогичные в дефолтном объекте
-     * @returns {*}
+     * @param {object} origin входящий объект
+     * @param {string} defType название дефолтного объекта для сляния
+     * @param {object} customDefaults собственные свойства, заменяющие аналогичные в дефолтном объекте
+     * @returns {object}
      */
     function factory(origin, defType, customDefaults) {
         origin = origin || {};
@@ -104,27 +106,17 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params
 
         const vm = ko_mapping.fromJS(data);
 
-        vmAdditional(vm);
-
         return vm;
-    }
-
-    /**
-     * Расширение для модели
-     *
-     * @param vm ViewModel
-     */
-    function vmAdditional(/*vm*/) {
     }
 
     /**
      * Создает из объекта viewmodel
      * если указана текущая viewmodel, то обновляет её новыми данными
      *
-     * @param data данные
-     * @param vmExist существующая viewmodel
-     * @param withoutFactory флаг, указывающий что не надо применять к данным фабрику
-     * @returns {*}
+     * @param {object} data данные
+     * @param {object} vmExist существующая viewmodel
+     * @param {boolean} withoutFactory флаг, указывающий что не надо применять к данным фабрику
+     * @returns {object}
      */
     function vm(data, vmExist, withoutFactory) {
         if (!withoutFactory) {
@@ -140,5 +132,5 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params
         return vmExist;
     }
 
-    return { factory: factory, vm: vm, vmAdditional: vmAdditional, def: defaults };
+    return { factory: factory, vm: vm, def: defaults };
 });

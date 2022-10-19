@@ -194,7 +194,8 @@ define([
                         selected: ko.observable(false),
                         obj: new L.TileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
                             updateWhenIdle: false,
-                            maxZoom: 20,
+                            maxZoom: 19,
+                            maxNativeZoom: 18,
                             attribution: 'OSM Française | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
                         }),
                         maxZoom: 19,
@@ -861,7 +862,6 @@ define([
             const layerActive = this.layerActive();
             let system;
             let type;
-            let setLayer;
 
             if (layerActive.sys && layerActive.sys.id === sysId && layerActive.type.id === typeId) {
                 return;
@@ -877,7 +877,7 @@ define([
                 type = this.getTypeById(system, defaults.type);
             }
 
-            setLayer = function (type) {
+            const setLayer = function (type) {
                 this.map.addLayer(type.obj);
                 this.markerManager.layerChange();
                 this.map.options.maxZoom = type.maxZoom;

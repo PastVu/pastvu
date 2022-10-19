@@ -1,5 +1,3 @@
-/*global define:true*/
-
 /**
  * Модель списка регионов
  */
@@ -227,7 +225,13 @@ define([
                     }
 
                     if (!result[year].children[month]) {
-                        result[year].children[month] = { sort: month, title: months[month], count: 0, regions: [], opened: ko.observable(false), level: 1 };
+                        result[year].children[month] = {
+                            sort: month,
+                            title: months[month],
+                            count: 0, regions: [],
+                            opened: ko.observable(false),
+                            level: 1,
+                        };
                         this.dateItemsFlat.push(result[year].children[month]);
                     }
 

@@ -1,4 +1,3 @@
-/*global define:true*/
 /**
  * Localizations
  */

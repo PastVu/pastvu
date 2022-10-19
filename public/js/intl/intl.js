@@ -1,4 +1,3 @@
-/*global define:true*/
 /**
  * Internationalisation functions
  */

@@ -1,4 +1,5 @@
 if (!String.prototype.includes) {
+    // eslint-disable-next-line no-extend-native
     String.prototype.includes = function () {
         'use strict';
 
@@ -7,17 +8,18 @@ if (!String.prototype.includes) {
 }
 
 if (!Array.prototype.includes) {
+    // eslint-disable-next-line no-extend-native
     Array.prototype.includes = function (searchElement/* , fromIndex*/) {
         'use strict';
 
         const O = Object(this);
-        const len = parseInt(O.length) || 0;
+        const len = parseInt(O.length) || 0; // eslint-disable-line radix
 
         if (len === 0) {
             return false;
         }
 
-        const n = parseInt(arguments[1]) || 0;
+        const n = parseInt(arguments[1]) || 0; // eslint-disable-line radix
         let k;
 
         if (n >= 0) {
@@ -35,8 +37,8 @@ if (!Array.prototype.includes) {
         while (k < len) {
             currentElement = O[k];
 
-            if (searchElement === currentElement ||
-                searchElement !== searchElement && currentElement !== currentElement) {
+            // eslint-disable-next-line no-self-compare
+            if (searchElement === currentElement || searchElement !== searchElement && currentElement !== currentElement) {
                 return true;
             }
 
@@ -52,12 +54,15 @@ if (!Array.prototype.includes) {
  * Console Gag
  */
 (function (global) {
+    // eslint-disable-next-line no-empty-function
     const noop = function () {
-    }/*,
+    };
+
+    /*,
         getConsoleTime = function () {
             return new Date().toLocaleTimeString();
         },
-        logOriginal = global.console.log || noop*/;
+        logOriginal = global.console.log || noop;*/
 
     if (!global.console) {
         global.console = {};

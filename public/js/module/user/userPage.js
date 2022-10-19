@@ -1,4 +1,3 @@
-/*global define:true, ga:true*/
 /**
  * Модель содержимого страницы пользователя
  */
@@ -100,8 +99,7 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
                 return;
             }
 
-            if ((params.section === 'settings' || params.section === 'subscriptions') &&
-				!itsMe && this.auth.iAm.role() < 10) {
+            if ((params.section === 'settings' || params.section === 'subscriptions') && !itsMe && this.auth.iAm.role() < 10) {
                 globalVM.router.navigate('/u/' + login);
 
                 return;
@@ -126,7 +124,7 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
         processStorageUser: function (login, cb, ctx) {
             storage.user(login, function (data) {
                 if (data) {
-				    if (data.lookat) {
+                    if (data.lookat) {
                         return globalVM.router.navigate(location.pathname.replace(login, data.lookat), { replace: true });
                     }
 

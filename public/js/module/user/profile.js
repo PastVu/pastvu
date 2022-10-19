@@ -1,4 +1,3 @@
-/*global define:true*/
 /**
  * Модель профиля пользователя
  */
@@ -45,7 +44,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
         editModeHandler: function (val) {
             if (val) {
-                require(['bs/ext/datepicker/datepicker', 'bs/ext/datepicker/lang/ru', 'css!style/bsext/datepicker'], function (Construct) {
+                require(['bs/ext/datepicker/datepicker', 'bs/ext/datepicker/lang/ru', 'css!style/bsext/datepicker'], function () {
                     if (this.$dom instanceof jQuery) {
                         this.$dom
                             .find('#inBirthdate')
@@ -56,7 +55,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                                 startDate: moment('1920-01-01').toDate(),
                                 endDate: moment().subtract('years', 13).toDate(),
                             })
-                            .on('changeDate', function (evt) {
+                            .on('changeDate', function () {
                                 this.u.birthdate(this.$dom.find('#inBirthdate').val());
                             }.bind(this));
                     }

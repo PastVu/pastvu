@@ -1,3 +1,4 @@
+/*global init:true*/
 /**
  * Params
  */

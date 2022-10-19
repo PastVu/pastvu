@@ -240,7 +240,8 @@ define([
      * Обновляет границы области отображения маркеров.
      * Если расчитанная ранее область включает текущую, обновление не происходит.
      *
-     * @param {?boolean=} force Принудительный пересчет области. Например, при изменении масштаба в +, текущая область будет содержаться в предыдущей, тем не менее пересчет нужен.
+     * @param {boolean} [force] Принудительный пересчет области. Например, при изменении масштаба в +,
+     *                          текущая область будет содержаться в предыдущей, тем не менее пересчет нужен.
      * @returns {boolean} Флаг того, что границы изменились.
      */
     MarkerManager.prototype.reCalcBound = function (force) {
@@ -335,10 +336,11 @@ define([
     MarkerManager.prototype.onMapMoveEnd = function () {
         if (this.zoomChanged) {
             if (this.currZoom >= this.firstClientWorkZoom && this.map.getZoom() >= this.firstClientWorkZoom) {
-                //Если установленный и новый зумы находятся в масштабах локальной работы, то вызываем пересчет быстрее
+                // Если установленный и новый зумы находятся в масштабах локальной работы, то вызываем пересчет быстрее
                 this.refreshByZoomTimeout = window.setTimeout(this.refreshDataByZoomBind, 100);
             } else if (this.currZoom === this.map.getZoom()) {
-                //Если установленный и новый зум равны, значит вернулись на тотже масштаб с которого начали зум, и надо полностью обновить данные
+                // Если установленный и новый зум равны, значит вернулись на тотже
+                // масштаб с которого начали зум, и надо полностью обновить данные
                 this.refreshByZoomTimeout = window.setTimeout(this.refreshDataByZoom.bind(this, true), 400);
             } else {
                 this.refreshByZoomTimeout = window.setTimeout(this.refreshDataByZoomBind, 400);
@@ -360,13 +362,12 @@ define([
         const self = this;
         let newZoom = this.map.getZoom();
         const localWork = newZoom >= this.firstClientWorkZoom;
-        const crossingLocalWorkZoom = this.currZoom < this.firstClientWorkZoom && localWork || this.currZoom >= this.firstClientWorkZoom && !localWork;
+        const crossingLocalWorkZoom = this.currZoom < this.firstClientWorkZoom && localWork ||
+            this.currZoom >= this.firstClientWorkZoom && !localWork;
         const direction = newZoom - this.currZoom;
         let bound = L.latLngBounds(this.calcBound.getSouthWest(), this.calcBound.getNorthEast()); // copy this.calcBound current values.
         let queryGeometry;
         let pollServer = true;
-        let curr;
-        let i;
 
         this.currZoom = newZoom;
 
@@ -426,9 +427,6 @@ define([
                     localWork: localWork,
                 }
             ).then(function (data) {
-                let localCluster; // Смотрим нужно ли использовать клиентскую кластеризацию
-                let boundChanged; // Если к моменту получения входящих данных нового зума, баунд изменился, значит мы успели подвигать картой, поэтому надо проверить пришедшие точки на вхождение в актуальный баунд
-
                 // Данные устарели и должны быть отброшены,
                 // если зум изменился или уже был отправлен другой запрос на данные по зуму или
                 // текущий баунд уже успел выйти за пределы запрашиваемого
@@ -438,8 +436,11 @@ define([
                     return;
                 }
 
-                boundChanged = !bound.equals(self.calcBound);
-                localCluster = localWork && self.clientClustering;
+                // Если к моменту получения входящих данных нового зума, баунд изменился, значит мы успели подвигать картой,
+                // поэтому надо проверить пришедшие точки на вхождение в актуальный баунд.
+                const boundChanged = !bound.equals(self.calcBound);
+                // Смотрим нужно ли использовать клиентскую кластеризацию.
+                const localCluster = localWork && self.clientClustering;
 
                 self.processIncomingDataZoom(data, boundChanged, localWork, localCluster);
 
@@ -510,15 +511,14 @@ define([
                 // Если такое фото уже есть, то просто записываем его в новый объект
                 photos[curr.cid] = existing;
                 this.mapObjects.photos[curr.cid] = undefined;
-            } else {
+            } else if (!boundChanged || this.calcBound.contains(curr.geo)) {
                 // Если оно новое - создаем его объект и маркер
-                if (!boundChanged || this.calcBound.contains(curr.geo)) {
-                    curr.sfile = Photo.picFormats.m + curr.file;
-                    divIcon = L.divIcon({
-                        className: 'photoIcon ' + getYearClass(curr.year, isPainting) + ' ' + curr.dir,
-                        iconSize: this.sizePoint,
-                    });
-                    curr.marker =
+                curr.sfile = Photo.picFormats.m + curr.file;
+                divIcon = L.divIcon({
+                    className: 'photoIcon ' + getYearClass(curr.year, isPainting) + ' ' + curr.dir,
+                    iconSize: this.sizePoint,
+                });
+                curr.marker =
                         L.marker(curr.geo, {
                             icon: divIcon,
                             riseOnHover: true,
@@ -526,9 +526,8 @@ define([
                         })
                             .on('click', this.clickMarker, this)
                             .on('mouseover', this.popupPhotoOver, this);
-                    this.layerPhotos.addLayer(curr.marker);
-                    photos[curr.cid] = curr;
-                }
+                this.layerPhotos.addLayer(curr.marker);
+                photos[curr.cid] = curr;
             }
         }
 
@@ -549,16 +548,12 @@ define([
 
     /**
      * Обновление данных маркеров.
-     *
-     * @param {?boolean=} reposExisting Пересчитывать позиции существующих маркеров. Например, при изменении масштаба надо пересчитывать.
      */
-    MarkerManager.prototype.refreshDataByMove = function (/*reposExisting*/) {
+    MarkerManager.prototype.refreshDataByMove = function () {
         const self = this;
         let zoom = this.currZoom;
         let bound = L.latLngBounds(this.calcBound.getSouthWest(), this.calcBound.getNorthEast());
         const localWork = zoom >= this.firstClientWorkZoom;
-        let curr;
-        let i;
 
         const poly = turf.bboxPolygon(bound.toBBoxString().split(','));
         const prevPoly = turf.bboxPolygon(this.calcBoundPrev.toBBoxString().split(','));
@@ -575,36 +570,34 @@ define([
             this.drawBounds(queryGeometry, false, localWork);
         }
 
-        socket
-            .run('photo.getByBounds', {
-                z: zoom,
-                geometry: turf.getGeom(queryGeometry),
-                year: this.year,
-                year2: this.year2,
-                isPainting: this.isPainting,
-                localWork: localWork,
-            })
-            .then(function (data) {
-                let localCluster; // Смотрим нужно ли использовать клиентскую кластеризацию
-                let boundChanged; // Если к моменту получения входящих данных нового зума, баунд изменился, значит мы успели подвигать картой, поэтому надо проверить пришедшие точки на вхождение в актуальный баунд
+        socket.run('photo.getByBounds', {
+            z: zoom,
+            geometry: turf.getGeom(queryGeometry),
+            year: this.year,
+            year2: this.year2,
+            isPainting: this.isPainting,
+            localWork: localWork,
+        }).then(function (data) {
+            // Данные устарели и должны быть отброшены,
+            // если текущий зум не равен запрашиваемомоу или текущий баунд уже успел выйти за пределы запрашиваемого
+            if (self.map.getZoom() !== data.z || !bound.intersects(self.calcBound)) {
+                console.log('Полученные данные перемещения устарели');
 
-                // Данные устарели и должны быть отброшены,
-                // если текущий зум не равен запрашиваемомоу или текущий баунд уже успел выйти за пределы запрашиваемого
-                if (self.map.getZoom() !== data.z || !bound.intersects(self.calcBound)) {
-                    console.log('Полученные данные перемещения устарели');
+                return;
+            }
 
-                    return;
-                }
+            // Смотрим нужно ли использовать клиентскую кластеризацию.
+            const localCluster = localWork && self.clientClustering;
+            // Если к моменту получения входящих данных нового зума, баунд изменился,
+            // значит мы успели подвигать картой, поэтому надо проверить пришедшие точки на вхождение в актуальный баунд.
+            const boundChanged = !bound.equals(self.calcBound);
 
-                localCluster = localWork && self.clientClustering;
-                boundChanged = !bound.equals(self.calcBound);
+            // Удаляем маркеры и кластеры, не входящие в новый баунд после получения новой порции данных
+            self.cropByBound(null, localWork);
 
-                // Удаляем маркеры и кластеры, не входящие в новый баунд после получения новой порции данных
-                self.cropByBound(null, localWork);
-
-                self.processIncomingDataMove(data, boundChanged, localWork, localCluster);
-                zoom = bound = null;
-            });
+            self.processIncomingDataMove(data, boundChanged, localWork, localCluster);
+            zoom = bound = null;
+        });
     };
 
     /**
@@ -680,8 +673,8 @@ define([
     MarkerManager.prototype.createClusters = function (data, withGravity) {
         const start = Date.now();
         const delta = this.clientClusteringDelta[this.currZoom] || this.clientClusteringDelta.default;
-        const clusterW = Utils.math.toPrecision(Math.abs(this.map.layerPointToLatLng(new L.Point(delta, 1)).lng - this.map.layerPointToLatLng(new L.Point(0, 1)).lng));
-        const clusterH = Utils.math.toPrecision(Math.abs(this.map.layerPointToLatLng(new L.Point(1, delta)).lat - this.map.layerPointToLatLng(new L.Point(1, 0)).lat));
+        const clusterW = Utils.math.toPrecision(Math.abs(this.map.layerPointToLatLng(new L.Point(delta, 1)).lng - this.map.layerPointToLatLng(new L.Point(0, 1)).lng)); // eslint-disable-line max-len
+        const clusterH = Utils.math.toPrecision(Math.abs(this.map.layerPointToLatLng(new L.Point(1, delta)).lat - this.map.layerPointToLatLng(new L.Point(1, 0)).lat)); // eslint-disable-line max-len
         const clusterWHalf = Utils.math.toPrecision(clusterW / 2);
         const clusterHHalf = Utils.math.toPrecision(clusterH / 2);
         const result = { photos: [], clusters: [] };
@@ -706,7 +699,7 @@ define([
             geoPhoto = photo.geo;
             geoPhotoCorrection = [geoPhoto[0] > 0 ? 1 : 0, geoPhoto[1] < 0 ? -1 : 0];
 
-            geo = [~~(clusterH * (~~(geoPhoto[0] / clusterH) + geoPhotoCorrection[0]) * precisionDivider) / precisionDivider, ~~(clusterW * (~~(geoPhoto[1] / clusterW) + geoPhotoCorrection[1]) * precisionDivider) / precisionDivider];
+            geo = [~~(clusterH * (~~(geoPhoto[0] / clusterH) + geoPhotoCorrection[0]) * precisionDivider) / precisionDivider, ~~(clusterW * (~~(geoPhoto[1] / clusterW) + geoPhotoCorrection[1]) * precisionDivider) / precisionDivider]; // eslint-disable-line max-len
             clustCoordId = geo[0] + '@' + geo[1];
             cluster = clusters[clustCoordId];
 
@@ -746,7 +739,7 @@ define([
 
             if (cluster.c > 2) {
                 if (withGravity) {
-                    cluster.geo = [~~(cluster.lats / cluster.c * precisionDivider) / precisionDivider, ~~(cluster.lngs / cluster.c * precisionDivider) / precisionDivider];
+                    cluster.geo = [~~(cluster.lats / cluster.c * precisionDivider) / precisionDivider, ~~(cluster.lngs / cluster.c * precisionDivider) / precisionDivider]; // eslint-disable-line max-len
                 }
 
                 cluster.c -= 1;
@@ -895,15 +888,15 @@ define([
     /**
      * Очищает объекты хэша с удалением маркера с карты и чисткой критических для памяти свойств
      *
-     * @param objHash Хэш объектов
-     * @param layer Слой, с которого удаляются маркеры
-     * @param onlyOutBound Баунд, при выходе за который надо удалять. Если не указан, удаляется всё из хэша
+     * @param {object} objHash Хэш объектов
+     * @param {object} layer Слой, с которого удаляются маркеры
+     * @param {object} onlyOutBound Баунд, при выходе за который надо удалять. Если не указан, удаляется всё из хэша
      */
     MarkerManager.prototype.clearObjHash = function (objHash, layer, onlyOutBound) {
         let obj;
         let i;
 
-        for (i in objHash) {
+        for (i in objHash) { // eslint-disable-line guard-for-in
             obj = objHash[i];
 
             if (obj !== undefined && (!onlyOutBound || !onlyOutBound.contains(obj.geo))) {
@@ -951,8 +944,8 @@ define([
     /**
      * Zoom animation to mouse pointer position.
      *
-     * @param point
-     * @param newZoom
+     * @param {object} point
+     * @param {number} newZoom
      * @returns {*}
      */
     MarkerManager.prototype.zoomApproachToPoint = function (point, newZoom) {
@@ -965,7 +958,7 @@ define([
     };
 
     /**
-     * @param evt
+     * @param {Event} evt
      */
     MarkerManager.prototype.clickMarker = function (evt) {
         const marker = evt.target;

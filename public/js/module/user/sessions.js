@@ -53,7 +53,7 @@ define([
             this.showing = false;
         },
 
-        applySessions(sessions) {
+        applySessions: function (sessions) {
             this.onlines(sessions.reduce(function (result, session) {
                 if (session.isCurrent) {
                     result.unshift(session);
@@ -95,7 +95,7 @@ define([
                 }.bind(this));
         },
 
-        toggleArchive() {
+        toggleArchive: function () {
             if (this.archivedFetching()) {
                 return;
             }
@@ -121,7 +121,7 @@ define([
             this.nextGetSessionTimeout = null;
             this.removing.push(key);
 
-            socket.run('session.destroyUserSession', { login: this.u.login(), key }, true)
+            socket.run('session.destroyUserSession', { login: this.u.login(), key: key }, true)
                 .then(function (result) {
                     this.applySessions(result.sessions);
 

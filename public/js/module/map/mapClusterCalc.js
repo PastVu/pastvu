@@ -243,7 +243,7 @@ define([
                     h: Utils.math.toPrecision(Math.abs(rectTopLeft.lat - rectBottomRight.lat)),
                 };
             };
-            var changeZoomRecursive = _.debounce(function () {
+            const changeZoomRecursive = _.debounce(function () {
                 const z = _this.map.getZoom();
 
                 result.push(calcOnZoom(z));

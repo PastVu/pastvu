@@ -1,6 +1,3 @@
-/*global define:true*/
-/**
- */
 define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'renderer', 'text!tpl/common/foot.pug', 'css!style/common/foot'], function (_, P, ko, Cliche, globalVM, renderer, pug) {
     'use strict';
 

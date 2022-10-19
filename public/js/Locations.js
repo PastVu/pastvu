@@ -24,7 +24,7 @@ define(['jquery', 'Browser', 'knockout.mapping', 'Params'/*, 'http://www.geoplug
         },
         subscribersNotify: function () {
             this.current = this.get();
-            this.subscribers.forEach(function (element, index) {
+            this.subscribers.forEach(function (element) {
                 element.fn.call(element.context || null, this.current);
             }, this);
         },
@@ -42,7 +42,8 @@ define(['jquery', 'Browser', 'knockout.mapping', 'Params'/*, 'http://www.geoplug
      */
     Locations.set({ 'gpsip': { lng: 37.617778, lat: 55.751667, z: 10 } }); //Временно устанавливаем в центр Москвы
     //try {
-    //    if (geoplugin_status && geoplugin_status() === '200' && geoplugin_latitude && parseFloat(geoplugin_latitude(), 10) && geoplugin_longitude && parseFloat(geoplugin_longitude(), 10)) {
+    //    if (geoplugin_status && geoplugin_status() === '200' && geoplugin_latitude && parseFloat(geoplugin_latitude(), 10)
+    //          && geoplugin_longitude && parseFloat(geoplugin_longitude(), 10)) {
     //        Locations.set({ 'gpsip': { lng: parseFloat(geoplugin_longitude(), 10), lat: parseFloat(geoplugin_latitude(), 10), z: 10 } });
     //    }
     //} catch (e) {

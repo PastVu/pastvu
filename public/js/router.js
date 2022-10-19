@@ -6,7 +6,7 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'globalVM', 'renderer'], fu
 
     const global = window;
     const hasHistoryApi = !!(global.history && global.history.pushState);
-    var router = {
+    const router = {
         init: function (options) {
             if (router.inited) {
                 console.warn('Double router init');
@@ -169,7 +169,9 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'globalVM', 'renderer'], fu
                     }, _.size(paramsCurrentVals) ? hrefCurrent.substr(hrefCurrent.indexOf('?')) + '&' : '?');
 
                     evt.preventDefault(); // Должен быть внутри этих if, т.к. если они не подходят должен продолжиться стандартный переход по ссылке
-                    router.navigate(location.pathname + paramsStringNew.substring(0, paramsStringNew.length - 1), { replace: replaceState });
+                    router.navigate(location.pathname + paramsStringNew.substring(0, paramsStringNew.length - 1), {
+                        replace: replaceState,
+                    });
                 } else if (router.checkUrl(Utils.parseUrl(href, this).pathname)) {
                     // Если у нас есть обработчик на данный url, навигируемся
                     evt.preventDefault();

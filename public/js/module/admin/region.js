@@ -1,5 +1,3 @@
-/*global define:true*/
-
 /**
  * Модель региона
  */
@@ -627,7 +625,6 @@ define([
             }
 
             const saveData = koMapping.toJS(this.region);
-            let needRedraw;
             let parentIsChanged;
 
             if (!saveData.geo) {
@@ -659,7 +656,7 @@ define([
             }
 
             //Перерисовка будет нужна, если изменился geojson(сл-во и bbox) или расчет центра поставили auto
-            needRedraw = !!saveData.geo || saveData.centerAuto && !this.regionOrigin.centerAuto;
+            const needRedraw = !!saveData.geo || saveData.centerAuto && !this.regionOrigin.centerAuto;
 
             if (this.haveParent() === '1') {
                 saveData.parent = Number(this.parentCid());

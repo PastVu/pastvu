@@ -1,4 +1,3 @@
-/*global define:true, ga:true*/
 /**
  * Модель статистики пользователя
  */
@@ -38,7 +37,8 @@ define([
                 this.updateUserDepends();
                 this.makeBinding();
             } else {
-                this.options.userLogin = this.options.userLogin || globalVM.router.params().user || this.auth.loggedIn() && this.auth.iAm.login();
+                this.options.userLogin = this.options.userLogin || globalVM.router.params().user ||
+                    this.auth.loggedIn() && this.auth.iAm.login();
 
                 if (this.options.userLogin) {
                     this.updateUser(this.options.userLogin);
@@ -160,7 +160,7 @@ define([
             return false;
         },
 
-        avaSubmit: function (e, data) {
+        avaSubmit: function (/*e, data*/) {
             this.avaexe(true);
         },
         avaDone: function (e, data) {

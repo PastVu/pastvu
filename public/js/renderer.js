@@ -1,5 +1,3 @@
-/*global define:true*/
-
 define([
     'jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'lib/doT', 'text!tpl/modal.pug',
 ], function ($, Utils, _, ko, globalVM, doT, dotModal) {
@@ -62,14 +60,16 @@ define([
             $modal
                 .on('click', function (evt) {
                     if (!$(evt.target).closest('a').length) {
-                        //Блокируем всплытие события, только если это не ahref, т.к. в этом случае должен сработать обработчик ссылок RoutManager на document
+                        // Блокируем всплытие события, только если это не ahref, т.к. в этом случае
+                        // должен сработать обработчик ссылок RoutManager на document.
                         evt.stopPropagation();
                         modal.curtainClick.click.call(modal.curtainClick.ctx, $(this), evt);
                     }
                 })
                 .find('.neoModal').on('click', function (evt) {
                     if (!$(evt.target).closest('a').length) {
-                        //Блокируем всплытие события, только если это не ahref, т.к. в этом случае должен сработать обработчик ссылок RoutManager на document
+                        // Блокируем всплытие события, только если это не ahref, т.к. в этом случае
+                        // должен сработать обработчик ссылок RoutManager на document.
                         evt.stopPropagation();
                     }
                 });
