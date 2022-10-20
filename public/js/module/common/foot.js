@@ -77,7 +77,9 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'rend
             }
         },
         getRulesUrl: function () {
-            return P.settings.docs.rulesUrl;
+            const template = _.template(P.settings.docs.rulesUrl);
+
+            return template({ lang: P.settings.lang });
         },
     });
 });

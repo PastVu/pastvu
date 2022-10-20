@@ -7,7 +7,7 @@
     //ko if: canLoad()
     .warn(style="font-size: 12px; color: #A57A30;")
         | According to the&nbsp;
-        a(href="https://docs.pastvu.com/en/rules" target="_blank") Rules
+        a(data-bind="attr: {href: getRulesUrl()}", target="_blank") Rules
         | , these kind of images will be allowed for publishing:
         br
         | Photos filmed up to 2000 year, and paintings, created up to 1980 year.
