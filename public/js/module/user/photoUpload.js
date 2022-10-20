@@ -422,5 +422,10 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 
             text = type = css = null;
         },
+        getRulesUrl: function () {
+            const template = _.template(P.settings.docs.rulesUrl);
+
+            return template({ lang: P.settings.lang });
+        },
     });
 });
