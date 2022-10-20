@@ -289,7 +289,9 @@ export function bindRoutes(app) {
     // Rules
     app.get('/rules', (req, res) => {
         // This used to be a modal popup, we have to keep redirect to documentation page.
-        res.redirect(301, config.docs.rulesUrl);
+        const template = _.template(config.docs.rulesUrl);
+
+        res.redirect(301, template({ lang: config.lang }));
     });
 
     // Admin section

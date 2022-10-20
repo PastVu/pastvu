@@ -7,7 +7,7 @@
     //ko if: canLoad()
     .warn(style="font-size: 12px; color: #A57A30;")
         | Согласно&nbsp;
-        a(href="https://docs.pastvu.com/rules" target="_blank") Правилам
+        a(data-bind="attr: {href: getRulesUrl()}", target="_blank") Правилам
         | , к публикации будут допущены:
         br
         | Фотографии, снятые до 2000 года, и картины, созданные до 1980 года.
