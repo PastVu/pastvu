@@ -1,6 +1,8 @@
 /**
- * Модель управления пользователем
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
+
 define([
     'underscore', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'noties',
     'renderer', 'model/User', 'model/storage', 'text!tpl/user/manage.pug', 'css!style/user/manage', 'bs/collapse',

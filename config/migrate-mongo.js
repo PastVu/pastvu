@@ -1,6 +1,9 @@
 /**
- * Migrate-mongo configuration.
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
+
+// Migrate-mongo configuration.
 const mongoConfig = require('./').mongo;
 const argv = require('yargs').argv;
 const logger = require('log4js').getLogger('migrate-mongo');

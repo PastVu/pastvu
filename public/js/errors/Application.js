@@ -1,3 +1,8 @@
+/**
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
+ */
+
 define(['Utils'], function (Utils) {
     const CAPTURE_STACK_TRACE_SUPPORT = Boolean(Error.captureStackTrace);
     const FIREFOX_ERROR_INFO = /@(.+?):(\d+):(\d+)$/;

@@ -1,7 +1,9 @@
 /**
- * Log4js configuration.
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
+// Log4js configuration.
 const path = require('path');
 const _ = require('lodash');
 const makeDir = require('make-dir');

@@ -1,6 +1,9 @@
-/*
- * Map helper.
+/**
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
+
+// Map helper.
 define(['jquery', 'Utils', 'leaflet', 'Params'], function ($, Utils, L, P) {
     'use strict';
 

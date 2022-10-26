@@ -1,3 +1,8 @@
+/**
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
+ */
+
 require([
     'domReady!', 'jquery', 'Browser', 'Utils', 'socket!', 'underscore', 'knockout', 'moment',
     'globalVM', 'Params', 'renderer', 'router', 'model/Photo', 'model/User', 'noties',

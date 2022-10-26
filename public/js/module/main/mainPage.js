@@ -1,6 +1,8 @@
 /**
- * Модель содержимого основной страницы
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
+
 define(['underscore', 'Utils', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/Photo', 'text!tpl/main/mainPage.pug', 'css!style/main/mainPage'], function (_, Utils, P, ko, ko_mapping, Cliche, globalVM, Photo, pug) {
     'use strict';
 

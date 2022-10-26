@@ -1,7 +1,12 @@
 /**
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
+ */
+
+/**
  * Utils
  *
- * @author Klimashkin P.
+ * @author Klimashkin
  */
 define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/plugins/extends'], function ($, _, _s) {
     const Utils = {

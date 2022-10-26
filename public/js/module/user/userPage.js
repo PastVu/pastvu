@@ -1,6 +1,8 @@
 /**
- * Модель содержимого страницы пользователя
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
+
 define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/storage', 'model/User', 'text!tpl/user/userPage.pug', 'css!style/user/userPage', 'bs/affix'], function (_, Utils, P, renderer, ko, ko_mapping, Cliche, globalVM, storage, User, pug) {
     'use strict';
 

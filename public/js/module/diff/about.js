@@ -1,6 +1,8 @@
 /**
- * Модель О проекте
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
+
 define(['underscore', 'Params', 'socket!', 'knockout', 'm/_moduleCliche', 'globalVM', 'text!tpl/diff/about.pug', 'css!style/diff/about'], function (_, P, socket, ko, Cliche, globalVM, pug) {
     'use strict';
 

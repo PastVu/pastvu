@@ -1,6 +1,8 @@
 /**
- * Модель статистики пользователя
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
+
 define([
     'underscore', 'Params', 'knockout', 'socket!', 'm/_moduleCliche', 'globalVM', 'model/storage', 'model/User',
     'noties', 'text!tpl/user/brief.pug', 'css!style/user/brief',

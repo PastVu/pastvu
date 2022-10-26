@@ -1,6 +1,8 @@
 /**
- * Модель управляет верхней панелью
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
+
 define(['underscore', 'Params', 'socket!', 'jquery', 'knockout', 'm/_moduleCliche', 'globalVM', 'text!tpl/common/top.pug', 'css!style/common/top', 'm/common/auth'], function (_, P, socket, $, ko, Cliche, globalVM, pug) {
     'use strict';
 

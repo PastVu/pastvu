@@ -1,3 +1,8 @@
+/**
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
+ */
+
 define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'renderer', 'text!tpl/common/foot.pug', 'css!style/common/foot'], function (_, P, ko, Cliche, globalVM, renderer, pug) {
     'use strict';
 

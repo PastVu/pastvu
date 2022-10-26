@@ -1,6 +1,8 @@
 /**
- * Класс управления маркерами
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
+
 define([
     'underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'globalVM', 'leaflet', 'model/Photo', 'turf',
 ], function (_, Utils, socket, P, ko, ko_mapping, globalVM, L, Photo, turf) {

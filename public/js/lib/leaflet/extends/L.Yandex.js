@@ -1,4 +1,10 @@
+/**
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
+ */
+
 /* global ymaps */
+
 /*
  * Yandex layer plugin wrapper. Loads Yandex maps library with API key included.
  * Requires L.Yandex ^3.3.2 (https://github.com/shramov/leaflet-plugins/).

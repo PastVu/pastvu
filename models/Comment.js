@@ -1,3 +1,8 @@
+/**
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
+ */
+
 import { Schema } from 'mongoose';
 import constants from '../controllers/constants';
 import { registerModel } from '../controllers/connection';
