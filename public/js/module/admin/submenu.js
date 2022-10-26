@@ -1,6 +1,8 @@
 /**
- * Модель левого подменю админки
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
+
 define(['underscore', 'knockout', 'm/_moduleCliche', 'globalVM', 'text!tpl/admin/submenu.pug', 'css!style/admin/submenu'], function (_, ko, Cliche, globalVM, pug) {
     'use strict';
 

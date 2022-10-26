@@ -1,6 +1,8 @@
 /**
- * Модель карты
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
+
 define([
     'underscore', 'jquery', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM',
     'renderer', 'model/User', 'model/storage', 'leaflet', 'leaflet-extends/L.neoMap', 'noties',

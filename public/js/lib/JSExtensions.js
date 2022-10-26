@@ -1,3 +1,8 @@
+/**
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
+ */
+
 if (!String.prototype.includes) {
     // eslint-disable-next-line no-extend-native
     String.prototype.includes = function () {

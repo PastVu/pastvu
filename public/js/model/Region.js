@@ -1,3 +1,8 @@
+/**
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
+ */
+
 define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping'], function ($, _, Utils, ko, ko_mapping) {
     'use strict';
 

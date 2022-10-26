@@ -1,6 +1,8 @@
 /**
- * Менеджер путей
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
+
 define(['jquery', 'underscore', 'Utils', 'knockout', 'globalVM', 'renderer'], function ($, _, Utils, ko, globalVM, renderer) {
     'use strict';
 

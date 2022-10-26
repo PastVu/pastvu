@@ -1,3 +1,8 @@
+/**
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
+ */
+
 /* eslint no-var: 0, object-shorthand: [2, 'never'] */
 /* global linkifyUrlString: true, toPrecision: true, toPrecision6: true, toPrecisionRound:true, geoToPrecision:true,
    regionClearPhotoTitle:true, regionsAssignPhotos:true, regionsAssignComments:true, calcPhotoStats:true, calcUserStats:true

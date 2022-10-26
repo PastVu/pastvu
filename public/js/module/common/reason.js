@@ -1,6 +1,8 @@
 /**
- * Выбор причины
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
+
 define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'globalVM', 'knockout', 'm/_moduleCliche', 'text!tpl/common/reason.pug', 'css!style/common/reason'], function (_, $, Utils, socket, P, globalVM, ko, Cliche, pug) {
     'use strict';
 

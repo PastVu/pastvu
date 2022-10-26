@@ -51,5 +51,6 @@ We expect all project participants to follow [Contributor Code of Conduct](CODE_
 
 ## License
 
+* GNU Affero General Public License (AGPL) v3 or later. See [COPYING](https://github.com/pastvu/pastvu/blob/master/COPYING) for the full license text.
 * Test database used for development setup is licensed under [ODbL 1.0](https://opendatacommons.org/licenses/odbl/summary/), geographic and adminstrative boundaries data it contains: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors.
 

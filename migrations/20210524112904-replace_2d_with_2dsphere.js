@@ -1,4 +1,9 @@
 /**
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
+ */
+
+/**
  * Replace 2d index with 2dsphere for support of geospacial queries on a
  * sphere.
  */

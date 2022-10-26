@@ -1,3 +1,8 @@
+/**
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
+ */
+
 import log4js from 'log4js';
 import { waitDb } from './connection';
 import { ApiLog } from '../models/ApiLog';

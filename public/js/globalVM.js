@@ -1,6 +1,8 @@
 /**
- * globalVM
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
+
 define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'intl', 'i18n', 'knockout', 'lib/PubSub', 'moment'], function ($, Browser, Utils, _, P, intl, i18n, ko, ps, moment) {
     'use strict';
 

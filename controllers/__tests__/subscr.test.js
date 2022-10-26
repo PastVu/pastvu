@@ -1,3 +1,8 @@
+/**
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
+ */
+
 import _ from 'lodash';
 import { UserObjectRel, UserNoty } from '../../models/UserStates';
 import subscr, { commentAdded, commentViewed } from '../subscr';

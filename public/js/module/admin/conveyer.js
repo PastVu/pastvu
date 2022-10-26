@@ -1,6 +1,8 @@
 /**
- * Администрирование конвейера
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
+
 define([
     'underscore', 'jquery', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping',
     'm/_moduleCliche', 'globalVM', 'renderer', 'model/User', 'model/storage', 'noties',

@@ -1,4 +1,9 @@
 /**
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
+ */
+
+/**
  * Module for assembling configuration object on server
  * Configuration with all default parameters is located in 'config/default.config.js'
  *

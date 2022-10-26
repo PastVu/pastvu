@@ -1,3 +1,8 @@
+/**
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
+ */
+
 module.exports = {
     'root': true,
     'parser': '@babel/eslint-parser',
@@ -28,6 +33,7 @@ module.exports = {
 
     'plugins': [
         '@babel',
+        'header',
     ],
 
     'extends': [
@@ -681,6 +687,12 @@ module.exports = {
         '@babel/no-invalid-this': 0,
         '@babel/semi': 2,
         '@babel/no-unused-expressions': 2, // Stop complaining about optional chaining
+        'header/header': [2, 'block', [
+            '*',
+            ' * Copyright: The PastVu contributors.',
+            ' * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)',
+            ' ',
+        ], 2],
     },
     'overrides': [
         {
@@ -723,6 +735,14 @@ module.exports = {
                 'no-underscore-dangle': [2, { 'allow': [
                     '_id', '__get__', '__set__', '__RewireAPI__', '__Rewire__', '__ResetDependency__', '__GetDependency__',
                 ] }],
+            },
+        },
+        {
+            // Example configuration files.
+            'files': ['config/*example'],
+            'rules': {
+                // no copyright header required.
+                'header/header': 0,
             },
         },
     ],

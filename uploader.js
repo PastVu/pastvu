@@ -1,3 +1,8 @@
+/**
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
+ */
+
 import fs, { promises as fsAsync } from 'fs';
 import gm from 'gm';
 import mv from 'mv';
