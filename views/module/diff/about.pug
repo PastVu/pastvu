@@ -1,66 +1,24 @@
 .about(data-bind="with: repository[M!M]")
     header.line
         | PastVu &mdash; проект по сбору свидетельств прошлого. Взгляд на историю среды обитания человечества.
-    .userrow(style="margin-top:15px;")
-        .row.usercenter
-            .col-xs-6
-                a.line.clearfix(target="_blank", href="/u/Ilya", ontouchstart="this.classList.toggle('hover');")
-                    .flip-container
-                        .flipper
-                            div.front(style="background-image: url(/img/misc/Ilya.jpg)")
-                            div.back(data-bind="style: {backgroundImage: 'url(/_a/d/' + avatars['Ilya'] + ')'}")
-                                | Ilya
-                    .lineBody
-                        .humanName Илья Варламов
-                        .humanAbout Автор оригинальной идеи
-                a.line.clearfix(target="_blank", href="/u/Duche", ontouchstart="this.classList.toggle('hover');")
-                    .flip-container
-                        .flipper
-                            div.front(style="background-image: url(/img/misc/Duche.jpg)")
-                            div.back(data-bind="style: {backgroundImage: 'url(/_a/d/' + avatars['Duche'] + ')'}")
-                                | Duche
-                    .lineBody
-                        .humanName Алексей Дук
-                        .humanAbout Продюсер проекта
-            .col-xs-6
-                a.line.clearfix(target="_blank", href="/u/klimashkin", ontouchstart="this.classList.toggle('hover');")
-                    .flip-container
-                        .flipper
-                            div.front(style="background-image: url(/img/misc/klimashkin.jpg)")
-                            div.back(data-bind="style: {backgroundImage: 'url(/_a/d/' + avatars['klimashkin'] + ')'}")
-                                | klimashkin
-                    .lineBody
-                        .humanName Павел Климашкин
-                        .humanAbout Архитектор проекта, создатель платформы
-                a.line.clearfix(target="_blank", href="/u/dema501", ontouchstart="this.classList.toggle('hover');")
-                    .flip-container
-                        .flipper
-                            div.front(style="background-image: url(/img/misc/dema501.png)")
-                            div.back(data-bind="style: {backgroundImage: 'url(/_a/d/' + avatars['dema501'] + ')'}")
-                                | dema501
-                    .lineBody
-                        .humanName Дмитрий Башлов
-                        .humanAbout Системное администрирование
-                a.line.clearfix(target="_blank", href="/u/abdulla_hasan", ontouchstart="this.classList.toggle('hover');")
-                    .flip-container
-                        .flipper
-                            div.front(style="background-image: url(/img/misc/abdulla_hasan.png)")
-                            div.back(data-bind="style: {backgroundImage: 'url(/_a/d/' + avatars['abdulla_hasan'] + ')'}")
-                                | abdulla_hasan
-                    .lineBody
-                        .humanName Anvar Paganini
-                        .humanAbout Инфраструктура, CRM
     .postrow
-        div
+        div.line
+            | Подробная информация о проекте находится&nbsp;
+            a(target="_blank", data-bind="attr: {href: getAboutUrl()}") в базе знаний
+            | .
+        div.line
             | Открытая разработка ведется&nbsp;
             a(target="_blank", href="https://github.com/PastVu") на GitHub
-            | . Следите за выполнением задач и присылайте свои идеи!
+            | . Следите за выполнением задач и принимайте участие в развитии!
     .postrow
-        div(style="margin-top: 10px;")
-            | Версия&nbsp;
+        hr
+        div.line
+            | Версия приложения&nbsp;
             span(data-bind="text: version")
-    .postrow
-        div(style="margin-top: 10px;")
+            | . Исходный код доступен по лицензии&nbsp;
+            a(target="_blank", href="https://github.com/PastVu/pastvu/blob/master/COPYING") GNU AGPL v3.0
+            | .
+        div.line
             | Данные по границам географических и административных регионов: ©&nbsp;
             a(target="_blank", href="https://www.openstreetmap.org/copyright") OpenStreetMap contributors
             | .

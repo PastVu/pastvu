@@ -34,5 +34,10 @@ define(['underscore', 'Params', 'socket!', 'knockout', 'm/_moduleCliche', 'globa
             globalVM.func.hideContainer(this.$container);
             this.showing = false;
         },
+        getAboutUrl: function () {
+            const template = _.template(P.settings.docs.aboutUrl);
+
+            return template({ lang: P.settings.lang });
+        },
     });
 });

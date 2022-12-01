@@ -111,7 +111,8 @@ module.exports = {
     sitemapInterval: ms('12h'),
     sitemapGenerateOnStart: false, // First run must be on server start
 
-    docs: {
-        rulesUrl: 'https://docs.pastvu.com/${ lang }/rules', // Rules document location. 'lang' placeholder will be replaced with a current user locale.
+    docs: { // 'lang' placeholder will be replaced with a current user locale.
+        rulesUrl: 'https://docs.pastvu.com/${ lang }/rules', // Rules document location.
+        aboutUrl: 'https://docs.pastvu.com/${ lang }/about', // About document location.
     },
 };

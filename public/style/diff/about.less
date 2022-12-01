@@ -7,13 +7,11 @@
  */
 .about {
     position: relative;
-    min-height: 770px;
     margin: 0;
-    padding: 3px 0;
+    padding: 3px 10px;
     color: @MainLigthColor;
     background-color: #2d3e53;
 
-    .userrow,
     .postrow {
         text-align: center;
     }
@@ -23,22 +21,17 @@
     }
 
     hr,
-    .poster,
-    .usercenter {
+    .poster {
         display: inline-block;
         width: 100%;
         max-width: 758px;
-    }
-
-    .poster {
         margin-bottom: 10px;
     }
 
     .line {
         display: block;
-        margin: 10px 0 10px 10px;
+        margin: 10px 0;
         color: #dcdcdc;
-        text-align: left;
         text-decoration: none;
     }
 
@@ -47,60 +40,6 @@
         color: #f5f5f5;
         cursor: default;
         text-align: center;
-    }
-
-    .flip-container {
-        float: left;
-        margin: 0 10px 0 0;
-        .perspective(1000); /* entire container, keeps perspective */
-    }
-
-    .line:hover,
-    .line.hover {
-        color: #fafafa;
-
-        .flip-container .flipper {
-            .rotateY(180deg);
-        }
-    }
-
-    .flip-container,
-    .front,
-    .back {
-        width: 100px;
-        height: 100px;
-    }
-
-    .flipper {
-        position: relative;
-        .transition-delay(0.1s);
-        .transition-duration(0.6s);
-
-        -webkit-transform-style: preserve-3d;
-        -moz-transform-style: preserve-3d;
-        -ms-transform-style: preserve-3d;
-        transform-style: preserve-3d;
-    }
-
-    .front,
-    .back {
-        position: absolute;
-        top: 0;
-        left: 0;
-        -webkit-backface-visibility: hidden; /* hide back of pane during swap */
-        -moz-backface-visibility: hidden;
-        -ms-backface-visibility: hidden;
-        backface-visibility: hidden;
-    }
-
-    .front {
-        z-index: 2; /* front pane, placed above back */
-    }
-
-    .back {
-        padding-top: 82px;
-        text-align: center;
-        .rotateY(180deg); /* back, initially hidden pane */
     }
 
     a {
@@ -114,18 +53,5 @@
             color: #fff;
             border-color: #fff;
         }
-    }
-
-    .lineBody {
-        margin-top: -4px;
-        .transition(color 0.3s linear);
-    }
-
-    .humanName {
-        font-size: 14px;
-    }
-
-    .humanAbout {
-        font-size: 12px;
     }
 }
