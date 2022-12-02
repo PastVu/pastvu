@@ -6,6 +6,8 @@ on:
 
 jobs:
   merge-master-to-en:
+    # This only makes sense to run for pastvu owned repo.
+    if: github.repository_owner == 'pastvu'
     name: Merge master into en
     runs-on: ubuntu-latest
     steps:
