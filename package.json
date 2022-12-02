@@ -124,7 +124,7 @@
         "less": "4.1.1",
         "less-middleware": "3.1.0",
         "lint-staged": "10.5.4",
-        "mongodb-memory-server": "8.0.3",
+        "mongodb-memory-server": "8.10.1",
         "osm-and-geojson": "0.1.2",
         "requirejs": "2.3.6",
         "stylelint": "14.1.0",
