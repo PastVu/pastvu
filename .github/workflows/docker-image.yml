@@ -14,8 +14,9 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
-
   build-and-push-app:
+    # This only makes sense to run for pastvu owned repo.
+    if: github.repository_owner == 'pastvu'
     runs-on: ubuntu-latest
     steps:
 
