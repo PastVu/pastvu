@@ -1,66 +1,24 @@
 .about(data-bind="with: repository[M!M]")
     header.line
         | PastVu &mdash; project to collect vintage images. A look at the history of humanity habitat.
-    .userrow(style="margin-top:15px;")
-        .row.usercenter
-            .col-xs-6
-                a.line.clearfix(target="_blank", href="/u/Ilya", ontouchstart="this.classList.toggle('hover');")
-                    .flip-container
-                        .flipper
-                            div.front(style="background-image: url(/img/misc/Ilya.jpg)")
-                            div.back(data-bind="style: {backgroundImage: 'url(/_a/d/' + avatars['Ilya'] + ')'}")
-                                | Ilya
-                    .lineBody
-                        .humanName Ilya Varlamov
-                        .humanAbout The author of the original idea
-                a.line.clearfix(target="_blank", href="/u/Duche", ontouchstart="this.classList.toggle('hover');")
-                    .flip-container
-                        .flipper
-                            div.front(style="background-image: url(/img/misc/Duche.jpg)")
-                            div.back(data-bind="style: {backgroundImage: 'url(/_a/d/' + avatars['Duche'] + ')'}")
-                                | Duche
-                    .lineBody
-                        .humanName Alex Duk
-                        .humanAbout Producer of the project
-            .col-xs-6
-                a.line.clearfix(target="_blank", href="/u/klimashkin", ontouchstart="this.classList.toggle('hover');")
-                    .flip-container
-                        .flipper
-                            div.front(style="background-image: url(/img/misc/klimashkin.jpg)")
-                            div.back(data-bind="style: {backgroundImage: 'url(/_a/d/' + avatars['klimashkin'] + ')'}")
-                                | klimashkin
-                    .lineBody
-                        .humanName Pavel Klimashkin
-                        .humanAbout Project's architect, platform creator
-                a.line.clearfix(target="_blank", href="/u/dema501", ontouchstart="this.classList.toggle('hover');")
-                    .flip-container
-                        .flipper
-                            div.front(style="background-image: url(/img/misc/dema501.png)")
-                            div.back(data-bind="style: {backgroundImage: 'url(/_a/d/' + avatars['dema501'] + ')'}")
-                                | dema501
-                    .lineBody
-                        .humanName Dmitry Bashlov
-                        .humanAbout System administration
-                a.line.clearfix(target="_blank", href="/u/abdulla_hasan", ontouchstart="this.classList.toggle('hover');")
-                    .flip-container
-                        .flipper
-                            div.front(style="background-image: url(/img/misc/abdulla_hasan.png)")
-                            div.back(data-bind="style: {backgroundImage: 'url(/_a/d/' + avatars['abdulla_hasan'] + ')'}")
-                                | abdulla_hasan
-                    .lineBody
-                        .humanName Anvar Paganini
-                        .humanAbout Infrastructure, Client relations
     .postrow
-        div
-            | Open development is performed&nbsp;
-            a(target="_blank", href="https://github.com/PastVu") on GitHub
-            | . You may track for issues progress and send us your ideas!
+        div.line
+            | More detailed information on project is in&nbsp;
+            a(target="_blank", data-bind="attr: {href: getAboutUrl()}") documentation resources
+            | .
+        div.line
+            | Open development is on&nbsp;
+            a(target="_blank", href="https://github.com/PastVu") GitHub
+            | . You can track issues progress and participate in development!
     .postrow
-        div(style="margin-top: 10px;")
-            | Version&nbsp;
+        hr
+        div.line
+            | Webapp version&nbsp;
             span(data-bind="text: version")
-    .postrow
-        div(style="margin-top: 10px;")
+            | . Source code is licensed under&nbsp;
+            a(target="_blank", href="https://github.com/PastVu/pastvu/blob/master/COPYING") GNU AGPL v3.0
+            | .
+        div.line
             | Administrative and geographic boundaries data: ©&nbsp;
             a(target="_blank", href="https://www.openstreetmap.org/copyright") OpenStreetMap contributors
             | .
