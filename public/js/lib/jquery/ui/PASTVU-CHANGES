@@ -1,0 +1,12 @@
+=== jquery-ui ===
+
+jQuery user interface library is deployed manually from its repo https://github.com/jquery/jquery-ui.
+
+Theme (Smoothness) files are located at public/style/jquery/ui/ and public/img/jqueryui/
+
+=== Local changes to jquery-ui ===
+
+08/12/22
+
+Added patch to fix slider widget issues when both sliders are set to the same
+year. See #532 for details.
