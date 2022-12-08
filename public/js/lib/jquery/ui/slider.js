@@ -164,9 +164,50 @@ $.widget( "ui.slider", $.ui.mouse, {
 		this._mouseDestroy();
 	},
 
+	_closestHandleIndex: function( value, activeHandleIndex ) {
+		var that = this,
+			index = activeHandleIndex,
+			activeSet = activeHandleIndex !== -1,
+			distance = activeSet ? value - this.values( index ) : this._valueMax() - this._valueMin() + 1;
+
+                if ( !activeSet ) {
+                    // Check for edge case when all sliders are set to same value and user clicked outside the slider.
+                    var sum = 0
+                    this.handles.each( ( i ) => sum += that.values( i ) );
+                    if ( sum / this.handles.length ===  that.values( 0 ) ) {
+                        // Sliders are set to same value. Return lowest index
+                        // if clicked to the left of slider and highest index when
+                        // clicked to the right.
+                        return ( value < that.values( 0 ) ) ? 0 : this.handles.length - 1;
+                    }
+                }
+
+                this.handles.each( function( i ) {
+			var handleDistance = Math.abs( value - that.values( i ) );
+                        console.log(i, handleDistance, distance);
+			if ( handleDistance >= distance || !that._canBeDrag( i ) ) {
+				return;
+			}
+			index = i;
+			distance = handleDistance;
+		});
+		return index;
+	},
+
+	_canBeDrag: function( index ) {
+		var val = this.values( index ),
+			prev = this.values( index - 1 ),
+			next = this.values( index + 1 );
+
+		prev = isNaN( prev ) ? this._valueMin() : prev;
+		next = isNaN( next ) ? this._valueMax() : next;
+
+		return !( prev === val && val === next );
+	},
+
 	_mouseCapture: function( event ) {
-		var position, normValue, distance, closestHandle, index, allowed, offset, mouseOverHandle,
-			that = this,
+		var position, normValue, handle, index, allowed, offset, mouseOverHandle,
+			capturedElementIndex = this.handles.index( $( event.target ) ),
 			o = this.options;
 
 		if ( o.disabled ) {
@@ -178,20 +219,11 @@ $.widget( "ui.slider", $.ui.mouse, {
 			height: this.element.outerHeight()
 		};
 		this.elementOffset = this.element.offset();
-
 		position = { x: event.pageX, y: event.pageY };
 		normValue = this._normValueFromMouse( position );
-		distance = this._valueMax() - this._valueMin() + 1;
-		this.handles.each(function( i ) {
-			var thisDistance = Math.abs( normValue - that.values(i) );
-			if (( distance > thisDistance ) ||
-				( distance === thisDistance &&
-					(i === that._lastChangedValue || that.values(i) === o.min ))) {
-				distance = thisDistance;
-				closestHandle = $( this );
-				index = i;
-			}
-		});
+
+		index = this._closestHandleIndex( normValue, capturedElementIndex );
+		handle = this.handles.eq( index );
 
 		allowed = this._start( event, index );
 		if ( allowed === false ) {
@@ -201,19 +233,19 @@ $.widget( "ui.slider", $.ui.mouse, {
 
 		this._handleIndex = index;
 
-		closestHandle
+		handle
 			.addClass( "ui-state-active" )
 			.focus();
 
-		offset = closestHandle.offset();
+		offset = handle.offset();
 		mouseOverHandle = !$( event.target ).parents().addBack().is( ".ui-slider-handle" );
 		this._clickOffset = mouseOverHandle ? { left: 0, top: 0 } : {
-			left: event.pageX - offset.left - ( closestHandle.width() / 2 ),
+			left: event.pageX - offset.left - ( handle.width() / 2 ),
 			top: event.pageY - offset.top -
-				( closestHandle.height() / 2 ) -
-				( parseInt( closestHandle.css("borderTopWidth"), 10 ) || 0 ) -
-				( parseInt( closestHandle.css("borderBottomWidth"), 10 ) || 0) +
-				( parseInt( closestHandle.css("marginTop"), 10 ) || 0)
+				( handle.height() / 2 ) -
+				( parseInt( handle.css("borderTopWidth"), 10 ) || 0 ) -
+				( parseInt( handle.css("borderBottomWidth"), 10 ) || 0) +
+				( parseInt( handle.css("marginTop"), 10 ) || 0)
 		};
 
 		if ( !this.handles.hasClass( "ui-state-hover" ) ) {
@@ -363,9 +395,6 @@ $.widget( "ui.slider", $.ui.mouse, {
 				uiHash.value = this.values( index );
 				uiHash.values = this.values();
 			}
-
-			//store the last changed value index for reference when handles overlap
-			this._lastChangedValue = index;
 
 			this._trigger( "change", event, uiHash );
 		}
