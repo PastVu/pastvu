@@ -11,7 +11,6 @@ const _ = require('lodash');
 const _s = require('underscore.string');
 const useragent = require('useragent');
 const DMP = require('diff-match-patch');
-const regexpUrl = require('./regex-weburl');
 const turf = require('@turf/turf');
 const ms = require('ms');
 
@@ -130,7 +129,22 @@ Utils.isType = function (type, obj) {
 Utils.validateEmail = function (email) {
     const emailRegexp = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@(([[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 
-    return email.toLowerCase().match(emailRegexp);
+    return !!email.toLowerCase().match(emailRegexp);
+};
+
+/**
+ * Checks if URI is of valid format.
+ *
+ * We use Diego Perini's validator retrieved from https://gist.github.com/dperini/729294,
+ * MIT licensed, version 2018/09/12, see http://mathiasbynens.be/demo/url-regex for details.
+ *
+ * @param {string} uri
+ * @returns {boolean}
+ */
+Utils.validateURI = function (uri) {
+    const uriRegexp = /^(?:(?:(?:https?|ftp):)?\/\/)(?:\S+(?::\S*)?@)?(?:(?!(?:10|127)(?:\.\d{1,3}){3})(?!(?:169\.254|192\.168)(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z0-9\u00a1-\uffff][a-z0-9\u00a1-\uffff_-]{0,62})?[a-z0-9\u00a1-\uffff]\.)+(?:[a-z\u00a1-\uffff]{2,}\.?))(?::\d{2,5})?(?:[/?#]\S*)?$/i;
+
+    return !!uri.match(uriRegexp);
 };
 
 /**
@@ -293,8 +307,7 @@ Utils.linkifyUrlString = function (text, target, className) {
             url = url.replace(/^www\./i, 'http://www.');
         }
 
-        // Validate against dperini complex validation regex (http://mathiasbynens.be/demo/url-regex).
-        if (!url.match(regexpUrl)) {
+        if (!Utils.validateURI(url)) {
             // Invalid URL, return original string.
             return match;
         }
