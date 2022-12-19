@@ -282,42 +282,40 @@ Utils.reflectKeys = function (obj) {
 Utils.linkifyUrlString = function (text, target, className) {
     'use strict';
 
-    let matches;
-
     target = target ? ` target="${target}"` : '';
     className = className ? ` class="${className}"` : '';
 
-    //Используем match и вручную перебираем все совпадающие ссылки, чтобы декодировать их с decodeURI,
-    //на случай, если ссылка, содержащая не аски символы, вставлена из строки браузера, вида http://ru.wikipedia.org/wiki/%D0%A1%D0%B5%D0%BA%D1%81
-    //Массив совпадений делаем уникальными (uniq)
+    const replaceLink = function(match, url, punctuation) {
+        const append = punctuation || '';
+        let linkText = url;
 
-    //Starting with http://, https://, or ftp://
-    matches = _.uniq(text.match(regexpUrl));
+        if (/^www\./i.test(url)) {
+            url = url.replace(/^www\./i, 'http://www.');
+        }
 
-    for (let i = 0; i < matches.length; i++) {
-        try { // Do nothing if URI malformed (decodeURI fails)
-            const url = decodeURI(matches[i]);
+        // Validate against dperini complex validation regex (http://mathiasbynens.be/demo/url-regex).
+        if (!url.match(regexpUrl)) {
+            // Invalid URL, return original string.
+            return match;
+        }
 
-            text = text.replace(matches[i], `<a href="${url}" rel="nofollow noopener"${target}${className}>${url}</a>`);
-        } catch (err) {}
-    }
-
-    //Starting with "www." (without // before it, or it'd re-link the ones done above).
-    const matchPattern = /(^|[^/])(www\.[\S]+(\b|$))/gim;
-
-    matches = _.uniq(text.match(matchPattern));
-
-    for (let i = 0; i < matches.length; i++) {
         try {
-            matches[i] = _s.trim(matches[i]); //Так как в результат match попадут и переносы и пробелы (^|[^\/]), то надо их удалить
+            // Decode URI, e.g. to make http://ru.wikipedia.org/wiki/%D0%A1%D0%B5%D0%BA%D1%81 url readable.
+            url = decodeURI(url);
+            linkText = decodeURI(linkText);
 
-            const url = decodeURI(matches[i]);
-
-            text = text.replace(matches[i], `<a href="http://${url}" rel="nofollow noopener"${target}${className}>${url}</a>`);
-        } catch (err) {}
+            return `<a href="${url}" rel="nofollow noopener"${target}${className}>${linkText}</a>${append}`;
+        } catch (err) {
+            // Malformed URI sequence, return original string.
+            return match;
+        }
     }
 
-    return text;
+    // Capture url starting with http://, https://, ftp:// or www, keep
+    // trailing punctuation ([.!?()]) in a separate group, so we append it later.
+    const simpleURLRegex = /\b((?:(?:https?|ftp):\/\/|www\.)[^'">\s]+\.[^'">\s]+?)([.!?()]?)(?=\s|$)/gmi;
+
+    return text.replace(simpleURLRegex, replaceLink);
 };
 
 Utils.inputIncomingParse = (function () {
