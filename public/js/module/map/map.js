@@ -135,19 +135,18 @@ define([
 
                     /* Define map types (layers).
                      *
-                     * For fixed max zoom: specify maxZoom in TileLayer and in
-                     * type object. It will be possible to zoom map up to maxZoom
-                     * value.
+                     * For fixed max zoom: specify maxZoom in TileLayer. It
+                     * will be possible to zoom map up to maxZoom value.
                      *
-                     * For "overzoom", set maxNativeZoom in TileLayer, and maxZoom
-                     * in both TileLayer and in type object. It will be possible to
-                     * zoom map up to maxZoom value. Layer will be "stretched" if
-                     * current zoom is above maxNativeZoom.
+                     * For "overzoom", set maxNativeZoom and maxZoom in
+                     * TileLayer. It will be possible to zoom map up to
+                     * maxZoom value. Layer will be "stretched" if current
+                     * zoom is above maxNativeZoom.
                      *
-                     * For switching layer, set maxNativeZoom in TileLayer, and maxZoom
-                     * in both TileLayer and in type object. Set limitZoom in type
-                     * object. It will be possible to zoom map up to maxZoom value.
-                     * When current zoom > limitZoom, map will switch to maxAfter
+                     * For switching layer, set maxNativeZoom and maxZoom in
+                     * TileLayer type object. Set limitZoom in type object. It
+                     * will be possible to zoom map up to maxZoom value.  When
+                     * current zoom > limitZoom, map will switch to maxAfter
                      * layer, keeping current zoom value. maxAfter value
                      * format is "<sys id>.<type id>", e.g. 'osm.mapnik'.
                      */
@@ -161,7 +160,6 @@ define([
                             maxZoom: 18,
                             maxNativeZoom: 17,
                         }),
-                        maxZoom: 18,
                         limitZoom: 17,
                         maxAfter: 'osm.mapnik',
                     },
@@ -175,7 +173,6 @@ define([
                             maxZoom: 20,
                             maxNativeZoom: 19,
                         }),
-                        maxZoom: 20,
                     },
                     {
                         id: 'mapnik_de',
@@ -187,7 +184,6 @@ define([
                             maxNativeZoom: 18,
                             attribution: 'OSM Deutsch | &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
                         }),
-                        maxZoom: 19,
                         limitZoom: 18,
                         maxAfter: 'osm.mapnik',
                     },
@@ -201,7 +197,6 @@ define([
                             maxNativeZoom: 18,
                             attribution: 'OSM Française | &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
                         }),
-                        maxZoom: 19,
                         limitZoom: 18,
                         maxAfter: 'osm.mapnik',
                     },
@@ -215,7 +210,6 @@ define([
                             maxNativeZoom: 17,
                             attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | <a href="http://viewfinderpanoramas.org">SRTM</a> | Стиль карты: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)',
                         }),
-                        maxZoom: 18,
                         limitZoom: 17,
                         maxAfter: 'osm.mapnik',
                     },
@@ -231,7 +225,6 @@ define([
                             ext: 'png',
                             updateWhenIdle: false,
                         }),
-                        maxZoom: 19,
                     },
                 ]),
             });
@@ -322,7 +315,6 @@ define([
                             maxZoom: 20,
                             maxNativeZoom: 19,
                         }),
-                        maxZoom: 20,
                     },
                     {
                         id: 'mtb',
@@ -334,7 +326,6 @@ define([
                             maxZoom: 19,
                             maxNativeZoom: 18,
                         }),
-                        maxZoom: 19,
                         limitZoom: 18,
                         maxAfter: 'osm.mapnik',
                     },
@@ -349,8 +340,6 @@ define([
                             maxZoom: 19,
                             maxNativeZoom: 17,
                         }),
-                        maxZoom: 19,
-                        minZoom: 9,
                     },
                 ]),
             });
@@ -533,7 +522,8 @@ define([
                         container: '.mapNavigation',
                         options: {
                             map: this.map,
-                            maxZoom: this.layerActive().type.limitZoom || this.layerActive().type.maxZoom,
+                            maxZoom: this.layerActive().type.limitZoom || this.map.getMaxZoom() || defaults.maxZoom,
+                            minZoom: this.map.getMinZoom() || defaults.minZoom,
                             canOpen: !this.embedded,
                         },
                         ctx: this,
@@ -884,11 +874,13 @@ define([
             const setLayer = function (type) {
                 this.map.addLayer(type.obj);
                 this.markerManager.layerChange();
-                this.map.options.maxZoom = type.maxZoom;
-                this.map.options.minZoom = type.minZoom || defaults.minZoom;
+                // Set maxZoom and minZoom as defined in TileLayer object, otherwise use defaults.
+                this.map.options.maxZoom = type.obj.options.maxZoom || defaults.maxZoom;
+                this.map.options.minZoom = type.obj.options.minZoom || defaults.minZoom;
 
                 if (this.navSliderVM && Utils.isType('function', this.navSliderVM.recalcZooms)) {
-                    this.navSliderVM.recalcZooms(type.limitZoom || type.maxZoom, true);
+                    // Adjust zoom slider.
+                    this.navSliderVM.recalcZooms(type.limitZoom || this.map.getMaxZoom(), true);
                 }
 
                 // If curent map zoom is out of range of layer settings, adjust accordingly.
@@ -896,10 +888,10 @@ define([
 
                 if (type.limitZoom !== undefined && this.map.getZoom() > type.limitZoom) {
                     this.map.setView(center, type.limitZoom);
-                } else if (this.map.getZoom() > type.maxZoom) {
-                    this.map.setView(center, type.maxZoom);
-                } else if (type.minZoom !== undefined && this.map.getZoom() < type.minZoom) {
-                    this.map.setView(center, type.minZoom);
+                } else if (this.map.getZoom() > this.map.getMaxZoom()) {
+                    this.map.setView(center, this.map.getMaxZoom());
+                } else if (this.map.getZoom() < this.map.getMinZoom()) {
+                    this.map.setView(center, this.map.getMinZoom());
                 }
 
                 this.setLocalState();

@@ -13,6 +13,7 @@ define([
     return Cliche.extend({
         pug: pug,
         options: {
+            minZoom: 3,
             maxZoom: 18,
             canOpen: true,
         },
@@ -27,7 +28,7 @@ define([
             this.sliding = ko.observable(false);
 
             this.step = ko.observable(9);
-            this.minZoom = ko.observable(0);
+            this.minZoom = ko.observable(this.options.minZoom);
             this.maxZoom = ko.observable(this.options.maxZoom);
             this.numZooms = ko.observable(false);
             this.sliderOnZoom = ko.observable(this.map.getZoom());
