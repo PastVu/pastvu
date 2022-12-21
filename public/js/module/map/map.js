@@ -172,9 +172,10 @@ define([
                         obj: new L.TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                             attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
                             updateWhenIdle: false,
-                            maxZoom: 19,
+                            maxZoom: 20,
+                            maxNativeZoom: 19,
                         }),
-                        maxZoom: 19,
+                        maxZoom: 20,
                     },
                     {
                         id: 'mapnik_de',
@@ -225,11 +226,12 @@ define([
                         obj: new L.TileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}.{ext}', {
                             attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> | &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
                             subdomains: 'abcd',
-                            maxZoom: 20,
+                            maxZoom: 19,
+                            maxNativeZoom: 18,
                             ext: 'png',
                             updateWhenIdle: false,
                         }),
-                        maxZoom: 20,
+                        maxZoom: 19,
                     },
                 ]),
             });
@@ -285,7 +287,7 @@ define([
                             desc: 'Схема',
                             selected: ko.observable(false),
                             params: 'map',
-                            maxZoom: 20,
+                            maxZoom: 21,
                         },
                         {
                             id: 'sat',
