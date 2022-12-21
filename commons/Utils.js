@@ -299,7 +299,7 @@ Utils.linkifyUrlString = function (text, target, className) {
     target = target ? ` target="${target}"` : '';
     className = className ? ` class="${className}"` : '';
 
-    const replaceLink = function(match, url, punctuation) {
+    const replaceLink = function (match, url, punctuation) {
         const append = punctuation || '';
         let linkText = url;
 
@@ -322,11 +322,11 @@ Utils.linkifyUrlString = function (text, target, className) {
             // Malformed URI sequence, return original string.
             return match;
         }
-    }
+    };
 
     // Capture url starting with http://, https://, ftp:// or www, keep
     // trailing punctuation ([.!?()]) in a separate group, so we append it later.
-    const simpleURLRegex = /\b((?:(?:https?|ftp):\/\/|www\.)[^'">\s]+\.[^'">\s]+?)([.!?()]?)(?=\s|$)/gmi;
+    const simpleURLRegex = /\b((?:(?:https?|ftp):\/\/|www\.)[^'">\s]+\.[^'">\s]+?)([.,;!?)]?)(?=\s|$)/gmi;
 
     return text.replace(simpleURLRegex, replaceLink);
 };
@@ -336,6 +336,7 @@ Utils.inputIncomingParse = (function () {
 
     const host = config.client.host;
     const reversedEscapeChars = { '<': 'lt', '>': 'gt', '"': 'quot', '&': 'amp', "'": '#39' };
+    const trailingChars = '\s).,;>!?'; // eslint-disable-line no-useless-escape
 
     function escape(txt) {
         //Паттерн из _s.escapeHTML(result); исключая амперсант
@@ -349,7 +350,9 @@ Utils.inputIncomingParse = (function () {
 
         //Заменяем ссылку на фото на диез-ссылку #xxx
         //Например, http://domain.com/p/123456 -> #123456
-        result = result.replace(new RegExp(`(\\b)(?:https?://)?(?:www.)?${host}/p/(\\d{1,8})/?(?=[\\s\\)\\.,;>]|$)`, 'gi'), '$1#$2');
+        result = result.replace(new RegExp(`(\\b)(?:https?://)?(?:www.)?${host}/p/(\\d{1,8})/?(?=[${trailingChars}]|$)`, 'gi'), '$1#$2');
+        // /p/123456 -> #123456
+        result = result.replace(new RegExp(`(^|\\s|\\()/p/(\\d{1,8})/?(?=[${trailingChars}]|$)`, 'gi'), '$1#$2');
 
         //Все внутрипортальные ссылки оставляем без доменного имени, от корня
         //Например, http://domain.com/u/klimashkin/photo -> /u/klimashkin/photo
@@ -357,7 +360,7 @@ Utils.inputIncomingParse = (function () {
 
         // Replace links to protected/covered photos with regular link
         // For example, /_pr/a/b/c/abc.jpg -> /_p/a/b/c/abc.jpg
-        result = result.replace(/\/_prn?\/([/a-z0-9]{26,40}\.(?:jpe?g|png))/gi, '/_p/$1');
+        result = result.replace(/\/_prn?\/([/a-z0-9]+\.(?:jpe?g|png))/gi, '/_p/$1');
 
         const plain = result;
 
@@ -370,7 +373,7 @@ Utils.inputIncomingParse = (function () {
 
         //Заменяем диез-ссылку фото #xxx на линк
         //Например, #123456 -> <a target="_blank" class="sharpPhoto" href="/p/123456">#123456</a>
-        result = result.replace(/(^|\s|\()#(\d{1,8})(?=[\s).,]|$)/g, '$1<a target="_blank" class="sharpPhoto" href="/p/$2">#$2</a>');
+        result = result.replace(new RegExp(`(^|\\s|\\()#(\\d{1,8})(?=[${trailingChars}]|$)`, 'g'), '$1<a target="_blank" class="sharpPhoto" href="/p/$2">#$2</a>');
 
         result = Utils.linkifyUrlString(result, '_blank'); //Оборачиваем остальные url в ahref
         result = result.replace(/\n{3,}/g, '<br><br>').replace(/\n/g, '<br>'); //Заменяем переносы на <br>
