@@ -11,7 +11,6 @@ const _ = require('lodash');
 const _s = require('underscore.string');
 const useragent = require('useragent');
 const DMP = require('diff-match-patch');
-const regexpUrl = require('./regex-weburl');
 const turf = require('@turf/turf');
 const ms = require('ms');
 
@@ -130,7 +129,22 @@ Utils.isType = function (type, obj) {
 Utils.validateEmail = function (email) {
     const emailRegexp = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@(([[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 
-    return email.toLowerCase().match(emailRegexp);
+    return !!email.toLowerCase().match(emailRegexp);
+};
+
+/**
+ * Checks if URI is of valid format.
+ *
+ * We use Diego Perini's validator retrieved from https://gist.github.com/dperini/729294,
+ * MIT licensed, version 2018/09/12, see http://mathiasbynens.be/demo/url-regex for details.
+ *
+ * @param {string} uri
+ * @returns {boolean}
+ */
+Utils.validateURI = function (uri) {
+    const uriRegexp = /^(?:(?:(?:https?|ftp):)?\/\/)(?:\S+(?::\S*)?@)?(?:(?!(?:10|127)(?:\.\d{1,3}){3})(?!(?:169\.254|192\.168)(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z0-9\u00a1-\uffff][a-z0-9\u00a1-\uffff_-]{0,62})?[a-z0-9\u00a1-\uffff]\.)+(?:[a-z\u00a1-\uffff]{2,}\.?))(?::\d{2,5})?(?:[/?#]\S*)?$/i;
+
+    return !!uri.match(uriRegexp);
 };
 
 /**
@@ -282,42 +296,39 @@ Utils.reflectKeys = function (obj) {
 Utils.linkifyUrlString = function (text, target, className) {
     'use strict';
 
-    let matches;
-
     target = target ? ` target="${target}"` : '';
     className = className ? ` class="${className}"` : '';
 
-    //Используем match и вручную перебираем все совпадающие ссылки, чтобы декодировать их с decodeURI,
-    //на случай, если ссылка, содержащая не аски символы, вставлена из строки браузера, вида http://ru.wikipedia.org/wiki/%D0%A1%D0%B5%D0%BA%D1%81
-    //Массив совпадений делаем уникальными (uniq)
+    const replaceLink = function (match, url, punctuation) {
+        const append = punctuation || '';
+        let linkText = url;
 
-    //Starting with http://, https://, or ftp://
-    matches = _.uniq(text.match(regexpUrl));
+        if (/^www\./i.test(url)) {
+            url = url.replace(/^www\./i, 'http://www.');
+        }
 
-    for (let i = 0; i < matches.length; i++) {
-        try { // Do nothing if URI malformed (decodeURI fails)
-            const url = decodeURI(matches[i]);
+        if (!Utils.validateURI(url)) {
+            // Invalid URL, return original string.
+            return match;
+        }
 
-            text = text.replace(matches[i], `<a href="${url}" rel="nofollow noopener"${target}${className}>${url}</a>`);
-        } catch (err) {}
-    }
-
-    //Starting with "www." (without // before it, or it'd re-link the ones done above).
-    const matchPattern = /(^|[^/])(www\.[\S]+(\b|$))/gim;
-
-    matches = _.uniq(text.match(matchPattern));
-
-    for (let i = 0; i < matches.length; i++) {
         try {
-            matches[i] = _s.trim(matches[i]); //Так как в результат match попадут и переносы и пробелы (^|[^\/]), то надо их удалить
+            // Decode URI, e.g. to make http://ru.wikipedia.org/wiki/%D0%A1%D0%B5%D0%BA%D1%81 url readable.
+            url = decodeURI(url);
+            linkText = decodeURI(linkText);
 
-            const url = decodeURI(matches[i]);
+            return `<a href="${url}" rel="nofollow noopener"${target}${className}>${linkText}</a>${append}`;
+        } catch (err) {
+            // Malformed URI sequence, return original string.
+            return match;
+        }
+    };
 
-            text = text.replace(matches[i], `<a href="http://${url}" rel="nofollow noopener"${target}${className}>${url}</a>`);
-        } catch (err) {}
-    }
+    // Capture url starting with http://, https://, ftp:// or www, keep
+    // trailing punctuation ([.!?()]) in a separate group, so we append it later.
+    const simpleURLRegex = /\b((?:(?:https?|ftp):\/\/|www\.)[^'">\s]+\.[^'">\s]+?)([.,;!?)]?)(?=\s|$)/gmi;
 
-    return text;
+    return text.replace(simpleURLRegex, replaceLink);
 };
 
 Utils.inputIncomingParse = (function () {
@@ -325,6 +336,7 @@ Utils.inputIncomingParse = (function () {
 
     const host = config.client.host;
     const reversedEscapeChars = { '<': 'lt', '>': 'gt', '"': 'quot', '&': 'amp', "'": '#39' };
+    const trailingChars = '\s).,;>!?'; // eslint-disable-line no-useless-escape
 
     function escape(txt) {
         //Паттерн из _s.escapeHTML(result); исключая амперсант
@@ -338,7 +350,9 @@ Utils.inputIncomingParse = (function () {
 
         //Заменяем ссылку на фото на диез-ссылку #xxx
         //Например, http://domain.com/p/123456 -> #123456
-        result = result.replace(new RegExp(`(\\b)(?:https?://)?(?:www.)?${host}/p/(\\d{1,8})/?(?=[\\s\\)\\.,;>]|$)`, 'gi'), '$1#$2');
+        result = result.replace(new RegExp(`(\\b)(?:https?://)?(?:www.)?${host}/p/(\\d{1,8})/?(?=[${trailingChars}]|$)`, 'gi'), '$1#$2');
+        // /p/123456 -> #123456
+        result = result.replace(new RegExp(`(^|\\s|\\()/p/(\\d{1,8})/?(?=[${trailingChars}]|$)`, 'gi'), '$1#$2');
 
         //Все внутрипортальные ссылки оставляем без доменного имени, от корня
         //Например, http://domain.com/u/klimashkin/photo -> /u/klimashkin/photo
@@ -346,7 +360,7 @@ Utils.inputIncomingParse = (function () {
 
         // Replace links to protected/covered photos with regular link
         // For example, /_pr/a/b/c/abc.jpg -> /_p/a/b/c/abc.jpg
-        result = result.replace(/\/_prn?\/([/a-z0-9]{26,40}\.(?:jpe?g|png))/gi, '/_p/$1');
+        result = result.replace(/\/_prn?\/([/a-z0-9]+\.(?:jpe?g|png))/gi, '/_p/$1');
 
         const plain = result;
 
@@ -359,7 +373,7 @@ Utils.inputIncomingParse = (function () {
 
         //Заменяем диез-ссылку фото #xxx на линк
         //Например, #123456 -> <a target="_blank" class="sharpPhoto" href="/p/123456">#123456</a>
-        result = result.replace(/(^|\s|\()#(\d{1,8})(?=[\s).,]|$)/g, '$1<a target="_blank" class="sharpPhoto" href="/p/$2">#$2</a>');
+        result = result.replace(new RegExp(`(^|\\s|\\()#(\\d{1,8})(?=[${trailingChars}]|$)`, 'g'), '$1<a target="_blank" class="sharpPhoto" href="/p/$2">#$2</a>');
 
         result = Utils.linkifyUrlString(result, '_blank'); //Оборачиваем остальные url в ahref
         result = result.replace(/\n{3,}/g, '<br><br>').replace(/\n/g, '<br>'); //Заменяем переносы на <br>
