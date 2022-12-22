@@ -38,6 +38,7 @@ describe('utils', () => {
         describe('should replace internal links', () => {
             const testData = [
                 ['replace photo url', `${origin}/p/123456`, '<a target="_blank" class="sharpPhoto" href="/p/123456">#123456</a>'],
+                ['replace photo url param', `${origin}/p/123456?hl=comment-123`, '<a target="_blank" class="innerLink" href="/p/123456?hl=comment-123">/p/123456?hl=comment-123</a>'],
                 ['replace photo path', '/p/123456', '<a target="_blank" class="sharpPhoto" href="/p/123456">#123456</a>'],
                 ['replace photo hash', '#123456', '<a target="_blank" class="sharpPhoto" href="/p/123456">#123456</a>'],
                 ['replace encoded url', 'https://ru.wikipedia.org/wiki/%D0%A4%D0%BE%D1%82%D0%BE%D0%B3%D1%80%D0%B0%D1%84%D0%B8%D1%8F', '<a href="https://ru.wikipedia.org/wiki/Фотография" rel="nofollow noopener" target="_blank">https://ru.wikipedia.org/wiki/Фотография</a>'],
@@ -53,6 +54,8 @@ describe('utils', () => {
         describe('should respect heading and trailing punctuation for internal links', () => {
             const testData = [
                 ['photo url', `(${origin}/p/123456) #123456.`, '(<a target="_blank" class="sharpPhoto" href="/p/123456">#123456</a>) <a target="_blank" class="sharpPhoto" href="/p/123456">#123456</a>.'],
+                ['photo urls', `${origin}/p/123456 ${origin}/p/123456`, '<a target="_blank" class="sharpPhoto" href="/p/123456">#123456</a> <a target="_blank" class="sharpPhoto" href="/p/123456">#123456</a>'],
+                ['photo hashes', '#123456 #123456', '<a target="_blank" class="sharpPhoto" href="/p/123456">#123456</a> <a target="_blank" class="sharpPhoto" href="/p/123456">#123456</a>'],
                 ['internal url', `${origin}/u/klimashkin/photo, ${origin}/u/klimashkin/photo; (/u/klimashkin/photo)`, '<a target="_blank" class="innerLink" href="/u/klimashkin/photo">/u/klimashkin/photo</a>, <a target="_blank" class="innerLink" href="/u/klimashkin/photo">/u/klimashkin/photo</a>; (<a target="_blank" class="innerLink" href="/u/klimashkin/photo">/u/klimashkin/photo</a>)'],
             ];
 
@@ -63,7 +66,7 @@ describe('utils', () => {
             const testData = [
                 ['replace url', 'https://jestjs.io/docs/expect#expectassertionsnumber', '<a href="https://jestjs.io/docs/expect#expectassertionsnumber" rel="nofollow noopener" target="_blank">https://jestjs.io/docs/expect#expectassertionsnumber</a>'],
                 ['replace www url', 'www.moodle.org', '<a href="http://www.moodle.org" rel="nofollow noopener" target="_blank">www.moodle.org</a>'],
-                ['replace url with params', 'https://jestjs.io/docs/expect?show=all', '<a href="https://jestjs.io/docs/expect?show=all" rel="nofollow noopener" target="_blank">https://jestjs.io/docs/expect?show=all</a>'],
+                ['replace url with params', 'https://jestjs.io/docs/expect?show=all&filter=1', '<a href="https://jestjs.io/docs/expect?show=all&filter=1" rel="nofollow noopener" target="_blank">https://jestjs.io/docs/expect?show=all&filter=1</a>'],
             ];
 
             it.each(testData)('%s', testInputIncomingParse); // eslint-disable-line jest/expect-expect
@@ -83,11 +86,11 @@ describe('utils', () => {
         it('should replace links in complex example', () => {
             expect.assertions(1);
 
-            const testString = `Hello /u/testuser, this photo #123456 (also #123457, #456789)
-                are related and taken from the http://oldtown.com.
-                Please amend the sources. You can find more information on https://docs.pastvu.com; https://docs.pastvu.com?id=3.`;
+            const testString = `Hello /u/testuser, thanks for photos #123456 #123457 (also #123458, #456789)
+                They are related and came from https://flic.kr/p/abcde (discussion at ${origin}/p/123456?hl=comment-12)
+                You can find more information on https://docs.pastvu.com; https://docs.pastvu.com?id=3.`;
 
-            const expectedString = 'Hello <a target="_blank" class="innerLink" href="/u/testuser">/u/testuser</a>, this photo #123456 (also <a target="_blank" class="sharpPhoto" href="/p/123457">#123457</a>, <a target="_blank" class="sharpPhoto" href="/p/456789">#456789</a>)<br> are related and taken from the <a href="http://oldtown.com" rel="nofollow noopener" target="_blank">http://oldtown.com</a>.<br> Please amend the sources. You can find more information on <a href="https://docs.pastvu.com" rel="nofollow noopener" target="_blank">https://docs.pastvu.com</a>; <a href="https://docs.pastvu.com?id=3" rel="nofollow noopener" target="_blank">https://docs.pastvu.com?id=3</a>.';
+            const expectedString = 'Hello <a target="_blank" class="innerLink" href="/u/testuser">/u/testuser</a>, thanks for photos <a target="_blank" class="sharpPhoto" href="/p/123456">#123456</a> <a target="_blank" class="sharpPhoto" href="/p/123457">#123457</a> (also <a target="_blank" class="sharpPhoto" href="/p/123458">#123458</a>, <a target="_blank" class="sharpPhoto" href="/p/456789">#456789</a>)<br> They are related and came from <a href="https://flic.kr/p/abcde" rel="nofollow noopener" target="_blank">https://flic.kr/p/abcde</a> (discussion at <a target="_blank" class="innerLink" href="/p/123456?hl=comment-12">/p/123456?hl=comment-12</a>)<br> You can find more information on <a href="https://docs.pastvu.com" rel="nofollow noopener" target="_blank">https://docs.pastvu.com</a>; <a href="https://docs.pastvu.com?id=3" rel="nofollow noopener" target="_blank">https://docs.pastvu.com?id=3</a>.';
 
             testInputIncomingParse('', testString, expectedString);
         });
