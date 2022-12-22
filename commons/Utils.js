@@ -336,7 +336,7 @@ Utils.inputIncomingParse = (function () {
 
     const host = config.client.host;
     const reversedEscapeChars = { '<': 'lt', '>': 'gt', '"': 'quot', '&': 'amp', "'": '#39' };
-    const trailingChars = '\s).,;>!?'; // eslint-disable-line no-useless-escape
+    const trailingChars = '\\s).,;>';
 
     function escape(txt) {
         //Паттерн из _s.escapeHTML(result); исключая амперсант
