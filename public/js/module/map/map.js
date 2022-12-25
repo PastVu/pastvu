@@ -522,8 +522,9 @@ define([
                         container: '.mapNavigation',
                         options: {
                             map: this.map,
-                            maxZoom: this.layerActive().type.limitZoom || this.map.getMaxZoom() || defaults.maxZoom,
-                            minZoom: this.map.getMinZoom() || defaults.minZoom,
+                            // eslint-disable-next-line max-len
+                            maxZoom: this.layerActive().type.limitZoom || this.layerActive().type.maxZoom || this.map.getMaxZoom() || defaults.maxZoom,
+                            minZoom: this.layerActive().type.minZoom || this.map.getMinZoom() || defaults.minZoom,
                             canOpen: !this.embedded,
                         },
                         ctx: this,
@@ -875,8 +876,8 @@ define([
                 this.map.addLayer(type.obj);
                 this.markerManager.layerChange();
                 // Set maxZoom and minZoom as defined in TileLayer object, otherwise use defaults.
-                this.map.options.maxZoom = type.obj.options.maxZoom || defaults.maxZoom;
-                this.map.options.minZoom = type.obj.options.minZoom || defaults.minZoom;
+                this.map.options.maxZoom = type.maxZoom || type.obj.options.maxZoom || defaults.maxZoom;
+                this.map.options.minZoom = type.minZoom || type.obj.options.minZoom || defaults.minZoom;
 
                 if (this.navSliderVM && Utils.isType('function', this.navSliderVM.recalcZooms)) {
                     // Adjust zoom slider.
