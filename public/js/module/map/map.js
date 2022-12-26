@@ -154,12 +154,13 @@ define([
                         id: 'osmosnimki',
                         desc: 'Kosmosnimki',
                         selected: ko.observable(false),
-                        obj: new L.TileLayer('https://{s}tilecart.kosmosnimki.ru/kosmo/{z}/{x}/{y}.png', {
+                        options: {
+                            urlTemplate: 'https://{s}tilecart.kosmosnimki.ru/kosmo/{z}/{x}/{y}.png',
                             attribution: '&copy; <a href="https://kosmosnimki.ru/">ScanEx</a> | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
                             updateWhenIdle: false,
                             maxZoom: 18,
                             maxNativeZoom: 17,
-                        }),
+                        },
                         limitZoom: 17,
                         maxAfter: 'osm.mapnik',
                     },
@@ -167,23 +168,25 @@ define([
                         id: 'mapnik',
                         desc: 'Mapnik',
                         selected: ko.observable(false),
-                        obj: new L.TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        options: {
+                            urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
                             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
                             updateWhenIdle: false,
                             maxZoom: 20,
                             maxNativeZoom: 19,
-                        }),
+                        },
                     },
                     {
                         id: 'mapnik_de',
                         desc: 'Mapnik De',
                         selected: ko.observable(false),
-                        obj: new L.TileLayer('https://{s}.tile.openstreetmap.de/tiles/osmde/{z}/{x}/{y}.png', {
+                        options: {
+                            urlTemplate: 'https://{s}.tile.openstreetmap.de/tiles/osmde/{z}/{x}/{y}.png',
                             updateWhenIdle: false,
                             maxZoom: 19,
                             maxNativeZoom: 18,
                             attribution: 'OSM Deutsch | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                        }),
+                        },
                         limitZoom: 18,
                         maxAfter: 'osm.mapnik',
                     },
@@ -191,12 +194,13 @@ define([
                         id: 'mapnik_fr',
                         desc: 'Mapnik Fr',
                         selected: ko.observable(false),
-                        obj: new L.TileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
+                        options: {
+                            urlTemplate: 'https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png',
                             updateWhenIdle: false,
                             maxZoom: 19,
                             maxNativeZoom: 18,
                             attribution: 'OSM Française | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                        }),
+                        },
                         limitZoom: 18,
                         maxAfter: 'osm.mapnik',
                     },
@@ -204,12 +208,13 @@ define([
                         id: 'opentopomap',
                         desc: 'Topographer',
                         selected: ko.observable(false),
-                        obj: new L.TileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                        options: {
+                            urlTemplate: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
                             updateWhenIdle: false,
                             maxZoom: 18,
                             maxNativeZoom: 17,
                             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)',
-                        }),
+                        },
                         limitZoom: 17,
                         maxAfter: 'osm.mapnik',
                     },
@@ -217,14 +222,15 @@ define([
                         id: 'stamen_bw',
                         desc: 'Stamen b/w',
                         selected: ko.observable(false),
-                        obj: new L.TileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}.{ext}', {
+                        options: {
+                            urlTemplate: 'https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}.{ext}',
                             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>',
                             subdomains: 'abcd',
                             maxZoom: 19,
                             maxNativeZoom: 18,
                             ext: 'png',
                             updateWhenIdle: false,
-                        }),
+                        },
                     },
                 ]),
             });
@@ -240,29 +246,37 @@ define([
                             id: 'scheme',
                             desc: 'Scheme',
                             selected: ko.observable(false),
-                            params: 'roadmap',
-                            maxZoom: 21,
+                            options: {
+                                type: 'roadmap',
+                                maxZoom: 21,
+                            },
                         },
                         {
                             id: 'sat',
                             desc: 'Satellite',
                             selected: ko.observable(false),
-                            params: 'satellite',
-                            maxZoom: 21,
+                            options: {
+                                type: 'satellite',
+                                maxZoom: 21,
+                            },
                         },
                         {
                             id: 'hyb',
                             desc: 'Hybrid',
                             selected: ko.observable(false),
-                            params: 'hybrid',
-                            maxZoom: 21,
+                            options: {
+                                type: 'hybrid',
+                                maxZoom: 21,
+                            },
                         },
                         {
                             id: 'land',
                             desc: 'Terrain',
                             selected: ko.observable(false),
-                            params: 'terrain',
-                            maxZoom: 21,
+                            options: {
+                                type: 'terrain',
+                                maxZoom: 21,
+                            },
                         },
                     ]),
                 });
@@ -279,22 +293,28 @@ define([
                             id: 'scheme',
                             desc: 'Scheme',
                             selected: ko.observable(false),
-                            params: 'map',
-                            maxZoom: 21,
+                            options: {
+                                type: 'map',
+                                maxZoom: 21,
+                            },
                         },
                         {
                             id: 'sat',
                             desc: 'Satellite',
                             selected: ko.observable(false),
-                            params: 'satellite',
-                            maxZoom: 19,
+                            options: {
+                                type: 'satellite',
+                                maxZoom: 19,
+                            },
                         },
                         {
                             id: 'hyb',
                             desc: 'Hybrid',
                             selected: ko.observable(false),
-                            params: 'hybrid',
-                            maxZoom: 19,
+                            options: {
+                                type: 'hybrid',
+                                maxZoom: 19,
+                            },
                         },
                     ]),
                 });
@@ -309,23 +329,25 @@ define([
                         id: 'esri_satimg',
                         desc: 'Esri',
                         selected: ko.observable(false),
-                        obj: new L.TileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                        options: {
+                            urlTemplate: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
                             attribution: '&copy; Esri &mdash; Sources: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
                             updateWhenIdle: false,
                             maxZoom: 20,
                             maxNativeZoom: 19,
-                        }),
+                        },
                     },
                     {
                         id: 'mtb',
                         desc: 'MTB',
                         selected: ko.observable(false),
-                        obj: new L.TileLayer('https://tile.mtbmap.cz/mtbmap_tiles/{z}/{x}/{y}.png', {
+                        options: {
+                            urlTemplate: 'https://tile.mtbmap.cz/mtbmap_tiles/{z}/{x}/{y}.png',
                             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | <a href="http://mtbmap.cz/">mtbmap.cz</a>',
                             updateWhenIdle: false,
                             maxZoom: 19,
                             maxNativeZoom: 18,
-                        }),
+                        },
                         limitZoom: 18,
                         maxAfter: 'osm.mapnik',
                     },
@@ -333,13 +355,14 @@ define([
                         id: 'warfly',
                         desc: 'WWII Aerial',
                         selected: ko.observable(false),
-                        obj: new L.TileLayer('https://17200.selcdn.ru/AerialWWII/Z{z}/{y}/{x}.jpg', {
+                        options: {
+                            urlTemplate: 'https://17200.selcdn.ru/AerialWWII/Z{z}/{y}/{x}.jpg',
                             attribution: 'WWII Aerial photos <a href="http://warfly.ru/about">warfly.ru</a> (coverage is limited to some locations)',
                             updateWhenIdle: false,
                             minZoom: 9,
                             maxZoom: 19,
                             maxNativeZoom: 17,
-                        }),
+                        },
                     },
                 ]),
             });
@@ -522,15 +545,16 @@ define([
                         container: '.mapNavigation',
                         options: {
                             map: this.map,
-                            // eslint-disable-next-line max-len
-                            maxZoom: this.layerActive().type.limitZoom || this.layerActive().type.maxZoom || this.map.getMaxZoom() || defaults.maxZoom,
-                            minZoom: this.layerActive().type.minZoom || this.map.getMinZoom() || defaults.minZoom,
+                            maxZoom: defaults.maxZoom,
+                            minZoom: defaults.minZoom,
                             canOpen: !this.embedded,
                         },
                         ctx: this,
                         callback: function (vm) {
                             this.childModules[vm.id] = vm;
                             this.navSliderVM = vm;
+                            // When slider is ready, update its limits.
+                            this.navSliderVM.recalcZooms(type.limitZoom || this.map.getMaxZoom(), true);
                         }.bind(this),
                     },
                 ],
@@ -876,8 +900,8 @@ define([
                 this.map.addLayer(type.obj);
                 this.markerManager.layerChange();
                 // Set maxZoom and minZoom as defined in TileLayer object, otherwise use defaults.
-                this.map.options.maxZoom = type.maxZoom || type.obj.options.maxZoom || defaults.maxZoom;
-                this.map.options.minZoom = type.minZoom || type.obj.options.minZoom || defaults.minZoom;
+                this.map.options.maxZoom = type.obj.options.maxZoom || defaults.maxZoom;
+                this.map.options.minZoom = type.obj.options.minZoom || defaults.minZoom;
 
                 if (this.navSliderVM && Utils.isType('function', this.navSliderVM.recalcZooms)) {
                     // Adjust zoom slider.
@@ -909,14 +933,23 @@ define([
             this.layerActiveDesc(this.embedded ? system.desc : system.desc + ': ' + type.desc);
             this.layerActive({ sys: system, type: type });
 
-            if (system.deps && !type.obj) {
+            if (system.deps && !type.options.urlTemplate) {
+                // Layer needs to be created via plugin.
                 require([system.deps], function (Construct) {
-                    type.obj = new Construct(type.params);
+                    type.options = type.options || {};
+                    type.obj = new Construct(type.options);
                     setLayer(type);
                     type = null;
                 });
-            } else {
+            } else if (type.options.urlTemplate !== undefined) {
+                // Layer needs to be created using L.TileLayer.
+                const urlTemplate = type.options.urlTemplate;
+                const options = _.omit(type.options, 'urlTemplate');
+
+                type.obj = new L.TileLayer(urlTemplate, options);
                 setLayer(type);
+            } else {
+                throw new Error(`Layer '${type.id}' definition is missing urlTemplate required property.`);
             }
         },
         onChange: function (callback, ctx) {
