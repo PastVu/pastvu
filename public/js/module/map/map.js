@@ -154,12 +154,13 @@ define([
                         id: 'osmosnimki',
                         desc: 'Kosmosnimki',
                         selected: ko.observable(false),
-                        obj: new L.TileLayer('https://{s}tilecart.kosmosnimki.ru/kosmo/{z}/{x}/{y}.png', {
+                        options: {
+                            urlTemplate: 'https://{s}tilecart.kosmosnimki.ru/kosmo/{z}/{x}/{y}.png',
                             attribution: '&copy; <a href="https://kosmosnimki.ru/">ООО ИТЦ "СКАНЭКС"</a> | &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
                             updateWhenIdle: false,
                             maxZoom: 18,
                             maxNativeZoom: 17,
-                        }),
+                        },
                         limitZoom: 17,
                         maxAfter: 'osm.mapnik',
                     },
@@ -167,23 +168,25 @@ define([
                         id: 'mapnik',
                         desc: 'Mapnik',
                         selected: ko.observable(false),
-                        obj: new L.TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        options: {
+                            urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
                             attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
                             updateWhenIdle: false,
                             maxZoom: 20,
                             maxNativeZoom: 19,
-                        }),
+                        },
                     },
                     {
                         id: 'mapnik_de',
                         desc: 'Mapnik De',
                         selected: ko.observable(false),
-                        obj: new L.TileLayer('https://{s}.tile.openstreetmap.de/tiles/osmde/{z}/{x}/{y}.png', {
+                        options: {
+                            urlTemplate: 'https://{s}.tile.openstreetmap.de/tiles/osmde/{z}/{x}/{y}.png',
                             updateWhenIdle: false,
                             maxZoom: 19,
                             maxNativeZoom: 18,
                             attribution: 'OSM Deutsch | &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-                        }),
+                        },
                         limitZoom: 18,
                         maxAfter: 'osm.mapnik',
                     },
@@ -191,12 +194,13 @@ define([
                         id: 'mapnik_fr',
                         desc: 'Mapnik Fr',
                         selected: ko.observable(false),
-                        obj: new L.TileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
+                        options: {
+                            urlTemplate: 'https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png',
                             updateWhenIdle: false,
                             maxZoom: 19,
                             maxNativeZoom: 18,
                             attribution: 'OSM Française | &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-                        }),
+                        },
                         limitZoom: 18,
                         maxAfter: 'osm.mapnik',
                     },
@@ -204,12 +208,13 @@ define([
                         id: 'opentopomap',
                         desc: 'Топограф',
                         selected: ko.observable(false),
-                        obj: new L.TileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                        options: {
+                            urlTemplate: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
                             updateWhenIdle: false,
                             maxZoom: 18,
                             maxNativeZoom: 17,
                             attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | <a href="http://viewfinderpanoramas.org">SRTM</a> | Стиль карты: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)',
-                        }),
+                        },
                         limitZoom: 17,
                         maxAfter: 'osm.mapnik',
                     },
@@ -217,14 +222,15 @@ define([
                         id: 'stamen_bw',
                         desc: 'Стамен ч/б',
                         selected: ko.observable(false),
-                        obj: new L.TileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}.{ext}', {
+                        options: {
+                            urlTemplate: 'https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}.{ext}',
                             attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> | &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
                             subdomains: 'abcd',
                             maxZoom: 19,
                             maxNativeZoom: 18,
                             ext: 'png',
                             updateWhenIdle: false,
-                        }),
+                        },
                     },
                 ]),
             });
@@ -323,23 +329,25 @@ define([
                         id: 'esri_satimg',
                         desc: 'Esri Снимки',
                         selected: ko.observable(false),
-                        obj: new L.TileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                        options: {
+                            urlTemplate: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
                             attribution: '&copy; Esri &mdash; Источники: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, и ГИС сообщество',
                             updateWhenIdle: false,
                             maxZoom: 20,
                             maxNativeZoom: 19,
-                        }),
+                        },
                     },
                     {
                         id: 'mtb',
                         desc: 'MTB пеш.',
                         selected: ko.observable(false),
-                        obj: new L.TileLayer('https://tile.mtbmap.cz/mtbmap_tiles/{z}/{x}/{y}.png', {
+                        options: {
+                            urlTemplate: 'https://tile.mtbmap.cz/mtbmap_tiles/{z}/{x}/{y}.png',
                             attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | <a href="http://mtbmap.cz/">mtbmap.cz</a>',
                             updateWhenIdle: false,
                             maxZoom: 19,
                             maxNativeZoom: 18,
-                        }),
+                        },
                         limitZoom: 18,
                         maxAfter: 'osm.mapnik',
                     },
@@ -347,13 +355,14 @@ define([
                         id: 'warfly',
                         desc: 'Аэрофото ВОВ',
                         selected: ko.observable(false),
-                        obj: new L.TileLayer('https://17200.selcdn.ru/AerialWWII/Z{z}/{y}/{x}.jpg', {
+                        options: {
+                            urlTemplate: 'https://17200.selcdn.ru/AerialWWII/Z{z}/{y}/{x}.jpg',
                             attribution: 'Аэрофотосъёмка Второй Мировой Войны <a href="http://warfly.ru/about">warfly.ru</a> (доступна для отдельных городов)',
                             updateWhenIdle: false,
                             minZoom: 9,
                             maxZoom: 19,
                             maxNativeZoom: 17,
-                        }),
+                        },
                     },
                 ]),
             });
@@ -924,7 +933,7 @@ define([
             this.layerActiveDesc(this.embedded ? system.desc : system.desc + ': ' + type.desc);
             this.layerActive({ sys: system, type: type });
 
-            if (system.deps && !type.obj) {
+            if (system.deps && !type.options.urlTemplate) {
                 // Layer needs to be created via plugin.
                 require([system.deps], function (Construct) {
                     type.options = type.options || {};
@@ -932,8 +941,15 @@ define([
                     setLayer(type);
                     type = null;
                 });
-            } else {
+            } else if (type.options.urlTemplate !== undefined) {
+                // Layer needs to be created using L.TileLayer.
+                const urlTemplate = type.options.urlTemplate;
+                const options = _.omit(type.options, 'urlTemplate');
+
+                type.obj = new L.TileLayer(urlTemplate, options);
                 setLayer(type);
+            } else {
+                throw new Error(`Layer '${type.id}' definition is missing urlTemplate required property.`);
             }
         },
         onChange: function (callback, ctx) {
