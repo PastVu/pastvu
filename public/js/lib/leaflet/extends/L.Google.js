@@ -11,9 +11,8 @@ define(['Params', 'leaflet', 'leaflet-plugins/lru', 'leaflet-plugins/Leaflet.Goo
     // Load Google Maps API library asynchronously.
     require(['async!' + url]);
 
-    return function (type, options) {
+    return function (options) {
         options = options || {};
-        options.type = type;
 
         return new L.GridLayer.GoogleMutant(options);
     };

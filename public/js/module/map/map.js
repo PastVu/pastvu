@@ -240,29 +240,37 @@ define([
                             id: 'scheme',
                             desc: 'Схема',
                             selected: ko.observable(false),
-                            params: 'roadmap',
-                            maxZoom: 21,
+                            options: {
+                                type: 'roadmap',
+                                maxZoom: 21,
+                            },
                         },
                         {
                             id: 'sat',
                             desc: 'Спутник',
                             selected: ko.observable(false),
-                            params: 'satellite',
-                            maxZoom: 21,
+                            options: {
+                                type: 'satellite',
+                                maxZoom: 21,
+                            },
                         },
                         {
                             id: 'hyb',
                             desc: 'Гибрид',
                             selected: ko.observable(false),
-                            params: 'hybrid',
-                            maxZoom: 21,
+                            options: {
+                                type: 'hybrid',
+                                maxZoom: 21,
+                            },
                         },
                         {
                             id: 'land',
                             desc: 'Ландшафт',
                             selected: ko.observable(false),
-                            params: 'terrain',
-                            maxZoom: 21,
+                            options: {
+                                type: 'terrain',
+                                maxZoom: 21,
+                            },
                         },
                     ]),
                 });
@@ -279,22 +287,28 @@ define([
                             id: 'scheme',
                             desc: 'Схема',
                             selected: ko.observable(false),
-                            params: 'map',
-                            maxZoom: 21,
+                            options: {
+                                type: 'map',
+                                maxZoom: 21,
+                            },
                         },
                         {
                             id: 'sat',
                             desc: 'Спутник',
                             selected: ko.observable(false),
-                            params: 'satellite',
-                            maxZoom: 19,
+                            options: {
+                                type: 'satellite',
+                                maxZoom: 19,
+                            },
                         },
                         {
                             id: 'hyb',
                             desc: 'Гибрид',
                             selected: ko.observable(false),
-                            params: 'hybrid',
-                            maxZoom: 19,
+                            options: {
+                                type: 'hybrid',
+                                maxZoom: 19,
+                            },
                         },
                     ]),
                 });
@@ -522,15 +536,16 @@ define([
                         container: '.mapNavigation',
                         options: {
                             map: this.map,
-                            // eslint-disable-next-line max-len
-                            maxZoom: this.layerActive().type.limitZoom || this.layerActive().type.maxZoom || this.map.getMaxZoom() || defaults.maxZoom,
-                            minZoom: this.layerActive().type.minZoom || this.map.getMinZoom() || defaults.minZoom,
+                            maxZoom: defaults.maxZoom,
+                            minZoom: defaults.minZoom,
                             canOpen: !this.embedded,
                         },
                         ctx: this,
                         callback: function (vm) {
                             this.childModules[vm.id] = vm;
                             this.navSliderVM = vm;
+                            // When slider is ready, update its limits.
+                            this.navSliderVM.recalcZooms(type.limitZoom || this.map.getMaxZoom(), true);
                         }.bind(this),
                     },
                 ],
@@ -876,8 +891,8 @@ define([
                 this.map.addLayer(type.obj);
                 this.markerManager.layerChange();
                 // Set maxZoom and minZoom as defined in TileLayer object, otherwise use defaults.
-                this.map.options.maxZoom = type.maxZoom || type.obj.options.maxZoom || defaults.maxZoom;
-                this.map.options.minZoom = type.minZoom || type.obj.options.minZoom || defaults.minZoom;
+                this.map.options.maxZoom = type.obj.options.maxZoom || defaults.maxZoom;
+                this.map.options.minZoom = type.obj.options.minZoom || defaults.minZoom;
 
                 if (this.navSliderVM && Utils.isType('function', this.navSliderVM.recalcZooms)) {
                     // Adjust zoom slider.
@@ -910,8 +925,10 @@ define([
             this.layerActive({ sys: system, type: type });
 
             if (system.deps && !type.obj) {
+                // Layer needs to be created via plugin.
                 require([system.deps], function (Construct) {
-                    type.obj = new Construct(type.params);
+                    type.options = type.options || {};
+                    type.obj = new Construct(type.options);
                     setLayer(type);
                     type = null;
                 });

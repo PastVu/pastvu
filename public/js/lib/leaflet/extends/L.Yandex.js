@@ -51,7 +51,7 @@ define(['Params', 'leaflet', 'jquery', 'leaflet-plugins/Yandex'], function (P, L
     });
     L.Yandex.addInitHook(L.Yandex.prototype._initLoader);
 
-    return function (type, options) {
+    return function (options) {
         // Disable point information pop-ups and "open in Yandex map" link.
         options = options || {};
         $.extend(options, {
@@ -61,6 +61,6 @@ define(['Params', 'leaflet', 'jquery', 'leaflet-plugins/Yandex'], function (P, L
             },
         });
 
-        return new L.Yandex(type, options);
+        return new L.Yandex(options);
     };
 });
