@@ -287,6 +287,8 @@
         //ko if: p.dir && p.dir() && p.dir().length
         .info
             span.infoName(data-bind="html: fields.dir+':'")
+            span.direction-icon(data-bind="html: fields.dirIcons[p.dir()]")
+            | &nbsp;
             span(data-bind="text: fields.dirVals[p.dir()]", style="text-transform: lowercase;")
         // /ko
         //ko if: p.watersignText() && p.watersignTextApplied()
@@ -347,7 +349,7 @@
         input.form-control(name="pAddr", type="text", maxlength="250", placeholder="Do you know shooting adress?", data-bind="value: p.address, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
     .fieldWrap(data-bind="css: {hasContent: !!p.dir()}")
         label(for="pDir", data-bind="html: fields.dir")
-        select.form-control(name="pDir", data-bind="css: {empty: !p.dir()}, options: fields.dirValsArr, value: p.dir, optionsText: function(item) {return fields.dirVals[item]}, optionsCaption: 'Chose shooting direction...'")
+        select.form-control.direction(name="pDir", data-bind="css: {empty: !p.dir()}, options: fields.dirValsArr, value: p.dir, optionsCaption: 'Choose a shooting direction...', optionsAfterRender: setDirOptionHTML")
     //ko if: can.nowaterchange()
     div(style="display:table;margin:8px 0 -6px;")
         div(style="display:table-cell;padding-right:5px;")
@@ -468,7 +470,7 @@
         input.form-control(name="pSource", type="text", maxlength="250", placeholder="Be sure to indicate the image source (link, a book, scanned photo from your personal archive, etc.)", data-bind="value: p.source, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
     .fieldWrap(data-bind="css: {hasContent: !!p.dir()}")
         label(for="pDir", data-bind="html: fields.dir")
-        select.form-control(name="pDir", data-bind="css: {empty: !p.dir()}, options: fields.dirValsArr, value: p.dir, optionsText: function(item) {return fields.dirVals[item]}, optionsCaption: 'Select view direction...'")
+        select.form-control.direction(name="pDir", data-bind="css: {empty: !p.dir()}, options: fields.dirValsArr, value: p.dir, optionsCaption: 'Select view direction...', optionsAfterRender: setDirOptionHTML")
     //ko if: can.nowaterchange()
     div(style="display:table;margin:8px 0 -6px;")
         div(style="display:table-cell;padding-right:5px;")

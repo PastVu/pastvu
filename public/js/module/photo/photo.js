@@ -2223,5 +2223,14 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.msgTitle(abbr || '');
             this.msgLink(link || '');
         },
+
+        setDirOptionHTML: function (option, item) {
+            // Render option content as html to decode entitites.
+            if (item !== undefined) {
+                ko.applyBindingsToNode(option, {
+                    html: fields.dirIcons[item] + '&nbsp;' + fields.dirVals[item],
+                });
+            }
+        },
     });
 });

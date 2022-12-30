@@ -1,6 +1,7 @@
 @import '../_vars.less';
 @import '../bs/variables.less';
 @import '../bs/mixins.less';
+@import '../fonts/material-icons.less';
 
 @toolColor: #677A8F;
 @toolColorHover: @MainBlueColor;
@@ -411,6 +412,15 @@
                 margin-right: 5px;
                 font-weight: bold;
             }
+
+            .direction-icon {
+                // We use material design icons for directions.
+                &:extend(.material-icons-feature);
+
+                font-family: 'Material Icons Directions', sans-serif;
+                position: relative;
+                top: 2px;
+            }
         }
     }
 
@@ -596,6 +606,13 @@
 
                 &:focus {
                     background-color: #fdfdfd;
+                }
+
+                &.direction {
+                    // We use material design icons for directions.
+                    &:extend(.material-icons-feature);
+
+                    font-family: 'Material Icons Directions', sans-serif;
                 }
             }
 
