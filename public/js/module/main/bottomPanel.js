@@ -294,7 +294,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                     self.stats.all = data.all;
                     self.stats.common = data.common;
                     self.stats.common.onlineTxt = 'Now ' + globalVM.intl.num(data.common.onall) +
-                        declension.user + (data.common.onall > 1 ? 's' : '') + ' is online, ' +
+                        declension.user[0] + (data.common.onall > 1 ? 's are' : ' is') + ' online, ' +
                         data.common.onreg + ' of them are registered';
                     success = true;
                 }
