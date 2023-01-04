@@ -6,18 +6,19 @@
 define([
     'underscore', 'jquery', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche',
     'globalVM', 'model/User', 'model/storage', 'noties', 'text!tpl/admin/newsEdit.pug', 'css!style/admin/newsEdit',
-    'jquery-plugins/redactor/redactor.min', 'jquery-plugins/redactor/lang/ru', 'css!style/jquery/redactor/redactor',
-    'bs/ext/datetimepicker/datetimepicker',
+    'trumbowyg', 'css!style/trumbowyg/trumbowyg.css', 'bs/ext/datetimepicker/datetimepicker',
 ], function (_, $, Browser, Utils, socket, P, ko, koMapping, Cliche, globalVM, User, storage, noties, pug) {
     'use strict';
 
-    const redactorOptions = {
-        lang: 'ru',
-        buttons: [
+    const trumbowygOptions = {
+        lang: P.settings.lang,
+        imageWidthModalEdit: true,
+        svgPath: '/img/trumbowyg/icons.svg',
+        /*buttons: [
             'html', 'formatting', 'bold', 'italic', 'underline', 'deleted', 'unorderedlist', 'orderedlist',
             'outdent', 'indent', 'image', 'video', 'file', 'table', 'link', 'alignment', '|',
             'horizontalrule',
-        ],
+        ],*/
     };
 
     return Cliche.extend({
@@ -39,7 +40,14 @@ define([
                 nocomments: false,
             });
 
-            this.$dom.find('textarea#newsPrimary').redactor(redactorOptions);
+
+            if (trumbowygOptions.lang !== 'en') {
+                require([`trumbowyg-langs/${trumbowygOptions.lang}.min`], () => {
+                   this.$dom.find('textarea#newsPrimary').trumbowyg(trumbowygOptions);
+                });
+            } else {
+                this.$dom.find('textarea#newsPrimary').trumbowyg(trumbowygOptions);
+            }
             this.$dom.find('#newsPdate').datetimepicker({ defaultDate: new Date(), collapse: false });
 
             this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandler, this);
@@ -57,7 +65,7 @@ define([
             this.showing = false;
         },
         localDestroy: function (destroy) {
-            this.$dom.find('textarea#newsPrimarynewsPrimary').redactor('destroy');
+            this.$dom.find('textarea#newsPrimarynewsPrimary').trumbowyg('destroy');
             this.$dom.find('#newsPdate').data('DateTimePicker').disable();
             this.noticeOff();
             this.tDateOff();
@@ -80,10 +88,9 @@ define([
         },
         //TODO: проверить флоу с переходом на другие новости
         resetData: function () {
-            const primaryRedactor = this.$dom.find('textarea#newsPrimary').redactor('getObject');
+            this.$dom.find('textarea#newsPrimary').trumbowyg('empty');
             const pickerP = this.$dom.find('#newsPdate').data('DateTimePicker');
 
-            primaryRedactor.set(primaryRedactor.opts.emptyHtml);
             pickerP.date(new Date());
             pickerP.show();
             this.noticeOff();
@@ -100,14 +107,13 @@ define([
             }, this.news);
         },
         fillData: function () {
-            const primaryRedactor = this.$dom.find('textarea#newsPrimary').redactor('getObject');
             const primaryTxt = this.news.txt();
             const pickerP = this.$dom.find('#newsPdate').data('DateTimePicker');
 
             pickerP.date(new Date(this.news.pdate() || Date.now()));
 
             if (primaryTxt) {
-                primaryRedactor.set(primaryTxt);
+                this.$dom.find('textarea#newsPrimary').trumbowyg('html', primaryTxt);
             }
 
             if (this.news.notice()) {
@@ -134,14 +140,12 @@ define([
         },
         noticeOn: function () {
             this.noticeExists(true);
-            this.$dom.find('textarea#newsNotice').redactor(redactorOptions).redactor('set', this.news.notice());
+            this.$dom.find('textarea#newsNotice').trumbowyg(trumbowygOptions).trumbowyg('html', this.news.notice());
         },
         noticeOff: function () {
             if (this.noticeExists()) {
-                const noticeRedactor = this.$dom.find('textarea#newsNotice').redactor('getObject');
-
-                this.news.notice(noticeRedactor.get());
-                noticeRedactor.destroy();
+                this.news.notice(this.$dom.find('textarea#newsNotice').trumbowyg('html'));
+                this.$dom.find('textarea#newsNotice').trumbowyg('destroy');
                 this.noticeExists(false);
             }
         },
@@ -185,13 +189,13 @@ define([
             }
 
             if (this.noticeExists()) {
-                saveData.notice = this.$dom.find('textarea#newsNotice').redactor('get');
+                saveData.notice = this.$dom.find('textarea#newsNotice').trumbowyg('html');
             } else {
                 delete saveData.notice;
             }
 
             saveData.pdate = this.$dom.find('#newsPdate').data('DateTimePicker').date().toDate();
-            saveData.txt = this.$dom.find('textarea#newsPrimary').redactor('get');
+            saveData.txt = this.$dom.find('textarea#newsPrimary').trumbowyg('html');
 
             socket.run('admin.saveOrCreateNews', saveData, true)
                 .then(function (data) {
