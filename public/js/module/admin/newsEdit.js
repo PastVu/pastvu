@@ -6,7 +6,7 @@
 define([
     'underscore', 'jquery', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche',
     'globalVM', 'model/User', 'model/storage', 'noties', 'text!tpl/admin/newsEdit.pug', 'css!style/admin/newsEdit',
-    'trumbowyg', 'css!style/trumbowyg/trumbowyg.css', 'bs/ext/datetimepicker/datetimepicker',
+    'trumbowyg', 'css!style/trumbowyg/trumbowyg.css', 'css!style/trumbowyg/trumbowyg.table.css', 'bs/ext/datetimepicker/datetimepicker',
 ], function (_, $, Browser, Utils, socket, P, ko, koMapping, Cliche, globalVM, User, storage, noties, pug) {
     'use strict';
 
@@ -14,12 +14,30 @@ define([
         lang: P.settings.lang,
         imageWidthModalEdit: true,
         svgPath: '/img/trumbowyg/icons.svg',
-        /*buttons: [
-            'html', 'formatting', 'bold', 'italic', 'underline', 'deleted', 'unorderedlist', 'orderedlist',
-            'outdent', 'indent', 'image', 'video', 'file', 'table', 'link', 'alignment', '|',
-            'horizontalrule',
-        ],*/
+        btns: [
+            ['viewHTML'],
+            ['undo', 'redo'], // Only supported in Blink browsers
+            ['formatting'],
+            ['strong', 'em', 'del'],
+            ['superscript', 'subscript'],
+            ['link'],
+            ['insertImage'],
+            ['noembed'],
+            ['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull'],
+            ['unorderedList', 'orderedList'],
+            ['indent', 'outdent'],
+            ['table'],
+            ['horizontalRule'],
+            ['removeformat'],
+            ['fullscreen'],
+        ],
     };
+
+    const trumbowygAddons = [
+        'trumbowyg-plugins/indent/trumbowyg.indent.min',
+        'trumbowyg-plugins/table/trumbowyg.table.min',
+        'trumbowyg-plugins/noembed/trumbowyg.noembed.min',
+    ];
 
     return Cliche.extend({
         pug: pug,
@@ -42,12 +60,13 @@ define([
 
 
             if (trumbowygOptions.lang !== 'en') {
-                require([`trumbowyg-langs/${trumbowygOptions.lang}.min`], () => {
-                   this.$dom.find('textarea#newsPrimary').trumbowyg(trumbowygOptions);
-                });
-            } else {
-                this.$dom.find('textarea#newsPrimary').trumbowyg(trumbowygOptions);
+                trumbowygAddons.push(`trumbowyg-langs/${trumbowygOptions.lang}.min`);
             }
+
+            require(trumbowygAddons, () => {
+                this.$dom.find('textarea#newsPrimary').trumbowyg(trumbowygOptions);
+            });
+
             this.$dom.find('#newsPdate').datetimepicker({ defaultDate: new Date(), collapse: false });
 
             this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandler, this);
@@ -89,6 +108,7 @@ define([
         //TODO: проверить флоу с переходом на другие новости
         resetData: function () {
             this.$dom.find('textarea#newsPrimary').trumbowyg('empty');
+
             const pickerP = this.$dom.find('#newsPdate').data('DateTimePicker');
 
             pickerP.date(new Date());
