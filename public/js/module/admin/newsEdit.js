@@ -21,7 +21,7 @@ define([
                 ico: 'justifyLeft',
             },
             format: {
-                dropdown: ['del', 'superscript', 'subscript'],
+                dropdown: ['del', 'underline', 'superscript', 'subscript'],
                 ico: 'del',
             },
         },
