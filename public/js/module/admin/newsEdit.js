@@ -17,7 +17,7 @@ define([
         btns: [
             ['viewHTML'],
             ['undo', 'redo'], // Only supported in Blink browsers
-            ['formatting'],
+            ['formatting', 'fontsize'],
             ['strong', 'em', 'del'],
             ['superscript', 'subscript'],
             ['link'],
@@ -40,6 +40,7 @@ define([
         'jquery-plugins/jquery-resizable.min', // Required for trumbowyg.resizimg.min
         'trumbowyg-plugins/resizimg/trumbowyg.resizimg.min',
         'trumbowyg-plugins/cleanpaste/trumbowyg.cleanpaste.min',
+        'trumbowyg-plugins/fontsize/trumbowyg.fontsize.min',
     ];
 
     return Cliche.extend({
