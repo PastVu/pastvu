@@ -14,16 +14,26 @@ define([
         lang: P.settings.lang,
         imageWidthModalEdit: true,
         svgPath: '/img/trumbowyg/icons.svg',
+        btnsDef: {
+            align: {
+                dropdown: ['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull'],
+                ico: 'justifyLeft',
+            },
+            format: {
+                dropdown: ['del', 'superscript', 'subscript'],
+                ico: 'del',
+            },
+        },
         btns: [
             ['viewHTML'],
-            ['undo', 'redo'], // Only supported in Blink browsers
-            ['formatting', 'fontsize'],
-            ['strong', 'em', 'del'],
-            ['superscript', 'subscript'],
+            ['undo', 'redo'],
+            ['formatting'],
+            ['strong', 'em', 'format'],
+            ['fontsize'],
             ['link'],
             ['insertImage'],
             ['noembed'],
-            ['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull'],
+            ['align'],
             ['unorderedList', 'orderedList'],
             ['indent', 'outdent'],
             ['table'],
