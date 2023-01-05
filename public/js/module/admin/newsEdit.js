@@ -6,7 +6,8 @@
 define([
     'underscore', 'jquery', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche',
     'globalVM', 'model/User', 'model/storage', 'noties', 'text!tpl/admin/newsEdit.pug', 'css!style/admin/newsEdit',
-    'trumbowyg', 'css!style/trumbowyg/trumbowyg.css', 'css!style/trumbowyg/trumbowyg.table.css', 'bs/ext/datetimepicker/datetimepicker',
+    'trumbowyg', 'css!style/trumbowyg/trumbowyg.css', 'css!style/trumbowyg/trumbowyg.table.css', 'css!style/trumbowyg/trumbowyg.colors.css',
+    'bs/ext/datetimepicker/datetimepicker',
 ], function (_, $, Browser, Utils, socket, P, ko, koMapping, Cliche, globalVM, User, storage, noties, pug) {
     'use strict';
 
@@ -30,6 +31,7 @@ define([
             ['formatting'],
             ['strong', 'em', 'format'],
             ['fontsize'],
+            ['foreColor', 'backColor'],
             ['link'],
             ['insertImage'],
             ['noembed'],
@@ -51,6 +53,7 @@ define([
         'trumbowyg-plugins/resizimg/trumbowyg.resizimg.min',
         'trumbowyg-plugins/cleanpaste/trumbowyg.cleanpaste.min',
         'trumbowyg-plugins/fontsize/trumbowyg.fontsize.min',
+        'trumbowyg-plugins/colors/trumbowyg.colors.min',
     ];
 
     return Cliche.extend({
