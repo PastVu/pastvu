@@ -27,7 +27,7 @@ define([
         },
         btns: [
             ['viewHTML'],
-            ['undo', 'redo'],
+            ['historyUndo', 'historyRedo'],
             ['formatting'],
             ['strong', 'em', 'format'],
             ['fontsize'],
@@ -46,14 +46,15 @@ define([
     };
 
     const trumbowygAddons = [
+        'trumbowyg-plugins/cleanpaste/trumbowyg.cleanpaste.min',
+        'trumbowyg-plugins/colors/trumbowyg.colors.min',
+        'trumbowyg-plugins/fontsize/trumbowyg.fontsize.min',
+        'trumbowyg-plugins/history/trumbowyg.history.min',
         'trumbowyg-plugins/indent/trumbowyg.indent.min',
-        'trumbowyg-plugins/table/trumbowyg.table.min',
         'trumbowyg-plugins/noembed/trumbowyg.noembed.min',
         'jquery-plugins/jquery-resizable.min', // Required for trumbowyg.resizimg.min
         'trumbowyg-plugins/resizimg/trumbowyg.resizimg.min',
-        'trumbowyg-plugins/cleanpaste/trumbowyg.cleanpaste.min',
-        'trumbowyg-plugins/fontsize/trumbowyg.fontsize.min',
-        'trumbowyg-plugins/colors/trumbowyg.colors.min',
+        'trumbowyg-plugins/table/trumbowyg.table.min',
     ];
 
     return Cliche.extend({
