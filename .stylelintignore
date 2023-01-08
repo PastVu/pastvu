@@ -2,6 +2,7 @@
 public/style/bs/**
 public/style/bsext/**
 public/style/jquery/**
+public/style/trumbowyg/**
 public/style/leaflet/**
 
 # Exclude fonts
