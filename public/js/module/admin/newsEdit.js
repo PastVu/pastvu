@@ -6,19 +6,56 @@
 define([
     'underscore', 'jquery', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche',
     'globalVM', 'model/User', 'model/storage', 'noties', 'text!tpl/admin/newsEdit.pug', 'css!style/admin/newsEdit',
-    'jquery-plugins/redactor/redactor.min', 'jquery-plugins/redactor/lang/ru', 'css!style/jquery/redactor/redactor',
+    'trumbowyg', 'css!style/trumbowyg/trumbowyg.css', 'css!style/trumbowyg/trumbowyg.table.css', 'css!style/trumbowyg/trumbowyg.colors.css',
     'bs/ext/datetimepicker/datetimepicker',
 ], function (_, $, Browser, Utils, socket, P, ko, koMapping, Cliche, globalVM, User, storage, noties, pug) {
     'use strict';
 
-    const redactorOptions = {
-        lang: 'ru',
-        buttons: [
-            'html', 'formatting', 'bold', 'italic', 'underline', 'deleted', 'unorderedlist', 'orderedlist',
-            'outdent', 'indent', 'image', 'video', 'file', 'table', 'link', 'alignment', '|',
-            'horizontalrule',
+    const trumbowygOptions = {
+        lang: P.settings.lang,
+        imageWidthModalEdit: true,
+        svgPath: '/img/trumbowyg/icons.svg',
+        btnsDef: {
+            align: {
+                dropdown: ['justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull'],
+                ico: 'justifyLeft',
+            },
+            format: {
+                dropdown: ['del', 'underline', 'superscript', 'subscript'],
+                ico: 'del',
+            },
+        },
+        btns: [
+            ['viewHTML'],
+            ['historyUndo', 'historyRedo'],
+            ['formatting'],
+            ['strong', 'em', 'format'],
+            ['fontsize'],
+            ['foreColor', 'backColor'],
+            ['link'],
+            ['insertImage'],
+            ['noembed'],
+            ['align'],
+            ['unorderedList', 'orderedList'],
+            ['indent', 'outdent'],
+            ['table'],
+            ['horizontalRule'],
+            ['removeformat'],
+            ['fullscreen'],
         ],
     };
+
+    const trumbowygAddons = [
+        'trumbowyg-plugins/cleanpaste/trumbowyg.cleanpaste.min',
+        'trumbowyg-plugins/colors/trumbowyg.colors.min',
+        'trumbowyg-plugins/fontsize/trumbowyg.fontsize.min',
+        'trumbowyg-plugins/history/trumbowyg.history.min',
+        'trumbowyg-plugins/indent/trumbowyg.indent.min',
+        'trumbowyg-plugins/noembed/trumbowyg.noembed.min',
+        'jquery-plugins/jquery-resizable.min', // Required for trumbowyg.resizimg.min
+        'trumbowyg-plugins/resizimg/trumbowyg.resizimg.min',
+        'trumbowyg-plugins/table/trumbowyg.table.min',
+    ];
 
     return Cliche.extend({
         pug: pug,
@@ -39,14 +76,21 @@ define([
                 nocomments: false,
             });
 
-            this.$dom.find('textarea#newsPrimary').redactor(redactorOptions);
-            this.$dom.find('#newsPdate').datetimepicker({ defaultDate: new Date(), collapse: false });
 
-            this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandler, this);
-            this.routeHandler();
+            if (trumbowygOptions.lang !== 'en') {
+                trumbowygAddons.push(`trumbowyg-langs/${trumbowygOptions.lang}.min`);
+            }
 
-            ko.applyBindings(globalVM, this.$dom[0]);
-            this.show();
+            require(trumbowygAddons, () => {
+                this.$dom.find('textarea#newsPrimary').trumbowyg(trumbowygOptions);
+                this.$dom.find('#newsPdate').datetimepicker({ defaultDate: new Date(), collapse: false });
+
+                this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandler, this);
+                this.routeHandler();
+
+                ko.applyBindings(globalVM, this.$dom[0]);
+                this.show();
+            });
         },
         show: function () {
             globalVM.func.showContainer(this.$container);
@@ -57,7 +101,7 @@ define([
             this.showing = false;
         },
         localDestroy: function (destroy) {
-            this.$dom.find('textarea#newsPrimarynewsPrimary').redactor('destroy');
+            this.$dom.find('textarea#newsPrimarynewsPrimary').trumbowyg('destroy');
             this.$dom.find('#newsPdate').data('DateTimePicker').disable();
             this.noticeOff();
             this.tDateOff();
@@ -80,10 +124,10 @@ define([
         },
         //TODO: проверить флоу с переходом на другие новости
         resetData: function () {
-            const primaryRedactor = this.$dom.find('textarea#newsPrimary').redactor('getObject');
+            this.$dom.find('textarea#newsPrimary').trumbowyg('empty');
+
             const pickerP = this.$dom.find('#newsPdate').data('DateTimePicker');
 
-            primaryRedactor.set(primaryRedactor.opts.emptyHtml);
             pickerP.date(new Date());
             pickerP.show();
             this.noticeOff();
@@ -100,14 +144,13 @@ define([
             }, this.news);
         },
         fillData: function () {
-            const primaryRedactor = this.$dom.find('textarea#newsPrimary').redactor('getObject');
             const primaryTxt = this.news.txt();
             const pickerP = this.$dom.find('#newsPdate').data('DateTimePicker');
 
             pickerP.date(new Date(this.news.pdate() || Date.now()));
 
             if (primaryTxt) {
-                primaryRedactor.set(primaryTxt);
+                this.$dom.find('textarea#newsPrimary').trumbowyg('html', primaryTxt);
             }
 
             if (this.news.notice()) {
@@ -134,14 +177,12 @@ define([
         },
         noticeOn: function () {
             this.noticeExists(true);
-            this.$dom.find('textarea#newsNotice').redactor(redactorOptions).redactor('set', this.news.notice());
+            this.$dom.find('textarea#newsNotice').trumbowyg(trumbowygOptions).trumbowyg('html', this.news.notice());
         },
         noticeOff: function () {
             if (this.noticeExists()) {
-                const noticeRedactor = this.$dom.find('textarea#newsNotice').redactor('getObject');
-
-                this.news.notice(noticeRedactor.get());
-                noticeRedactor.destroy();
+                this.news.notice(this.$dom.find('textarea#newsNotice').trumbowyg('html'));
+                this.$dom.find('textarea#newsNotice').trumbowyg('destroy');
                 this.noticeExists(false);
             }
         },
@@ -185,13 +226,13 @@ define([
             }
 
             if (this.noticeExists()) {
-                saveData.notice = this.$dom.find('textarea#newsNotice').redactor('get');
+                saveData.notice = this.$dom.find('textarea#newsNotice').trumbowyg('html');
             } else {
                 delete saveData.notice;
             }
 
             saveData.pdate = this.$dom.find('#newsPdate').data('DateTimePicker').date().toDate();
-            saveData.txt = this.$dom.find('textarea#newsPrimary').redactor('get');
+            saveData.txt = this.$dom.find('textarea#newsPrimary').trumbowyg('html');
 
             socket.run('admin.saveOrCreateNews', saveData, true)
                 .then(function (data) {

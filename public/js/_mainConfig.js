@@ -17,14 +17,9 @@ requirejs.config({
             ],
             exports: 'Highcharts',
         },
-        'jquery-plugins/redactor/redactor.min': {
+        'trumbowyg': {
             deps: [
                 'jquery',
-            ],
-        },
-        'jquery-plugins/redactor/lang/ru': {
-            deps: [
-                'jquery-plugins/redactor/redactor.min',
             ],
         },
     },
@@ -68,6 +63,10 @@ requirejs.config({
         'leaflet-plugins': 'lib/leaflet/plugins',
         'leaflet-extends': 'lib/leaflet/extends',
         'turf': 'lib/turf.min',
+
+        'trumbowyg': 'lib/trumbowyg/trumbowyg.min',
+        'trumbowyg-plugins': 'lib/trumbowyg/plugins',
+        'trumbowyg-langs': 'lib/trumbowyg/langs',
 
         'highstock': 'lib/highstock',
 
