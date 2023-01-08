@@ -83,15 +83,14 @@ define([
 
             require(trumbowygAddons, () => {
                 this.$dom.find('textarea#newsPrimary').trumbowyg(trumbowygOptions);
+                this.$dom.find('#newsPdate').datetimepicker({ defaultDate: new Date(), collapse: false });
+
+                this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandler, this);
+                this.routeHandler();
+
+                ko.applyBindings(globalVM, this.$dom[0]);
+                this.show();
             });
-
-            this.$dom.find('#newsPdate').datetimepicker({ defaultDate: new Date(), collapse: false });
-
-            this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandler, this);
-            this.routeHandler();
-
-            ko.applyBindings(globalVM, this.$dom[0]);
-            this.show();
         },
         show: function () {
             globalVM.func.showContainer(this.$container);
