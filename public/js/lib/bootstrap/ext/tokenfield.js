@@ -7,7 +7,7 @@
 (function (factory) {
   if (typeof define === 'function' && define.amd) {
     // AMD. Register as an anonymous module.
-    define(['jquery'], factory);
+    define(['jquery', 'jquery-plugins/typeahead.bundle', 'css!style/bsext/tokenfield'], factory);
   } else if (typeof exports === 'object') {
     // For CommonJS and CommonJS-like environments where a window with jQuery
     // is present, execute the factory with the jQuery instance from the window object
@@ -444,6 +444,7 @@
         })
         .on('typeahead:selected typeahead:autocompleted', function (e, datum, dataset) {
           // Create token
+          datum.value = _self.$input.typeahead('val'); // https://github.com/sliptree/bootstrap-tokenfield/pull/128
           if (_self.createToken( datum )) {
             _self.$input.typeahead('val', '')
             if (_self.$input.data( 'edit' )) {
