@@ -3,6 +3,7 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
+/* global Bloodhound: true */
 define([
     'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
     'model/storage', 'noties', 'text!tpl/region/select.pug', 'css!style/region/select', 'bs/ext/tokenfield',
@@ -264,33 +265,61 @@ define([
             }, {});
         },
         createTokenfield: function () {
+            const engine = new Bloodhound({
+                local: this.regionsTypehead, /*[{cid: 2, title: 'США', tokens: ['2', 'USA', 'США']}]*/
+                datumTokenizer: function (d) {
+                    // Join all tokens using space and tokenise using whitespace.
+                    return Bloodhound.tokenizers.whitespace(d.tokens.join(' '));
+                },
+                queryTokenizer: Bloodhound.tokenizers.whitespace,
+                identify: function (obj) {
+                    return obj.cid;
+                }, // Unique id.
+            });
+
+            engine.initialize();
+
             this.$dom.find('.regionstkn')
                 .tokenfield({
-                    allowDuplicates: false,
                     createTokensOnBlur: false,
                     minLength: 1,
                     minWidth: 200,
+                    limit: 10,
                     tokens: this.selectedInitTkns,
-                    typeahead: {
+                    typeahead: [{
+                        highlight: true,
+                    }, {
                         name: 'regions',
-                        valueKey: 'title',
+                        displayKey: 'title',
                         limit: 10,
-                        template: function (context) {
-                            const title = '<p>' + context.title + '</p>';
-                            const parentTitle = context.parentTitle ? "<p style='color: #aaa; font-size 0.9em'>" + context.parentTitle + '</p>' : '';
+                        templates: {
+                            'suggestion': function (context) {
+                                const title = '<p>' + context.title + '</p>';
 
-                            return title + parentTitle;
+                                return title + (context.parentTitle ? "<p style='color: #aaa; font-size 0.9em'>" + context.parentTitle + '</p>' : '');
+                            },
                         },
-                        local: this.regionsTypehead, /*[{title: 'США', tokens: ['USA', 'США', 'Соединенные Штаты Америки']}]*/
-                    },
+                        source: engine.ttAdapter(),
+                    }],
                 })
-                .on('afterCreateToken', this.onCreateToken.bind(this)) //При создании токена добавляем выбор
-                .on('beforeEditToken removeToken', this.onRemoveToken.bind(this)); //При удалении или редиктировании токена удаляем выбор
+                .on('tokenfield:createdtoken', this.onCreateToken.bind(this)) //При создании токена добавляем выбор
+                .on('tokenfield:edittoken tokenfield:removedtoken', this.onRemoveToken.bind(this)) //При удалении или редиктировании токена удаляем выбор
+                .on('tokenfield:createtoken', function (e) {
+                    // Prevent duplicated tokens.
+                    const existingTokens = $(this).tokenfield('getTokens');
+
+                    $.each(existingTokens, function (index, token) {
+                        if (token.value === e.attrs.value) {
+                            e.preventDefault();
+                        }
+                    });
+                    $(this).tokenfield('setInput', '');
+                });
         },
         // Событие создания токена. Вызовется как при создании в поле,
         // так и при удалении из дерева (потому что при этом пересоздаются неудаляемые токены).
         onCreateToken: function (e) {
-            const title = e.token.value;
+            const title = e.attrs.value;
             const region = this.regionsHashByTitle[title];
 
             if (region && region.exists) {
@@ -309,7 +338,7 @@ define([
         },
         //Событие удаления токена непосредственно из поля
         onRemoveToken: function (e) {
-            const title = e.token.value;
+            const title = e.attrs.value;
             const region = this.regionsHashByTitle[title];
 
             if (region && region.exists) {
@@ -463,14 +492,14 @@ define([
                 // Due to some bug in tokenfield/typehead we have typehead list created only once and never removed,
                 // so track region existence
                 region.exists = false;
+                cid = region.cid;
                 this.regionsTypehead.push({
+                    cid: cid,
                     title: region.title_local,
                     parentTitle: region.parent && region.parent.title_local,
                     tokens: [String(cid), region.title_local, region.title_en],
                 });
                 this.regionsHashByTitle[region.title_local] = region;
-
-                cid = region.cid;
 
                 const proceed = !filterByCids || parentsCidsFilterHash[cid] === true ||
                     region.level > 0 && parentsCidsFilterHash[region.parents[region.level - 1]] === true;
