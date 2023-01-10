@@ -22,6 +22,12 @@ requirejs.config({
                 'jquery',
             ],
         },
+        'tokenfield': {
+            deps: [
+                'jquery',
+                'jquery-plugins/typeahead.bundle',
+            ],
+        },
     },
     map: {
         '*': {
