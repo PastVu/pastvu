@@ -32,7 +32,8 @@ if photos.length
     p(style="margin-bottom: 2px;")
         strong Фотографии:
     +noticeLi(photos, '/p/')
-p
-    | Управлять подписанными материалами вы можете на странице подписок: <a href='#{origin + '/u/' + user.login + '/subscriptions'}' target='_blank'>#{config.client.host + '/u/' + user.login + '/subscriptions'}</a>
-    br
-    | Задать интервал уведомления вы можете на странице настроек: <a href='#{origin + '/u/' + user.login + '/settings'}' target='_blank'>#{config.client.host + '/u/' + user.login + '/settings'}</a>
+div(style="border-top: 1px solid #eee; border-bottom: 1px solid #fff; margin-top: 1em;")
+    p(style="font-size: smaller; margin-top: 0.5em;")
+        | Управлять подписанными материалами вы можете на странице подписок: <a href='#{origin + '/u/' + user.login + '/subscriptions'}' target='_blank'>#{config.client.host + '/u/' + user.login + '/subscriptions'}</a>
+        br
+        | Задать интервал уведомлений или отключить их вы можете на странице настроек: <a href='#{origin + '/u/' + user.login + '/settings'}' target='_blank'>#{config.client.host + '/u/' + user.login + '/settings'}</a>
