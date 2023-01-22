@@ -23,7 +23,7 @@ mixin noticeLi(arr, path)
 
 include head
 - var origin = config.client.origin
-p На момент отправки данного уведомления в подписанных вами темах было добавлено следующее количество комментариев:
+p На момент отправки данного уведомления в темах, на которые вы подписаны, было добавлено следующее количество комментариев:
 if news.length
     p(style="margin-bottom: 2px;")
         strong Новости:
@@ -34,6 +34,6 @@ if photos.length
     +noticeLi(photos, '/p/')
 div(style="border-top: 1px solid #eee; border-bottom: 1px solid #fff; margin-top: 1em;")
     p(style="font-size: smaller; margin-top: 0.5em;")
-        | Управлять подписанными материалами вы можете на странице подписок: <a href='#{origin + '/u/' + user.login + '/subscriptions'}' target='_blank'>#{config.client.host + '/u/' + user.login + '/subscriptions'}</a>
+        | Управлять материалами, на которые вы подписаны, можно на странице подписок: <a href='#{origin + '/u/' + user.login + '/subscriptions'}' target='_blank'>#{config.client.host + '/u/' + user.login + '/subscriptions'}</a>
         br
         | Задать интервал уведомлений или отключить их вы можете на странице настроек: <a href='#{origin + '/u/' + user.login + '/settings'}' target='_blank'>#{config.client.host + '/u/' + user.login + '/settings'}</a>
