@@ -39,6 +39,9 @@ const requireBuildConfig = {
     inlineText: true, //Включать ли в модули контент, загруженный плагином text
     logLevel: 0,
     mainConfigFile: 'public/js/_mainConfig.js',
+    paths: {
+        'lib/geocoordsparser': 'empty:', // Exclude geocoordsparser processing, as it fails on spread syntax (https://github.com/requirejs/r.js/issues/971)
+    },
     modules: [
         {
             //Виртуальный модуль, содержащий общие модули, которые надо исключать из частных модулей
