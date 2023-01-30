@@ -43,6 +43,7 @@ describe('utils', () => {
                 ['replace photo path', '/p/123456', '<a target="_blank" class="sharpPhoto" href="/p/123456">#123456</a>'],
                 ['replace photo hash', '#123456', '<a target="_blank" class="sharpPhoto" href="/p/123456">#123456</a>'],
                 ['replace encoded url', 'https://ru.wikipedia.org/wiki/%D0%A4%D0%BE%D1%82%D0%BE%D0%B3%D1%80%D0%B0%D1%84%D0%B8%D1%8F', '<a href="https://ru.wikipedia.org/wiki/Фотография" rel="nofollow noopener" target="_blank">https://ru.wikipedia.org/wiki/Фотография</a>'],
+                ['replace encoded url with space', 'https://forum.vgd.ru/post/14/127242/p4009576.htm?hlt=%D0%BD%D0%B8%D0%BA%D0%BE%D0%BB%D0%B0%D0%B5%D0%B2%D1%81%D0%BA%D0%B0%D1%8F+%D1%81%D0%BB%D0%BE%D0%B1#pp4009576', '<a href="https://forum.vgd.ru/post/14/127242/p4009576.htm?hlt=николаевская+слоб#pp4009576" rel="nofollow noopener" target="_blank">https://forum.vgd.ru/post/14/127242/p4009576.htm?hlt=николаевская+слоб#pp4009576</a>'],
                 ['shorten internal url', `${origin}/u/klimashkin/photo`, '<a target="_blank" class="innerLink" href="/u/klimashkin/photo">/u/klimashkin/photo</a>'],
                 ['replace internal path', '/u/klimashkin/photo', '<a target="_blank" class="innerLink" href="/u/klimashkin/photo">/u/klimashkin/photo</a>'],
                 ['replace protected photo url', `${origin}/_pr/a/b/c/abc.jpg`, '<a target="_blank" class="innerLink" href="/_p/a/b/c/abc.jpg">/_p/a/b/c/abc.jpg</a>'],

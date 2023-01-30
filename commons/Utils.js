@@ -313,9 +313,10 @@ Utils.linkifyUrlString = function (text, target, className) {
         }
 
         try {
-            // Decode URI, e.g. to make http://ru.wikipedia.org/wiki/%D0%A1%D0%B5%D0%BA%D1%81 url readable.
-            url = decodeURI(url);
-            linkText = decodeURI(linkText);
+            // Decode URI, e.g. to make http://ru.wikipedia.org/wiki/%D0%A1%D0%B5%D0%BA%D1%81 url readable,
+            // then replace spaces with + sign, so we won't loose part of URL on consequent editing.
+            url = decodeURI(url).replace(/\s+/g, '+');
+            linkText = decodeURI(linkText).replace(/\s+/g, '+');
 
             return `<a href="${url}" rel="nofollow noopener"${target}${className}>${linkText}</a>${append}`;
         } catch (err) {
