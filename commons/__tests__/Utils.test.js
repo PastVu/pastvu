@@ -7,6 +7,7 @@ import Utils from '../Utils';
 import config from '../../config';
 
 const origin = config.client.origin;
+const host = config.client.host;
 
 /**
  * Test Utils.inputIncomingParse output matches expected.
@@ -67,6 +68,7 @@ describe('utils', () => {
                 ['replace url', 'https://jestjs.io/docs/expect#expectassertionsnumber', '<a href="https://jestjs.io/docs/expect#expectassertionsnumber" rel="nofollow noopener" target="_blank">https://jestjs.io/docs/expect#expectassertionsnumber</a>'],
                 ['replace www url', 'www.moodle.org', '<a href="http://www.moodle.org" rel="nofollow noopener" target="_blank">www.moodle.org</a>'],
                 ['replace url with params', 'https://jestjs.io/docs/expect?show=all&filter=1', '<a href="https://jestjs.io/docs/expect?show=all&filter=1" rel="nofollow noopener" target="_blank">https://jestjs.io/docs/expect?show=all&filter=1</a>'],
+                ['replace subdomain url', `https://docs.${host}/rules`, `<a href="https://docs.${host}/rules" rel="nofollow noopener" target="_blank">https://docs.${host}/rules</a>`],
             ];
 
             it.each(testData)('%s', testInputIncomingParse); // eslint-disable-line jest/expect-expect

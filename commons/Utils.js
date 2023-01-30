@@ -356,7 +356,7 @@ Utils.inputIncomingParse = (function () {
 
         //Все внутрипортальные ссылки оставляем без доменного имени, от корня
         //Например, http://domain.com/u/klimashkin/photo -> /u/klimashkin/photo
-        result = result.replace(new RegExp(`(\\b)(?:https?://)?(?:www.)?${host}(/[-A-Z0-9+&@#\\/%?=~_|!:,.;]*[-A-Z0-9+&@#\\/%=~_|])`, 'gim'), '$1$2');
+        result = result.replace(new RegExp(`(\\b)(?:https?://)?(?<=[^.|www.])${host}(/[-A-Z0-9+&@#\\/%?=~_|!:,.;]*[-A-Z0-9+&@#\\/%=~_|])`, 'gim'), '$1$2');
 
         // Replace links to protected/covered photos with regular link
         // For example, /_pr/a/b/c/abc.jpg -> /_p/a/b/c/abc.jpg
