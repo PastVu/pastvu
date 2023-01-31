@@ -88,14 +88,7 @@ define([
                         if (_.isEmpty(value)) {
                             this.delPointGeo();
                         } else {
-                            inputGeo = value
-                                .split(',')
-                                .filter(function (val) {
-                                    val = val.trim();
-
-                                    return val && val[0] !== '.' && val[val.length - 1] !== '.';
-                                })
-                                .map(Number);
+                            inputGeo = Utils.geo.parseCoordinates(value);
 
                             if (Utils.geo.checkLatLng(inputGeo) && !_.isEqual(inputGeo, geo)) {
                                 inputGeo = Utils.geo.geoToPrecision(inputGeo);

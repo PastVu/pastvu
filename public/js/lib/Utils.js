@@ -8,7 +8,7 @@
  *
  * @author Klimashkin
  */
-define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/plugins/extends'], function ($, _, _s) {
+define(['jquery', 'underscore', 'underscore.string', 'lib/geocoordsparser', 'lib/jsuri', 'lib/jquery/plugins/extends'], function ($, _, _s, convert) {
     const Utils = {
 
         /**
@@ -1046,6 +1046,38 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
                 return [bbox[1], bbox[0], bbox[3], bbox[2]];
             }
 
+            /**
+             * @param {string} coordsString string with geo coordinates
+             * @returns {(Array|undefined)} Coordinates as float numbers [latitude, longitude] or undef when a string has a bad format
+             */
+            function parseCoordinates(coordsString) {
+                const n_pat = /СЕВЕР|СЕВ|с\.?\s?ш\.?|(?<= )С/i;
+                const s_pat = /ЮГ|ю\.?\s?ш\.?|Ю/i;
+                const e_pat = /ВОСТОК|в\.?\s?д\.?|В/i;
+                const w_pat = /ЗАПАД|з\.?\s?д\.?|З/i;
+
+                const deg_pat = /Г(Р)?(АД)?/ig;
+                const min_pat = /М(ИН)?(УТ)?/ig;
+                const sec_pat = /С(ЕК)?(УНД)?/ig;
+
+                try {
+                    coordsString = decodeURIComponent(coordsString);
+                } catch (err) {
+                }
+
+                coordsString = coordsString.replace(/градусов/g, 'г');
+                coordsString = coordsString.replace(n_pat, 'N').replace(s_pat, 'S').replace(e_pat, 'E').replace(w_pat, 'W');
+                coordsString = coordsString.replace(deg_pat, 'D').replace(min_pat, 'M').replace(sec_pat, 'S');
+
+                try {
+                    const coord = convert(coordsString, 6);
+
+                    return [coord.decimalLatitude, coord.decimalLongitude];
+                } catch (err) {
+                    return undefined;
+                }
+            }
+
             return {
                 deg2rad: deg2rad,
                 geoToPrecision: geoToPrecision,
@@ -1058,6 +1090,7 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
                 checkbbox: checkbbox,
                 checkbboxLatLng: checkbboxLatLng,
                 bboxReverse: bboxReverse,
+                parseCoordinates: parseCoordinates,
             };
         }()),
 
