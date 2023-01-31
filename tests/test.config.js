@@ -10,6 +10,9 @@ module.exports = function (config, appRequire) {
 
     _.merge(config, {
         env: 'test',
+        client: {
+            hostname: 'test.local',
+        },
         // It is important to flag instance as primary to avoid starting
         // region cache timer, which will prevent Jest from completing.
         primary: true,
