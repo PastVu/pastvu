@@ -75,7 +75,7 @@
         "migrate-mongo": "8.2.2",
         "mime": "2.4.4",
         "moment": "2.29.4",
-        "mongoose": "5.13.10",
+        "mongoose": "5.13.15",
         "ms": "2.1.2",
         "mv": "2.1.1",
         "nodemailer": "6.6.1",
