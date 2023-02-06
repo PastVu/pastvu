@@ -82,14 +82,9 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'globalVM', 'knock
             const input = evt.target;
 
             if (input) {
+                Utils.copyTextToClipboard(input.value);
                 input.select();
             }
-
-            Utils.copyText();
-
-            evt.stopPropagation();
-
-            return false;
         },
         share: function (network) {
             let url;

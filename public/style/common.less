@@ -1100,6 +1100,30 @@ a.disabled:hover {
     color: #070; //#2C852D
 }
 
+.tooltip-inner {
+    color: @MainLigthColor;
+    font-size: @font-size-small;
+    box-shadow: 2px 2px 6px rgba(0, 0, 0, 28%);
+    max-width: 300px;
+    background-color: lighten(@MainDarkColor, 10%);
+}
+
+.tooltip.top .tooltip-arrow {
+    border-top-color: lighten(@MainDarkColor, 10%);
+}
+
+.tooltip.right .tooltip-arrow {
+    border-right-color: lighten(@MainDarkColor, 10%);
+}
+
+.tooltip.bottom .tooltip-arrow {
+    border-bottom-color: lighten(@MainDarkColor, 10%);
+}
+
+.tooltip.left .tooltip-arrow {
+    border-left-color: lighten(@MainDarkColor, 10%);
+}
+
 /*!
  * animate.css -http://daneden.me/animate
  * Version - 3.5.1

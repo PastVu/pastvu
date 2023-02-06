@@ -8,7 +8,7 @@
  *
  * @author Klimashkin
  */
-define(['jquery', 'underscore', 'underscore.string', 'lib/geocoordsparser', 'lib/jsuri', 'lib/jquery/plugins/extends'], function ($, _, _s, convert) {
+define(['jquery', 'underscore', 'underscore.string', 'lib/geocoordsparser', 'lib/jsuri', 'lib/jquery/plugins/extends', 'bs/tooltip'], function ($, _, _s, convert) {
     const Utils = {
 
         /**
@@ -255,41 +255,52 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/geocoordsparser', 'lib
             }
         },
 
-        // Not yet supported
-        copyTextSupported: function () {
-            try {
-                console.log(!!document.execCommand && !!document.queryCommandSupported &&
-                    document.queryCommandSupported('copy') && document.execCommand('copy'));
-            } catch (e) {
-                return false;
+        fallbackCopyTextToClipboard: function (text) {
+            // https://stackoverflow.com/a/33928558/447249
+            if (window.clipboardData && window.clipboardData.setData) {
+                window.clipboardData.setData('Text', text);
+            } else if (document.queryCommandSupported && document.queryCommandSupported('copy')) {
+                const textarea = document.createElement('textarea');
+
+                textarea.textContent = text;
+                textarea.style.position = 'fixed';  // Prevent scrolling to bottom of page in Microsoft Edge.
+                document.body.appendChild(textarea);
+                textarea.select();
+
+                try {
+                    document.execCommand('copy');  // Security exception may be thrown by some browsers.
+                } catch (ex) {
+                    console.error('Could not copy text using execCommand:' + ex.message);
+                } finally {
+                    document.body.removeChild(textarea);
+                }
             }
         },
-        // http://habrahabr.ru/post/256027/
-        copyText: function (element) {
-            let successful = false;
 
-            if (element) {
-                const range = document.createRange();
+        copyTextToClipboard: function (text) {
+            // navigator.clipboard only works if using https (for debugging in chrome://flags
+            // set 'Insecure origins treated as secure')
+            if (!navigator.clipboard) {
+                this.fallbackCopyTextToClipboard(text);
 
-                range.selectNode(element);
-                window.getSelection().addRange(range);
+                return;
             }
 
-            try {
-                // Теперь, когда мы выбрали текст ссылки, выполним команду копирования
-                successful = document.execCommand('copy');
-                console.log('Copy command was ' + (successful ? 'successful' : 'unsuccessful'));
-            } catch (err) {
-                console.log('Oops, unable to copy');
-            }
+            navigator.clipboard.writeText(text).catch(error => {
+                console.error('Could not copy text using navigator.clipboard:' + error);
+            });
+        },
 
-            if (element) {
-                // Снятие выделения - ВНИМАНИЕ: вы должны использовать
-                // removeRange(range) когда это возможно
-                window.getSelection().removeAllRanges();
-            }
+        flashTooltip: function (target, text) {
+            const element = $(target);
+            const origTitle = element.attr('title');
 
-            return successful;
+            element.tooltip({ placement: 'right', trigger: 'manual' }).attr('data-original-title', text).tooltip('show');
+            setTimeout(function () {
+                element.tooltip('destroy');
+                // Restore original title as it seems being cleared.
+                element.attr('title', origTitle);
+            }, 1000);
         },
 
         popupCenter: function (url, title, w, h) {

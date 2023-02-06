@@ -2,6 +2,11 @@
 @import '../bs/variables.less';
 @import '../bs/mixins.less';
 @import '../leaflet/leaflet.less';
+@import '../fonts/material-icons.less';
+
+@iconLocationCopy: 'data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgZmlsbD0iIzAwMDAwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cGF0aCBkPSJNMCAwaDI0djI0SDB6IiBmaWxsPSJub25lIi8+CiAgPHBhdGggZD0iTSAxOS43NTUgOSBDIDE5Ljc1NSAxNC4yNSAxMi43NTUgMjIgMTIuNzU1IDIyIEMgMTIuNzU1IDIyIDExLjg3MSAyMS4yNjggMTAuNjkxIDIwLjA5NyBDIDkuMzQ3IDIxLjkyMSA4LjIyNyAyMy4xNjEgOC4yMjcgMjMuMTYxIEMgOC4yMjcgMjMuMTYxIDEuMjI3IDE1LjQxMSAxLjIyNyAxMC4xNjEgQyAxLjIyNyA2LjI5MSA0LjM1NyAzLjE2MSA4LjIyNyAzLjE2MSBDIDguNDk4IDMuMTYxIDguNzY2IDMuMTc2IDkuMDI5IDMuMjA2IEMgMTAuMTk1IDIuNDU2IDExLjQ4OCAyIDEyLjc1NSAyIEMgMTYuNjI1IDIgMTkuNzU1IDUuMTMgMTkuNzU1IDkgWiBNIDEyLjc1NSAxOC44OCBDIDE0Ljg3NSAxNi4xOSAxNy43NTUgMTEuODggMTcuNzU1IDkgQyAxNy43NTUgNi4yNCAxNS41MTUgNCAxMi43NTUgNCBDIDEyLjQ0NSA0IDEyLjExMyA0LjA0MiAxMS43NjkgNC4xMiBDIDEzLjgzOSA1LjMzNSAxNS4yMjcgNy41ODQgMTUuMjI3IDEwLjE2MSBDIDE1LjIyNyAxMi42MDkgMTMuNzA1IDE1LjYwMSAxMi4wOCAxOC4wOTcgQyAxMi4zMjggMTguMzYzIDEyLjU1NiAxOC42MjQgMTIuNzU1IDE4Ljg4IFogTSA4LjIyNyAxMi42NjEgQyA5LjYwNyAxMi42NjEgMTAuNzI3IDExLjU0MSAxMC43MjcgMTAuMTYxIEMgMTAuNzI3IDguNzgxIDkuNjA3IDcuNjYxIDguMjI3IDcuNjYxIEMgNi44NDcgNy42NjEgNS43MjcgOC43ODEgNS43MjcgMTAuMTYxIEMgNS43MjcgMTEuNTQxIDYuODQ3IDEyLjY2MSA4LjIyNyAxMi42NjEgWiIgc3R5bGU9ImZpbGw6IHJnYigyMjgsIDIyOCwgMjI4KTsiLz4KPC9zdmc+';
+@iconLocationCopyI: 'data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgZmlsbD0iIzAwMDAwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cGF0aCBkPSJNMCAwaDI0djI0SDB6IiBmaWxsPSJub25lIi8+CiAgPHBhdGggZD0iTSAxOS43NTUgOSBDIDE5Ljc1NSAxNC4yNSAxMi43NTUgMjIgMTIuNzU1IDIyIEMgMTIuNzU1IDIyIDExLjg3MSAyMS4yNjggMTAuNjkxIDIwLjA5NyBDIDkuMzQ3IDIxLjkyMSA4LjIyNyAyMy4xNjEgOC4yMjcgMjMuMTYxIEMgOC4yMjcgMjMuMTYxIDEuMjI3IDE1LjQxMSAxLjIyNyAxMC4xNjEgQyAxLjIyNyA2LjI5MSA0LjM1NyAzLjE2MSA4LjIyNyAzLjE2MSBDIDguNDk4IDMuMTYxIDguNzY2IDMuMTc2IDkuMDI5IDMuMjA2IEMgMTAuMTk1IDIuNDU2IDExLjQ4OCAyIDEyLjc1NSAyIEMgMTYuNjI1IDIgMTkuNzU1IDUuMTMgMTkuNzU1IDkgWiBNIDEyLjc1NSAxOC44OCBDIDE0Ljg3NSAxNi4xOSAxNy43NTUgMTEuODggMTcuNzU1IDkgQyAxNy43NTUgNi4yNCAxNS41MTUgNCAxMi43NTUgNCBDIDEyLjQ0NSA0IDEyLjExMyA0LjA0MiAxMS43NjkgNC4xMiBDIDEzLjgzOSA1LjMzNSAxNS4yMjcgNy41ODQgMTUuMjI3IDEwLjE2MSBDIDE1LjIyNyAxMi42MDkgMTMuNzA1IDE1LjYwMSAxMi4wOCAxOC4wOTcgQyAxMi4zMjggMTguMzYzIDEyLjU1NiAxOC42MjQgMTIuNzU1IDE4Ljg4IFogTSA4LjIyNyAxMi42NjEgQyA5LjYwNyAxMi42NjEgMTAuNzI3IDExLjU0MSAxMC43MjcgMTAuMTYxIEMgMTAuNzI3IDguNzgxIDkuNjA3IDcuNjYxIDguMjI3IDcuNjYxIEMgNi44NDcgNy42NjEgNS43MjcgOC43ODEgNS43MjcgMTAuMTYxIEMgNS43MjcgMTEuNTQxIDYuODQ3IDEyLjY2MSA4LjIyNyAxMi42NjEgWiIgc3R5bGU9ImZpbGw6IHJnYigxODIsIDE4NSwgMjAyKTsiLz4KPC9zdmc+';
+@iconLocationCopyH: 'data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgZmlsbD0iIzAwMDAwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cGF0aCBkPSJNMCAwaDI0djI0SDB6IiBmaWxsPSJub25lIi8+CiAgPHBhdGggZD0iTSAxOS43NTUgOSBDIDE5Ljc1NSAxNC4yNSAxMi43NTUgMjIgMTIuNzU1IDIyIEMgMTIuNzU1IDIyIDExLjg3MSAyMS4yNjggMTAuNjkxIDIwLjA5NyBDIDkuMzQ3IDIxLjkyMSA4LjIyNyAyMy4xNjEgOC4yMjcgMjMuMTYxIEMgOC4yMjcgMjMuMTYxIDEuMjI3IDE1LjQxMSAxLjIyNyAxMC4xNjEgQyAxLjIyNyA2LjI5MSA0LjM1NyAzLjE2MSA4LjIyNyAzLjE2MSBDIDguNDk4IDMuMTYxIDguNzY2IDMuMTc2IDkuMDI5IDMuMjA2IEMgMTAuMTk1IDIuNDU2IDExLjQ4OCAyIDEyLjc1NSAyIEMgMTYuNjI1IDIgMTkuNzU1IDUuMTMgMTkuNzU1IDkgWiBNIDEyLjc1NSAxOC44OCBDIDE0Ljg3NSAxNi4xOSAxNy43NTUgMTEuODggMTcuNzU1IDkgQyAxNy43NTUgNi4yNCAxNS41MTUgNCAxMi43NTUgNCBDIDEyLjQ0NSA0IDEyLjExMyA0LjA0MiAxMS43NjkgNC4xMiBDIDEzLjgzOSA1LjMzNSAxNS4yMjcgNy41ODQgMTUuMjI3IDEwLjE2MSBDIDE1LjIyNyAxMi42MDkgMTMuNzA1IDE1LjYwMSAxMi4wOCAxOC4wOTcgQyAxMi4zMjggMTguMzYzIDEyLjU1NiAxOC42MjQgMTIuNzU1IDE4Ljg4IFogTSA4LjIyNyAxMi42NjEgQyA5LjYwNyAxMi42NjEgMTAuNzI3IDExLjU0MSAxMC43MjcgMTAuMTYxIEMgMTAuNzI3IDguNzgxIDkuNjA3IDcuNjYxIDguMjI3IDcuNjYxIEMgNi44NDcgNy42NjEgNS43MjcgOC43ODEgNS43MjcgMTAuMTYxIEMgNS43MjcgMTEuNTQxIDYuODQ3IDEyLjY2MSA4LjIyNyAxMi42NjEgWiIgc3R5bGU9ImZpbGw6IHJnYigyNTUsIDI1NSwgMjU1KTsiLz4KPC9zdmc+';
 
 @photoHightYear: 2000;
 @photoLowYear: 1826;
@@ -92,49 +97,83 @@
 
     .mapInfos {
         position: absolute;
-        left: 0;
-        right: 0;
-        bottom: 26px;
+        left: 5px;
+        right: 5px;
+        bottom: 31px;
     }
 
     .mapInfo {
         text-align: center;
+        position: relative;
+        display: inline-block;
+        height: 25px;
+        margin-left: 3px;
+        vertical-align: top;
+    }
 
-        &.warn {
-            background-color: #ffd62d;
+    .button {
+        width: 26px;
+        padding-top: 1px;
+        font-size: 16px;
+        line-height: 23px;
+        text-align: center;
+        cursor: pointer;
+
+        &:hover {
+            color: #fff;
+            border-color: #eff2ff;
         }
 
-        &.info {
-            background-color: #a7c4f0;
+        .location-copy {
+            display: inline-block;
+            width: 26px;
+            height: 20px;
+            content: url('@{iconLocationCopy}');
+
+            &:hover {
+                content: url('@{iconLocationCopyH}');
+            }
+        }
+
+        &.no .location-copy {
+            content: url('@{iconLocationCopyI}');
         }
     }
 
     .geoInput {
-        height: 23px;
-        line-height: 23px;
+        height: 27px;
+        line-height: 26px;
+        white-space: nowrap;
 
         > input {
+            height: 25px;
             width: 157px;
             color: #333;
-            line-height: 19px;
             text-align: center;
-            border-style: solid;
-            border-color: #a7c4f0;
-            border-width: 2px 2px 0;
-            background-color: #f0f0f0;
+            border: 1px solid @MainLigthColor;
+            background-color: @MainLigthColor;
+            .box-shadow(~'0 0 0 1px #000, 0 2px 4px 0px #222');
 
             &:focus {
                 outline: 0;
             }
         }
-    }
 
-    .geoInfo {
-        height: 27px;
-        line-height: 26px;
+        > button {
+            height: 25px;
+            margin-left: 4px;
+            line-height: 1.5;
+        }
 
-        .btn {
-            margin: 0;
+        .location-on::before {
+            font-family: 'Material Icons';
+            content: '\e0c8';
+        }
+
+        .location-off::before {
+            font-family: 'Material Icons';
+            content: '\e0c7';
+            top: 2px; // This one is shifted more than others.
         }
     }
 
@@ -664,21 +703,7 @@
         vertical-align: top;
     }
 
-    .trtoolbutt {
-        width: 26px;
-        padding-top: 1px;
-        font-size: 16px;
-        line-height: 23px;
-        text-align: center;
-        cursor: pointer;
-
-        &:hover {
-            color: #fff;
-            border-color: #eff2ff;
-        }
-    }
-
-    .openModePanel {
+    .fringe {
         &.no {
             color: #b6b9ca;
             opacity: 0.9;
