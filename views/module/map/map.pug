@@ -4,25 +4,16 @@
 
         //ko if: embedded
         .mapInfos
+            .mapInfo.button.fringe(data-bind="css: {no: !point.geo()}, click: copyGeo, attr: {title: (point.geo() ? 'Скопировать координаты в буфер обмена' : 'Координаты фотографии не указаны')}")
+                span.location-copy
             //ko if: editing()
             .mapInfo.geoInput
                 input(type="text", data-bind="value: geoInputComputed, valueUpdate: 'keyup', event: {focusout: geoInputBlur}", placeholder="Широта, долгота")
-            .mapInfo.info.geoInfo
                 //ko if: point.geo()
-                button.btn.btn-sm.btn-warning(type="button", data-bind="click: delPointGeo")
-                    span.glyphicon.glyphicon-remove-circle
+                button.btn.btn-warning(type="button", data-bind="click: delPointGeo")
+                    span.material-icons-inline.location-off
                     |  Обнулить координаты
                 // /ko
-                //ko ifnot: point.geo()
-                span.glyphicon.glyphicon-map-marker
-                | Для установки координаты кликните по карте
-                // /ko
-            // /ko
-
-            //ko if: !editing() && !point.geo()
-            .mapInfo.warn
-                span.glyphicon.glyphicon-warning-sign
-                |  Координаты фотографии не указаны
             // /ko
         // /ko
 
@@ -34,14 +25,14 @@
             .yearOuter.R
         .mapNavigation.mContainer.mHidden
         .trtools
-            .trtool.trtoolbutt.openModePanel.fringe(data-bind="css: {no: isPainting()}, click: function () {setPainting(false)}, attr: {title: 'Показывать на карте фотографии'}")
+            .trtool.button.fringe(data-bind="css: {no: isPainting()}, click: function () {setPainting(false)}, attr: {title: 'Показывать на карте фотографии'}")
                 span.glyphicon.glyphicon-camera
-            .trtool.trtoolbutt.openModePanel.fringe(data-bind="css: {no: !isPainting()}, click: function () {setPainting(true)}, attr: {title: 'Показывать на карте картины/рисунки'}")
+            .trtool.button.fringe(data-bind="css: {no: !isPainting()}, click: function () {setPainting(true)}, attr: {title: 'Показывать на карте картины/рисунки'}")
                 span.glyphicon.glyphicon-picture
-            .trtool.trtoolbutt.openModePanel.fringe(data-bind="css: {no: !openNewTab()}, click: function () {openNewTab(!openNewTab())}, attr: {title: (openNewTab() ? 'Выключить' : 'Включить') + ' открытие фотографий в новом окне'}")
+            .trtool.button.fringe(data-bind="css: {no: !openNewTab()}, click: function () {openNewTab(!openNewTab())}, attr: {title: (openNewTab() ? 'Выключить' : 'Включить') + ' открытие фотографий в новом окне'}")
                 span.glyphicon.glyphicon-share
             //ko if: !embedded
-            .trtool.trtoolbutt.link.fringe(data-bind="click: showLink", title="Ссылка на текущую позицию карты")
+            .trtool.button.link.fringe(data-bind="click: showLink", title="Ссылка на текущую позицию карты")
                 span.glyphicon.glyphicon-link
                 //ko if: linkShow()
                 input.inputLink(type="url", readonly, data-bind="click: linkClick, value: link()", autocorrect="off", autocapitalize="off")

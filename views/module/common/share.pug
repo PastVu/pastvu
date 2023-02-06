@@ -9,19 +9,17 @@
     hr
     .shareBlock
         .shareName Ссылка на страницу
-        .inputWrap(data-bind="style: {width: (location.host+options.linkPage).length * 7 + 30 + 'px'}")
-            //-.input-group.input-group-sm
-            input.form-control.inputLink(type="url", readonly, data-bind="click: linkClick, value: location.host + options.linkPage", autocorrect="off", autocapitalize="off")
-            //-.input-group-addon: .copy(title="Скопировать адрес в буфер обмена")
-            //-.copyOk Скопировано
+        .inputWrap
+            .input-group(data-bind="style: {width: (location.host+options.linkPage).length * 7 + 30 + 'px'}")
+                input.form-control.inputLink(type="url", readonly, data-bind="click: linkClick, value: location.host + options.linkPage", autocorrect="off", autocapitalize="off")
+                .input-group-addon.form-control.copy(title="Скопировать адрес в буфер обмена" data-bind="click: copyClick")
     // /ko
     //ko if: options.linkObject
     hr
     .shareBlock
         .shareName Ссылка на изображение
-        .inputWrap(data-bind="style: {width: (location.host+options.linkObject).length * 7 + 'px'}")
-            //-.input-group.input-group-sm
-            input.form-control.inputLink(type="url", readonly, data-bind="click: linkClick, value: location.host + options.linkObject", autocorrect="off", autocapitalize="off")
-            //-.input-group-addon: .copy(title="Скопировать адрес в буфер обмена")
-            //-.copyOk Скопировано
+        .inputWrap
+            .input-group(data-bind="style: {width: (location.host+options.linkObject).length * 7 + 'px'}")
+                input.form-control.inputLink(type="url", readonly, data-bind="click: linkClick, value: location.host + options.linkObject", autocorrect="off", autocapitalize="off")
+                .input-group-addon.form-control.copy(title="Скопировать адрес в буфер обмена" data-bind="click: copyClick")
     // /ko

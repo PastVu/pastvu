@@ -16,6 +16,7 @@ define(['m/photo/status'], function () {
         author: 'Автор',
         address: 'Адрес точки съемки',
         dir: 'Направление съемки',
+        coords: 'Координаты',
         typeVals: {
             1: 'Фотография',
             2: 'Картина/рисунок',
