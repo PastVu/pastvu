@@ -6,8 +6,9 @@
 define([
     'underscore', 'Browser', 'Utils', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'renderer',
     'model/User', 'model/storage', 'Locations', 'leaflet', 'leaflet-extends/L.neoMap', 'm/map/marker',
-    'm/photo/status', 'text!tpl/map/map.pug', 'css!style/map/map', 'jquery-ui/draggable', 'jquery-ui/slider',
+    'm/photo/status', 'text!tpl/map/map.pug', 'bs/tooltip', 'css!style/map/map', 'jquery-ui/draggable', 'jquery-ui/slider',
     'jquery-ui/effect-highlight', 'css!style/jquery/ui/core', 'css!style/jquery/ui/theme', 'css!style/jquery/ui/slider',
+    'css!style/jquery/ui/tooltip',
 ], function (_, Browser, Utils, P, ko, Cliche, globalVM, renderer, User, storage, Locations, L, Map, MarkerManager, statuses, pug) {
     'use strict';
 
@@ -106,6 +107,14 @@ define([
                     },
                     owner: this,
                 });
+
+                this.geoInputComputed.subscribe(function (val) {
+                    const input = this.$dom.find('.geoInput input');
+
+                    if (input) {
+                        input.tooltip(_.isEmpty(val) ? 'show' : 'hide');
+                    }
+                }, this);
             }
 
             const type = this.type();
@@ -612,6 +621,18 @@ define([
         editPointOn: function () {
             this.editing(true);
 
+            // Add coordinates hint tooltip, always displayed when there are no coodinates.
+            let title = '<span class="material-icons-inline location-on"></span>&nbsp;';
+
+            title += 'Click on the map to set coordinates';
+
+            const input = $('.geoInput input').tooltip({ placement: 'right', trigger: 'manual', title: title, html: true });
+
+            if (!this.point.geo()) {
+                // Show it immediately if there are no coords.
+                input.tooltip('show');
+            }
+
             return this;
         },
         // Выключает режим редактирования
@@ -869,6 +890,12 @@ define([
             evt.stopPropagation();
 
             return false;
+        },
+        copyGeo: function (data, evt) {
+            if (this.point.geo()) {
+                Utils.copyTextToClipboard(this.geoInputComputed());
+                Utils.flashTooltip(evt.currentTarget, 'Copied');
+            }
         },
         selectLayer: function (sysId, typeId) {
             const layerActive = this.layerActive();

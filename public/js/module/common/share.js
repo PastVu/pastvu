@@ -78,18 +78,16 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'globalVM', 'knock
             globalVM.func.hideContainer(this.$container);
             this.showing = false;
         },
+        copyClick: function (data, evt) {
+            evt.target.previousSibling.click();
+        },
         linkClick: function (data, evt) {
             const input = evt.target;
 
             if (input) {
+                Utils.copyTextToClipboard(input.value);
                 input.select();
             }
-
-            Utils.copyText();
-
-            evt.stopPropagation();
-
-            return false;
         },
         share: function (network) {
             let url;

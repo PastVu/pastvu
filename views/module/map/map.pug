@@ -4,25 +4,16 @@
 
         //ko if: embedded
         .mapInfos
+            .mapInfo.button.fringe(data-bind="css: {no: !point.geo()}, click: copyGeo, attr: {title: (point.geo() ? 'Copy coordinates to the clipboard' : 'Coordinates of photo are not specified')}")
+                span.location-copy
             //ko if: editing()
             .mapInfo.geoInput
-                input(type="text", data-bind="value: geoInputComputed, valueUpdate: 'keyup', event: {focusout: geoInputBlur}", placeholder="Широта, долгота")
-            .mapInfo.info.geoInfo
+                input(type="text", data-bind="value: geoInputComputed, valueUpdate: 'keyup', event: {focusout: geoInputBlur}", placeholder="Latitude, Longtitude")
                 //ko if: point.geo()
-                button.btn.btn-sm.btn-warning(type="button", data-bind="click: delPointGeo")
-                    span.glyphicon.glyphicon-remove-circle
+                button.btn.btn-warning(type="button", data-bind="click: delPointGeo")
+                    span.material-icons-inline.location-off
                     |  Reset the coordinates
                 // /ko
-                //ko ifnot: point.geo()
-                span.glyphicon.glyphicon-map-marker
-                | To set the coordinates, click on the map
-                // /ko
-            // /ko
-
-            //ko if: !editing() && !point.geo()
-            .mapInfo.warn
-                span.glyphicon.glyphicon-warning-sign
-                |  Coordinates of photo are not specified
             // /ko
         // /ko
 
@@ -34,14 +25,14 @@
             .yearOuter.R
         .mapNavigation.mContainer.mHidden
         .trtools
-            .trtool.trtoolbutt.openModePanel.fringe(data-bind="css: {no: isPainting()}, click: function () {setPainting(false)}, attr: {title: 'Show photos on map'}")
+            .trtool.button.fringe(data-bind="css: {no: isPainting()}, click: function () {setPainting(false)}, attr: {title: 'Show photos on map'}")
                 span.glyphicon.glyphicon-camera
-            .trtool.trtoolbutt.openModePanel.fringe(data-bind="css: {no: !isPainting()}, click: function () {setPainting(true)}, attr: {title: 'Show paintings on map'}")
+            .trtool.button.fringe(data-bind="css: {no: !isPainting()}, click: function () {setPainting(true)}, attr: {title: 'Show paintings on map'}")
                 span.glyphicon.glyphicon-picture
-            .trtool.trtoolbutt.openModePanel.fringe(data-bind="css: {no: !openNewTab()}, click: function () {openNewTab(!openNewTab())}, attr: {title: (openNewTab() ? 'Disable' : 'Enable') + ' opening of a photo in a new window'}")
+            .trtool.button.fringe(data-bind="css: {no: !openNewTab()}, click: function () {openNewTab(!openNewTab())}, attr: {title: (openNewTab() ? 'Disable' : 'Enable') + ' opening of a photo in a new window'}")
                 span.glyphicon.glyphicon-share
             //ko if: !embedded
-            .trtool.trtoolbutt.link.fringe(data-bind="click: showLink", title="Link to current map position")
+            .trtool.button.link.fringe(data-bind="click: showLink", title="Link to current map position")
                 span.glyphicon.glyphicon-link
                 //ko if: linkShow()
                 input.inputLink(type="url", readonly, data-bind="click: linkClick, value: link()", autocorrect="off", autocapitalize="off")
