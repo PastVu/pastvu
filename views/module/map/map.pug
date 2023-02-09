@@ -15,6 +15,11 @@
                     |  Reset the coordinates
                 // /ko
             // /ko
+            //ko if: !editing() && !point.geo()
+            .mapInfo.warn
+                span.glyphicon.glyphicon-warning-sign
+                |  Координаты фотографии не указаны
+            // /ko
         // /ko
 
         .mapYearSelector
