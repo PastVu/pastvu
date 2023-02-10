@@ -66,7 +66,7 @@
         "gm": "1.23.1",
         "got": "11.8.5",
         "http-proxy-middleware": "0.20.0",
-        "ioredis": "4.19.2",
+        "ioredis": "5.3.0",
         "locale": "0.1.0",
         "lodash": "4.17.21",
         "log4js": "6.4.0",
