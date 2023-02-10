@@ -54,7 +54,7 @@
         "bcrypt": "5.0.0",
         "body-parser": "1.20.1",
         "bufferutil": "4.0.1",
-        "bull": "3.20.0",
+        "bull": "4.10.3",
         "compression": "1.7.4",
         "content-disposition": "0.5.3",
         "cookie": "0.4.0",
