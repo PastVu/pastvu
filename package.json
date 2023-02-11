@@ -131,6 +131,6 @@
         "stylelint-config-standard": "24.0.0"
     },
     "engines": {
-        "node": "16.10.0"
+        "node": "16.19.0"
     }
 }
