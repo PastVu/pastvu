@@ -199,12 +199,23 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
                     }
 
                     // Report success to log.
-                    const server = dbRedis.serverInfo;
+                    dbRedis.info().then(res => {
+                        const lines = res.split('\r\n');
+                        const info = {};
 
-                    logger.info(
-                        `Redis[${server.redis_version}, gcc ${server.gcc_version}, x${server.arch_bits},`,
-                        `pid ${server.process_id}, ${server.redis_mode} mode] connected at ${uri}`
-                    );
+                        for (let i = 0; i < lines.length; ++i) {
+                            const parts = lines[i].split(':');
+
+                            if (parts[1]) {
+                                info[parts[0]] = parts[1];
+                            }
+                        }
+
+                        logger.info(
+                            `Redis[${info.redis_version}, gcc ${info.gcc_version}, x${info.arch_bits},`,
+                            `pid ${info.process_id}, ${info.redis_mode} mode] connected at ${uri}`
+                        );
+                    });
 
                     // Reset retries and flag initial connection established.
                     totalRetryTime = 0;

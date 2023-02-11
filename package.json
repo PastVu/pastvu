@@ -52,9 +52,9 @@
         "aws-sdk": "2.814.0",
         "basic-auth-connect": "1.0.0",
         "bcrypt": "5.0.0",
-        "body-parser": "1.19.0",
+        "body-parser": "1.20.1",
         "bufferutil": "4.0.1",
-        "bull": "3.20.0",
+        "bull": "4.10.3",
         "compression": "1.7.4",
         "content-disposition": "0.5.3",
         "cookie": "0.4.0",
@@ -66,7 +66,7 @@
         "gm": "1.23.1",
         "got": "11.8.5",
         "http-proxy-middleware": "0.20.0",
-        "ioredis": "4.19.2",
+        "ioredis": "5.3.0",
         "locale": "0.1.0",
         "lodash": "4.17.21",
         "log4js": "6.4.0",
@@ -131,6 +131,6 @@
         "stylelint-config-standard": "24.0.0"
     },
     "engines": {
-        "node": "16.10.0"
+        "node": "16.19.0"
     }
 }

@@ -82,8 +82,8 @@ module.exports = {
     redis: {
         host: 'localhost',
         port: '6379',
-        autoResendUnfulfilledCommands: false,
-        maxReconnectTime: ms('60s'),
+        maxRetriesPerRequest: null, // Required for bull handling sheduled jobs after reconnection.
+        maxReconnectTime: ms('60s'), // Used in connection controller.
     },
 
     // Lifetime of link to file of protected photo for user, that has right to see this photo
