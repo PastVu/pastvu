@@ -64,7 +64,7 @@
         "express-urlrewrite": "1.2.0",
         "formidable": "1.2.1",
         "gm": "1.23.1",
-        "got": "11.8.5",
+        "got": "12.5.3",
         "http-proxy-middleware": "0.20.0",
         "ioredis": "5.3.0",
         "locale": "0.1.0",
