@@ -108,6 +108,10 @@ export async function createQueue(name) {
         job = job.toJSON();
         logger.error(`${queueLogPrefix} job '${job.name}' failed with error: ${err}`);
     });
+    // Report on job error to log.
+    queue.on('error', err => {
+        logger.error(`${queueLogPrefix} job reported error: ${err}`);
+    });
     // Add to the list of opened queues.
     queueInstances.set(name, queue);
 
