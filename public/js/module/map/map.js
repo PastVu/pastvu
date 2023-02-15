@@ -36,7 +36,7 @@ define([
 
             this.destroy = _.wrap(this.destroy, this.localDestroy);
 
-            // Promise witch will be resolved when map ready
+            // Promise which will be resolved when map ready
             this.readyPromise = new Promise(function (resolve) {
                 self.readyPromiseResolve = resolve;
             });
@@ -555,8 +555,13 @@ define([
                         callback: function (vm) {
                             this.childModules[vm.id] = vm;
                             this.navSliderVM = vm;
-                            // When slider is ready, update its limits.
-                            this.navSliderVM.recalcZooms(type.limitZoom || this.map.getMaxZoom(), true);
+
+                            // When slider is ready, update its limits (if
+                            // layer is loaded already, if not selectLayer
+                            // will update them).
+                            if (this.map.getMaxZoom() !== Infinity) {
+                                this.navSliderVM.recalcZooms(this.map.getMaxZoom(), true);
+                            }
                         }.bind(this),
                     },
                 ],
@@ -959,7 +964,6 @@ define([
                     type.options = type.options || {};
                     type.obj = new Construct(type.options);
                     setLayer(type);
-                    type = null;
                 });
             } else if (type.options.urlTemplate !== undefined) {
                 // Layer needs to be created using L.TileLayer.
