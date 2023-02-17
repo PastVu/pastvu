@@ -26,16 +26,16 @@
             .changed(title="Показать историю изменений") {{='Изменен '+it.fDateIn(new Date(c.lastChanged))}}
             | {{?}}
         .ctext {{=c.txt}}
-        | {{?it.reply}}
         .cacts
+            | {{?it.reply}}
             span.cact.reply Ответить
-            | {{?it.mod || c.can.edit}}
+            | {{?}}
+            | {{?it.mod || (it.reply && c.can.edit)}}
             .dotDelimeter ·
             span.cact.edit Редактировать
             | {{?}}
-            | {{?it.mod || c.can.del}}
+            | {{?it.mod || (it.reply && c.can.del)}}
             .dotDelimeter ·
             span.cact.remove Удалить
             | {{?}}
-        | {{?}}
 | {{?}}
