@@ -793,7 +793,7 @@ define([
             }
         },
         edit: function (cid, $c) {
-            if (!this.canReply()) {
+            if (!this.canReply() && !this.canModerate()) {
                 return;
             }
 
@@ -1169,7 +1169,7 @@ define([
             }
         },
         send: function (vm, event) {
-            if (!vm.canReply()) {
+            if (!vm.canReply() && !vm.canModerate()) {
                 return;
             }
 
