@@ -8,7 +8,7 @@
  *
  * @author Klimashkin
  */
-define(['jquery', 'underscore', 'underscore.string', 'lib/geocoordsparser', 'lib/jsuri', 'lib/jquery/plugins/extends', 'bs/tooltip'], function ($, _, _s, convert) {
+define(['jquery', 'underscore', 'underscore.string', 'lib/geocoordsparser', 'lib/jsuri', 'lib/jquery/plugins/extends', 'bs/tooltip'], function ($, _, _s, parsecoords) {
     const Utils = {
 
         /**
@@ -1086,7 +1086,7 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/geocoordsparser', 'lib
                 coordsString = coordsString.replace(n_pat, 'N').replace(s_pat, 'S').replace(e_pat, 'E').replace(w_pat, 'W');
 
                 try {
-                    const coord = convert(coordsString, 6);
+                    const coord = parsecoords(coordsString, 6);
 
                     return [coord.decimalLatitude, coord.decimalLongitude];
                 } catch (err) {
