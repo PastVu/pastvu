@@ -3,22 +3,31 @@
         .map
 
         //ko if: embedded
-        .mapInfos
-            .mapInfo.button.fringe(data-bind="css: {no: !point.geo()}, click: copyGeo, attr: {title: (point.geo() ? 'Скопировать координаты в буфер обмена' : 'Координаты фотографии не указаны')}")
+        .mapInfos.tltp-wrap
+            .mapInfo.button.fringe(data-bind="css: {no: !point.geo()}, click: copyGeo, attr: {'aria-label': (point.geo() ? 'Скопировать координаты в буфер обмена' : 'Координаты фотографии не указаны')}")
                 span.location-copy
+            //ko if: !editing() && point.geo()
+            .tltp.tltp-right.tltp-animate-opacity(style="white-space:nowrap")
+                | Скопировать координаты в буфер обмена
+            // /ko
             //ko if: editing()
             .mapInfo.geoInput
                 input(type="text", data-bind="value: geoInputComputed, valueUpdate: 'keyup', event: {focusout: geoInputBlur}", placeholder="Широта, долгота")
                 //ko if: point.geo()
                 button.btn.btn-warning(type="button", data-bind="click: delPointGeo")
                     span.material-icons-inline.location-off
-                    |  Обнулить координаты
+                    | &nbsp;Обнулить координаты
                 // /ko
+            // /ko
+            //ko if: editing() && !point.geo()
+            .tltp.tltp-right.tltp-show(style="white-space:nowrap")
+                span.material-icons-inline.location-on
+                | &nbsp;Для установки координаты кликните по карте
             // /ko
             //ko if: !editing() && !point.geo()
             .mapInfo.warn
                 span.glyphicon.glyphicon-warning-sign
-                |  Координаты фотографии не указаны
+                | &nbsp;Координаты фотографии не указаны
             // /ko
         // /ko
 

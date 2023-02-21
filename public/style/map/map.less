@@ -101,23 +101,60 @@
         right: 5px;
         bottom: 52px;
         width: max-content;
-    }
 
-    .mapInfo {
-        text-align: center;
-        position: relative;
-        display: inline-block;
-        height: 25px;
-        margin-left: 3px;
-        vertical-align: top;
-
-        &.warn {
-            background-color: #ffd62d;
-            padding: 3px 8px;
-            border-radius: 1px;
+        .mapInfo {
             text-align: center;
+            position: relative;
+            display: inline-block;
+            height: 25px;
+            margin-left: 3px;
+            vertical-align: top;
+
+            &.warn {
+                background-color: #ffd62d;
+                padding: 3px 8px;
+                border-radius: 1px;
+                text-align: center;
+                height: 27px;
+                line-height: 1.7;
+            }
+        }
+
+        .geoInput {
             height: 27px;
-            line-height: 1.7;
+            line-height: 2;
+            white-space: nowrap;
+
+            > input {
+                height: 25px;
+                width: 157px;
+                color: #333;
+                text-align: center;
+                border: 1px solid @MainLigthColor;
+                background-color: @MainLigthColor;
+                .box-shadow(~'0 0 0 1px #000, 0 2px 4px 0px #222');
+
+                &:focus {
+                    outline: 0;
+                }
+            }
+
+            > button {
+                height: 25px;
+                margin-left: 4px;
+                line-height: 1.5;
+            }
+        }
+
+        .location-on::before {
+            font-family: 'Material Icons';
+            content: '\e0c8';
+        }
+
+        .location-off::before {
+            font-family: 'Material Icons';
+            content: '\e0c7';
+            top: 2px; // This one is shifted more than others.
         }
     }
 
@@ -147,43 +184,6 @@
 
         &.no .location-copy {
             content: url('@{iconLocationCopyI}');
-        }
-    }
-
-    .geoInput {
-        height: 27px;
-        line-height: 27px;
-        white-space: nowrap;
-
-        > input {
-            height: 25px;
-            width: 157px;
-            color: #333;
-            text-align: center;
-            border: 1px solid @MainLigthColor;
-            background-color: @MainLigthColor;
-            .box-shadow(~'0 0 0 1px #000, 0 2px 4px 0px #222');
-
-            &:focus {
-                outline: 0;
-            }
-        }
-
-        > button {
-            height: 25px;
-            margin-left: 4px;
-            line-height: 1.5;
-        }
-
-        .location-on::before {
-            font-family: 'Material Icons';
-            content: '\e0c8';
-        }
-
-        .location-off::before {
-            font-family: 'Material Icons';
-            content: '\e0c7';
-            top: 2px; // This one is shifted more than others.
         }
     }
 
