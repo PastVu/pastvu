@@ -30,7 +30,12 @@
                 | &nbsp;Координаты фотографии не указаны
             // /ko
         // /ko
-
+        // ko if: isGeolocationSupported()
+        .mapPosTools.tltp-wrap
+                .mapPosTool.button.fringe(data-bind="click: showMyLocation, css: {no: geolocationStatus() === 'denied' || geolocationStatus() === 'error', nogeo: geolocationStatus() === 'denied', pendinggeo: geolocationStatus() === 'pending' }" aria-describedby="mylocation")
+                    span.material-icons.my-location
+                .tltp.tltp-left.tltp-animate-opacity(id="mylocation" role="tooltip" style="white-space:nowrap" data-bind="text: (geolocationStatus() === 'denied' ? 'Определение местоположения запрещено браузером' : geolocationStatus() === 'error' ? 'Не удается определить местоположение' : 'Моё местоположение')")
+        // /ko
         .mapYearSelector
             .yearSlider
                 .ui-slider-handle.L
