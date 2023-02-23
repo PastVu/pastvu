@@ -493,6 +493,7 @@ body {
     border: 1px solid #7a7a7a;
     z-index: @zindex-tooltip;
     text-align: center;
+    line-height: 1.5;
 
     /* This bridges the gap so you can mouse into the tooltip without it disappearing */
     &::before {
@@ -668,6 +669,10 @@ body {
             transform: translateX(-12px);
         }
     }
+}
+
+span.tltp-wrap {
+    display: inline-block;
 }
 
 .tltp-wrap {

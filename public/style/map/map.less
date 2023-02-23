@@ -703,14 +703,23 @@
         top: 5px;
         right: 5px;
         white-space: nowrap;
-    }
 
-    .trtool {
-        position: relative;
-        display: inline-block;
-        height: 25px;
-        margin-left: 3px;
-        vertical-align: top;
+        .tltp {
+            // Compensate space between buttons.
+            margin-left: 2px;
+
+            &.tltp-hotizontal-right {
+                right: -5px;
+            }
+        }
+
+        .trtool {
+            position: relative;
+            display: inline-block;
+            height: 25px;
+            margin-left: 3px;
+            vertical-align: top;
+        }
     }
 
     .fringe {
