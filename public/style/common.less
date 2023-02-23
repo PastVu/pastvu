@@ -723,6 +723,14 @@ span.tltp-wrap {
     }
 }
 
+[aria-describedby]:hover {
+    position: relative;
+}
+
+[aria-describedby]:hover > [role='tooltip'] {
+    opacity: 1;
+}
+
 //Cтиль для подгрузки фото в контейнере с отображением ошибки
 .imgLoad {
     position: relative;
