@@ -443,7 +443,7 @@ define([
                 filterString += (filterString ? '_' : '') + 'geo!' + geo[0];
             }
 
-            if (s.length && this.auth.iAm && !_.isEqual(s, [statuses.keys.PUBLIC])) {
+            if (s.length && this.auth.iAm) {
                 let allowedS;
 
                 if (this.auth.iAm.role() > 4 || this.itsMine()) {
@@ -604,7 +604,10 @@ define([
         filterSHandle: function (val) {
             if (_.isEmpty(val)) {
                 // If user removes last status checkbox, set public status as default
-                this.filter.disp.s([String(statuses.keys.PUBLIC)]);
+                // without timeout checkbox remains unchecked
+                setTimeout(function () {
+                    this.filter.disp.s([String(statuses.keys.PUBLIC)]);
+                }.bind(this), 10);
             } else {
                 this.filterChangeHandle();
             }
