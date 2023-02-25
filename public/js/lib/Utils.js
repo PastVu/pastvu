@@ -292,15 +292,18 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/geocoordsparser', 'lib
         },
 
         flashTooltip: function (target, text) {
-            const element = $(target);
-            const origTitle = element.attr('title');
+            return new Promise(function (resolve) {
+                const element = $(target);
+                const origTitle = element.attr('title');
 
-            element.tooltip({ placement: 'right', trigger: 'manual' }).attr('data-original-title', text).tooltip('show');
-            setTimeout(function () {
-                element.tooltip('destroy');
-                // Restore original title as it seems being cleared.
-                element.attr('title', origTitle);
-            }, 1000);
+                element.tooltip({ placement: 'right', trigger: 'manual' }).attr('data-original-title', text).tooltip('show');
+                setTimeout(function () {
+                    element.tooltip('destroy');
+                    // Restore original title as it seems being cleared.
+                    element.attr('title', origTitle);
+                    resolve();
+                }, 1000);
+            });
         },
 
         popupCenter: function (url, title, w, h) {

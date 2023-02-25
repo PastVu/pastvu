@@ -9,8 +9,9 @@
                 span.glyphicon.glyphicon-arrow-down
             .mleft.fringe.butt(data-bind="event: {'click': function () { pan('left') }}")
                 span.glyphicon.glyphicon-arrow-left
-            .mhome.fringe.butt(data-bind="click: toHome, attr: {title: 'Установить карту в домашний регион ' + (auth.loggedIn() ? auth.iAm.regionHome.title_local() : 'Москва')}")
+            .mhome.fringe.butt(data-bind="click: toHome" aria-describedby="tohome")
                 span.glyphicon.glyphicon-home
+                .tltp.tltp-right.tltp-animate-opacity(style="white-space:nowrap" id="tohome" role="tooltip" data-bind="text: 'Установить карту в домашний регион ' + (auth.loggedIn() ? auth.iAm.regionHome.title_local() : 'Москва')")
             .zoomin.fringe.butt.inout(data-bind="event: {'click': function () { changeZoom(1) }}")
                 span.glyphicon.glyphicon-plus
             .zoomout.fringe.butt.inout(data-bind="event: {'click': function () { changeZoom(-1) }}")
