@@ -158,6 +158,21 @@
         }
     }
 
+    .mapPosTools {
+        position: absolute;
+        right: 5px;
+        bottom: 52px;
+        width: max-content;
+    }
+
+    .mapPosTool {
+        position: relative;
+        display: inline-block;
+        height: 25px;
+        margin-left: 3px;
+        vertical-align: top;
+    }
+
     .button {
         width: 26px;
         padding-top: 1px;
@@ -184,6 +199,18 @@
 
         &.no .location-copy {
             content: url('@{iconLocationCopyI}');
+        }
+
+        .my-location::before {
+            content: '\e55c';
+        }
+
+        &.nogeo .my-location::before {
+            content: '\e1b6';
+        }
+
+        &.pendinggeo .my-location::before {
+            content: '\e1b7';
         }
     }
 
