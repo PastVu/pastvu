@@ -18,6 +18,14 @@ define([
         minZoom: 3,
         maxZoom: 18,
         zoom: 17,
+        geolocationZoom: 12,
+    };
+
+    const geoStatus = {
+        READY: 'ready',
+        PENDING: 'pending',
+        ERROR: 'error',
+        DENIED: 'denied',
     };
 
     return Cliche.extend({
@@ -119,7 +127,17 @@ define([
             this.yearRefreshMarkersBind = this.yearRefreshMarkers.bind(this);
             this.yearRefreshMarkersTimeout = null;
 
-            this.infoShow = ko.observable(true);
+            // Geolocation
+            this.geolocationStatus = ko.observable(geoStatus.READY);
+
+            if ('permissions' in navigator) {
+                navigator.permissions.query({ name: 'geolocation' }).then(result => {
+                    if (result.state === 'denied') {
+                        // Use of geolocation is already denied for this site.
+                        this.geolocationStatus(geoStatus.DENIED);
+                    }
+                });
+            }
 
             this.layers.push({
                 id: 'osm',
@@ -875,6 +893,39 @@ define([
             evt.stopPropagation();
 
             return false;
+        },
+        isGeolocationSupported: function () {
+            return !!('geolocation' in navigator);
+        },
+        showMyLocation: function () {
+            // Geolocate current position. Query position even if we know
+            // that user denied it already, in Chrome for example this will show
+            // location icon in status bar, making easier to find
+            // where to change this setting. Don't query if there is a pending
+            // request already.
+            if (this.geolocationStatus() !== geoStatus.PENDING) {
+                this.geolocationStatus(geoStatus.PENDING);
+
+                const success = function (position) {
+                    this.geolocationStatus(geoStatus.READY);
+                    this.map.setView(new L.LatLng(position.coords.latitude, position.coords.longitude),
+                        defaults.geolocationZoom, { animate: true });
+                }.bind(this);
+
+                const error = function error(err) {
+                    if (err.code === err.PERMISSION_DENIED) {
+                        // User denied geolocation.
+                        this.geolocationStatus(geoStatus.DENIED);
+                    } else {
+                        // Position unavilable due to timeout or device internal error.
+                        this.geolocationStatus(geoStatus.ERROR);
+                    }
+
+                    console.warn(`Geolocation error: ${err.message}`);
+                }.bind(this);
+
+                navigator.geolocation.getCurrentPosition(success, error, { maximumAge: 30000, timeout: 10000 });
+            }
         },
         copyGeo: function (data, evt) {
             if (this.point.geo()) {
