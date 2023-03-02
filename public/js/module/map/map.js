@@ -626,10 +626,30 @@ define([
 
         // Обработчик переключения режима редактирования
         editHandler: function (edit) {
+            const self = this;
+
             if (edit) {
-                this.pointHighlightDestroy().pointEditCreate().markerManager.disable();
+                let highlightedPhotoLayer;
+
+                this.markerManager.layerPhotos.eachLayer(function (marker) {
+                    if (_.isEqual(self.point.geo(), marker.options.data.obj.geo)) {
+                        highlightedPhotoLayer = marker;
+                    }
+
+                    marker
+                        .off('click')
+                        .off('mouseover');
+                });
+
+                if (highlightedPhotoLayer) {
+                    this.markerManager.layerPhotos.removeLayer(highlightedPhotoLayer);
+                }
+
+                this.pointHighlightDestroy().pointEditCreate();
             } else {
-                this.pointEditDestroy().pointHighlightCreate().markerManager.enable();
+                this.markerManager.disable();
+                this.pointEditDestroy().pointHighlightCreate();
+                this.markerManager.enable();
             }
         },
         // Включает режим редактирования
