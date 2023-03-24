@@ -35,13 +35,13 @@
             div(data-bind="css: {'text-success': conveyerEnabled(), 'text-error': !conveyerEnabled()}, text: conveyerEnabled() ? 'Конвейер активен' : 'Конвейер остановлен'")
             div
                 span.stateRate(data-bind="text:converted()")
-                span.stateDesc Конвертированно с песледней 10-минутки
+                span.stateDesc Конвертировано за текущую 10-ти минутку
             div
                 span.stateRate(data-bind="text:clength()")
-                span.stateDesc Длина конвейера
+                span.stateDesc Текущая длина конвейера
             div
                 span.stateRate(data-bind="text:cmaxlength()")
-                span.stateDesc Максимальная длина конвейера с песледней 10-минутки
+                span.stateDesc Максимальная длина конвейера за текущую 10-ти минутку
     br
     h5 Сконвертированно
     #conveyerConvertGraph
