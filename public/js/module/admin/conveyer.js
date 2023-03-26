@@ -485,7 +485,7 @@ define([
                         this.converted(data.conveyerConverted);
                     }
 
-                    this.timeoutUpdate = window.setTimeout(this.statFast.bind(this), 2000);
+                    this.timeoutUpdate = window.setTimeout(this.statFast.bind(this), 5000);
                 }.bind(this));
         },
     });

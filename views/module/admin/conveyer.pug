@@ -35,13 +35,13 @@
             div(data-bind="css: {'text-success': conveyerEnabled(), 'text-error': !conveyerEnabled()}, text: conveyerEnabled() ? 'Conveyor is active' : 'Conveyor is stopped'")
             div
                 span.stateRate(data-bind="text:converted()")
-                span.stateDesc Converted since last 10-minute
+                span.stateDesc Converted since last 10-minute interval
             div
                 span.stateRate(data-bind="text:clength()")
-                span.stateDesc Conveyor length
+                span.stateDesc Current conveyor length
             div
                 span.stateRate(data-bind="text:cmaxlength()")
-                span.stateDesc Maximum conveyor length since last 10-minute
+                span.stateDesc Maximum conveyor length for the current 10-minute interval
     br
     h5 Converted
     #conveyerConvertGraph

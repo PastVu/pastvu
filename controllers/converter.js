@@ -231,7 +231,7 @@ function fillImgPrior(parent, level) {
 }
 
 // Собираем статистику конвейера на начало каждой 10-минутки
-function collectConveyerStat() {
+async function collectConveyerStat() {
     const st = new STPhotoConveyer({
         stamp: new Date(+moment.utc().startOf('minute')),
         clength: conveyerMaxLength,
@@ -244,6 +244,8 @@ function collectConveyerStat() {
         }
     });
 
+    // Update stats.
+    conveyerLength = await PhotoConveyer.estimatedDocumentCount().exec();
     conveyerMaxLength = conveyerLength;
     conveyerConverted = 0;
     setTimeout(collectConveyerStat, ms('10m'));
