@@ -1257,10 +1257,14 @@ async function approve(data) {
 
     const oldPhotoObj = photo.toObject();
 
+    // Publish photo.
     photo.s = status.PUBLIC;
     photo.stdate = photo.cdate = photo.adate = photo.sdate = new Date();
 
     const { rel } = await this.call('photo.update', { photo });
+
+    // Save previous status to history
+    await this.call('photo.saveHistory', { oldPhotoObj, photo, canModerate });
 
     await Promise.all([
         // Recalculate the number of photos of the owner
@@ -1277,9 +1281,6 @@ async function approve(data) {
     if (Utils.geo.check(photo.geo)) {
         await this.call('photo.photoToMap', { photo, paintingMap: photo.type === constants.photo.type.PAINTING });
     }
-
-    // Save previous status to history
-    await this.call('photo.saveHistory', { oldPhotoObj, photo, canModerate });
 
     this.call('photo.changeFileProtection', { photo, protect: false });
 
