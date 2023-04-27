@@ -184,7 +184,6 @@ $.widget( "ui.slider", $.ui.mouse, {
 
                 this.handles.each( function( i ) {
 			var handleDistance = Math.abs( value - that.values( i ) );
-                        console.log(i, handleDistance, distance);
 			if ( handleDistance >= distance || !that._canBeDrag( i ) ) {
 				return;
 			}
