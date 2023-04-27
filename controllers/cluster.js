@@ -467,7 +467,7 @@ export async function getBoundsByYear({ geometry, z, year, year2, isPainting }) 
     const ClusterModel = isPainting ? ClusterPaint : Cluster;
     const foundClusters = await ClusterModel.find(
         { g: { $geoWithin: { $geometry: geometry } }, z },
-        { _id: 0, c: 1, geo: 1, y: 1, p: 1 },
+        { _id: 0, c: 1, geo: 1, y: 1, p: 1, g: 1 },
         { lean: true }
     ).exec();
 
