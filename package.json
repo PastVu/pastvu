@@ -84,7 +84,7 @@
         "semver": "7.1.1",
         "serve-favicon": "2.5.0",
         "serve-index": "1.9.1",
-        "socket.io": "4.5.1",
+        "socket.io": "4.6.1",
         "step": "1.0.0",
         "underscore.string": "3.3.5",
         "useragent": "2.3.0",
