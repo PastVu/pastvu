@@ -232,7 +232,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'analytics', 'knoc
                             setTimeout(function () {
                                 self.formWorking(false);
                             }, 420);
-                            ga('send', 'event', 'auth', 'register', 'auth register success');
+                            ga('send', 'event', 'auth', 'sign_up', 'auth sign up success');
                         },
                         function (data) {
                             self.setMessage(data.message, 'error');
@@ -240,7 +240,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'analytics', 'knoc
                                 self.formFocus();
                                 self.formWorking(false);
                             }, 420);
-                            ga('send', 'event', 'auth', 'register', 'auth register error');
+                            ga('send', 'event', 'auth', 'sign_up', 'auth sign up error');
                         }
                     );
                 } else if (self.mode() === 'recallRequest') {
