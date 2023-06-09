@@ -182,10 +182,8 @@ require([
     $('body').append(html);
     ko.applyBindings(globalVM);
 
-    analytics.install({
-        debug_mode: P.settings.env === 'development', // Enable to use DebugView in Analytics admin interface.
-        send_page_view: false, // In single page app we take control over page view event.
-    });
+    // Initialise Google Analytics.
+    analytics.install();
 
     globalVM.router = router.init(routerAnatomy);
     $.when(routerDeferred.promise()).then(function () {

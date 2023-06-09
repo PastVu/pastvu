@@ -6,12 +6,16 @@
 define(['underscore', 'Params'], function (_, P) {
     'use strict';
 
+    const config = {
+        send_page_view: false, // In single page app we take control over page view event.
+    };
+
     /**
      * Initialise GA4
      *
-     * @param {object} additionalConfigInfo
+     * @param {object} additionalConfig
      */
-    const install = function(additionalConfigInfo = {}) {
+    const install = function (additionalConfig = {}) {
         const trackingID = P.settings.analytics.trackingID;
 
         if (!trackingID) {
@@ -23,8 +27,12 @@ define(['underscore', 'Params'], function (_, P) {
 
         window.dataLayer = window.dataLayer || [];
 
+        if (P.settings.env === 'development') {
+            config.debug_mode = true; // Allow to monitor events in DebugView admin interface.
+        }
+
         gtag('js', new Date());
-        gtag('config', trackingID, additionalConfigInfo);
+        gtag('config', trackingID, _.defaults(additionalConfig, config));
     };
 
     /**
