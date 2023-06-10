@@ -36,6 +36,16 @@ define(['underscore', 'Params'], function (_, P) {
     };
 
     /**
+     * Set user ID for enhanced user analytics across devices and sessions.
+     * https://developers.google.com/analytics/devguides/collection/ga4/user-id?client_type=gtag
+     *
+     * @param {number} userID
+     */
+    const setUserID = function (userID) {
+        gtag('config', P.settings.analytics.trackingID, { 'user_id': userID });
+    };
+
+    /**
      * Send data to Google Analytics.
      */
     window.gtag = function () {
