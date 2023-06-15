@@ -233,7 +233,7 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
             }
 
             this.section(section);
-            ga('send', 'pageview');
+            gtag('event', 'page_view');
 
             if (!this.contentVM || this.contentVM.module !== module) {
                 moduleOptions.module = module;

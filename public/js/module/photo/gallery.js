@@ -378,7 +378,7 @@ define([
             this.page(page);
 
             if (!this.u) {
-                ga('send', 'pageview'); //В галерее пользователя pageview отправляет userPage
+                gtag('event', 'page_view'); //В галерее пользователя page_view отправляет userPage
             }
 
             if (needRecieve || filterChange) {

@@ -4,7 +4,7 @@
  */
 
 /*global init:true */
-define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'model/storage', 'model/User', 'text!tpl/common/auth.pug', 'css!style/common/auth'], function (_, $, Utils, socket, P, ko, Cliche, globalVM, storage, User, pug) {
+define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'analytics', 'knockout', 'm/_moduleCliche', 'globalVM', 'model/storage', 'model/User', 'text!tpl/common/auth.pug', 'css!style/common/auth'], function (_, $, Utils, socket, P, analytics, ko, Cliche, globalVM, storage, User, pug) {
     'use strict';
 
     //Обновляет куки сессии переданным объектом с сервера
@@ -232,7 +232,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
                             setTimeout(function () {
                                 self.formWorking(false);
                             }, 420);
-                            ga('send', 'event', 'auth', 'register', 'auth register success');
+                            ga('send', 'event', 'auth', 'sign_up', 'auth sign up success');
                         },
                         function (data) {
                             self.setMessage(data.message, 'error');
@@ -240,7 +240,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
                                 self.formFocus();
                                 self.formWorking(false);
                             }, 420);
-                            ga('send', 'event', 'auth', 'register', 'auth register error');
+                            ga('send', 'event', 'auth', 'sign_up', 'auth sign up error');
                         }
                     );
                 } else if (self.mode() === 'recallRequest') {
@@ -391,7 +391,11 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 
             if (loggedIn) {
                 this.loggedIn(loggedIn); //loggedIn должен изменятся после обновления storage, так как на него есть зависимые подписки
+                analytics.setUserID(user.cid);
+            } else {
+                analytics.setUserID(null);
             }
+
 
             //Поднимаем версию пользователя, с помощью которой есть подписки на обновление iAm
             this.iAm._v_(user._v_ + 1);

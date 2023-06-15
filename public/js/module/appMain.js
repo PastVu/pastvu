@@ -5,10 +5,10 @@
 
 require([
     'domReady!', 'jquery', 'Browser', 'Utils', 'socket!', 'underscore', 'knockout', 'moment',
-    'globalVM', 'Params', 'renderer', 'router', 'model/Photo', 'model/User', 'noties',
+    'globalVM', 'Params', 'renderer', 'router', 'model/Photo', 'model/User', 'noties', 'analytics',
     'text!tpl/appMain.pug', 'css!style/appMain', 'momentlang/ru', 'bs/transition', 'bs/popover',
     'knockout.extends', 'noty', 'noty.layouts', 'noty.themes/pastvu', 'jquery-plugins/scrollto',
-], function (domReady, $, Browser, Utils, socket, _, ko, moment, globalVM, P, renderer, router, Photo, User, noties, html) {
+], function (domReady, $, Browser, Utils, socket, _, ko, moment, globalVM, P, renderer, router, Photo, User, noties, analytics, html) {
     'use strict';
 
     Utils.title.setPostfix('Фотографии прошлого');
@@ -43,7 +43,6 @@ require([
         handlers: {
             index: function (qparams) {
                 router.params(_.assign({ _handler: 'index' }, qparams));
-                ga('set', 'page', '/');
 
                 renderer(
                     [
@@ -59,7 +58,6 @@ require([
                 }
 
                 router.params(_.assign({ cid: cid, _handler: 'photo' }, qparams));
-                ga('set', 'page', '/p' + (cid ? '/' + cid : ''));
                 renderer(
                     [
                         { module: 'm/photo/photo', container: '#bodyContainer' },
@@ -68,7 +66,12 @@ require([
             },
             photos: function (page, qparams) {
                 router.params(_.assign({ page: page, _handler: 'gallery' }, qparams));
-                ga('set', 'page', '/ps' + (page ? '/' + page : ''));
+
+                if (page !== 'feed' && page !== 'coin') {
+                    // Suppress numbered pagination in analytics.
+                    gtag('set', 'page_path', '/ps');
+                }
+
                 renderer(
                     [
                         { module: 'm/photo/gallery', container: '#bodyContainer', options: { } },
@@ -84,6 +87,8 @@ require([
 
                 if (!section) {
                     section = 'profile';
+                    // Override page_path to reflect /profile for the default user page location in analytics.
+                    gtag('set', 'page_path', `/u/${login}/profile`);
                 }
 
                 router.params(_.assign({
@@ -93,7 +98,6 @@ require([
                     _handler: 'profile',
                 }, qparams));
 
-                ga('set', 'page', '/u' + (login ? '/' + login + (section ? '/' + section : '') : ''));
                 renderer(
                     [
                         { module: 'm/user/userPage', container: '#bodyContainer' },
@@ -103,7 +107,6 @@ require([
             photoUpload: function () {
                 router.params({ section: 'photo', photoUpload: true, _handler: 'profile' });
 
-                ga('set', 'page', '/photoUpload');
                 renderer(
                     [
                         { module: 'm/user/userPage', container: '#bodyContainer' },
@@ -128,7 +131,6 @@ require([
                 const mName = cid ? 'm/diff/news' : 'm/diff/newsList';
 
                 router.params(_.assign({ cid: cid, _handler: 'news' }, qparams));
-                ga('set', 'page', '/news' + (cid ? '/' + cid : ''));
                 renderer(
                     [
                         { module: mName, container: '#bodyContainer' },
@@ -144,8 +146,10 @@ require([
                     .then(function (data) {
                         renderer([{ module: 'm/main/mainPage', container: '#bodyContainer' }]);
 
-                        ga('set', 'page', '/confirm');
-                        ga('send', 'pageview', { title: 'Confirm' });
+                        gtag('event', 'page_view', {
+                            page_title: 'Confirm',
+                            page_path: '/confirm',
+                        });
 
                         if (data.type === 'noty') {
                             noties.alert({
@@ -177,6 +181,9 @@ require([
 
     $('body').append(html);
     ko.applyBindings(globalVM);
+
+    // Initialise Google Analytics.
+    analytics.install();
 
     globalVM.router = router.init(routerAnatomy);
     $.when(routerDeferred.promise()).then(function () {
