@@ -33,6 +33,7 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params
             email: '',
             firstName: '',
             lastName: '',
+            cid: 0,
 
             role: 0,
 

@@ -96,7 +96,6 @@ export const getPlainUser = (function () {
         // Transforms are applied to the document and each of its sub-documents.
         // Check that it's exactly user
         if (doc.login !== undefined) {
-            delete ret.cid;
             delete ret.pass;
             delete ret.activatedate;
             delete ret.loginAttempts;

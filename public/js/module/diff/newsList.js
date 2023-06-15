@@ -47,7 +47,7 @@ define([
         routeHandler: function () {
             this.getAllNews(function (/*data*/) {
                 Utils.title.setTitle({ title: 'News' });
-                ga('send', 'pageview');
+                gtag('event', 'page_view');
             });
         },
         getAllNews: function (cb, ctx) {

@@ -44,7 +44,9 @@ define(['jquery', 'underscore', 'socket!', 'Utils', 'knockout', 'knockout.mappin
 
     // Create Params view model, define properties that will not be observable
     // when view model is converted to JS object.
-    Params = koMapping.fromJS(Params, { copy: ['window.head', 'settings.lang', 'settings.publicApiKeys', 'settings.docs'] });
+    const noObserve = ['window.head', 'settings.lang', 'settings.publicApiKeys', 'settings.analytics', 'settings.docs', 'settings.env'];
+
+    Params = koMapping.fromJS(Params, { copy: noObserve });
 
     // Пересчитываем размеры при ресайзе окна
     $window.on('resize', _.debounce(function () {

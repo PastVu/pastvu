@@ -448,7 +448,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         self.destroyHistory();
                     }
 
-                    ga('send', 'pageview', '/p');
+                    gtag('event', 'page_view');
                 }, this);
             } else {
                 if (self.toFrag || self.toComment) {

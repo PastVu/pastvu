@@ -48,7 +48,7 @@ define(['underscore', 'Utils', 'Params', 'knockout', 'knockout.mapping', 'm/_mod
             this.sizesCalc();
             globalVM.func.showContainer(this.$container);
             this.showing = true;
-            ga('send', 'pageview');
+            gtag('event', 'page_view');
         },
         hide: function () {
             globalVM.func.hideContainer(this.$container);

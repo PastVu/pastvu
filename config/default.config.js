@@ -104,6 +104,13 @@ module.exports = {
         yandexMaps: process.env.YANDEX_MAPS_API_KEY || '',
     },
 
+    // Google Analytics (gtag.js) tagging framework and API. Make sure "Page
+    // changes based on browser history events" is not ticked at Enhanced
+    // Management interface, otherwise page view events will have duplicates.
+    analytics: {
+        trackingID: process.env.GA_TRACKING_ID || '', // Google Analytics destination ID of G-XXXXXXXX format.
+    },
+
     // Default home region for new user
     regionHome: 2,
 

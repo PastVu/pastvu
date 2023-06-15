@@ -61,8 +61,8 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'globalVM', 'renderer'], fu
 
         routes: [],
         handlers: {},
-        addRoute: function (route, handler, ctx) {
-            router.routes.push({ route: route, handler: handler, ctx: ctx });
+        addRoute: function (route, handler) {
+            router.routes.push({ route: route, handler: handler });
         },
         addHandler: function (name, func) {
             router.handlers[name] = _.wrap(func, router.handlerWrapper);
@@ -101,16 +101,19 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'globalVM', 'renderer'], fu
         triggerUrl: function () {
             const qparams = Utils.getURLParameters(location.href);
             const pathname = location.pathname;
-            let matchedArgs;
-            let handler;
+
+            // Set page_path early, so handler may override it if needed.
+            gtag('set', 'page_path', pathname);
+
             let triggered = false;
 
             router.routes.forEach(function (item) {
                 if (item.route.test(pathname)) {
-                    handler = router.handlers[item.handler];
+                    const handler = router.handlers[item.handler];
 
                     if (_.isFunction(handler)) {
-                        matchedArgs = _.chain(pathname.match(item.route)).toArray().tail().value();
+                        const matchedArgs = _.chain(pathname.match(item.route)).toArray().tail().value();
+
                         matchedArgs.push(qparams);
                         handler.apply(item.ctx, matchedArgs);
                         triggered = true;

@@ -17,7 +17,6 @@ define(['underscore', 'Params', 'socket!', 'knockout', 'm/_moduleCliche', 'globa
 
             socket.run('index.giveAbout').then(function (result) {
                 ga('send', 'event', 'about', 'open', 'about open');
-                // ga('send', 'pageview', {'page': '/about', 'title': 'О проекте'});
 
                 self.avatars = result || {};
 

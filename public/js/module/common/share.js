@@ -56,7 +56,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'globalVM', 'knock
 
             socials.forEach(function (social) {
                 social.action = function (data, evt) {
-                    self.share(social.id, data, evt);
+                    self.share(social.id, social.name, data, evt);
                 };
             });
 
@@ -89,7 +89,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'globalVM', 'knock
                 input.select();
             }
         },
-        share: function (network) {
+        share: function (network, networkName) {
             let url;
             const origin = location.origin || location.protocol + '://' + location.host;
             const options = this.options;
@@ -152,7 +152,11 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'globalVM', 'knock
                     '&counturl=' + pageUrl;
             }
 
-            ga('send', 'event', 'share', network, 'share network click');
+            gtag('event', 'share', {
+                method: networkName,
+                content_type: 'url',
+                item_id: options.linkPage,
+            });
         },
     });
 });

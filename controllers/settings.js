@@ -26,9 +26,9 @@ const getUserRanks = () => constants.user.ranks;
 // Fill object for client parameters
 async function fillClientParams() {
     const settings = await Settings.find({}, { _id: 0, key: 1, val: 1 }, { lean: true }).exec();
-    const { lang, hash, publicApiKeys, version, docs } = config;
+    const { lang, hash, publicApiKeys, analytics, version, docs, env } = config;
 
-    Object.assign(clientParams, { lang, hash, publicApiKeys, version, docs });
+    Object.assign(clientParams, { lang, hash, publicApiKeys, analytics, version, docs, env });
 
     for (const setting of settings) {
         clientParams[setting.key] = setting.val;

@@ -101,7 +101,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     });
 
                     this.makeBinding();
-                    ga('send', 'pageview');
+                    gtag('event', 'page_view');
                 }, this);
             } else if (this.toComment) {
                 this.scrollTimeout = window.setTimeout(this.scrollToBind, 50);
