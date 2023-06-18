@@ -8,6 +8,9 @@ define(['underscore', 'Params'], function (_, P) {
 
     const config = {
         send_page_view: false, // In single page app we take control over page view event.
+        user_properties: {
+            app_language: P.settings.lang,
+        },
     };
 
     /**
