@@ -69,7 +69,7 @@ require([
 
                 if (page !== 'feed' && page !== 'coin') {
                     // Suppress numbered pagination in analytics.
-                    gtag('set', 'page_path', '/ps');
+                    gtag('set', 'page_location', location.origin + '/ps');
                 }
 
                 renderer(
@@ -87,8 +87,8 @@ require([
 
                 if (!section) {
                     section = 'profile';
-                    // Override page_path to reflect /profile for the default user page location in analytics.
-                    gtag('set', 'page_path', `/u/${login}/profile`);
+                    // Override page_location to reflect /profile for the default user page location in analytics.
+                    gtag('set', 'page_location', location.origin + `/u/${login}/profile`);
                 }
 
                 router.params(_.assign({
@@ -148,7 +148,7 @@ require([
 
                         gtag('event', 'page_view', {
                             page_title: 'Confirm',
-                            page_path: '/confirm',
+                            page_location: location.origin + '/confirm',
                         });
 
                         if (data.type === 'noty') {
