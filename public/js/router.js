@@ -102,8 +102,8 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'globalVM', 'renderer'], fu
             const qparams = Utils.getURLParameters(location.href);
             const pathname = location.pathname;
 
-            // Set page_path early, so handler may override it if needed.
-            gtag('set', 'page_path', pathname);
+            // Set page_location early, so handler may override it if needed.
+            gtag('set', 'page_location', location.origin + location.pathname);
 
             let triggered = false;
 

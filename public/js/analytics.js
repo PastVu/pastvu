@@ -8,6 +8,9 @@ define(['underscore', 'Params'], function (_, P) {
 
     const config = {
         send_page_view: false, // In single page app we take control over page view event.
+        user_properties: {
+            app_language: P.settings.lang,
+        },
     };
 
     /**
@@ -42,7 +45,8 @@ define(['underscore', 'Params'], function (_, P) {
      * @param {number} userID
      */
     const setUserID = function (userID) {
-        gtag('config', P.settings.analytics.trackingID, { 'user_id': userID });
+        // Set globally, it does not seem update configuration at this stage.
+        gtag('set', 'user_id', userID);
     };
 
     /**
