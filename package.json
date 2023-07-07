@@ -81,7 +81,7 @@
         "nodemailer": "6.6.1",
         "postcss-less": "5.0.0",
         "pug": "3.0.2",
-        "semver": "7.1.1",
+        "semver": "7.5.2",
         "serve-favicon": "2.5.0",
         "serve-index": "1.9.1",
         "socket.io": "4.6.1",
