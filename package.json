@@ -128,7 +128,7 @@
         "mongodb-memory-server": "8.10.1",
         "osm-and-geojson": "0.1.2",
         "requirejs": "2.3.6",
-        "stylelint": "14.1.0",
+        "stylelint": "15.10.1",
         "stylelint-config-standard": "24.0.0"
     },
     "engines": {
