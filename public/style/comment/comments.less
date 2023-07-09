@@ -195,7 +195,7 @@
                 .transition(~'background-color .25s linear .1s');
             }
 
-            &.hlRemove:not(.cdel):not(.delopen) { //Выделения для удаленя не выделяет уже удаленные
+            &.hlRemove:not(.cdel, .delopen) { //Выделения для удаленя не выделяет уже удаленные
                 background-color: rgba(255, 188, 16, 50%);
             }
 
