@@ -8,6 +8,8 @@ module.exports = {
     'ignoreFiles': ['**/*.{eot,ttf,woff}'],
     'customSyntax': 'postcss-less',
     'rules': {
+        'import-notation': 'string',
+        'media-feature-range-notation': 'prefix',
         'indentation': 4,
         // If we have Autoprefixer one day, remove *-no-vendor-prefix rules
         // and run stylelint with --fix param to strip prefixes.
@@ -26,5 +28,10 @@ module.exports = {
         'function-url-quotes': 'never',
         'max-line-length': null,
         'block-no-empty': null,
+        'declaration-block-no-redundant-longhand-properties': null,
+        'function-no-unknown': null,
+        'media-query-no-invalid': null,
+        'keyframe-block-no-duplicate-selectors': null,
+        'value-keyword-case': ['lower', { 'camelCaseSvgKeywords': true }],
     },
 };
