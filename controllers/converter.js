@@ -41,7 +41,7 @@ const coveredDir = path.join(config.storePath, 'publicCovered/photos/');
 const waterDir = path.join(__dirname, '/../misc/watermark/');
 const waterFontPath = path.normalize(waterDir + 'AdobeFanHeitiStd-Bold.otf');
 
-const maxWorking = 6; // Possible to convert in parallel
+const maxWorking = 4; // Possible to convert in parallel
 let goingToWork = 0; // Выборка для дальнейшей конвертации
 let working = 0; // Now converting
 
@@ -293,42 +293,42 @@ async function conveyerControl() {
         goingToWork -= 1;
         working += 1;
 
-        const photo = await Photo
-            .findOne({ cid: photoConv.cid }, {
-                cid: 1, s: 1, user: 1,
-                path: 1, file: 1, mime: 1,
-                w: 1, h: 1, ws: 1, hs: 1,
-                conv: 1, convqueue: 1, watersignText: 1,
-            })
-            .populate({ path: 'user', select: { _id: 0, login: 1 } })
-            .exec();
+        Photo.findOne({ cid: photoConv.cid }, {
+            cid: 1, s: 1, user: 1,
+            path: 1, file: 1, mime: 1,
+            w: 1, h: 1, ws: 1, hs: 1,
+            conv: 1, convqueue: 1, watersignText: 1,
+        }).populate({
+            path: 'user',
+            select: { _id: 0, login: 1 },
+        }).exec().then(async photo => {
+            photo.conv = true;
+            photoConv.converting = true;
+            await Promise.all([photo.save(), photoConv.save()]);
 
-        photo.conv = true;
-        photoConv.converting = true;
-        await Promise.all([photo.save(), photoConv.save()]);
+            try {
+                await conveyorStep(photo, photoConv);
+                conveyerConverted += 1;
+            } catch (err) {
+                const errorObject = { cid: photoConv.cid, added: photoConv.added, error: String(err && err.message) };
 
-        try {
-            await conveyorStep(photo, photoConv);
-            conveyerConverted += 1;
-        } catch (err) {
-            const errorObject = { cid: photoConv.cid, added: photoConv.added, error: String(err && err.message) };
+                logger.error(errorObject);
+                await new PhotoConveyerError(errorObject).save();
+            }
 
-            logger.error(errorObject);
-            await new PhotoConveyerError(errorObject).save();
-        }
+            photo.conv = undefined; // Set undefined to remove properties
+            photo.convqueue = undefined;
+            photo.converted = new Date(); // Save last converted stamp
+            await Promise.all([photo.save(), photoConv.deleteOne()]);
 
-        photo.conv = undefined; // Set undefined to remove properties
-        photo.convqueue = undefined;
-        photo.converted = new Date(); // Save last converted stamp
-        await Promise.all([photo.save(), photoConv.deleteOne()]);
+            working -= 1;
 
-        working -= 1;
+            if (conveyerLength) {
+                conveyerLength -= 1;
+            }
 
-        if (conveyerLength) {
-            conveyerLength -= 1;
-        }
-
-        conveyerControl();
+            conveyerControl();
+        });
     }
 }
 
