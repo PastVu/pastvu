@@ -1351,7 +1351,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
             const changes = _.chain(koMapping.toJS(p))
                 .pick(
-                    'geo', 'dir', 'title', 'year', 'year2', 'address',
+                    'geo', 'dir', 'title', 'year', 'year2', 'address', 'desc', 'source', 'author',
                     'nowaterchange', 'watersignIndividual', 'disallowDownloadOriginIndividual'
                 )
                 .transform(function (result, value, key) {
