@@ -44,30 +44,6 @@
 			label.col-sm-3.col-md-2.control-label(for="inWebsite") Веб-сайт
 			.col-sm-3.col-md-2
 				input.form-control(type="text", id='inWebsite', data-bind="attr: {disabled: !editMode()}, value: u.www, valueUpdate: 'afterkeydown'")
-		.form-group(data-bind="style: {display: canBeEdit() ||  u.lj().length > 0 ? '' : 'none'}")
-			label.col-sm-3.col-md-2.control-label(for="inLJ") ЖЖ
-			.col-sm-3.col-md-2
-				input.form-control(type="text", id='inLJ', data-bind="attr: {disabled: !editMode()}, value: u.lj, valueUpdate: 'afterkeydown'")
-		.form-group(data-bind="style: {display: canBeEdit() ||  u.skype().length > 0 ? '' : 'none'}")
-			label.col-sm-3.col-md-2.control-label(for="inSkype") Skype
-			.col-sm-3.col-md-2
-				input.form-control(type="text", id='inSkype', data-bind="attr: {disabled: !editMode()}, value: u.skype, valueUpdate: 'afterkeydown'")
-		.form-group(data-bind="style: {display: canBeEdit() ||  u.icq().length > 0 ? '' : 'none'}")
-			label.col-sm-3.col-md-2.control-label(for="inICQ") icq
-			.col-sm-3.col-md-2
-				input.form-control(type="text", id='inICQ', data-bind="attr: {disabled: !editMode()}, value: u.icq, valueUpdate: 'afterkeydown'")
-		.form-group(data-bind="style: {display: canBeEdit() ||  u.aim().length > 0 ? '' : 'none'}")
-			label.col-sm-3.col-md-2.control-label(for="inaim") aim
-			.col-sm-3.col-md-2
-				input.form-control(type="text", id='inaim', data-bind="attr: {disabled: !editMode()}, value: u.aim, valueUpdate: 'afterkeydown'")
-		.form-group(data-bind="style: {display: canBeEdit() ||  u.flickr().length > 0 ? '' : 'none'}")
-			label.col-sm-3.col-md-2.control-label(for="inflickr") flickr
-			.col-sm-3.col-md-2
-				input.form-control(type="text", id='inflickr', data-bind="attr: {disabled: !editMode()}, value: u.flickr, valueUpdate: 'afterkeydown'")
-		.form-group(data-bind="style: {display: canBeEdit() ||  u.blogger().length > 0 ? '' : 'none'}")
-			label.col-sm-3.col-md-2.control-label(for="inBlogger") Blogger
-			.col-sm-3.col-md-2
-				input.form-control(type="text", id='inBlogger', data-bind="attr: {disabled: !editMode()}, value: u.blogger, valueUpdate: 'afterkeydown'")
 		.form-group(data-bind="style: {display: canBeEdit() ||  u.aboutme().length > 0 ? '' : 'none'}")
 			label.col-sm-3.col-md-2.control-label(for="inaboutme") Обо мне
 			.col-sm-7.col-md-8
