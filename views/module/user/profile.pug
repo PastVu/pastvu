@@ -16,11 +16,14 @@
 			label.col-sm-3.col-md-2.control-label(for="inBirthdate") Дата рождения
 			.col-sm-3.col-md-2
 				input#inBirthdate.form-control(type="text", data-bind="attr: {disabled: !editMode()}, value: u.birthdate, valueUpdate: 'keyup'")
-		.form-group
+		.form-group(data-bind="style: {display: canBeEdit() ||  u.sex().length > 0 ? '' : 'none'}")
 			label.col-sm-3.col-md-2.control-label(for="inSex2") Пол
 			.col-sm-4.col-md-3
-				input.form-control(type="text", id="inSex2", disabled, data-bind="style: {display: (!canBeEdit() ? '' : 'none')}, value: u.sex()=='m' ? 'Male' : 'Female'")
+				input.form-control(type="text", id="inSex2", disabled, data-bind="style: {display: (!canBeEdit() ? '' : 'none')}, value: u.sex()=='m' ? 'Мужчина' : 'Женщина'")
 				div(data-bind="style: {display: canBeEdit() ? '' : 'none'}")
+					label.radio-inline
+						input(type="radio", id='inSex', name="sex", value="", data-bind="checked: u.sex, attr: {disabled: !editMode()}")
+						| &nbsp;Не указан
 					label.radio-inline
 						input(type="radio", id='inSex', name="sex", value="m", data-bind="checked: u.sex, attr: {disabled: !editMode()}")
 						| &nbsp;Мужчина

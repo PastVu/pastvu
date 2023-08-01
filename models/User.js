@@ -17,7 +17,7 @@ const SALT_ROUNDS = 10;
 const MAX_LOGIN_ATTEMPTS = 10;
 const LOCK_TIME = ms('2m');
 
-const sexes = ['m', 'f'];
+const sexes = ['m', 'f', ''];
 
 export let User = null;
 export let UserConfirm = null;
