@@ -43,7 +43,7 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params
 
             // profile
             birthdate: '',
-            sex: 'm',
+            sex: '',
             country: '',
             city: '',
             work: '',
