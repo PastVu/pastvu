@@ -9,9 +9,9 @@
         .form-group(data-bind="style: {display: canBeEdit() ||  u.firstName().length || u.lastName().length > 0 ? '' : 'none'}")
             label.col-sm-3.col-md-2.control-label(for="inName") Real name
             .col-sm-3.col-md-2
-                input.form-control(type="text", id="inName", data-bind="attr: {size: u.firstName().length, disabled: !editMode()}, value: u.firstName, valueUpdate: 'afterkeydown'")
+                input.form-control(type="text", id="inName", data-bind="attr: {size: u.firstName().length, disabled: !editMode()}, value: u.firstName, valueUpdate: 'afterkeydown'", placeholder='First name')
             .col-sm-3.col-md-2
-                input.form-control(type="text", id="inLastName", data-bind="attr: {disabled: !editMode()}, value: u.lastName, valueUpdate: 'afterkeydown'")
+                input.form-control(type="text", id="inLastName", data-bind="attr: {disabled: !editMode()}, value: u.lastName, valueUpdate: 'afterkeydown'", placeholder='Last name')
         .form-group
             label.col-sm-3.col-md-2.control-label(for="inBirthdate") Birthdate
             .col-sm-3.col-md-2
@@ -30,9 +30,9 @@
         .form-group(data-bind="style: {display: canBeEdit() ||  u.country().length || u.city().length > 0 ? '' : 'none'}")
             label.col-sm-3.col-md-2.control-label(for="inResidence") Residence
             .col-sm-3.col-md-2
-                input.form-control(type="text", id='inResidence', data-bind="attr: {disabled: !editMode()}, size: u.country().length, value: u.country, valueUpdate: 'afterkeydown'")
+                input.form-control(type="text", id='inResidence', data-bind="attr: {disabled: !editMode()}, size: u.country().length, value: u.country, valueUpdate: 'afterkeydown'", placeholder='Country')
             .col-sm-3.col-md-2
-                input.form-control(type="text", id="inResidence2", data-bind="attr: {disabled: !editMode()}, value: u.city, valueUpdate: 'afterkeydown'")
+                input.form-control(type="text", id="inResidence2", data-bind="attr: {disabled: !editMode()}, value: u.city, valueUpdate: 'afterkeydown'", placeholder='City')
         .form-group(data-bind="style: {display: canBeEdit() ||  u.work().length > 0 ? '' : 'none'}")
             label.col-sm-3.col-md-2.control-label(for="inInterested") Occupation
             .col-sm-3.col-md-2
