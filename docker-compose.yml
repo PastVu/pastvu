@@ -87,11 +87,11 @@ services:
     command: run sitemap
 
   mailcatcher:
-    image: sj26/mailcatcher:latest
+    image: axllent/mailpit:latest
     expose:
      - "1025"
     ports:
-     - "127.0.0.1:1080:1080"
+     - "127.0.0.1:1080:8025"
 
 volumes:
   store:
