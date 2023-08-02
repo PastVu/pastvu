@@ -9,10 +9,10 @@
         .form-group(data-bind="style: {display: canBeEdit() ||  u.firstName().length || u.lastName().length > 0 ? '' : 'none'}")
             label.col-sm-3.col-md-2.control-label(for="inName") Real name
             .col-sm-3.col-md-2
-                input.form-control(type="text", id="inName", data-bind="attr: {size: u.firstName().length, disabled: !editMode()}, value: u.firstName, valueUpdate: 'afterkeydown'", placeholder='First name')
+                input.form-control(type="text", id="inName", data-bind="attr: {size: u.firstName().length, disabled: !editMode(), placeholder: !editMode() ? '' : 'First name'}, value: u.firstName, valueUpdate: 'afterkeydown'")
             .col-sm-3.col-md-2
-                input.form-control(type="text", id="inLastName", data-bind="attr: {disabled: !editMode()}, value: u.lastName, valueUpdate: 'afterkeydown'", placeholder='Last name')
-        .form-group
+                input.form-control(type="text", id="inLastName", data-bind="attr: {disabled: !editMode(), placeholder: !editMode() ? '' : 'Last name'}, value: u.lastName, valueUpdate: 'afterkeydown'")
+        .form-group(data-bind="style: {display: canBeEdit() ||  u.birthdate().length ? '' : 'none'}")
             label.col-sm-3.col-md-2.control-label(for="inBirthdate") Birthdate
             .col-sm-3.col-md-2
                 input#inBirthdate.form-control(type="text", data-bind="attr: {disabled: !editMode()}, value: u.birthdate, valueUpdate: 'keyup'")
@@ -33,9 +33,9 @@
         .form-group(data-bind="style: {display: canBeEdit() ||  u.country().length || u.city().length > 0 ? '' : 'none'}")
             label.col-sm-3.col-md-2.control-label(for="inResidence") Residence
             .col-sm-3.col-md-2
-                input.form-control(type="text", id='inResidence', data-bind="attr: {disabled: !editMode()}, size: u.country().length, value: u.country, valueUpdate: 'afterkeydown'", placeholder='Country')
+                input.form-control(type="text", id='inResidence', data-bind="attr: {disabled: !editMode(), placeholder: !editMode() ? '' : 'Country'}, size: u.country().length, value: u.country, valueUpdate: 'afterkeydown'")
             .col-sm-3.col-md-2
-                input.form-control(type="text", id="inResidence2", data-bind="attr: {disabled: !editMode()}, value: u.city, valueUpdate: 'afterkeydown'", placeholder='City')
+                input.form-control(type="text", id="inResidence2", data-bind="attr: {disabled: !editMode(), placeholder: !editMode() ? '' : 'City'}, value: u.city, valueUpdate: 'afterkeydown'")
         .form-group(data-bind="style: {display: canBeEdit() ||  u.work().length > 0 ? '' : 'none'}")
             label.col-sm-3.col-md-2.control-label(for="inInterested") Occupation
             .col-sm-3.col-md-2
