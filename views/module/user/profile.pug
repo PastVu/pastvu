@@ -12,7 +12,7 @@
 				input.form-control(type="text", id="inName", data-bind="attr: {size: u.firstName().length, disabled: !editMode(), placeholder: !editMode() ? '' : 'Имя'}, value: u.firstName, valueUpdate: 'afterkeydown'")
 			.col-sm-3.col-md-2
 				input.form-control(type="text", id="inLastName", data-bind="attr: {disabled: !editMode(), placeholder: !editMode() ? '': 'Фамилия'}, value: u.lastName, valueUpdate: 'afterkeydown'")
-		.form-group
+		.form-group(data-bind="style: {display: canBeEdit() ||  u.birthdate().length ? '' : 'none'}")
 			label.col-sm-3.col-md-2.control-label(for="inBirthdate") Дата рождения
 			.col-sm-3.col-md-2
 				input#inBirthdate.form-control(type="text", data-bind="attr: {disabled: !editMode()}, value: u.birthdate, valueUpdate: 'keyup'")
