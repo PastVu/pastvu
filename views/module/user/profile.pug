@@ -9,9 +9,9 @@
 		.form-group(data-bind="style: {display: canBeEdit() ||  u.firstName().length || u.lastName().length > 0 ? '' : 'none'}")
 			label.col-sm-3.col-md-2.control-label(for="inName") Реальное имя
 			.col-sm-3.col-md-2
-				input.form-control(type="text", id="inName", data-bind="attr: {size: u.firstName().length, disabled: !editMode()}, value: u.firstName, valueUpdate: 'afterkeydown'", placeholder='Имя')
+				input.form-control(type="text", id="inName", data-bind="attr: {size: u.firstName().length, disabled: !editMode(), placeholder: !editMode() ? '' : 'Имя'}, value: u.firstName, valueUpdate: 'afterkeydown'")
 			.col-sm-3.col-md-2
-				input.form-control(type="text", id="inLastName", data-bind="attr: {disabled: !editMode()}, value: u.lastName, valueUpdate: 'afterkeydown'", placeholder='Фамилия')
+				input.form-control(type="text", id="inLastName", data-bind="attr: {disabled: !editMode(), placeholder: !editMode() ? '': 'Фамилия'}, value: u.lastName, valueUpdate: 'afterkeydown'")
 		.form-group
 			label.col-sm-3.col-md-2.control-label(for="inBirthdate") Дата рождения
 			.col-sm-3.col-md-2
@@ -33,9 +33,9 @@
 		.form-group(data-bind="style: {display: canBeEdit() ||  u.country().length || u.city().length > 0 ? '' : 'none'}")
 			label.col-sm-3.col-md-2.control-label(for="inResidence") Откуда
 			.col-sm-3.col-md-2
-				input.form-control(type="text", id='inResidence', data-bind="attr: {disabled: !editMode()}, size: u.country().length, value: u.country, valueUpdate: 'afterkeydown'", placeholder='Страна')
+				input.form-control(type="text", id='inResidence', data-bind="attr: {disabled: !editMode(), placeholder: !editMode() ? '': 'Страна'}, size: u.country().length, value: u.country, valueUpdate: 'afterkeydown'")
 			.col-sm-3.col-md-2
-				input.form-control(type="text", id="inResidence2", data-bind="attr: {disabled: !editMode()}, value: u.city, valueUpdate: 'afterkeydown'", placeholder='Город')
+				input.form-control(type="text", id="inResidence2", data-bind="attr: {disabled: !editMode(), placeholder: !editMode() ? '': 'Город'}, value: u.city, valueUpdate: 'afterkeydown'")
 		.form-group(data-bind="style: {display: canBeEdit() ||  u.work().length > 0 ? '' : 'none'}")
 			label.col-sm-3.col-md-2.control-label(for="inInterested") Деятельность
 			.col-sm-3.col-md-2
