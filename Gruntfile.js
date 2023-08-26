@@ -311,9 +311,9 @@ module.exports = function (grunt) {
     grunt.registerTask('test', [
         'exec:testNodeVersion:.node-version',
         'exec:testNodeVersion:.nvmrc',
-        'exec:testNodeVersionDockerfile:./docker/Dockerfile',
-        'exec:testNodeVersionDockerfile:./docker/backend.Dockerfile',
-        'exec:testNodeVersionDockerfile:./docker/frontend.Dockerfile',
+        'exec:testNodeVersionDockerfile:./.docker/Dockerfile',
+        'exec:testNodeVersionDockerfile:./.docker/backend.Dockerfile',
+        'exec:testNodeVersionDockerfile:./.docker/frontend.Dockerfile',
         'eslint',
         'stylelint',
         'exec:jest',
