@@ -1,7 +1,7 @@
 version: '3.9'
 
 x-defaults: &app-image
-  build: ./docker
+  build: ./.docker
   image: pastvu_node
   environment:
     - NODE_ENV=development
@@ -11,7 +11,7 @@ services:
     image: mongo:4.4
     volumes:
       - mongo4:/data/db
-      - ./docker/dev-initdb.sh:/usr/local/bin/initdb
+      - ./.docker/dev-initdb.sh:/usr/local/bin/initdb
     expose:
       - "27017"
     ports:
