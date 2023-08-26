@@ -13,8 +13,8 @@ define([
     'use strict';
 
     const defaults = {
-        sys: 'osm',
-        type: 'mapnik',
+        sys: 'yandex',
+        type: 'scheme',
         minZoom: 3,
         maxZoom: 18,
         zoom: 17,
@@ -175,18 +175,6 @@ define([
                         },
                         limitZoom: 17,
                         maxAfter: 'osm.mapnik',
-                    },
-                    {
-                        id: 'mapnik',
-                        desc: 'Mapnik',
-                        selected: ko.observable(false),
-                        options: {
-                            urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                            updateWhenIdle: false,
-                            maxZoom: 20,
-                            maxNativeZoom: 19,
-                        },
                     },
                     {
                         id: 'mapnik_de',

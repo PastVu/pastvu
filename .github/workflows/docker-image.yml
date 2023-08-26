@@ -42,7 +42,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: .
-          file: ./docker/backend.Dockerfile
+          file: ./.docker/backend.Dockerfile
           tags: ${{ steps.docker_meta_backend.outputs.tags }}
           labels: ${{ steps.docker_meta_backend.outputs.labels }}
           push: true
@@ -60,7 +60,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: .
-          file: ./docker/frontend.Dockerfile
+          file: ./.docker/frontend.Dockerfile
           tags: ${{ steps.docker_meta_frontend.outputs.tags }}
           labels: ${{ steps.docker_meta_frontend.outputs.labels }}
           push: true
