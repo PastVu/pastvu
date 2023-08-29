@@ -14,7 +14,7 @@ define([
 
     const defaults = {
         sys: 'osm',
-        type: 'mapnik',
+        type: 'kosmosnimki',
         minZoom: 3,
         maxZoom: 18,
         zoom: 17,
@@ -163,7 +163,7 @@ define([
                      * format is "<sys id>.<type id>", e.g. 'osm.mapnik'.
                      */
                     {
-                        id: 'osmosnimki',
+                        id: 'kosmosnimki',
                         desc: 'Kosmosnimki',
                         selected: ko.observable(false),
                         options: {
