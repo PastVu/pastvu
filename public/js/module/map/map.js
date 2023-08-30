@@ -368,8 +368,8 @@ define([
                         desc: 'Аэрофото ВОВ',
                         selected: ko.observable(false),
                         options: {
-                            urlTemplate: 'https://17200.selcdn.ru/AerialWWII/Z{z}/{y}/{x}.jpg',
-                            attribution: 'Аэрофотосъёмка Второй Мировой Войны <a href="http://warfly.ru/about">warfly.ru</a> (доступна для отдельных городов)',
+                            urlTemplate: 'https://hutun.pastvu.com/tiles/4/061942/Z{z}/{y}/{x}.jpg',
+                            attribution: 'Немецкая аэрофотосъемка 1939-1943 годов (доступна для отдельных городов) | <a href="http://retromap.ru/061942">retromap.ru</a>',
                             updateWhenIdle: false,
                             minZoom: 9,
                             maxZoom: 19,
