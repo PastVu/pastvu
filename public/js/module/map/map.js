@@ -13,8 +13,8 @@ define([
     'use strict';
 
     const defaults = {
-        sys: 'yandex',
-        type: 'scheme',
+        sys: 'osm',
+        type: 'kosmosnimki',
         minZoom: 3,
         maxZoom: 18,
         zoom: 17,
@@ -163,7 +163,7 @@ define([
                      * format is "<sys id>.<type id>", e.g. 'osm.mapnik'.
                      */
                     {
-                        id: 'osmosnimki',
+                        id: 'kosmosnimki',
                         desc: 'Kosmosnimki',
                         selected: ko.observable(false),
                         options: {
@@ -175,6 +175,18 @@ define([
                         },
                         limitZoom: 17,
                         maxAfter: 'osm.mapnik',
+                    },
+                    {
+                        id: 'mapnik',
+                        desc: 'Mapnik',
+                        selected: ko.observable(false),
+                        options: {
+                            urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                            updateWhenIdle: false,
+                            maxZoom: 20,
+                            maxNativeZoom: 19,
+                        },
                     },
                     {
                         id: 'mapnik_de',
