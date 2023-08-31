@@ -182,7 +182,7 @@ define([
                         selected: ko.observable(false),
                         options: {
                             urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                            attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
                             updateWhenIdle: false,
                             maxZoom: 20,
                             maxNativeZoom: 19,
@@ -368,8 +368,8 @@ define([
                         desc: 'WWII Aerial',
                         selected: ko.observable(false),
                         options: {
-                            urlTemplate: 'https://17200.selcdn.ru/AerialWWII/Z{z}/{y}/{x}.jpg',
-                            attribution: 'WWII Aerial photos <a href="http://warfly.ru/about">warfly.ru</a> (coverage is limited to some locations)',
+                            urlTemplate: 'https://hutun.pastvu.com/tiles/4/061942/Z{z}/{y}/{x}.jpg',
+                            attribution: 'WWII Aerial photos 1939-1943 (coverage is limited to some locations) | <a href="http://retromap.ru/061942">retromap.ru</a>',
                             updateWhenIdle: false,
                             minZoom: 9,
                             maxZoom: 19,
