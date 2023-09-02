@@ -177,7 +177,7 @@ define([
                         maxAfter: 'osm.mapnik',
                     },
                     {
-                        id: 'mapnik',
+                        id: 'mapnik_ru',
                         desc: 'Mapnik',
                         selected: ko.observable(false),
                         options: {
