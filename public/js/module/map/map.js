@@ -472,7 +472,7 @@ define([
             let bbox;
             let fitBounds;
             const qParams = globalVM.router.params();
-            const zoom = Number(qParams.z) || (this.embedded ? defaults.zoom : Utils.getLocalStorage('map.zoom') || P.settings.locDef.z());
+            const zoom = Number(qParams.z) || (this.embedded ? defaults.zoom : Utils.getLocalStorage('map.zoom') || P.settings.locDef.z);
             const system = qParams.s || Utils.getLocalStorage(this.embedded ? 'map.embedded.sys' : 'map.sys') || defaults.sys;
             const type = qParams.t || Utils.getLocalStorage(this.embedded ? 'map.embedded.type' : 'map.type') || defaults.type;
 
@@ -518,7 +518,7 @@ define([
             }
 
             if (!center || !Utils.geo.checkLatLng(center)) {
-                center = new L.LatLng(P.settings.locDef.lat(), P.settings.locDef.lng());
+                center = new L.LatLng(P.settings.locDef.lat, P.settings.locDef.lng);
             }
 
             this.map = new L.NeoMap(this.$dom.find('.map')[0], {
