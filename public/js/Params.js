@@ -31,8 +31,6 @@ define(['jquery', 'underscore', 'socket!', 'Utils', 'knockout', 'knockout.mappin
             CLUSTERING_ON_CLIENT: true,
             CLUSTERING_ON_CLIENT_PIX_DELTA: { 17: 25, 18: 20, 19: 15, 20: 5, 'default': 15 },
 
-            locDef: { lat: 27.14, lng: 24.34, z: 3 },
-
             REGISTRATION_ALLOWED: false,
         },
     };
@@ -42,7 +40,7 @@ define(['jquery', 'underscore', 'socket!', 'Utils', 'knockout', 'knockout.mappin
 
     // Create Params view model, define properties that will not be observable
     // when view model is converted to JS object.
-    const noObserve = ['window.head', 'settings.lang', 'settings.publicApiKeys', 'settings.analytics', 'settings.docs', 'settings.env'];
+    const noObserve = ['window.head', 'settings.lang', 'settings.publicApiKeys', 'settings.analytics', 'settings.docs', 'settings.env', 'settings.locDef'];
 
     Params = koMapping.fromJS(Params, { copy: noObserve });
 
