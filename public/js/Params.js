@@ -31,9 +31,7 @@ define(['jquery', 'underscore', 'socket!', 'Utils', 'knockout', 'knockout.mappin
             CLUSTERING_ON_CLIENT: true,
             CLUSTERING_ON_CLIENT_PIX_DELTA: { 17: 25, 18: 20, 19: 15, 20: 5, 'default': 15 },
 
-            locDef: { lat: 40, lng: -17, z: 3 },
-            locDefRange: ['gpsip', '_def_'],
-            locDefRangeUser: ['last', 'home', 'gpsip', '_def_'],
+            locDef: { lat: 27.14, lng: 24.34, z: 3 },
 
             REGISTRATION_ALLOWED: false,
         },

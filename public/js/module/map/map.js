@@ -5,11 +5,11 @@
 
 define([
     'underscore', 'Browser', 'Utils', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'renderer',
-    'model/User', 'model/storage', 'Locations', 'leaflet', 'leaflet-extends/L.neoMap', 'm/map/marker',
+    'model/User', 'model/storage', 'leaflet', 'leaflet-extends/L.neoMap', 'm/map/marker',
     'm/photo/status', 'text!tpl/map/map.pug', 'css!style/map/map', 'jquery-ui/draggable', 'jquery-ui/slider',
     'jquery-ui/effect-highlight', 'css!style/jquery/ui/core', 'css!style/jquery/ui/theme', 'css!style/jquery/ui/slider',
     'css!style/jquery/ui/tooltip',
-], function (_, Browser, Utils, P, ko, Cliche, globalVM, renderer, User, storage, Locations, L, Map, MarkerManager, statuses, pug) {
+], function (_, Browser, Utils, P, ko, Cliche, globalVM, renderer, User, storage, L, Map, MarkerManager, statuses, pug) {
     'use strict';
 
     const defaults = {
@@ -71,7 +71,6 @@ define([
 
             // Map objects
             this.map = null;
-            this.mapDefCenter = new L.LatLng(Locations.current.lat, Locations.current.lng);
             this.layers = ko.observableArray();
             this.layersOpen = ko.observable(false);
             this.layerActive = ko.observable({ sys: null, type: null });
@@ -473,7 +472,7 @@ define([
             let bbox;
             let fitBounds;
             const qParams = globalVM.router.params();
-            const zoom = Number(qParams.z) || (this.embedded ? defaults.zoom : Utils.getLocalStorage('map.zoom') || Locations.current.z);
+            const zoom = Number(qParams.z) || (this.embedded ? defaults.zoom : Utils.getLocalStorage('map.zoom') || P.settings.locDef.z());
             const system = qParams.s || Utils.getLocalStorage(this.embedded ? 'map.embedded.sys' : 'map.sys') || defaults.sys;
             const type = qParams.t || Utils.getLocalStorage(this.embedded ? 'map.embedded.type' : 'map.type') || defaults.type;
 
@@ -519,11 +518,10 @@ define([
             }
 
             if (!center || !Utils.geo.checkLatLng(center)) {
-                center = this.mapDefCenter;
+                center = new L.LatLng(P.settings.locDef.lat(), P.settings.locDef.lng());
             }
 
             this.map = new L.NeoMap(this.$dom.find('.map')[0], {
-                center: center,
                 zoom: zoom,
                 zoomAnimation: L.Map.prototype.options.zoomAnimation && true,
                 trackResize: false,
@@ -533,6 +531,8 @@ define([
 
             if (fitBounds) {
                 this.map.fitBounds(fitBounds, { maxZoom: defaults.maxZoom });
+            } else {
+                this.map.panTo(center);
             }
 
             this.markerManager = new MarkerManager(this.map, {
@@ -544,11 +544,6 @@ define([
                 year2: this.yearHigh,
             });
             this.selectLayer(system, type);
-
-            Locations.subscribe(function (val) {
-                this.mapDefCenter = new L.LatLng(val.lat, val.lng);
-                this.setMapDefCenter(true);
-            }.bind(this));
 
             renderer(
                 [
@@ -811,9 +806,6 @@ define([
             return this;
         },
 
-        setMapDefCenter: function (/*forceMoveEvent*/) {
-            this.map.setView(this.mapDefCenter, Locations.current.z, false);
-        },
         saveCenterZoom: function () {
             this.setLocalState();
         },
