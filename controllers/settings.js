@@ -7,7 +7,9 @@ import config from '../config';
 import { waitDb } from './connection';
 import { Settings } from '../models/Settings';
 import { UserSettings } from '../models/UserSettings';
+import { Cluster } from '../models/Cluster';
 import constants from './constants';
+import { centerOfMass as turfCenter, points as turfPoints } from '@turf/turf';
 
 export const clientParams = {};
 export const userSettingsDef = {};
@@ -28,7 +30,19 @@ async function fillClientParams() {
     const settings = await Settings.find({}, { _id: 0, key: 1, val: 1 }, { lean: true }).exec();
     const { lang, hash, publicApiKeys, analytics, version, docs, env } = config;
 
-    Object.assign(clientParams, { lang, hash, publicApiKeys, analytics, version, docs, env });
+    // Calculate default map center from the clusters.
+    const locDef = { lat: 27, lng: 24, z: 3 };
+    const clusterPoints = await Cluster.find({ z: locDef.z }, { geo: 1 }, { lean: true }).exec();
+
+    if (clusterPoints.length) {
+        // Clusters centres are used to build convex hull polygon, its mass center is used as default map center.
+        const center = turfCenter(turfPoints(clusterPoints.map(a => a.geo)));
+
+        locDef.lng = center.geometry.coordinates[0];
+        locDef.lat = center.geometry.coordinates[1];
+    }
+
+    Object.assign(clientParams, { lang, hash, publicApiKeys, analytics, version, docs, env, locDef });
 
     for (const setting of settings) {
         clientParams[setting.key] = setting.val;
