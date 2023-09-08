@@ -42,6 +42,7 @@ define([
             const qParams = globalVM.router.params();
             const qType = Number(qParams.type);
 
+            this.auth = globalVM.repository['m/common/auth'];
             this.destroy = _.wrap(this.destroy, this.localDestroy);
 
             // Promise which will be resolved when map ready
@@ -472,32 +473,35 @@ define([
             let bbox;
             let fitBounds;
             const qParams = globalVM.router.params();
-            const zoom = Number(qParams.z) || (this.embedded ? defaults.zoom : Utils.getLocalStorage('map.zoom') || P.settings.locDef.z);
+            const zoom = Number(qParams.z) || (this.embedded ? defaults.zoom : Utils.getLocalStorage('map.zoom'));
             const system = qParams.s || Utils.getLocalStorage(this.embedded ? 'map.embedded.sys' : 'map.sys') || defaults.sys;
             const type = qParams.t || Utils.getLocalStorage(this.embedded ? 'map.embedded.type' : 'map.type') || defaults.type;
 
             if (this.embedded) {
-                if (this.point) {
+                if (this.point && this.point.geo()) {
+                    // Point with coordinates.
+                    center = this.point.geo();
+                } else if (this.point && this.point.regions().length) {
+                    // Point with regions (most "where is it" photos).
                     region = _.last(this.point.regions());
+                } else if (this.auth.loggedIn() && this.auth.iAm.regionHome.cid()) {
+                    // No coordinates and no regions, use home location if defined.
+                    region = this.auth.iAm.regionHome;
+                }
 
-                    if (this.point.geo()) {
-                        center = this.point.geo();
-                    } else if (region && region.center) {
-                        center = [region.center()[1], region.center()[0]];
+                if (region && region.center) {
+                    center = [region.center()[1], region.center()[0]];
 
-                        if (region.bboxhome || region.bbox) {
-                            bbox = region.bboxhome() || region.bbox();
+                    if (region.bboxhome || region.bbox) {
+                        bbox = region.bboxhome() || region.bbox();
 
-                            if (Utils.geo.checkbbox(bbox)) {
-                                fitBounds = [
-                                    [bbox[1], bbox[0]],
-                                    [bbox[3], bbox[2]],
-                                ];
-                            }
+                        if (Utils.geo.checkbbox(bbox)) {
+                            fitBounds = [
+                                [bbox[1], bbox[0]],
+                                [bbox[3], bbox[2]],
+                            ];
                         }
                     }
-                } else {
-                    center = this.options.center;
                 }
             } else {
                 center = qParams.g;
@@ -517,10 +521,6 @@ define([
                 }
             }
 
-            if (!center || !Utils.geo.checkLatLng(center)) {
-                center = new L.LatLng(P.settings.locDef.lat, P.settings.locDef.lng);
-            }
-
             this.map = new L.NeoMap(this.$dom.find('.map')[0], {
                 zoom: zoom,
                 zoomAnimation: L.Map.prototype.options.zoomAnimation && true,
@@ -531,8 +531,11 @@ define([
 
             if (fitBounds) {
                 this.map.fitBounds(fitBounds, { maxZoom: defaults.maxZoom });
-            } else {
+            } else if (center && Utils.geo.checkLatLng(center)) {
                 this.map.panTo(center);
+            } else {
+                // Fit world.
+                this.map.setView(new L.LatLng(P.settings.locDef.lat, P.settings.locDef.lng), P.settings.locDef.z);
             }
 
             this.markerManager = new MarkerManager(this.map, {
