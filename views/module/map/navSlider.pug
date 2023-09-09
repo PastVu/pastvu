@@ -11,7 +11,7 @@
                 span.glyphicon.glyphicon-arrow-left
             .mhome.fringe.butt(data-bind="click: toHome" aria-describedby="tohome")
                 span.glyphicon.glyphicon-home
-                .tltp.tltp-right.tltp-animate-opacity(style="white-space:nowrap" id="tohome" role="tooltip" data-bind="text: 'Set map to home region ' + (auth.loggedIn() ? auth.iAm.regionHome.title_local() : 'Moscow')")
+                .tltp.tltp-right.tltp-animate-opacity(style="white-space:nowrap" id="tohome" role="tooltip" data-bind="text: 'Set map to home region ' + (auth.loggedIn() ? auth.iAm.regionHome.title_local() : '')")
             .zoomin.fringe.butt.inout(data-bind="event: {'click': function () { changeZoom(1) }}")
                 span.glyphicon.glyphicon-plus
             .zoomout.fringe.butt.inout(data-bind="event: {'click': function () { changeZoom(-1) }}")

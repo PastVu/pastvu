@@ -132,11 +132,11 @@ define([
             }
 
             if (!center) {
-                latlng = [55.751667, 37.617778];
+                latlng = [P.settings.locDef.lat, P.settings.locDef.lng];
             }
 
             if (!z) {
-                z = 10;
+                z = P.settings.locDef.z;
             }
 
             this.map.setView(new L.LatLng(latlng[0], latlng[1]), z, { animate: true });

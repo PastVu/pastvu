@@ -160,7 +160,7 @@ define([
                      * will be possible to zoom map up to maxZoom value.  When
                      * current zoom > limitZoom, map will switch to maxAfter
                      * layer, keeping current zoom value. maxAfter value
-                     * format is "<sys id>.<type id>", e.g. 'osm.mapnik'.
+                     * format is "<sys id>.<type id>", e.g. 'osm.openstreetmap'.
                      */
                     {
                         id: 'kosmosnimki',
@@ -173,12 +173,10 @@ define([
                             maxZoom: 18,
                             maxNativeZoom: 17,
                         },
-                        limitZoom: 17,
-                        maxAfter: 'osm.mapnik',
                     },
                     {
-                        id: 'mapnik_ru',
-                        desc: 'Mapnik',
+                        id: 'openstreetmap',
+                        desc: 'OpenStreetMap',
                         selected: ko.observable(false),
                         options: {
                             urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -200,7 +198,7 @@ define([
                             attribution: 'OSM Deutsch | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
                         },
                         limitZoom: 18,
-                        maxAfter: 'osm.mapnik',
+                        maxAfter: 'osm.openstreetmap',
                     },
                     {
                         id: 'mapnik_fr',
@@ -214,7 +212,7 @@ define([
                             attribution: 'OSM Française | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
                         },
                         limitZoom: 18,
-                        maxAfter: 'osm.mapnik',
+                        maxAfter: 'osm.openstreetmap',
                     },
                     {
                         id: 'opentopomap',
@@ -223,24 +221,20 @@ define([
                         options: {
                             urlTemplate: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
                             updateWhenIdle: false,
-                            maxZoom: 18,
-                            maxNativeZoom: 17,
+                            maxZoom: 15,
+                            maxNativeZoom: 14,
                             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)',
                         },
-                        limitZoom: 17,
-                        maxAfter: 'osm.mapnik',
                     },
                     {
                         id: 'stamen_bw',
                         desc: 'Stamen b/w',
                         selected: ko.observable(false),
                         options: {
-                            urlTemplate: 'https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}.{ext}',
+                            urlTemplate: 'https://tiles.stadiamaps.com/tiles/stamen_toner/{z}/{x}/{y}.png',
                             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>',
-                            subdomains: 'abcd',
                             maxZoom: 19,
                             maxNativeZoom: 18,
-                            ext: 'png',
                             updateWhenIdle: false,
                         },
                     },
@@ -361,7 +355,7 @@ define([
                             maxNativeZoom: 18,
                         },
                         limitZoom: 18,
-                        maxAfter: 'osm.mapnik',
+                        maxAfter: 'osm.openstreetmap',
                     },
                     {
                         id: 'warfly',
