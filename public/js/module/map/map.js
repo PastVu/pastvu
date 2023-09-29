@@ -233,9 +233,7 @@ define([
                         options: {
                             urlTemplate: 'https://tiles.stadiamaps.com/tiles/stamen_toner/{z}/{x}/{y}.png',
                             attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> | &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-                            maxZoom: 19,
-                            maxNativeZoom: 18,
-                            updateWhenIdle: false,
+                            maxZoom: 21,
                         },
                     },
                 ]),
