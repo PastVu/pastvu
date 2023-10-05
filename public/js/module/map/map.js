@@ -233,9 +233,7 @@ define([
                         options: {
                             urlTemplate: 'https://tiles.stadiamaps.com/tiles/stamen_toner/{z}/{x}/{y}.png',
                             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>',
-                            maxZoom: 19,
-                            maxNativeZoom: 18,
-                            updateWhenIdle: false,
+                            maxZoom: 21,
                         },
                     },
                 ]),
@@ -362,7 +360,7 @@ define([
                         desc: 'WWII Aerial',
                         selected: ko.observable(false),
                         options: {
-                            urlTemplate: 'https://hutun.pastvu.com/tiles/4/061942/Z{z}/{y}/{x}.jpg',
+                            urlTemplate: 'https://hutun.ru/tiles/4/061942/Z{z}/{y}/{x}.jpg',
                             attribution: 'WWII Aerial photos 1939-1943 (coverage is limited to some locations) | <a href="http://retromap.ru/061942">retromap.ru</a>',
                             updateWhenIdle: false,
                             minZoom: 9,
