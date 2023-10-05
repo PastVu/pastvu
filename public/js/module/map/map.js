@@ -360,7 +360,7 @@ define([
                         desc: 'Аэрофото ВОВ',
                         selected: ko.observable(false),
                         options: {
-                            urlTemplate: 'https://hutun.pastvu.com/tiles/4/061942/Z{z}/{y}/{x}.jpg',
+                            urlTemplate: 'https://hutun.ru/tiles/4/061942/Z{z}/{y}/{x}.jpg',
                             attribution: 'Немецкая аэрофотосъемка 1939-1943 годов (доступна для отдельных городов) | <a href="http://retromap.ru/061942">retromap.ru</a>',
                             updateWhenIdle: false,
                             minZoom: 9,
