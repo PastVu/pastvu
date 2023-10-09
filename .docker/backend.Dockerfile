@@ -20,5 +20,6 @@ ENV NODE_ENV production
 COPY --from=builder /appBuild/ .
 RUN npm install --production
 RUN mkdir /store && chown node:node /store
+RUN mkdir /sitemap && chown node:node /sitemap
 USER node
 CMD ["bin/run"]
