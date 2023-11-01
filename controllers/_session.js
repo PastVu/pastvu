@@ -46,7 +46,7 @@ export const createSidCookieObj = (function () {
 
 // Create cookie lang object (temporary)
 const createLangCookieObj = (function () {
-    const key = 'past.lang';
+    const key = 'past_lang';
     const domain = config.client.hostname;
     const cookieUserMaxAge = SESSION_USER_LIFE / 1000;
     const cookieAnonMaxAge = SESSION_ANON_LIFE / 1000;
