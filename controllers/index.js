@@ -283,8 +283,9 @@ const giveIndexNews = (function () {
 // News archive
 async function giveAllNews() {
     const { handshake: { usObj: iAm } } = this;
+    // Admin can see all news including scheduled ones.
     const news = await News.find(
-        { pdate: { $lte: new Date() } },
+        iAm.isAdmin ? {} : { pdate: { $lte: new Date() } },
         { cdate: 0, tdate: 0, nocomments: 0 },
         { lean: true, sort: { pdate: -1 } }
     ).populate({ path: 'user', select: { _id: 0, login: 1, avatar: 1, disp: 1 } }).exec();

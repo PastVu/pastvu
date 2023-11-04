@@ -111,14 +111,23 @@ define([
         },
         routeHandler: function () {
             const cid = Number(globalVM.router.params().cid);
+            const action = globalVM.router.params().action;
 
-            this.createMode(!cid);
+            if (action === 'delete') {
+                this.getOneNews(cid, function () {
+                    this.deleteNews();
+                }, this);
+            }
+
+            this.createMode(action === 'create');
 
             if (!this.createMode()) {
+                // Edit news.
                 this.getOneNews(cid, function () {
                     this.fillData();
                 }, this);
             } else {
+                // Create news.
                 this.resetData();
             }
         },
@@ -165,6 +174,31 @@ define([
             } else {
                 this.tDateOff();
                 this.news.tdate('');
+            }
+        },
+        deleteNews: function () {
+            if (this.news.ccount && this.news.ccount() > 0) {
+                noties.error({
+                    message: 'Новость содержит комментарии и не может быть удалена',
+                });
+            } else {
+                const cid = this.news.cid();
+
+                noties.confirm({
+                    message: `Новость "${this.news.title()}" будет удалена`,
+                    onOk: function (confirmer) {
+                        confirmer.close();
+                        socket.run('admin.deleteNews', { cid }, true)
+                            .then(function () {
+                                noties.alert({
+                                    message: 'Новость удалена',
+                                    type: 'success',
+                                    layout: 'topRight',
+                                });
+                                globalVM.router.navigate('/admin/news/');
+                            });
+                    },
+                });
             }
         },
 
