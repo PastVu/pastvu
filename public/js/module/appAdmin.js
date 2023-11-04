@@ -70,8 +70,8 @@ require([
                     params = { section: section };
                     modules.push({ module: 'm/admin/main', container: '#bodyContainer' });
                 } else if (section === 'news') {
-                    if (param1 === 'create' || param1 === 'edit') {
-                        params = { section: section, cid: param2 };
+                    if (param1 === 'create' || param1 === 'edit' || param1 === 'delete') {
+                        params = { section: section, cid: param2, action: param1 };
                         modules.push({ module: 'm/admin/newsEdit', container: '#bodyContainer' });
                     } else {
                         params = { section: section, cid: param1 };

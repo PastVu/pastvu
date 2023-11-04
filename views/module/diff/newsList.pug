@@ -9,7 +9,7 @@
     .news
         //ko foreach: news
         hr
-        .novel.clearfix
+        .novel.clearfix(data-bind="css: {future: new Date($data.pdate) > new Date()}")
             .newsLeft
                 .newsAvatar.fringe(data-bind="attr: {href: '/u/' + $data.user.login}")
                     img(data-bind="attr: {src: $data.user.avatar}")
@@ -27,6 +27,12 @@
                     a.newsEdit(data-bind="attr: {href: '/admin/news/edit/' + $data.cid}")
                         span.glyphicon.glyphicon-pencil
                         |  Edit
+                    // /ko
+                    //ko if: $parent.canEdit() && !$data.ccount
+                    .dotDelimeter ·
+                    a.newsEdit(data-bind="attr: {href: '/admin/news/delete/' + $data.cid}")
+                        span.glyphicon.glyphicon-trash
+                        |  Delete
                     // /ko
                 .newsNotice(data-bind="html: $data.notice, css: {expandable: $data.expand}")
                 //ko if: $data.expand

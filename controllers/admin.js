@@ -54,6 +54,32 @@ async function saveNews(iAm, { cid, pdate, tdate, title, notice, txt, nocomments
     return { news: novel };
 }
 
+async function deleteNews(data) {
+    const { handshake: { usObj: iAm } } = this;
+
+    if (!iAm.isAdmin) {
+        throw new AuthorizationError();
+    }
+
+    if (!data.cid) {
+        throw new BadParamsError();
+    }
+
+    const novel = await News.findOne({ cid: data.cid }).exec();
+
+    if (!novel) {
+        throw new NotFoundError(constantsError.NO_SUCH_NEWS);
+    }
+
+    if (novel.ccount > 0) {
+        throw new NoticeError(constantsError.NEWS_CONTAINS_COMMENTS);
+    }
+
+    await News.deleteOne({ cid: data.cid }).exec();
+
+    return {};
+}
+
 function getOnlineStat() {
     const { handshake: { usObj: iAm } } = this;
 
@@ -220,9 +246,11 @@ async function saveUserCredentials({ login, role, regions }) {
 getOnlineStat.isPublic = true;
 saveOrCreateNews.isPublic = true;
 saveUserCredentials.isPublic = true;
+deleteNews.isPublic = true;
 
 export default {
     getOnlineStat,
     saveOrCreateNews,
     saveUserCredentials,
+    deleteNews,
 };
