@@ -1,3 +1,8 @@
+/**
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
+ */
+
 module.exports = function (config, appRequire) {
     const _ = appRequire('lodash');
 
@@ -22,17 +27,17 @@ module.exports = function (config, appRequire) {
         storePath: '/store',
 
         mongo: {
-            connection: 'mongodb://mongo:27017/pastvu',
+            connection: 'mongodb://mongo/pastvu',
         },
         mongo_api: {
-            con: 'mongodb://mongo:27017/pastvu',
+            con: 'mongodb://mongo/pastvu',
         },
         redis: {
             host: 'redis',
         },
         mail: {
             type: 'SMTP',
-            host: 'mailcatcher',
+            host: 'mailpit',
             port: 1025,
         },
     });
