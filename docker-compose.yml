@@ -1,38 +1,24 @@
 version: '3.9'
 
+include:
+  - .docker/mongo.yaml
+  - .docker/redis.yaml
+  - .docker/mailpit.yaml
+
 x-defaults: &app-image
   build: ./.docker
   image: pastvu_node
   environment:
     - NODE_ENV=development
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
 
 services:
-  mongo:
-    image: mongo:4.4
-    volumes:
-      - mongo4:/data/db
-      - ./.docker/dev-initdb.sh:/usr/local/bin/initdb
-    expose:
-      - "27017"
-    ports:
-      - "127.0.0.1:27017:27017"
-
-  redis:
-    image: redis:6.2.6
-    expose:
-      - "6379"
 
   app:
     << : *app-image
-    expose:
-      - "3000"
-      - "3010"
-      - "3011"
     ports:
       - "3000:3000"
-    depends_on:
-      - "mongo"
-      - "redis"
     volumes:
       - .:/code
       - store:/store
@@ -40,8 +26,6 @@ services:
 
   worker:
     << : *app-image
-    depends_on:
-      - "app"
     volumes:
       - .:/code
       - store:/store
@@ -49,18 +33,12 @@ services:
 
   notifier:
     << : *app-image
-    depends_on:
-      - "app"
     volumes:
       - .:/code
     command: run notifier
 
   uploader:
     << : *app-image
-    expose:
-      - "3001"
-    depends_on:
-      - "app"
     volumes:
       - .:/code
       - store:/store
@@ -68,10 +46,6 @@ services:
 
   downloader:
     << : *app-image
-    expose:
-      - "3002"
-    depends_on:
-      - "app"
     volumes:
       - .:/code
       - store:/store:ro
@@ -79,21 +53,11 @@ services:
 
   sitemap:
     << : *app-image
-    depends_on:
-      - "app"
     volumes:
       - .:/code
       - sitemap:/sitemap
     command: run sitemap
 
-  mailcatcher:
-    image: axllent/mailpit:latest
-    expose:
-     - "1025"
-    ports:
-     - "127.0.0.1:1080:8025"
-
 volumes:
   store:
   sitemap:
-  mongo4:
