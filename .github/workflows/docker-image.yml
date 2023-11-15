@@ -33,7 +33,7 @@ jobs:
 
       - name: Backend metadata
         id: docker_meta_backend
-        uses: docker/metadata-action@v3
+        uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/pastvu/backend
 
@@ -51,7 +51,7 @@ jobs:
 
       - name: Frontend Metadata
         id: docker_meta_frontend
-        uses: docker/metadata-action@v3
+        uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/pastvu/frontend
 
