@@ -23,6 +23,9 @@ services:
       - .:/code
       - store:/store
     command: run app --primary
+    depends_on:
+      - "mongo"
+      - "redis"
 
   worker:
     << : *app-image
@@ -30,12 +33,16 @@ services:
       - .:/code
       - store:/store
     command: run worker
+    depends_on:
+      - "app"
 
   notifier:
     << : *app-image
     volumes:
       - .:/code
     command: run notifier
+    depends_on:
+      - "app"
 
   uploader:
     << : *app-image
@@ -43,6 +50,8 @@ services:
       - .:/code
       - store:/store
     command: run uploader
+    depends_on:
+      - "app"
 
   downloader:
     << : *app-image
@@ -50,6 +59,8 @@ services:
       - .:/code
       - store:/store:ro
     command: run downloader
+    depends_on:
+      - "app"
 
   sitemap:
     << : *app-image
@@ -57,6 +68,8 @@ services:
       - .:/code
       - sitemap:/sitemap
     command: run sitemap
+    depends_on:
+      - "app"
 
 volumes:
   store:
