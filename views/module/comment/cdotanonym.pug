@@ -1,4 +1,4 @@
-.c(id="c{{=c.cid}}", class="l{{=c.level}}")
+.c(id="c{{=c.cid}}", class="l{{=c.level}}{{?c.latest}} latest{{?}}")
     a.hrefava(href="{{='/u/'+c.user.login}}")
         | {{?c.user.avatar === undefined}}
         .overprint {{=c.user.disp[0]}}
@@ -21,5 +21,9 @@
             | {{?c.lastChanged}}
             .dotDelimeter ·
             .changed(title="Показать историю изменений") {{='Изменен '+it.fDateIn(new Date(c.lastChanged))}}
+            | {{?}}
+            | {{?c.latest}}
+            .dotDelimeter ·
+            .badge.badge-latest Последний комментарий
             | {{?}}
         .ctext {{=c.txt}}
