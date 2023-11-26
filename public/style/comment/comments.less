@@ -1,6 +1,7 @@
 @import '../_vars.less';
 @import '../bs/variables.less';
 @import '../bs/mixins.less';
+@import '../bs/badges.less';
 
 @headColor: #677A8F;
 @headColorHover: @MainBlueColor;
@@ -26,6 +27,10 @@
         background-image: url(/img/misc/load.gif);
         background-repeat: no-repeat;
         background-position: 0 50%;
+    }
+
+    .commentsLatest {
+        margin-left: 8px;
     }
 
     > .cmtsHead {
@@ -131,6 +136,13 @@
 
             .levelLooping(0, 58);
 
+            .badge {
+                font-size: 11px;
+                font-weight: normal;
+                color: #f2f2f2;
+                background-color: rgba(85, 85, 85, 80%);
+            }
+
             &.isnew {
                 padding-left: 5px;
                 border-width: 0 0 0 1px;
@@ -138,6 +150,7 @@
                 border-color: #81df7d;
                 background-color: rgba(174, 255, 184, 30%);
             }
+
             //Редактируемый комментарий скрывается, заменяясь на поле ввода
             &.edit {
                 display: none;

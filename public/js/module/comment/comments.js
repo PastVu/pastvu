@@ -66,6 +66,7 @@ define([
             this.count = ko.observable(this.options.count || 0);
             this.countNew = ko.observable(this.options.countNew || 0);
             this.countDel = ko.observable(0);
+            this.latestCommentStamp = ko.observable(0);
             this.subscr = ko.observable(this.options.subscr || false);
             this.nocomments = ko.observable(this.options.nocomments);
             this.canReply = ko.observable(this.options.canReply);
@@ -393,6 +394,7 @@ define([
                     this.countDel(data.countDel || 0);
                     this.canModerate(canModerate);
                     this.canReply(canReply);
+                    this.latestCommentStamp(data.latestCommentStamp);
 
                     if (Utils.isType('function', cbBeforeRender)) {
                         cbBeforeRender.call(ctx, data);
@@ -496,6 +498,8 @@ define([
                 if (this.countNew()) {
                     this.navCheckBefore(0, true);
                 }
+            } else if (ccid === 'latest') {
+                $element = $('.latest', this.$cmts);
             } else {
                 $element = $('#c' + ccid, this.$cmts);
                 highlight = true;
@@ -541,7 +545,9 @@ define([
         highlightOff: function () {
             $('.c.hl', this.$cmts).removeClass('hl');
         },
-
+        getLatestCommentStamp: function () {
+            return formatDateRelative(new Date(this.latestCommentStamp()));
+        },
         // Создаёт поле ввода комментария. Ответ или редактирование
         inputCreate: function (relatedComment, $cedit) {
             let $cadd;
@@ -1234,6 +1240,13 @@ define([
                 comment.user = self.users[comment.user];
                 comment.can.edit = true;
                 comment.can.del = true;
+
+                // New comment is the latest, remove previous latest comment highlight.
+                comment.latest = true;
+                $('.badge-latest', self.$cmts).prev('.dotDelimeter').remove();
+                $('.badge-latest', self.$cmts).remove();
+                $('.latest', self.$cmts).removeClass('latest');
+                self.latestCommentStamp(comment.stamp);
 
                 self.commentsHash[comment.cid] = comment;
 
