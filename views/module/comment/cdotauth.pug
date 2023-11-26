@@ -23,11 +23,11 @@
             a.stamp(data-replace="true", href="?hl=comment-{{=c.cid}}") {{=it.fDate(new Date(c.stamp))}}
             | {{?c.lastChanged}}
             .dotDelimeter ·
-            .changed(title="Show history of changes") {{='Изменен '+it.fDateIn(new Date(c.lastChanged))}}
+            .changed(title="Show history of changes") {{='Changed '+it.fDateIn(new Date(c.lastChanged))}}
             | {{?}}
             | {{?c.latest}}
             .dotDelimeter ·
-            .badge.badge-latest Последний комментарий
+            .badge.badge-latest Latest comment
             | {{?}}
         .ctext {{=c.txt}}
         .cacts
