@@ -60,6 +60,8 @@ const permissions = {
 function commentsTreeBuildAnonym(comments, usersHash) {
     const hash = {};
     const tree = [];
+    let latestCid = 0;
+    let latestStamp = 0;
 
     for (const comment of comments) {
         const user = usersHash[String(comment.user)];
@@ -96,10 +98,25 @@ function commentsTreeBuildAnonym(comments, usersHash) {
             tree.push(comment);
         }
 
+        if (comment.stamp > latestStamp) {
+            latestCid = comment.cid;
+            latestStamp = comment.stamp;
+        }
+
         hash[comment.cid] = comment;
     }
 
-    return tree;
+    // Set latest comment flag.
+    let latestCommentStamp = 0;
+
+    if (latestCid) {
+        const latestComment = hash[latestCid];
+
+        latestComment.latest = true;
+        latestCommentStamp = latestComment.stamp;
+    }
+
+    return { tree, latestCommentStamp };
 }
 
 async function commentsTreeBuildAuth({ iAm, type, commentModel, obj, canReply, showDel }) {
@@ -143,6 +160,8 @@ async function commentsTreeBuildAuth({ iAm, type, commentModel, obj, canReply, s
     const commentsArr = [];
     const commentsHash = {};
     const usersSet = new Set();
+    let latestCid = 0;
+    let latestStamp = 0;
 
     for (const comment of comments) {
         comment.user = String(comment.user);
@@ -229,10 +248,25 @@ async function commentsTreeBuildAuth({ iAm, type, commentModel, obj, canReply, s
                 comment.isnew = true;
                 countNew++;
             }
+
+            if (comment.stamp > latestStamp) {
+                latestCid = comment.cid;
+                latestStamp = comment.stamp;
+            }
         }
 
         commentsHash[comment.cid] = comment;
         commentsArr.push(comment);
+    }
+
+    // Set latest comment flag.
+    let latestCommentStamp = 0;
+
+    if (latestCid) {
+        const latestComment = commentsHash[latestCid];
+
+        latestComment.latest = true;
+        latestCommentStamp = latestComment.stamp;
     }
 
     const { usersById, usersByLogin } = await getUsersHashForComments(usersSet);
@@ -266,6 +300,7 @@ async function commentsTreeBuildAuth({ iAm, type, commentModel, obj, canReply, s
 
         comment.user = usersById[comment.user].login;
 
+
         if (comment.lastChanged !== undefined) {
             comment.lastChanged = comment.lastChanged.getTime();
         }
@@ -277,7 +312,7 @@ async function commentsTreeBuildAuth({ iAm, type, commentModel, obj, canReply, s
         }
     }
 
-    return { tree: commentsTree, users: usersByLogin, countTotal, countNew, countDel };
+    return { tree: commentsTree, users: usersByLogin, countTotal, countNew, countDel, latestCommentStamp };
 }
 
 async function commentsTreeBuildCanModerate({ iAm, type, commentModel, obj, showDel }) {
@@ -319,6 +354,9 @@ async function commentsTreeBuildCanModerate({ iAm, type, commentModel, obj, show
             subscrController.commentViewed(obj._id, iAm.user);
         }
     }
+
+    let latestCid = 0;
+    let latestStamp = 0;
 
     for (const comment of comments) {
         if (comment.level === undefined) {
@@ -365,7 +403,22 @@ async function commentsTreeBuildCanModerate({ iAm, type, commentModel, obj, show
                 comment.isnew = true;
                 countNew++;
             }
+
+            if (comment.stamp > latestStamp) {
+                latestCid = comment.cid;
+                latestStamp = comment.stamp;
+            }
         }
+    }
+
+    // Set latest comment flag.
+    const latestComment = commentsMap.get(latestCid);
+    let latestCommentStamp = 0;
+
+    if (latestComment) {
+        latestComment.latest = true;
+        commentsMap.set(latestCid, latestComment);
+        latestCommentStamp = latestComment.stamp;
     }
 
     const { usersById, usersByLogin } = await getUsersHashForComments(usersSet);
@@ -374,7 +427,7 @@ async function commentsTreeBuildCanModerate({ iAm, type, commentModel, obj, show
         comment.user = usersById[comment.user].login;
     }
 
-    return { tree: commentsTree, users: usersByLogin, countTotal, countNew, countDel };
+    return { tree: commentsTree, users: usersByLogin, countTotal, countNew, countDel, latestCommentStamp };
 }
 
 async function commentsTreeBuildDel(comment, childs, checkMyId) {
@@ -506,13 +559,14 @@ async function getCommentsObjAnonym({ cid, type = 'photo' }) {
     let tree;
     let usersById;
     let usersByLogin;
+    let latestCommentStamp = 0;
 
     if (usersSet.size) {
         ({ usersById, usersByLogin } = await getUsersHashForComments(usersSet));
-        tree = commentsTreeBuildAnonym(comments, usersById);
+        ({ tree, latestCommentStamp } = commentsTreeBuildAnonym(comments, usersById));
     }
 
-    return { comments: tree || [], countTotal: comments.length, users: usersByLogin };
+    return { comments: tree || [], countTotal: comments.length, users: usersByLogin, latestCommentStamp };
 }
 
 async function getCommentsObjAuth({ cid, type = 'photo', showDel = false }) {
@@ -536,14 +590,14 @@ async function getCommentsObjAuth({ cid, type = 'photo', showDel = false }) {
     const canModerate = permissions.canModerate(type, obj, iAm);
     const canReply = permissions.canReply(type, obj, iAm);
 
-    const { tree, users, countTotal, countNew, countDel } = await (canModerate ?
+    const { tree, users, countTotal, countNew, countDel, latestCommentStamp } = await (canModerate ?
         // Если это модератор данной фотографии или администратор новости
         commentsTreeBuildCanModerate({ iAm, type, commentModel, obj, showDel }) :
         // Если это зарегистрированный пользователь
         commentsTreeBuildAuth({ iAm, type, commentModel, obj, canReply, showDel })
     );
 
-    return { comments: tree, users, countTotal, countNew, countDel, canModerate, canReply };
+    return { comments: tree, users, countTotal, countNew, countDel, canModerate, canReply, latestCommentStamp };
 }
 
 // Select comments for object
