@@ -7,7 +7,7 @@
 /**
  * Модель страницы фотографии
  */
-define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'noties', 'model/Photo', 'model/Region', 'model/storage', 'm/photo/fields', 'm/photo/status', 'text!tpl/photo/photo.pug', 'css!style/photo/photo', 'bs/ext/multiselect', 'jquery-plugins/imgareaselect'], function (_, Utils, socket, P, ko, koMapping, Cliche, globalVM, renderer, moment, noties, Photo, Region, storage, fields, statuses, pug) {
+define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'noties', 'model/Photo', 'model/Region', 'model/storage', 'm/photo/fields', 'm/photo/status', 'text!tpl/photo/photo.pug', 'css!style/photo/photo', 'bs/ext/multiselect', 'jquery-plugins/imgareaselect'], function (_, Utils, Browser, socket, P, ko, koMapping, Cliche, globalVM, renderer, moment, noties, Photo, Region, storage, fields, statuses, pug) {
     const $window = $(window);
     const imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
     const statusKeys = statuses.keys;
@@ -2227,10 +2227,17 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         setDirOptionHTML: function (option, item) {
             // Render option content as html to decode entitites.
             if (item !== undefined) {
+                const iconIndex = Browser.support.selectOptionFont ? 0 : 1;
+
                 ko.applyBindingsToNode(option, {
-                    html: fields.dirIcons[item] + '&nbsp;' + fields.dirVals[item],
+                    html: fields.dirIcons[item][iconIndex] + '&nbsp;' + fields.dirVals[item],
                 });
             }
+        },
+        getDirIcon: function (dir) {
+            const iconIndex = Browser.support.selectOptionFont ? 0 : 1;
+
+            return fields.dirIcons[dir][iconIndex];
         },
     });
 });
