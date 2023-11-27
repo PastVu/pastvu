@@ -291,7 +291,7 @@
         //ko if: p.dir && p.dir() && p.dir().length
         .info
             span.infoName(data-bind="html: fields.dir+':'")
-            span.direction-icon(data-bind="html: fields.dirIcons[p.dir()]")
+            span.direction-icon(data-bind="html: getDirIcon(p.dir())")
             | &nbsp;
             span(data-bind="text: fields.dirVals[p.dir()]", style="text-transform: lowercase;")
         // /ko
