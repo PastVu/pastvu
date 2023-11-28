@@ -43,14 +43,13 @@ define([
             if (this.selectedInit && this.selectedInit.length) {
                 this.selectedInit.forEach(function (region) {
                     this.selectedInitHash[region.cid] = region;
-                    this.selectedInitTkns.push({ value: region.title_en, label: region.title_en });
+                    this.selectedInitTkns.push({ cid: region.cid, value: region.title_en });
                 }, this);
             }
 
             this.regionsTree = ko.observableArray();
             this.regionsTypehead = [];
             this.regionsHashByCid = {};
-            this.regionsHashByTitle = {};
 
             this.sortBy = ko.observable(Utils.getLocalStorage('regionSelect.sortBy') || 'alphabet'); // alphabet, sub, photo, pic, comment
             this.sortOrder = ko.observable(Utils.getLocalStorage('regionSelect.sortOrder') || 1); // 1, -1
@@ -193,7 +192,7 @@ define([
             const result = [];
 
             tokens.forEach(function (item) {
-                const region = this.regionsHashByTitle[item.value];
+                const region = this.regionsHashByCid[item.cid];
 
                 if (region && region.exists) {
                     result.push(fields ? _.pick(region, fields) : region);
@@ -209,7 +208,7 @@ define([
             const results = [];
 
             tokens.forEach(function (item) {
-                const region = this.regionsHashByTitle[item.value];
+                const region = this.regionsHashByCid[item.cid];
 
                 if (region && region.exists) {
                     const result = [];
@@ -239,7 +238,7 @@ define([
             const result = [];
 
             tokens.forEach(function (item) {
-                const region = this.regionsHashByTitle[item.value];
+                const region = this.regionsHashByCid[item.cid];
 
                 if (region && region.exists) {
                     result.push(region.cid);
@@ -266,7 +265,7 @@ define([
         },
         createTokenfield: function () {
             const engine = new Bloodhound({
-                local: this.regionsTypehead, /*[{cid: 2, title: 'США', tokens: ['2', 'USA', 'США']}]*/
+                local: this.regionsTypehead, /*[{cid: 2, value: 'США', tokens: ['2', 'USA', 'США']}]*/
                 datumTokenizer: function (d) {
                     // Join all tokens using space and tokenise using whitespace.
                     return Bloodhound.tokenizers.whitespace(d.tokens.join(' '));
@@ -290,13 +289,13 @@ define([
                         highlight: true,
                     }, {
                         name: 'regions',
-                        displayKey: 'title',
+                        displayKey: 'value',
                         limit: 10,
                         templates: {
                             'suggestion': function (context) {
-                                const title = '<p>' + context.title + '</p>';
+                                const title = `<p>${context.value}</p>`;
 
-                                return title + (context.parentTitle ? "<p style='color: #aaa; font-size 0.9em'>" + context.parentTitle + '</p>' : '');
+                                return title + (context.parentTitle ? `<p style="color: #aaa; font-size 0.9em">${context.parentTitle}</p>` : '');
                             },
                         },
                         source: engine.ttAdapter(),
@@ -309,7 +308,7 @@ define([
                     const existingTokens = $(this).tokenfield('getTokens');
 
                     $.each(existingTokens, function (index, token) {
-                        if (token.value === e.attrs.value) {
+                        if (token.cid === e.attrs.cid) {
                             e.preventDefault();
                         }
                     });
@@ -319,8 +318,7 @@ define([
         // Событие создания токена. Вызовется как при создании в поле,
         // так и при удалении из дерева (потому что при этом пересоздаются неудаляемые токены).
         onCreateToken: function (e) {
-            const title = e.attrs.value;
-            const region = this.regionsHashByTitle[title];
+            const region = this.regionsHashByCid[e.attrs.cid];
 
             if (region && region.exists) {
                 //Если регион уже выбран, значит, мы создаем токен вручную после клика по узлу дерева
@@ -338,8 +336,7 @@ define([
         },
         //Событие удаления токена непосредственно из поля
         onRemoveToken: function (e) {
-            const title = e.attrs.value;
-            const region = this.regionsHashByTitle[title];
+            const region = this.regionsHashByCid[e.attrs.cid];
 
             if (region && region.exists) {
                 region.selected(false);
@@ -349,12 +346,12 @@ define([
         //Ручное удаление токена, работает полной заменой токенов, кроме удаляемого.
         //Поэтому для удаляемого токена событие onRemoveToken не сработает, но сработает onCreateToken для каждого неудаляемого
         removeToken: function (region) {
-            const title = region.title_local;
+            const cid = region.cid;
             const tkn = this.$dom.find('.regionstkn');
             const tokensExists = tkn.tokenfield('getTokens');
 
             _.remove(tokensExists, function (item) {
-                return item.value === title;
+                return item.cid === cid;
             });
             tkn.tokenfield('setTokens', tokensExists);
         },
@@ -386,13 +383,12 @@ define([
                 return;
             }
 
-            const title = region.title_en;
             const add = !region.selected();
             const tkn = this.$dom.find('.regionstkn');
 
             if (add) {
                 if (this.selectRegion(region)) {
-                    tkn.tokenfield('createToken', { value: title, label: title });
+                    tkn.tokenfield('createToken', { cid: region.cid, value: region.title_en });
                 }
             } else {
                 region.selected(false);
@@ -495,11 +491,10 @@ define([
                 cid = region.cid;
                 this.regionsTypehead.push({
                     cid: cid,
-                    title: region.title_en,
-                    parentTitle: region.parent && region.parent.title_local,
+                    value: region.title_en,
+                    parentTitle: region.parent && region.parent.title_en,
                     tokens: [String(cid), region.title_local, region.title_en],
                 });
-                this.regionsHashByTitle[region.title_en] = region;
 
                 const proceed = !filterByCids || parentsCidsFilterHash[cid] === true ||
                     region.level > 0 && parentsCidsFilterHash[region.parents[region.level - 1]] === true;
