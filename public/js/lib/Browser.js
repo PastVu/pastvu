@@ -67,7 +67,6 @@ define([], function () {
             }()),
             cssAnimation: true,
             chromeframe: false,
-            selectOptionFont: !(uA.indexOf('FIREFOX') >= 0 || navigator.platform.toUpperCase().indexOf('MAC') >= 0),
         },
     };
 
