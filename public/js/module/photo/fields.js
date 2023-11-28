@@ -3,8 +3,34 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-define(['m/photo/status'], function () {
+define(['Browser'], function (Browser) {
+    const dirIcons = {
+        // Arrows are not unified accross browsers and platforms.
+        // The choices we use [default, FF, Mac].
+        n: ['&#xf1e0;', '🡡', '↑'],
+        ne: ['&#xf1e1;', '🡥', '↗'],
+        e: ['&#xf1df;', '🡢', '→'],
+        se: ['&#xf1e4;', '🡦', '↘'],
+        s: ['&#xf1e3;', '🡣', '↓'],
+        sw: ['&#xf1e5;', '🡧', '↙'],
+        w: ['&#xf1e6;', '🡠', '←'],
+        nw: ['&#xf1e2;', '🡤', '↖'],
+        aero: ['&#xe3f7;', '◎', '◎'],
+    };
+
+    const getDirIcon = function (dir) {
+        const iconIndex = Browser.platform.indexOf('MAC') >= 0 ? 2 : Browser.name === 'FIREFOX' ? 1 : 0;
+
+        if (iconIndex === 2 && !(dir === 'e' || dir === 'w' || dir === 'aero')) {
+            // Ugly hack to align text in options on Mac.
+            return dirIcons[dir][iconIndex] + '&nbsp;';
+        }
+
+        return dirIcons[dir][iconIndex];
+    };
+
     return {
+        getDirIcon: getDirIcon,
         s: 'Status',
         y: 'Year',
         geo: 'Coordinates',
@@ -31,17 +57,6 @@ define(['m/photo/status'], function () {
             w: 'West',
             nw: 'Northwest',
             aero: 'Aero/Satellite',
-        },
-        dirIcons: {
-            n: ['&#xf1e0;', '🡡'],
-            ne: ['&#xf1e1;', '🡥'],
-            e: ['&#xf1df;', '🡢'],
-            se: ['&#xf1e4;', '🡦'],
-            s: ['&#xf1e3;', '🡣'],
-            sw: ['&#xf1e5;', '🡧'],
-            w: ['&#xf1e6;', '🡠'],
-            nw: ['&#xf1e2;', '🡤'],
-            aero: ['&#xe3f7;', '◎'],
         },
         dirValsArr: ['w', 'nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'aero'],
         watersign: {

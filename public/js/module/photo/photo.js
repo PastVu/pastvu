@@ -2227,17 +2227,13 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
         setDirOptionHTML: function (option, item) {
             // Render option content as html to decode entitites.
             if (item !== undefined) {
-                const iconIndex = Browser.support.selectOptionFont ? 0 : 1;
-
                 ko.applyBindingsToNode(option, {
-                    html: fields.dirIcons[item][iconIndex] + '&nbsp;' + fields.dirVals[item],
+                    html: fields.getDirIcon(item) + '&nbsp;' + fields.dirVals[item],
                 });
             }
         },
         getDirIcon: function (dir) {
-            const iconIndex = Browser.support.selectOptionFont ? 0 : 1;
-
-            return fields.dirIcons[dir][iconIndex];
+            return fields.getDirIcon(dir);
         },
     });
 });
