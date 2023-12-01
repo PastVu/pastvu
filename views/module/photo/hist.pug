@@ -65,6 +65,12 @@
                 | Комментирование {{?h.values.nocomments}}запрещено{{??}}разрешено{{?}}
             | {{?}}
 
+            | {{?h.values.histmissing}}
+            .info.iconed.red
+                span.glyphicon(class="glyphicon-floppy-remove")
+                | Доступна не вся история изменений
+            | {{?}}
+
             | {{?h.reason}}
             .value
                 .name Причина
