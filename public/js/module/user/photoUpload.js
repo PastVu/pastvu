@@ -98,7 +98,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                     this.$fileupload.fileupload('option', {
                         url: '/upload',
                         dropZone: $(document), //this.$dom.find('.addfiles_area'),
-                        pasteZone: $(document),
+                        pasteZone: null,
                         singleFileUploads: true,
                         sequentialUploads: false,
                         limitConcurrentUploads: 3,
