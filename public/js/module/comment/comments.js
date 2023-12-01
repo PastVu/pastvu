@@ -1247,14 +1247,12 @@ define([
                 comment.can.edit = true;
                 comment.can.del = true;
 
+                self.commentsHash[comment.cid] = comment;
+
                 // New comment is the latest, remove previous latest comment highlight.
                 comment.latest = true;
-                $('.badge-latest', self.$cmts).prev('.dotDelimeter').remove();
-                $('.badge-latest', self.$cmts).remove();
                 $('.latest', self.$cmts).removeClass('latest');
-                self.latestCommentStamp(comment.stamp);
-
-                self.commentsHash[comment.cid] = comment;
+                self.latestCommentCid(comment.cid);
 
                 const $c = $(tplCommentAuth(comment, {
                     reply: self.canReply(),
