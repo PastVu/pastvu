@@ -792,6 +792,12 @@ async function saveHistory({ oldPhotoObj, photo, canModerate, reason, parsedFile
             add: undefined,
             del: undefined,
         }];
+
+        if (oldPhotoObj.s > 0) {
+            // Photo was added before history functionality. Make intial record
+            // reflect upload time.
+            histories[0].values = { s: 0, histmissing: 1 };
+        }
     }
 
     const lastFieldsIndexes = histories.reduce((result, historyEntry, historyIndex) => {
@@ -3195,12 +3201,20 @@ async function giveObjHist({ cid, fetchId, showDiff }) {
         historySelect.diff = 0;
     }
 
-    const histories = await PhotoHistory
+    let histories = await PhotoHistory
         .find({ cid }, historySelect, { lean: true, sort: { stamp: 1 } })
         .populate({ path: 'user', select: { _id: 0, login: 1, avatar: 1, disp: 1 } }).exec();
 
     if (_.isEmpty(histories)) {
-        throw new NoticeError(constantsError.HISTORY_DOESNT_EXISTS);
+        // This is workaround for old photos that did not have history. When
+        // this old photo is editied the first time, proper history record will be created.
+        const user = await User.findOne({ _id: photo.user }, { _id: 0, login: 1, avatar: 1, disp: 1 }).exec();
+
+        histories = [{
+            user,
+            stamp: photo.ldate,
+            values: { s: 0, histmissing: 1 },
+        }];
     }
 
     const reasons = new Set();

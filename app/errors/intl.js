@@ -88,8 +88,6 @@ export default {
     CONVERT_PHOTOS_ALL: 'Error sending for conversion',
     CONVERT_PROMISE_GENERATOR: 'Ошибка выполнения операции в конвейере конвертации',
 
-    HISTORY_DOESNT_EXISTS: 'The are no history for this object',
-
     SETTING_DOESNT_EXISTS: 'Such setting does not exist',
 
     MAIL_SEND: 'Error sending mail',
