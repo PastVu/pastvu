@@ -22,8 +22,4 @@
             .dotDelimeter ·
             .changed(title="Show history of changes") {{='Changed '+it.fDateIn(new Date(c.lastChanged))}}
             | {{?}}
-            | {{?c.latest}}
-            .dotDelimeter ·
-            .badge.badge-latest Latest comment
-            | {{?}}
         .ctext {{=c.txt}}

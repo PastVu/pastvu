@@ -66,7 +66,7 @@ define([
             this.count = ko.observable(this.options.count || 0);
             this.countNew = ko.observable(this.options.countNew || 0);
             this.countDel = ko.observable(0);
-            this.latestCommentStamp = ko.observable(0);
+            this.latestCommentCid = ko.observable(0);
             this.subscr = ko.observable(this.options.subscr || false);
             this.nocomments = ko.observable(this.options.nocomments);
             this.canReply = ko.observable(this.options.canReply);
@@ -394,7 +394,7 @@ define([
                     this.countDel(data.countDel || 0);
                     this.canModerate(canModerate);
                     this.canReply(canReply);
-                    this.latestCommentStamp(data.latestCommentStamp);
+                    this.latestCommentCid(data.latestCid);
 
                     if (Utils.isType('function', cbBeforeRender)) {
                         cbBeforeRender.call(ctx, data);
@@ -500,6 +500,8 @@ define([
                 }
             } else if (ccid === 'latest') {
                 $element = $('.latest', this.$cmts);
+                ccid = this.latestCommentCid();
+                highlight = true;
             } else {
                 $element = $('#c' + ccid, this.$cmts);
                 highlight = true;
@@ -546,7 +548,11 @@ define([
             $('.c.hl', this.$cmts).removeClass('hl');
         },
         getLatestCommentStamp: function () {
-            return formatDateRelative(new Date(this.latestCommentStamp()));
+            if (this.commentsHash[this.latestCommentCid()]) {
+                return formatDateRelative(new Date(this.commentsHash[this.latestCommentCid()].stamp));
+            }
+
+            return '';
         },
         // Создаёт поле ввода комментария. Ответ или редактирование
         inputCreate: function (relatedComment, $cedit) {
