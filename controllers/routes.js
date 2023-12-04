@@ -322,8 +322,9 @@ export function bindRoutes(app) {
     });
 
     // Ping-pong to verify the server is working
-    app.all('/ping', (req, res) => {
-        res.status(200).send('pong');
+    app.all('/health', (req, res) => {
+        res.set('Cache-Control', 'no-store');
+        res.status(200).send('OK');
     });
 
     // Last handler. If request reaches it, means that there is no handler for this request
