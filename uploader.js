@@ -268,6 +268,14 @@ export function configure(startStamp) {
     };
 
     const handleRequest = (req, res) => {
+        if (req.url === '/health') {
+            res.setHeader('Cache-Control', 'no-store');
+            res.statusCode = 200;
+            res.end('OK');
+
+            return;
+        }
+
         if (req.url !== '/upload' && req.url !== '/uploadava') {
             res.statusCode = 403;
             res.end();
