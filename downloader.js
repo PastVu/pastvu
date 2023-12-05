@@ -302,7 +302,7 @@ export async function configure(startStamp) {
     // Start server and do manual manual url router, express is not needed
     const server = http
         .createServer(function handleRequest(req, res) {
-            if (req.url === '/health') {
+            if (req.url === '/healthz') {
                 res.setHeader('Cache-Control', 'no-store');
                 res.statusCode = 200;
                 res.end('OK');
