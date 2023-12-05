@@ -268,7 +268,7 @@ export function configure(startStamp) {
     };
 
     const handleRequest = (req, res) => {
-        if (req.url === '/health') {
+        if (req.url === '/healthz') {
             res.setHeader('Cache-Control', 'no-store');
             res.statusCode = 200;
             res.end('OK');

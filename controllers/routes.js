@@ -322,7 +322,7 @@ export function bindRoutes(app) {
     });
 
     // Ping-pong to verify the server is working
-    app.all('/health', (req, res) => {
+    app.all('/healthz', (req, res) => {
         res.set('Cache-Control', 'no-store');
         res.status(200).send('OK');
     });
