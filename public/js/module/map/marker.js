@@ -793,6 +793,12 @@ define([
                         picFormat = Photo.picFormats.x;
                     }
 
+                    if (!cluster.p) {
+                        // This is really to debug issue #646
+                        console.warn('Missing cluster photo', cluster);
+                        continue;
+                    }
+
                     cluster.p.sfile = picFormat + cluster.p.file;
                     divIcon = L.divIcon({
                         className: 'clusterIcon fringe ' + measure,
