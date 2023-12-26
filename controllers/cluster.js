@@ -203,7 +203,7 @@ export const clusterPhotosAll = async function (params) {
                     Utils.geo.normalizeCoordinates(cluster.g);
 
                     // Link it to photo that will represent cluster.
-                    const dist = Utils.geo.getDistanceFromLatLonInKm(cluster.g[1], cluster.g[0], cluster.geo[1], cluster.geo[0]) * 1000;
+                    const dist = Utils.geo.getDistanceFromLatLonInKm(cluster.g[1], cluster.g[0], cluster.geo[1], cluster.geo[0]) * 2000;
 
                     cluster.p = await Photo.findOne({
                         s: constants.photo.status.PUBLIC,
@@ -320,10 +320,11 @@ async function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, isPainting
     }
 
     // Limit searching distance to improve $nearSphere performance.
-    const dist = Utils.geo.getDistanceFromLatLonInKm(g[1], g[0], geoCluster[1], geoCluster[0]) * 1000;
+    const dist = Utils.geo.getDistanceFromLatLonInKm(g[1], g[0], geoCluster[1], geoCluster[0]) * 2000;
     const photo = await Photo.findOne(
         {
-            s: constants.photo.status.PUBLIC, geo: { $nearSphere: { $geometry: { type: 'Point', coordinates: geoCluster }, $maxDistance: dist } },
+            s: constants.photo.status.PUBLIC,
+            geo: { $nearSphere: { $geometry: { type: 'Point', coordinates: geoCluster }, $maxDistance: dist } },
             type: isPainting ? constants.photo.type.PAINTING : constants.photo.type.PHOTO,
         },
         { _id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1 },
@@ -512,7 +513,7 @@ export async function getBoundsByYear({ geometry, z, year, year2, isPainting }) 
 
 async function getClusterPoster(cluster, yearCriteria, isPainting) {
     // Limit searching distance to improve $nearSphere performance.
-    const dist = Utils.geo.getDistanceFromLatLonInKm(cluster.g[1], cluster.g[0], cluster.geo[1], cluster.geo[0]) * 1000;
+    const dist = Utils.geo.getDistanceFromLatLonInKm(cluster.g[1], cluster.g[0], cluster.geo[1], cluster.geo[0]) * 2000;
 
     cluster.p = await Photo.findOne(
         {
