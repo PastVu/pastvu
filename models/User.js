@@ -153,7 +153,7 @@ registerModel(db => {
     UserScheme.statics.getAuthenticated = async function (login, password) {
         const user = await this.findOne({
             $or: [
-                { login: new RegExp(`^${_.escapeRegExp(login)}$`, 'i') },
+                { login: new RegExp(`^${_.escapeRegExp(login)}$`) },
                 { email: login.toLowerCase() },
             ], active: true, pass: { $ne: 'init' },
         });
@@ -213,7 +213,7 @@ registerModel(db => {
             cb(null, 'Login is not specified');
         }
 
-        this.findOne({ login: new RegExp(`^${_.escapeRegExp(login)}$`, 'i'), active: true }).select({
+        this.findOne({ login: new RegExp(`^${_.escapeRegExp(login)}$`), active: true }).select({
             _id: 0,
             pass: 0,
             activatedate: 0,
@@ -230,7 +230,7 @@ registerModel(db => {
             cb(null, 'Login is not specified');
         }
 
-        this.findOne({ login: new RegExp(`^${_.escapeRegExp(login)}$`, 'i'), active: true }).exec(cb);
+        this.findOne({ login: new RegExp(`^${_.escapeRegExp(login)}$`), active: true }).exec(cb);
     };
 
     UserScheme.statics.getUserAllLoginMail = function (login, cb) {
@@ -242,7 +242,7 @@ registerModel(db => {
             $and: [
                 {
                     $or: [
-                        { login: new RegExp(`^${_.escapeRegExp(login)}$`, 'i') },
+                        { login: new RegExp(`^${_.escapeRegExp(login)}$`) },
                         { email: login.toLowerCase() },
                     ],
                 },

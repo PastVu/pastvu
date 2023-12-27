@@ -67,7 +67,7 @@ async function giveUser({ login }) {
         user.online = Boolean(userObj);
     } else {
         user = await User.findOne(
-            { login: new RegExp(`^${_.escapeRegExp(login)}$`, 'i'), active: true },
+            { login: new RegExp(`^${_.escapeRegExp(login)}$`), active: true },
             { _id: 0, cid: 0, pass: 0, activatedate: 0, loginAttempts: 0, active: 0, rules: 0 }, { lean: true }
         ).populate([
             {

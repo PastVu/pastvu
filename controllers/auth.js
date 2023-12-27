@@ -205,7 +205,7 @@ async function recall({ login }) {
     }
 
     const user = await User.findOne({
-        $or: [{ login: new RegExp(`^${_.escapeRegExp(login)}$`, 'i') }, { email: login.toLowerCase() }],
+        $or: [{ login: new RegExp(`^${_.escapeRegExp(login)}$`) }, { email: login.toLowerCase() }],
     }, null, { lean: true }).exec();
 
     if (!user) {
