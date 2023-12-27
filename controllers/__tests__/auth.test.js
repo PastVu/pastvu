@@ -88,13 +88,18 @@ describe('authentication', () => {
             });
 
             it('user login exists', async () => {
-                expect.assertions(1);
+                expect.assertions(2);
 
                 // Register user.
                 await auth.register(data);
 
                 // Change email and register again.
-                const testData = _.defaults({ 'email': 'user2@test.com' }, data);
+                let testData = _.defaults({ 'email': 'user2@test.com' }, data);
+
+                await expect(auth.register(testData)).rejects.toThrow(new AuthenticationError(constants.AUTHENTICATION_USER_EXISTS));
+
+                // Change username to different case and register again.
+                testData = _.defaults({ 'login': 'User1' }, testData);
 
                 await expect(auth.register(testData)).rejects.toThrow(new AuthenticationError(constants.AUTHENTICATION_USER_EXISTS));
             });
