@@ -11,7 +11,7 @@ module.exports = function (grunt) {
     const path = require('path');
     const Utils = require('./commons/Utils');
     const env = grunt.option('env') || 'production'; // Например, --env testing
-    const upperDir = path.normalize(path.resolve('../') + '/');
+    const upperDir = path.normalize(path.resolve('./') + '/');
     const targetDir = path.normalize(upperDir + 'appBuild/');
     const babelConfig = require('./babel/server.config');
     const hash = Utils.randomString(5);
@@ -103,6 +103,7 @@ module.exports = function (grunt) {
         },
         uglify: {
             options: {
+                sourceMap: true,
                 output: {
                     comments: false,
                 },
