@@ -10,7 +10,7 @@ html
                 script(type="text/javascript", src='/js/lib/es6-promise.min.js')
 
         link(rel="stylesheet", href="/style/common.css")
-        | <script src="https://js.sentry-cdn.com/9584509fc9bc1edf71474b8460b41d65.min.js" crossorigin="anonymous"></script>
+
         | <script type="text/javascript">
         //-Вставляем в скрипт сгенерированную для клиента строку глобальных переменных с изначальными данными
         != initData
@@ -20,6 +20,8 @@ html
             include ../public/js/lib/require/require.js
             include ../public/js/_mainConfig.js
             | </script>
+        else
+            script(src="https://js.sentry-cdn.com/9584509fc9bc1edf71474b8460b41d65.min.js", crossorigin="anonymous")
 
     body
         if nojsShow
