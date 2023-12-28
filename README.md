@@ -1,6 +1,5 @@
 # PastVu
 ![GitHub package.json version](https://img.shields.io/github/package-json/v/pastvu/pastvu)
-[![Node.js CI](https://github.com/PastVu/pastvu/actions/workflows/node.js.yml/badge.svg)](https://github.com/PastVu/pastvu/actions/workflows/node.js.yml)
 [![Docker Image CI](https://github.com/PastVu/pastvu/actions/workflows/docker-image.yml/badge.svg)](https://github.com/PastVu/pastvu/actions/workflows/docker-image.yml)
 
 [PastVu](https://pastvu.com/) is an online platform for gathering, geo-tagging, attributing and discussing retro photos. A look at the history of humanity habitat.
