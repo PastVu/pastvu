@@ -11,8 +11,8 @@ module.exports = function (grunt) {
     const path = require('path');
     const Utils = require('./commons/Utils');
     const env = grunt.option('env') || 'production'; // Например, --env testing
-    const upperDir = path.normalize(path.resolve('../') + '/');
-    const targetDir = path.normalize(upperDir + 'appBuild/');
+    const currentDir = path.normalize(path.resolve('./') + '/');
+    const targetDir = path.normalize(currentDir + 'appBuild/');
     const babelConfig = require('./babel/server.config');
     const hash = Utils.randomString(5);
 
@@ -103,6 +103,7 @@ module.exports = function (grunt) {
         },
         uglify: {
             options: {
+                sourceMap: true,
                 output: {
                     comments: false,
                 },
@@ -220,7 +221,7 @@ module.exports = function (grunt) {
         compress: {
             main: {
                 options: {
-                    archive: upperDir + 'app<%= pkg.version %>.zip',
+                    archive: currentDir + 'app<%= pkg.version %>.zip',
                     mode: 'zip',
                     level: 9,
                     forceUTC: true,

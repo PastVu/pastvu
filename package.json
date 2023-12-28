@@ -41,7 +41,8 @@
         "migrate:create": "migrate-mongo create -f config/migrate-mongo.js -- ",
         "migrate:status": "migrate-mongo status -f config/migrate-mongo.js",
         "migrate:up": "migrate-mongo up -f config/migrate-mongo.js",
-        "migrate:down": "migrate-mongo down -f config/migrate-mongo.js"
+        "migrate:down": "migrate-mongo down -f config/migrate-mongo.js",
+        "sentry:sourcemaps": "sentry-cli sourcemaps inject --org pastvu --project javascript ./appBuild && sentry-cli sourcemaps upload --org pastvu --project javascript ./appBuild"
     },
     "dependencies": {
         "@mapbox/geojson-area": "0.2.2",
@@ -98,6 +99,7 @@
         "@babel/eslint-plugin": "7.22.5",
         "@babel/preset-env": "7.22.7",
         "@babel/register": "7.22.5",
+        "@sentry/cli": "2.23.1",
         "ansi-colors": "4.1.1",
         "babel-jest": "29.6.1",
         "babel-plugin-rewire": "1.2.0",
