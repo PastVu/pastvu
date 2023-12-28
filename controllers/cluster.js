@@ -161,7 +161,7 @@ export const clusterPhotosAll = async function (params) {
             }
 
             cluster.c += 1;
-            cluster.y[photo.year] = 1 + (cluster.y[photo.year] | 0);
+            cluster.y[photo.year] = 1 + (cluster.y[photo.year] ?? 0);
 
             if (useGravity) {
                 cluster.geo[0] += geoPhoto[0];
@@ -285,10 +285,8 @@ async function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, isPainting
         }
 
         if (yearPhotos.n) {
-            yCluster[String(yearPhotos.n)] = 1 + (yCluster[String(yearPhotos.n)] | 0);
+            yCluster[String(yearPhotos.n)] = 1 + (yCluster[String(yearPhotos.n)] ?? 0);
         }
-
-        $update.$set.y = yCluster;
     }
 
     // Such a situation shouldn't be
@@ -333,6 +331,7 @@ async function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, isPainting
 
     $update.$set.p = photo;
     $update.$set.geo = geoCluster;
+    $update.$set.y = yCluster;
 
     const { n: count = 0 } = await ClusterModel.updateOne({ g, z: zParam.z }, $update, { upsert: true }).exec();
 
@@ -480,7 +479,7 @@ export async function getBoundsByYear({ geometry, z, year, year2, isPainting }) 
         cluster.c = 0;
 
         for (let y = year; y <= year2; y++) {
-            cluster.c += cluster.y[y] | 0;
+            cluster.c += cluster.y[y] ?? 0;
         }
 
         if (cluster.c > 0) {
