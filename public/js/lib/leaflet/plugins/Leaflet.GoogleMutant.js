@@ -11,8 +11,7 @@ this stuff is worth it, you can buy me a beer in return.
 */
 
 //import { LRUMap } from "./lru_map.js";
-// We have to use requirejs to load module, ES6 syntax won't work here.
-const { LRUMap } = require('leaflet-plugins/lru');
+// LRU is passed in options.
 
 function waitForAPI(callback, context) {
 	let checkCounter = 0,
@@ -47,7 +46,7 @@ L.GridLayer.GoogleMutant = L.GridLayer.extend({
 
 		// Couple data structures indexed by tile key
 		this._tileCallbacks = {}; // Callbacks for promises for tiles that are expected
-		this._lru = new LRUMap(100); // Tile LRU cache
+		this._lru = options.lru; // Tile LRU cache
 
 		this._imagesPerTile = this.options.type === "hybrid" ? 2 : 1;
 
