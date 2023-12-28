@@ -7,17 +7,10 @@ RUN apt-get update && apt-get install -y \
 && rm -rf /var/lib/apt/lists/*
 COPY ./.docker/imagick-policy.xml /etc/ImageMagick-6/policy.xml
 
-FROM node:${NODE_TAG} AS builder
-WORKDIR /build
-COPY package.json .
-RUN npm install
-COPY . .
-RUN npm run build
-
 FROM base
 WORKDIR /code
 ENV NODE_ENV production
-COPY --from=builder /appBuild/ .
+COPY ./appBuild/ .
 RUN npm install --production
 RUN mkdir /store && chown node:node /store
 RUN mkdir /sitemap && chown node:node /sitemap
