@@ -736,8 +736,8 @@ module.exports = {
                 'no-underscore-dangle': [2, { 'allow': [
                     '_id', '__get__', '__set__', '__RewireAPI__', '__Rewire__', '__ResetDependency__', '__GetDependency__',
                 ] }],
-                // Max assertions is 10 and warning rather than error.
-                'jest/max-expects': [1, { 'max': 10 }],
+                // Max assertions is 20 and warning rather than error.
+                'jest/max-expects': [1, { 'max': 20 }],
                 // We are not using TypeScript
                 'jest/no-untyped-mock-factory': 0,
             },
