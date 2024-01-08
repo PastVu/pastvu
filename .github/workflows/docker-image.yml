@@ -24,6 +24,10 @@ jobs:
         with:
           node-version: 20.10.0
 
+      - name: version
+        run: |
+          npm version --no-git-tag-version $(node -p "require('./package.json').version")-${GITHUB_SHA}
+
       - name: Build
         run: |
           npm ci
