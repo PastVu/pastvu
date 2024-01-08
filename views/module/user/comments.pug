@@ -45,10 +45,6 @@
             .dotDelimeter ·
             .commentChanged(title="Show history of changes", data-bind="text: ($data.del ? 'Removed at ' : 'Changed at ') + moment($data.lastChanged).calendar().toLowerCase(), click: function () {$parent.showHistory($data.obj.cid, $data.cid)}")
             // /ko
-            //ko if: $data.waitsAnswer
-            .dotDelimeter ·
-            .badge.badge-latest Awaiting answer
-            // /ko
         a.commentText(data-bind="attr: {href: $data.link}, html: $data.txt")
     | </script>
 
@@ -61,10 +57,6 @@
             //ko if: $data.lastChanged
             .dotDelimeter ·
             .commentChanged(title="Show history of changes", data-bind="text: ($data.del ? 'Removed at ' : 'Changed at ') + moment($data.lastChanged).calendar().toLowerCase(), click: function () {$parent.showHistory($data.obj.cid, $data.cid)}")
-            // /ko
-            //ko if: $data.waitsAnswer
-            .dotDelimeter ·
-            .badge.badge-latest Awaiting answer
             // /ko
         a.commentText(style="margin-left:29px", data-bind="attr: {href: $data.link}, html: $data.txt")
     | </script>
@@ -79,3 +71,4 @@
         li.edge(data-bind="css: {disabled: !pageHasNext()}"): a(data-bind="attr: {href: pageUrl() + '/' + (page() + 1) + pageQuery()}", title="Next page") &raquo;
         li.edge(data-bind="css: {disabled: page() === pageLast()}"): a(data-bind="attr: {href: pageUrl() + '/' + pageLast() + pageQuery()}", title="Last page") &raquo;&raquo;
     | </script>
+
