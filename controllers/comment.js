@@ -722,9 +722,36 @@ async function giveForUser({ login, page = 1, type = 'photo', active = true, del
         }
 
         const fields = { _id: 0, lastChanged: 1, cid: 1, obj: 1, stamp: 1, txt: 1, 'del.origin': 1 };
-        const options = { lean: true, sort: { stamp: -1 }, skip: page * commentsUserPerPage, limit: commentsUserPerPage };
+        const options = { sort: { stamp: -1 }, skip: page * commentsUserPerPage, limit: commentsUserPerPage };
 
-        comments = await commentModel.find(query, fields, options).exec();
+        if (!iAm.registered) {
+            comments = await commentModel.find(query, fields, options).lean().exec();
+        } else {
+            fields.hasChild = 1;
+            comments = await commentModel.aggregate([
+                {
+                    '$match': query,
+                },
+                {
+                    '$lookup': {
+                        'from': commentModel.collection.collectionName,
+                        'localField': 'cid',
+                        'foreignField': 'parent',
+                        'as': 'children',
+                    },
+                },
+                {
+                    '$addFields': {
+                        'hasChild': {
+                            $gt: [{ $size: '$children' }, 0],
+                        },
+                    },
+                },
+                {
+                    '$project': fields,
+                },
+            ]).sort(options.sort).skip(options.skip).limit(options.limit).exec();
+        }
     }
 
     if (_.isEmpty(comments)) {
@@ -757,18 +784,6 @@ async function giveForUser({ login, page = 1, type = 'photo', active = true, del
 
     if (type === 'photo' && iAm.registered) {
         await this.call('photo.fillPhotosProtection', { photos: objs, setMyFlag: true });
-
-        for (const obj of objs) {
-            objFormattedHashCid[obj.cid] = objFormattedHashId[obj._id] = obj;
-            obj._id = undefined;
-            obj.user = undefined;
-            obj.mime = undefined;
-        }
-    } else {
-        for (const obj of objs) {
-            objFormattedHashCid[obj.cid] = objFormattedHashId[obj._id] = obj;
-            obj._id = undefined;
-        }
     }
 
     for (const obj of objs) {
@@ -780,6 +795,9 @@ async function giveForUser({ login, page = 1, type = 'photo', active = true, del
 
     // For each comment check object exists and assign to comment its cid
     for (const comment of comments) {
+        // Mark those awaiting response.
+        comment.waitsAnswer = comment.hasChild !== undefined && !comment.hasChild;
+
         const obj = objFormattedHashId[comment.obj];
 
         if (obj !== undefined) {
@@ -926,7 +944,7 @@ async function create(data) {
         throw obj.nocomments ? new NoticeError(constantsError.COMMENT_NOT_ALLOWED) : new AuthorizationError();
     }
 
-    if (data.parent && (!parent || parent.del || parent.level >= 9 || data.level !== (parent.level || 0) + 1)) {
+    if (data.parent && (!parent || parent.del || parent.level >= 9 || data.level !== parent.level + 1)) {
         throw new NoticeError(constantsError.COMMENT_WRONG_PARENT);
     }
 
@@ -952,9 +970,11 @@ async function create(data) {
         }
     }
 
+    comment.level = data.level ?? 0;
+
     if (data.parent) {
         comment.parent = data.parent;
-        comment.level = data.level;
+        comment.level = data.level ?? parent.level + 1;
     }
 
     if (fragAdded) {
@@ -997,10 +1017,6 @@ async function create(data) {
     comment.user = iAm.user.login;
     comment.obj = objCid;
     comment.can = {};
-
-    if (comment.level === undefined) {
-        comment.level = 0;
-    }
 
     session.emitUser({ usObj: iAm, excludeSocket: socket });
     subscrController.commentAdded(obj._id, iAm.user, stamp);
