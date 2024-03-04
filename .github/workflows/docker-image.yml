@@ -33,11 +33,11 @@ jobs:
           npm ci
           npm run build
 
-      - name: Sentry
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-        run: |
-          npm run sentry:sourcemaps
+      #- name: Sentry
+      #  env:
+      #    SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      #  run: |
+      #    npm run sentry:sourcemaps
 
       - name: Login to ghcr.io
         uses: docker/login-action@v3
