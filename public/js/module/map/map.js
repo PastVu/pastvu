@@ -226,16 +226,6 @@ define([
                             attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | <a href="http://viewfinderpanoramas.org">SRTM</a> | Стиль карты: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)',
                         },
                     },
-                    {
-                        id: 'stamen_bw',
-                        desc: 'Стамен ч/б',
-                        selected: ko.observable(false),
-                        options: {
-                            urlTemplate: 'https://tiles.stadiamaps.com/tiles/stamen_toner/{z}/{x}/{y}.png',
-                            attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> | &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-                            maxZoom: 21,
-                        },
-                    },
                 ]),
             });
 
