@@ -136,7 +136,8 @@ function meta(req) {
         } else if (!_.isEmpty(photo.regions)) {
             // If there in no description, create it as regions names
             desc = og.desc = twitter.desc = photo.regions.reduceRight(
-                (result, region, index) => result + region.title_local + (index ? ', ' : ''), ''
+
+                (result, region, index) => result + region.title_en + (index ? ', ' : ''), ''
             );
         } else {
             desc = '';
@@ -307,7 +308,7 @@ export function bindRoutes(app) {
         res.statusCode = 200;
         res.render('status/badbrowser', {
             agent: req.browser && req.browser.agent,
-            title: 'Вы используете устаревшую версию браузера',
+            title: 'You are using outdated browser',
         });
     });
 

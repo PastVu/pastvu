@@ -1,5 +1,5 @@
 .newsApart(data-bind="with: repository[M!M]")
-    .newsHeader Новости проекта
+    .newsHeader Project news
 
     .news
         .novelAuthor
@@ -17,7 +17,7 @@
                     .dotDelimeter ·
                     a.newsEdit(data-bind="attr: {href: '/admin/news/edit/' + news.cid()}")
                         span.glyphicon.glyphicon-pencil
-                        |  Редактировать
+                        |  Edit
                     // /ko
                 .newsTxt(data-bind="html: news.txt()")
     hr

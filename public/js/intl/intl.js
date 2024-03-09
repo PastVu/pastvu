@@ -6,9 +6,9 @@
 define(['Utils'], function () {
     'use strict';
 
-    const intlNumFormat = new Intl.NumberFormat('ru-RU').format;
-    const intlDateFormat = new Intl.DateTimeFormat('ru-RU').format;
-    const intlDateFullFormat = new Intl.DateTimeFormat('ru-RU', {
+    const intlNumFormat = new Intl.NumberFormat('en-US').format;
+    const intlDateFormat = new Intl.DateTimeFormat('en-US').format;
+    const intlDateFullFormat = new Intl.DateTimeFormat('en-US', {
         weekday: 'long',
         day: 'numeric',
         month: 'long',

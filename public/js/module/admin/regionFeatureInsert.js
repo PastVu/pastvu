@@ -71,7 +71,7 @@ define([
                                     const geoChangePhotosCount = stat.photosCountAfter - stat.photosCountBefore;
 
                                     if (geoChangePhotosCount) {
-                                        stats.push('<b>' + globalVM.intl.num(Math.abs(geoChangePhotosCount)) + '</b> фотографий ' + (geoChangePhotosCount > 0 ? 'добавлено в регион' : 'удалено из региона') + ' вследствии изменения коордиант поолигона.');
+                                        stats.push('<b>' + globalVM.intl.num(Math.abs(geoChangePhotosCount)) + '</b> photos are ' + (geoChangePhotosCount > 0 ? 'added to the region' : 'removed from the region') + ' because of polygon coordinates changing.');
                                     }
                                 }
 
@@ -79,24 +79,24 @@ define([
                                     const geoChangeCommentsCount = stat.commentsCountAfter - stat.commentsCountBefore;
 
                                     if (geoChangeCommentsCount) {
-                                        stats.push('<b>' + globalVM.intl.num(Math.abs(geoChangeCommentsCount)) + '</b> комментариев ' + (geoChangeCommentsCount > 0 ? 'добавлено в регион' : 'удалено из региона') + ' вследствии переноса фотографий.');
+                                        stats.push('<b>' + globalVM.intl.num(Math.abs(geoChangeCommentsCount)) + '</b> comments are ' + (geoChangeCommentsCount > 0 ? 'added to the region' : 'removed from the region') + ' because of photos transfer.');
                                     }
                                 }
 
                                 if (stat.affectedPhotos) {
-                                    stats.push('<b>' + globalVM.intl.num(stat.affectedPhotos) + '</b> фотографий переехали по дереву вслед за регионом.');
+                                    stats.push('<b>' + globalVM.intl.num(stat.affectedPhotos) + '</b> photos have been moved following the region.');
                                 }
 
                                 if (stat.affectedComments) {
-                                    stats.push('<b>' + globalVM.intl.num(stat.affectedComments) + '</b> комментариев переехали вслед за своими фотографиями.');
+                                    stats.push('<b>' + globalVM.intl.num(stat.affectedComments) + '</b> comments have been moved following their photos.');
                                 }
 
                                 if (stat.affectedUsers) {
-                                    stats.push('У <b>' + globalVM.intl.num(stat.affectedUsers) + '</b> пользователей были сокрашены "Мои регионы".');
+                                    stats.push('<b>' + globalVM.intl.num(stat.affectedUsers) + '</b> users have been reduced in "my regions" count.');
                                 }
 
                                 if (stat.affectedMods) {
-                                    stats.push('У <b>' + globalVM.intl.num(stat.affectedMods) + '</b> модераторов были сокрашены модерируемые регионы.');
+                                    stats.push('<b>' + globalVM.intl.num(stat.affectedMods) + '</b> moderators have been reduced moderators regions.');
                                 }
                             }
 
