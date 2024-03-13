@@ -892,6 +892,26 @@
     }
 
     .mapContainer.embedded {
+        &.editing {
+            .clusterIcon {
+                display: none !important;
+            }
+
+            .clusterIconLocal,
+            .photoIcon {
+                opacity: 0.4;
+                cursor: grab;
+            }
+
+            .photoIcon:hover {
+                width: 8px !important;
+                height: 8px !important;
+                margin-left: -4px !important;
+                margin-top: -4px !important;
+                .box-shadow(0 0 1px 1px #fff);
+            }
+        }
+
         .mapNavigation {
             top: -33px;
             left: -13px;

@@ -525,6 +525,7 @@ define([
                 openNewTab: this.openNewTab(),
                 isPainting: this.isPainting(),
                 embedded: this.embedded,
+                editing: this.editing,
                 year: this.yearLow,
                 year2: this.yearHigh,
             });
@@ -606,10 +607,22 @@ define([
 
         // Обработчик переключения режима редактирования
         editHandler: function (edit) {
+            this.markerManager.enable();
+
             if (edit) {
-                this.pointHighlightDestroy().pointEditCreate().markerManager.disable();
+                const currentPointCid = this.point.cid();
+                const currentPhoto = this.markerManager.mapObjects.photos[currentPointCid];
+                // const currentPhotoMarker = currentPhoto?.marker;
+
+                this.currentPhotoMarker = currentPhoto.marker;
+                this.markerManager.layerPhotos.removeLayer(this.currentPhotoMarker);
+                this.pointHighlightDestroy().pointEditCreate();
             } else {
-                this.pointEditDestroy().pointHighlightCreate().markerManager.enable();
+                if (this.currentPhotoMarker) {
+                    this.markerManager.layerPhotos.addLayer(this.currentPhotoMarker);
+                }
+
+                this.pointEditDestroy().pointHighlightCreate();
             }
         },
         // Включает режим редактирования
