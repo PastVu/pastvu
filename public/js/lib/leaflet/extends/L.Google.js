@@ -9,9 +9,10 @@ define(['Params', 'leaflet', 'leaflet-plugins/lru', 'leaflet-plugins/Leaflet.Goo
     const url = 'https://maps.googleapis.com/maps/api/js?v=weekly&region=RU' + keyParam;
 
     // Load Google Maps API library asynchronously.
-    L.GridLayer.GoogleMutant.addInitHook(function() {
+    L.GridLayer.GoogleMutant.addInitHook(function () {
         require(['async!' + url]);
     });
+
     return function (options) {
         options = options || {};
         options.lru = new lru.LRUMap(100); // Tile LRU cache.

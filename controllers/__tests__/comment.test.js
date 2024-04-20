@@ -78,7 +78,8 @@ describe('comment', () => {
             const data = { txt: 'news comment', type: 'news', obj: news.cid };
 
             // Create 4 comments.
-            const comment0 = await comment.create(data);
+            await comment.create(data);
+
             const comment1 = await comment.create(data);
 
             data.parent = comment1.comment.cid;
@@ -89,7 +90,7 @@ describe('comment', () => {
             data.parent = comment2.comment.cid;
             data.level = comment2.comment.level + 1;
 
-            const comment3 = await comment.create(data);
+            await comment.create(data);
 
             // Sanity check.
             await expect(CommentN.count({ obj: news })).resolves.toBe(4);
