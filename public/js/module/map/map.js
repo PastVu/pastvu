@@ -8,7 +8,7 @@ define([
     'model/User', 'model/storage', 'leaflet', 'leaflet-extends/L.neoMap', 'm/map/marker',
     'm/photo/status', 'text!tpl/map/map.pug', 'css!style/map/map', 'jquery-ui/draggable', 'jquery-ui/slider',
     'jquery-ui/effect-highlight', 'css!style/jquery/ui/core', 'css!style/jquery/ui/theme', 'css!style/jquery/ui/slider',
-    'css!style/jquery/ui/tooltip',
+    'css!style/jquery/ui/tooltip', 'bs/collapse',
 ], function (_, Browser, Utils, P, ko, Cliche, globalVM, renderer, User, storage, L, Map, MarkerManager, statuses, pug) {
     'use strict';
 
@@ -69,6 +69,8 @@ define([
             });
             this.linkShow = ko.observable(false); //Показывать ссылку на карту
             this.link = ko.observable(''); //Ссылка на карту
+            // State of the comments feed, updated at main/mainPage.
+            this.commentFeedShown = ko.observable(true);
 
             // Map objects
             this.map = null;
@@ -366,6 +368,7 @@ define([
             ko.applyBindings(globalVM, this.$dom[0]);
 
             // Subscriptions
+            this.subscriptions.commentFeedShown = this.commentFeedShown.subscribe(this.sizesCalc, this);
             this.subscriptions.edit = this.editing.subscribe(this.editHandler, this);
             this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
             this.subscriptions.openNewTab = this.openNewTab.subscribe(function (val) {
@@ -855,6 +858,9 @@ define([
                 this.linkShow(false);
                 this.removeShowLinkListener();
             }
+        },
+        toggleCommentsFeed: function () {
+            $('#commentsFeed').collapse('toggle');
         },
         removeShowLinkListener: function () {
             this.map.off('zoomstart', this.hideLink, this);
