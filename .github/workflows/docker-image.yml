@@ -3,7 +3,8 @@ name: Docker Image CI
 on:
   push:
     branches:
-      - '**'
+      - 'master'
+      - 'en'
     tags:
       - 'v*'
   workflow_dispatch:
@@ -28,10 +29,14 @@ jobs:
         run: |
           npm version --no-git-tag-version $(node -p "require('./package.json').version")-en-${GITHUB_SHA::8}
 
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Test
+        run: npm run test
+
       - name: Build
-        run: |
-          npm ci
-          npm run build
+        run: npm run build
 
       #- name: Sentry
       #  env:
