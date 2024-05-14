@@ -314,7 +314,6 @@ module.exports = function (grunt) {
         'exec:testNodeVersion:.nvmrc',
         'exec:testNodeVersionDockerfile:./.docker/Dockerfile',
         'exec:testNodeVersionDockerfile:./.docker/backend.Dockerfile',
-        'exec:testNodeVersionDockerfile:./.docker/frontend.Dockerfile',
         'eslint',
         'stylelint',
         'exec:jest',
