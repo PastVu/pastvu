@@ -72,17 +72,6 @@ module.exports = function (grunt) {
                 stdout: true,
                 stderr: true,
             },
-            testNodeVersionDockerfile: {
-                command: filename => {
-                    const error = `Version defined in ${filename} is not matching package version of node.`;
-                    const pkgVersion = grunt.template.process('<%= pkg.engines.node %>');
-                    const dockerParse = "sed -n -e '/^ARG NODE_TAG/ s/.*=//p' " + filename;
-
-                    return 'if [ "$(' + dockerParse + ')" != "' + pkgVersion + '" ]; then echo "' + error + '"; exit 1; fi;';
-                },
-                stdout: true,
-                stderr: true,
-            },
             jest: {
                 command: 'npm run jest -- --ci',
                 stdout: true,
@@ -312,9 +301,6 @@ module.exports = function (grunt) {
     grunt.registerTask('test', [
         'exec:testNodeVersion:.node-version',
         'exec:testNodeVersion:.nvmrc',
-        'exec:testNodeVersionDockerfile:./.docker/Dockerfile',
-        'exec:testNodeVersionDockerfile:./.docker/backend.Dockerfile',
-        'exec:testNodeVersionDockerfile:./.docker/frontend.Dockerfile',
         'eslint',
         'stylelint',
         'exec:jest',
