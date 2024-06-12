@@ -2,7 +2,7 @@
     .panel-group#accordion
         .panel.panel-pastvu
             .panel-heading: .panel-title
-                a.accordion-toggle(data-toggle="collapse", href="#credentials") Полномочия
+                a.accordion-toggle(data-toggle="collapse", href="#credentials") Credentials
             .panel-collapse.collapse.in#credentials: .panel-body
                 form
                     .form-group
@@ -13,145 +13,145 @@
                     .form-group: .col-xs-12
                         .checkbox: label
                             input(type="checkbox", value = '5', data-bind="checked: role")
-                            | Региональный:&nbsp;
+                            | Regions:&nbsp;
                             //ko if: !regions().length
                             span.region
                                 span.glyphicon.glyphicon-globe
-                                |  Весь мир
+                                |  Whole world
                             // /ko
                             //ko foreach: regions
-                            span.region.candrop(title="Убрать регион", data-bind="click: function() {$parent.regionDrop($data.cid);}")
-                                span(data-bind="text: $data.title_local")
+                            span.region.candrop(title="Remove region", data-bind="click: function() {$parent.regionDrop($data.cid);}")
+                                span(data-bind="text: $data.title_en")
                             // /ko
                             span.regionEdit(data-bind="click: regionSelect")
                                 span.glyphicon.glyphicon-pencil
-                                | Изменить
+                                | Change
                         .checkbox: label
                             input(type="checkbox", disabled)
-                            | Языковой
+                            | Language
 
                     // /ko
                     //ko if: credentialsChanged()
                     .form-group: .col-xs-12
                         button.btn.btn-sm.btn-success(type="button", data-bind="event: {click: saveCredentials}, attr: {disabled: exe()}")
                             span.glyphicon.glyphicon-ok
-                            |  Сохранить полномочия
+                            |  Save credentials
                         button.btn.btn-sm.btn-danger(type="button", data-bind="event: {click: cancelCredentials}, attr: {disabled: exe()}")
                             span.glyphicon.glyphicon-remove
-                            |  Отмена
+                            |  Cancel
                     // /ko
 
         .panel.panel-pastvu
             .panel-heading: .panel-title
-                a.accordion-toggle(data-toggle="collapse", href="#restrictions") Права и ограничения
+                a.accordion-toggle(data-toggle="collapse", href="#restrictions") Restrictions
             .panel-collapse.collapse.in#restrictions: .panel-body
                 dl.dl-horizontal
                     dt.helpexists
                         .help.tltp-wrap
                             span.glyphicon.glyphicon-info-sign
                             .tltp.tltp-top.tltp-animate-move
-                                | Разрешать заходить на сайт под своим именем.
+                                | Allow to login using their name.
                                 br
-                                | Будет разлогинен если в данный момент онлайн
-                        | &nbsp;Может логиниться
+                                | Will be logout if currently online
+                        | &nbsp;Can login
                     dd
                         .btn-group.btn-group-sm
-                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nologin()}, click: changenologin") Да
-                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nologin()}, click: changenologin") Нет
+                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nologin()}, click: changenologin") Yes
+                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nologin()}, click: changenologin") No
                 dl.dl-horizontal
                     dt.helpexists
                         .help.tltp-wrap
                             span.glyphicon.glyphicon-info-sign
                             .tltp.tltp-top.tltp-animate-move
-                                | Разрешать изменять информацию на странице профиля
+                                | Allow changing information on profile page
                                 br
-                                | и менять свою аватарку
-                        | &nbsp;Может редактировать свой профиль
+                                | and replace/remove own avatar
+                        | &nbsp;Can edit own profile
                     dd
                         .btn-group.btn-group-sm
-                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.noprofile()}, click: changenoprofile") Да
-                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.noprofile()}, click: changenoprofile") Нет
+                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.noprofile()}, click: changenoprofile") Yes
+                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.noprofile()}, click: changenoprofile") No
                 dl.dl-horizontal
                     dt.helpexists
                         .help.tltp-wrap
                             span.glyphicon.glyphicon-info-sign
                             .tltp.tltp-top.tltp-animate-move
-                                | Разрешать загружать фотографии
-                        | &nbsp;Может загружать фотографии
+                                | Allow uploading pictures
+                        | &nbsp;Can upload pictures
                     dd
                         .btn-group.btn-group-sm
-                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nophotoupload()}, click: changenophotoupload") Да
-                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nophotoupload()}, click: changenophotoupload") Нет
+                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nophotoupload()}, click: changenophotoupload") Yes
+                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nophotoupload()}, click: changenophotoupload") No
                 dl.dl-horizontal
                     dt.helpexists
                         .help.tltp-wrap
                             span.glyphicon.glyphicon-info-sign
                             .tltp.tltp-top.tltp-animate-move
-                                | Разрешать редактировать фотографии
-                        | &nbsp;Может редактировать свои фотографии
+                                | Allow editing their own pictures
+                        | &nbsp;Can edit their pictures
                     dd
                         .btn-group.btn-group-sm
-                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nophotoedit()}, click: changenophotoedit") Да
-                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nophotoedit()}, click: changenophotoedit") Нет
+                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nophotoedit()}, click: changenophotoedit") Yes
+                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nophotoedit()}, click: changenophotoedit") No
                         p.text-muted(style="padding:6px 0 0 6px;line-height:1.1;font-size:11px;")
                             sup(style="margin-left:-6px;") *
-                            |  Пользователь сможет редактировать свои "Новые" и фотографии "На доработке" всегда, даже с выбранной опцией Нет
+                            |  The user will be able to edit their "New" and "On Revision" photos always, even with the option No selected
                 dl.dl-horizontal
                     dt.helpexists
                         .help.tltp-wrap
                             span.glyphicon.glyphicon-info-sign
                             .tltp.tltp-top.tltp-animate-move
-                                | Разрешать пользователю отзывать еще неопубликованную фотографию,
+                                | Allow user to recall an unpublished photo,
                                 br
-                                | и удалять деактивированную
-                        | &nbsp;Может деактивировать
+                                | and remove deactivated
+                        | &nbsp;Can deactivate
                         br
-                        | и удалять свои фотографии
+                        | and remove their photos
                     dd
                         .btn-group.btn-group-sm
-                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nophotostatus()}, click: changenophotostatus") Да
-                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nophotostatus()}, click: changenophotostatus") Нет
+                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nophotostatus()}, click: changenophotostatus") Yes
+                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nophotostatus()}, click: changenophotostatus") No
                         p.text-muted(style="padding:6px 0 0 6px;line-height:1.1;font-size:11px;")
                             sup(style="margin-left:-6px;") *
-                            |  Пользователь сможет отправлять на публикацию свои "Новые" и фотографии "На доработке" всегда, даже с выбранной опцией Нет
+                            |  The user will be able to send his “New” and “On Revision” photos to publication always, even with the No option selected
                 dl.dl-horizontal
                     dt.helpexists
                         .help.tltp-wrap
                             span.glyphicon.glyphicon-info-sign
                             .tltp.tltp-top.tltp-animate-move
-                                | Разрешать менять подпись на своих фотографиях,
+                                | Allow to change watermark on own photos,
                                 br
-                                | управлять настройками скачивания оригинала и
+                                | manage downloading settings of original and
                                 br
-                                | отправлять свои фотографии на переконвертацию
-                        | &nbsp;Может менять вотермарк и правила скачивания
+                                | send own photos to reconvert
+                        | &nbsp;Can change watermark and download settings
                     dd
                         .btn-group.btn-group-sm
-                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nowaterchange()}, click: changewaterchange") Да
-                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nowaterchange()}, click: changewaterchange") Нет
+                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nowaterchange()}, click: changewaterchange") Yes
+                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nowaterchange()}, click: changewaterchange") No
                         p.text-muted(style="padding:6px 0 0 6px;line-height:1.1;font-size:11px;")
                             sup(style="margin-left:-6px;") *
-                            |  Это глобальная настройка для пользователя, действующая на возможность изменения им соответствующих настроек в профиле и индивидуальных настроек в каждой фотографии. При этом в каждой фотографии можно запретить/разрешить это индивидуально
+                            |  This is a global setting for the user, affecting on the possibility of changing settings in their profile and individual settings for each photo. For each photo it can disable/enable it individually
                 dl.dl-horizontal
                     dt.helpexists
                         .help.tltp-wrap
                             span.glyphicon.glyphicon-info-sign
                             .tltp.tltp-top.tltp-animate-move
-                                | Разрешать добавлять комментарии,
+                                | Allow user to add new comments,
                                 br
-                                | и редактировать уже добавленные
-                        | &nbsp;Может оставлять комментарии
+                                | and edit the existing ones
+                        | &nbsp;Can leave comments
                     dd
                         .btn-group.btn-group-sm
-                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nocomments()}, click: changenocomments") Да
-                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nocomments()}, click: changenocomments") Нет
+                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nocomments()}, click: changenocomments") Yes
+                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nocomments()}, click: changenocomments") No
 
 
         .panel.panel-pastvu
             .panel-heading: .panel-title
-                a.accordion-toggle(data-toggle="collapse", href="#ranks") Специальные настройки
+                a.accordion-toggle(data-toggle="collapse", href="#ranks") Special settings
             .panel-collapse.collapse.in#ranks: .panel-body
-                .setTitle Присваиваемые звания
+                .setTitle Assigned ranks
                 form: .form-group
                     //ko foreach: ranks
                     label.checkbox-inline
@@ -159,17 +159,17 @@
                         span(data-bind="text: $data.desc")
                     // /ko
 
-                .setTitle Лимит количества неподтвержденных фотографий
-                div(data-bind="html: 'Действующая настройка: <b>'+$root.intl.num(photoNewLimitOrigin())+'</b>'", style="margin-bottom: 2px;")
-                .calcInfo(data-bind="html: 'Доступный лимит: <b>'+$root.intl.num(photoNewCan())+'</b>'")
-                .calcInfo(data-bind="html: 'Всего неподтвержденных: <b>'+$root.intl.num(u.pfcount())+'</b>'")
-                .calcInfo(data-bind="html: 'Всего опубликованных: <b>'+$root.intl.num(u.pcount())+'</b>'")
+                .setTitle Limit of unconfirmed photos
+                div(data-bind="html: 'Current setting: <b>'+$root.intl.num(photoNewLimitOrigin())+'</b>'", style="margin-bottom: 2px;")
+                .calcInfo(data-bind="html: 'Available limit: <b>'+$root.intl.num(photoNewCan())+'</b>'")
+                .calcInfo(data-bind="html: 'Total unconfirmed: <b>'+$root.intl.num(u.pfcount())+'</b>'")
+                .calcInfo(data-bind="html: 'Total published: <b>'+$root.intl.num(u.pcount())+'</b>'")
                 form.form-inline(style="margin-top: 7px;"): .form-group
                     .radio: label.radio-inline
                         input(type="radio", value="auto", name="photo_new_radios", data-bind="checked: photoNewLimitOption")
-                        | Авто
+                        | Auto
                     .radio: label.radio-inline
                         input(type="radio", value="manual", name="photo_new_radios", data-bind="checked: photoNewLimitOption")
-                        | Вручную
+                        | Manual
                     .form-group
-                        input.form-control.input-sm.photoLimit(type="text", title="Число от 0 до 10000", maxlength="5", pattern="[0-9]{1,5}", data-bind="value: photoNewLimit, valueUpdate: 'keyup', attr: {disabled: photoNewLimitOption() === 'auto'}, css: {}")
+                        input.form-control.input-sm.photoLimit(type="text", title="A number between 0 and 10000", maxlength="5", pattern="[0-9]{1,5}", data-bind="value: photoNewLimit, valueUpdate: 'keyup', attr: {disabled: photoNewLimitOption() === 'auto'}, css: {}")

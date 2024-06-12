@@ -1,6 +1,6 @@
 .mapModuleWrapper(data-bind="with: repository[M!M]")
-    h3 Параметры размера кластера
-    p Для установки нового размера кластера, захватите прозрачный прямоугольник на карте и перемещайте его или его границу в необходимых пределах. Для приенения изменений нажмите кнопку Сохранить.
+    h4 Cluster size parameters
+    p To set a new cluster size, grab a transparent rectangle on the map and move it or its borders to the extent necessary. To apply your changes, click Save.
     .mapContainer(data-bind="css: {}")
         .map
         .clusterContainer
@@ -17,10 +17,10 @@
                     // /ko
                 // /ko
     dl.dl-horizontal
-        dt(data-bind="text: 'Текущие размеры:'")
+        dt(data-bind="text: 'Current sizes:'")
         dd(data-bind="text: '' + wCurr() + ' x ' + hCurr() + ''")
     dl.dl-horizontal(data-bind="style: {display: changed() ? '' : 'none'}")
-        dt(data-bind="text: 'Новые размеры:'")
+        dt(data-bind="text: 'New sizes:'")
         dd(data-bind="text: '' + wNew() + ' x ' + hNew() + ''")
     .clusterButt(data-bind="style: {display: changed() ? '' : 'none'}")
         button.btn.btn-primary.btnSave(type="button", data-bind="css: {disabled: exe()}, click: save, attr: {disabled: exe()}")
@@ -31,6 +31,6 @@
             |  Cancel
     button.btn.btn-primary.btnSave(type="button", data-bind="style: {display: changed() || isDefault() ? 'none' : ''}, click: setDefaults")
         | Reset to default
-    p(style="margin-top: 6px; margin-bottom: 0;", data-bind="style: {display: exe() && changed() ? '' : 'none'}") Процесс расчета новых параметров на разных уровнях зума:
+    p(style="margin-top: 6px; margin-bottom: 0;", data-bind="style: {display: exe() && changed() ? '' : 'none'}") The process of calculating the new parameters at different levels of zoom:
     .progress.progress-striped.active(data-bind="style: {display: exe() && changed() ? '' : 'none'}")
         .progress-bar.progress-bar-success(data-bind="style: {width: exePercent() + '%'}")
