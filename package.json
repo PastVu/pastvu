@@ -81,7 +81,7 @@
         "mv": "2.1.1",
         "nodemailer": "6.9.9",
         "postcss-less": "6.0.0",
-        "pug": "3.0.2",
+        "pug": "3.0.3",
         "semver": "7.5.2",
         "serve-favicon": "2.5.0",
         "serve-index": "1.9.1",
