@@ -125,11 +125,11 @@
         "jest": "29.6.1",
         "jqueryui-amd": "0.0.2",
         "less": "4.1.1",
-        "less-middleware": "3.1.0",
+        "less-middleware": "2.2.1",
         "lint-staged": "10.5.4",
         "mongodb-memory-server": "8.13.0",
         "osm-and-geojson": "0.1.2",
-        "requirejs": "2.3.6",
+        "requirejs": "2.3.7",
         "stylelint": "15.10.1",
         "stylelint-config-standard": "34.0.0"
     },
