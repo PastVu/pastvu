@@ -43,9 +43,10 @@ export function configure(startStamp) {
 
     class FileInfo {
         constructor(file, targetDir, nameLen, dirDepth) {
-            this.name = file.name;
+            this.name = file.originalFilename;
             this.size = file.size;
-            this.mime = file.type;
+            this.mime = file.mimetype;
+            this.path = file.filepath;
 
             this.createFileName(targetDir, nameLen, dirDepth);
         }
@@ -193,7 +194,7 @@ export function configure(startStamp) {
     }
 
     const postHandler = (req, res) => {
-        const form = new formidable.IncomingForm();
+        const form = formidable({ uploadDir: incomeDir });
         const isAvatar = req.url === '/uploadava';
         const maxPostSize = isAvatar ? maxAvaPostSize : maxPhotoPostSize;
         const targetDir = isAvatar ? targetDirAvatar : targetDirPhoto;
@@ -210,22 +211,21 @@ export function configure(startStamp) {
             tooBigPostDestroy(req, isAvatar, 0, contentLength);
         }
 
-        form.uploadDir = incomeDir;
         form
             .on('fileBegin', (name, file) => {
-                tmpFiles.push(file.path);
+                tmpFiles.push(file.filepath);
 
                 const fileInfo = new FileInfo(file, targetDir, isAvatar ? 10 : 18, isAvatar ? 2 : 3);
 
-                map[path.basename(file.path)] = fileInfo;
+                map[path.basename(file.filepath)] = fileInfo;
                 files.push(fileInfo);
             })
             .on('file', (name, file) => {
-                const fileInfo = map[path.basename(file.path)];
+                const fileInfo = map[path.basename(file.filepath)];
 
                 fileInfo.size = file.size;
                 fileInfo.path = path.join(incomeDir, fileInfo.file);
-                mv(file.path, fileInfo.path, { clobber: false }, err => {
+                mv(file.filepath, fileInfo.path, { clobber: false }, err => {
                     if (err) {
                         logger.error('MV error:', err);
                     }
