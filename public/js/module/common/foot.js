@@ -45,13 +45,13 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'rend
                         {
                             module: 'm/diff/about',
                             modal: {
-                                topic: 'О проекте',
+                                topic: 'About',
                                 initWidth: '1000px',
                                 //animateScale: true,
                                 curtainClick: { click: this.closePopup, ctx: this },
-                                offIcon: { text: 'Закрыть', click: this.closePopup, ctx: this },
+                                offIcon: { text: 'Close', click: this.closePopup, ctx: this },
                                 btns: [
-                                    { css: 'btn-primary', text: 'Закрыть', click: this.closePopup, ctx: this },
+                                    { css: 'btn-primary', text: 'Close', click: this.closePopup, ctx: this },
                                 ],
                             },
                             callback: function (vm) {

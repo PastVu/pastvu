@@ -1,22 +1,22 @@
 #top(data-bind="with: repository[M!M]")
     .fringe#panel
-        a#brand(href='/', title="PastVu - ретроспектива среды обитания человечества")
+        a#brand(href='/', title="PastVu - retro photo of mankind's habitat")
             img.logo(src="/img/misc/logow.png")
             .name(data-bind="html: pageTitle()")
         #panelTools.hide-text
             //ko if: auth.loggedIn() && !auth.iAm.nophotoupload()
             a#toUpload.labledIco.strokeAfter(href="/photoUpload")
                 .glyphicon.glyphicon-cloud-upload
-                .text Загрузить фото
+                .text Upload photo
             // /ko
             a#gallery.labledIco.strokeAfter(href="/ps")
                 .glyphicon.glyphicon-th
-                .text Галерея
+                .text Gallery
             //ko if: auth.loggedIn()
             //ko if: can.adm()
             a#toAdmin.labledIco.strokeAfter(href="/admin", target="_blank")
                 .glyphicon.glyphicon-cog
-                .text Админ
+                .text Admin
             // /ko
             a#toProfile.labledIco(data-bind="attr:{href: '/u/'+auth.iAm.login()}")
                 .ico.fringe(data-bind="style: {backgroundImage: 'url('+profileAvatar()+')'}")
@@ -25,14 +25,14 @@
             //ko if: !auth.loggedIn()
             #toRegister.labledIco(data-bind="click: function(data, evt){auth.show('reg')}")
                 .ico
-                .text Регистрация
+                .text Sign Up
             #toLogIn.labledIco.strokeBefore.iconAfter(data-bind="click: function(data, evt){auth.show('login')}")
-                .text Вход
+                .text Log In
                 .ico
             // /ko
             //ko if: auth.loggedIn()
             #toLogOut.labledIco.strokeBefore.iconAfter(data-bind="click: function(data, evt){auth.doLogout()}")
-                .text Выход
+                .text Log Out
                 .ico
             // /ko
             #lang.labledIco.strokeBefore(data-bind="click: langClick")

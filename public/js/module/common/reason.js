@@ -84,7 +84,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'globalVM', 'knock
             const descmax = selected.desc.max || 1000;
 
             if (desc.length < descmin || desc.length > descmax) {
-                this.errMsg('Длина описания должна быть в пределах ' + descmin + ' - ' + descmax + ' символов');
+                this.errMsg('Description length must be between ' + descmin + ' and ' + descmax + ' symbols');
 
                 return false;
             }

@@ -1,49 +1,49 @@
 .adminRegions(data-bind="with: repository[M!M]")
-    h4 Список регионов
+    h4 List of regions
     .regionsStat
         .stat
-            span Всего регионов:
+            span Total regions count:
             b(data-bind="text: ' '+$root.intl.num(stat.common.regionsCount)")
-            span &nbsp;&nbsp;По уровням:
+            span &nbsp;&nbsp;By level:
             //ko foreach: stat.byLevel
             //ko if: $index() > 0
             span.glyphicon.glyphicon-play
             // /ko
-            b(data-bind="text: ' ' + $root.intl.num($data.regionsCount) + ' ', attr: {title: ($index() + 1) + ' уровень'}")
+            b(data-bind="text: ' ' + $root.intl.num($data.regionsCount) + ' ', attr: {title: ($index() + 1) + ' level'}")
             // /ko
         .stat
-            span Всего вершин:
+            span Total vertex count:
             b(data-bind="text: ' '+$root.intl.num(stat.common.pointsCount)")
-            span &nbsp;&nbsp;По уровням:
+            span &nbsp;&nbsp;By level:
             //ko foreach: stat.byLevel
             //ko if: $index() > 0
             span.glyphicon.glyphicon-play
             // /ko
-            b(data-bind="text: ' ' + $root.intl.num($data.pointsCount) + ' ', attr: {title: ($index() + 1) + ' уровень'}")
+            b(data-bind="text: ' ' + $root.intl.num($data.pointsCount) + ' ', attr: {title: ($index() + 1) + ' level'}")
             // /ko
     .regionsHead
-        = 'Группировать по: '
-        .headElem.interact(data-bind="click: function () {mode('inheritence')}, css: {'selected':mode()==='inheritence'}") Наследованию
-        .headElem.interact(data-bind="click: function () {mode('cdate')}, css: {'selected':mode()==='cdate'}") Дате создания
-        .headElem.interact(data-bind="click: function () {mode('udate')}, css: {'selected':mode()==='udate'}") Дате изменения
-        .headElem.interact(data-bind="click: function () {mode('gdate')}, css: {'selected':mode()==='gdate'}") Дате изменения координат
+        = 'Group by: '
+        .headElem.interact(data-bind="click: function () {mode('inheritence')}, css: {'selected':mode()==='inheritence'}") Inheritance
+        .headElem.interact(data-bind="click: function () {mode('cdate')}, css: {'selected':mode()==='cdate'}") Creation date
+        .headElem.interact(data-bind="click: function () {mode('udate')}, css: {'selected':mode()==='udate'}") Update date
+        .headElem.interact(data-bind="click: function () {mode('gdate')}, css: {'selected':mode()==='gdate'}") Geometry update date
     .regionsHead
-        = 'Сортировать по: '
-        .headElem.interact(data-bind="click: function () {sort(1)}, css: {'selected':sort()===1}") Возрастанию
-        .headElem.interact(data-bind="click: function () {sort(-1)}, css: {'selected':sort()===-1}") Убыванию
+        = 'Sort by: '
+        .headElem.interact(data-bind="click: function () {sort(1)}, css: {'selected':sort()===1}") Ascending
+        .headElem.interact(data-bind="click: function () {sort(-1)}, css: {'selected':sort()===-1}") Descending
     .regionsHead
         a.headElem.interact(href="/admin/region/create")
             span.glyphicon.glyphicon-plus
-            |  Добавить
+            |  Add
         .headElem.interact(data-bind="click: expandAll")
             span.glyphicon.glyphicon-chevron-down
-            |  Раскрыть все
+            |  Expand all
         .headElem.interact(data-bind="click: collapseAll")
             span.glyphicon.glyphicon-chevron-up
-            |  Свернуть все
+            |  Collapse all
         .headElem.interact(data-bind="click: recalcStats")
             span.glyphicon.glyphicon-refresh
-            |  Пересчитать статистику
+            |  Recalculate stat
     .tree.well.well-sm
         ul(data-bind="template: {name:mode()==='inheritence'?'treeNode':'dateNode', foreach:mode()==='inheritence'?regions:regionsByYear}")
 
@@ -51,13 +51,13 @@
     li(data-bind="css: {isparent: $data.childLen}")
         .lirow(data-bind="css: {hl: $data.hl}")
             //ko if: $data.childLen && $parents[$data.level] && $parents[$data.level].mode && $parents[$data.level].mode() === 'inheritence'
-            .chevron(data-bind="click: $parents[$data.level].collapseToggle, attr: {title: ($data.opened() ? 'Скрыть' : 'Показать') + ' дочерние регионы'}")
+            .chevron(data-bind="click: $parents[$data.level].collapseToggle, attr: {title: ($data.opened() ? 'Hide' : 'Show') + ' children regions'}")
                 span.glyphicon(data-bind="css: {'glyphicon-chevron-up': $data.opened(), 'glyphicon-chevron-down': !$data.opened()}")
             // /ko
-            a.name(title="Открыть регион", data-bind="attr: {href: '/admin/region/' + $data.cid}")
-                .rname(data-bind="text: ' ' + $data.title_local")
+            a.name(title="Open region", data-bind="attr: {href: '/admin/region/' + $data.cid}")
+                .rname(data-bind="text: ' ' + $data.title_en")
                 //ko if: $data.childLen
-                .section.childsCount(title="Дочерние по уровням")
+                .section.childsCount(title="Children by level")
                     //ko foreach: childLenArr
                     | &nbsp;
                     span.glyphicon.glyphicon-play
@@ -65,27 +65,27 @@
                     // /ko
                 // /ko
                 //ko if: $data.pc
-                .section(title="Изображения")
+                .section(title="Images")
                     span.glyphicon.glyphicon-camera
-                    .pc(title="Изображения с/без координат", data-bind="text: $root.intl.num($data.pcg) + ' / ' + $root.intl.num($data.pc - $data.pcg)")
+                    .pc(title="Images with/without coordinates", data-bind="text: $root.intl.num($data.pcg) + ' / ' + $root.intl.num($data.pc - $data.pcg)")
                     //ko if: $data.childLen && $data.pco
-                    .pco(title="Изображения без сабрегиона с/без координат", data-bind="text: $root.intl.num($data.pcog) + ' / ' + $root.intl.num($data.pco - $data.pcog)")
+                    .pco(title="Images without subregions with/without coordinates", data-bind="text: $root.intl.num($data.pcog) + ' / ' + $root.intl.num($data.pco - $data.pcog)")
                     // /ko
                 // /ko
                 //ko if: $data.cc > 0
-                .section(title="Комментарии")
+                .section(title="Comments")
                     span.glyphicon.glyphicon-comment
                     //ko if: !$data.ccd
-                    .cc(title="Комментариев всего", data-bind="text: $root.intl.num($data.cc)")
+                    .cc(title="Comments total", data-bind="text: $root.intl.num($data.cc)")
                     // /ko
                     //ko if: $data.ccd
-                    .cc(title="Комментарии активные/удаленные", data-bind="text: $root.intl.num($data.cc - $data.ccd) + ' / ' + $root.intl.num($data.ccd)")
+                    .cc(title="Comments active/delete", data-bind="text: $root.intl.num($data.cc - $data.ccd) + ' / ' + $root.intl.num($data.ccd)")
                     // /ko
                 // /ko
             //ko if: $data.level < 5
-            a.addChild(title="Создать дочерний регион", data-bind="attr: {href: '/admin/region/create?parent=' + $data.cid}")
+            a.addChild(title="Create shild region", data-bind="attr: {href: '/admin/region/create?parent=' + $data.cid}")
                 span.glyphicon.glyphicon-plus
-                |  Добавить потомка
+                |  Add descendant
             // /ko
         //ko if: $data.childLen && $data.opened()
         //ko template: {name: 'treeNode', foreach: $data.regions}
@@ -95,12 +95,12 @@
 
     | <script id="dateNode" type="text/html">
     li
-        .lirow.notRegion(data-bind="click: $parents[$data.level].collapseToggle, attr: {title: $data.opened() ? 'Раскрыть' : 'Закрыть'}")
+        .lirow.notRegion(data-bind="click: $parents[$data.level].collapseToggle, attr: {title: $data.opened() ? 'Expand' : 'Close'}")
             .chevron
                 span.glyphicon(data-bind="css: {'glyphicon-chevron-up': $data.opened(), 'glyphicon-chevron-down': !$data.opened()}")
             .name
                 .rname(data-bind="text: ' ' + $data.title")
-                .section.childsCount(title="Количество регионов")
+                .section.childsCount(title="Number of regions")
                     | &nbsp;
                     span.glyphicon.glyphicon-play
                     span(data-bind="text: ' ' + $root.intl.num($data.count)")
