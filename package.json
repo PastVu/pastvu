@@ -51,7 +51,7 @@
         "@turf/turf": "6.4.0",
         "async-exit-hook": "2.0.1",
         "aws-sdk": "2.1354.0",
-        "basic-auth-connect": "1.0.0",
+        "basic-auth-connect": "1.1.0",
         "bcrypt": "5.1.1",
         "body-parser": "1.20.1",
         "bufferutil": "4.0.1",
