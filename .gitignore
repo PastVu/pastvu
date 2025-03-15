@@ -42,3 +42,6 @@ babel/output*.js
 # Grunt output
 appBuild
 app*.zip
+
+# Dumps
+pastvu.gz

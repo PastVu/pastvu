@@ -1,11 +1,6 @@
-include:
-  - .docker/mongo.yaml
-  - .docker/redis.yaml
-  - .docker/mailpit.yaml
-
 x-defaults: &app-image
   build: ./.docker
-  image: pastvu_node
+  restart: always
   environment:
     - NODE_ENV=development
   extra_hosts:
@@ -69,6 +64,24 @@ services:
     depends_on:
       - "app"
 
+  mongo:
+    image: mongo:4.4
+    volumes:
+      - mongo4:/data/db
+      - ./.docker/dev-initdb.sh:/docker-entrypoint-initdb.d/dev-initdb.sh
+      - ./pastvu.gz:/dump/pastvu.gz
+    ports:
+      - "127.0.0.1:27017:27017"
+
+  redis:
+    image: redis
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+     - "127.0.0.1:1080:8025"
+
 volumes:
   store:
   sitemap:
+  mongo4:

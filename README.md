@@ -48,6 +48,15 @@ Our [contributing guidance](https://docs.pastvu.com/en/contributing) contains mo
 
 We expect all project participants to follow [Contributor Code of Conduct](CODE_OF_CONDUCT.md)
 
+### Quickstart
+
+```bash
+curl -O https://varlamov.me/pastvu/github/pastvu.gz
+cp ./config/local.config.js.docker-example ./config/local.config.js
+docker compose run --rm --no-deps app npm install
+docker compose up -d
+```
+
 ## License
 
 * GNU Affero General Public License (AGPL) v3 or later. See [COPYING](https://github.com/pastvu/pastvu/blob/master/COPYING) for the full license text.
