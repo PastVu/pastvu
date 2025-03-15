@@ -5,6 +5,7 @@ on:
     branches:
       - 'master'
       - 'en'
+      - 'develop'
     tags:
       - 'v*'
   workflow_dispatch:
