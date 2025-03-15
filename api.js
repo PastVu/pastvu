@@ -92,7 +92,7 @@ async.waterfall([
         db = mongoose.createConnection() // http://mongoosejs.com/docs/api.html#connection_Connection
             .once('open', openHandler)
             .once('error', errFirstHandler);
-        db.open(moongoUri, { server: { poolSize: moongoPool, auto_reconnect: true }, db: { safe: true } });
+        db.open(moongoUri, { server: { maxPoolSize: moongoPool, auto_reconnect: true }, db: { safe: true } });
 
         function openHandler() {
             const admin = new mongoose.mongo.Admin(db.db);

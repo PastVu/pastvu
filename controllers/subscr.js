@@ -174,7 +174,7 @@ export async function commentAdded(objId, user, stamp = new Date()) {
  */
 export async function commentViewed(objId, user, setInRel) {
     if (setInRel) {
-        const { n: numberAffected = 0 } = await UserObjectRel.updateOne(
+        const { matchedCount: numberAffected = 0 } = await UserObjectRel.updateOne(
             { obj: objId, user: user._id },
             { $unset: { sbscr_noty: 1 }, $set: { sbscr_noty_change: new Date() } },
             { upsert: false }
