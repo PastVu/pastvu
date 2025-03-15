@@ -1,5 +1,3 @@
-version: '3.9'
-
 include:
   - .docker/mongo.yaml
   - .docker/redis.yaml
