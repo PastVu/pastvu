@@ -49,7 +49,7 @@ describe('comment', () => {
             expect(result.comment.txt).toMatch(data.txt);
             expect(result.comment.user).toMatch('user1');
 
-            await expect(CommentN.count({ obj: news })).resolves.toBe(1);
+            await expect(CommentN.countDocuments({ obj: news })).resolves.toBe(1);
         });
     });
 
@@ -93,7 +93,7 @@ describe('comment', () => {
             await comment.create(data);
 
             // Sanity check.
-            await expect(CommentN.count({ obj: news })).resolves.toBe(4);
+            await expect(CommentN.countDocuments({ obj: news })).resolves.toBe(4);
 
             const comments = await comment.giveForUser({ login: 'user1', type: 'news' });
 

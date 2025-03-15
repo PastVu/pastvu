@@ -139,7 +139,7 @@ describe('admin', () => {
 
             await comment.create(data);
 
-            await expect(CommentN.count({ obj: news })).resolves.toBe(1);
+            await expect(CommentN.countDocuments({ obj: news })).resolves.toBe(1);
             await expect(admin.deleteNews(news)).rejects.toThrow(new NoticeError(constants.NEWS_CONTAINS_COMMENTS));
         });
     });
