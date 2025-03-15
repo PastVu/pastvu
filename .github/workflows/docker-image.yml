@@ -16,7 +16,7 @@ jobs:
   build-and-push-app:
     # This only makes sense to run for pastvu owned repo.
     if: github.repository_owner == 'pastvu'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
