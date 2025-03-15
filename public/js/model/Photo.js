@@ -100,7 +100,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'model/
             download: 'login',
             'protected': undefined,
         };
-        const picPrefix = '/_p';
+        const picPrefix = 'https://img.pastvu.com';
         const picProtectedPrefix = '/_pr';
         const picCoveredPrefix = '/_prn';
         const sizeVariants = ['a', 'd', 'h', 'm', 'q', 's', 'x'];
