@@ -61,7 +61,7 @@
         "cookie": "0.7.0",
         "diff-match-patch": "1.0.5",
         "docker-secret": "1.1.2",
-        "express": "4.19.2",
+        "express": "4.20.0",
         "express-urlrewrite": "1.2.0",
         "formidable": "3.5.1",
         "gm": "1.23.1",
