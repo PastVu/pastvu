@@ -13,13 +13,13 @@
             .dotDelimeter ·
             a(class="stamp{{?c.delroot!==true}} dis{{?}}", data-replace="true", href="{{= c.delroot===true ? ('?hl=comment-'+c.cid) : 'javascript: void(0)'}}") {{=it.fDate(new Date(c.stamp))}}
             .dotDelimeter ·
-            .changed(title="Показать историю изменений") {{='Удален '+it.fDateIn(new Date(c.lastChanged))}}
+            .changed(title="Show history of changes") {{='Removed at '+it.fDateIn(new Date(c.lastChanged))}}
         .ctext {{=c.txt}}
         | {{?c.delroot===true}}
         .cacts
-            span.cact.hidedel Свернуть
+            span.cact.hidedel Roll up
             | {{?it.mod}}
             .dotDelimeter ·
-            span.cact.restore Восстановить
+            span.cact.restore Restore
             | {{?}}
         | {{?}}

@@ -554,27 +554,42 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/geocoordsparser', 'lib
         format: (function () {
             const dateFormat = (function () {
                 const months = [
-                    'января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря',
+                    'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december',
                 ];
                 const weekDays = [
-                    'Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота',
+                    'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday',
                 ];
                 const weekDaysIn = [
-                    'в воскресенье', 'в понедельник', 'во вторник', 'в среду', 'в четверг', 'в пятницу', 'в субботу',
+                    'at sunday', 'at monday', 'at tuesday', 'at wednesday', 'at thursday', 'at friday', 'at saturday',
                 ];
 
                 function dMMYYYYhhmm(date) {
-                    const hours = date.getHours();
-                    const mintues = date.getMinutes();
-
-                    return date.getDate() + ' ' + months[date.getMonth()] + ' ' + date.getFullYear() + ', ' + (hours > 9 ? hours : '0' + hours) + ':' + (mintues > 9 ? mintues : '0' + mintues);
+                    return date.getDate() + ' ' + months[date.getMonth()] + ' ' + date.getFullYear() + ', ' + hhmm(date);
                 }
 
                 function hhmm(date) {
-                    const hours = date.getHours();
+                    let hours = date.getHours();
                     const mintues = date.getMinutes();
+                    let ext;
 
-                    return (hours > 9 ? hours : '0' + hours) + ':' + (mintues > 9 ? mintues : '0' + mintues);
+                    if (hours > 12) {
+                        ext = 'PM';
+                        hours -= 12;
+
+                        if (hours < 10) {
+                            hours = '0' + hours;
+                        } else if (hours === 12) {
+                            hours = '12';
+                            ext = 'AM';
+                        }
+                    } else if (hours < 12) {
+                        hours = hours < 10 ? '0' + hours : hours;
+                        ext = 'AM';
+                    } else if (hours === 12) {
+                        ext = 'PM';
+                    }
+
+                    return hours + ':' + (mintues > 9 ? mintues : '0' + mintues) + ' ' + ext;
                 }
 
                 // Возвращает дату относительно переданной в формате "Сегодня в 12:15"
@@ -588,10 +603,10 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/geocoordsparser', 'lib
                         if (dateMs < Utils.times.midnight - Utils.times.msDay) {
                             result = weekDays[date.getDay()] + ', ' + dateFormat.hhmm(date);
                         } else {
-                            result = 'Вчера в ' + dateFormat.hhmm(date);
+                            result = 'Yesterday at ' + dateFormat.hhmm(date);
                         }
                     } else {
-                        result = 'Сегодня в ' + dateFormat.hhmm(date);
+                        result = 'Today at ' + dateFormat.hhmm(date);
                     }
 
                     return result;
@@ -607,10 +622,10 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/geocoordsparser', 'lib
                         if (dateMs < Utils.times.midnight - Utils.times.msDay) {
                             result = weekDaysIn[date.getDay()] + ', ' + dateFormat.hhmm(date);
                         } else {
-                            result = 'вчера в ' + dateFormat.hhmm(date);
+                            result = 'yesterday at ' + dateFormat.hhmm(date);
                         }
                     } else {
-                        result = 'сегодня в ' + dateFormat.hhmm(date);
+                        result = 'today at ' + dateFormat.hhmm(date);
                     }
 
                     return result;
