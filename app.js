@@ -151,7 +151,7 @@ export async function configure(startStamp) {
     if (config.serveStore) {
         const got = require('got');
         const rewrite = require('express-urlrewrite');
-        const proxy = require('http-proxy-middleware');
+        const { createProxyMiddleware } = require('http-proxy-middleware');
         const uploadServer = `http://${config.uploader.hostname || 'localhost'}:${config.uploader.port}`;
         const downloadServer = `http://${config.downloader.hostname || 'localhost'}:${config.downloader.port}`;
 
@@ -197,8 +197,8 @@ export async function configure(startStamp) {
             res.redirect(302, '/img/caps/avatarth.png');
         });
 
-        app.use(['/upload', '/uploadava'], proxy({ target: uploadServer, logLevel: 'warn' }));
-        app.use('/download', proxy({ target: downloadServer, logLevel: 'warn' }));
+        app.use(['/upload', '/uploadava'], createProxyMiddleware({ target: uploadServer, logger }));
+        app.use('/download', createProxyMiddleware({ target: downloadServer, logger }));
 
         // Seal store paths, ie request that achieve this handler will receive 404
         app.get(/^\/(?:_a|_prn)(?:\/.*)$/, static404);
