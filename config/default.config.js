@@ -73,7 +73,7 @@ module.exports = {
 
     mongo: {
         connection: 'mongodb://localhost:27017/pastvu',
-        pool: 5, // Number of concurrent connections to DB
+        pool: 10, // Number of concurrent connections to DB
     },
     mongo_api: {
         con: 'mongodb://localhost:27017/pastvu',

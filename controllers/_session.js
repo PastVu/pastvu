@@ -483,7 +483,7 @@ async function popUserRegions(usObj) {
         paths.push({ path: 'mod_regions', select: { _id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1 } });
     }
 
-    await user.populate(paths).execPopulate();
+    await user.populate(paths);
 
     let regionsData = regionController.buildQuery(user.regions);
     let shortRegions = regionController.getShortRegionsParams(regionsData.rhash);
@@ -754,7 +754,7 @@ export const archiveExpiredSessions = async function () {
     const anonQuery = { anonym: { $exists: true }, stamp: { $lte: new Date(start - SESSION_ANON_LIFE) } };
 
     // Simply remove anonymous sessions older then SESSION_ANON_LIFE, there is no point in storing them
-    const { n: countRemovedAnon } = await Session.deleteMany(anonQuery).exec();
+    const { deletedCount: countRemovedAnon } = await Session.deleteMany(anonQuery).exec();
 
     // Move each expired registered user session to sessions_archive
     for await (const session of Session.find(userQuery).limit(5000)) {
