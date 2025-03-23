@@ -53,7 +53,7 @@ module.exports = {
     serveStore: true, // Tell app.js serve out store public folder
 
     cdn: {
-        picPrefix: "/_p",
+        picPrefix: '/_p',
     },
 
     logLongDuration: ms('2s'),
