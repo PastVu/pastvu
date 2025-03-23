@@ -28,7 +28,7 @@ const getUserRanks = () => constants.user.ranks;
 // Fill object for client parameters
 async function fillClientParams() {
     const settings = await Settings.find({}, { _id: 0, key: 1, val: 1 }, { lean: true }).exec();
-    const { lang, hash, publicApiKeys, analytics, version, docs, env } = config;
+    const { lang, hash, publicApiKeys, analytics, version, docs, env, cdn } = config;
 
     // Calculate default map center from the clusters.
     const locDef = { lat: 27, lng: 24, z: 3 };
@@ -42,7 +42,7 @@ async function fillClientParams() {
         locDef.lat = center.geometry.coordinates[1];
     }
 
-    Object.assign(clientParams, { lang, hash, publicApiKeys, analytics, version, docs, env, locDef });
+    Object.assign(clientParams, { lang, hash, publicApiKeys, analytics, version, docs, env, locDef, cdn });
 
     for (const setting of settings) {
         clientParams[setting.key] = setting.val;

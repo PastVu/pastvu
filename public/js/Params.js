@@ -40,7 +40,7 @@ define(['jquery', 'underscore', 'socket!', 'Utils', 'knockout', 'knockout.mappin
 
     // Create Params view model, define properties that will not be observable
     // when view model is converted to JS object.
-    const noObserve = ['window.head', 'settings.lang', 'settings.publicApiKeys', 'settings.analytics', 'settings.docs', 'settings.env', 'settings.locDef'];
+    const noObserve = ['window.head', 'settings.lang', 'settings.publicApiKeys', 'settings.analytics', 'settings.docs', 'settings.env', 'settings.locDef', 'settings.cdn'];
 
     Params = koMapping.fromJS(Params, { copy: noObserve });
 

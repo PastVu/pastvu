@@ -52,6 +52,10 @@ module.exports = {
     servePublic: true, // Tell app.js serve out its public folder (js, css, etc)
     serveStore: true, // Tell app.js serve out store public folder
 
+    cdn: {
+        picPrefix: "/_p",
+    },
+
     logLongDuration: ms('2s'),
     serveLog: false, // Tell app.js serve out its logs folder (path: "logPath") at /nodelog
     serveLogAuth: {
