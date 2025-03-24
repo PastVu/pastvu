@@ -100,8 +100,8 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'model/
             download: 'login',
             'protected': undefined,
         };
-        const cdnPrefix = P.settings.cdn.picPrefix;
         const picPrefix = '/_p';
+        const cdnPrefix = P.settings.cdn.picPrefix || picPrefix;
         const picProtectedPrefix = '/_pr';
         const picCoveredPrefix = '/_prn';
         const sizeVariants = ['a', 'd', 'h', 'm', 'q', 's', 'x'];
