@@ -100,12 +100,13 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'model/
             download: 'login',
             'protected': undefined,
         };
-        const picPrefix = P.settings.cdn.picPrefix || '/_p';
+        const cdnPrefix = P.settings.cdn.picPrefix;
+        const picPrefix = '/_p';
         const picProtectedPrefix = '/_pr';
         const picCoveredPrefix = '/_prn';
         const sizeVariants = ['a', 'd', 'h', 'm', 'q', 's', 'x'];
 
-        const picFormats = createFormatMap(picPrefix);
+        const picFormats = createFormatMap(cdnPrefix);
         const picCoveredFormats = createFormatMap(picCoveredPrefix);
         const picProtectedFormats = createFormatMap(picProtectedPrefix);
 
