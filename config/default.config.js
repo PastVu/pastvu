@@ -52,6 +52,7 @@ module.exports = {
     servePublic: true, // Tell app.js serve out its public folder (js, css, etc)
     serveStore: true, // Tell app.js serve out store public folder
 
+    // CDN settings used when public images are delivered from alternative path.
     cdn: {
         picPrefix: '/_p',
     },
