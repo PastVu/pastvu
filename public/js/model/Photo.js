@@ -3,8 +3,8 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'model/User', 'model/Region', 'm/photo/status'],
-    function ($, _, ko, koMapping, Utils, User, Region, statuses) {
+define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'model/User', 'model/Region', 'm/photo/status', 'Params'],
+    function ($, _, ko, koMapping, Utils, User, Region, statuses, P) {
         'use strict';
 
         const defaults = {
@@ -105,7 +105,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'model/
         const picCoveredPrefix = '/_prn';
         const sizeVariants = ['a', 'd', 'h', 'm', 'q', 's', 'x'];
 
-        const picFormats = createFormatMap(picPrefix);
+        const picFormats = createFormatMap(P.settings.cdn.url || picPrefix);
         const picCoveredFormats = createFormatMap(picCoveredPrefix);
         const picProtectedFormats = createFormatMap(picProtectedPrefix);
 

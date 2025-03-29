@@ -52,6 +52,11 @@ module.exports = {
     servePublic: true, // Tell app.js serve out its public folder (js, css, etc)
     serveStore: true, // Tell app.js serve out store public folder
 
+    // CDN settings used when public images are delivered from alternative path.
+    cdn: {
+        url: '', // Define absolute URL containing hostname and path (no trailing slash).
+    },
+
     logLongDuration: ms('2s'),
     serveLog: false, // Tell app.js serve out its logs folder (path: "logPath") at /nodelog
     serveLogAuth: {
