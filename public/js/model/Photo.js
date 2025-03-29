@@ -101,12 +101,11 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'model/
             'protected': undefined,
         };
         const picPrefix = '/_p';
-        const cdnPrefix = P.settings.cdn.picPrefix || picPrefix;
         const picProtectedPrefix = '/_pr';
         const picCoveredPrefix = '/_prn';
         const sizeVariants = ['a', 'd', 'h', 'm', 'q', 's', 'x'];
 
-        const picFormats = createFormatMap(cdnPrefix);
+        const picFormats = createFormatMap(P.settings.cdn.url || picPrefix);
         const picCoveredFormats = createFormatMap(picCoveredPrefix);
         const picProtectedFormats = createFormatMap(picProtectedPrefix);
 

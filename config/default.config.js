@@ -54,7 +54,7 @@ module.exports = {
 
     // CDN settings used when public images are delivered from alternative path.
     cdn: {
-        picPrefix: '/_p',
+        url: '', // Define absolute URL containing hostname and path (no trailing slash).
     },
 
     logLongDuration: ms('2s'),
