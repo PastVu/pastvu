@@ -32,7 +32,7 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
     }
 
     function getErrorMessage(error) {
-        let message = 'Возникла ошибка';
+        let message = 'An error occurred';
 
         if (!_.isEmpty(error)) {
             if (_.isString(error)) {
@@ -156,7 +156,7 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
                     },
                 },
                 {
-                    addClass: cancelClass, text: params.cancelText || 'Отмена',
+                    addClass: cancelClass, text: params.cancelText || 'Cancel',
                     onClick: function ($noty) {
                         $noty.close();
 
@@ -252,7 +252,7 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
         notyAlert({
             message: getErrorMessage(error),
             type: 'error', timeout: params.timeout || 120000,
-            ok: true, text: 'Закрыть',
+            ok: true, text: 'Close',
         });
     }
 

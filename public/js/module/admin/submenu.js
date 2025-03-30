@@ -15,18 +15,18 @@ define(['underscore', 'knockout', 'm/_moduleCliche', 'globalVM', 'text!tpl/admin
 
             this.submenus = {
                 index: [
-                    { name: 'Главная', href: '/admin', section: 'main' },
-                    { name: 'Новости', href: '/admin/news', section: 'news' },
+                    { name: 'Main', href: '/admin', section: 'main' },
+                    { name: 'News', href: '/admin/news', section: 'news' },
                 ],
                 map: [
-                    { name: 'Кластеры', href: '/admin/map/cluster', section: 'cluster' },
+                    { name: 'Clusters', href: '/admin/map/cluster', section: 'cluster' },
                 ],
                 photo: [
-                    { name: 'Конвейер конвертаций', href: '/admin/photo/conveyer', section: 'conveyer' },
+                    { name: 'Conversions conveyor', href: '/admin/photo/conveyer', section: 'conveyer' },
                 ],
                 region: [
-                    { name: 'Список и просмотр', href: '/admin/region', section: 'region' },
-                    { name: 'Проверка по точке', href: '/admin/region/check', section: 'regionCheck' },
+                    { name: 'List and view', href: '/admin/region', section: 'region' },
+                    { name: 'Check by point', href: '/admin/region/check', section: 'regionCheck' },
                 ],
             };
 

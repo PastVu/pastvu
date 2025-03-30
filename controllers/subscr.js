@@ -8,7 +8,6 @@ import _ from 'lodash';
 import path from 'path';
 import pug from 'pug';
 import log4js from 'log4js';
-import Utils from '../commons/Utils';
 import * as session from './_session';
 import config from '../config';
 import { waitDb } from './connection';
@@ -37,8 +36,8 @@ const sortNotice = (a, b) => a.brief.newest < b.brief.newest ? 1 : a.brief.newes
 const sortSubscr = ({ ccount_new: aCount = 0, sbscr_create: aDate }, { ccount_new: bCount = 0, sbscr_create: bDate }) =>
     aCount < bCount ? 1 : aCount > bCount ? -1 : aDate < bDate ? 1 : aDate > bDate ? -1 : 0;
 const declension = {
-    comment: [' новый комментарий', ' новых комментария', ' новых комментариев'],
-    commentUnread: [' непрочитанный', ' непрочитанных', ' непрочитанных'],
+    comment: [' new comment', ' new comments'],
+    commentUnread: [' unread'],
 };
 
 // Subscribe to/unsubscribe from object (external, for current user by object cid)
@@ -437,10 +436,10 @@ async function sendUserNotice(userId) {
 
             totalNewestComments += newest;
 
-            obj.briefFormat = { newest: newest + Utils.format.wordEndOfNum(newest, declension.comment) };
+            obj.briefFormat = { newest: newest + ' new comment' + (newest > 1 ? 's' : '') };
 
             if (newest !== unread) {
-                obj.briefFormat.unread = unread + Utils.format.wordEndOfNum(unread, declension.commentUnread);
+                obj.briefFormat.unread = unread + declension.commentUnread;
             }
 
             result.push(obj);
@@ -461,7 +460,7 @@ async function sendUserNotice(userId) {
         await sendMail({
             sender: 'noreply',
             receiver: { alias: String(user.disp), email: user.email },
-            subject: 'Новое уведомление',
+            subject: 'New notification',
             head: true,
             body: noticeTpl({
                 user,
@@ -469,11 +468,9 @@ async function sendUserNotice(userId) {
                 news: newsResult,
                 photos: photosResult,
                 username: String(user.disp),
-                greeting: 'Уведомление о событиях на PastVu',
+                greeting: 'Notification about events on PastVu',
             }),
-            text: totalNewestComments +
-            (totalNewestComments === 1 ? ' новый коментарий' : ' новых ' +
-            (totalNewestComments < 5 ? 'комментария' : 'комментариев')),
+            text: totalNewestComments + ' new comment' + (totalNewestComments > 1 ? 's' : ''),
         });
     }
 
