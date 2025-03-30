@@ -437,7 +437,10 @@ async function sendUserNotice(userId) {
 
             totalNewestComments += newest;
 
-            obj.briefFormat = { newest: newest + Utils.format.wordEndOfNum(newest, declension.comment) };
+            obj.briefFormat = {
+                newest: newest + Utils.format.wordEndOfNum(newest, declension.comment),
+                id: obj._id,
+            };
 
             if (newest !== unread) {
                 obj.briefFormat.unread = unread + Utils.format.wordEndOfNum(unread, declension.commentUnread);
@@ -472,8 +475,8 @@ async function sendUserNotice(userId) {
                 greeting: 'Уведомление о событиях на PastVu',
             }),
             text: totalNewestComments +
-            (totalNewestComments === 1 ? ' новый коментарий' : ' новых ' +
-            (totalNewestComments < 5 ? 'комментария' : 'комментариев')),
+                (totalNewestComments === 1 ? ' новый коментарий' : ' новых ' +
+                    (totalNewestComments < 5 ? 'комментария' : 'комментариев')),
         });
     }
 
@@ -613,7 +616,7 @@ async function giveUserSubscriptions({ login, page = 1, type = 'photo' }) {
 }
 
 export const ready = (async () => {
-    if (! config.notifier) {
+    if (!config.notifier) {
         return;
     } //Turn off notifier if disabled in config
 
