@@ -32,6 +32,7 @@ define([
         this.openNewTab = options.openNewTab;
         this.embedded = options.embedded;
         this.isPainting = options.isPainting;
+        this.editing = options.editing;
         this.year = options.year || undefined;
         this.year2 = options.year2 || undefined;
 
@@ -969,6 +970,10 @@ define([
      * @param {Event} evt
      */
     MarkerManager.prototype.clickMarker = function (evt) {
+        if (this.editing()) {
+            return;
+        }
+
         const marker = evt.target;
         const object = marker.options.data.obj;
         const eventPoint = this.map.mouseEventToContainerPoint(evt.originalEvent);
@@ -1092,6 +1097,13 @@ define([
         }
     };
     MarkerManager.prototype.popupPhotoOver = function (evt) {
+        if (this.editing()) {
+            console.log(this.editing());
+            return;
+        }
+
+        console.log(this.editing());
+
         const type = evt.target.options.data.type;
 
         window.clearTimeout(this.popupTimeout);
