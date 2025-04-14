@@ -145,7 +145,7 @@ export async function setCommentView(objId, userId, type = 'photo', stamp = new 
  * @param {string} [type=photo] Object type
  */
 export async function onCommentAdd(objId, userId, type = 'photo') {
-    const { n: count = 0 } = await UserObjectRel.updateMany(
+    const { matchedCount: count = 0 } = await UserObjectRel.updateMany(
         { obj: objId, comments: { $exists: true }, user: { $ne: userId }, type },
         { $inc: { ccount_new: 1 } }
     ).exec();

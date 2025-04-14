@@ -292,7 +292,7 @@ export async function configure(startStamp) {
 
     await connectDb({
         redis: config.redis,
-        mongo: { uri: config.mongo.connection, poolSize: config.mongo.pool },
+        mongo: { uri: config.mongo.connection, maxPoolSize: config.mongo.pool },
         logger,
     });
 

@@ -2790,7 +2790,7 @@ async function resetIndividualDownloadOrigin({ login, r }) {
         query[`r${region.level}`] = region.cid;
     }
 
-    const { n: updated = 0 } = await Photo.updateMany(
+    const { matchedCount: updated = 0 } = await Photo.updateMany(
         query, { $unset: { disallowDownloadOriginIndividual: 1 } }
     ).exec();
 
@@ -3443,7 +3443,7 @@ const planResetDisplayStat = (function () {
         try {
             logger.info(`Resetting day ${needWeek ? 'and week ' : ''}display statistics...`);
 
-            const { n: count = 0 } = await Photo.updateMany(
+            const { matchedCount: count = 0 } = await Photo.updateMany(
                 { s: { $in: [status.PUBLIC, status.DEACTIVATE, status.REMOVE] } }, { $set: setQuery }
             ).exec();
 

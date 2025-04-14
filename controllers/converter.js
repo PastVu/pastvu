@@ -258,7 +258,7 @@ async function conveyerClear({ value }) {
     if (value === true) {
         conveyerEnabled = value;
 
-        ({ n: removedCount = 0 } = await PhotoConveyer.deleteMany({ converting: { $exists: false } }).exec());
+        ({ deletedCount: removedCount = 0 } = await PhotoConveyer.deleteMany({ converting: { $exists: false } }).exec());
     }
 
     conveyerLength = await PhotoConveyer.estimatedDocumentCount().exec();
@@ -785,7 +785,7 @@ export async function removePhotos(cids) {
         return 0;
     }
 
-    const { n: removedCount = 0 } = await PhotoConveyer.deleteMany({ cid: { $in: cids } }).exec();
+    const { deletedCount: removedCount = 0 } = await PhotoConveyer.deleteMany({ cid: { $in: cids } }).exec();
 
     conveyerLength -= removedCount;
 

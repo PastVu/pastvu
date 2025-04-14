@@ -63,7 +63,7 @@ const schedule = (function () {
 export async function configure(startStamp) {
     makeDir.sync(sitemapPathAbs);
 
-    await connectDb({ mongo: { uri: config.mongo.connection, poolSize: config.mongo.pool }, logger });
+    await connectDb({ mongo: { uri: config.mongo.connection, maxPoolSize: config.mongo.pool }, logger });
     await regionsReady;
 
     logger.info(`Sitemap generator started up in ${(Date.now() - startStamp) / 1000}s`);
