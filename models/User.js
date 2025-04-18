@@ -65,7 +65,10 @@ registerModel(db => {
         firstName: { type: String },
         lastName: { type: String },
         disp: { type: String }, // Display name
-
+        realName: {
+            type: String,
+            maxlength: [50, 'EValidation.RealNameTooLong'],
+        },
         birthdate: { type: String },
         sex: { type: String },
         country: { type: String },
