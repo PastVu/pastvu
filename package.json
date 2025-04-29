@@ -63,7 +63,7 @@
         "docker-secret": "1.1.2",
         "express": "4.20.0",
         "express-urlrewrite": "1.2.0",
-        "formidable": "3.5.1",
+        "formidable": "3.5.4",
         "gm": "1.23.1",
         "got": "11.8.5",
         "http-proxy-middleware": "2.0.7",
