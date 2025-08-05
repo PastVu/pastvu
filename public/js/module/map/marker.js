@@ -24,10 +24,11 @@ define([
         return 'y' + year;
     }
 
-    function MarkerManager(map, options) {
+    function MarkerManager(map, pointHL, options) {
         const _this = this;
 
         this.map = map;
+        this.pointHighlight = pointHL; //if pointHighlight exists need to disable it from a local cluster
 
         this.openNewTab = options.openNewTab;
         this.embedded = options.embedded;
@@ -698,38 +699,41 @@ define([
 
         while (i) {
             photo = data[--i];
-            geoPhoto = photo.geo;
-            geoPhotoCorrection = [geoPhoto[0] > 0 ? 1 : 0, geoPhoto[1] < 0 ? -1 : 0];
 
-            geo = [~~(clusterH * (~~(geoPhoto[0] / clusterH) + geoPhotoCorrection[0]) * precisionDivider) / precisionDivider, ~~(clusterW * (~~(geoPhoto[1] / clusterW) + geoPhotoCorrection[1]) * precisionDivider) / precisionDivider]; // eslint-disable-line max-len
-            clustCoordId = geo[0] + '@' + geo[1];
-            cluster = clusters[clustCoordId];
+            if (!this.pointHighlight || this.pointHighlight && this.pointHighlight.cid() !== photo.cid) {
+                geoPhoto = photo.geo;
+                geoPhotoCorrection = [geoPhoto[0] > 0 ? 1 : 0, geoPhoto[1] < 0 ? -1 : 0];
 
-            if (cluster === undefined) {
-                //При создании объекта в year надо присвоить минимум значащую цифру,
-                //иначе v8(>=3.19) видимо не выделяет память и при добавлении очередного photo.year крэшится через несколько итераций
-                clusters[clustCoordId] = {
-                    cid: clustCoordId,
-                    geo: geo,
-                    lats: geo[0] - clusterHHalf,
-                    lngs: geo[1] + clusterWHalf,
-                    year: 1,
-                    c: 1,
-                    photos: [],
-                };
-                clustCoordIdS.push(clustCoordId);
+                geo = [~~(clusterH * (~~(geoPhoto[0] / clusterH) + geoPhotoCorrection[0]) * precisionDivider) / precisionDivider, ~~(clusterW * (~~(geoPhoto[1] / clusterW) + geoPhotoCorrection[1]) * precisionDivider) / precisionDivider]; // eslint-disable-line max-len
+                clustCoordId = geo[0] + '@' + geo[1];
                 cluster = clusters[clustCoordId];
+
+                if (cluster === undefined) {
+                    //При создании объекта в year надо присвоить минимум значащую цифру,
+                    //иначе v8(>=3.19) видимо не выделяет память и при добавлении очередного photo.year крэшится через несколько итераций
+                    clusters[clustCoordId] = {
+                        cid: clustCoordId,
+                        geo: geo,
+                        lats: geo[0] - clusterHHalf,
+                        lngs: geo[1] + clusterWHalf,
+                        year: 1,
+                        c: 1,
+                        photos: [],
+                    };
+                    clustCoordIdS.push(clustCoordId);
+                    cluster = clusters[clustCoordId];
+                }
+
+                cluster.c += 1;
+                cluster.year += photo.year;
+
+                if (withGravity) {
+                    cluster.lats += photo.geo[0];
+                    cluster.lngs += photo.geo[1];
+                }
+
+                cluster.photos.push(photo);
             }
-
-            cluster.c += 1;
-            cluster.year += photo.year;
-
-            if (withGravity) {
-                cluster.lats += photo.geo[0];
-                cluster.lngs += photo.geo[1];
-            }
-
-            cluster.photos.push(photo);
         }
 
         // Заполняем массивы кластеров и фото
