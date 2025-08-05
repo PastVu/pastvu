@@ -4,1131 +4,1097 @@
  */
 
 define([
-    'underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'globalVM', 'leaflet', 'model/Photo', 'turf',
-], function (_, Utils, socket, P, ko, ko_mapping, globalVM, L, Photo, turf) {
+    'underscore', 'Browser', 'Utils', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'renderer',
+    'model/User', 'model/storage', 'leaflet', 'leaflet-extends/L.neoMap', 'm/map/marker',
+    'm/photo/status', 'text!tpl/map/map.pug', 'css!style/map/map', 'jquery-ui/draggable', 'jquery-ui/slider',
+    'jquery-ui/effect-highlight', 'css!style/jquery/ui/core', 'css!style/jquery/ui/theme', 'css!style/jquery/ui/slider',
+    'css!style/jquery/ui/tooltip', 'bs/collapse',
+], function (_, Browser, Utils, P, ko, Cliche, globalVM, renderer, User, storage, L, Map, MarkerManager, statuses, pug) {
     'use strict';
 
-    const paintingDivisionYear = Math.floor(1688 / 5) * 5;
-
-    function getYearClass(year, isPainting) {
-        if (isPainting) {
-            if (year < paintingDivisionYear) {
-                year = Math.floor(year / 25) * 25;
-            } else {
-                year = Math.floor(year / 5) * 5;
-            }
-
-            year = 'p' + year;
-        }
-
-        return 'y' + year;
-    }
-
-    function MarkerManager(map, pointHL, options) {
-        const _this = this;
-
-        this.map = map;
-        this.pointHighlight = pointHL; //if pointHighlight exists need to disable it from a local cluster
-
-        this.openNewTab = options.openNewTab;
-        this.embedded = options.embedded;
-        this.isPainting = options.isPainting;
-        this.year = options.year || undefined;
-        this.year2 = options.year2 || undefined;
-
-        this.photosAll = [];
-        this.mapObjects = { photos: {}, clusters: {} };
-        this.layerClusters = L.layerGroup(); // Слой кластеров
-        this.layerPhotos = L.layerGroup(); // Слой фотографий
-
-        this.firstClientWorkZoom = P.settings.FIRST_CLIENT_WORK_ZOOM();
-        this.clientClustering = P.settings.CLUSTERING_ON_CLIENT();
-        this.clientClusteringDelta = ko_mapping.toJS(P.settings.CLUSTERING_ON_CLIENT_PIX_DELTA);
-
-        this.sizePoint = new L.Point(8, 8);
-        this.sizeCluster = new L.Point(42, 42);
-        this.sizeClusterm = new L.Point(52, 52);
-        this.sizeClusterb = new L.Point(62, 62);
-
-
-        this.sizeClusterL = new L.Point(12, 12);
-        this.sizeClusterLm = new L.Point(16, 16);
-        this.sizeClusterLb = new L.Point(18, 18);
-
-        this.paneMarkers = this.map.getPanes().markerPane;
-        this.calcBound = null;
-        this.calcBoundPrev = null;
-        this.currZoom = this.map.getZoom();
-        this.zoomChanged = false;
-        this.refreshByZoomTimeout = null;
-        this.refreshDataByZoomBind = this.refreshDataByZoom.bind(this);
-        this.visBound = false; // Set to true for debugging.
-
-        this.animationOn = false;
-
-        this.popupPhoto = new L.Popup({
-            className: 'popupPhoto',
-            minWidth: 151,
-            maxWidth: 151,
-            offset: new L.Point(0, -14),
-            autoPan: false,
-            zoomAnimation: false,
-            closeButton: false,
-        });
-        this.popupPhotoTpl = _.template('<img class="popupImg" src="${ img }"/><div class="popupCap">${ txt }</div><div class="popupYear">${ year }</div>');
-
-        this.popupClusterPhoto = new L.Popup({
-            className: 'popupClusterPhoto',
-            minWidth: 70,
-            maxWidth: 151,
-            offset: new L.Point(0, -21),
-            autoPan: false,
-            zoomAnimation: false,
-            closeButton: false,
-        });
-        this.popupClusterPhotom = new L.Popup({
-            className: 'popupClusterPhoto',
-            minWidth: 70,
-            maxWidth: 151,
-            offset: new L.Point(0, -26),
-            autoPan: false,
-            zoomAnimation: false,
-            closeButton: false,
-        });
-        this.popupClusterPhotob = new L.Popup({
-            className: 'popupClusterPhoto',
-            minWidth: 70,
-            maxWidth: 151,
-            offset: new L.Point(0, -31),
-            autoPan: false,
-            zoomAnimation: false,
-            closeButton: false,
-        });
-        this.popupClusterPhotoTpl = _.template('<div class="popupCap">${ txt }</div><div class="popupYear">${ year }</div>');
-
-        this.popupCluster = new L.Popup({
-            className: 'popupCluster',
-            minWidth: 151,
-            maxWidth: 151, /*maxHeight: 223,*/
-            offset: new L.Point(0, -8),
-            autoPan: true,
-            autoPanPadding: new L.Point(10, 10),
-            zoomAnimation: false,
-            closeButton: false,
-        });
-        this.popupClusterFive = new L.Popup({
-            className: 'popupCluster five',
-            minWidth: 247,
-            maxWidth: 247, /* maxHeight: 277,*/
-            offset: new L.Point(0, -8),
-            autoPan: true,
-            autoPanPadding: new L.Point(10, 10),
-            zoomAnimation: false,
-            closeButton: false,
-        });
-        this.popupClusterFiveScroll = new L.Popup({
-            className: 'popupCluster five scroll',
-            minWidth: 249,
-            maxWidth: 249, /* maxHeight: 277,*/
-            offset: new L.Point(0, -8),
-            autoPan: true,
-            autoPanPadding: new L.Point(10, 10),
-            zoomAnimation: false,
-            closeButton: false,
-        });
-        this.popupClusterClickFN = '_' + Utils.randomString(10);
-        this.popupClusterOverFN = '_' + Utils.randomString(10);
-        this.popupClusterTpl = _.template('<img alt="" class="popupImgPreview fringe" ' +
-            'onclick="' + this.popupClusterClickFN + '(this)" ' +
-            'onmouseover="' + this.popupClusterOverFN + '(this)" ' +
-            'src="${ img }" data-cid="${ cid }" data-sfile="${ sfile }" data-title="${ title }" data-href="${ href }" data-year="${ year }"/>'
-        );
-        window[this.popupClusterClickFN] = function (element) {
-            const url = element.getAttribute('data-href');
-
-            if (Utils.isType('string', url) && url.length > 0) {
-                _this.photoNavigate(url);
-            }
-        };
-        window[this.popupClusterOverFN] = function (element) {
-            const root = element.parentNode.parentNode;
-            const div = root.querySelector('.popupPoster');
-            const img = root.querySelector('.popupImg');
-            const title = root.querySelector('.popupCap');
-            const year = root.querySelector('.popupYear');
-
-            div.setAttribute('data-href', element.getAttribute('data-href'));
-            img.setAttribute('src', element.getAttribute('data-sfile'));
-            title.innerHTML = element.getAttribute('data-title');
-            year.innerHTML = element.getAttribute('data-year');
-        };
-
-        this.popupOpened = null;
-
-        this.markerToPopup = null;
-        this.popupPhotoOpenBind = this.popupPhotoOpen.bind(this);
-        this.popupTimeout = null;
-
-        this.enabled = false;
-
-        if (options.enabled) {
-            this.enable();
-        }
-    }
-
-    MarkerManager.prototype.enable = function () {
-        if (!this.enabled) {
-            // Добавляем слои на карту
-            this.map.addLayer(this.layerClusters).addLayer(this.layerPhotos);
-
-            //Events ON
-            this.map
-                .on('zoomstart', this.onZoomStart, this)
-                .on('moveend', this.onMapMoveEnd, this);
-
-            // Запрашиваем данные
-            this.refreshDataByZoom(true);
-            this.enabled = true;
-        }
-
-        return this;
-    };
-    MarkerManager.prototype.disable = function () {
-        if (this.enabled) {
-            // Закрываем попапы и очищаем слои
-            this.popupClose();
-            this.clearClusters();
-            this.clearPhotos();
-
-            //Удаляем слои с карты
-            this.map.removeLayer(this.layerClusters).removeLayer(this.layerPhotos);
-
-            //Events OFF
-            this.map
-                .off('zoomstart', this.onZoomStart, this)
-                .off('moveend', this.onMapMoveEnd, this);
-
-            this.enabled = false;
-        }
-
-        return this;
-    };
-    MarkerManager.prototype.changePainting = function (val, year, year2, fetch) {
-        this.isPainting = val;
-        this.year = year || undefined;
-        this.year2 = year2 || undefined;
-
-        if (this.enabled) {
-            // Закрываем попапы и очищаем слои
-            this.popupClose();
-            this.clearClusters();
-            this.clearPhotos();
-
-            // Запрашиваем данные
-            if (fetch) {
-                this.refreshDataByZoom(true);
-            }
-        }
-
-        return this;
-    };
-    MarkerManager.prototype.destroy = function () {
-        this.disable();
-        delete window[this.popupClusterClickFN];
-        delete window[this.popupClusterOverFN];
-        delete this.map;
+    const defaults = {
+        sys: 'osm',
+        type: 'kosmosnimki',
+        minZoom: 3,
+        maxZoom: 18,
+        zoom: 17,
+        geolocationZoom: 12,
     };
 
-    /**
-     * Обновляет границы области отображения маркеров.
-     * Если расчитанная ранее область включает текущую, обновление не происходит.
-     *
-     * @param {boolean} [force] Принудительный пересчет области. Например, при изменении масштаба в +,
-     *                          текущая область будет содержаться в предыдущей, тем не менее пересчет нужен.
-     * @returns {boolean} Флаг того, что границы изменились.
-     */
-    MarkerManager.prototype.reCalcBound = function (force) {
-        let result = false;
-        const localWork = this.map.getZoom() >= this.firstClientWorkZoom;
-
-        if (force || !this.calcBound || !this.calcBound.contains(this.map.getBounds())) {
-            this.calcBoundPrev = this.calcBound;
-            this.calcBound = this.map.getBounds().pad(localWork ? 0.1 : 0.25);
-            this.calcBound._southWest.lng = Utils.math.toPrecision(this.calcBound._southWest.lng);
-            this.calcBound._southWest.lat = Utils.math.toPrecision(this.calcBound._southWest.lat);
-            this.calcBound._northEast.lng = Utils.math.toPrecision(this.calcBound._northEast.lng);
-            this.calcBound._northEast.lat = Utils.math.toPrecision(this.calcBound._northEast.lat);
-
-            // We don't go beyond antemeredian on either side for now, to
-            // comply with EPSG:4326 (WGS 84) projection used by MongoDB. In fiture we may
-            // have means of slicing geometries at backend to query object on both
-            // sides of antimeridian, in that case limiting coordinates won't
-            // be needed.
-            this.calcBound._northEast.lng = Math.min(this.calcBound._northEast.lng, 180);
-            this.calcBound._southWest.lng = Math.max(this.calcBound._southWest.lng, -180);
-
-            // The north/south poles have no representation on a cylindrical map projection used in Leaflet
-            // (EPSG:3857 "WGS 84 Web-Mercator") which is bounded by bbox [[-180, -85.06], [180, 85.06]]
-            // However, we have photos and clusters located beyond those latitudes (as we store them in
-            // EPSG:4326 coordinate reference in Mongo), therefore expand latitudes to be able to query
-            // those objects when top/bottom edge of map is visible to user.
-            if (this.calcBound._southWest.lat <= -85.06) {
-                this.calcBound._southWest.lat = -90;
-            }
-
-            if (this.calcBound._northEast.lat >= 85.06) {
-                this.calcBound._northEast.lat = 90;
-            }
-
-            result = true;
-        }
-
-        return result;
+    const geoStatus = {
+        READY: 'ready',
+        PENDING: 'pending',
+        ERROR: 'error',
+        DENIED: 'denied',
     };
 
-    /**
-     * Вызывается по событию изменения базового слоя карты
-     * Определяет, активна ли анимация изменения масштаба для данного слоя или нет
-     */
-    MarkerManager.prototype.layerChange = function () {
-        if (this.map.options.zoomAnimation && this.map.options.markerZoomAnimation) {
-            if (!this.animationOn) {
-                //this.paneMarkers.classList.add('neo-animate');
-                this.animationOn = true;
-            }
-        } else if (this.animationOn) {
-            //this.paneMarkers.classList.remove('neo-animate');
-            this.animationOn = false;
-        }
-    };
+    return Cliche.extend({
+        pug: pug,
+        options: {
+            isPainting: undefined,
+            embedded: undefined, // Режим встроенной карты
+            editing: undefined, // Режим редактирования
+            point: undefined,
+            center: undefined,
+        },
+        create: function () {
+            const self = this;
+            const qParams = globalVM.router.params();
+            const qType = Number(qParams.type);
 
-    /**
-     * Задает новые временные рамки и вызывает обновление данных
-     */
-    MarkerManager.prototype.setYearLimits = function (year, year2) {
-        if (year !== this.year || year2 !== this.year2) {
-            this.year = year || undefined;
-            this.year2 = year2 || undefined;
-            this.clearState();
-            this.clearPhotos();
-            this.refreshDataByZoom(true);
-        }
-    };
+            this.auth = globalVM.repository['m/common/auth'];
+            this.destroy = _.wrap(this.destroy, this.localDestroy);
 
-    /**
-     * Вызывается по событию начала изменения масштаба карты
-     */
-    MarkerManager.prototype.clearState = function () {
-        window.clearTimeout(this.refreshByZoomTimeout);
-        this.popupClose();
-        this.clearClusters();
-    };
-
-    /**
-     * Вызывается по событию начала изменения масштаба карты
-     */
-    MarkerManager.prototype.onZoomStart = function () {
-        this.clearState();
-        this.zoomChanged = true;
-    };
-
-    /**
-     * Вызывается по событию завершения движения карты - перемещения или изменения масштаба
-     * При изменении масштаба отсрачиваем обновление данных, т.к. масштаб может меняться многократно за короткий промежуток времени
-     */
-    MarkerManager.prototype.onMapMoveEnd = function () {
-        if (this.zoomChanged) {
-            if (this.currZoom >= this.firstClientWorkZoom && this.map.getZoom() >= this.firstClientWorkZoom) {
-                // Если установленный и новый зумы находятся в масштабах локальной работы, то вызываем пересчет быстрее
-                this.refreshByZoomTimeout = window.setTimeout(this.refreshDataByZoomBind, 100);
-            } else if (this.currZoom === this.map.getZoom()) {
-                // Если установленный и новый зум равны, значит вернулись на тотже
-                // масштаб с которого начали зум, и надо полностью обновить данные
-                this.refreshByZoomTimeout = window.setTimeout(this.refreshDataByZoom.bind(this, true), 400);
-            } else {
-                this.refreshByZoomTimeout = window.setTimeout(this.refreshDataByZoomBind, 400);
-            }
-
-            this.zoomChanged = false;
-        } else if (this.reCalcBound()) {
-            this.refreshDataByMove();
-        }
-    };
-
-    /**
-     * Обновление данных маркеров по зуму.
-     */
-    MarkerManager.prototype.refreshDataByZoom = function (init) {
-        this.reCalcBound(true);
-        this.startPendingAt = Date.now();
-
-        const self = this;
-        let newZoom = this.map.getZoom();
-        const localWork = newZoom >= this.firstClientWorkZoom;
-        const crossingLocalWorkZoom = this.currZoom < this.firstClientWorkZoom && localWork ||
-            this.currZoom >= this.firstClientWorkZoom && !localWork;
-        const direction = newZoom - this.currZoom;
-        let bound = L.latLngBounds(this.calcBound.getSouthWest(), this.calcBound.getNorthEast()); // copy this.calcBound current values.
-        let queryGeometry;
-        let pollServer = true;
-
-        this.currZoom = newZoom;
-
-        if (!init && localWork && !crossingLocalWorkZoom) {
-            // Local work level. We are expecting photo object at those zoom
-            // levels, so we need to fetch photos for area that become visible
-            // as result of zoom change.
-            const poly = turf.bboxPolygon(bound.toBBoxString().split(','));
-            const prevPoly = turf.bboxPolygon(this.calcBoundPrev.toBBoxString().split(','));
-
-            // Если на клиенте уже есть все фотографии для данного зума
-            if (!direction) {
-                //Если зум не изменился, то считаем дополнительные баунды, если они есть, запрашиваем их
-                //а если их нет (т.е. баунд тоже не изменился), то просто пересчитываем локальные кластеры
-                queryGeometry = turf.difference(poly, prevPoly);
-
-                if (queryGeometry !== null) {
-                    this.cropByBound(null, true);
-                } else {
-                    pollServer = false;
-                    this.processIncomingDataZoom(null, false, true, this.clientClustering);
-                }
-            } else if (direction > 0) {
-                // Если новый зум больше предыдущего, то просто отбрасываем объекты, не попадающие в новый баунд
-                // и пересчитываем кластеры
-                pollServer = false;
-                this.cropByBound(null, true);
-                this.processIncomingDataZoom(null, false, true, this.clientClustering);
-            } else {
-                // If new zoom is lower, determine the difference and query
-                // opbjects just for the polygon with an inner ring (hole).
-                queryGeometry = turf.difference(poly, prevPoly);
-            }
-        } else {
-            // При пересечении границы "вверх" обнуляем массив всех фото на клиенте
-            if (crossingLocalWorkZoom && !localWork) {
-                this.photosAll = [];
-            }
-
-            // Query objects for new .
-            queryGeometry = turf.bboxPolygon(bound.toBBoxString().split(','));
-        }
-
-        if (pollServer) {
-            if (this.visBound) {
-                this.drawBounds(queryGeometry, true, localWork);
-            }
-
-            socket.run('photo.getByBounds',
-                {
-                    z: newZoom,
-                    geometry: turf.getGeom(queryGeometry),
-                    startAt: this.startPendingAt,
-                    year: this.year,
-                    year2: this.year2,
-                    isPainting: this.isPainting,
-                    localWork: localWork,
-                }
-            ).then(function (data) {
-                // Данные устарели и должны быть отброшены,
-                // если зум изменился или уже был отправлен другой запрос на данные по зуму или
-                // текущий баунд уже успел выйти за пределы запрашиваемого
-                if (self.map.getZoom() !== data.z || self.startPendingAt !== data.startAt || !bound.intersects(self.calcBound)) {
-                    console.log('Полученные данные нового зума устарели');
-
-                    return;
-                }
-
-                // Если к моменту получения входящих данных нового зума, баунд изменился, значит мы успели подвигать картой,
-                // поэтому надо проверить пришедшие точки на вхождение в актуальный баунд.
-                const boundChanged = !bound.equals(self.calcBound);
-                // Смотрим нужно ли использовать клиентскую кластеризацию.
-                const localCluster = localWork && self.clientClustering;
-
-                self.processIncomingDataZoom(data, boundChanged, localWork, localCluster);
-
-                newZoom = bound = null;
-                self.startPendingAt = undefined;
+            // Promise which will be resolved when map ready
+            this.readyPromise = new Promise(function (resolve) {
+                self.readyPromiseResolve = resolve;
             });
-        }
-    };
+            this.changeSubscribers = [];
 
-    /**
-     * Visualise bounds for debugging purposes.
-     */
-    MarkerManager.prototype.drawBounds = function (geometry, zoom, localWork) {
-        const summary = zoom === true ? 'Refresh by Zoom' : 'Refresh by Move';
+            // Modes
+            this.embedded = this.options.embedded;
+            this.editing = ko.observable(this.options.editing);
+            this.openNewTab = ko.observable(!!Utils.getLocalStorage(this.embedded ? 'map.embedded.opennew' : 'map.opennew'));
+            this.isPainting = ko.observable(this.options.isPainting !== undefined ?
+                this.options.isPainting :
+                !!Utils.getLocalStorage(this.embedded ? 'map.embedded.isPainting' : 'map.isPainting')
+            );
 
-        console.log(summary + `, localWork=${localWork}, ` + turf.getType(geometry) + ' (Lng,Lat):', JSON.stringify(turf.getCoords(geometry)));
-
-        // Remove previous drawings.
-        if (this.b !== undefined) {
-            this.map.removeLayer(this.b);
-            this.b = undefined;
-        }
-
-        // Draw new polygon, reverse coordinates.
-        this.b = L.polygon(turf.getCoords(turf.flip(geometry)), { color: '#25CE00', weight: 1 }).addTo(this.map);
-    };
-
-    /**
-     * Обрабатывает входящие данные по зуму
-     */
-    MarkerManager.prototype.processIncomingDataZoom = function (data, boundChanged, localWork, localCluster) {
-        const isPainting = this.isPainting;
-        let photos = {}; //новый хэш фотографий
-        let divIcon;
-        let curr;
-        let existing;
-        let i;
-
-        //Очищаем кластеры, если они вдруг успели появится при быстром измении зума.
-        //Это произойдет, если мы быстро уменьшили зум и опять увеличили - перед moveEnd
-        //фазы увеличения придут данные от уменьшения и они успеют кластеризоваться.
-        //Или при быстром переходе вверх с пересечением границы локальной работы
-        this.clearClusters();
-
-        // На уровне локальной работы этот метод учавствует только в "поднятии" зума,
-        // когда сервер отдает только фотографии "в рамке, обрамляющей предыдущий баунд", следовательно,
-        // полученные фото мы должны присоединить к существующим и локально кластеризовать их объединение (т.к. изменился зум)
-        if (localWork) {
-            if (data) {
-                this.photosAll = this.photosAll.concat(data.photos);
+            if (!this.embedded && qType && _.values(statuses.type).includes(qType)) {
+                this.isPainting(qType === statuses.type.PAINTING);
             }
 
-            if (localCluster) {
-                data = this.createClusters(this.photosAll, true); //Кластеризуем. На выходе - массив кластеров и фотографий, которые туда не попали
-            } else {
-                data = { photos: this.photosAll };
-            }
-        }
+            this.type = this.co.typeComputed = ko.computed(function () {
+                return self.isPainting() ? statuses.type.PAINTING : statuses.type.PHOTO;
+            });
+            this.linkShow = ko.observable(false); //Показывать ссылку на карту
+            this.link = ko.observable(''); //Ссылка на карту
+            // State of the comments feed, updated at main/mainPage.
+            this.commentFeedShown = ko.observable(true);
 
-        // Заполняем новый объект фото
-        i = data.photos.length;
+            // Map objects
+            this.map = null;
+            this.layers = ko.observableArray();
+            this.layersOpen = ko.observable(false);
+            this.layerActive = ko.observable({ sys: null, type: null });
+            this.layerActiveDesc = ko.observable('');
 
-        while (i) { // while loop, reversed
-            curr = data.photos[--i];
-            existing = this.mapObjects.photos[curr.cid];
+            this.markerManager = null;
 
-            if (existing !== undefined) {
-                // Если такое фото уже есть, то просто записываем его в новый объект
-                photos[curr.cid] = existing;
-                this.mapObjects.photos[curr.cid] = undefined;
-            } else if (!boundChanged || this.calcBound.contains(curr.geo)) {
-                // Если оно новое - создаем его объект и маркер
-                curr.sfile = Photo.picFormats.m + curr.file;
-                divIcon = L.divIcon({
-                    className: 'photoIcon ' + getYearClass(curr.year, isPainting) + ' ' + curr.dir,
-                    iconSize: this.sizePoint,
+            //Если карта встроена, то создаем точку для выделения и слой, куда её добавить
+            if (this.embedded) {
+                this.point = this.options.point; // Точка для выделения
+                this.pointLayer = L.layerGroup();
+
+                this.geoInputComputed = this.co.geoInputComputed = ko.computed({
+                    read: function () {
+                        const geo = this.point.geo();
+
+                        return _.isEmpty(geo) ? '' : geo.join(',');
+                    },
+                    write: function (value) {
+                        const geo = this.point.geo();
+                        let inputGeo;
+
+                        if (_.isEmpty(value)) {
+                            this.delPointGeo();
+                        } else {
+                            inputGeo = Utils.geo.parseCoordinates(value);
+
+                            if (Utils.geo.checkLatLng(inputGeo) && !_.isEqual(inputGeo, geo)) {
+                                inputGeo = Utils.geo.geoToPrecision(inputGeo);
+                                this.point.geo(inputGeo);
+
+                                if (this.pointMarkerEdit) {
+                                    this.pointMarkerEdit.setLatLng(inputGeo);
+                                } else {
+                                    this.pointEditMarkerCreate();
+                                }
+
+                                this.map.panTo(inputGeo);
+                            }
+                        }
+                    },
+                    owner: this,
                 });
-                curr.marker =
-                        L.marker(curr.geo, {
-                            icon: divIcon,
-                            riseOnHover: true,
-                            data: { cid: curr.cid, type: 'photo', obj: curr },
-                        })
-                            .on('click', this.clickMarker, this)
-                            .on('mouseover', this.popupPhotoOver, this);
-                this.layerPhotos.addLayer(curr.marker);
-                photos[curr.cid] = curr;
             }
-        }
 
-        // В текущем объекте остались только фото на удаление
-        this.clearObjHash(this.mapObjects.photos, this.layerPhotos);
-        this.mapObjects.photos = photos;
+            const type = this.type();
 
-        // Создаем маркеры кластеров
-        if (!localWork) {
-            this.drawClusters(data.clusters, boundChanged);
-        } else if (localCluster) {
-            this.drawClustersLocal(data.clusters, boundChanged);
-        }
+            this.setYears(
+                !this.embedded && (Number(qParams.y) || Utils.getLocalStorage('map.year.' + type)),
+                !this.embedded && (Number(qParams.y2) || Utils.getLocalStorage('map.year2.' + type))
+            );
 
-        //Чистим ссылки
-        photos = curr = existing = data = null;
-    };
+            this.yearRefreshMarkersBind = this.yearRefreshMarkers.bind(this);
+            this.yearRefreshMarkersTimeout = null;
 
-    /**
-     * Обновление данных маркеров.
-     */
-    MarkerManager.prototype.refreshDataByMove = function () {
-        const self = this;
-        let zoom = this.currZoom;
-        let bound = L.latLngBounds(this.calcBound.getSouthWest(), this.calcBound.getNorthEast());
-        const localWork = zoom >= this.firstClientWorkZoom;
+            // Geolocation
+            this.geolocationStatus = ko.observable(geoStatus.READY);
 
-        const poly = turf.bboxPolygon(bound.toBBoxString().split(','));
-        const prevPoly = turf.bboxPolygon(this.calcBoundPrev.toBBoxString().split(','));
-        const queryGeometry = turf.difference(poly, prevPoly);
+            if ('permissions' in navigator) {
+                navigator.permissions.query({ name: 'geolocation' }).then(result => {
+                    if (result.state === 'denied') {
+                        // Use of geolocation is already denied for this site.
+                        this.geolocationStatus(geoStatus.DENIED);
+                    }
+                });
+            }
 
-        if (queryGeometry === null) {
-            // Likely map is far beyond antimeridian on either side.
-            return;
-        }
+            this.layers.push({
+                id: 'osm',
+                desc: 'OSM',
+                selected: ko.observable(false),
+                types: ko.observableArray([
 
-        if (this.visBound) {
-            // We expect L-shape polygon here in most cases (or rectangle if map is moved
-            // by pressing arrow keys).
-            this.drawBounds(queryGeometry, false, localWork);
-        }
+                    /* Define map types (layers).
+                     *
+                     * For fixed max zoom: specify maxZoom in TileLayer. It
+                     * will be possible to zoom map up to maxZoom value.
+                     *
+                     * For "overzoom", set maxNativeZoom and maxZoom in
+                     * TileLayer. It will be possible to zoom map up to
+                     * maxZoom value. Layer will be "stretched" if current
+                     * zoom is above maxNativeZoom.
+                     *
+                     * For switching layer, set maxNativeZoom and maxZoom in
+                     * TileLayer type object. Set limitZoom in type object. It
+                     * will be possible to zoom map up to maxZoom value.  When
+                     * current zoom > limitZoom, map will switch to maxAfter
+                     * layer, keeping current zoom value. maxAfter value
+                     * format is "<sys id>.<type id>", e.g. 'osm.openstreetmap'.
+                     */
+                    {
+                        id: 'kosmosnimki',
+                        desc: 'Kosmosnimki',
+                        selected: ko.observable(false),
+                        options: {
+                            urlTemplate: 'https://{s}tilecart.kosmosnimki.ru/kosmo/{z}/{x}/{y}.png',
+                            attribution: '&copy; <a href="https://kosmosnimki.ru/">ООО ИТЦ "СКАНЭКС"</a> | &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                            updateWhenIdle: false,
+                            maxZoom: 18,
+                            maxNativeZoom: 17,
+                        },
+                    },
+                    {
+                        id: 'openstreetmap',
+                        desc: 'OpenStreetMap',
+                        selected: ko.observable(false),
+                        options: {
+                            urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                            updateWhenIdle: false,
+                            maxZoom: 20,
+                            maxNativeZoom: 19,
+                        },
+                    },
+                    {
+                        id: 'mapnik_de',
+                        desc: 'Mapnik De',
+                        selected: ko.observable(false),
+                        options: {
+                            urlTemplate: 'https://{s}.tile.openstreetmap.de/tiles/osmde/{z}/{x}/{y}.png',
+                            updateWhenIdle: false,
+                            maxZoom: 19,
+                            maxNativeZoom: 18,
+                            attribution: 'OSM Deutsch | &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                        },
+                        limitZoom: 18,
+                        maxAfter: 'osm.openstreetmap',
+                    },
+                    {
+                        id: 'mapnik_fr',
+                        desc: 'Mapnik Fr',
+                        selected: ko.observable(false),
+                        options: {
+                            urlTemplate: 'https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png',
+                            updateWhenIdle: false,
+                            maxZoom: 19,
+                            maxNativeZoom: 18,
+                            attribution: 'OSM Française | &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                        },
+                        limitZoom: 18,
+                        maxAfter: 'osm.openstreetmap',
+                    },
+                    {
+                        id: 'opentopomap',
+                        desc: 'Топограф',
+                        selected: ko.observable(false),
+                        options: {
+                            urlTemplate: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+                            updateWhenIdle: false,
+                            maxZoom: 15,
+                            maxNativeZoom: 14,
+                            attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | <a href="http://viewfinderpanoramas.org">SRTM</a> | Стиль карты: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)',
+                        },
+                    },
+                ]),
+            });
 
-        socket.run('photo.getByBounds', {
-            z: zoom,
-            geometry: turf.getGeom(queryGeometry),
-            year: this.year,
-            year2: this.year2,
-            isPainting: this.isPainting,
-            localWork: localWork,
-        }).then(function (data) {
-            // Данные устарели и должны быть отброшены,
-            // если текущий зум не равен запрашиваемомоу или текущий баунд уже успел выйти за пределы запрашиваемого
-            if (self.map.getZoom() !== data.z || !bound.intersects(self.calcBound)) {
-                console.log('Полученные данные перемещения устарели');
+            if (P.settings.USE_GOOGLE_API()) {
+                this.layers.push({
+                    id: 'google',
+                    desc: 'Google',
+                    deps: 'leaflet-extends/L.Google',
+                    selected: ko.observable(false),
+                    types: ko.observableArray([
+                        {
+                            id: 'scheme',
+                            desc: 'Схема',
+                            selected: ko.observable(false),
+                            options: {
+                                type: 'roadmap',
+                                maxZoom: 21,
+                            },
+                        },
+                        {
+                            id: 'sat',
+                            desc: 'Спутник',
+                            selected: ko.observable(false),
+                            options: {
+                                type: 'satellite',
+                                maxZoom: 21,
+                            },
+                        },
+                        {
+                            id: 'hyb',
+                            desc: 'Гибрид',
+                            selected: ko.observable(false),
+                            options: {
+                                type: 'hybrid',
+                                maxZoom: 21,
+                            },
+                        },
+                        {
+                            id: 'land',
+                            desc: 'Ландшафт',
+                            selected: ko.observable(false),
+                            options: {
+                                type: 'terrain',
+                                maxZoom: 21,
+                            },
+                        },
+                    ]),
+                });
+            }
 
+            if (P.settings.USE_YANDEX_API()) {
+                this.layers.push({
+                    id: 'yandex',
+                    desc: 'Яндекс',
+                    deps: 'leaflet-extends/L.Yandex',
+                    selected: ko.observable(false),
+                    types: ko.observableArray([
+                        {
+                            id: 'scheme',
+                            desc: 'Схема',
+                            selected: ko.observable(false),
+                            options: {
+                                type: 'map',
+                                maxZoom: 21,
+                            },
+                        },
+                        {
+                            id: 'sat',
+                            desc: 'Спутник',
+                            selected: ko.observable(false),
+                            options: {
+                                type: 'satellite',
+                                maxZoom: 19,
+                            },
+                        },
+                        {
+                            id: 'hyb',
+                            desc: 'Гибрид',
+                            selected: ko.observable(false),
+                            options: {
+                                type: 'hybrid',
+                                maxZoom: 19,
+                            },
+                        },
+                    ]),
+                });
+            }
+
+            this.layers.push({
+                id: 'other',
+                desc: 'Прочие',
+                selected: ko.observable(false),
+                types: ko.observableArray([
+                    {
+                        id: 'esri_satimg',
+                        desc: 'Esri Снимки',
+                        selected: ko.observable(false),
+                        options: {
+                            urlTemplate: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                            attribution: '&copy; Esri &mdash; Источники: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, и ГИС сообщество',
+                            updateWhenIdle: false,
+                            maxZoom: 20,
+                            maxNativeZoom: 19,
+                        },
+                    },
+                    {
+                        id: 'mtb',
+                        desc: 'MTB пеш.',
+                        selected: ko.observable(false),
+                        options: {
+                            urlTemplate: 'https://tile.mtbmap.cz/mtbmap_tiles/{z}/{x}/{y}.png',
+                            attribution: '&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | <a href="http://mtbmap.cz/">mtbmap.cz</a>',
+                            updateWhenIdle: false,
+                            maxZoom: 19,
+                            maxNativeZoom: 18,
+                        },
+                        limitZoom: 18,
+                        maxAfter: 'osm.openstreetmap',
+                    },
+                    {
+                        id: 'warfly',
+                        desc: 'Аэрофото ВОВ',
+                        selected: ko.observable(false),
+                        options: {
+                            urlTemplate: 'https://hutun.ru/tiles/4/061942/Z{z}/{y}/{x}.jpg',
+                            attribution: 'Немецкая аэрофотосъемка 1939-1943 годов (доступна для отдельных городов) | <a href="http://retromap.ru/061942">retromap.ru</a>',
+                            updateWhenIdle: false,
+                            minZoom: 9,
+                            maxZoom: 19,
+                            maxNativeZoom: 17,
+                        },
+                    },
+                ]),
+            });
+
+            this.showLinkBind = this.showLink.bind(this);
+
+            ko.applyBindings(globalVM, this.$dom[0]);
+
+            // Subscriptions
+            this.subscriptions.commentFeedShown = this.commentFeedShown.subscribe(this.sizesCalc, this);
+            this.subscriptions.edit = this.editing.subscribe(this.editHandler, this);
+            this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
+            this.subscriptions.openNewTab = this.openNewTab.subscribe(function (val) {
+                if (this.markerManager) {
+                    this.markerManager.openNewTab = val;
+                }
+
+                this.setLocalState();
+            }, this);
+
+            this.show();
+        },
+        setLocalState: function () {
+            const layerActive = this.layerActive();
+
+            Utils.setLocalStorage(this.embedded ? 'map.embedded.opennew' : 'map.opennew', this.openNewTab());
+            Utils.setLocalStorage(this.embedded ? 'map.embedded.sys' : 'map.sys', layerActive.sys.id);
+            Utils.setLocalStorage(this.embedded ? 'map.embedded.type' : 'map.type', layerActive.type.id);
+
+            if (!this.embedded) {
+                Utils.setLocalStorage('map.isPainting', this.isPainting());
+                Utils.setLocalStorage('map.center', Utils.geo.latlngToArr(this.map.getCenter()));
+                Utils.setLocalStorage('map.zoom', this.map.getZoom());
+
+                const type = this.type();
+                const years = statuses.years[this.type()];
+
+                if (this.yearLow > years.min) {
+                    Utils.setLocalStorage('map.year.' + type, this.yearLow);
+                } else {
+                    Utils.removeLocalStorage('map.year.' + type);
+                }
+
+                if (this.yearHigh < years.max) {
+                    Utils.setLocalStorage('map.year2.' + type, this.yearHigh);
+                } else {
+                    Utils.removeLocalStorage('map.year2.' + type);
+                }
+            }
+        },
+        setYears: function (y, y2) {
+            const type = this.type();
+            const years = statuses.years[type] || statuses.years[statuses.type.PHOTO];
+
+            if (_.isNumber(y) && y !== 0 && y > years.min && y <= years.max) {
+                this.yearLow = y;
+            } else {
+                this.yearLow = years.min;
+            }
+
+            if (_.isNumber(y2) && y2 !== 0 && y2 >= this.yearLow && y2 < years.max) {
+                this.yearHigh = y2;
+            } else {
+                this.yearHigh = years.max;
+            }
+        },
+        setPainting: function (val) {
+            this.isPainting(val);
+
+            this.yearSliderRefresh();
+
+            if (this.markerManager) {
+                this.markerManager.changePainting(val, this.yearLow, this.yearHigh, true);
+            }
+
+            this.notifySubscribers();
+            this.setLocalState();
+        },
+        notifySubscribers: function () {
+            const data = this.getStatusData();
+
+            this.changeSubscribers.forEach(function (item) {
+                item.callback.call(item.ctx, data);
+            }, this);
+        },
+        getStatusData: function () {
+            return {
+                isPainting: this.isPainting(),
+                year: this.yearLow, year2: this.yearHigh,
+                center: this.getCenter(),
+            };
+        },
+
+        show: function () {
+            let region;
+            let center;
+            let bbox;
+            let fitBounds;
+            const qParams = globalVM.router.params();
+            const zoom = Number(qParams.z) || (this.embedded ? defaults.zoom : Utils.getLocalStorage('map.zoom'));
+            const system = qParams.s || Utils.getLocalStorage(this.embedded ? 'map.embedded.sys' : 'map.sys') || defaults.sys;
+            const type = qParams.t || Utils.getLocalStorage(this.embedded ? 'map.embedded.type' : 'map.type') || defaults.type;
+
+            if (this.embedded) {
+                if (this.point && this.point.geo()) {
+                    // Point with coordinates.
+                    center = this.point.geo();
+                } else if (this.point && this.point.regions().length) {
+                    // Point with regions (most "where is it" photos).
+                    region = _.last(this.point.regions());
+                } else if (this.auth.loggedIn() && this.auth.iAm.regionHome.cid()) {
+                    // No coordinates and no regions, use home location if defined.
+                    region = this.auth.iAm.regionHome;
+                }
+
+                if (region && region.center) {
+                    center = [region.center()[1], region.center()[0]];
+
+                    if (region.bboxhome || region.bbox) {
+                        bbox = region.bboxhome() || region.bbox();
+
+                        if (Utils.geo.checkbbox(bbox)) {
+                            fitBounds = [
+                                [bbox[1], bbox[0]],
+                                [bbox[3], bbox[2]],
+                            ];
+                        }
+                    }
+                }
+            } else {
+                center = qParams.g;
+
+                if (center) {
+                    center = center.split(',').map(function (element) {
+                        return parseFloat(element);
+                    });
+
+                    if (!Utils.geo.checkLatLng(center)) {
+                        center = null;
+                    }
+                }
+
+                if (!center) {
+                    center = Utils.getLocalStorage('map.center');
+                }
+            }
+
+            this.map = new L.NeoMap(this.$dom.find('.map')[0], {
+                zoom: zoom,
+                zoomAnimation: L.Map.prototype.options.zoomAnimation && true,
+                trackResize: false,
+                zoomControl: false, // Remove default zoom control (we use our own)
+                tap: false, // TODO: Prevent double click in Safari, remove when Leaflet/Leaflet#7255 is addressed.
+            });
+
+            if (fitBounds) {
+                this.map.fitBounds(fitBounds, { maxZoom: defaults.maxZoom });
+            } else if (center && Utils.geo.checkLatLng(center)) {
+                this.map.panTo(center);
+            } else {
+                // Fit world.
+                this.map.setView(new L.LatLng(P.settings.locDef.lat, P.settings.locDef.lng), P.settings.locDef.z);
+            }
+
+            this.markerManager = new MarkerManager(this.map, this.point, {
+                enabled: false,
+                openNewTab: this.openNewTab(),
+                isPainting: this.isPainting(),
+                embedded: this.embedded,
+                year: this.yearLow,
+                year2: this.yearHigh,
+            });
+            this.selectLayer(system, type);
+
+            renderer(
+                [
+                    {
+                        module: 'm/map/navSlider',
+                        container: '.mapNavigation',
+                        options: {
+                            map: this.map,
+                            maxZoom: defaults.maxZoom,
+                            minZoom: defaults.minZoom,
+                            canOpen: !this.embedded,
+                        },
+                        ctx: this,
+                        callback: function (vm) {
+                            this.childModules[vm.id] = vm;
+                            this.navSliderVM = vm;
+
+                            // When slider is ready, update its limits (if
+                            // layer is loaded already, if not selectLayer
+                            // will update them).
+                            if (this.map.getMaxZoom() !== Infinity) {
+                                this.navSliderVM.recalcZooms(this.map.getMaxZoom(), true);
+                            }
+                        }.bind(this),
+                    },
+                ],
+                {
+                    parent: this,
+                    level: this.level + 1,
+                }
+            );
+
+            this.map
+                .on('zoomend', this.zoomEndCheckLayer, this)
+                .whenReady(function () {
+                    if (this.embedded) {
+                        this.map.addLayer(this.pointLayer);
+                    } else {
+                        this.map.on('moveend', this.saveCenterZoom, this);
+                    }
+
+                    this.map.on('moveend', function () {
+                        this.notifySubscribers();
+                    }, this);
+                    this.editHandler(this.editing());
+
+                    this.yearSliderCreate();
+                    this.setLocalState();
+
+                    globalVM.func.showContainer(this.$container);
+
+                    setTimeout(this.readyPromiseResolve, 100);
+                }, this);
+
+            this.showing = true;
+        },
+        hide: function () {
+            globalVM.func.hideContainer(this.$container);
+            this.showing = false;
+        },
+        localDestroy: function (destroy) {
+            this.removeShowLinkListener();
+            this.pointHighlightDestroy().pointEditDestroy().markerManager.destroy();
+            this.map.off('zoomend');
+            this.map.off('moveend');
+            this.map.remove();
+            delete this.point;
+            delete this.map;
+            delete this.markerManager;
+            destroy.call(this);
+        },
+        sizesCalc: function () {
+            this.map.whenReady(this.map._onResize, this.map); //Самостоятельно обновляем размеры карты
+        },
+
+        // Обработчик переключения режима редактирования
+        editHandler: function (edit) {
+            if (edit) {
+                this.pointHighlightDestroy().pointEditCreate().markerManager.disable();
+            } else {
+                this.pointEditDestroy().pointHighlightCreate().markerManager.enable();
+            }
+        },
+        // Включает режим редактирования
+        editPointOn: function () {
+            this.editing(true);
+
+            return this;
+        },
+        // Выключает режим редактирования
+        editPointOff: function () {
+            this.editing(false);
+
+            return this;
+        },
+
+        setPoint: function (point, isPainting) {
+            const geo = point.geo();
+            let bbox;
+            let zoom;
+            const region = _.last(point.regions());
+
+            this.point = point;
+
+            if (isPainting !== this.isPainting()) {
+                this.isPainting(isPainting);
+                this.yearSliderRefresh();
+
+                if (this.markerManager) {
+                    this.markerManager.changePainting(isPainting, this.yearLow, this.yearHigh);
+                }
+            }
+
+            if (this.editing()) {
+                if (this.pointMarkerEdit) {
+                    if (geo) {
+                        this.pointMarkerEdit.setLatLng(geo);
+                    } else {
+                        this.pointEditMarkerDestroy();
+                    }
+                } else if (geo) {
+                    this.pointEditMarkerCreate();
+                }
+            } else {
+                this.pointHighlightCreate();
+            }
+
+            if (geo) {
+                this.map.panTo(geo);
+            } else if (region && region.center) {
+                if (region.bboxhome || region.bbox) {
+                    bbox = region.bboxhome() || region.bbox();
+
+                    if (Utils.geo.checkbbox(bbox)) {
+                        zoom = this.map.getBoundsZoom([
+                            [bbox[1], bbox[0]],
+                            [bbox[3], bbox[2]],
+                        ], false);
+                    }
+                }
+
+                this.map.setView([region.center()[1], region.center()[0]], zoom || this.map.getZoom());
+            }
+
+            return this;
+        },
+        geoInputBlur: function (vm, evt) {
+            let geo = this.point.geo();
+            const $inputGeo = $(evt.target);
+            const inputGeo = $inputGeo.val();
+
+            // При выходе фокуса с поля координаты, вставляем актуальное в него значение geo, например, если оно в поле не валидное
+            if (_.isEmpty(geo)) {
+                if (inputGeo) {
+                    $inputGeo.val('');
+                }
+            } else {
+                geo = geo.join(',');
+
+                if (geo !== inputGeo) {
+                    $inputGeo.val(geo);
+                }
+            }
+        },
+        delPointGeo: function () {
+            this.pointHighlightDestroy().pointEditMarkerDestroy().point.geo(null);
+        },
+
+        // Создает подсвечивающий маркер для point, если координаты точки есть
+        pointHighlightCreate: function () {
+            this.pointHighlightDestroy();
+
+            if (this.point && this.point.geo()) {
+                const divIcon = L.divIcon({
+                    className: 'photoIcon highlight ' + 'y' + this.point.year() + ' ' + this.point.dir(),
+                    iconSize: new L.Point(8, 8),
+                });
+
+                this.pointMarkerHL = L.marker(this.point.geo(), {
+                    zIndexOffset: 10000,
+                    draggable: false,
+                    title: this.point.title(),
+                    icon: divIcon,
+                    riseOnHover: true,
+                });
+                this.pointLayer.addLayer(this.pointMarkerHL);
+            }
+
+            return this;
+        },
+        pointHighlightDestroy: function () {
+            if (this.pointMarkerHL) {
+                this.pointLayer.removeLayer(this.pointMarkerHL);
+                delete this.pointMarkerHL;
+            }
+
+            return this;
+        },
+
+        // Создает редактирующий маркер, если координаты точки есть, а если нет, то создает по клику на карте
+        pointEditCreate: function () {
+            this.pointEditDestroy();
+
+            if (this.point) {
+                if (this.point.geo()) {
+                    this.pointEditMarkerCreate();
+                }
+
+                this.map.on('click', function (e) {
+                    const geo = Utils.geo.geoToPrecision([e.latlng.lat, e.latlng.lng]);
+
+                    this.point.geo(geo);
+
+                    if (this.pointMarkerEdit) {
+                        this.pointMarkerEdit.setLatLng(geo);
+                    } else {
+                        this.pointEditMarkerCreate();
+                    }
+                }, this);
+            }
+
+            return this;
+        },
+        pointEditDestroy: function () {
+            this.pointEditMarkerDestroy();
+            this.map.off('click');
+
+            return this;
+        },
+        pointEditMarkerCreate: function () {
+            const self = this;
+
+            this.pointMarkerEdit = L.marker(this.point.geo(),
+                {
+                    draggable: true,
+                    title: 'Точка съемки',
+                    icon: L.icon({
+                        iconSize: [26, 43],
+                        iconAnchor: [13, 36],
+                        iconUrl: '/img/map/pinEdit.png',
+                        className: 'pointMarkerEdit',
+                    }),
+                })
+                .on('dragend', function () {
+                    const latlng = Utils.geo.geoToPrecision(this.getLatLng());
+
+                    self.point.geo([latlng.lat, latlng.lng]);
+                })
+                .addTo(this.pointLayer);
+
+            return this;
+        },
+        pointEditMarkerDestroy: function () {
+            if (this.pointMarkerEdit) {
+                this.pointMarkerEdit.off('dragend');
+                this.pointLayer.removeLayer(this.pointMarkerEdit);
+                delete this.pointMarkerEdit;
+            }
+
+            return this;
+        },
+
+        saveCenterZoom: function () {
+            this.setLocalState();
+        },
+        zoomEndCheckLayer: function () {
+            const limitZoom = this.layerActive().type.limitZoom;
+            const maxAfter = this.layerActive().type.maxAfter;
+
+            if (limitZoom !== undefined && maxAfter !== undefined && this.map.getZoom() > limitZoom) {
+                const layers = maxAfter.split('.');
+
+                window.setTimeout(_.bind(this.selectLayer, this, layers[0], layers[1]), 300);
+            }
+        },
+        toggleLayers: function (/*vm, event*/) {
+            this.layersOpen(!this.layersOpen());
+        },
+        getSysById: function (id) {
+            return _.find(this.layers(), function (item) {
+                return item.id === id;
+            });
+        },
+        getTypeById: function (system, id) {
+            return _.find(system.types(), function (item) {
+                return item.id === id;
+            });
+        },
+        showLink: function () {
+            if (!this.linkShow()) {
+                const center = Utils.geo.geoToPrecision(Utils.geo.latlngToArr(this.map.getCenter()));
+                const layerActive = this.layerActive();
+
+                setTimeout(function () {
+                    this.$dom.find('.inputLink').focus().select();
+                    document.addEventListener('click', this.showLinkBind);
+                }.bind(this), 100);
+
+                const years = statuses.years[this.type()];
+                let y = '';
+
+                if (this.yearLow > years.min) {
+                    y += '&y=' + this.yearLow;
+                }
+
+                if (this.yearHigh < years.max) {
+                    y += '&y2=' + this.yearHigh;
+                }
+
+                this.link(
+                    location.host +
+                    '?g=' + center.join(',') + '&z=' + this.map.getZoom() +
+                    '&s=' + layerActive.sys.id + '&t=' + layerActive.type.id +
+                    '&type=' + this.type() + y
+                );
+                this.map.on('zoomstart', this.hideLink, this); //Скрываем ссылку при начале зуммирования карты
+                this.linkShow(true);
+            } else {
+                this.hideLink();
+            }
+        },
+        hideLink: function () {
+            if (this.linkShow()) {
+                this.linkShow(false);
+                this.removeShowLinkListener();
+            }
+        },
+        toggleCommentsFeed: function () {
+            $('#commentsFeed').collapse('toggle');
+        },
+        removeShowLinkListener: function () {
+            this.map.off('zoomstart', this.hideLink, this);
+            document.removeEventListener('click', this.showLinkBind);
+        },
+        linkClick: function (data, evt) {
+            const input = evt.target;
+
+            if (input) {
+                input.select();
+            }
+
+            evt.stopPropagation();
+
+            return false;
+        },
+        isGeolocationSupported: function () {
+            return !!('geolocation' in navigator);
+        },
+        showMyLocation: function () {
+            // Geolocate current position. Query position even if we know
+            // that user denied it already, in Chrome for example this will show
+            // location icon in status bar, making easier to find
+            // where to change this setting. Don't query if there is a pending
+            // request already.
+            if (this.geolocationStatus() !== geoStatus.PENDING) {
+                this.geolocationStatus(geoStatus.PENDING);
+
+                const success = function (position) {
+                    this.geolocationStatus(geoStatus.READY);
+                    this.map.setView(new L.LatLng(position.coords.latitude, position.coords.longitude),
+                        defaults.geolocationZoom, { animate: true });
+                }.bind(this);
+
+                const error = function error(err) {
+                    if (err.code === err.PERMISSION_DENIED) {
+                        // User denied geolocation.
+                        this.geolocationStatus(geoStatus.DENIED);
+                    } else {
+                        // Position unavilable due to timeout or device internal error.
+                        this.geolocationStatus(geoStatus.ERROR);
+                    }
+
+                    console.warn(`Geolocation error: ${err.message}`);
+                }.bind(this);
+
+                navigator.geolocation.getCurrentPosition(success, error, { maximumAge: 30000, timeout: 10000 });
+            }
+        },
+        copyGeo: function (data, evt) {
+            if (this.point.geo()) {
+                // Temporaly hide custom tooltip so it does not overlap flashing one.
+                const tooltip = $(evt.currentTarget).siblings('.tltp').hide();
+
+                Utils.copyTextToClipboard(this.geoInputComputed());
+                Utils.flashTooltip(evt.currentTarget, 'Скопировано').then(function () {
+                    tooltip.show();
+                });
+            }
+        },
+        selectLayer: function (sysId, typeId) {
+            const layerActive = this.layerActive();
+            let system;
+            let type;
+
+            if (layerActive.sys && layerActive.sys.id === sysId && layerActive.type.id === typeId) {
                 return;
             }
 
-            // Смотрим нужно ли использовать клиентскую кластеризацию.
-            const localCluster = localWork && self.clientClustering;
-            // Если к моменту получения входящих данных нового зума, баунд изменился,
-            // значит мы успели подвигать картой, поэтому надо проверить пришедшие точки на вхождение в актуальный баунд.
-            const boundChanged = !bound.equals(self.calcBound);
+            system = this.getSysById(sysId || defaults.sys) || this.getSysById(defaults.sys);
+            type = this.getTypeById(system, typeId || defaults.type) || this.getTypeById(system, defaults.type);
 
-            // Удаляем маркеры и кластеры, не входящие в новый баунд после получения новой порции данных
-            self.cropByBound(null, localWork);
-
-            self.processIncomingDataMove(data, boundChanged, localWork, localCluster);
-            zoom = bound = null;
-        });
-    };
-
-    /**
-     * Обрабатывает входящие данные
-     */
-    MarkerManager.prototype.processIncomingDataMove = function (data, boundChanged, localWork, localCluster) {
-        const isPainting = this.isPainting;
-        let photos = {};
-        let divIcon;
-        let curr;
-        let i;
-
-        // На уровне локальных кластеризаций,
-        // сервер отдает только фотографии в новых баундах, следовательно,
-        // полученные фото мы должны присоединить к существующим и локально кластеризовать только их
-        if (localWork) {
-            this.photosAll = this.photosAll.concat(data.photos);
-        }
-
-        if (localCluster) {
-            data = this.createClusters(data.photos, true);
-        }
-
-        // Заполняем новый объект фото
-        if (Array.isArray(data.photos) && data.photos.length > 0) {
-            i = data.photos.length;
-
-            while (i) {
-                curr = data.photos[--i];
-
-                if (!this.mapObjects.photos[curr.cid]) {
-                    // Если оно новое - создаем его объект и маркер
-                    if (!boundChanged || this.calcBound.contains(curr.geo)) {
-                        curr.sfile = Photo.picFormats.m + curr.file;
-                        divIcon = L.divIcon(
-                            {
-                                className: 'photoIcon ' + getYearClass(curr.year, isPainting) + ' ' + curr.dir,
-                                iconSize: this.sizePoint,
-                            }
-                        );
-                        curr.marker =
-                            L.marker(curr.geo, {
-                                icon: divIcon,
-                                riseOnHover: true,
-                                data: { cid: curr.cid, type: 'photo', obj: curr },
-                            })
-                                .on('click', this.clickMarker, this)
-                                .on('mouseover', this.popupPhotoOver, this);
-                        this.layerPhotos.addLayer(curr.marker);
-                        photos[curr.cid] = curr;
-                    }
-                }
+            if (type === undefined) {
+                // It is likely that required type does not exist in this
+                // system, fallback to default system and type.
+                system = this.getSysById(defaults.sys);
+                type = this.getTypeById(system, defaults.type);
             }
-        }
 
-        _.assign(this.mapObjects.photos, photos);
+            const setLayer = function (type) {
+                this.map.addLayer(type.obj);
+                this.markerManager.layerChange();
+                // Set maxZoom and minZoom as defined in TileLayer object, otherwise use defaults.
+                this.map.options.maxZoom = type.obj.options.maxZoom || defaults.maxZoom;
+                this.map.options.minZoom = type.obj.options.minZoom || defaults.minZoom;
 
-        // Создаем маркеры кластеров
-        if (!localWork) {
-            this.drawClusters(data.clusters, boundChanged, true);
-        } else if (localCluster) {
-            this.drawClustersLocal(data.clusters, boundChanged, true);
-        }
-
-        //Чистим ссылки
-        photos = curr = data = null;
-    };
-
-
-    /**
-     * Локальная кластеризация камер, пришедших клиенту. Проверяем на совпадение координат камер с учетом дельты. Связываем такие камеры
-     */
-    MarkerManager.prototype.createClusters = function (data, withGravity) {
-        const start = Date.now();
-        const delta = this.clientClusteringDelta[this.currZoom] || this.clientClusteringDelta.default;
-        const clusterW = Utils.math.toPrecision(Math.abs(this.map.layerPointToLatLng(new L.Point(delta, 1)).lng - this.map.layerPointToLatLng(new L.Point(0, 1)).lng)); // eslint-disable-line max-len
-        const clusterH = Utils.math.toPrecision(Math.abs(this.map.layerPointToLatLng(new L.Point(1, delta)).lat - this.map.layerPointToLatLng(new L.Point(1, 0)).lat)); // eslint-disable-line max-len
-        const clusterWHalf = Utils.math.toPrecision(clusterW / 2);
-        const clusterHHalf = Utils.math.toPrecision(clusterH / 2);
-        const result = { photos: [], clusters: [] };
-        let i;
-
-        let photo;
-        let geoPhoto;
-        let geoPhotoCorrection;
-
-        let geo;
-        let cluster;
-        const clusters = {};
-        let clustCoordId;
-        const clustCoordIdS = [];
-
-        const precisionDivider = 1e+6;
-
-        i = data.length;
-
-        while (i) {
-            photo = data[--i];
-
-            if (!this.pointHighlight || this.pointHighlight && this.pointHighlight.cid() !== photo.cid) {
-                geoPhoto = photo.geo;
-                geoPhotoCorrection = [geoPhoto[0] > 0 ? 1 : 0, geoPhoto[1] < 0 ? -1 : 0];
-
-                geo = [~~(clusterH * (~~(geoPhoto[0] / clusterH) + geoPhotoCorrection[0]) * precisionDivider) / precisionDivider, ~~(clusterW * (~~(geoPhoto[1] / clusterW) + geoPhotoCorrection[1]) * precisionDivider) / precisionDivider]; // eslint-disable-line max-len
-                clustCoordId = geo[0] + '@' + geo[1];
-                cluster = clusters[clustCoordId];
-
-                if (cluster === undefined) {
-                    //При создании объекта в year надо присвоить минимум значащую цифру,
-                    //иначе v8(>=3.19) видимо не выделяет память и при добавлении очередного photo.year крэшится через несколько итераций
-                    clusters[clustCoordId] = {
-                        cid: clustCoordId,
-                        geo: geo,
-                        lats: geo[0] - clusterHHalf,
-                        lngs: geo[1] + clusterWHalf,
-                        year: 1,
-                        c: 1,
-                        photos: [],
-                    };
-                    clustCoordIdS.push(clustCoordId);
-                    cluster = clusters[clustCoordId];
+                if (this.navSliderVM && Utils.isType('function', this.navSliderVM.recalcZooms)) {
+                    // Adjust zoom slider.
+                    this.navSliderVM.recalcZooms(type.limitZoom || this.map.getMaxZoom(), true);
                 }
 
-                cluster.c += 1;
-                cluster.year += photo.year;
+                // If curent map zoom is out of range of layer settings, adjust accordingly.
+                const center = this.map.getCenter();
 
-                if (withGravity) {
-                    cluster.lats += photo.geo[0];
-                    cluster.lngs += photo.geo[1];
+                if (type.limitZoom !== undefined && this.map.getZoom() > type.limitZoom) {
+                    this.map.setView(center, type.limitZoom);
+                } else if (this.map.getZoom() > this.map.getMaxZoom()) {
+                    this.map.setView(center, this.map.getMaxZoom());
+                } else if (this.map.getZoom() < this.map.getMinZoom()) {
+                    this.map.setView(center, this.map.getMinZoom());
                 }
 
-                cluster.photos.push(photo);
+                this.setLocalState();
+            }.bind(this);
+
+            if (layerActive.sys && layerActive.type) {
+                layerActive.sys.selected(false);
+                layerActive.type.selected(false);
+                this.map.removeLayer(layerActive.type.obj);
             }
-        }
 
-        // Заполняем массивы кластеров и фото
-        i = clustCoordIdS.length;
+            system.selected(true);
+            type.selected(true);
+            this.layerActiveDesc(this.embedded ? system.desc : system.desc + ': ' + type.desc);
+            this.layerActive({ sys: system, type: type });
 
-        while (i) {
-            clustCoordId = clustCoordIdS[--i];
-            cluster = clusters[clustCoordId];
+            if (system.deps && !type.options.urlTemplate) {
+                // Layer needs to be created via plugin.
+                require([system.deps], function (Construct) {
+                    type.options = type.options || {};
+                    type.obj = new Construct(type.options);
+                    setLayer(type);
+                });
+            } else if (type.options.urlTemplate !== undefined) {
+                // Layer needs to be created using L.TileLayer.
+                const urlTemplate = type.options.urlTemplate;
+                const options = _.omit(type.options, 'urlTemplate');
 
-            if (cluster.c > 2) {
-                if (withGravity) {
-                    cluster.geo = [~~(cluster.lats / cluster.c * precisionDivider) / precisionDivider, ~~(cluster.lngs / cluster.c * precisionDivider) / precisionDivider]; // eslint-disable-line max-len
-                }
-
-                cluster.c -= 1;
-                cluster.year = --cluster.year / cluster.c >> 0; //Из суммы лет надо вычесть единицу, т.к. прибавили её при создании кластера для v8
-                cluster.lats = undefined;
-                cluster.lngs = undefined;
-                result.clusters.push(cluster);
+                type.obj = new L.TileLayer(urlTemplate, options);
+                setLayer(type);
             } else {
-                result.photos.push(cluster.photos[0]);
+                throw new Error(`Layer '${type.id}' definition is missing urlTemplate required property.`);
             }
-        }
+        },
+        onChange: function (callback, ctx) {
+            this.changeSubscribers.push({ callback: callback, ctx: ctx });
+        },
+        offChange: function (callback, ctx) {
+            this.changeSubscribers = _.remove(this.changeSubscribers, { callback: callback, ctx: ctx });
+        },
+        getCenter: function () {
+            return Utils.geo.latlngToArr(this.map.getCenter());
+        },
 
-        console.log('Clustered in ' + (Date.now() - start));
+        yearSliderRefresh: function () {
+            const $slider = this.$dom.find('.yearSlider');
 
-        return result;
-    };
+            $slider.slider('destroy');
 
-    MarkerManager.prototype.drawClusters = function (clusters, boundChanged, add) {
-        let i;
-        let size;
-        let measure;
-        let picFormat;
-        let cluster;
-        let divIcon;
-        const result = {};
+            //P.window.square.unsubscribe();
+            window.clearTimeout(this.yearRefreshMarkersTimeout);
 
-        if (Array.isArray(clusters) && clusters.length) {
-            i = clusters.length;
+            const type = this.type();
 
-            while (i) {
-                cluster = clusters[--i];
+            this.setYears(
+                Utils.getLocalStorage('map.year.' + type),
+                Utils.getLocalStorage('map.year2.' + type)
+            );
 
-                if (!boundChanged || this.calcBound.contains(cluster.geo)) {
-                    cluster.cid = cluster.geo[0] + '@' + cluster.geo[1];
-
-                    if (cluster.c > 499) {
-                        if (cluster.c > 2999) {
-                            size = this.sizeClusterb;
-                            measure = 'b';
-                            picFormat = Photo.picFormats.s;
-                        } else {
-                            size = this.sizeClusterm;
-                            measure = 'm';
-                            picFormat = Photo.picFormats.s;
-                        }
-                    } else {
-                        size = this.sizeCluster;
-                        measure = '';
-                        picFormat = Photo.picFormats.x;
-                    }
-
-                    if (!cluster.p) {
-                        // This is really to debug issue #646
-                        console.warn('Missing cluster photo', cluster);
-                        continue;
-                    }
-
-                    cluster.p.sfile = picFormat + cluster.p.file;
-                    divIcon = L.divIcon({
-                        className: 'clusterIcon fringe ' + measure,
-                        iconSize: size,
-                        html: '<img class="clusterImg" onload="if (this.parentNode && this.parentNode.classList) {this.parentNode.classList.add(\'show\');}" src="' + cluster.p.sfile + '"/><div class="clusterFoot"><span class="clusterCount">' + cluster.c + '</span></div>',
-                    });
-                    cluster.measure = measure;
-                    cluster.marker =
-                        L.marker(cluster.geo, {
-                            icon: divIcon,
-                            riseOnHover: true,
-                            data: { type: 'clust', obj: cluster },
-                        })
-                            .on('click', this.clickMarker, this)
-                            .on('mouseover', this.popupPhotoOver, this);
-                    this.layerClusters.addLayer(cluster.marker);
-                    result[cluster.cid] = cluster;
+            $('.mapYearSelector').replaceWith(
+                '<div class="mapYearSelector">' +
+                '<div class="yearSlider"><div class="ui-slider-handle L"></div><div class="ui-slider-handle R"></div></div>' +
+                '<div class="yearOuter L"></div><div class="yearOuter R"></div>' +
+                '</div>'
+            );
+            this.yearSliderCreate();
+        },
+        yearSliderCreate: function () {
+            const self = this;
+            const years = statuses.years[this.type()];
+            const yearLowOrigin = years.min;
+            const yearHighOrigin = years.max;
+            const yearsDelta = yearHighOrigin - yearLowOrigin;
+            const $slider = this.$dom.find('.yearSlider');
+            let sliderStep = $slider.width() / yearsDelta;
+            const slideOuterL = this.$dom.find('.yearOuter.L')[0];
+            const slideOuterR = this.$dom.find('.yearOuter.R')[0];
+            const handleL = $slider[0].querySelector('.ui-slider-handle.L');
+            const handleR = $slider[0].querySelector('.ui-slider-handle.R');
+            let currMin;
+            let currMax;
+            const culcSlider = function (min, max) {
+                if (currMin !== min) {
+                    slideOuterL.style.width = (sliderStep * Math.abs(min - yearLowOrigin) >> 0) + 'px';
+                    currMin = min;
+                    handleL.innerHTML = min || 1;
                 }
-            }
-        }
 
-        if (add) {
-            _.assign(this.mapObjects.clusters, result);
-        } else {
-            this.mapObjects.clusters = result;
-        }
-    };
-
-    MarkerManager.prototype.drawClustersLocal = function (clusters, boundChanged, add) {
-        const isPainting = this.isPainting;
-        let i;
-        let size;
-        let measure;
-        let cluster;
-        let divIcon;
-        const result = {};
-
-        if (Array.isArray(clusters) && clusters.length > 0) {
-            i = clusters.length;
-
-            while (i) {
-                cluster = clusters[--i];
-
-                if (!boundChanged || this.calcBound.contains(cluster.geo)) {
-                    if (cluster.c > 9) {
-                        if (cluster.c > 49) {
-                            size = this.sizeClusterLb;
-                            measure = 'b';
-                        } else {
-                            size = this.sizeClusterLm;
-                            measure = 'm';
-                        }
-                    } else {
-                        size = this.sizeClusterL;
-                        measure = '';
-                    }
-
-                    divIcon = L.divIcon({
-                        className: 'clusterIconLocal ' + getYearClass(cluster.year, isPainting) + ' ' + measure,
-                        iconSize: size,
-                        html: cluster.c,
-                    });
-                    cluster.marker =
-                        L.marker(cluster.geo, {
-                            icon: divIcon,
-                            riseOnHover: true,
-                            data: { type: 'clust', obj: cluster },
-                        })
-                            .on('click', this.clickMarker, this);
-                    this.layerClusters.addLayer(cluster.marker);
-                    result[cluster.cid] = cluster;
+                if (currMax !== max) {
+                    slideOuterR.style.width = (sliderStep * Math.abs(yearHighOrigin - max) >> 0) + 'px';
+                    currMax = max;
+                    handleR.innerHTML = max || 1;
                 }
-            }
-        }
+            };
 
-        if (add) {
-            _.assign(this.mapObjects.clusters, result);
-        } else {
-            this.mapObjects.clusters = result;
-        }
-    };
+            $slider.slider({
+                range: true,
+                min: years.min,
+                max: years.max,
+                step: 1,
+                values: [this.yearLow, this.yearHigh],
+                create: function () {
+                    const values = $slider.slider('values');
 
-    MarkerManager.prototype.clearClusters = function () {
-        this.clearObjHash(this.mapObjects.clusters, this.layerClusters);
-        this.layerClusters.clearLayers();
-        this.mapObjects.clusters = {};
-    };
-    MarkerManager.prototype.clearPhotos = function () {
-        this.clearObjHash(this.mapObjects.photos, this.layerPhotos);
-        this.layerPhotos.clearLayers();
-        this.mapObjects.photos = {};
-        this.photosAll = [];
-    };
-
-    /**
-     * Очищает объекты хэша с удалением маркера с карты и чисткой критических для памяти свойств
-     *
-     * @param {object} objHash Хэш объектов
-     * @param {object} layer Слой, с которого удаляются маркеры
-     * @param {object} onlyOutBound Баунд, при выходе за который надо удалять. Если не указан, удаляется всё из хэша
-     */
-    MarkerManager.prototype.clearObjHash = function (objHash, layer, onlyOutBound) {
-        let obj;
-        let i;
-
-        for (i in objHash) { // eslint-disable-line guard-for-in
-            obj = objHash[i];
-
-            if (obj !== undefined && (!onlyOutBound || !onlyOutBound.contains(obj.geo))) {
-                layer.removeLayer(obj.marker.clearAllEventListeners());
-                delete obj.marker.options.data.obj;
-                delete obj.marker.options.data;
-                delete obj.marker;
-                delete objHash[i];
-            }
-        }
-    };
-
-    /**
-     * Удаляет объекты не входящие в баунд
-     */
-    MarkerManager.prototype.cropByBound = function (bound, localWork) {
-        bound = bound || this.calcBound;
-
-        let i;
-        let curr;
-        let arr;
-
-        // На уровнях локальной кластеризации обрезаем массив всех фотографий
-        if (localWork) {
-            arr = [];
-            i = this.photosAll.length;
-
-            while (i) {
-                curr = this.photosAll[--i];
-
-                if (bound.contains(curr.geo)) {
-                    arr.push(curr);
-                }
-            }
-
-            this.photosAll = arr;
-        }
-
-        // Удаляем невходящие маркеры фотографий
-        this.clearObjHash(this.mapObjects.photos, this.layerPhotos, bound);
-        // Удаляем невходящие маркеры кластеров
-        this.clearObjHash(this.mapObjects.clusters, this.layerClusters, bound);
-    };
-
-    /**
-     * Zoom animation to mouse pointer position.
-     *
-     * @param {object} point
-     * @param {number} newZoom
-     * @returns {*}
-     */
-    MarkerManager.prototype.zoomApproachToPoint = function (point, newZoom) {
-        const scale = this.map.getZoomScale(newZoom);
-        const viewHalf = this.map.getSize().divideBy(2);
-        const centerOffset = point.subtract(viewHalf).multiplyBy(1 - 1 / scale);
-        const newCenterPoint = this.map._getTopLeftPoint().add(viewHalf).add(centerOffset);
-
-        return this.map.unproject(newCenterPoint);
-    };
-
-    /**
-     * @param {Event} evt
-     */
-    MarkerManager.prototype.clickMarker = function (evt) {
-        const marker = evt.target;
-        const object = marker.options.data.obj;
-        const eventPoint = this.map.mouseEventToContainerPoint(evt.originalEvent);
-        let nextZoom;
-
-        if (marker.options.data.type === 'photo' && object.cid) {
-            this.photoNavigate('/p/' + object.cid);
-        } else if (marker.options.data.type === 'clust') {
-            if (evt.originalEvent.target.classList.contains('clusterImg')) {
-                this.photoNavigate('/p/' + object.p.cid);
-            } else if (this.map.getZoom() === this.map.getMaxZoom()) {
-                this.popupClusterLocalOpen(marker);
-            } else {
-                nextZoom = this.map.getZoom() + 1;
-                this.map.setView(this.zoomApproachToPoint(eventPoint, nextZoom), nextZoom);
-            }
-        }
-    };
-    MarkerManager.prototype.photoNavigate = function (url) {
-        if (this.openNewTab) {
-            window.open(url, '_blank');
-        } else {
-            globalVM.router.navigate(url);
-        }
-    };
-
-    MarkerManager.prototype.popupClusterLocalOpen = function (marker) {
-        const photos = marker.options.data.obj.photos;
-        let photo;
-        let photoPrevFile;
-        let photoPosterFile;
-        let i = -1;
-        const len = photos.length;
-        const small = len <= 3;
-        const popup = small ? this.popupCluster : len <= 15 ? this.popupClusterFive : this.popupClusterFiveScroll;
-        let content = '<div class="popupPreviews">';
-
-        photos.sort(function (a, b) {
-            let result = 0;
-
-            if (a.year > b.year) {
-                result = -1;
-            } else if (a.year < b.year) {
-                result = 1;
-            }
-
-            return result;
-        });
-
-        while (++i < len) {
-            photo = photos[i];
-            photo.sfile = Photo.picFormats.m + photo.file;
-
-            photoPosterFile = small ? photo.sfile : Photo.picFormats.h + photo.file;
-            photoPrevFile = Photo.picFormats.x + photo.file;
-
-            if (i > 0 && i % 5 === 0) {
-                content += '<br/>';
-            }
-
-            content += this.popupClusterTpl({
-                img: photoPrevFile,
-                cid: photo.cid || '',
-                sfile: photoPosterFile,
-                title: photo.title,
-                href: '/p/' + photo.cid,
-                year: this.makeTextYear(photo),
+                    culcSlider(values[0], values[1]);
+                },
+                start: function () {
+                    window.clearTimeout(self.yearRefreshMarkersTimeout);
+                },
+                slide: function (event, ui) {
+                    culcSlider(ui.values[0], ui.values[1]);
+                },
+                change: function (event, ui) {
+                    self.hideLink();
+                    culcSlider(ui.values[0], ui.values[1]);
+                    self.yearLow = currMin;
+                    self.yearHigh = currMax;
+                    self.yearRefreshMarkersTimeout = window.setTimeout(self.yearRefreshMarkersBind, 400);
+                },
             });
-        }
 
-        content += '</div><div class="popupPoster" data-href="' + '/p/' + photos[photos.length - 1].cid + '" onclick="' + this.popupClusterClickFN + '(this)" >' + this.popupPhotoTpl({
-            img: photoPosterFile,
-            year: this.makeTextYear(photos[photos.length - 1]),
-            txt: photos[photos.length - 1].title,
-        }) + '<div class="h_separatorWhite"></div> ' + '</div>';
-        popup
-            .setLatLng(marker.getLatLng())
-            .setContent(content);
+            //Подписываемся на изменение размеров окна для пересчета шага и позиций покрывал
+            this.subscriptions.sizeSlider = P.window.square.subscribe(function () {
+                const values = $slider.slider('values');
 
-        this.popupOpen(popup);
-    };
-
-
-    MarkerManager.prototype.makeTextYear = function (photo) {
-        let year = String(Math.abs(photo.year));
-
-        if (photo.year < 0) {
-            year += ' BC';
-        } else if (photo.year < 1000) {
-            year += ' AD';
-        }
-
-        if (photo.year2 && photo.year2 !== photo.year) {
-            year += ' —' + Math.abs(photo.year2);
-
-            if (photo.year2 < 0) {
-                year += ' BC';
-            } else if (photo.year2 < 1000) {
-                year += ' AD';
-            }
-        }
-
-        return year;
-    };
-    MarkerManager.prototype.popupPhotoOpen = function () {
-        let popup;
-        const type = this.markerToPopup.options.data.type;
-        const obj = this.markerToPopup.options.data.obj;
-
-        if (this.markerToPopup) {
-            if (type === 'photo') {
-                popup = this.popupPhoto
-                    .setContent(this.popupPhotoTpl({ img: obj.sfile, txt: obj.title, year: this.makeTextYear(obj) }));
-            } else if (type === 'clust') {
-                popup = this['popupClusterPhoto' + obj.measure]
-                    .setContent(this.popupClusterPhotoTpl({ txt: obj.p.title, year: this.makeTextYear(obj.p) }));
-            }
-
-            popup.setLatLng(this.markerToPopup.getLatLng());
-            this.popupOpen(popup);
-        }
-    };
-    MarkerManager.prototype.popupPhotoOver = function (evt) {
-        const type = evt.target.options.data.type;
-
-        window.clearTimeout(this.popupTimeout);
-
-        if (type === 'photo' || type === 'clust' && evt.originalEvent.target.classList.contains('clusterImg')) {
-            this.popupTimeout = window.setTimeout(this.popupPhotoOpenBind, 200);
-            this.markerToPopup = evt.target.on('mouseout', this.popupPhotoOut, this);
-        }
-    };
-
-    MarkerManager.prototype.popupPhotoOut = function (evt) {
-        // Закрываем попап, только если это попап фото. Чтобы при наведения и убыстрого уведения без открытия не закрывался попап кластера
-        if (this.popupOpened !== this.popupCluster && this.popupOpened !== this.popupClusterFive && this.popupOpened !== this.popupClusterFiveScroll) {
-            this.popupClose();
-        }
-
-        this.markerToPopup = null;
-        window.clearTimeout(this.popupTimeout);
-        evt.target.off('mouseout', this.popupPhotoOut, this);
-    };
-
-    MarkerManager.prototype.popupOpen = function (popup) {
-        window.clearTimeout(this.popupTimeout);
-        this.popupClose();
-        this.map.addLayer(popup);
-        this.popupOpened = popup;
-    };
-    MarkerManager.prototype.popupClose = function () {
-        if (this.popupOpened) {
-            this.map.removeLayer(this.popupOpened);
-            this.popupOpened = null;
-        }
-    };
-
-    return MarkerManager;
+                sliderStep = $slider.width() / yearsDelta;
+                slideOuterL.style.width = (sliderStep * Math.abs(values[0] - yearLowOrigin) >> 0) + 'px';
+                slideOuterR.style.width = (sliderStep * Math.abs(yearHighOrigin - values[1]) >> 0) + 'px';
+            });
+        },
+        yearRefreshMarkers: function () {
+            this.markerManager.setYearLimits(this.yearLow || 1, this.yearHigh || 1);
+            this.setLocalState();
+            this.notifySubscribers();
+        },
+    });
 });
