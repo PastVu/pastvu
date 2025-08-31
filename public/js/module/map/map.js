@@ -523,7 +523,7 @@ define([
                 this.map.setView(new L.LatLng(P.settings.locDef.lat, P.settings.locDef.lng), P.settings.locDef.z);
             }
 
-            this.markerManager = new MarkerManager(this.map, {
+            this.markerManager = new MarkerManager(this.map, this.point, {
                 enabled: false,
                 openNewTab: this.openNewTab(),
                 isPainting: this.isPainting(),

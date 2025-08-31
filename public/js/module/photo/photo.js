@@ -528,7 +528,7 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
             this.mapVM.setPoint(this.genMapPoint(), this.isPainting());
         },
         genMapPoint: function () {
-            return _.pick(this.p, 'geo', 'year', 'dir', 'title', 'regions');
+            return _.pick(this.p, 'geo', 'year', 'dir', 'title', 'regions', 'cid');
         },
         editGeoChange: function (geo) {
             if (geo) {
