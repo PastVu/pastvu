@@ -306,32 +306,41 @@ export async function find({ query, fieldSelect = {}, options = {}, populateUser
 }
 
 export function getNewPhotosLimit(user) {
-    let canCreate = 0;
-    const pfcount = user.pfcount;
+    return Math.max(0, getUserPhotosLimitMax(user) - user.pfcount);
+}
+
+export function getUserPhotosLimitMax(user) {
+    // return user photos limit
+    /* needed fields:
+        user.rules.photoNewLimit
+        user.ranks
+        user.pcount
+    */
+    let limit = 0;
 
     if (user.rules && _.isNumber(user.rules.photoNewLimit)) {
-        canCreate = Math.max(0, Math.min(user.rules.photoNewLimit, maxNewPhotosLimit) - pfcount);
+        limit = Math.min(user.rules.photoNewLimit, maxNewPhotosLimit);
     } else if (user.ranks && (user.ranks.includes('mec_silv') || user.ranks.includes('mec_gold'))) {
         // Silver and Gold metsenats have the maximum possible limit
-        canCreate = maxNewPhotosLimit - pfcount;
+        limit = maxNewPhotosLimit;
     } else if (user.ranks && user.ranks.includes('mec')) {
         // Metsenat has a limit of 150
-        canCreate = Math.max(0, 150 - pfcount);
+        limit = 150;
     } else if (user.pcount < 15) {
-        canCreate = Math.max(0, 10 - pfcount);
+        limit = 10;
     } else if (user.pcount < 25) {
-        canCreate = Math.max(0, 15 - pfcount);
+        limit = 15;
     } else if (user.pcount < 50) {
-        canCreate = Math.max(0, 20 - pfcount);
+        limit = 20;
     } else if (user.pcount < 200) {
-        canCreate = Math.max(0, 50 - pfcount);
+        limit = 50;
     } else if (user.pcount < 1000) {
-        canCreate = Math.max(0, 75 - pfcount);
+        limit = 75;
     } else if (user.pcount >= 1000) {
-        canCreate = Math.max(0, 150 - pfcount);
+        limit = 150;
     }
 
-    return canCreate;
+    return limit;
 }
 
 /**
@@ -1508,6 +1517,70 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40, random = fa
                 Photo.find(query, fieldsSelect, { lean: true, limit }).exec(),
                 Photo.countDocuments(countQuery).exec(),
             ]);
+        } else if (iAm && iAm.registered && iAm.user.role >= 5 &&
+                    (!(filter.l === null) && filter.l && !filter.l.any || _.isEqual(filter.lf, [1]))) {
+            //aggregate вроде работает дольше по этому используем его только если необходимо
+
+            let aggQuery = [
+                { $lookup: { from: 'users', localField: 'user', foreignField: '_id', as: 'user_info' } },
+                { $match: query },
+                { $set: { photoNewLimit: { $sum: '$user_info.rules.photoNewLimit' } } },
+                { $set: { pcount: { $sum: '$user_info.pcount' } } },
+                { $set: { pfcount: { $sum: '$user_info.pfcount' } } },
+                { $set: { ranks: { $first: '$user_info.ranks' } } },
+                { $set: { photosLimit: { $sum: { $switch: {
+                    branches: [
+                        { case: { $gt: ['$photoNewLimit', 0] }, then: { $min: ['$photoNewLimit', maxNewPhotosLimit] } },
+                        { case: { $in: [{ $max: '$ranks' }, ['mec_silv', 'mec_gold']] }, then: maxNewPhotosLimit },
+                        { case: { $in: [{ $max: '$ranks' }, ['mec']] }, then: 150 },
+                        { case: { $lt: ['$pcount', 15] }, then: 10 },
+                        { case: { $lt: ['$pcount', 25] }, then: 15 },
+                        { case: { $lt: ['$pcount', 50] }, then: 20 },
+                        { case: { $lt: ['$pcount', 200] }, then: 50 },
+                        { case: { $lt: ['$pcount', 1000] }, then: 75 },
+                        { case: { $gte: ['$pcount', 1000] }, then: 150 },
+                    ],
+                } } } } },
+            ];
+
+            if (_.isEqual(filter.lf, [1])) {
+                aggQuery = [
+                    ...aggQuery,
+                    { $match: { $expr: { $gte: ['$pfcount', '$photosLimit'] } } },
+                ];
+            }
+
+            if (!filter.l.any) {
+                aggQuery = [
+                    ...aggQuery,
+                    { $match: { photosLimit: { $lt: Number(filter.l.max) } } },
+                ];
+            }
+
+            [photos, count] = await Promise.all([
+                Photo.aggregate([
+                    ... aggQuery,
+                    { $sort: { sdate: -1 } },
+                    { $skip: skip },
+                    { $limit: limit },
+                    { $project: { 'photosLimit': 1, 'pcount': 1, 'pfcount': 1, 'photoNewLimit': 1, 'ranks': 1, 'user_info.cid': 1, 'user_info.pfcount': 1, 'user_info.pcount': 1, 'user_info.ranks': 1, 'user_info.rules': 1, ...fieldsSelect } },
+                ]),
+                Photo.aggregate([
+                    ...aggQuery,
+                    { $count: 'photos_count' },
+                ]),
+            ]);
+
+            // take count value
+            count = count.length ? count[0].photos_count : 0;
+        } else if (iAm && iAm.registered && iAm.user.role >= 5) {
+            //to show different colors make sence only for moderators
+            [photos, count] = await Promise.all([
+                Photo.find(query, fieldsSelect, { lean: true, skip, limit, sort: { sdate: -1 } })
+                    .populate({ path: 'user', select: { pfcount: 1, pcount: 1, ranks: 1, rules: 1 } }
+                    ).exec(),
+                Photo.countDocuments(query).exec(),
+            ]);
         } else {
             [photos, count] = await Promise.all([
                 Photo.find(query, fieldsSelect, { lean: true, skip, limit, sort: { sdate: -1 } }).exec(),
@@ -1527,6 +1600,11 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40, random = fa
                 await this.call('photo.fillPhotosProtection', { photos, theyAreMine: itsMineGallery, setMyFlag: !userId });
 
                 for (const photo of photos) {
+                    if (iAm.user.role >= 5) {
+                        //set user limit for moderator view
+                        photo.userPhotoLimitMax = getUserPhotosLimitMax(photo.user_info ? photo.user_info[0] : photo.user);
+                    }
+
                     photo._id = undefined;
                     photo.user = undefined;
                     photo.vdate = undefined;
@@ -1588,6 +1666,8 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40, random = fa
             s: buildQueryResult.s,
             y: buildQueryResult.y,
             c: buildQueryResult.c,
+            l: buildQueryResult.l,
+            lf: buildQueryResult.lf,
             geo: filter.geo,
         },
     };
@@ -1615,7 +1695,7 @@ const givePublicNoGeoIndex = (function () {
     };
 }());
 
-const filterProps = { geo: [], r: [], rp: [], rs: [], re: [], s: [], t: [], y: [], c: [] };
+const filterProps = { geo: [], r: [], rp: [], rs: [], re: [], s: [], t: [], y: [], c: [], l: [], lf: [] };
 const delimeterParam = '_';
 const delimeterVal = '!';
 export function parseFilter(filterString) {
@@ -1788,6 +1868,57 @@ export function parseFilter(filterString) {
                         if (active) {
                             result.c = c;
                         }
+                    }
+                }
+            } else if (filterParam === 'l') {
+                filterVal = filterVal.split(delimeterVal);
+
+                if (Array.isArray(filterVal) && filterVal.length === 1) {
+                    filterVal = filterVal.map(Number).sort();
+
+                    if (!_.isEqual(filterVal, [0])) {
+                        const [l0] = filterVal;
+                        const l = {};
+                        let active = true;
+
+                        if (l0 === 0) {
+                            l.any = true;
+                            l.max = 10000;
+                        } else if (l0 > 0 && l0 < 1e5) {
+                            l.any = false;
+                            l.max = l0;
+                        } else {
+                            active = false;
+                        }
+
+                        if (active) {
+                            result.l = l;
+                        }
+                    } else {
+                        const l = {};
+
+                        l.any = true;
+                        result.l = l;
+                    }
+                }
+            } else if (filterParam === 'lf') {
+                filterVal = filterVal.split(delimeterVal);
+
+                if (Array.isArray(filterVal) && filterVal.length) {
+                    result.lf = [];
+
+                    for (filterValItem of filterVal) {
+                        if (filterValItem) {
+                            filterValItem = Number(filterValItem);
+
+                            if (typesSet.has(filterValItem)) {
+                                result.lf.push(filterValItem);
+                            }
+                        }
+                    }
+
+                    if (!result.lf.length) {
+                        delete result.lf;
                     }
                 }
             }
@@ -3161,6 +3292,16 @@ export function buildPhotosQuery(filter, forUserId, iAm, random) {
         }
 
         result.c = filter.c;
+    }
+
+    if (filter.l) {
+        // добавляется напрямую в агрегативной функции
+        result.l = filter.l;
+    }
+
+    if (filter.lf) {
+        // добавляется напрямую в агрегативной функции
+        result.lf = filter.lf;
     }
 
     if (random) {

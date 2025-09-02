@@ -165,6 +165,23 @@
                                 |   Войдите, чтобы видеть больше
                             // /ko
 
+                    //ko if: auth.iAm && auth.iAm.role() >= 5
+                    .fRow
+                        .fName Лимит пользователя:
+                        .fVars             
+                            label.checkbox-inline
+                                input(type="checkbox", value="1", data-bind="checked: filter.disp.lf, click: flfclick")
+                                span Исчерпан            
+                            label.checkbox-inline
+                                input(type="checkbox", value="0", data-bind="checked: filter.disp.l, click: flclick")
+                                span Любой
+                            div(style="display:inline-block;")
+                                label.checkbox-inline(style="margin-right:0;min-width:auto;")
+                                    input(type="checkbox", value="1", data-bind="checked: filter.disp.l, click: flclick")
+                                    = 'Меньше'
+                                = ' '
+                                input.form-control.ccount(type="text", data-bind="value: filter.disp.lcount, valueUpdate: 'keyup', event: {keydown: lcountArrow}, attr: {disabled:filter.disp.l.indexOf('1')<0}, css: {lcountSet: filter.disp.lcount()>1 && filter.disp.l.indexOf('1')>=0}", maxlength="4")
+                    // /ko
         .row.rowoffset
             .col-xs-12.col-sm-7.col-lg-4(data-bind="css: {invisible: !loadedFirst()}")
             .col-xs-12.col-sm-5.col-lg-4.col-lg-push-4.switch(data-bind="css: {invisible: !loadedFirst()}")
@@ -199,7 +216,7 @@
             .desc Добавить..
         // /ko
         //ko foreach: photos
-        .photoPreview.withStatus.withInfo.fringe(data-bind="attr: {title: title}, css: ($parent.feed() ? 'trans ' : '') + 's' + $data.s")
+        .photoPreview.withStatus.withInfo.fringe(data-bind="attr: {title: title}, css: ($parent.feed() ? 'trans ' : '') + 's' + $data.s + (($parent.auth.iAm.role() >= 5 && $data.status.num <= 2 ) ? ( $data.userPhotoLimitMax <= 10 ? ' photoLimit1' : ( $data.userPhotoLimitMax <= 20 ? ' photoLimit2' : ( $data.userPhotoLimitMax <= 75 ? ' photoLimit3' : ''))) : '')  ")
             a.photoBox(data-bind="attr: {href: '/p/' + cid, target: $parent.feed() ? '_blank' : '_self'}")
                 img.img(data-bind="attr: {src: sfile, alt: title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.w, height: $parent.h}")
                 .curtain
