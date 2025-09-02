@@ -144,6 +144,9 @@
                     = 'За неделю новых фотографий: '
                     b(data-bind="text: $root.intl.num(stats.all.pweekCount)")
                 .statrow
+                    = 'Изображений: '
+                    b(data-bind="text: $root.intl.num(stats.all.iallCount) + (auth.loggedIn() ? ', из них ' + $root.intl.num(stats.all.ipubCount) + ' публичных' : '')")
+                .statrow
                     = 'Комментариев: '
                     b(data-bind="text: $root.intl.num(stats.all.callCount)+ (auth.loggedIn() ? ', из них ' + $root.intl.num(stats.all.callCount - stats.all.cpubCount) + ' удаленных' : '')")
                 .statrow
