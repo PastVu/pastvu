@@ -1,8 +1,11 @@
-mixin noticeLi(arr, path)
+mixin noticeLi(arr, path, isPhoto)
     each val in arr
         - usersLogin = Object.keys(val.brief.users)
         li(style="margin-left: 10px;")
-            a(href=origin + path + val.cid + '?hl=comment-unread&utm_campaign=notification&utm_source=notify_letter&utm_medium=email', target='_blank')= val.title
+            if isPhoto
+                a(href=origin + path + val.cid + '?hl=comment-unread&utm_campaign=notification&utm_source=notify_letter&utm_medium=email', target='_blank')= val.title + ' (#' + val.cid + ')'
+            else
+                a(href=origin + path + val.cid + '?hl=comment-unread&utm_campaign=notification&utm_source=notify_letter&utm_medium=email', target='_blank')= val.title
             div(style="margin-left: 13px;")
                 = val.briefFormat.newest
                 if val.briefFormat.unread
@@ -27,11 +30,11 @@ p At the time of sending this notice the following number of comments was added 
 if news.length
     p(style="margin-bottom: 2px;")
         strong News:
-    +noticeLi(news, '/news/')
+    +noticeLi(news, '/news/', false)
 if photos.length
     p(style="margin-bottom: 2px;")
         strong Photos:
-    +noticeLi(photos, '/p/')
+    +noticeLi(photos, '/p/', true)
 div(style="border-top: 1px solid #eee; border-bottom: 1px solid #fff; margin-top: 1em;")
     p(style="font-size: smaller; margin-top: 0.5em;")
         | You can manage your subscriptions on subscriptions page: <a href='#{origin + '/u/' + user.login + '/subscriptions'}' target='_blank'>#{config.client.host + '/u/' + user.login + '/subscriptions'}</a>
