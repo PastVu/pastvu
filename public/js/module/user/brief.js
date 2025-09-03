@@ -10,11 +10,11 @@ define([
     'use strict';
 
     const mess = {
-        ftype: 'Тип файла не соответствует правилам',
-        fmax: 'Файл больше разрешенного размера',
-        fmin: 'Файл слишком мал',
-        fpx: 'Согласно правилам, размер изображения должен быть не менее 100px по каждой из сторон',
-        finvalid: 'Файл не прошел валидацию', //Сообщение по умолчанию для валидации
+        ftype: 'File type does not correspond site rules',
+        fmax: 'File is bigger then allowed',
+        fmin: 'File is too small',
+        fpx: 'According the rules, image size must be at least 100px for each sides',
+        finvalid: 'The file has not passed validation', //Сообщение по умолчанию для валидации
     };
 
     return Cliche.extend({
@@ -171,7 +171,7 @@ define([
             if (receivedFile && receivedFile.file) {
                 if (receivedFile.error) {
                     noties.error({
-                        message: mess[receivedFile.error] || mess.finvalid || 'Ошибка загрузки аватары',
+                        message: mess[receivedFile.error] || mess.finvalid || 'Failed to load avatar',
                     });
                     this.avaexe(false);
                     ga('send', 'event', 'avatar', 'upload', 'avatar upload error');
@@ -205,7 +205,7 @@ define([
         },
         avaFail: function (e, data) {
             noties.error({
-                message: data && data.message || 'Ошибка загрузки аватары',
+                message: data && data.message || 'Failed to load avatar',
             });
             this.avaexe(false);
         },

@@ -10,7 +10,7 @@ define([
 ], function (_, $, Utils, socket, P, ko, koMapping, Cliche, globalVM, storage, noties, pug) {
     'use strict';
 
-    const collator = new Intl.Collator('ru-RU', { numeric: true, sensitivity: 'base' });
+    const collator = new Intl.Collator('en', { numeric: true, sensitivity: 'base' });
     const $window = $(window);
     let cache = null;
 
@@ -43,7 +43,7 @@ define([
             if (this.selectedInit && this.selectedInit.length) {
                 this.selectedInit.forEach(function (region) {
                     this.selectedInitHash[region.cid] = region;
-                    this.selectedInitTkns.push({ cid: region.cid, value: region.title_local });
+                    this.selectedInitTkns.push({ cid: region.cid, value: region.title_en });
                 }, this);
             }
 
@@ -331,7 +331,7 @@ define([
                     }
                 }
             } else {
-                $(e.relatedTarget).addClass('invalid').attr('title', 'Нет такого региона');
+                $(e.relatedTarget).addClass('invalid').attr('title', 'No such region');
             }
         },
         //Событие удаления токена непосредственно из поля
@@ -363,7 +363,7 @@ define([
 
             if (this.checkBranchSelected(region)) {
                 noties.alert({
-                    message: 'Нельзя одновременно выбирать родительский и дочерний регионы',
+                    message: 'You can not choose the parent and child regions simultaneously',
                     type: 'warning',
                     timeout: 4000,
                     ok: true,
@@ -388,7 +388,7 @@ define([
 
             if (add) {
                 if (this.selectRegion(region)) {
-                    tkn.tokenfield('createToken', { cid: region.cid, value: region.title_local });
+                    tkn.tokenfield('createToken', { cid: region.cid, value: region.title_en });
                 }
             } else {
                 region.selected(false);
@@ -491,8 +491,8 @@ define([
                 cid = region.cid;
                 this.regionsTypehead.push({
                     cid: cid,
-                    value: region.title_local,
-                    parentTitle: region.parent && region.parent.title_local,
+                    value: region.title_en,
+                    parentTitle: region.parent && region.parent.title_en,
                     tokens: [String(cid), region.title_local, region.title_en],
                 });
 
@@ -585,7 +585,7 @@ define([
                     break;
                 case 'alphabet':
                 default:
-                    field = 'title_local';
+                    field = 'title_en';
             }
 
             return (function recursiveSort(arr) {
@@ -622,7 +622,7 @@ define([
                         // If values are equal (exists or not)
                         if (sortBy !== 'alphabet') {
                             // If it is not alphabetical order, order by title
-                            return collator.compare(a.title_local, b.title_local);
+                            return collator.compare(a.title_en, b.title_en);
                         }
 
                         // Otherwise don't sort

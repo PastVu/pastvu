@@ -75,25 +75,25 @@ define([
                     types: ko.observableArray([
                         {
                             id: 'scheme',
-                            desc: 'Схема',
+                            desc: 'Scheme',
                             selected: ko.observable(false),
                             params: 'roadmap',
                         },
                         {
                             id: 'sat',
-                            desc: 'Спутник',
+                            desc: 'Satellite',
                             selected: ko.observable(false),
                             params: 'satellite',
                         },
                         {
                             id: 'hyb',
-                            desc: 'Гибрид',
+                            desc: 'Hybrid',
                             selected: ko.observable(false),
                             params: 'hybrid',
                         },
                         {
                             id: 'land',
-                            desc: 'Ландшафт',
+                            desc: 'Terrain',
                             selected: ko.observable(false),
                             params: 'terrain',
                         },
@@ -104,37 +104,37 @@ define([
             if (P.settings.USE_YANDEX_API()) {
                 this.layers.push({
                     id: 'yandex',
-                    desc: 'Яндекс',
+                    desc: 'Yandex',
                     deps: 'leaflet-extends/L.Yandex',
                     selected: ko.observable(false),
                     types: ko.observableArray([
                         {
                             id: 'scheme',
-                            desc: 'Схема',
+                            desc: 'Scheme',
                             selected: ko.observable(false),
                             params: 'map',
                         },
                         {
                             id: 'sat',
-                            desc: 'Спутник',
+                            desc: 'Satellite',
                             selected: ko.observable(false),
                             params: 'satellite',
                         },
                         {
                             id: 'hyb',
-                            desc: 'Гибрид',
+                            desc: 'Hybrid',
                             selected: ko.observable(false),
                             params: 'hybrid',
                         },
                         {
                             id: 'pub',
-                            desc: 'Народная',
+                            desc: 'Public',
                             selected: ko.observable(false),
                             params: 'publicMap',
                         },
                         {
                             id: 'pubhyb',
-                            desc: 'Народный гибрид',
+                            desc: 'Public hybrid',
                             selected: ko.observable(false),
                             params: 'publicMapHybrid',
                         },
@@ -285,10 +285,9 @@ define([
             const _this = this;
 
             noties.confirm({
-                message: 'Новые параметры кластера посчитаны для всех ' + arr.length + ' уровней зума. <br>' +
-                'Отправить данные на сервер для формирования новой кластерной сетки всех фотографий?<br>' +
-                'Это может занять несколько минут',
-                okText: 'Да',
+                message: 'New cluster parameters is calculated for all ' + arr.length + ' zooms. <br> ' +
+                'Send data to server for forming new cluster grid for all photos? <br> It may takes several minutes',
+                okText: 'Yes',
                 okClass: 'btn-warning',
                 onOk: function (confirmer) {
                     confirmer.disable();
@@ -296,7 +295,7 @@ define([
                     socket.run('cluster.recalcAll', { params: arr, conditions: _this.saveParams }, true)
                         .then(function () {
                             if (confirmer) {
-                                confirmer.success('Новая кластерная сетка сформированна', 'Ok', null, function () {
+                                confirmer.success('New cluster grid is complete', 'Ok', null, function () {
                                     _this.finish();
                                 });
                             }
@@ -310,9 +309,9 @@ define([
                         });
 
                     confirmer.success(
-                        'Данные отправлены на сервер для пересчета.<br>' +
-                        'Вы можете закрыть этот диалог - данные расчитываются на сервере.<br>' +
-                        'Диалог обновится при получении результата расчета с сервера', 'Закрыть', null, function () {
+                        'Data has been sent to server for calculation.<br>' +
+                        'You may close this dialog - grid is being calculated on server-side.<br>' +
+                        'This dialog will be updated after receiving result from server', 'Close', null, function () {
                             confirmer = null;
                             _this.finish();
                         });

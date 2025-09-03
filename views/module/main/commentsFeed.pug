@@ -1,7 +1,7 @@
 .commentsFeed(data-bind="with: repository[M!M]")
     //-a.help(href="http://start.planeta.ru/campaigns/1694", target="_blank", title="Узнайте как помочь проекту")
         img.img-responsive.helpimg(data-bind="attr: {src: '/img/misc/fund2/bn_right_' + _.random(1,4) + '.jpg'}", alt="Помогите PastVu")
-    .ribbonHead.lineBehind: span Новые комментарии
+    .ribbonHead.lineBehind: span New comments
     .commentsBody
 
     | <script id="cfeeddot" type="text/doT">
@@ -10,7 +10,7 @@
         a.photoName(href="{{=p.link}}") {{=p.title}}
         .cRegions
             | {{?p.rs}}{{~p.rs :r:rindex}}{{?rindex}}, {{?}}
-            a(class="shortRegion{{?r.cid===0}} where{{?}}", href="{{='/ps?f=' + (r.cid===0 ? 'geo!0'+(p.rs[rindex+1] ? '_r!'+p.rs[rindex+1].cid : '') : 'r!'+r.cid)}}") {{=r.title_local}}
+            a(class="shortRegion{{?r.cid===0}} where{{?}}", href="{{='/ps?f=' + (r.cid===0 ? 'geo!0'+(p.rs[rindex+1] ? '_r!'+p.rs[rindex+1].cid : '') : 'r!'+r.cid)}}") {{=r.title_en}}
             | {{~}}{{?}}
         a.imgLoad(href="{{=p.link}}"): img.img(src="{{=p.sfile}}", onload="G.imgLoadOk(this)", onerror="G.imgLoadFail(this)")
         div

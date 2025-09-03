@@ -1,13 +1,13 @@
 .adminRegionCheck(data-bind="with: repository[M!M]")
-    h4 Поиск регионов по точке
+    h4 Regions search by point coordinates
     .topinfo
-        span.infotxt Кликните на карту или введите координаты через запятую:
+        span.infotxt Click on the map or enter the coordinates separated by commas:
         .inputGeoWrap
             .input-group
-                input.form-control.input-sm.inputGeo(type="text", data-bind="event: {keyup: inputEnter}", placeholder="Широта, долгота")
+                input.form-control.input-sm.inputGeo(type="text", data-bind="event: {keyup: inputEnter}", placeholder="Latitude, Longitude")
                 span.input-group-addon(data-bind="click: inputGeo")
                     span.glyphicon.glyphicon-screenshot
         .extlnk
-            span.infotxt Ссылка на отображаемую точку:
+            span.infotxt Link to the point:
             input.form-control.input-sm.inputLink(type="text", onclick="this.select();", readonly, data-bind="value: location.host + location.pathname + link()")
     .map(data-bind="style: {height: mh()}")

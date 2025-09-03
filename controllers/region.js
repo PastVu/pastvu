@@ -462,7 +462,7 @@ export const genObjsShortRegionsArr = function (objs, showlvls = ['r0', 'r1'], d
     }
 
     if (Object.keys(shortRegionsHash).length) {
-        fillRegionsHash(shortRegionsHash, ['cid', 'title_local']);
+        fillRegionsHash(shortRegionsHash, ['cid', 'title_en']);
     } else {
         shortRegionsHash = undefined;
     }
@@ -1390,7 +1390,7 @@ async function give(data) {
         children = [];
 
         for (const cid of childrenCids) {
-            const { cdate, udate, title_local: title, childLen } = regionCacheHash[cid];
+            const { cdate, udate, title_en: title, childLen } = regionCacheHash[cid];
 
             children.push({ cid, cdate, udate, title, childLen, childrenCount: _.size(regionsChildrenArrHash[cid]) || undefined });
         }

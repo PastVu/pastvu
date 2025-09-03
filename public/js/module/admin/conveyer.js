@@ -380,7 +380,7 @@ define([
                             },
                             series: [
                                 {
-                                    name: 'Фотографий в очереди',
+                                    name: 'Photos in the queue',
                                     data: self.conveyerLengthData,
                                     tooltip: {
                                         valueDecimals: 0,
@@ -394,7 +394,7 @@ define([
                             },
                             series: [
                                 {
-                                    name: 'Фотографий конвертированно',
+                                    name: 'Converted photos',
                                     data: self.conveyerConvertData,
                                     tooltip: {
                                         valueDecimals: 0,
@@ -434,7 +434,7 @@ define([
             this.exe(true);
 
             noties.confirm({
-                message: 'Конвейер будет очищен. Подтвердить операцию?',
+                message: 'The conveyor will be cleared.<br>Confirm the operation?',
                 onOk: function (confirmer) {
                     confirmer.disable();
 

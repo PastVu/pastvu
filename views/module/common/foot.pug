@@ -1,10 +1,10 @@
 .foot.fringe(data-bind="with: repository[M!M]")
     .rightSide.hide-text
         a.footElem.strokeAfter(href="mailto:support@pastvu.com", target="_blank", onclick="ga('send', 'event', 'support', 'click', 'support click common');")
-            | Поддержка: support@pastvu.com
-        a.footElem.strokeAfter(data-bind="attr: {href: getRulesUrl()}", target="_blank", onclick="ga('send', 'event', 'rules', 'click', 'rules click common');")
-            | Правила
-        .footElem.strokeAfter(data-bind="click: navigateAbout") О проекте
+            | Support: support@pastvu.com
+        a.footElem.strokeAfter(data-bind="attr: {href: getRulesUrl()}", target="_blank", onclick="ga('send', 'event', 'rules', 'click', 'rules click common');    ")
+            | Rules
+        .footElem.strokeAfter(data-bind="click: navigateAbout") About
         a.footElem.strokeAfter(href="https://github.com/PastVu", target="_blank", onclick="ga('send', 'event', 'github', 'click', 'go to github');")
             span.github
             | &nbsp;GitHub

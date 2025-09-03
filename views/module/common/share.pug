@@ -1,6 +1,6 @@
 .share(data-bind="with: repository[M!M]")
     .shareBlock
-        .shareName Разместить в социальных сетях
+        .shareName Share in social networks
         .socials
             //ko foreach: {data:socials, as: 'social'}
             .social(data-bind="click: social.action, style: {backgroundImage: 'url(\"'+ social.icon + '\")'}, attr: {title: social.name}")
@@ -8,18 +8,18 @@
     //ko if: options.linkPage
     hr
     .shareBlock
-        .shareName Ссылка на страницу
+        .shareName Link to this page
         .inputWrap
             .input-group(data-bind="style: {width: (location.host+options.linkPage).length * 7 + 30 + 'px'}")
                 input.form-control.inputLink(type="url", readonly, data-bind="click: linkClick, value: location.host + options.linkPage", autocorrect="off", autocapitalize="off")
-                .input-group-addon.form-control.copy(title="Скопировать адрес в буфер обмена" data-bind="click: copyClick")
+                .input-group-addon.form-control.copy(title="Copy link to clipboard" data-bind="click: copyClick")
     // /ko
     //ko if: options.linkObject
     hr
     .shareBlock
-        .shareName Ссылка на изображение
+        .shareName Link to image
         .inputWrap
             .input-group(data-bind="style: {width: (location.host+options.linkObject).length * 7 + 'px'}")
                 input.form-control.inputLink(type="url", readonly, data-bind="click: linkClick, value: location.host + options.linkObject", autocorrect="off", autocapitalize="off")
-                .input-group-addon.form-control.copy(title="Скопировать адрес в буфер обмена" data-bind="click: copyClick")
+                .input-group-addon.form-control.copy(title="Copy link to clipboard" data-bind="click: copyClick")
     // /ko

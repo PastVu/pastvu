@@ -28,7 +28,7 @@ jobs:
 
       - name: version
         run: |
-          npm version --no-git-tag-version $(node -p "require('./package.json').version")-${GITHUB_SHA::8}
+          npm version --no-git-tag-version $(node -p "require('./package.json').version")-en-${GITHUB_SHA::8}
 
       - name: Install dependencies
         run: npm ci
@@ -58,7 +58,7 @@ jobs:
         id: docker_meta_backend
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/pastvu/backend/ru
+          images: ${{ env.REGISTRY }}/pastvu/backend/en
 
       - name: Build and push backend
         id: docker_build_backend
@@ -76,7 +76,7 @@ jobs:
         id: docker_meta_frontend
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/pastvu/frontend/ru
+          images: ${{ env.REGISTRY }}/pastvu/frontend/en
 
       - name: Build and push frontend
         id: docker_build_frontend

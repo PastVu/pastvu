@@ -9,34 +9,34 @@ mixin noticeLi(arr, path, isPhoto)
             div(style="margin-left: 13px;")
                 = val.briefFormat.newest
                 if val.briefFormat.unread
-                    = ' (всего ' + val.briefFormat.unread + ')'
+                    = ' (' + val.briefFormat.unread + ' total)'
             if usersLogin.length > 1
                 div(style="margin-left: 13px; margin-bottom: 4px;")
-                    | Авторы:
+                    | Authors:
                     each login, index in usersLogin
                         if (index < 6)
                             if (index > 0)
                                 | ,
                             = ' ' + val.brief.users[login]
                     if usersLogin.length > 6
-                        = ' и др.'
+                        = ' et al.'
             if usersLogin.length === 1
                 div(style="margin-left: 13px; margin-bottom: 4px;")
-                    | Автор: #{val.brief.users[usersLogin[0]]}
+                    | Author: #{val.brief.users[usersLogin[0]]}
 
 include head
 - var origin = config.client.origin
-p На момент отправки данного уведомления в темах, на которые вы подписаны, было добавлено следующее количество комментариев:
+p At the time of sending this notice the following number of comments was added to topics, which you have subscribed:
 if news.length
     p(style="margin-bottom: 2px;")
-        strong Новости:
+        strong News:
     +noticeLi(news, '/news/', false)
 if photos.length
     p(style="margin-bottom: 2px;")
-        strong Фотографии:
+        strong Photos:
     +noticeLi(photos, '/p/', true)
 div(style="border-top: 1px solid #eee; border-bottom: 1px solid #fff; margin-top: 1em;")
     p(style="font-size: smaller; margin-top: 0.5em;")
-        | Управлять материалами, на которые вы подписаны, можно на странице подписок: <a href='#{origin + '/u/' + user.login + '/subscriptions'}' target='_blank'>#{config.client.host + '/u/' + user.login + '/subscriptions'}</a>
+        | You can manage your subscriptions on subscriptions page: <a href='#{origin + '/u/' + user.login + '/subscriptions'}' target='_blank'>#{config.client.host + '/u/' + user.login + '/subscriptions'}</a>
         br
-        | Задать интервал уведомлений или отключить их вы можете на странице настроек: <a href='#{origin + '/u/' + user.login + '/settings'}' target='_blank'>#{config.client.host + '/u/' + user.login + '/settings'}</a>
+        | You can set notification interval or disable notifications on the settings page: <a href='#{origin + '/u/' + user.login + '/settings'}' target='_blank'>#{config.client.host + '/u/' + user.login + '/settings'}</a>

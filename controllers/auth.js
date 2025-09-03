@@ -165,7 +165,7 @@ async function register({ login, email, pass, pass2 }) {
             sender: 'noreply',
             receiver: { alias: login, email },
             bcc: config.admin.email,
-            subject: 'Подтверждение регистрации',
+            subject: 'Registration Confirmation',
             head: true,
             body: regTpl({
                 email,
@@ -173,10 +173,10 @@ async function register({ login, email, pass, pass2 }) {
                 config,
                 confirmKey,
                 username: login,
-                greeting: 'Спасибо за регистрацию на проекте PastVu!',
-                linkvalid: `${human2d} (до ${moment.utc().add(ms2d).format('LLL')})`,
+                greeting: 'Thank you for the registering on PastVu!',
+                linkvalid: `${human2d} (till ${moment.utc().add(ms2d).format('LLL')})`,
             }),
-            text: `Перейдите по следующей ссылке: ${config.client.origin}/confirm/${confirmKey}`,
+            text: `Click the following link: ${config.client.origin}/confirm/${confirmKey}`,
         });
     } catch (err) {
         await User.deleteOne({ login }).exec();
@@ -186,8 +186,8 @@ async function register({ login, email, pass, pass2 }) {
     }
 
     return {
-        message: 'Учетная запись создана успешно. Для завершения регистрации следуйте инструкциям, ' +
-        'отправленным на указанный вами e-mail',
+        message: 'Account has been successfully created. To confirm registration, ' +
+        'follow the instructions sent to Your e-mail',
     };
 }
 
@@ -221,19 +221,19 @@ async function recall({ login }) {
     sendMail({
         sender: 'noreply',
         receiver: { alias: user.login, email: user.email },
-        subject: 'Запрос на восстановление пароля',
+        subject: 'Password recovery request',
         head: true,
         body: recallTpl({
             config,
             confirmKey,
             username: user.disp,
-            linkvalid: `${human2d} (до ${moment.utc().add(ms2d).format('LLL')})`,
+            linkvalid: `${human2d} (till ${moment.utc().add(ms2d).format('LLL')})`,
         }),
-        text: `Перейдите по следующей ссылке: ${config.client.origin}/confirm/${confirmKey}`,
+        text: `Click the following link: ${config.client.origin}/confirm/${confirmKey}`,
     });
 
     return {
-        message: 'Запрос успешно отправлен. Для продолжения процедуры следуйте инструкциям, высланным на Ваш e-mail',
+        message: 'The data has been successfully sent. To restore the password, follow the instructions sent to Your e-mail',
     };
 }
 
@@ -274,7 +274,7 @@ async function passChangeRecall({ key, pass, pass2 }) {
 
     await Promise.all([user.save(), confirm.deleteOne()]);
 
-    return { message: 'Новый пароль сохранен успешно' };
+    return { message: 'New password has been saved successfully' };
 }
 
 // Password changing in user's settings page with entering current password
@@ -302,7 +302,7 @@ async function passChange({ login, pass, passNew, passNew2 }) {
     iAm.user.pass = passNew;
     await iAm.user.save();
 
-    return { message: 'Новый пароль установлен успешно' };
+    return { message: 'Password has been changed successfully' };
 }
 
 // Check confirm key
@@ -325,7 +325,7 @@ async function checkConfirm({ key }) {
         await Promise.all([user.save(), confirm.deleteOne()]);
 
         return {
-            message: 'Спасибо, регистрация подтверждена! Теперь вы можете войти в систему, используя ваш логин и пароль',
+            message: 'Thank you! Your registration is confirmed. Now you can log in using your username and password',
             type: 'noty',
         };
     }

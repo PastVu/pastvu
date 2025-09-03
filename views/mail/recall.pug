@@ -1,12 +1,12 @@
 include head
 p
-    | Для Вашей учетной записи был создан запрос на восстановление пароля на проекте PastVu.
+    | Password recovery request was created for your PastVu account.
     br
-    | Если Вы не производили таких действий на нашем сайте, то просто проигнорируйте и удалите письмо.
+    | If you didn't request it, just ignore this email.
 p
-    | Для ввода нового пароля перейдите по следующей ссылке:
+    | Click on the following link to enter a new password:
     br
     a(href=config.client.origin + '/confirm/' + confirmKey, target='_blank')
         = config.client.host + '/confirm/' + confirmKey
     br
-    small Ссылка действительна #{linkvalid}, по истечении которых Вам будет необходимо запрашивать смену пароля повторно
+    small The link is valid for #{linkvalid}, after which you will need to request a password change again
