@@ -9,13 +9,19 @@
 		.form-group(data-bind="style: {display: canBeEdit() ||  u.firstName().length || u.lastName().length > 0 ? '' : 'none'}")
 			label.col-sm-3.col-md-2.control-label(for="inName") Реальное имя
 			.col-sm-3.col-md-2
-				input.form-control(type="text", id="inName", data-bind="attr: {size: u.firstName().length, disabled: !editMode(), placeholder: !editMode() ? '' : 'Имя'}, value: u.firstName, valueUpdate: 'afterkeydown'")
+				input.form-control(type="text", id="inName", data-bind="attr: {size: u.firstName().length, disabled: !editMode(), placeholder: !editMode() ? '' : 'Имя'}, style: {display: editMode() ? '' : 'none'}, value: u.firstName, valueUpdate: 'afterkeydown'")
+				.text-field-wrapper(data-bind="style: {display: !editMode() ? '' : 'none'}")
+					.text-value(data-bind="text: u.firstName")
 			.col-sm-3.col-md-2
-				input.form-control(type="text", id="inLastName", data-bind="attr: {disabled: !editMode(), placeholder: !editMode() ? '': 'Фамилия'}, value: u.lastName, valueUpdate: 'afterkeydown'")
+				input.form-control(type="text", id="inLastName", data-bind="attr: {disabled: !editMode(), placeholder: !editMode() ? '': 'Фамилия'}, style: {display: editMode() ? '' : 'none'}, value: u.lastName, valueUpdate: 'afterkeydown'")
+				.text-field-wrapper(data-bind="style: {display: !editMode() ? '' : 'none'}")
+					.text-value(data-bind="text: u.lastName")
 		.form-group(data-bind="style: {display: canBeEdit() ||  u.birthdate().length ? '' : 'none'}")
 			label.col-sm-3.col-md-2.control-label(for="inBirthdate") Дата рождения
 			.col-sm-3.col-md-2
-				input#inBirthdate.form-control(type="text", data-bind="attr: {disabled: !editMode()}, value: u.birthdate, valueUpdate: 'keyup'")
+				input#inBirthdate.form-control(type="text", data-bind="attr: {disabled: !editMode()}, style: {display: editMode() ? '' : 'none'}, value: u.birthdate, valueUpdate: 'keyup'")
+				.text-field-wrapper(data-bind="style: {display: !editMode() ? '' : 'none'}")
+					.text-value(data-bind="text: u.birthdate")
 		.form-group(data-bind="style: {display: canBeEdit() ||  u.sex().length > 0 ? '' : 'none'}")
 			label.col-sm-3.col-md-2.control-label(for="inSex2") Пол
 			.col-sm-4.col-md-3
@@ -33,21 +39,31 @@
 		.form-group(data-bind="style: {display: canBeEdit() ||  u.country().length || u.city().length > 0 ? '' : 'none'}")
 			label.col-sm-3.col-md-2.control-label(for="inResidence") Откуда
 			.col-sm-3.col-md-2
-				input.form-control(type="text", id='inResidence', data-bind="attr: {disabled: !editMode(), placeholder: !editMode() ? '': 'Страна'}, size: u.country().length, value: u.country, valueUpdate: 'afterkeydown'")
+				input.form-control(type="text", id='inResidence', data-bind="attr: {disabled: !editMode(), placeholder: !editMode() ? '': 'Страна'}, style: {display: editMode() ? '' : 'none'}, size: u.country().length, value: u.country, valueUpdate: 'afterkeydown'")
+				.text-field-wrapper(data-bind="style: {display: !editMode() ? '' : 'none'}")
+					.text-value(data-bind="text: u.country")
 			.col-sm-3.col-md-2
-				input.form-control(type="text", id="inResidence2", data-bind="attr: {disabled: !editMode(), placeholder: !editMode() ? '': 'Город'}, value: u.city, valueUpdate: 'afterkeydown'")
+				input.form-control(type="text", id="inResidence2", data-bind="attr: {disabled: !editMode(), placeholder: !editMode() ? '': 'Город'}, style: {display: editMode() ? '' : 'none'}, value: u.city, valueUpdate: 'afterkeydown'")
+				.text-field-wrapper(data-bind="style: {display: !editMode() ? '' : 'none'}")
+					.text-value(data-bind="text: u.city")
 		.form-group(data-bind="style: {display: canBeEdit() ||  u.work().length > 0 ? '' : 'none'}")
 			label.col-sm-3.col-md-2.control-label(for="inInterested") Деятельность
 			.col-sm-3.col-md-2
-				input.form-control(type="text", id='inInterested', data-bind="attr: {disabled: !editMode()}, value: u.work, valueUpdate: 'afterkeydown'")
+				input.form-control(type="text", id='inInterested', data-bind="attr: {disabled: !editMode()}, style: {display: editMode() ? '' : 'none'}, value: u.work, valueUpdate: 'afterkeydown'")
+				.text-field-wrapper(data-bind="style: {display: !editMode() ? '' : 'none'}")
+					.text-value(data-bind="text: u.work")
 		.form-group(data-bind="style: {display: canBeEdit() ||  u.www().length > 0 ? '' : 'none'}")
 			label.col-sm-3.col-md-2.control-label(for="inWebsite") Веб-сайт
 			.col-sm-3.col-md-2
-				input.form-control(type="text", id='inWebsite', data-bind="attr: {disabled: !editMode()}, value: u.www, valueUpdate: 'afterkeydown'")
+				input.form-control(type="text", id='inWebsite', data-bind="attr: {disabled: !editMode()}, style: {display: editMode() ? '' : 'none'}, value: u.www, valueUpdate: 'afterkeydown'")
+				.text-field-wrapper(data-bind="style: {display: !editMode() ? '' : 'none'}")
+					.text-value(data-bind="text: u.www")
 		.form-group(data-bind="style: {display: canBeEdit() ||  u.aboutme().length > 0 ? '' : 'none'}")
 			label.col-sm-3.col-md-2.control-label(for="inaboutme") Обо мне
 			.col-sm-7.col-md-8
-				textarea.form-control(rows="4", id='inaboutme', data-bind="attr: {disabled: !editMode()}, value: u.aboutme, valueUpdate: 'afterkeydown'")
+				textarea.form-control(rows="4", id='inaboutme', data-bind="attr: {disabled: !editMode()}, style: {display: editMode() ? '' : 'none'}, value: u.aboutme, valueUpdate: 'afterkeydown'")
+				.textarea-wrapper(data-bind="style: {display: !editMode() ? '' : 'none'}")
+					.text-value-multiline(data-bind="text: u.aboutme")
 		.form-group(data-bind="style: {display: canBeEdit() ? '' : 'none'}")
 			.col-sm-12
 				button.btn.btn-primary(type="button", data-bind="css: {'btn-success': editMode()}, event: {click: function(data, event) { if (!data.editMode()){data.edit(true)} else{data.saveUser()}}}")
@@ -56,3 +72,4 @@
 				button.btn.btn-danger(type="button", data-bind="style: {display: editMode() ? '' : 'none'}, event: {click: function(data, event) { if (data.editMode()) {data.cancelUser()}}}")
 					span.glyphicon.glyphicon-remove
 					|  Отмена
+					
