@@ -1642,7 +1642,7 @@ async function setNoComments({ cid, type = 'photo', val: nocomments }) {
 }
 
 export async function changeObjCommentsStatus({ obj: { _id: objId, s } }) {
-    const { n: count = 0 } = await Comment.updateMany({ obj: objId }, { $set: { s } }).exec();
+    const { matchedCount: count = 0 } = await Comment.updateMany({ obj: objId }, { $set: { s } }).exec();
 
     return count;
 }
@@ -1698,7 +1698,7 @@ export async function changeObjCommentsVisibility({ obj, hide }) {
 export async function changePhotoCommentsType({ photo: { _id: objId, type } }) {
     const command = { $set: { type } };
 
-    const { n: count = 0 } = await Comment.updateMany({ obj: objId }, command).exec();
+    const { matchedCount: count = 0 } = await Comment.updateMany({ obj: objId }, command).exec();
 
     return { count };
 }
