@@ -41,6 +41,7 @@ define([
 
             this.t = [];
             this.ccount = 1;
+            this.lcount = 75;
             this.year = statuses.years[statuses.type.PAINTING].min;
             this.year2 = statuses.years[statuses.type.PHOTO].max;
 
@@ -69,6 +70,9 @@ define([
                     s: ko.observableArray(),
                     c: ko.observableArray(),
                     ccount: ko.observable(this.ccount),
+                    l: ko.observableArray(),
+                    lcount: ko.observable(this.lcount),
+                    lf: ko.observableArray(), // limit for user is full
                     r: ko.observableArray(), // Array of selected regions
                     rdis: ko.observableArray(), // Array of cids of inactive regions
                     rs: ko.observableArray(), // Enable/disable subregions
@@ -243,6 +247,7 @@ define([
             this.subscriptions.filter_disp_y = this.filter.disp.year.subscribe(_.debounce(this.yearHandle, 800), this);
             this.subscriptions.filter_disp_y2 = this.filter.disp.year2.subscribe(_.debounce(this.year2Handle, 800), this);
             this.subscriptions.filter_disp_ccount = this.filter.disp.ccount.subscribe(_.debounce(this.ccountHandle, 800), this);
+            this.subscriptions.filter_disp_lcount = this.filter.disp.lcount.subscribe(_.debounce(this.lcountHandle, 800), this);
             this.subscriptions.filter_active = this.filter.active.subscribe(this.filterActiveChange, this);
             this.filterChangeHandleBlock = false;
 
@@ -392,6 +397,8 @@ define([
             let filterString = '';
             const t = this.filter.disp.t().map(Number).sort();
             const c = this.filter.disp.c().map(Number).sort();
+            const l = this.filter.disp.l().map(Number).sort();
+            const lf = this.filter.disp.lf().map(Number).sort();
             const r = this.filter.disp.r();
             const re = this.filter.disp.re();
             let s = this.filter.disp.s().map(Number);
@@ -399,6 +406,7 @@ define([
             const year = Number(this.filter.disp.year());
             const year2 = Number(this.filter.disp.year2());
             const ccount = Number(this.filter.disp.ccount());
+            const lcount = Number(this.filter.disp.lcount());
             const yearsRange = this.getTypeYearsRange();
             let i;
 
@@ -499,6 +507,24 @@ define([
                 if (_.includes(c, 1)) {
                     filterString += '!' + (ccount > 1 ? ccount : 1);
                 }
+            }
+
+            if (l.length && (_.isEqual(l, [0]) || lcount > 0)) {
+                this.lcount = lcount;
+
+                filterString += (filterString ? '_' : '') + 'l';
+
+                if (_.includes(l, 0)) {
+                    filterString += '!0';
+                }
+
+                if (_.includes(l, 1)) {
+                    filterString += '!' + (lcount > 1 ? lcount : 1);
+                }
+            }
+
+            if (lf.length && _.isEqual(lf, [1])) {
+                filterString += (filterString ? '_' : '') + 'lf!1';
             }
 
             return filterString;
@@ -1054,6 +1080,72 @@ define([
                     return true;
             }
         },
+        flclick: function (data, event) {
+            const currL = data.filter.disp.l();
+            const clicked = event.target.value;
+
+            if (currL.length === 2) {
+                data.filter.disp.l([clicked]);
+            }
+
+            this.filterChangeHandle(); //Вручную вызываем обработку фильтра
+
+            return true; //Возвращаем true, чтобы галка в браузере переключилась
+        },
+        lcountHandle: function (lcount) {
+            lcount = Number(lcount);
+
+            if (!lcount || lcount < 1) {
+                this.filter.disp.lcount('1');
+
+                return;
+            }
+
+            if (lcount > 9999) {
+                this.filter.disp.lcount('9999');
+
+                return;
+            }
+
+            if (_.includes(this.filter.disp.l(), '1') && lcount !== this.lcount) {
+                // Вручную вызываем обработку фильтра
+                this.filterChangeHandle();
+            }
+        },
+        lcountArrow: function (data, evt) {
+            let lcount = Number(this.filter.disp.lcount());
+
+            switch (evt.key) {
+                case 'ArrowUp':
+                    if (lcount < 9999) {
+                        lcount = lcount + 1;
+                        this.filter.disp.lcount(String(lcount));
+                    }
+
+                    break;
+                case 'ArrowDown':
+                    if (lcount > 1) {
+                        this.filter.disp.lcount(String(lcount - 1));
+                    }
+
+                    break;
+                default:
+                    return true;
+            }
+        },
+        flfclick: function (data, event) {
+            const checkedType = event.target.checked;
+
+            if (checkedType) {
+                data.filter.disp.lf(['1']);
+            } else {
+                data.filter.disp.lf(['0']);
+            }
+
+            this.filterChangeHandle(); //Вручную вызываем обработку фильтра
+
+            return true; //Возвращаем true, чтобы галка в браузере переключилась
+        },
         updateFilterUrl: function (filterString) {
             const uri = new Uri(location.pathname + location.search);
 
@@ -1299,6 +1391,27 @@ define([
                         }
 
                         this.filter.disp.c(c.map(String));
+
+                        let l;
+
+                        if (!_.isEmpty(data.filter.l)) {
+                            l = [];
+
+                            if (data.filter.l.max > 0) {
+                                l.push(1);
+                                this.lcount = data.filter.l.max;
+                                this.filter.disp.lcount(String(this.lcount));
+                            }
+
+                            this.filter.disp.l(l.map(String));
+                        }
+
+                        if (!data.filter.lf || !data.filter.lf.length) {
+                            data.filter.lf = [0];
+                        }
+
+                        this.lf = data.filter.lf.map(String);
+                        this.filter.disp.lf(this.lf.slice());
 
                         this.filterChangeHandleBlock = false;
                     }
