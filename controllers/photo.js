@@ -309,6 +309,12 @@ export function getNewPhotosLimit(user) {
     return Math.max(0, getUserPhotosLimitMax(user) - user.pfcount);
 }
 
+export function getNewPhotosLimitCss(user) {
+    const limit = getUserPhotosLimitMax(user);
+
+    return limit <= 10 ? 'photoLimit1' : limit <= 20 ? 'photoLimit2' : limit <= 75 ? 'photoLimit3' : '';
+}
+
 export function getUserPhotosLimitMax(user) {
     // return user photos limit
     /* needed fields:
@@ -316,31 +322,45 @@ export function getUserPhotosLimitMax(user) {
         user.ranks
         user.pcount
     */
-    let limit = 0;
-
     if (user.rules && _.isNumber(user.rules.photoNewLimit)) {
-        limit = Math.min(user.rules.photoNewLimit, maxNewPhotosLimit);
-    } else if (user.ranks && (user.ranks.includes('mec_silv') || user.ranks.includes('mec_gold'))) {
-        // Silver and Gold metsenats have the maximum possible limit
-        limit = maxNewPhotosLimit;
-    } else if (user.ranks && user.ranks.includes('mec')) {
-        // Metsenat has a limit of 150
-        limit = 150;
-    } else if (user.pcount < 15) {
-        limit = 10;
-    } else if (user.pcount < 25) {
-        limit = 15;
-    } else if (user.pcount < 50) {
-        limit = 20;
-    } else if (user.pcount < 200) {
-        limit = 50;
-    } else if (user.pcount < 1000) {
-        limit = 75;
-    } else if (user.pcount >= 1000) {
-        limit = 150;
+        return Math.min(user.rules.photoNewLimit, maxNewPhotosLimit);
     }
 
-    return limit;
+    // Silver and Gold metsenats have the maximum possible limit
+    if (user.ranks && (user.ranks.includes('mec_silv') || user.ranks.includes('mec_gold'))) {
+        return maxNewPhotosLimit;
+    }
+
+    // Metsenat has a limit of 150
+    if (user.ranks && user.ranks.includes('mec')) {
+        return 150;
+    }
+
+    if (user.pcount < 15) {
+        return 10;
+    }
+
+    if (user.pcount < 25) {
+        return 15;
+    }
+
+    if (user.pcount < 50) {
+        return 20;
+    }
+
+    if (user.pcount < 200) {
+        return 50;
+    }
+
+    if (user.pcount < 1000) {
+        return 75;
+    }
+
+    if (user.pcount >= 1000) {
+        return 150;
+    }
+
+    return 0;
 }
 
 /**
@@ -1518,7 +1538,7 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40, random = fa
                 Photo.countDocuments(countQuery).exec(),
             ]);
         } else if (iAm && iAm.registered && iAm.user.role >= 5 &&
-                    (!(filter.l === null) && filter.l && !filter.l.any || _.isEqual(filter.lf, [1]))) {
+                    (!(filter.l === null) && filter.l || _.isEqual(filter.lf, [1]))) {
             //aggregate вроде работает дольше по этому используем его только если необходимо
 
             let aggQuery = [
@@ -1550,7 +1570,7 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40, random = fa
                 ];
             }
 
-            if (!filter.l.any) {
+            if (filter.l) {
                 aggQuery = [
                     ...aggQuery,
                     { $match: { photosLimit: { $lt: Number(filter.l.max) } } },
@@ -1600,9 +1620,11 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40, random = fa
                 await this.call('photo.fillPhotosProtection', { photos, theyAreMine: itsMineGallery, setMyFlag: !userId });
 
                 for (const photo of photos) {
-                    if (iAm.user.role >= 5) {
+                    if (iAm.user.role >= 5 && photo.s <= 2) {
                         //set user limit for moderator view
-                        photo.userPhotoLimitMax = getUserPhotosLimitMax(photo.user_info ? photo.user_info[0] : photo.user);
+                        photo.userPhotoLimitCss = getNewPhotosLimitCss(photo.user_info ? photo.user_info[0] : photo.user);
+                    } else {
+                        photo.userPhotoLimitCss = '';
                     }
 
                     photo._id = undefined;
@@ -1876,16 +1898,13 @@ export function parseFilter(filterString) {
                 if (Array.isArray(filterVal) && filterVal.length === 1) {
                     filterVal = filterVal.map(Number).sort();
 
+                    // set l.max (max user limit) only if value l is choosen in link and between 1 and 9999
                     if (!_.isEqual(filterVal, [0])) {
                         const [l0] = filterVal;
                         const l = {};
                         let active = true;
 
-                        if (l0 === 0) {
-                            l.any = true;
-                            l.max = 10000;
-                        } else if (l0 > 0 && l0 < 1e5) {
-                            l.any = false;
+                        if (l0 > 0 && l0 < 1e5) {
                             l.max = l0;
                         } else {
                             active = false;
@@ -1897,7 +1916,6 @@ export function parseFilter(filterString) {
                     } else {
                         const l = {};
 
-                        l.any = true;
                         result.l = l;
                     }
                 }

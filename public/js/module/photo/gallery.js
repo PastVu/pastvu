@@ -1084,14 +1084,7 @@ define([
             const currL = data.filter.disp.l();
             const clicked = event.target.value;
 
-            if (!currL.length) {
-                //Должен быть выбран только один
-                if (clicked === '0') {
-                    data.filter.disp.l(['1']);
-                } else {
-                    data.filter.disp.l(['0']);
-                }
-            } else if (currL.length === 2) {
+            if (currL.length === 2) {
                 data.filter.disp.l([clicked]);
             }
 
@@ -1404,20 +1397,14 @@ define([
                         if (!_.isEmpty(data.filter.l)) {
                             l = [];
 
-                            if (data.filter.l.any) {
-                                l.push(0);
-                            } else if (data.filter.l.max > 0) {
+                            if (data.filter.l.max > 0) {
                                 l.push(1);
                                 this.lcount = data.filter.l.max;
                                 this.filter.disp.lcount(String(this.lcount));
                             }
-                        } else {
-                            l = ['0'];
-                            this.lcount = 75;
-                            this.filter.disp.lcount(String(this.lcount));
-                        }
 
-                        this.filter.disp.l(l.map(String));
+                            this.filter.disp.l(l.map(String));
+                        }
 
                         if (!data.filter.lf || !data.filter.lf.length) {
                             data.filter.lf = [0];
