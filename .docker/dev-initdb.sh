@@ -8,6 +8,6 @@ if ! command -v curl; then
     apt update -qq  && apt-get install -yqq curl
 fi
 echo "Downloading db dump..."
-curl --progress-bar -o /tmp/pastvu.gz https://varlamov.me/pastvu/github/pastvu.gz
+curl --progress-bar -o /tmp/pastvu.gz https://archive.varlamov.me/pastvu/github/pastvu.gz
 mongorestore --drop --gzip --db pastvu --archive=/tmp/pastvu.gz
 rm /tmp/pastvu.gz
