@@ -30,23 +30,35 @@
     }
 
     .shareName {
-        margin-bottom: 5px;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #555;
     }
 
     .socials {
-        display: inline-block;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 6px;
+        padding: 0 10px;
     }
 
-    .social {
-        display: inline-block;
-        width: 32px;
-        height: 32px;
-        margin: 0 5px 5px;
+    .socialBtn {
+        min-width: 100px;
+        padding: 6px 12px;
         cursor: pointer;
-        transition: opacity 0.4s;
-        background-position: 0 0;
-        background-size: 32px 32px;
-        background-repeat: no-repeat;
+        transition: all 0.2s;
+        border: 1px solid #ccc;
+        background-color: #fff;
+
+        &:hover {
+            background-color: #f5f5f5;
+            border-color: #adadad;
+        }
+
+        &:active {
+            background-color: #e0e0e0;
+        }
     }
 
     .inputWrap {
@@ -61,6 +73,7 @@
     .inputLink {
         text-align: center;
         cursor: pointer !important;
+        font-size: 13px;
     }
 
     .input-group-addon {
@@ -71,11 +84,47 @@
         }
     }
 
-    .copyOk {
-        position: absolute;
-        display: block;
-        top: 0;
-        right: 0;
+    .copyBtn {
+        padding: 6px 12px;
+        cursor: pointer;
+        border: 1px solid #ccc;
+        border-left: 0;
+        background-color: #f5f5f5;
+        font-size: 12px;
+
+        &:hover {
+            background-color: #e7e7e7;
+        }
+    }
+
+    .copyBtnBlock {
+        margin-top: 5px;
+        cursor: pointer;
+
+        &:hover {
+            background-color: #e7e7e7;
+        }
+    }
+
+    .qrCodeWrap {
+        padding: 10px 0;
+
+        .qrCode {
+            width: 128px;
+            height: 128px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    }
+
+    .htmlCodeArea {
+        width: 100%;
+        max-width: 500px;
+        font-family: monospace;
+        font-size: 12px;
+        resize: vertical;
+        cursor: pointer !important;
+        padding: 8px;
     }
 
     .copy {

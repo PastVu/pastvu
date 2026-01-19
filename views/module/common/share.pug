@@ -3,7 +3,7 @@
         .shareName Разместить в социальных сетях
         .socials
             //ko foreach: {data:socials, as: 'social'}
-            .social(data-bind="click: social.action, style: {backgroundImage: 'url(\"'+ social.icon + '\")'}, attr: {title: social.name}")
+            button.btn.btn-sm.btn-default.socialBtn(data-bind="click: social.action, text: social.name", type="button")
             // /ko
     //ko if: options.linkPage
     hr
@@ -12,14 +12,29 @@
         .inputWrap
             .input-group(data-bind="style: {width: (location.host+options.linkPage).length * 7 + 30 + 'px'}")
                 input.form-control.inputLink(type="url", readonly, data-bind="click: linkClick, value: location.host + options.linkPage", autocorrect="off", autocapitalize="off")
-                .input-group-addon.form-control.copy(title="Скопировать адрес в буфер обмена" data-bind="click: copyClick")
+                button.input-group-addon.form-control.copyBtn(type="button", title="Скопировать адрес в буфер обмена" data-bind="click: copyClick") Копировать
     // /ko
     //ko if: options.linkObject
     hr
     .shareBlock
         .shareName Ссылка на изображение
         .inputWrap
-            .input-group(data-bind="style: {width: (location.host+options.linkObject).length * 7 + 'px'}")
+            .input-group(data-bind="style: {width: (location.host+options.linkObject).length * 7 + 30 + 'px'}")
                 input.form-control.inputLink(type="url", readonly, data-bind="click: linkClick, value: location.host + options.linkObject", autocorrect="off", autocapitalize="off")
-                .input-group-addon.form-control.copy(title="Скопировать адрес в буфер обмена" data-bind="click: copyClick")
+                button.input-group-addon.form-control.copyBtn(type="button", title="Скопировать адрес в буфер обмена" data-bind="click: copyClick") Копировать
+    // /ko
+    //ko if: qrCodeDataUrl()
+    hr
+    .shareBlock
+        .shareName QR-код
+        .qrCodeWrap
+            img.qrCode(data-bind="attr: {src: qrCodeDataUrl}", alt="QR Code")
+    // /ko
+    //ko if: htmlCode()
+    hr
+    .shareBlock
+        .shareName HTML код для сайта/блога
+        .inputWrap
+            textarea.form-control.htmlCodeArea(readonly, data-bind="click: linkClick, text: htmlCode", rows="3", autocorrect="off", autocapitalize="off")
+            button.btn.btn-sm.btn-default.copyBtnBlock(type="button", title="Скопировать код в буфер обмена" data-bind="click: copyClick") Копировать
     // /ko
