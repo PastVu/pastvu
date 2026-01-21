@@ -17,8 +17,10 @@ services:
       - store:/store
     command: run app --primary
     depends_on:
-      - "mongo"
-      - "redis"
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
   worker:
     << : *app-image
@@ -72,6 +74,12 @@ services:
       - ./pastvu.gz:/pastvu.gz:ro
     ports:
       - "127.0.0.1:27017:27017"
+    healthcheck:
+      test: ["CMD", "mongo", "pastvu", "--eval", "db.init_complete.findOne({status: 'done'})"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 10s
 
   redis:
     image: redis:6.2.6
