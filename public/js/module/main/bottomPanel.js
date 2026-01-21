@@ -80,6 +80,8 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                 all: {
                     pallCount: 0,
                     ppubCount: 0,
+                    iallCount: 0,
+                    ipubCount: 0,
                     userCount: 0,
                     photoYear: {},
                     pdayCount: 0,
