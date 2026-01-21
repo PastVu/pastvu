@@ -75,7 +75,7 @@ services:
     ports:
       - "127.0.0.1:27017:27017"
     healthcheck:
-      test: ["CMD", "mongo", "pastvu", "--eval", "db.init_complete.findOne({status: 'done'})"]
+      test: ["CMD", "mongo", "pastvu", "--quiet", "--eval", "if (!db.init_complete.findOne({status: 'done'})) quit(1)"]
       interval: 5s
       timeout: 5s
       retries: 60
