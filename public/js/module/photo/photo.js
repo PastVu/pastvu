@@ -1119,9 +1119,6 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
                             animateScale: true,
                             curtainClick: { click: self.closeHistoryOrShare, ctx: self },
                             offIcon: { text: 'Close', click: self.closeHistoryOrShare, ctx: self },
-                            btns: [
-                                { css: 'btn-primary', text: 'Close', click: self.closeHistoryOrShare, ctx: self },
-                            ],
                         },
                         callback: function (vm) {
                             self.shareVM = self.childModules[vm.id] = vm;
