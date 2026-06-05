@@ -31,9 +31,9 @@ settingsReady.then(() => clientParamsJSON = JSON.stringify(clientParams));
 function genInitDataString(req) {
     const usObj = req.handshake.usObj;
     const cookieLang = req.cookie && req.cookie.past_lang;
-    const settingsJSON = config.locales.includes(cookieLang) && cookieLang !== clientParams.lang
-        ? JSON.stringify({ ...clientParams, lang: cookieLang })
-        : clientParamsJSON;
+    const settingsJSON = config.locales.includes(cookieLang) && cookieLang !== clientParams.lang ?
+        JSON.stringify({ ...clientParams, lang: cookieLang }) :
+        clientParamsJSON;
     let resultString = `var init={settings:${settingsJSON},` +
         `user:${JSON.stringify(session.getPlainUser(usObj.user))}`;
 
