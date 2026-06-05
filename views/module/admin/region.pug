@@ -1,55 +1,55 @@
 .adminRegion(data-bind="with: repository[M!M]")
     //ko if: createMode()
-    h4 Создание региона
+    h4(data-bind="text: $root.i18n('Создание региона')")
     // /ko
     form.form-horizontal(action='', autocomplete="off", data-bind="event: {submit: save}", style="overflow:hidden;")
         //ko if: !createMode()
         .form-group
-            label.col-xs-4.col-sm-3.col-lg-2.control-label Редактирование региона
+            label.col-xs-4.col-sm-3.col-lg-2.control-label(data-bind="text: $root.i18n('Редактирование региона')")
             .col-xs-8.col-sm-9.col-lg-10
                 p.form-control-static
-                    = 'Номер: '
+                    span(data-bind="text: $root.i18n('Номер:') + ' '")
                     strong(data-bind="text: region.cid()")
-                    = '; Уровень: '
+                    span(data-bind="text: '; ' + $root.i18n('Уровень:') + ' '")
                     strong(data-bind="text: (Number(haveParent()) ? region.parents().length + 1 : 1)")
-                    = '; Создан: '
+                    span(data-bind="text: '; ' + $root.i18n('Создан:') + ' '")
                     strong(data-bind="text: fDateIn(new Date(region.cdate()))")
                     //ko if: region.udate && region.cdate() !== region.udate()
-                    = '; Обновлен: '
+                    span(data-bind="text: '; ' + $root.i18n('Обновлен:') + ' '")
                     strong(data-bind="text: fDateIn(new Date(region.udate()))")
                     // /ko
         // /ko
         .form-group
-            label.col-xs-4.col-sm-3.col-lg-2.control-label Название
+            label.col-xs-4.col-sm-3.col-lg-2.control-label(data-bind="text: $root.i18n('Название')")
             .col-xs-2.col-sm-2
-                input.form-control(type='text', data-bind="value: region.title_en, valueUpdate: 'keyup'", placeholder="(EN) Английское", required="required", autocorrect="off", autocapitalize="off")
+                input.form-control(type='text', data-bind="value: region.title_en, valueUpdate: 'keyup', attr: {placeholder: $root.i18n('(EN) Английское')}", required="required", autocorrect="off", autocapitalize="off")
             .col-xs-2.col-sm-2
-                input.form-control(type='text', data-bind="value: region.title_local, valueUpdate: 'keyup'", placeholder="(RU) Русское", autocorrect="off", autocapitalize="off")
+                input.form-control(type='text', data-bind="value: region.title_local, valueUpdate: 'keyup', attr: {placeholder: $root.i18n('(RU) Русское')}", autocorrect="off", autocapitalize="off")
             //ko if: !createMode()
             .col-xs-2.col-sm-2(style="padding: 1px 0 0 4px;")
-                a.btn.btn-sm.btn-primary(type="button", title="Показать в дереве регионов", data-bind="attr: {href: '/admin/region?hl=' + region.cid()}")
+                a.btn.btn-sm.btn-primary(type="button", data-bind="attr: {href: '/admin/region?hl=' + region.cid(), title: $root.i18n('Показать в дереве регионов')}")
                     span.glyphicon.glyphicon-indent-left
-                a.btn.btn-sm.btn-primary(type="button", title="Перейти в галерею региона", data-bind="attr: {href: '/ps?f=r!' + region.cid()}")
+                a.btn.btn-sm.btn-primary(type="button", data-bind="attr: {href: '/ps?f=r!' + region.cid(), title: $root.i18n('Перейти в галерею региона')}")
                     span.glyphicon.glyphicon-th
             // /ko
         .form-group
-            label.col-xs-4.col-sm-3.col-lg-2.control-label Родительский регион
+            label.col-xs-4.col-sm-3.col-lg-2.control-label(data-bind="text: $root.i18n('Родительский регион')")
             .col-xs-6.col-sm-4
                 .row
                     .col-xs-8.col-sm-9.col-md-8.col-lg-6
                         label.radio-inline
                             input.thr(type="radio", id="parent_radios_0", name="parent_radios", value="0", data-bind="checked: haveParent")
-                            |  Отсутствует
+                            span(data-bind="text: ' ' + $root.i18n('Отсутствует')")
                         label.radio-inline
                             input.thr(type="radio", id="parent_radios_1", name="parent_radios", value="1", data-bind="checked: haveParent")
-                            |  Есть
+                            span(data-bind="text: ' ' + $root.i18n('Есть')")
                     //ko if: Number(haveParent())
                     .col-xs-4.col-sm-3.col-lg-3
-                        input.form-control(type='text', data-bind="value: parentCid, valueUpdate: 'keyup'", placeholder="Номер родительского региона", required="required", autocorrect="off", autocapitalize="off")
+                        input.form-control(type='text', data-bind="value: parentCid, valueUpdate: 'keyup', attr: {placeholder: $root.i18n('Номер родительского региона')}", required="required", autocorrect="off", autocapitalize="off")
                     // /ko
         //ko if: region.parents().length || childLenArr().length
         .form-group
-            label.col-xs-4.col-sm-3.col-lg-2.control-label Путь региона
+            label.col-xs-4.col-sm-3.col-lg-2.control-label(data-bind="text: $root.i18n('Путь региона')")
             .col-xs-8.col-sm-9.col-lg-10
                 p.form-control-static.path
                     //ko foreach: region.parents
@@ -59,7 +59,7 @@
                     | &nbsp;
                     // /ko
                     //ko if: !createMode()
-                    span.current(title="Текущий регион", data-bind="text: ' ' + region.title_local()")
+                    span.current(data-bind="text: ' ' + region.title_local(), attr: {title: $root.i18n('Текущий регион')}")
                     // /ko
                     //ko foreach: childLenArr
                     | &nbsp;
@@ -69,12 +69,12 @@
         // /ko
         //ko if: !createMode() && region.parents().length < maxRegionLevel
         .form-group
-            label.col-xs-4.col-sm-3.col-lg-2.control-label Прямые потомки
+            label.col-xs-4.col-sm-3.col-lg-2.control-label(data-bind="text: $root.i18n('Прямые потомки')")
             .col-xs-8.col-sm-9.col-lg-10(style="padding-top: 2px")
                 span.children(data-bind="css: {more: childrenExpand() === 1, expanded: childrenExpand() === 2}")
-                    a(data-bind="attr: {href: '/admin/region/create?parent=' + region.cid()}", title="Добавить дочерний регион") [+1]
+                    a(data-bind="attr: {href: '/admin/region/create?parent=' + region.cid(), title: $root.i18n('Добавить дочерний регион')}") [+1]
                     //ko if: auth.iAm.login() === 'klimashkin'
-                    a(data-bind="click: addFeatures", href="javascript:void(0);", title="Добавить дочерние через FeatureCollection") [+FC]
+                    a(href="javascript:void(0);", data-bind="click: addFeatures, attr: {title: $root.i18n('Добавить дочерние через FeatureCollection')}") [+FC]
                     // /ko
                     //ko if: children().length
                     = ' | '
@@ -85,10 +85,10 @@
                             a(data-bind="attr: {href: '/admin/region/' + $data.cid}, css: {'noPhotos': !$data.phc && !$data.pac && !$data.cc}")
                                 span(data-bind="text: $data.title")
                                 //ko if: $data.childrenCount
-                                span(data-bind="text: ' +' + $data.childrenCount", style="color:#5b6d82;font-size:10px;", title="Кол-во прямых потомков")
+                                span(style="color:#5b6d82;font-size:10px;", data-bind="text: ' +' + $data.childrenCount, attr: {title: $root.i18n('Кол-во прямых потомков')}")
                                 // /ko
                                 //ko if: $data.childLen && $data.childrenCount !== $data.childLen
-                                span(data-bind="text: '(' + $data.childLen + ')'", style="color:#5b6d82;font-size:10px;", title="Кол-во всех потомков")
+                                span(style="color:#5b6d82;font-size:10px;", data-bind="text: '(' + $data.childLen + ')', attr: {title: $root.i18n('Кол-во всех потомков')}")
                                 // /ko
                             | <!--ko if: $index() < $parent.children().length - 1 -->,<!-- /ko -->
                             .tltp.tltp-top.tltp-animate-opacity.rytltp
@@ -128,48 +128,48 @@
                     | <!--ko if: childrenExpand() === 1-->, <!-- /ko -->
                     span.expand(data-bind="click: childrenExpandToggle")
                         span.glyphicon(data-bind="css: {'glyphicon-chevron-right': childrenExpand() === 1, 'glyphicon-chevron-up': childrenExpand() === 2}")
-                        span(data-bind="text: childrenExpand() === 1 ? 'Еще' : 'Свернуть'")
+                        span(data-bind="text: $root.i18n(childrenExpand() === 1 ? 'Еще' : 'Свернуть')")
                     // /ko
         // /ko
         //ko if: !createMode() && showGeo()
         .form-group
-            label.col-xs-4.col-sm-3.col-lg-2.control-label Геометрия
+            label.col-xs-4.col-sm-3.col-lg-2.control-label(data-bind="text: $root.i18n('Геометрия')")
             .col-xs-8.col-sm-9.col-lg-10
                 p.form-control-static
-                    | Полигонов:
+                    span(data-bind="text: $root.i18n('Полигонов:')")
                     strong(data-bind="text: ' ' + $root.intl.num(region.polynum.exterior())")
                     //ko if: region.polynum.interior()
                     |  (+
                     strong(data-bind="text: $root.intl.num(region.polynum.interior())")
-                    |  выколотых)
+                    span(data-bind="text: ' ' + $root.i18n('выколотых') + ')'")
                     // /ko
-                    | ; Вершин:
+                    span(data-bind="text: '; ' + $root.i18n('Вершин:')")
                     strong(data-bind="text: ' ' + ($root.intl.num(region.pointsnum() - region.polynum.exterior() - region.polynum.interior()))")
         // /ko
         //ko if: createMode() || showGeo()
         .form-group
-            label.col-xs-4.col-sm-3.col-lg-2.control-label Доп. параметры
+            label.col-xs-4.col-sm-3.col-lg-2.control-label(data-bind="text: $root.i18n('Доп. параметры')")
             .col-xs-8.col-sm-9.col-lg-10(style="padding-top: 3px")
                 .dopparam
-                    abbr(title="Центральная точка региона в его домашнем положении") Центр
+                    abbr(data-bind="attr: {title: $root.i18n('Центральная точка региона в его домашнем положении')}, text: $root.i18n('Центр')")
                     | :
-                    input.form-control.input-sm.center(type="text", data-bind="centerInput: true, attr: {readonly: region.centerAuto(), placeholder: region.centerAuto() ? 'Пока не рассчитан' : 'Не задан'}, css: {invalid: !region.centerAuto() && !centerValid()}")
+                    input.form-control.input-sm.center(type="text", data-bind="centerInput: true, attr: {readonly: region.centerAuto(), placeholder: region.centerAuto() ? $root.i18n('Пока не рассчитан') : $root.i18n('Не задан')}, css: {invalid: !region.centerAuto() && !centerValid()}")
                     .btn-group.btn-group-sm
-                        button.btn.btn-primary.yes(type="button", data-bind="css: {active: region.centerAuto()}, click: centerAutoToggle") Авто
-                        button.btn.btn-primary.no(type="button", data-bind="css: {active: !region.centerAuto()}, click: centerAutoToggle") Вручную
+                        button.btn.btn-primary.yes(type="button", data-bind="css: {active: region.centerAuto()}, click: centerAutoToggle, text: $root.i18n('Авто')")
+                        button.btn.btn-primary.no(type="button", data-bind="css: {active: !region.centerAuto()}, click: centerAutoToggle, text: $root.i18n('Вручную')")
                 br
                 .dopparam
-                    abbr(title="Bounding box - прямоугольник, в который целиком вписан регион") Bbox
+                    abbr(data-bind="attr: {title: $root.i18n('Bounding box - прямоугольник, в который целиком вписан регион')}") Bbox
                     | :
-                    input.form-control.input-sm.bbox(type="text", readonly, data-bind="attr: {value: region.bbox() ? region.bbox().join(', ') : ''}", placeholder="Пока не рассчитан")
+                    input.form-control.input-sm.bbox(type="text", readonly, data-bind="attr: {value: region.bbox() ? region.bbox().join(', ') : '', placeholder: $root.i18n('Пока не рассчитан')}")
                 .dopparam
-                    abbr(title="Прямоугольник, который должен быть виден в домашнем положении карты для данного региона. Нужен для расчета масштаба") Bbox дом
+                    abbr(data-bind="attr: {title: $root.i18n('Прямоугольник, который должен быть виден в домашнем положении карты для данного региона. Нужен для расчета масштаба')}, text: $root.i18n('Bbox дом')")
                     | .:
                     .btn-group.btn-group-sm
-                        button.btn.btn-primary.yes(type="button", data-bind="css: {active: bboxAuto()}, click: bboxHomeToggle") Как bbox
-                        button.btn.btn-primary.no(type="button", data-bind="css: {active: !bboxAuto()}, click: bboxHomeToggle") Вручную
+                        button.btn.btn-primary.yes(type="button", data-bind="css: {active: bboxAuto()}, click: bboxHomeToggle, text: $root.i18n('Как bbox')")
+                        button.btn.btn-primary.no(type="button", data-bind="css: {active: !bboxAuto()}, click: bboxHomeToggle, text: $root.i18n('Вручную')")
                     //ko if: !bboxAuto()
-                    input.form-control.input-sm.bbox(type="text", data-bind="bboxhomeInput: true, attr: {readonly: bboxAuto()}, css: {invalid: !bboxAuto() && !bboxhomeValid()}", placeholder="Не задан")
+                    input.form-control.input-sm.bbox(type="text", data-bind="bboxhomeInput: true, attr: {readonly: bboxAuto(), placeholder: $root.i18n('Не задан')}, css: {invalid: !bboxAuto() && !bboxhomeValid()}")
                     // /ko
         .form-group
             label.col-xs-4.col-sm-3.col-lg-2.control-label GeoJSON
@@ -180,14 +180,14 @@
         .form-group.actions
             button.btn.btn-success(type="submit", data-bind="attr: {disabled: exe()}")
                 span.glyphicon.glyphicon-ok
-                |  Сохранить
+                span(data-bind="text: ' ' + $root.i18n('Сохранить')")
             button.btn.btn-danger(type="button", data-bind="click: remove, attr: {disabled: exe()}")
                 span.glyphicon.glyphicon-remove
-                |  Удалить
+                span(data-bind="text: ' ' + $root.i18n('Удалить')")
             //ko if: !createMode()
             button.btn.btn-primary(type="button", data-bind="click: toggleGeo, attr: {disabled: exe()}")
                 span.glyphicon.glyphicon-th-list
-                span(data-bind="text: showGeo() ? ' Скрыть геометрию' : ' Управление геометрией'")
+                span(data-bind="text: ' ' + $root.i18n(showGeo() ? 'Скрыть геометрию' : 'Управление геометрией')")
             // /ko
     .maprow
         .map(data-bind="style: {height: mh()}")
@@ -197,7 +197,7 @@
                 //ko if: photostat().all && paintstat().all
                 .stats-section.stats-photo
                     | <!--ko template: {name: 'photoStat', data: imagestat()}--><!-- /ko -->
-                    .toggleStatByType(data-bind="text: (imagesByType() ? 'Скрыть' : 'Показать') + ' статистику по типам изображений', click: toggleImagesStatType")
+                    .toggleStatByType(data-bind="text: $root.i18n(imagesByType() ? 'Скрыть статистику по типам изображений' : 'Показать статистику по типам изображений'), click: toggleImagesStatType")
                 // /ko
                 //ko if: photostat().all && (!paintstat().all || imagesByType())
                 .stats-section.stats-photo(data-bind="template: {name: 'photoStat', data: photostat()}")
@@ -208,15 +208,15 @@
                 .stats-section.stats-comment(data-bind="with: cstat()")
                     .stats-head
                         span.glyphicon.glyphicon-comment
-                        = " Комментариев: "
+                        span(data-bind="text: ' ' + $root.i18n('Комментариев:') + ' '")
                         span(data-bind="text: $root.intl.num(all)")
                     div(style="margin-top:3px;")
-                        b= "Активных: "
+                        b(data-bind="text: $root.i18n('Активных:') + ' '")
                         span(data-bind="text: $root.intl.num(all - del)")
                     div
-                        b= "Удаленных: "
+                        b(data-bind="text: $root.i18n('Удаленных:') + ' '")
                         span(data-bind="text: $root.intl.num(del)")
-                    b(style="display:block;margin-top:4px;") Активных по статусам изображений:
+                    b(style="display:block;margin-top:4px;", data-bind="text: $root.i18n('Активных по статусам изображений:')")
                     //ko foreach: statuses
                     | <!--ko if: $index-->, <!-- /ko -->
                     span(style="white-space:nowrap;")
@@ -225,7 +225,7 @@
                     // /ko
             button.btn.btn-primary(type="button", data-bind="click: recalcStats, attr: {disabled: exe()}")
                 span.glyphicon.glyphicon-refresh
-                span  Пересчитать статистику
+                span(data-bind="text: ' ' + $root.i18n('Пересчитать статистику')")
         // /ko
 
     | <script id="photoStat" type="text/html">
@@ -235,23 +235,23 @@
             span(style="margin-left: 5px", data-bind="text: title + ': '")
         .sc(data-bind="text: $data.alterAll || $root.intl.num($data.all)")
     a(style="display:block;margin-top:3px;", data-bind="attr: {href: linkprefix + '_geo!1_s!all'}")
-        .sn(style="font-weight:bold;")= "С координатами: "
+        .sn(style="font-weight:bold;", data-bind="text: $root.i18n('С координатами:') + ' '")
         .sc(data-bind="text: $root.intl.num(geo)")
     a(style="display:block;", data-bind="attr: {href: linkprefix + '_geo!0_s!all'}")
-        .sn(style="font-weight:bold;")= "Без координат: "
+        .sn(style="font-weight:bold;", data-bind="text: $root.i18n('Без координат:') + ' '")
         .sc(data-bind="text: $root.intl.num(all - geo)")
     //ko if: own && all !== own
     a(style="display:block;margin-top:4px;", data-bind="attr: {href: linkprefix + '_rs!0_s!all'}")
-        .sn(style="font-weight:bold;")= "Без дочерних регионов: "
+        .sn(style="font-weight:bold;", data-bind="text: $root.i18n('Без дочерних регионов:') + ' '")
         .sc(data-bind="text: $root.intl.num(own)")
     a(style="display:block;padding-left:26px;", data-bind="attr: {href: linkprefix + '_rs!0_geo!1_s!all'}")
-        .sn= "C координатами: "
+        .sn(data-bind="text: $root.i18n('С координатами:') + ' '")
         .sc(data-bind="text: $root.intl.num(owngeo)")
     a(style="display:block;padding-left:26px;", data-bind="attr: {href: linkprefix + '_rs!0_geo!0_s!all'}")
-        .sn= "Без координат: "
+        .sn(data-bind="text: $root.i18n('Без координат:') + ' '")
         .sc(data-bind="text: $root.intl.num(own - owngeo)")
     // /ko
-    b(style="display:block;margin-top:4px;") По статусам:
+    b(style="display:block;margin-top:4px;", data-bind="text: $root.i18n('По статусам:')")
     //ko foreach: statuses
     | <!--ko if: $index-->, <!-- /ko -->
     a(style="white-space:nowrap;", data-bind="attr: {href: $parent.linkprefix + '_s!' + $data.status }")

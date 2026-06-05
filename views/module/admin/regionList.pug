@@ -95,7 +95,7 @@
 
     | <script id="dateNode" type="text/html">
     li
-        .lirow.notRegion(data-bind="click: $parents[$data.level].collapseToggle, attr: {title: $root.i18n($data.opened() ? 'Раскрыть' : 'Закрыть')}")
+        .lirow.notRegion(data-bind="click: $parents[$data.level].collapseToggle, attr: {title: $root.i18n($data.opened() ? 'Раскрыть' : 'Свернуть')}")
             .chevron
                 span.glyphicon(data-bind="css: {'glyphicon-chevron-up': $data.opened(), 'glyphicon-chevron-down': !$data.opened()}")
             .name
