@@ -184,7 +184,10 @@ module.exports = function (grunt) {
 
                         grunt.log.write('appName: ' + name + '. ');
 
-                        return { appName: name, config: { env, hash }, pretty: false };
+                        // Build-time fallback for the i18n helper: this HTML is the
+                        // static fallback (e.g. nginx error_page); runtime renders
+                        // go through Express with a real t() from commons/i18n.
+                        return { appName: name, config: { env, hash }, pretty: false, t: s => s };
                     },
                 },
                 files: [
