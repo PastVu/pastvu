@@ -279,6 +279,7 @@ define(
                     hists: data.hists,
                     reasonsHash: reasonsHash,
                     fDate: Utils.format.date.relative,
+                    i18n: globalVM.i18n,
                 });
             },
             getHist: function (cb, ctx) {

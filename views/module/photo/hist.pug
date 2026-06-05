@@ -1,10 +1,10 @@
 .objHist(data-bind="with: repository[M!M]")
     // ko if: haveDiff()
-    .diffSwitch(data-bind="text: showDiff() ? 'Скрыть подсветку разницы значений' : 'Показать разницу значений', click: switchDiff")
+    .diffSwitch(data-bind="text: $root.i18n(showDiff() ? 'Скрыть подсветку разницы значений' : 'Показать разницу значений'), click: switchDiff")
     // /ko
     ul.media-list.hists
     //ko if: haveDiff() && switchDiff2()
-    .diffSwitch(data-bind="text: showDiff() ? 'Скрыть подсветку разницы значений' : 'Показать разницу значений', click: switchDiff")
+    .diffSwitch(data-bind="text: $root.i18n(showDiff() ? 'Скрыть подсветку разницы значений' : 'Показать разницу значений'), click: switchDiff")
     // /ko
 
     | <script id="dotRegions" type="text/x-dot-template">
@@ -35,10 +35,10 @@
                 a.author(target="_blank", href="{{='/u/'+h.user.login}}") {{=h.user.disp}}
                 ='{{?h.role}} '
                 .role
-                    | {{?h.role===5}}как модератор
-                    | {{?h.roleregion}} региона&nbsp;
+                    | {{?h.role===5}}{{=it.i18n('как модератор')}}
+                    | {{?h.roleregion}} {{=it.i18n('региона')}}&nbsp;
                     a(target="_blank", href="{{='/ps?f=r!' + h.roleregion.cid}}") {{=h.roleregion.title_local}}{{?}}
-                    | {{??h.role>9}}как администратор{{?}}
+                    | {{??h.role>9}}{{=it.i18n('как администратор')}}{{?}}
                 | {{?}}
                 .dotDelimeter ·
                 a.histStamp(data-replace="true", href="/p/{{=it.cid}}?history={{=h.stamp}}") {{=it.fDate(new Date(h.stamp))}}
@@ -52,28 +52,28 @@
             | {{?h.del}}
             .info.red.iconed
                 span.glyphicon.glyphicon-minus
-                | Удален{{?h.del.length>1}}ы{{??}}о{{?}}:
+                | {{=it.i18n(h.del.length > 1 ? 'Удалены:' : 'Удалено:')}}
                 | {{~h.del :del:delIndex}}
                 | {{?delIndex}},{{?}}&#32;
-                span.del {{=it.fields[del]}}
+                span.del {{=it.i18n(it.fields[del])}}
                 | {{~}}
             | {{?}}
 
             | {{?h.values.nocomments !== undefined}}
             .info.iconed(class="{{?h.values.nocomments}}red{{??}}green{{?}}")
                 span.glyphicon(class="glyphicon-{{?h.values.nocomments}}ban-circle{{??}}ok{{?}}")
-                | Комментирование {{?h.values.nocomments}}запрещено{{??}}разрешено{{?}}
+                | {{=it.i18n(h.values.nocomments ? 'Комментирование запрещено' : 'Комментирование разрешено')}}
             | {{?}}
 
             | {{?h.values.histmissing}}
             .info.iconed.red
                 span.glyphicon(class="glyphicon-floppy-remove")
-                | Доступна не вся история изменений
+                | {{=it.i18n('Доступна не вся история изменений')}}
             | {{?}}
 
             | {{?h.reason}}
             .value
-                .name Причина
+                .name {{=it.i18n('Причина')}}
                 .val
                     | {{?h.reason.cid}}{{=it.reasonsHash[h.reason.cid].title}}{{?}}
                     | {{?h.reason.desc}}
@@ -87,7 +87,7 @@
                     | {{?index}}
                     span.glyphicon(class="glyphicon-{{?value.add}}plus{{??}}pencil{{?}}")
                     | {{?}}
-                    | {{=it.fields[value.field]}}
+                    | {{=it.i18n(it.fields[value.field])}}
                 .val {{=value.val}}
             | {{~}}
 
