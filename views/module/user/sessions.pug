@@ -1,15 +1,15 @@
 .user_sessions(data-bind="with: repository[M!M]"): .panel-group#accordion
     .panel.panel-pastvu
-        .panel-heading: .panel-title: a(data-toggle="collapse", href="#sessions") Активные сессии
+        .panel-heading: .panel-title: a(data-toggle="collapse", href="#sessions", data-bind="text: $root.i18n('Активные сессии')")
         .panel-collapse.collapse.in#sessions: .panel-body
             dl.dl-horizontal
                 //ko if: !onlines().length && !offlines().length
-                | Пользователь не имеет активных сессий
+                span(data-bind="text: $root.i18n('Пользователь не имеет активных сессий')")
                 br
                 br
                 // /ko
                 //ko if: onlines().length
-                dt.online Онлайн
+                dt.online(data-bind="text: $root.i18n('Онлайн')")
                 dd
                     //ko foreach: onlines
                     .session(data-bind="click: function () {$parent.handleShowSession($data.key, false, true)}")
@@ -35,18 +35,17 @@
                                 i(data-bind="text: ' (+' + $data.ipCount + ')'")
                                 // /ko
                             //ko if: $data.lang
-                            div(data-bind="text: 'Язык: ' + $data.lang")
+                            div(data-bind="text: $root.i18n('Язык:') + ' ' + $data.lang")
                             // /ko
                             div
-                                | Количество открытых вкладок:&nbsp;
+                                span(data-bind="text: $root.i18n('Количество открытых вкладок:') + ' '")
                                 span(data-bind="text: $root.intl.num($data.sockets)")
-                            div(data-bind="text: 'Первая активность: ' + $root.intl.dateFull($data.created)")
+                            div(data-bind="text: $root.i18n('Первая активность:') + ' ' + $root.intl.dateFull($data.created)")
                         //ko if: $data.isCurrent
-                        div.online(style="min-width:80px; margin-right:4px; padding: 0 10px; text-align:center; font-style:italic") Текущая
+                        div.online(style="min-width:80px; margin-right:4px; padding: 0 10px; text-align:center; font-style:italic", data-bind="text: $root.i18n('Текущая')")
                         // /ko
                         //ko if: !$data.isCurrent
-                        button.btn.btn-primary(type="button", title="Уничтожить сессию", data-bind="attr: {disabled: $parent.removing.indexOf($data.key) > -1}, event:{click: $parent.handleSessionDestroy}", style="min-width:80px;")
-                            | Выйти
+                        button.btn.btn-primary(type="button", data-bind="attr: {disabled: $parent.removing.indexOf($data.key) > -1, title: $root.i18n('Уничтожить сессию')}, event:{click: $parent.handleSessionDestroy}, text: $root.i18n('Выйти')", style="min-width:80px;")
                         // /ko
                     // /ko
                 // /ko
@@ -57,7 +56,7 @@
                 // /ko
 
                 //ko if: offlines().length
-                dt Оффлайн
+                dt(data-bind="text: $root.i18n('Оффлайн')")
                 dd
                     //ko foreach: offlines
                     .session(data-bind="click: function () {$parent.handleShowSession($data.key)}")
@@ -82,11 +81,10 @@
                                 //ko if: $data.ipCount
                                 i(data-bind="text: ' (+' + $data.ipCount + ')'")
                                 // /ko
-                            div(data-bind="text: 'Язык: ' + $data.lang")
-                            div(data-bind="text: 'Первая активность: ' + $root.intl.dateFull($data.created)")
-                            div(data-bind="text: 'Последняя активность: ' + $root.intl.dateFull($data.stamp)")
-                        button.btn.btn-primary(type="button", title="Уничтожить сессию", data-bind="attr: {disabled: $parent.removing.indexOf($data.key) > -1}, event:{click: $parent.handleSessionDestroy}", style="min-width:80px;")
-                            | Удалить
+                            div(data-bind="text: $root.i18n('Язык:') + ' ' + $data.lang")
+                            div(data-bind="text: $root.i18n('Первая активность:') + ' ' + $root.intl.dateFull($data.created)")
+                            div(data-bind="text: $root.i18n('Последняя активность:') + ' ' + $root.intl.dateFull($data.stamp)")
+                        button.btn.btn-primary(type="button", data-bind="attr: {disabled: $parent.removing.indexOf($data.key) > -1, title: $root.i18n('Уничтожить сессию')}, event:{click: $parent.handleSessionDestroy}, text: $root.i18n('Удалить')", style="min-width:80px;")
                     // /ko
                 // /ko
 
@@ -98,13 +96,10 @@
                 dt.helpexists
                     .help.tltp-wrap
                         span.glyphicon.glyphicon-info-sign
-                        .tltp.tltp-top.tltp-animate-move
-                            | Просмотр архивных сессий
-                            br
-                            | доступен только администраторам
-                    | &nbsp;Архивные
+                        .tltp.tltp-top.tltp-animate-move(data-bind="html: $root.i18n('Просмотр архивных сессий<br>доступен только администраторам')")
+                    span(data-bind="text: ' ' + $root.i18n('Архивные')")
                 dd
-                    button.btn.btn-primary(type="button", data-bind="text: archivedShow() ? 'Скрыть' : 'Показать (' + archivedCount() + ')', event:{click: toggleArchive}, attr: {disabled: archivedFetching()}", style="min-width:80px;")
+                    button.btn.btn-primary(type="button", data-bind="text: $root.i18n(archivedShow() ? 'Скрыть' : 'Показать') + (archivedShow() ? '' : ' (' + archivedCount() + ')'), event:{click: toggleArchive}, attr: {disabled: archivedFetching()}", style="min-width:80px;")
                     //ko if: archives()
                     br
                     br
@@ -133,9 +128,9 @@
                                 i(data-bind="text: ' (+' + $data.ipCount + ')'")
                                 // /ko
                             //ko if: $data.lang
-                            div(data-bind="text: 'Язык: ' + $data.lang")
+                            div(data-bind="text: $root.i18n('Язык:') + ' ' + $data.lang")
                             // /ko
-                            div(data-bind="text: 'Первая активность: ' + $root.intl.dateFull($data.created)")
-                            div(data-bind="text: 'Последняя активность: ' + $root.intl.dateFull($data.stamp)")
+                            div(data-bind="text: $root.i18n('Первая активность:') + ' ' + $root.intl.dateFull($data.created)")
+                            div(data-bind="text: $root.i18n('Последняя активность:') + ' ' + $root.intl.dateFull($data.stamp)")
                     // /ko
                 // /ko
