@@ -3,29 +3,33 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-define(['knockout', 'knockout.mapping'], function (ko, koMapping) {
+define(['i18next', 'Params'], function (i18next, P) {
     'use strict';
 
-    const i18n = {
-        en: {
-            login: 'Login',
-            logout: 'Logout',
-            register: 'Registration',
-            mod: 'Moderation',
-            admin: 'Administration',
-            gallery: 'Gallery',
-            image_upload: 'Upload Image',
+    i18next.init({
+        lng: P.settings && P.settings.lang || 'ru',
+        fallbackLng: 'ru',
+        // Keys are Russian source strings; turn off separators so dots/colons in a key
+        // are not interpreted as namespace/key paths.
+        keySeparator: false,
+        nsSeparator: false,
+        // Knockout escapes text bindings — don't double-escape.
+        interpolation: { escapeValue: false },
+        resources: {
+            ru: { translation: {} },
+            en: {
+                translation: {
+                    'Вход': 'Login',
+                    'Выход': 'Logout',
+                    'Регистрация': 'Sign up',
+                    'Модерирование': 'Moderation',
+                    'Админ': 'Admin',
+                    'Галерея': 'Gallery',
+                    'Загрузить фото': 'Upload photo',
+                },
+            },
         },
-        ru: {
-            login: 'Вход',
-            logout: 'Выход',
-            register: 'Регистрация',
-            mod: 'Модерирование',
-            admin: 'Админ',
-            gallery: 'Галерея',
-            image_upload: 'Загрузить фото',
-        },
-    };
+    });
 
-    return koMapping.fromJS(i18n.ru);
+    return i18next.t.bind(i18next);
 });
