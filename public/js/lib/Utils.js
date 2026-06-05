@@ -8,7 +8,7 @@
  *
  * @author Klimashkin
  */
-define(['jquery', 'underscore', 'underscore.string', 'lib/geocoordsparser', 'lib/jsuri', 'lib/jquery/plugins/extends', 'bs/tooltip'], function ($, _, _s, parsecoords) {
+define(['jquery', 'underscore', 'underscore.string', 'i18n', 'lib/geocoordsparser', 'lib/jsuri', 'lib/jquery/plugins/extends', 'bs/tooltip'], function ($, _, _s, i18n, parsecoords) {
     const Utils = {
 
         /**
@@ -554,13 +554,16 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/geocoordsparser', 'lib
         format: (function () {
             const dateFormat = (function () {
                 const months = [
-                    'января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря',
+                    i18n('января'), i18n('февраля'), i18n('марта'), i18n('апреля'), i18n('мая'), i18n('июня'),
+                    i18n('июля'), i18n('августа'), i18n('сентября'), i18n('октября'), i18n('ноября'), i18n('декабря'),
                 ];
                 const weekDays = [
-                    'Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота',
+                    i18n('Воскресенье'), i18n('Понедельник'), i18n('Вторник'), i18n('Среда'),
+                    i18n('Четверг'), i18n('Пятница'), i18n('Суббота'),
                 ];
                 const weekDaysIn = [
-                    'в воскресенье', 'в понедельник', 'во вторник', 'в среду', 'в четверг', 'в пятницу', 'в субботу',
+                    i18n('в воскресенье'), i18n('в понедельник'), i18n('во вторник'), i18n('в среду'),
+                    i18n('в четверг'), i18n('в пятницу'), i18n('в субботу'),
                 ];
 
                 function dMMYYYYhhmm(date) {
@@ -588,10 +591,10 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/geocoordsparser', 'lib
                         if (dateMs < Utils.times.midnight - Utils.times.msDay) {
                             result = weekDays[date.getDay()] + ', ' + dateFormat.hhmm(date);
                         } else {
-                            result = 'Вчера в ' + dateFormat.hhmm(date);
+                            result = i18n('Вчера в {{time}}', { time: dateFormat.hhmm(date) });
                         }
                     } else {
-                        result = 'Сегодня в ' + dateFormat.hhmm(date);
+                        result = i18n('Сегодня в {{time}}', { time: dateFormat.hhmm(date) });
                     }
 
                     return result;
@@ -607,10 +610,10 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/geocoordsparser', 'lib
                         if (dateMs < Utils.times.midnight - Utils.times.msDay) {
                             result = weekDaysIn[date.getDay()] + ', ' + dateFormat.hhmm(date);
                         } else {
-                            result = 'вчера в ' + dateFormat.hhmm(date);
+                            result = i18n('вчера в {{time}}', { time: dateFormat.hhmm(date) });
                         }
                     } else {
-                        result = 'сегодня в ' + dateFormat.hhmm(date);
+                        result = i18n('сегодня в {{time}}', { time: dateFormat.hhmm(date) });
                     }
 
                     return result;
