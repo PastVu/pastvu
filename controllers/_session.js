@@ -1196,6 +1196,15 @@ async function langChange(data) {
         return;
     }
 
+    // Persist the chosen language on the user document so background flows
+    // (notifier, mail) can localize per-user even after the session ends.
+    if (usObj.registered && usObj.user) {
+        usObj.user.settings = usObj.user.settings || {};
+        usObj.user.settings.lang = data.lang;
+        usObj.user.markModified('settings');
+        await usObj.user.save();
+    }
+
     // Send client new language cookie
     await emitLangCookie(socket, data.lang, true, usObj.registered);
 
