@@ -38,6 +38,15 @@ function langFromRequest(req) {
     return config.locales.includes(cookieLang) ? cookieLang : config.lang;
 }
 
+// Map our short language codes to the full OpenGraph locale tags used in
+// meta(property="og:locale") so social previews render in the matching
+// language.
+const OG_LOCALES = { ru: 'ru_RU', en: 'en_US' };
+
+function ogLocale(lang) {
+    return OG_LOCALES[lang] || OG_LOCALES.ru;
+}
+
 function genInitDataString(req) {
     const usObj = req.handshake.usObj;
     const cookieLang = req.cookie && req.cookie.past_lang;
@@ -206,6 +215,7 @@ function meta(req) {
 function appMainHandler(req, res) {
     const { nojsUrl, nojsShow } = checkNoJS(req);
     const { browser = {}, photoData: { photo, can } = {} } = req;
+    const lang = langFromRequest(req);
 
     if (photo && photo.s !== status.PUBLIC && !can.protected) {
         res.statusCode = 403; // This is more for search engines
@@ -221,13 +231,16 @@ function appMainHandler(req, res) {
         agent: browser.agent,
         polyfills: browser.polyfills,
         initData: genInitDataString(req),
-        t: getT(langFromRequest(req)),
+        lang,
+        ogLocale: ogLocale(lang),
+        t: getT(lang),
     });
 }
 
 function appAdminHandler(req, res) {
     const { nojsUrl, nojsShow } = checkNoJS(req);
     const { browser = {} } = req;
+    const lang = langFromRequest(req);
 
     res.statusCode = 200;
     res.render('app', {
@@ -238,7 +251,9 @@ function appAdminHandler(req, res) {
         agent: browser.agent,
         polyfills: browser.polyfills,
         initData: genInitDataString(req),
-        t: getT(langFromRequest(req)),
+        lang,
+        ogLocale: ogLocale(lang),
+        t: getT(lang),
     });
 }
 
