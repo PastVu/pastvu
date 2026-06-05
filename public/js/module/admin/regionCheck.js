@@ -5,10 +5,10 @@
 
 // Module for checking region by geo coordianates.
 define([
-    'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
+    'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'i18n',
     'noties', 'leaflet', 'lib/doT',
     'text!tpl/admin/regionCheck.pug', 'css!style/admin/regionCheck', 'css!style/leaflet/leaflet',
-], function (_, $, Utils, socket, P, ko, koMapping, Cliche, globalVM, noties, L, doT, pug) {
+], function (_, $, Utils, socket, P, ko, koMapping, Cliche, globalVM, i18n, noties, L, doT, pug) {
     'use strict';
 
     let requestNominatim;
@@ -140,7 +140,7 @@ define([
                 this.goToGeo(geo);
             } else {
                 noties.alert({
-                    message: 'Неверный формат',
+                    message: i18n('Неверный формат'),
                     type: 'warning',
                 });
             }
@@ -159,7 +159,7 @@ define([
             this.marker = L.marker(geo,
                 {
                     draggable: true,
-                    title: 'Точка для проверки региона',
+                    title: i18n('Точка для проверки региона'),
                     icon: L.icon({
                         iconSize: [26, 43],
                         iconAnchor: [13, 36],

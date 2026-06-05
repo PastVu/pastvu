@@ -3,18 +3,18 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/storage', 'load-image', 'text!tpl/user/photoUpload.pug', 'css!style/user/photoUpload', 'jfileupload/jquery.iframe-transport', 'jfileupload/jquery.fileupload'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, storage, loadImage, pug) {
+define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'i18n', 'model/storage', 'load-image', 'text!tpl/user/photoUpload.pug', 'css!style/user/photoUpload', 'jfileupload/jquery.iframe-transport', 'jfileupload/jquery.fileupload'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, i18n, storage, loadImage, pug) {
     'use strict';
 
     const mess = {
-        fsuccess: 'Файл успешно загружен',
-        fcount: 'Превышено разрешенное количество файлов',
+        fsuccess: i18n('Файл успешно загружен'),
+        fcount: i18n('Превышено разрешенное количество файлов'),
 
-        ftype: 'Тип файла не соответствует Правилам',
-        fmax: 'Файл больше разрешенного размера',
-        fmin: 'Файл слишком мал',
-        fpx: 'Согласно Правилам, размер изображения должен быть не менее 350px по меньшей стороне и не менее 700px по большей стороне',
-        finvalid: 'Файл не прошел валидацию', //Сообщение по умолчанию для валидации
+        ftype: i18n('Тип файла не соответствует Правилам'),
+        fmax: i18n('Файл больше разрешенного размера'),
+        fmin: i18n('Файл слишком мал'),
+        fpx: i18n('Согласно Правилам, размер изображения должен быть не менее 350px по меньшей стороне и не менее 700px по большей стороне'),
+        finvalid: i18n('Файл не прошел валидацию'),
     };
 
     return Cliche.extend({
@@ -54,9 +54,9 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                             this.canCount(this.canCountTotal);
 
                             if (!this.canCount()) {
-                                this.toptext('У вас нет свободных лимитов для загрузки файлов, так как вы имеете ' + this.u.pfcount() + ' неподтвержденных модератором фотографий. Это максимально разрешенное количество, установленное для вашего профиля.');
+                                this.toptext(i18n('У вас нет свободных лимитов для загрузки файлов, так как вы имеете {{count}} неподтвержденных модератором фотографий. Это максимально разрешенное количество, установленное для вашего профиля.', { count: this.u.pfcount() }));
                             } else {
-                                this.toptext('Выберите файлы, нажав на кнопку добавления' + (this.filereader() ? ' или перетащив их в пунктирную область' : ''));
+                                this.toptext(this.filereader() ? i18n('Выберите файлы, нажав на кнопку добавления или перетащив их в пунктирную область') : i18n('Выберите файлы, нажав на кнопку добавления'));
                                 this.canLoad(true);
 
                                 this.fileOptions = {
@@ -82,7 +82,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                 }, this);
             } else {
                 this.toptext(
-                    this.auth.iAm.nophotoupload() ? 'У вас нет прав на загрузку фотографий' : 'Вы не авторизованы для загрузки фотографий'
+                    this.auth.iAm.nophotoupload() ? i18n('У вас нет прав на загрузку фотографий') : i18n('Вы не авторизованы для загрузки фотографий')
                 );
                 ko.applyBindings(globalVM, this.$dom[0]);
                 this.show();
@@ -256,7 +256,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
             data.files.forEach(function (file) {
                 file.ext.uploading(true);
                 file.ext.uploaded(false);
-                this.setMessage(file, 'Пожалуйста подождите. Загрузка..', 'muted'); //Please wait. Loading..
+                this.setMessage(file, i18n('Пожалуйста подождите. Загрузка..'), 'muted');
             }, this);
         },
         onFileSend: function (e, data) {
@@ -368,7 +368,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
             const that = this;
             const options = this.fileOptions;
 
-            this.setMessage(file, 'Подготовка файла..', 'muted');
+            this.setMessage(file, i18n('Подготовка файла..'), 'muted');
             loadImage(
                 file,
                 function (img) {

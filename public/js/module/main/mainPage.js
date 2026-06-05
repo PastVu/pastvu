@@ -3,7 +3,7 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-define(['underscore', 'Utils', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/Photo', 'text!tpl/main/mainPage.pug', 'css!style/main/mainPage'], function (_, Utils, P, ko, ko_mapping, Cliche, globalVM, Photo, pug) {
+define(['underscore', 'Utils', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'i18n', 'model/Photo', 'text!tpl/main/mainPage.pug', 'css!style/main/mainPage'], function (_, Utils, P, ko, ko_mapping, Cliche, globalVM, i18n, Photo, pug) {
     'use strict';
 
     return Cliche.extend({
@@ -58,7 +58,7 @@ define(['underscore', 'Utils', 'Params', 'knockout', 'knockout.mapping', 'm/_mod
             this.show();
         },
         show: function () {
-            Utils.title.setTitle({ title: 'Главная' });
+            Utils.title.setTitle({ title: i18n('Главная') });
             this.sizesCalc();
             globalVM.func.showContainer(this.$container);
             this.showing = true;

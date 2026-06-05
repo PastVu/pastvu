@@ -5,13 +5,16 @@
 
 require([
     'domReady!', 'jquery', 'Browser', 'Utils', 'socket!', 'underscore', 'knockout', 'moment',
-    'globalVM', 'Params', 'renderer', 'router', 'model/Photo', 'model/User', 'noties', 'analytics',
+    'globalVM', 'Params', 'renderer', 'router', 'i18n', 'model/Photo', 'model/User', 'noties', 'analytics',
     'text!tpl/appMain.pug', 'css!style/appMain', 'momentlang/ru', 'bs/transition', 'bs/popover',
     'knockout.extends', 'noty', 'noty.layouts', 'noty.themes/pastvu', 'jquery-plugins/scrollto',
-], function (domReady, $, Browser, Utils, socket, _, ko, moment, globalVM, P, renderer, router, Photo, User, noties, analytics, html) {
+], function (
+    domReady, $, Browser, Utils, socket, _, ko, moment, globalVM,
+    P, renderer, router, i18n, Photo, User, noties, analytics, html
+) {
     'use strict';
 
-    Utils.title.setPostfix('Фотографии прошлого');
+    Utils.title.setPostfix(i18n('Фотографии прошлого'));
 
     const routerDeferred = $.Deferred();
     const routerAnatomy = {

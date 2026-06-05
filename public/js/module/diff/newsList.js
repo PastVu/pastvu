@@ -4,10 +4,10 @@
  */
 
 define([
-    'underscore', 'jquery', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
+    'underscore', 'jquery', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'i18n',
     'model/User', 'model/storage',
     'text!tpl/diff/newsList.pug', 'css!style/diff/newsList',
-], function (_, $, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, User, storage, pug) {
+], function (_, $, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, i18n, User, storage, pug) {
     'use strict';
 
     return Cliche.extend({
@@ -46,7 +46,7 @@ define([
         },
         routeHandler: function () {
             this.getAllNews(function (/*data*/) {
-                Utils.title.setTitle({ title: 'Новости' });
+                Utils.title.setTitle({ title: i18n('Новости') });
                 gtag('event', 'page_view');
             });
         },

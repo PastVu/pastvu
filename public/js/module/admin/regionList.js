@@ -4,9 +4,9 @@
  */
 
 define([
-    'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM',
+    'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'i18n',
     'model/storage', 'noties', 'text!tpl/admin/regionList.pug', 'css!style/admin/regionList',
-], function (_, $, Utils, socket, P, ko, Cliche, globalVM, storage, noties, pug) {
+], function (_, $, Utils, socket, P, ko, Cliche, globalVM, i18n, storage, noties, pug) {
     'use strict';
 
     const collator = new Intl.Collator('ru-RU', { numeric: true, sensitivity: 'base' });
@@ -295,8 +295,8 @@ define([
             const that = this;
 
             noties.confirm({
-                message: 'Перерасчет статистики регионов займет ~5 минут. Продолжить?',
-                okText: 'Да, налью чаю',
+                message: i18n('Перерасчет статистики регионов займет ~5 минут. Продолжить?'),
+                okText: i18n('Да, налью чаю'),
                 okClass: 'btn-success',
                 onOk: function (confirmer) {
                     confirmer.disable();
@@ -306,18 +306,18 @@ define([
                             let msg;
 
                             if (data.running) {
-                                msg = 'В данный момент статистика уже пересчитывается';
+                                msg = i18n('В данный момент статистика уже пересчитывается');
                             } else {
-                                msg = 'Статистика регионам пересчитана<br>';
+                                msg = i18n('Статистика регионам пересчитана') + '<br>';
 
                                 if (data.valuesChanged) {
                                     if (data.regionChanged) {
-                                        msg += '<b>' + globalVM.intl.num(data.regionChanged) + '</b> регионов было обновлено<br>';
+                                        msg += i18n('<b>{{count}}</b> регионов было обновлено', { count: globalVM.intl.num(data.regionChanged) }) + '<br>';
                                     }
 
-                                    msg += '<b>' + globalVM.intl.num(data.valuesChanged) + '</b> значений было изменено';
+                                    msg += i18n('<b>{{count}}</b> значений было изменено', { count: globalVM.intl.num(data.valuesChanged) });
                                 } else {
-                                    msg += 'Значения не изменились';
+                                    msg += i18n('Значения не изменились');
                                 }
                             }
 
@@ -326,10 +326,10 @@ define([
                             });
                         })
                         .catch(function (error) {
-                            confirmer.error(error, 'Закрыть');
+                            confirmer.error(error, i18n('Закрыть'));
                         });
                 },
-                cancelText: 'Нет',
+                cancelText: i18n('Нет'),
             });
         },
     });

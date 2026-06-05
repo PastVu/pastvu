@@ -5,9 +5,9 @@
 
 /* global Bloodhound: true */
 define([
-    'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
+    'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'i18n',
     'model/storage', 'noties', 'text!tpl/region/select.pug', 'css!style/region/select', 'bs/ext/tokenfield',
-], function (_, $, Utils, socket, P, ko, koMapping, Cliche, globalVM, storage, noties, pug) {
+], function (_, $, Utils, socket, P, ko, koMapping, Cliche, globalVM, i18n, storage, noties, pug) {
     'use strict';
 
     const collator = new Intl.Collator('ru-RU', { numeric: true, sensitivity: 'base' });
@@ -331,7 +331,7 @@ define([
                     }
                 }
             } else {
-                $(e.relatedTarget).addClass('invalid').attr('title', 'Нет такого региона');
+                $(e.relatedTarget).addClass('invalid').attr('title', i18n('Нет такого региона'));
             }
         },
         //Событие удаления токена непосредственно из поля
@@ -363,7 +363,7 @@ define([
 
             if (this.checkBranchSelected(region)) {
                 noties.alert({
-                    message: 'Нельзя одновременно выбирать родительский и дочерний регионы',
+                    message: i18n('Нельзя одновременно выбирать родительский и дочерний регионы'),
                     type: 'warning',
                     timeout: 4000,
                     ok: true,

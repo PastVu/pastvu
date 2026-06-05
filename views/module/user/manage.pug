@@ -8,7 +8,7 @@
                     .form-group
                         .col-xs-12(data-bind="foreach: roles"): label.radio-inline
                             input(type="radio", name="credent_radios", data-bind="attr: {value: $data.cat}, checked: $parent.roleCategory")
-                            span(data-bind="text: $data.name")
+                            span(data-bind="text: $root.i18n($data.name)")
                     //ko if: roleCategory() === 'mod'
                     .form-group: .col-xs-12
                         .checkbox: label
@@ -135,7 +135,7 @@
                     //ko foreach: ranks
                     label.checkbox-inline
                         input(type="checkbox", data-bind="attr: {value: $data.key}, checked: $parent.u.ranks")
-                        span(data-bind="text: $data.desc")
+                        span(data-bind="text: $root.i18n($data.desc)")
                     // /ko
 
                 .setTitle(data-bind="text: $root.i18n('Лимит количества неподтвержденных фотографий')")

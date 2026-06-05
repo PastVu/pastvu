@@ -5,10 +5,10 @@
 
 define([
     'underscore', 'jquery', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche',
-    'globalVM', 'model/User', 'model/storage', 'noties', 'text!tpl/admin/newsEdit.pug', 'css!style/admin/newsEdit',
+    'globalVM', 'i18n', 'model/User', 'model/storage', 'noties', 'text!tpl/admin/newsEdit.pug', 'css!style/admin/newsEdit',
     'trumbowyg', 'css!style/trumbowyg/trumbowyg.css', 'css!style/trumbowyg/trumbowyg.table.css', 'css!style/trumbowyg/trumbowyg.colors.css',
     'bs/ext/datetimepicker/datetimepicker',
-], function (_, $, Browser, Utils, socket, P, ko, koMapping, Cliche, globalVM, User, storage, noties, pug) {
+], function (_, $, Browser, Utils, socket, P, ko, koMapping, Cliche, globalVM, i18n, User, storage, noties, pug) {
     'use strict';
 
     const trumbowygOptions = {
@@ -179,19 +179,19 @@ define([
         deleteNews: function () {
             if (this.news.ccount && this.news.ccount() > 0) {
                 noties.error({
-                    message: 'Новость содержит комментарии и не может быть удалена',
+                    message: i18n('Новость содержит комментарии и не может быть удалена'),
                 });
             } else {
                 const cid = this.news.cid();
 
                 noties.confirm({
-                    message: `Новость "${this.news.title()}" будет удалена`,
+                    message: i18n('Новость "{{title}}" будет удалена', { title: this.news.title() }),
                     onOk: function (confirmer) {
                         confirmer.close();
                         socket.run('admin.deleteNews', { cid }, true)
                             .then(function () {
                                 noties.alert({
-                                    message: 'Новость удалена',
+                                    message: i18n('Новость удалена'),
                                     type: 'success',
                                     layout: 'topRight',
                                 });
@@ -271,7 +271,7 @@ define([
             socket.run('admin.saveOrCreateNews', saveData, true)
                 .then(function (data) {
                     noties.alert({
-                        message: 'Сохранено',
+                        message: i18n('Сохранено'),
                         type: 'success',
                         layout: 'topRight',
                     });

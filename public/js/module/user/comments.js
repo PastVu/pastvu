@@ -3,7 +3,7 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/Photo', 'model/storage', 'text!tpl/user/comments.pug', 'css!style/user/comments'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, Photo, storage, pug) {
+define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'i18n', 'renderer', 'model/Photo', 'model/storage', 'text!tpl/user/comments.pug', 'css!style/user/comments'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, i18n, renderer, Photo, storage, pug) {
     'use strict';
 
     const imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
@@ -87,9 +87,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 let txt = '';
 
                 if (count) {
-                    txt = 'Показаны ' + globalVM.intl.num(this.pageFirstItem()) + '&nbsp;&ndash;&nbsp;' + globalVM.intl.num(this.pageLastItem()) + ' из ' + globalVM.intl.num(count);
+                    txt = i18n('Показаны {{from}}&nbsp;&ndash;&nbsp;{{to}} из {{total}}', {
+                        from: globalVM.intl.num(this.pageFirstItem()),
+                        to: globalVM.intl.num(this.pageLastItem()),
+                        total: globalVM.intl.num(count),
+                    });
                 } else {
-                    txt = 'Пользователь пока не оставил комментариев в данной категории';
+                    txt = i18n('Пользователь пока не оставил комментариев в данной категории');
                 }
 
                 return txt;
@@ -284,12 +288,12 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         {
                             module: 'm/comment/hist',
                             modal: {
-                                topic: 'История изменений комментария',
+                                topic: i18n('История изменений комментария'),
                                 animateScale: true,
                                 curtainClick: { click: this.closeHistory, ctx: this },
-                                offIcon: { text: 'Закрыть', click: this.closeHistory, ctx: this },
+                                offIcon: { text: i18n('Закрыть'), click: this.closeHistory, ctx: this },
                                 btns: [
-                                    { css: 'btn-primary', text: 'Закрыть', click: this.closeHistory, ctx: this },
+                                    { css: 'btn-primary', text: i18n('Закрыть'), click: this.closeHistory, ctx: this },
                                 ],
                             },
                             options: { objCid: objCid, cid: cid, type: this.type() },

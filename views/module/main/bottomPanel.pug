@@ -24,7 +24,7 @@
         ul.nav.navbar-nav
             //ko foreach: cats
             li(data-bind="css: {loading: $data === $parent.catLoading(), active: $data === $parent.catActive()}, click: $parent.catClickBind")
-                a(data-bind="text: $parent.catsObj[$data].name")
+                a(data-bind="text: $root.i18n($parent.catsObj[$data].name)")
             // /ko
             li
                 a(target="_blank", href="/news")

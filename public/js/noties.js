@@ -3,7 +3,7 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
+define(['underscore', 'jquery', 'Utils', 'i18n'], function (_, $, Utils, i18n) {
     'use strict';
 
     function getPosition(params) {
@@ -32,7 +32,7 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
     }
 
     function getErrorMessage(error) {
-        let message = 'Возникла ошибка';
+        let message = i18n('Возникла ошибка');
 
         if (!_.isEmpty(error)) {
             if (_.isString(error)) {
@@ -41,7 +41,7 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
                 message = _.get(error, 'message') || message;
 
                 if (error.rid && error.type !== 'NoticeError' && error.type !== 'InputError') {
-                    message += '<br><span style="color:#A7A7A7">Номер ошибки: ' + error.rid + '</span>';
+                    message += '<br><span style="color:#A7A7A7">' + i18n('Номер ошибки: {{rid}}', { rid: error.rid }) + '</span>';
                 }
             }
         }
@@ -156,7 +156,7 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
                     },
                 },
                 {
-                    addClass: cancelClass, text: params.cancelText || 'Отмена',
+                    addClass: cancelClass, text: params.cancelText || i18n('Отмена'),
                     onClick: function ($noty) {
                         $noty.close();
 
@@ -252,7 +252,7 @@ define(['underscore', 'jquery', 'Utils'], function (_, $, Utils) {
         notyAlert({
             message: getErrorMessage(error),
             type: 'error', timeout: params.timeout || 120000,
-            ok: true, text: 'Закрыть',
+            ok: true, text: i18n('Закрыть'),
         });
     }
 

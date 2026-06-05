@@ -3,14 +3,14 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/storage', 'lib/doT', 'text!tpl/comment/hist.pug', 'css!style/comment/hist'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, storage, doT, pug) {
+define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'i18n', 'model/storage', 'lib/doT', 'text!tpl/comment/hist.pug', 'css!style/comment/hist'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, i18n, storage, doT, pug) {
     'use strict';
 
     let tplHist;
     const changeFragTexts = {
-        f1: '<span class="glyphicon glyphicon-plus"></span> Добавлен фрагмент',
-        f2: '<span class="glyphicon glyphicon-retweet"></span> Изменен фрагмент',
-        f3: '<span class="glyphicon glyphicon-minus"></span> Удален фрагмент',
+        f1: '<span class="glyphicon glyphicon-plus"></span> ' + i18n('Добавлен фрагмент'),
+        f2: '<span class="glyphicon glyphicon-retweet"></span> ' + i18n('Изменен фрагмент'),
+        f3: '<span class="glyphicon glyphicon-minus"></span> ' + i18n('Удален фрагмент'),
     };
 
     return Cliche.extend({

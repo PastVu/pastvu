@@ -4,17 +4,17 @@
  */
 
 define([
-    'underscore', 'Params', 'knockout', 'socket!', 'm/_moduleCliche', 'globalVM', 'model/storage', 'model/User',
+    'underscore', 'Params', 'knockout', 'socket!', 'm/_moduleCliche', 'globalVM', 'i18n', 'model/storage', 'model/User',
     'noties', 'text!tpl/user/brief.pug', 'css!style/user/brief',
-], function (_, P, ko, socket, Cliche, globalVM, storage, User, noties, pug) {
+], function (_, P, ko, socket, Cliche, globalVM, i18n, storage, User, noties, pug) {
     'use strict';
 
     const mess = {
-        ftype: 'Тип файла не соответствует правилам',
-        fmax: 'Файл больше разрешенного размера',
-        fmin: 'Файл слишком мал',
-        fpx: 'Согласно правилам, размер изображения должен быть не менее 100px по каждой из сторон',
-        finvalid: 'Файл не прошел валидацию', //Сообщение по умолчанию для валидации
+        ftype: i18n('Тип файла не соответствует правилам'),
+        fmax: i18n('Файл больше разрешенного размера'),
+        fmin: i18n('Файл слишком мал'),
+        fpx: i18n('Согласно правилам, размер изображения должен быть не менее 100px по каждой из сторон'),
+        finvalid: i18n('Файл не прошел валидацию'),
     };
 
     return Cliche.extend({
@@ -171,7 +171,7 @@ define([
             if (receivedFile && receivedFile.file) {
                 if (receivedFile.error) {
                     noties.error({
-                        message: mess[receivedFile.error] || mess.finvalid || 'Ошибка загрузки аватары',
+                        message: mess[receivedFile.error] || mess.finvalid || i18n('Ошибка загрузки аватары'),
                     });
                     this.avaexe(false);
                     ga('send', 'event', 'avatar', 'upload', 'avatar upload error');
@@ -205,7 +205,7 @@ define([
         },
         avaFail: function (e, data) {
             noties.error({
-                message: data && data.message || 'Ошибка загрузки аватары',
+                message: data && data.message || i18n('Ошибка загрузки аватары'),
             });
             this.avaexe(false);
         },

@@ -3,7 +3,7 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/storage', 'model/User', 'text!tpl/user/userPage.pug', 'css!style/user/userPage', 'bs/affix'], function (_, Utils, P, renderer, ko, ko_mapping, Cliche, globalVM, storage, User, pug) {
+define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'i18n', 'model/storage', 'model/User', 'text!tpl/user/userPage.pug', 'css!style/user/userPage', 'bs/affix'], function (_, Utils, P, renderer, ko, ko_mapping, Cliche, globalVM, i18n, storage, User, pug) {
     'use strict';
 
     return Cliche.extend({
@@ -211,25 +211,25 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
                         moduleOptions.options.goUpload = true; //Если нет, говорим что надо открыть при загрузке галереи
                     }
 
-                    Utils.title.setTitle({ pre: 'Загрузка - ', title: this.user.disp() });
+                    Utils.title.setTitle({ pre: i18n('Загрузка - '), title: this.user.disp() });
                 } else {
-                    Utils.title.setTitle({ pre: 'Галерея - ', title: this.user.disp() });
+                    Utils.title.setTitle({ pre: i18n('Галерея - '), title: this.user.disp() });
                 }
             } else if (section === 'comments') {
                 module = 'm/user/comments';
-                Utils.title.setTitle({ pre: 'Комментарии - ', title: this.user.disp() });
+                Utils.title.setTitle({ pre: i18n('Комментарии - '), title: this.user.disp() });
             } else if (section === 'subscriptions') {
                 module = 'm/user/subscr';
-                Utils.title.setTitle({ pre: 'Подписки - ', title: this.user.disp() });
+                Utils.title.setTitle({ pre: i18n('Подписки - '), title: this.user.disp() });
             } else if (section === 'settings') {
                 module = 'm/user/settings';
-                Utils.title.setTitle({ pre: 'Настройки - ', title: this.user.disp() });
+                Utils.title.setTitle({ pre: i18n('Настройки - '), title: this.user.disp() });
             } else if (section === 'sessions') {
                 module = 'm/user/sessions';
-                Utils.title.setTitle({ pre: 'Сессии - ', title: this.user.disp() });
+                Utils.title.setTitle({ pre: i18n('Сессии - '), title: this.user.disp() });
             } else if (section === 'manage') {
                 module = 'm/user/manage';
-                Utils.title.setTitle({ pre: 'Управление - ', title: this.user.disp() });
+                Utils.title.setTitle({ pre: i18n('Управление - '), title: this.user.disp() });
             }
 
             this.section(section);

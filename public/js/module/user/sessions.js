@@ -4,10 +4,10 @@
  */
 
 define([
-    'underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
+    'underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'i18n',
     'renderer', 'noties', 'model/User', 'model/storage',
     'text!tpl/user/sessions.pug', 'css!style/user/sessions', 'bs/collapse',
-], function (_, Utils, socket, P, ko, koMapping, Cliche, globalVM, renderer, noties, User, storage, pug) {
+], function (_, Utils, socket, P, ko, koMapping, Cliche, globalVM, i18n, renderer, noties, User, storage, pug) {
     return Cliche.extend({
         pug: pug,
         options: {
@@ -146,14 +146,14 @@ define([
                             module: 'm/user/session',
                             options: { login: this.u.login(), key: key, archive: archive, online: online },
                             modal: {
-                                topic: 'Детали сессии',
+                                topic: i18n('Детали сессии'),
                                 animateScale: true,
                                 initWidth: '800px',
                                 maxWidthRatio: 0.95,
                                 curtainClick: { click: this.handleCloseSession, ctx: this },
-                                offIcon: { text: 'Закрыть', click: this.handleCloseSession, ctx: this },
+                                offIcon: { text: i18n('Закрыть'), click: this.handleCloseSession, ctx: this },
                                 btns: [
-                                    { css: 'btn-primary', text: 'Закрыть', click: this.handleCloseSession, ctx: this },
+                                    { css: 'btn-primary', text: i18n('Закрыть'), click: this.handleCloseSession, ctx: this },
                                 ],
                             },
                             callback: function (vm) {

@@ -8,7 +8,7 @@ define(['module'], function (/* module */) {
 
     let onLoad;
 
-    function moduleHandler(_, io, noties, TimeoutError) {
+    function moduleHandler(_, io, noties, TimeoutError, i18n) {
         const connectPath = location.host;
         const connectOptions = {
             autoConnect: false,
@@ -30,10 +30,10 @@ define(['module'], function (/* module */) {
         const disconnectionDataReturn = {
             error: true,
             noconnect: true,
-            message: 'Нет соединения с сервером, повторите после восстановления связи',
+            message: i18n('Нет соединения с сервером, повторите после восстановления связи'),
         };
-        const noConnWait = '<div class="inn">Нет соединения с сервером, пробую подключиться.. После восстановления связи сообщение пропадет автоматически</div>';
-        const noConnFail = '<div class="inn">Не удалось автоматически подключиться к серверу. <span class="repeat">Продолжать попытки</span></div>';
+        const noConnWait = '<div class="inn">' + i18n('Нет соединения с сервером, пробую подключиться.. После восстановления связи сообщение пропадет автоматически') + '</div>';
+        const noConnFail = '<div class="inn">' + i18n('Не удалось автоматически подключиться к серверу.') + ' <span class="repeat">' + i18n('Продолжать попытки') + '</span></div>';
 
         /**
          * Событие первого соединения с сервером
@@ -233,7 +233,7 @@ define(['module'], function (/* module */) {
             return socket.request(name, data, timeToWaitIfNoConnection)
                 .catch(function (error) {
                     if (error instanceof TimeoutError) {
-                        error.message = 'Превышено время ожидания запроса';
+                        error.message = i18n('Превышено время ожидания запроса');
                     }
 
                     return { error: error };
@@ -444,7 +444,7 @@ define(['module'], function (/* module */) {
 
             onLoad = onLoadExe;
 
-            req(['underscore', 'socket.io', 'noties', 'errors/Timeout'], moduleHandler);
+            req(['underscore', 'socket.io', 'noties', 'errors/Timeout', 'i18n'], moduleHandler);
         },
     };
 });

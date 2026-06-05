@@ -3,12 +3,12 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'model/Photo', 'model/storage', 'text!tpl/diff/news.pug', 'css!style/diff/news'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, Photo, storage, pug) {
+define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'i18n', 'renderer', 'moment', 'model/Photo', 'model/storage', 'text!tpl/diff/news.pug', 'css!style/diff/news'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, i18n, renderer, moment, Photo, storage, pug) {
     'use strict';
 
     const newsDefault = {
         pdate: new Date(),
-        title: 'Нет заголовка',
+        title: i18n('Нет заголовка'),
         txt: '',
         ccount: 0,
         ccount_new: 0,
