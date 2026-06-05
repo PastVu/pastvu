@@ -1,45 +1,45 @@
 .user_session(data-bind="with: repository[M!M]")
     dl.dl-horizontal
-        dt Первая активность:
+        dt(data-bind="text: $root.i18n('Первая активность:')")
         dd(data-bind="text: $root.intl.dateFull(session.created)")
         //ko if: !session.sockets
-        dt Последняя активность:
+        dt(data-bind="text: $root.i18n('Последняя активность:')")
         dd(data-bind="text: $root.intl.dateFull(session.stamp)")
         // /ko
         //ko if: session.lang
-        dt Язык:
+        dt(data-bind="text: $root.i18n('Язык:')")
         dd(data-bind="text: session.lang")
         // /ko
         //ko if: session.sockets
-        dt Количество вкладок:
+        dt(data-bind="text: $root.i18n('Количество вкладок:')")
         dd(data-bind="text: $root.intl.num(session.sockets)")
         // /ko
         dt
-            | IP адреса:
+            span(data-bind="text: $root.i18n('IP адреса:')")
             //ko if: session.ips.length > 2
             br
             .btn-group.btn-group-sm(style="margin:3px")
-                button.btn.btn-primary.yes(type="button", data-bind="css: {active: !ipsHist()}, click: toggleIPs") Уникальные
-                button.btn.btn-primary.no(type="button", data-bind="css: {active: ipsHist()}, click: toggleIPs") История
+                button.btn.btn-primary.yes(type="button", data-bind="css: {active: !ipsHist()}, click: toggleIPs, text: $root.i18n('Уникальные')")
+                button.btn.btn-primary.no(type="button", data-bind="css: {active: ipsHist()}, click: toggleIPs, text: $root.i18n('История')")
             // /ko
         dd
             // ko if: session.ips.length === 101
-            div Предыдущие адреса возможно были отброшены
+            div(data-bind="text: $root.i18n('Предыдущие адреса возможно были отброшены')")
             // /ko
             //ko foreach: ips
             div
                 span.ip(data-bind="text: $data.ip")
                 //ko if: $parent.ipsHist() && $data.off
-                span(data-bind="text: ' (до ' + $root.intl.dateFullDigit($data.off) + ')'")
+                span(data-bind="text: ' ' + $root.i18n('(до {{date}})', {date: $root.intl.dateFullDigit($data.off)})")
                 // /ko
                 //ko if: $data.ip === $parent.ipLast && (!$parent.ipsHist() || !$data.off)
-                i(data-bind="text: $parent.online ? ' (текущий адрес)' : ' ( последний адрес)'")
+                i(data-bind="text: ' ' + $root.i18n($parent.online ? '(текущий адрес)' : '(последний адрес)')")
                 // /ko
             // /ko
-        dt Клиенты:
+        dt(data-bind="text: $root.i18n('Клиенты:')")
         dd
             // ko if: session.agents.length === 101
-            div Предыдущие клиенты возможно были отброшены
+            div(data-bind="text: $root.i18n('Предыдущие клиенты возможно были отброшены')")
             // /ko
             //ko foreach: session.agents
             .versions
@@ -55,9 +55,9 @@
                 span(data-bind="text: $data.browser")
                 // /ko
                 //ko if: $data.off
-                span(data-bind="text: ' (до ' + $root.intl.dateFullDigit($data.off) + ')'")
+                span(data-bind="text: ' ' + $root.i18n('(до {{date}})', {date: $root.intl.dateFullDigit($data.off)})")
                 // /ko
                 //ko if: !$data.off
-                i(data-bind="text: $parent.online ? ' (текущий клиент)' : '  (последний клиент)'")
+                i(data-bind="text: ' ' + $root.i18n($parent.online ? '(текущий клиент)' : '(последний клиент)')")
                 // /ko
             // /ko
