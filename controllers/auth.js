@@ -10,10 +10,9 @@ import path from 'path';
 import pug from 'pug';
 import log4js from 'log4js';
 import moment from 'moment';
-import { parse as parseCookie } from 'cookie';
 import config from '../config';
 import Utils from '../commons/Utils';
-import { getT } from '../commons/i18n';
+import { getT, langFromHandshake } from '../commons/i18n';
 import * as session from './_session';
 import { send as sendMail } from './mail';
 import { userSettingsDef } from './settings';
@@ -27,16 +26,6 @@ import { Counter } from '../models/Counter';
 moment.locale(config.lang);
 
 const ms2d = ms('2d');
-
-// Pull the user's preferred language from this request's past_lang cookie.
-// Used for anonymous flows like registration where there is no user document
-// yet to read user.settings.lang from.
-function langFromHandshake(handshake) {
-    const cookieObj = parseCookie(handshake && handshake.headers && handshake.headers.cookie || '');
-    const cookieLang = cookieObj.past_lang;
-
-    return config.locales.includes(cookieLang) ? cookieLang : config.lang;
-}
 
 function formatLinkValid(lang, t) {
     return `${moment.duration(ms2d).locale(lang).humanize()} ` +

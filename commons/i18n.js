@@ -4,6 +4,7 @@
  */
 
 const i18next = require('i18next');
+const { parse: parseCookie } = require('cookie');
 const config = require('../config');
 const translations = require('../public/js/i18n-translations.json');
 
@@ -70,6 +71,18 @@ function userLang(user) {
     return config.lang || DEFAULT_LANG;
 }
 
+/**
+ * Read the user's preferred language from a Socket.IO / Express handshake's
+ * past_lang cookie. Falls back to config.lang when the cookie is missing or
+ * names an unsupported locale.
+ */
+function langFromHandshake(handshake) {
+    const cookieHeader = handshake && handshake.headers && handshake.headers.cookie || '';
+    const cookieLang = parseCookie(cookieHeader).past_lang;
+
+    return (config.locales || []).includes(cookieLang) ? cookieLang : config.lang || DEFAULT_LANG;
+}
+
 // Plural forms used in notification mail. Indexed by Russian declension
 // categories: [one, few, many]. English collapses few/many into a single
 // "other" form, but we keep three entries for shape parity.
@@ -115,4 +128,4 @@ function commentCount(lang, count, kind) {
     return count + ' ' + forms[idx];
 }
 
-module.exports = { getT, t, userLang, commentCount, init };
+module.exports = { getT, t, userLang, langFromHandshake, commentCount, init };
