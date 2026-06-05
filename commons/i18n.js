@@ -70,4 +70,49 @@ function userLang(user) {
     return config.lang || DEFAULT_LANG;
 }
 
-module.exports = { getT, t, userLang, init };
+// Plural forms used in notification mail. Indexed by Russian declension
+// categories: [one, few, many]. English collapses few/many into a single
+// "other" form, but we keep three entries for shape parity.
+const COMMENT_FORMS = {
+    ru: {
+        new: ['новый комментарий', 'новых комментария', 'новых комментариев'],
+        unread: ['непрочитанный', 'непрочитанных', 'непрочитанных'],
+    },
+    en: {
+        new: ['new comment', 'new comments', 'new comments'],
+        unread: ['unread', 'unread', 'unread'],
+    },
+};
+
+// Russian plural index: 0 = one, 1 = few, 2 = many.
+function ruPluralIndex(count) {
+    const mod10 = count % 10;
+    const mod100 = count % 100;
+
+    if (mod100 >= 11 && mod100 <= 14) {
+        return 2;
+    }
+
+    if (mod10 === 1) {
+        return 0;
+    }
+
+    if (mod10 >= 2 && mod10 <= 4) {
+        return 1;
+    }
+
+    return 2;
+}
+
+/**
+ * Format a count + plural noun ("5 new comments" / "5 новых комментариев")
+ * for the comment-notification mail. kind is 'new' or 'unread'.
+ */
+function commentCount(lang, count, kind) {
+    const forms = (COMMENT_FORMS[lang] || COMMENT_FORMS.ru)[kind];
+    const idx = lang === 'ru' ? ruPluralIndex(count) : count === 1 ? 0 : 1;
+
+    return count + ' ' + forms[idx];
+}
+
+module.exports = { getT, t, userLang, commentCount, init };

@@ -8,8 +8,7 @@ import _ from 'lodash';
 import path from 'path';
 import pug from 'pug';
 import log4js from 'log4js';
-import Utils from '../commons/Utils';
-import { getT, userLang } from '../commons/i18n';
+import { getT, userLang, commentCount } from '../commons/i18n';
 import * as session from './_session';
 import config from '../config';
 import { waitDb } from './connection';
@@ -36,10 +35,6 @@ const subscrPerPage = 24;
 const sortNotice = (a, b) => a.brief.newest < b.brief.newest ? 1 : a.brief.newest > b.brief.newest ? -1 : 0;
 const sortSubscr = ({ ccount_new: aCount = 0, sbscr_create: aDate }, { ccount_new: bCount = 0, sbscr_create: bDate }) =>
     aCount < bCount ? 1 : aCount > bCount ? -1 : aDate < bDate ? 1 : aDate > bDate ? -1 : 0;
-const declension = {
-    comment: [' новый комментарий', ' новых комментария', ' новых комментариев'],
-    commentUnread: [' непрочитанный', ' непрочитанных', ' непрочитанных'],
-};
 
 // Subscribe to/unsubscribe from object (external, for current user by object cid)
 async function subscribeUser({ cid, type = 'photo', subscribe }) {
@@ -351,6 +346,9 @@ async function sendUserNotice(userId) {
         throw new NotFoundError(constantsError.NO_SUCH_USER);
     }
 
+    const lang = userLang(user);
+    const t = getT(lang);
+
     // Find all subscriptions of users, which ready for notyfication (sbscr_noty: true)
     const rels = await UserObjectRel.find(
         { user: userId, sbscr_noty: true },
@@ -420,10 +418,10 @@ async function sendUserNotice(userId) {
 
             totalNewestComments += newest;
 
-            obj.briefFormat = { newest: newest + Utils.format.wordEndOfNum(newest, declension.comment) };
+            obj.briefFormat = { newest: commentCount(lang, newest, 'new') };
 
             if (newest !== unread) {
-                obj.briefFormat.unread = unread + Utils.format.wordEndOfNum(unread, declension.commentUnread);
+                obj.briefFormat.unread = commentCount(lang, unread, 'unread');
             }
 
             result.push(obj);
@@ -441,9 +439,6 @@ async function sendUserNotice(userId) {
         newsResult.sort(sortNotice);
         photosResult.sort(sortNotice);
 
-        const lang = userLang(user);
-        const t = getT(lang);
-
         await sendMail({
             sender: 'noreply',
             receiver: { alias: String(user.disp), email: user.email },
@@ -458,9 +453,7 @@ async function sendUserNotice(userId) {
                 greeting: t('Уведомление о событиях на PastVu'),
                 t,
             }),
-            text: totalNewestComments +
-            (totalNewestComments === 1 ? ' новый коментарий' : ' новых ' +
-            (totalNewestComments < 5 ? 'комментария' : 'комментариев')),
+            text: commentCount(lang, totalNewestComments, 'new'),
         });
     }
 
