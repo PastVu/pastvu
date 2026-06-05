@@ -8,6 +8,7 @@
  *
  * @author Klimashkin
  */
+/*global init:true*/
 define(['jquery', 'underscore', 'underscore.string', 'i18n', 'lib/geocoordsparser', 'lib/jsuri', 'lib/jquery/plugins/extends', 'bs/tooltip'], function ($, _, _s, i18n, parsecoords) {
     const Utils = {
 
@@ -691,9 +692,20 @@ define(['jquery', 'underscore', 'underscore.string', 'i18n', 'lib/geocoordsparse
             }
 
             const wordEndOfNumCases = [2, 0, 1, 1, 1, 2];
+            // window.init.settings.lang reflects the resolved locale picked by
+            // the server; same source i18n.js reads from. Cached here so the
+            // hot path stays branch-free per call.
+            const isRussianLang = (typeof init !== 'undefined' && init.settings && init.settings.lang || 'ru') === 'ru';
 
             function declOfNum(number, titles) {
-                return titles[number % 100 > 4 && number % 100 < 20 ? 2 : wordEndOfNumCases[number % 10 < 5 ? number % 10 : 5]];
+                if (isRussianLang) {
+                    return titles[number % 100 > 4 && number % 100 < 20 ? 2 : wordEndOfNumCases[number % 10 < 5 ? number % 10 : 5]];
+                }
+
+                // Russian declension feeds in [singular, paucal, plural];
+                // English collapses the latter two, so pick singular only when
+                // count is exactly 1.
+                return number === 1 ? titles[0] : titles[1];
             }
 
             return {

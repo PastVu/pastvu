@@ -23,12 +23,16 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
         'photosToApprove',
     ];
     const imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
+    // Declension arrays are passed to Utils.format.wordEndOfNum as
+    // [singular, paucal, plural]. Russian uses all three; English collapses
+    // paucal+plural into one form, so each cell still goes through i18n so
+    // the English file can declare a single noun form per slot.
     const declension = {
-        user: [' пользователь', ' пользователя', ' пользователей'],
-        reg: [' зарегистрирован', ' зарегистрированых', ' зарегистрированых'],
-        photo: [' фотография', ' фотографии', ' фотографий'],
-        comment: [' комментарий', ' комментария', ' комментариев'],
-        view: [' просмотр', ' просмотра', ' просмотров'],
+        user: [i18n(' пользователь'), i18n(' пользователя'), i18n(' пользователей')],
+        reg: [i18n(' зарегистрирован'), i18n(' зарегистрированых'), i18n(' зарегистрированых')],
+        photo: [i18n(' фотография'), i18n(' фотографии'), i18n(' фотографий')],
+        comment: [i18n(' комментарий'), i18n(' комментария'), i18n(' комментариев')],
+        view: [i18n(' просмотр'), i18n(' просмотра'), i18n(' просмотров')],
     };
 
     return Cliche.extend({
@@ -293,9 +297,12 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                 if (self.catLoading() === 'stats') {
                     self.stats.all = data.all;
                     self.stats.common = data.common;
-                    self.stats.common.onlineTxt = 'Сейчас на сайте ' + globalVM.intl.num(data.common.onall) +
-                        Utils.format.wordEndOfNum(data.common.onall, declension.user) +
-                        ', из них ' + globalVM.intl.num(data.common.onreg) + Utils.format.wordEndOfNum(data.common.onall, declension.reg);
+                    self.stats.common.onlineTxt = i18n('Сейчас на сайте {{users}}, из них {{regs}}', {
+                        users: globalVM.intl.num(data.common.onall) +
+                            Utils.format.wordEndOfNum(data.common.onall, declension.user),
+                        regs: globalVM.intl.num(data.common.onreg) +
+                            Utils.format.wordEndOfNum(data.common.onreg, declension.reg),
+                    });
                     success = true;
                 }
 

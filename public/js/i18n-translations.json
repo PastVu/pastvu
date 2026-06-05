@@ -973,5 +973,20 @@
     "У {{count}} фотографий сброшены индивидуальные настройки скачивания": "Individual download settings were reset on {{count}} photos",
     "Выбор домашнего региона": "Pick home region",
     "Необходимо выбрать один регион": "You must select exactly one region",
-    "Изменение списка регионов для фильтрации по умолчанию": "Edit default filter region list"
+    "Изменение списка регионов для фильтрации по умолчанию": "Edit default filter region list",
+    " пользователь": " user",
+    " пользователя": " users",
+    " пользователей": " users",
+    " зарегистрирован": " registered",
+    " зарегистрированых": " registered",
+    " фотография": " photo",
+    " фотографии": " photos",
+    " фотографий": " photos",
+    " комментарий": " comment",
+    " комментария": " comments",
+    " комментариев": " comments",
+    " просмотр": " view",
+    " просмотра": " views",
+    " просмотров": " views",
+    "Сейчас на сайте {{users}}, из них {{regs}}": "Currently online: {{users}}, of which {{regs}}"
 }
