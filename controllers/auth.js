@@ -10,8 +10,10 @@ import path from 'path';
 import pug from 'pug';
 import log4js from 'log4js';
 import moment from 'moment';
+import { parse as parseCookie } from 'cookie';
 import config from '../config';
 import Utils from '../commons/Utils';
+import { getT } from '../commons/i18n';
 import * as session from './_session';
 import { send as sendMail } from './mail';
 import { userSettingsDef } from './settings';
@@ -25,7 +27,22 @@ import { Counter } from '../models/Counter';
 moment.locale(config.lang);
 
 const ms2d = ms('2d');
-const human2d = moment.duration(ms2d).humanize();
+
+// Pull the user's preferred language from this request's past_lang cookie.
+// Used for anonymous flows like registration where there is no user document
+// yet to read user.settings.lang from.
+function langFromHandshake(handshake) {
+    const cookieObj = parseCookie(handshake && handshake.headers && handshake.headers.cookie || '');
+    const cookieLang = cookieObj.past_lang;
+
+    return config.locales.includes(cookieLang) ? cookieLang : config.lang;
+}
+
+function formatLinkValid(lang, t) {
+    return `${moment.duration(ms2d).locale(lang).humanize()} ` +
+        `(${t('до')} ${moment.utc().add(ms2d).locale(lang).format('LLL')})`;
+}
+
 const logger = log4js.getLogger('auth.js');
 
 let recallTpl;
@@ -92,6 +109,9 @@ async function logout() {
 
 // Registration
 async function register({ login, email, pass, pass2 }) {
+    const lang = langFromHandshake(this.handshake);
+    const t = getT(lang);
+
     if (!login) {
         throw new InputError(constants.INPUT_LOGIN_REQUIRED);
     }
@@ -165,7 +185,7 @@ async function register({ login, email, pass, pass2 }) {
             sender: 'noreply',
             receiver: { alias: login, email },
             bcc: config.admin.email,
-            subject: 'Подтверждение регистрации',
+            subject: t('Подтверждение регистрации'),
             head: true,
             body: regTpl({
                 email,
@@ -173,10 +193,11 @@ async function register({ login, email, pass, pass2 }) {
                 config,
                 confirmKey,
                 username: login,
-                greeting: 'Спасибо за регистрацию на проекте PastVu!',
-                linkvalid: `${human2d} (до ${moment.utc().add(ms2d).format('LLL')})`,
+                greeting: t('Спасибо за регистрацию на проекте PastVu!'),
+                linkvalid: formatLinkValid(lang, t),
+                t,
             }),
-            text: `Перейдите по следующей ссылке: ${config.client.origin}/confirm/${confirmKey}`,
+            text: t('Перейдите по следующей ссылке: {{link}}', { link: `${config.client.origin}/confirm/${confirmKey}` }),
         });
     } catch (err) {
         await User.deleteOne({ login }).exec();
@@ -186,8 +207,7 @@ async function register({ login, email, pass, pass2 }) {
     }
 
     return {
-        message: 'Учетная запись создана успешно. Для завершения регистрации следуйте инструкциям, ' +
-        'отправленным на указанный вами e-mail',
+        message: t('Учетная запись создана успешно. Для завершения регистрации следуйте инструкциям, отправленным на указанный вами e-mail'),
     };
 }
 
@@ -212,6 +232,11 @@ async function recall({ login }) {
         throw new AuthenticationError(constants.AUTHENTICATION_REGISTRATION);
     }
 
+    // Prefer the recall target's saved language so the email matches their UI,
+    // even when the recall form was opened in a different language.
+    const lang = user.settings && user.settings.lang || langFromHandshake(this.handshake);
+    const t = getT(lang);
+
     const confirmKey = Utils.randomString(8);
 
     await UserConfirm.deleteOne({ user: user._id }).exec();
@@ -221,19 +246,20 @@ async function recall({ login }) {
     sendMail({
         sender: 'noreply',
         receiver: { alias: user.login, email: user.email },
-        subject: 'Запрос на восстановление пароля',
+        subject: t('Запрос на восстановление пароля'),
         head: true,
         body: recallTpl({
             config,
             confirmKey,
             username: user.disp,
-            linkvalid: `${human2d} (до ${moment.utc().add(ms2d).format('LLL')})`,
+            linkvalid: formatLinkValid(lang, t),
+            t,
         }),
-        text: `Перейдите по следующей ссылке: ${config.client.origin}/confirm/${confirmKey}`,
+        text: t('Перейдите по следующей ссылке: {{link}}', { link: `${config.client.origin}/confirm/${confirmKey}` }),
     });
 
     return {
-        message: 'Запрос успешно отправлен. Для продолжения процедуры следуйте инструкциям, высланным на Ваш e-mail',
+        message: t('Запрос успешно отправлен. Для продолжения процедуры следуйте инструкциям, высланным на Ваш e-mail'),
     };
 }
 

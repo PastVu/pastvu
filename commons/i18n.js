@@ -58,4 +58,16 @@ function t(lang, key, vars) {
     return getT(lang)(key, vars);
 }
 
-module.exports = { getT, t, init };
+/**
+ * Pick the most appropriate language for a given user document.
+ * Falls back to config.lang when the user has no explicit preference.
+ */
+function userLang(user) {
+    if (user && user.settings && user.settings.lang) {
+        return user.settings.lang;
+    }
+
+    return config.lang || DEFAULT_LANG;
+}
+
+module.exports = { getT, t, userLang, init };
