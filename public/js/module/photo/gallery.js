@@ -5,9 +5,9 @@
 
 define([
     'underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche',
-    'globalVM', 'renderer', 'model/Photo', 'model/storage', 'm/photo/status', 'lib/jsuri',
+    'globalVM', 'i18n', 'renderer', 'model/Photo', 'model/storage', 'm/photo/status', 'lib/jsuri',
     'noties', 'text!tpl/photo/gallery.pug', 'css!style/photo/gallery',
-], function (_, Browser, Utils, socket, P, ko, koMapping, Cliche, globalVM,
+], function (_, Browser, Utils, socket, P, ko, koMapping, Cliche, globalVM, i18n,
              renderer, Photo, storage, statuses, Uri, noties, pug) {
     'use strict';
 
@@ -212,12 +212,16 @@ define([
 
                 if (count) {
                     if (this.feed() || this.coin()) {
-                        txt = 'Всего ' + globalVM.intl.num(count) + ' фотографий';
+                        txt = i18n('Всего {{count}} фотографий', { count: globalVM.intl.num(count) });
                     } else {
-                        txt = 'Показаны ' + globalVM.intl.num(this.pageFirstItem()) + '&nbsp;&ndash;&nbsp;' + globalVM.intl.num(this.pageLastItem()) + ' из ' + globalVM.intl.num(count);
+                        txt = i18n('Показаны {{from}}&nbsp;&ndash;&nbsp;{{to}} из {{total}}', {
+                            from: globalVM.intl.num(this.pageFirstItem()),
+                            to: globalVM.intl.num(this.pageLastItem()),
+                            total: globalVM.intl.num(count),
+                        });
                     }
                 } else {
-                    txt = 'Пока нет ни одной фотографии';
+                    txt = i18n('Пока нет ни одной фотографии');
                 }
 
                 return txt;
@@ -325,9 +329,9 @@ define([
 
             if (page === 'feed') {
                 if (this.u) {
-                    Utils.title.setTitle({ pre: preTitle + 'Лента изображений - ' });
+                    Utils.title.setTitle({ pre: preTitle + i18n('Лента изображений - ') });
                 } else {
-                    Utils.title.setTitle({ title: preTitle + 'Лента всех изображений' });
+                    Utils.title.setTitle({ title: preTitle + i18n('Лента всех изображений') });
                 }
 
                 if (!this.coin() && this.page() === 1 && currPhotoLength && currPhotoLength <= this.limit) {
@@ -348,7 +352,7 @@ define([
                     return;
                 }
 
-                Utils.title.setTitle({ title: preTitle + 'Случайные изображения' });
+                Utils.title.setTitle({ title: preTitle + i18n('Случайные изображения') });
 
                 page = 1;
                 this.feed(false);
@@ -356,9 +360,9 @@ define([
                 this.coin(true);
             } else {
                 if (this.u) {
-                    Utils.title.setTitle({ pre: preTitle + 'Галерея - ' });
+                    Utils.title.setTitle({ pre: preTitle + i18n('Галерея - ') });
                 } else {
-                    Utils.title.setTitle({ title: preTitle + 'Галерея' });
+                    Utils.title.setTitle({ title: preTitle + i18n('Галерея') });
                 }
 
                 if (!this.coin() && page === 1 && this.page() === 1 && currPhotoLength) {
@@ -1318,7 +1322,7 @@ define([
                 Photo.factory(photo, {
                     type: 'compact',
                     pic: 'h',
-                    customDefaults: { title: 'Без названия' },
+                    customDefaults: { title: i18n('Без названия') },
                     can: { 'protected': photo.protected },
                 });
 
@@ -1381,16 +1385,16 @@ define([
                         {
                             module: 'm/user/photoUpload',
                             modal: {
-                                topic: 'Загрузка изображений',
+                                topic: i18n('Загрузка изображений'),
                                 initWidth: '1000px',
                                 offIcon: {
-                                    text: 'Отмена', click: function () {
+                                    text: i18n('Отмена'), click: function () {
                                         this.closeUpload();
                                     }, ctx: this,
                                 },
                                 btns: [
                                     {
-                                        css: 'btn-success', text: 'Завершить',
+                                        css: 'btn-success', text: i18n('Завершить'),
                                         click: function () {
                                             this.uploadVM.createPhotos(function (data) {
                                                 if (data && !data.error) {
@@ -1403,7 +1407,7 @@ define([
                                         }, ctx: this,
                                     },
                                     {
-                                        css: 'btn-warning', text: 'Отмена',
+                                        css: 'btn-warning', text: i18n('Отмена'),
                                         click: function () {
                                             this.closeUpload();
                                         }, ctx: this,
@@ -1481,17 +1485,17 @@ define([
             if (data.conv) {
                 content = imgFailTpl({
                     style: 'margin-top:7px;padding-top:20px; background: url(/img/misc/photoConvWhite.png) 50% 0 no-repeat;',
-                    txt: 'Превью уже создается<br>пожалуйста, обновите позже',
+                    txt: i18n('Превью уже создается<br>пожалуйста, обновите позже'),
                 });
             } else if (data.convqueue) {
                 content = imgFailTpl({
                     style: 'margin-top:7px;',
-                    txt: '<span class="glyphicon glyphicon-road"></span><br>Превью скоро будет создано<br>пожалуйста, обновите позже',
+                    txt: '<span class="glyphicon glyphicon-road"></span><br>' + i18n('Превью скоро будет создано<br>пожалуйста, обновите позже'),
                 });
             } else {
                 content = imgFailTpl({
                     style: 'margin-top:7px;padding-top:25px; background: url(/img/misc/imgw.png) 50% 0 no-repeat;',
-                    txt: 'Превью недоступно',
+                    txt: i18n('Превью недоступно'),
                 });
             }
 
@@ -1511,23 +1515,23 @@ define([
                                 selectedInit: this.filter.disp.r(),
                             },
                             modal: {
-                                topic: 'Выбор регионов для фильтрации',
+                                topic: i18n('Выбор регионов для фильтрации'),
                                 initWidth: '900px',
                                 maxWidthRatio: 0.95,
                                 fullHeight: true,
                                 withScroll: true,
-                                offIcon: { text: 'Отмена', click: this.closeRegionSelect, ctx: this },
+                                offIcon: { text: i18n('Отмена'), click: this.closeRegionSelect, ctx: this },
                                 btns: [
                                     {
                                         css: 'btn-success',
-                                        text: 'Применить',
+                                        text: i18n('Применить'),
                                         glyphicon: 'glyphicon-ok',
                                         click: function () {
                                             const regions = this.regselectVM.getSelectedRegions(['cid', 'parents', 'title_local', 'childLen']);
 
                                             if (regions.length > 10) {
                                                 return noties.alert({
-                                                    message: 'Допускается выбирать до 10 регионов',
+                                                    message: i18n('Допускается выбирать до 10 регионов'),
                                                     type: 'warning',
                                                     timeout: 4000,
                                                     ok: true,
@@ -1548,7 +1552,7 @@ define([
                                         },
                                         ctx: this,
                                     },
-                                    { css: 'btn-warning', text: 'Отмена', click: this.closeRegionSelect, ctx: this },
+                                    { css: 'btn-warning', text: i18n('Отмена'), click: this.closeRegionSelect, ctx: this },
                                 ],
                             },
                             callback: function (vm) {
@@ -1605,23 +1609,23 @@ define([
                             neverSelectable: topcids,
                         },
                         modal: {
-                            topic: 'Выбор регионов для исключения из фильтрации',
+                            topic: i18n('Выбор регионов для исключения из фильтрации'),
                             initWidth: '900px',
                             maxWidthRatio: 0.95,
                             fullHeight: true,
                             withScroll: true,
-                            offIcon: { text: 'Отмена', click: this.closeRegionExcludeSelect, ctx: this },
+                            offIcon: { text: i18n('Отмена'), click: this.closeRegionExcludeSelect, ctx: this },
                             btns: [
                                 {
                                     css: 'btn-success',
-                                    text: 'Применить',
+                                    text: i18n('Применить'),
                                     glyphicon: 'glyphicon-ok',
                                     click: function () {
                                         const regions = this.regselectVM.getSelectedRegions(['cid', 'parents', 'title_local']);
 
                                         if (regions.length > 10) {
                                             return noties.alert({
-                                                message: 'Допускается выбирать до 10 регионов',
+                                                message: i18n('Допускается выбирать до 10 регионов'),
                                                 type: 'warning',
                                                 timeout: 4000,
                                                 ok: true,
@@ -1644,7 +1648,7 @@ define([
                                     },
                                     ctx: this,
                                 },
-                                { css: 'btn-warning', text: 'Отмена', click: this.closeRegionExcludeSelect, ctx: this },
+                                { css: 'btn-warning', text: i18n('Отмена'), click: this.closeRegionExcludeSelect, ctx: this },
                             ],
                         },
                         callback: function (vm) {

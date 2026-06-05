@@ -4,11 +4,11 @@
  */
 
 define([
-    'underscore', 'jquery', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM',
+    'underscore', 'jquery', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'i18n',
     'renderer', 'model/User', 'model/storage', 'leaflet', 'leaflet-extends/L.neoMap', 'noties',
     'text!tpl/map/mapClusterCalc.pug', 'css!style/map/mapClusterCalc', 'jquery-ui/draggable', 'jquery-ui/resizable',
     'jquery-ui/effect-highlight', 'css!style/jquery/ui/core', 'css!style/jquery/ui/resizable', 'css!style/jquery/ui/theme',
-], function (_, $, Browser, Utils, socket, P, ko, Cliche, globalVM, renderer, User, storage, L, Map, noties, pug) {
+], function (_, $, Browser, Utils, socket, P, ko, Cliche, globalVM, i18n, renderer, User, storage, L, Map, noties, pug) {
     'use strict';
 
     return Cliche.extend({
@@ -75,25 +75,25 @@ define([
                     types: ko.observableArray([
                         {
                             id: 'scheme',
-                            desc: 'Схема',
+                            desc: i18n('Схема'),
                             selected: ko.observable(false),
                             params: 'roadmap',
                         },
                         {
                             id: 'sat',
-                            desc: 'Спутник',
+                            desc: i18n('Спутник'),
                             selected: ko.observable(false),
                             params: 'satellite',
                         },
                         {
                             id: 'hyb',
-                            desc: 'Гибрид',
+                            desc: i18n('Гибрид'),
                             selected: ko.observable(false),
                             params: 'hybrid',
                         },
                         {
                             id: 'land',
-                            desc: 'Ландшафт',
+                            desc: i18n('Ландшафт'),
                             selected: ko.observable(false),
                             params: 'terrain',
                         },
@@ -104,37 +104,37 @@ define([
             if (P.settings.USE_YANDEX_API()) {
                 this.layers.push({
                     id: 'yandex',
-                    desc: 'Яндекс',
+                    desc: i18n('Яндекс'),
                     deps: 'leaflet-extends/L.Yandex',
                     selected: ko.observable(false),
                     types: ko.observableArray([
                         {
                             id: 'scheme',
-                            desc: 'Схема',
+                            desc: i18n('Схема'),
                             selected: ko.observable(false),
                             params: 'map',
                         },
                         {
                             id: 'sat',
-                            desc: 'Спутник',
+                            desc: i18n('Спутник'),
                             selected: ko.observable(false),
                             params: 'satellite',
                         },
                         {
                             id: 'hyb',
-                            desc: 'Гибрид',
+                            desc: i18n('Гибрид'),
                             selected: ko.observable(false),
                             params: 'hybrid',
                         },
                         {
                             id: 'pub',
-                            desc: 'Народная',
+                            desc: i18n('Народная'),
                             selected: ko.observable(false),
                             params: 'publicMap',
                         },
                         {
                             id: 'pubhyb',
-                            desc: 'Народный гибрид',
+                            desc: i18n('Народный гибрид'),
                             selected: ko.observable(false),
                             params: 'publicMapHybrid',
                         },
@@ -285,10 +285,8 @@ define([
             const _this = this;
 
             noties.confirm({
-                message: 'Новые параметры кластера посчитаны для всех ' + arr.length + ' уровней зума. <br>' +
-                'Отправить данные на сервер для формирования новой кластерной сетки всех фотографий?<br>' +
-                'Это может занять несколько минут',
-                okText: 'Да',
+                message: i18n('Новые параметры кластера посчитаны для всех {{count}} уровней зума. <br>Отправить данные на сервер для формирования новой кластерной сетки всех фотографий?<br>Это может занять несколько минут', { count: arr.length }),
+                okText: i18n('Да'),
                 okClass: 'btn-warning',
                 onOk: function (confirmer) {
                     confirmer.disable();
@@ -296,7 +294,7 @@ define([
                     socket.run('cluster.recalcAll', { params: arr, conditions: _this.saveParams }, true)
                         .then(function () {
                             if (confirmer) {
-                                confirmer.success('Новая кластерная сетка сформированна', 'Ok', null, function () {
+                                confirmer.success(i18n('Новая кластерная сетка сформированна'), 'Ok', null, function () {
                                     _this.finish();
                                 });
                             }
@@ -310,9 +308,7 @@ define([
                         });
 
                     confirmer.success(
-                        'Данные отправлены на сервер для пересчета.<br>' +
-                        'Вы можете закрыть этот диалог - данные расчитываются на сервере.<br>' +
-                        'Диалог обновится при получении результата расчета с сервера', 'Закрыть', null, function () {
+                        i18n('Данные отправлены на сервер для пересчета.<br>Вы можете закрыть этот диалог - данные расчитываются на сервере.<br>Диалог обновится при получении результата расчета с сервера'), i18n('Закрыть'), null, function () {
                             confirmer = null;
                             _this.finish();
                         });

@@ -5,11 +5,11 @@
 
 define([
     'underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping',
-    'noties', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'lib/doT', 'text!tpl/comment/comments.pug',
+    'noties', 'm/_moduleCliche', 'globalVM', 'i18n', 'renderer', 'moment', 'lib/doT', 'text!tpl/comment/comments.pug',
     'text!tpl/comment/cdot.pug', 'text!tpl/comment/cdotanonym.pug', 'text!tpl/comment/cdotauth.pug',
     'text!tpl/comment/cdotdel.pug', 'text!tpl/comment/cdotadd.pug', 'css!style/comment/comments',
 ], function (_, _s, Browser, Utils, socket, P, ko, koMapping,
-             noties, Cliche, globalVM, renderer, moment, doT, html,
+             noties, Cliche, globalVM, i18n, renderer, moment, doT, html,
              doTComments, doTCommentAnonym, doTCommentAuth,
              dotCommentDel, dotCommentAdd) {
     'use strict';
@@ -767,7 +767,7 @@ define([
 
             if ($withContent.length) {
                 noties.alert({
-                    message: 'У вас есть незавершенный комментарий. Отправьте или отмените его и переходите к новому',
+                    message: i18n('У вас есть незавершенный комментарий. Отправьте или отмените его и переходите к новому'),
                     type: 'warning',
                     timeout: 4000,
                 });
@@ -862,7 +862,7 @@ define([
                 action += '.own';
             }
 
-            this.reasonSelect(action, 'Причина удаления', function (cancel, reason) {
+            this.reasonSelect(action, i18n('Причина удаления'), function (cancel, reason) {
                 if (cancel) {
                     $('.hlRemove', this.$cmts).removeClass('hlRemove');
 
@@ -930,7 +930,7 @@ define([
                             }
 
                             if (parent.can.del) {
-                                $('<div class="dotDelimeter">·</div><span class="cact remove">Удалить</span>')
+                                $('<div class="dotDelimeter">·</div><span class="cact remove">' + i18n('Удалить') + '</span>')
                                     .insertAfter($('#c' + parent.cid + ' .cact.edit', this.$cmts));
                             }
                         }
@@ -943,7 +943,7 @@ define([
                         ga('send', 'event', 'comment', 'delete', 'comment delete success', count);
 
                         noties.alert({
-                            message: 'Удалено комментариев: ' + count + ', от ' + result.countUsers + ' пользователя(ей)',
+                            message: i18n('Удалено комментариев: {{count}}, от {{users}} пользователя(ей)', { count: count, users: result.countUsers }),
                             type: 'information',
                             layout: 'topRight',
                             timeout: 5000,
@@ -966,8 +966,8 @@ define([
             $('[data-origin="' + cid + '"]', that.$cmts).add($c).addClass('hlRestore');
 
             noties.confirm({
-                message: 'Восстановить комментарий и его потомков, которые были удалены вместе с ним<br>(подсвечены зеленым)?',
-                okText: 'Да',
+                message: i18n('Восстановить комментарий и его потомков, которые были удалены вместе с ним<br>(подсвечены зеленым)?'),
+                okText: i18n('Да'),
                 okClass: 'btn-success',
                 onOk: function (confirmer) {
                     confirmer.disable();
@@ -1021,7 +1021,7 @@ define([
                             confirmer.close();
                         });
                 },
-                cancelText: 'Нет',
+                cancelText: i18n('Нет'),
                 cancelClass: 'btn-warning',
                 onCancel: function () {
                     $('.hlRestore', that.$cmts).removeClass('hlRestore');
@@ -1089,7 +1089,7 @@ define([
                     });
                 })
                 .catch(function () {
-                    $('.delico', $c).removeClass('loading').html('Показать');
+                    $('.delico', $c).removeClass('loading').html(i18n('Показать'));
                     that.loadingDel = false;
                 });
         },
@@ -1124,14 +1124,14 @@ define([
                         maxWidthRatio: 0.75,
                         animateScale: true,
                         offIcon: {
-                            text: 'Отмена', click: function () {
+                            text: i18n('Отмена'), click: function () {
                                 cb.call(ctx, true);
                                 this.reasonDestroy();
                             }, ctx: this,
                         },
                         btns: [
                             {
-                                css: 'btn-warning', text: 'Выполнить', glyphicon: 'glyphicon-ok',
+                                css: 'btn-warning', text: i18n('Выполнить'), glyphicon: 'glyphicon-ok',
                                 click: function () {
                                     const reason = this.reasonVM.getReason();
 
@@ -1142,7 +1142,7 @@ define([
                                 }, ctx: this,
                             },
                             {
-                                css: 'btn-success', text: 'Отмена',
+                                css: 'btn-success', text: i18n('Отмена'),
                                 click: function () {
                                     cb.call(ctx, true);
                                     this.reasonDestroy();
@@ -1396,12 +1396,12 @@ define([
                             module: 'm/comment/hist',
                             options: { objCid: this.cid, cid: cid, type: this.type },
                             modal: {
-                                topic: 'История изменений комментария',
+                                topic: i18n('История изменений комментария'),
                                 animateScale: true,
                                 curtainClick: { click: this.closeHistory, ctx: this },
-                                offIcon: { text: 'Закрыть', click: this.closeHistory, ctx: this },
+                                offIcon: { text: i18n('Закрыть'), click: this.closeHistory, ctx: this },
                                 btns: [
-                                    { css: 'btn-primary', text: 'Закрыть', click: this.closeHistory, ctx: this },
+                                    { css: 'btn-primary', text: i18n('Закрыть'), click: this.closeHistory, ctx: this },
                                 ],
                             },
                             callback: function (vm) {
@@ -1522,7 +1522,7 @@ define([
                     this.navScrollCounterOn();
                 } else {
                     // Если дерево еще скрыто, т.е. receive еще не было, просто пишем сколько новых комментариев ниже
-                    $('.navigator .down', this.$dom).addClass('active').find('.navTxt').attr('title', 'Следующий непрочитанный комментарий').text(this.countNew());
+                    $('.navigator .down', this.$dom).addClass('active').find('.navTxt').attr('title', i18n('Следующий непрочитанный комментарий')).text(this.countNew());
                     this.navScrollCounterOff();
                 }
             } else {
@@ -1574,11 +1574,11 @@ define([
 
             up.classList[upCount ? 'add' : 'remove']('active');
             up.querySelector('.navTxt').innerHTML = upCount ? globalVM.intl.num(upCount) : '';
-            up[upCount ? 'setAttribute' : 'removeAttribute']('title', 'Предыдущий непрочитанный комментарий');
+            up[upCount ? 'setAttribute' : 'removeAttribute']('title', i18n('Предыдущий непрочитанный комментарий'));
 
             down.classList[downCount ? 'add' : 'remove']('active');
             down.querySelector('.navTxt').innerHTML = downCount ? globalVM.intl.num(downCount) : '';
-            down[downCount ? 'setAttribute' : 'removeAttribute']('title', 'Следующий непрочитанный комментарий');
+            down[downCount ? 'setAttribute' : 'removeAttribute']('title', i18n('Следующий непрочитанный комментарий'));
         },
     });
 });
