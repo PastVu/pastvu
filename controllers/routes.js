@@ -8,6 +8,7 @@ import http from 'http';
 import log4js from 'log4js';
 import config from '../config';
 import Utils from '../commons/Utils';
+import { getT } from '../commons/i18n';
 import * as session from './_session';
 import { clientParams, ready as settingsReady } from './settings';
 import NotFoundError from '../app/errors/NotFound';
@@ -27,6 +28,15 @@ const origin = config.client.origin;
 let clientParamsJSON = JSON.stringify(clientParams);
 
 settingsReady.then(() => clientParamsJSON = JSON.stringify(clientParams));
+
+// Resolve the request language from the past_lang cookie, falling back to
+// the server's default. Used by server-rendered pages (status/error, nojs)
+// to localize without going through a socket.
+function langFromRequest(req) {
+    const cookieLang = req.cookie && req.cookie.past_lang;
+
+    return config.locales.includes(cookieLang) ? cookieLang : config.lang;
+}
 
 function genInitDataString(req) {
     const usObj = req.handshake.usObj;
@@ -211,6 +221,7 @@ function appMainHandler(req, res) {
         agent: browser.agent,
         polyfills: browser.polyfills,
         initData: genInitDataString(req),
+        t: getT(langFromRequest(req)),
     });
 }
 
@@ -227,6 +238,7 @@ function appAdminHandler(req, res) {
         agent: browser.agent,
         polyfills: browser.polyfills,
         initData: genInitDataString(req),
+        t: getT(langFromRequest(req)),
     });
 }
 
@@ -308,10 +320,13 @@ export function bindRoutes(app) {
 
     // Obsolete browser
     app.get('/badbrowser', getReqBrowser, setStaticHeaders, (req, res) => {
+        const t = getT(langFromRequest(req));
+
         res.statusCode = 200;
         res.render('status/badbrowser', {
             agent: req.browser && req.browser.agent,
-            title: 'Вы используете устаревшую версию браузера',
+            title: t('Вы используете устаревшую версию браузера'),
+            t,
         });
     });
 
@@ -321,7 +336,7 @@ export function bindRoutes(app) {
 
         res.statusCode = 200;
         res.setHeader('Cache-Control', 'no-cache,no-store,max-age=0,must-revalidate');
-        res.render('status/myua', { agent, accept, title });
+        res.render('status/myua', { agent, accept, title, t: getT(langFromRequest(req)) });
     });
 
     // Ping-pong to verify the server is working
@@ -341,7 +356,7 @@ export function bindRoutes(app) {
 export const send404 = (function () {
     const status404 = http.STATUS_CODES[404];
     const json404 = JSON.stringify({ error: status404 });
-    let html404;
+    const htmlCache = new Map(); // lang → rendered html
 
     return function (req, res, error) {
         res.statusCode = 404;
@@ -350,19 +365,22 @@ export const send404 = (function () {
             return res.end(error.toJSON ? error.toJSON() : json404);
         }
 
-        if (html404) {
-            return res.end(html404);
+        const lang = langFromRequest(req);
+        const cached = htmlCache.get(lang);
+
+        if (cached) {
+            return res.end(cached);
         }
 
-        res.render('status/404', (err, html) => {
+        res.render('status/404', { t: getT(lang) }, (err, html) => {
             if (err) {
                 loggerError.error('Cannot render 404 page', err);
-                html404 = status404;
+                htmlCache.set(lang, status404);
             } else {
-                html404 = html;
+                htmlCache.set(lang, html);
             }
 
-            res.end(html404);
+            res.end(htmlCache.get(lang));
         });
     };
 }());
@@ -378,7 +396,7 @@ export const send500 = (function () {
             return res.end(error.toJSON ? error.toJSON() : json500);
         }
 
-        res.render('status/500', { error }, (err, html) => {
+        res.render('status/500', { error, t: getT(langFromRequest(req)) }, (err, html) => {
             if (err) {
                 loggerError.error('Cannot render 500 page', err);
             }

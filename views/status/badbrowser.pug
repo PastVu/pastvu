@@ -57,18 +57,18 @@ body
 	.cent.centering_content
 		.content.fringe
 			p
-				span Команда PastVu считает, что ваш браузер
+				span= t('Команда PastVu считает, что ваш браузер')
 				if agent && agent.family
 					span.curr=' '+agent.family+' '+agent.major
-				span  устарел и не отвечает современным требованиям, по которым разработан наш сайт
+				span= ' ' + t('устарел и не отвечает современным требованиям, по которым разработан наш сайт')
 				br
 				br
-				| Пожалуйста, обновите ваш браузер или установите с официального сайта один из перечисленных ниже.
+				| #{t('Пожалуйста, обновите ваш браузер или установите с официального сайта один из перечисленных ниже.')}
 				br
-				| Это займет всего несколько минут, но откроет вам быстрый современный интернет.
+				| #{t('Это займет всего несколько минут, но откроет вам быстрый современный интернет.')}
 				br
 				br
-				| А после установки возвращайтесь к нам - на самый большой архив исторических фотографий PastVu.com!
+				| #{t('А после установки возвращайтесь к нам - на самый большой архив исторических фотографий PastVu.com!')}
 			.browsers
 				a.chrome(href="http://www.google.com/chrome", target="_blank") Google Chrome
 				a.firefox(href="http://www.mozilla.org", target="_blank") Mozilla Firefox
@@ -77,4 +77,4 @@ body
 				a.yandex(href="http://browser.yandex.net", target="_blank") Yandex
 			.support
 				a(href='mailto:support@pastvu.comm?subject=Сайт выдаёт сообщение об устаревшем браузере&body=Добрый день! Идентификатор моего браузера: '+(agent&&agent.source?agent.source:''), target="_blank")
-					| Напишите, если мы ошибаемся: support@pastvu.com
+					| #{t('Напишите, если мы ошибаемся: support@pastvu.com')}

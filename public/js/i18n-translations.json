@@ -468,5 +468,20 @@
     "Управлять материалами, на которые вы подписаны, можно на странице подписок:": "You can manage your subscriptions on the subscriptions page:",
     "Задать интервал уведомлений или отключить их вы можете на странице настроек:": "You can adjust the notification interval or disable notifications on the settings page:",
     "Новости:": "News:",
-    "Фотографии:": "Photos:"
+    "Фотографии:": "Photos:",
+    "Страница не найдена [404] - PastVu": "Not found [404] - PastVu",
+    "Запрошенная страница не найдена": "The page you requested was not found",
+    "нажмите, чтобы вернуться на главную": "click here to go to the main page",
+    "Ошибка - PastVu": "Error - PastVu",
+    "К сожалению, сервер не смог выполнить запрос": "Sorry, the server could not fulfill the request",
+    "Код:": "Code:",
+    "Вы используете устаревшую версию браузера": "You are using an outdated browser version",
+    "Команда PastVu считает, что ваш браузер": "The PastVu team thinks your browser",
+    "устарел и не отвечает современным требованиям, по которым разработан наш сайт": "is outdated and does not meet the modern requirements our site is built around",
+    "Пожалуйста, обновите ваш браузер или установите с официального сайта один из перечисленных ниже.": "Please update your browser or install one of those listed below from its official site.",
+    "Это займет всего несколько минут, но откроет вам быстрый современный интернет.": "It will take just a few minutes but will open up the fast modern web for you.",
+    "А после установки возвращайтесь к нам - на самый большой архив исторических фотографий PastVu.com!": "And after installing come back to us — the largest historical photo archive PastVu.com!",
+    "Напишите, если мы ошибаемся: support@pastvu.com": "Write to us if we are wrong: support@pastvu.com",
+    "К сожалению, в вашем браузере выключен JavaScript, который необходим для полноценной работы сайта PastVu.com": "Unfortunately JavaScript is disabled in your browser, and it is required for PastVu.com to work properly.",
+    "Перейдите по следующей ссылке, чтобы узнать почему это важно и как это исправить:": "Follow the link below to learn why this is important and how to fix it:"
 }
