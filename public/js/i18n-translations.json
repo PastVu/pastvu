@@ -553,5 +553,8 @@
     "Такой настройки не существует": "No such setting",
     "Ошибка отправки письма": "Failed to send e-mail",
     "Неверный формат email, проверьте еще раз": "Invalid e-mail format, please check again",
-    "Этот email уже используется другим пользователем": "This e-mail is already in use by another user"
+    "Этот email уже используется другим пользователем": "This e-mail is already in use by another user",
+    "Новый пароль сохранен успешно": "New password saved successfully",
+    "Новый пароль установлен успешно": "New password set successfully",
+    "Спасибо, регистрация подтверждена! Теперь вы можете войти в систему, используя ваш логин и пароль": "Thank you, your registration is confirmed. You can now sign in with your login and password."
 }

@@ -255,6 +255,7 @@ async function recall({ login }) {
 // Password change by recall request from email
 async function passChangeRecall({ key, pass, pass2 }) {
     const { handshake: { usObj: iAm } } = this;
+    const t = getT(langFromHandshake(this.handshake));
 
     if (!_.isString(key) || key.length !== 8) {
         throw new BadParamsError();
@@ -289,12 +290,13 @@ async function passChangeRecall({ key, pass, pass2 }) {
 
     await Promise.all([user.save(), confirm.deleteOne()]);
 
-    return { message: 'Новый пароль сохранен успешно' };
+    return { message: t('Новый пароль сохранен успешно') };
 }
 
 // Password changing in user's settings page with entering current password
 async function passChange({ login, pass, passNew, passNew2 }) {
     const { handshake: { usObj: iAm } } = this;
+    const t = getT(langFromHandshake(this.handshake));
 
     if (!iAm.registered || iAm.user.login !== login) {
         throw new AuthorizationError();
@@ -317,11 +319,13 @@ async function passChange({ login, pass, passNew, passNew2 }) {
     iAm.user.pass = passNew;
     await iAm.user.save();
 
-    return { message: 'Новый пароль установлен успешно' };
+    return { message: t('Новый пароль установлен успешно') };
 }
 
 // Check confirm key
 async function checkConfirm({ key }) {
+    const t = getT(langFromHandshake(this.handshake));
+
     if (!_.isString(key) || key.length < 7 || key.length > 8) {
         throw new BadParamsError();
     }
@@ -340,7 +344,7 @@ async function checkConfirm({ key }) {
         await Promise.all([user.save(), confirm.deleteOne()]);
 
         return {
-            message: 'Спасибо, регистрация подтверждена! Теперь вы можете войти в систему, используя ваш логин и пароль',
+            message: t('Спасибо, регистрация подтверждена! Теперь вы можете войти в систему, используя ваш логин и пароль'),
             type: 'noty',
         };
     }
