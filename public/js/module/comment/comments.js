@@ -457,6 +457,7 @@ define([
                 mod: this.canModerate(),
                 fDate: formatDateRelative,
                 fDateIn: formatDateRelativeIn,
+                i18n: globalVM.i18n,
             });
         },
         usersRanks: function (users) {
@@ -599,6 +600,7 @@ define([
                 cid: inputCid,
                 level: level,
                 type: $cedit ? 'edit' : 'reply',
+                i18n: globalVM.i18n,
             }));
             ko.applyBindings(this, $cadd[0]);
 
@@ -905,6 +907,7 @@ define([
                             $cdel = $(tplCommentDel(comment, {
                                 fDate: formatDateRelative,
                                 fDateIn: formatDateRelativeIn,
+                                i18n: globalVM.i18n,
                             }));
 
                             $c.replaceWith($cdel);
@@ -991,6 +994,7 @@ define([
                                 mod: true,
                                 fDate: formatDateRelative,
                                 fDateIn: formatDateRelativeIn,
+                                i18n: globalVM.i18n,
                             };
 
                             //Заменяем корневой восстанавливаемый комментарий
@@ -1102,7 +1106,7 @@ define([
 
             delete comment.comments; //Обнуляем поддерево дочерних, чтобы, например, createInput ответа на родительский удаленного не искал его дочерние
             getChildComments(comment, $c).remove(); //Удаляем дочерние элементы dom
-            $c.replaceWith(tplCommentDel(comment, { fDate: formatDateRelative, fDateIn: formatDateRelativeIn }));
+            $c.replaceWith(tplCommentDel(comment, { fDate: formatDateRelative, fDateIn: formatDateRelativeIn, i18n: globalVM.i18n }));
         },
         reasonSelect: function (action, topic, cb, ctx) {
             if (this.reasonVM) {
@@ -1260,6 +1264,7 @@ define([
                     mod: self.canModerate(),
                     fDate: formatDateRelative,
                     fDateIn: formatDateRelativeIn,
+                    i18n: globalVM.i18n,
                 }));
 
                 if (parent) {
@@ -1348,6 +1353,7 @@ define([
                     mod: self.canModerate(),
                     fDate: formatDateRelative,
                     fDateIn: formatDateRelativeIn,
+                    i18n: globalVM.i18n,
                 }));
 
                 $('#c' + comment.cid, self.$cmts).replaceWith($c); // Заменяем комментарий на новый
