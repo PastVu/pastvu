@@ -34,6 +34,7 @@
         "worker": "node --max-old-space-size=2048 bin/run.js --script ./worker.js",
         "lint": "./node_modules/.bin/eslint .",
         "lintfix": "./node_modules/.bin/eslint . --fix",
+        "i18n:check": "node bin/find-untranslated-i18n.js",
         "jest": "jest --runInBand",
         "build": "grunt",
         "test": "grunt test",
