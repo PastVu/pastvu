@@ -279,20 +279,12 @@ function getRegionForGallery(req, res, next) {
             const regions = getRegionsArrPublicFromCache(parseFilter(filter).r);
 
             if (!_.isEmpty(regions)) {
-                let hasRussianRegions = false;
-                let title = regions.map(({ title_en: en, title_local: local, parents }) => {
-                    if (parents[0] === 1) {
-                        hasRussianRegions = true;
+                const lang = langFromRequest(req);
+                const regionTitles = regions
+                    .map(({ title_en, title_local }) => lang === 'en' ? title_en || title_local : title_local)
+                    .join(', ');
 
-                        return local;
-                    }
-
-                    return en;
-                }).join(', ');
-
-                title = (hasRussianRegions ? 'Старые фотографии ' : 'Retro photos of ') + title;
-
-                req.pageTitle = title;
+                req.pageTitle = getT(lang)('Старые фотографии {{regions}}', { regions: regionTitles });
             }
         } catch (err) {
             return next(err);

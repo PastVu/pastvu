@@ -557,5 +557,6 @@
     "Новый пароль сохранен успешно": "New password saved successfully",
     "Новый пароль установлен успешно": "New password set successfully",
     "Спасибо, регистрация подтверждена! Теперь вы можете войти в систему, используя ваш логин и пароль": "Thank you, your registration is confirmed. You can now sign in with your login and password.",
-    "PastVu - ретроспектива среды обитания человечества": "PastVu — a retrospective of humanity's habitat"
+    "PastVu - ретроспектива среды обитания человечества": "PastVu — a retrospective of humanity's habitat",
+    "Старые фотографии {{regions}}": "Retro photos of {{regions}}"
 }
