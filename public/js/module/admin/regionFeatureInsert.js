@@ -4,9 +4,9 @@
  */
 
 define([
-    'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
+    'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'i18n',
     'model/storage', 'noties', 'text!tpl/admin/regionFeatureInsert.pug', 'css!style/admin/regionFeatureInsert',
-], function (_, $, Utils, socket, P, ko, koMapping, Cliche, globalVM, storage, noties, pug) {
+], function (_, $, Utils, socket, P, ko, koMapping, Cliche, globalVM, i18n, storage, noties, pug) {
     'use strict';
 
     return Cliche.extend({
@@ -71,7 +71,9 @@ define([
                                     const geoChangePhotosCount = stat.photosCountAfter - stat.photosCountBefore;
 
                                     if (geoChangePhotosCount) {
-                                        stats.push('<b>' + globalVM.intl.num(Math.abs(geoChangePhotosCount)) + '</b> фотографий ' + (geoChangePhotosCount > 0 ? 'добавлено в регион' : 'удалено из региона') + ' вследствии изменения коордиант поолигона.');
+                                        stats.push(i18n(geoChangePhotosCount > 0 ?
+                                            '<b>{{count}}</b> фотографий добавлено в регион вследствии изменения коордиант поолигона.' :
+                                            '<b>{{count}}</b> фотографий удалено из региона вследствии изменения коордиант поолигона.', { count: globalVM.intl.num(Math.abs(geoChangePhotosCount)) }));
                                     }
                                 }
 
@@ -79,24 +81,26 @@ define([
                                     const geoChangeCommentsCount = stat.commentsCountAfter - stat.commentsCountBefore;
 
                                     if (geoChangeCommentsCount) {
-                                        stats.push('<b>' + globalVM.intl.num(Math.abs(geoChangeCommentsCount)) + '</b> комментариев ' + (geoChangeCommentsCount > 0 ? 'добавлено в регион' : 'удалено из региона') + ' вследствии переноса фотографий.');
+                                        stats.push(i18n(geoChangeCommentsCount > 0 ?
+                                            '<b>{{count}}</b> комментариев добавлено в регион вследствии переноса фотографий.' :
+                                            '<b>{{count}}</b> комментариев удалено из региона вследствии переноса фотографий.', { count: globalVM.intl.num(Math.abs(geoChangeCommentsCount)) }));
                                     }
                                 }
 
                                 if (stat.affectedPhotos) {
-                                    stats.push('<b>' + globalVM.intl.num(stat.affectedPhotos) + '</b> фотографий переехали по дереву вслед за регионом.');
+                                    stats.push(i18n('<b>{{count}}</b> фотографий переехали по дереву вслед за регионом.', { count: globalVM.intl.num(stat.affectedPhotos) }));
                                 }
 
                                 if (stat.affectedComments) {
-                                    stats.push('<b>' + globalVM.intl.num(stat.affectedComments) + '</b> комментариев переехали вслед за своими фотографиями.');
+                                    stats.push(i18n('<b>{{count}}</b> комментариев переехали вслед за своими фотографиями.', { count: globalVM.intl.num(stat.affectedComments) }));
                                 }
 
                                 if (stat.affectedUsers) {
-                                    stats.push('У <b>' + globalVM.intl.num(stat.affectedUsers) + '</b> пользователей были сокрашены "Мои регионы".');
+                                    stats.push(i18n('У <b>{{count}}</b> пользователей были сокрашены "Мои регионы".', { count: globalVM.intl.num(stat.affectedUsers) }));
                                 }
 
                                 if (stat.affectedMods) {
-                                    stats.push('У <b>' + globalVM.intl.num(stat.affectedMods) + '</b> модераторов были сокрашены модерируемые регионы.');
+                                    stats.push(i18n('У <b>{{count}}</b> модераторов были сокрашены модерируемые регионы.', { count: globalVM.intl.num(stat.affectedMods) }));
                                 }
                             }
 
