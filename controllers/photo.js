@@ -12,6 +12,7 @@ import log4js from 'log4js';
 import moment from 'moment';
 import config from '../config';
 import Utils from '../commons/Utils';
+import { getT, langFromHandshake } from '../commons/i18n';
 import { dbRedis } from './connection';
 import constants from './constants';
 import constantsError from '../app/errors/constants';
@@ -2574,7 +2575,14 @@ async function convert({ cids = [] }) {
         await Photo.updateMany({ cid: { $in: cids } }, { $set: { convqueue: true } }).exec();
     }
 
-    return converter.addPhotos(converterData, 3);
+    const { count } = await converter.addPhotos(converterData, 3);
+    const t = getT(langFromHandshake(this.handshake));
+
+    return {
+        message: count === 1 ?
+            t('Фотография отправлена на конвертацию') :
+            t('{{count}} фотографии отправлено на конвертацию', { count }),
+    };
 }
 
 // Sends all photo for convert
