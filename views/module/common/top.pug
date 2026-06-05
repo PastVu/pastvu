@@ -1,6 +1,6 @@
 #top(data-bind="with: repository[M!M]")
     .fringe#panel
-        a#brand(href='/', title="PastVu - ретроспектива среды обитания человечества")
+        a#brand(href='/', data-bind="attr: {title: $root.i18n('PastVu - ретроспектива среды обитания человечества')}")
             img.logo(src="/img/misc/logow.png")
             .name(data-bind="html: pageTitle()")
         #panelTools.hide-text
