@@ -40,6 +40,11 @@ function init() {
     });
 }
 
+// Cache of fixed t-functions per language. getFixedT allocates a closure on
+// every call, and getT() runs once per request (per webapi error, per page
+// render); caching keeps the hot path allocation-free.
+const fixedTByLang = new Map();
+
 /**
  * Returns a translation function bound to the given language. Falls back to
  * config.lang (and then to 'ru') when lang is not in config.locales.
@@ -48,8 +53,14 @@ function getT(lang) {
     init();
 
     const supported = (config.locales || []).includes(lang) ? lang : config.lang || DEFAULT_LANG;
+    let fixed = fixedTByLang.get(supported);
 
-    return i18next.getFixedT(supported);
+    if (!fixed) {
+        fixed = i18next.getFixedT(supported);
+        fixedTByLang.set(supported, fixed);
+    }
+
+    return fixed;
 }
 
 /**

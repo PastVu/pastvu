@@ -151,4 +151,4 @@
                         input(type="radio", value="manual", name="photo_new_radios", data-bind="checked: photoNewLimitOption")
                         span(data-bind="text: ' ' + $root.i18n('Вручную')")
                     .form-group
-                        input.form-control.input-sm.photoLimit(type="text", title="Число от 0 до 10000", maxlength="5", pattern="[0-9]{1,5}", data-bind="value: photoNewLimit, valueUpdate: 'keyup', attr: {disabled: photoNewLimitOption() === 'auto'}, css: {}")
+                        input.form-control.input-sm.photoLimit(type="text", maxlength="5", pattern="[0-9]{1,5}", data-bind="value: photoNewLimit, valueUpdate: 'keyup', attr: {disabled: photoNewLimitOption() === 'auto', title: $root.i18n('Число от 0 до 10000')}, css: {}")

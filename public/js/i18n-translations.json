@@ -706,5 +706,20 @@
     "Структура": "Structure",
     "Возвращает массив фотографий, ближайших переданной координате. Массив отсортирован по возрастанию расстояния": "Returns an array of photos nearest to the given coordinate, ordered by ascending distance",
     "Возвращает массивы кластеров и фотографий для карты, входящих в переданные границы": "Returns the arrays of clusters and photos that fall within the given map bounds",
-    "Возвращает дерево комментариев для фотографии": "Returns the comment tree for a photo"
+    "Возвращает дерево комментариев для фотографии": "Returns the comment tree for a photo",
+    "PastVu — проект по сбору свидетельств прошлого. Взгляд на историю среды обитания человечества.": "PastVu — a project collecting evidence of the past. A look at the history of humanity's habitat.",
+    "Подробная информация о проекте находится": "More information about the project is",
+    "в базе знаний": "in the knowledge base",
+    "Открытая разработка ведется": "Open development happens",
+    "на GitHub": "on GitHub",
+    "Следите за выполнением задач и принимайте участие в развитии!": "Follow our issue tracker and join in!",
+    "Версия приложения": "Application version",
+    "Исходный код доступен по лицензии": "Source code is available under the",
+    "Данные по границам географических и административных регионов:": "Geographic and administrative region boundary data:",
+    "Число от 0 до 10000": "A number from 0 to 10000",
+    "Параметры размера кластера": "Cluster size parameters",
+    "Для установки нового размера кластера, захватите прозрачный прямоугольник на карте и перемещайте его или его границу в необходимых пределах. Для применения изменений нажмите кнопку Сохранить.": "To set a new cluster size, grab the transparent rectangle on the map and drag it (or its edge) within the desired bounds. Click Save to apply the changes.",
+    "Текущие размеры:": "Current size:",
+    "Новые размеры:": "New size:",
+    "Процесс расчета новых параметров на разных уровнях зума:": "Recomputing the parameters at each zoom level:"
 }
