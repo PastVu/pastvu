@@ -3,13 +3,19 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-define(['i18next', 'Params', 'text!./i18n-translations.json'], function (i18next, P, translationsText) {
+/*global init:true*/
+define(['i18next', 'text!./i18n-translations.json'], function (i18next, translationsText) {
     'use strict';
 
     const translations = JSON.parse(translationsText);
+    // Read the locale directly from window.init (set inline in the HTML
+    // template), not from Params, because Params depends on `socket!` and
+    // i18n is loaded from socket.js itself — going through Params would
+    // create a circular dependency.
+    const lang = typeof init !== 'undefined' && init.settings && init.settings.lang || 'ru';
 
     i18next.init({
-        lng: P.settings && P.settings.lang || 'ru',
+        lng: lang,
         fallbackLng: 'ru',
         // Keys are Russian source strings; turn off separators so dots/colons in a key
         // are not interpreted as namespace/key paths.
