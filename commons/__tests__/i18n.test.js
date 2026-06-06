@@ -32,7 +32,7 @@ describe('commons/i18n', () => {
             const tFr = getT('fr');
 
             // 'fr' is not in config.locales, so we fall back to config.lang ('ru'),
-            // which has empty translations and therefore returns the key itself.
+            // which has no entry for this key and therefore returns the key itself.
             expect(tFr('Вход')).toBe('Вход');
         });
     });
@@ -100,6 +100,11 @@ describe('commons/i18n', () => {
             expect(t('ru', 'comments_unread', { count: 5 })).toBe('5 непрочитанных');
             expect(t('en', 'comments_unread', { count: 1 })).toBe('1 unread');
             expect(t('en', 'comments_unread', { count: 5 })).toBe('5 unread');
+        });
+
+        it('handles count: 0 correctly in both languages', () => {
+            expect(t('ru', 'comments_new', { count: 0 })).toBe('0 новых комментариев');
+            expect(t('en', 'comments_new', { count: 0 })).toBe('0 new comments');
         });
     });
 });
