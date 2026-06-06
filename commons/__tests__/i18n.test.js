@@ -87,7 +87,7 @@ describe('commons/i18n', () => {
             expect(t('ru', 'users_count', { count: 2 })).toBe(' пользователя');
             expect(t('ru', 'comments_count', { count: 11 })).toBe(' комментариев');
             expect(t('ru', 'views_count', { count: 1 })).toBe(' просмотр');
-            expect(t('ru', 'users_registered_count', { count: 5 })).toBe(' зарегистрированых');
+            expect(t('ru', 'users_registered_count', { count: 5 })).toBe(' зарегистрированных');
             expect(t('en', 'users_count', { count: 1 })).toBe(' user');
             expect(t('en', 'comments_count', { count: 2 })).toBe(' comments');
         });
