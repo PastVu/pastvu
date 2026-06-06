@@ -988,5 +988,9 @@
     " просмотр": " view",
     " просмотра": " views",
     " просмотров": " views",
-    "Сейчас на сайте {{users}}, из них {{regs}}": "Currently online: {{users}}, of which {{regs}}"
+    "Сейчас на сайте {{users}}, из них {{regs}}": "Currently online: {{users}}, of which {{regs}}",
+    "comments_new_one": "{{count}} new comment",
+    "comments_new_other": "{{count}} new comments",
+    "comments_unread_one": "{{count}} unread",
+    "comments_unread_other": "{{count}} unread"
 }

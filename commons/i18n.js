@@ -7,7 +7,8 @@ const i18next = require('i18next');
 const { parse: parseCookie } = require('cookie');
 const config = require('../config');
 const Utils = require('./Utils');
-const translations = require('../public/js/lang/i18n.en.json');
+const translationsEn = require('../public/js/lang/i18n.en.json');
+const translationsRu = require('../public/js/lang/i18n.ru.json');
 
 const DEFAULT_LANG = 'ru';
 const SUPPORTED = config.locales || ['ru', 'en'];
@@ -21,11 +22,10 @@ function init() {
 
     inited = true;
 
-    const resources = {};
-
-    SUPPORTED.forEach(lng => {
-        resources[lng] = { translation: lng === 'en' ? translations : {} };
-    });
+    const resources = {
+        ru: { translation: translationsRu },
+        en: { translation: translationsEn },
+    };
 
     i18next.init({
         lng: FALLBACK,

@@ -1,0 +1,10 @@
+{
+    "comments_new_one": "{{count}} новый комментарий",
+    "comments_new_few": "{{count}} новых комментария",
+    "comments_new_many": "{{count}} новых комментариев",
+    "comments_new_other": "{{count}} новых комментариев",
+    "comments_unread_one": "{{count}} непрочитанный",
+    "comments_unread_few": "{{count}} непрочитанных",
+    "comments_unread_many": "{{count}} непрочитанных",
+    "comments_unread_other": "{{count}} непрочитанных"
+}

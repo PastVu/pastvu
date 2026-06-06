@@ -77,4 +77,29 @@ describe('commons/i18n', () => {
             expect(commentCount('fr', 5, 'new')).toBe('5 новых комментариев');
         });
     });
+
+    describe('cldr plurals via t(lang, key, { count })', () => {
+        it('resolves Russian one/few/many for comments_new', () => {
+            expect(t('ru', 'comments_new', { count: 1 })).toBe('1 новый комментарий');
+            expect(t('ru', 'comments_new', { count: 2 })).toBe('2 новых комментария');
+            expect(t('ru', 'comments_new', { count: 4 })).toBe('4 новых комментария');
+            expect(t('ru', 'comments_new', { count: 5 })).toBe('5 новых комментариев');
+            expect(t('ru', 'comments_new', { count: 11 })).toBe('11 новых комментариев');
+            expect(t('ru', 'comments_new', { count: 21 })).toBe('21 новый комментарий');
+            expect(t('ru', 'comments_new', { count: 22 })).toBe('22 новых комментария');
+        });
+
+        it('resolves English one/other for comments_new', () => {
+            expect(t('en', 'comments_new', { count: 1 })).toBe('1 new comment');
+            expect(t('en', 'comments_new', { count: 2 })).toBe('2 new comments');
+            expect(t('en', 'comments_new', { count: 21 })).toBe('21 new comments');
+        });
+
+        it('resolves comments_unread in both languages', () => {
+            expect(t('ru', 'comments_unread', { count: 1 })).toBe('1 непрочитанный');
+            expect(t('ru', 'comments_unread', { count: 5 })).toBe('5 непрочитанных');
+            expect(t('en', 'comments_unread', { count: 1 })).toBe('1 unread');
+            expect(t('en', 'comments_unread', { count: 5 })).toBe('5 unread');
+        });
+    });
 });
