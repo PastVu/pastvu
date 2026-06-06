@@ -26,6 +26,13 @@ const EXCLUDE = [
 function walk(dir, out) {
     for (const name of fs.readdirSync(dir)) {
         const p = path.join(dir, name);
+
+        // Prune whole subtrees (node_modules, lib) before descending — the
+        // EXCLUDE patterns match a trailing slash so we test with one appended.
+        if (EXCLUDE.some(re => re.test(p + '/'))) {
+            continue;
+        }
+
         const stat = fs.statSync(p);
 
         if (stat.isDirectory()) {
