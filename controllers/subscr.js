@@ -8,7 +8,7 @@ import _ from 'lodash';
 import path from 'path';
 import pug from 'pug';
 import log4js from 'log4js';
-import { getT, userLang, t } from '../commons/i18n';
+import { getT, userLang } from '../commons/i18n';
 import * as session from './_session';
 import config from '../config';
 import { waitDb } from './connection';
@@ -347,7 +347,7 @@ async function sendUserNotice(userId) {
     }
 
     const lang = userLang(user);
-    const tLocal = getT(lang);
+    const t = getT(lang);
 
     // Find all subscriptions of users, which ready for notyfication (sbscr_noty: true)
     const rels = await UserObjectRel.find(
@@ -418,10 +418,10 @@ async function sendUserNotice(userId) {
 
             totalNewestComments += newest;
 
-            obj.briefFormat = { newest: t(lang, 'comments_new', { count: newest }) };
+            obj.briefFormat = { newest: t('comments_new', { count: newest }) };
 
             if (newest !== unread) {
-                obj.briefFormat.unread = t(lang, 'comments_unread', { count: unread });
+                obj.briefFormat.unread = t('comments_unread', { count: unread });
             }
 
             result.push(obj);
@@ -442,7 +442,7 @@ async function sendUserNotice(userId) {
         await sendMail({
             sender: 'noreply',
             receiver: { alias: String(user.disp), email: user.email },
-            subject: tLocal('Новое уведомление'),
+            subject: t('Новое уведомление'),
             head: true,
             body: noticeTpl({
                 user,
@@ -450,10 +450,10 @@ async function sendUserNotice(userId) {
                 news: newsResult,
                 photos: photosResult,
                 username: String(user.disp),
-                greeting: tLocal('Уведомление о событиях на PastVu'),
-                t: tLocal,
+                greeting: t('Уведомление о событиях на PastVu'),
+                t,
             }),
-            text: t(lang, 'comments_new', { count: totalNewestComments }),
+            text: t('comments_new', { count: totalNewestComments }),
         });
     }
 
