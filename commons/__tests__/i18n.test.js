@@ -92,4 +92,21 @@ describe('commons/i18n', () => {
             expect(t('en', 'comments_count', { count: 2 })).toBe(' comments');
         });
     });
+
+    describe('built-in number formatter', () => {
+        it('formats integers per language locale (ru)', () => {
+            expect(t('ru', '{{n, number}}', { n: 1234 })).toBe(new Intl.NumberFormat('ru').format(1234));
+            expect(t('ru', '{{n, number}}', { n: 0 })).toBe('0');
+            expect(t('ru', '{{n, number}}', { n: 1 })).toBe('1');
+        });
+
+        it('formats integers per language locale (en)', () => {
+            expect(t('en', '{{n, number}}', { n: 1234 })).toBe('1,234');
+            expect(t('en', '{{n, number}}', { n: 1234567 })).toBe('1,234,567');
+        });
+
+        it('interpolates multiple number placeholders in one key', () => {
+            expect(t('en', '{{a, number}} of {{b, number}}', { a: 100, b: 1000 })).toBe('100 of 1,000');
+        });
+    });
 });
