@@ -8,7 +8,7 @@ import _ from 'lodash';
 import path from 'path';
 import pug from 'pug';
 import log4js from 'log4js';
-import { getT, userLang, commentCount } from '../commons/i18n';
+import { getT, userLang, t } from '../commons/i18n';
 import * as session from './_session';
 import config from '../config';
 import { waitDb } from './connection';
@@ -347,7 +347,7 @@ async function sendUserNotice(userId) {
     }
 
     const lang = userLang(user);
-    const t = getT(lang);
+    const tLocal = getT(lang);
 
     // Find all subscriptions of users, which ready for notyfication (sbscr_noty: true)
     const rels = await UserObjectRel.find(
@@ -418,10 +418,10 @@ async function sendUserNotice(userId) {
 
             totalNewestComments += newest;
 
-            obj.briefFormat = { newest: commentCount(lang, newest, 'new') };
+            obj.briefFormat = { newest: t(lang, 'comments_new', { count: newest }) };
 
             if (newest !== unread) {
-                obj.briefFormat.unread = commentCount(lang, unread, 'unread');
+                obj.briefFormat.unread = t(lang, 'comments_unread', { count: unread });
             }
 
             result.push(obj);
@@ -442,7 +442,7 @@ async function sendUserNotice(userId) {
         await sendMail({
             sender: 'noreply',
             receiver: { alias: String(user.disp), email: user.email },
-            subject: t('Новое уведомление'),
+            subject: tLocal('Новое уведомление'),
             head: true,
             body: noticeTpl({
                 user,
@@ -450,10 +450,10 @@ async function sendUserNotice(userId) {
                 news: newsResult,
                 photos: photosResult,
                 username: String(user.disp),
-                greeting: t('Уведомление о событиях на PastVu'),
-                t,
+                greeting: tLocal('Уведомление о событиях на PastVu'),
+                t: tLocal,
             }),
-            text: commentCount(lang, totalNewestComments, 'new'),
+            text: t(lang, 'comments_new', { count: totalNewestComments }),
         });
     }
 
