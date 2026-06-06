@@ -6,7 +6,6 @@
 const i18next = require('i18next');
 const { parse: parseCookie } = require('cookie');
 const config = require('../config');
-const Utils = require('./Utils');
 const translationsEn = require('../public/js/lang/i18n.en.json');
 const translationsRu = require('../public/js/lang/i18n.ru.json');
 
@@ -113,34 +112,4 @@ function langFromRequest(req) {
     return resolveLang(parseCookie(cookieHeader).past_lang);
 }
 
-// Plural forms used in notification mail. Each entry is a 3-tuple matching
-// Utils.format.wordEndOfNum's title order (one, few, many). English collapses
-// few/many into a single "other" form, but we keep three entries for shape
-// parity with the Russian helper, which selects the same index for both.
-const COMMENT_FORMS = {
-    ru: {
-        new: ['новый комментарий', 'новых комментария', 'новых комментариев'],
-        unread: ['непрочитанный', 'непрочитанных', 'непрочитанных'],
-    },
-    en: {
-        new: ['new comment', 'new comments', 'new comments'],
-        unread: ['unread', 'unread', 'unread'],
-    },
-};
-
-/**
- * Format a count + plural noun ("5 new comments" / "5 новых комментариев")
- * for the comment-notification mail. kind is 'new' or 'unread'.
- */
-function commentCount(lang, count, kind) {
-    const resolved = resolveLang(lang);
-    const forms = COMMENT_FORMS[resolved][kind];
-    // Russian: route through the shared declension helper. English: simple
-    // singular/plural. Both forms arrays carry the same 3-tuple shape so
-    // wordEndOfNum-style indexing also works for ru without a second copy.
-    const form = resolved === 'en' ? forms[count === 1 ? 0 : 1] : Utils.format.wordEndOfNum(count, forms);
-
-    return count + ' ' + form;
-}
-
-module.exports = { getT, t, userLang, langFromHandshake, langFromRequest, commentCount, init };
+module.exports = { getT, t, userLang, langFromHandshake, langFromRequest, init };
