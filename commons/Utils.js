@@ -982,18 +982,11 @@ Utils.format = (function () {
         return (floatValue * 100).toFixed(2) + ' %';
     }
 
-    const wordEndOfNumCases = [2, 0, 1, 1, 1, 2];
-
-    function declOfNum(number, titles) {
-        return titles[number % 100 > 4 && number % 100 < 20 ? 2 : wordEndOfNumCases[number % 10 < 5 ? number % 10 : 5]];
-    }
-
     return {
         fileSize: formatFileSize,
         bitrate: formatBitrate,
         secondsToTime,
         percentage: formatPercentage,
-        wordEndOfNum: declOfNum,
     };
 }());
 
