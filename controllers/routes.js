@@ -44,9 +44,15 @@ function pickRegionTitle(region, lang) {
 
 function genInitDataString(req) {
     const usObj = req.handshake.usObj;
+    // Prefer the persisted user preference over the cookie so a registered
+    // user opening the site in a fresh browser still gets their saved
+    // language on the very first render (before the socket round-trip).
+    const userLang = usObj.registered && usObj.user && usObj.user.settings && usObj.user.settings.lang;
     const cookieLang = req.cookie && req.cookie.past_lang;
-    const settingsJSON = config.locales.includes(cookieLang) && cookieLang !== clientParams.lang ?
-        JSON.stringify({ ...clientParams, lang: cookieLang }) :
+    const pickedLang = config.locales.includes(userLang) ? userLang :
+        config.locales.includes(cookieLang) ? cookieLang : clientParams.lang;
+    const settingsJSON = pickedLang !== clientParams.lang ?
+        JSON.stringify({ ...clientParams, lang: pickedLang }) :
         clientParamsJSON;
     let resultString = `var init={settings:${settingsJSON},` +
         `user:${JSON.stringify(session.getPlainUser(usObj.user))}`;
@@ -363,11 +369,12 @@ export const send404 = (function () {
     return function (req, res, error) {
         res.statusCode = 404;
 
+        const lang = langFromRequest(req);
+
         if (req.xhr) {
-            return res.end(error.toJSON ? error.toJSON() : json404);
+            return res.end(error.toJSON ? JSON.stringify(error.toJSON(lang)) : json404);
         }
 
-        const lang = langFromRequest(req);
         const cached = htmlCache.get(lang);
 
         if (cached) {
@@ -377,12 +384,15 @@ export const send404 = (function () {
         res.render('status/404', { t: getT(lang) }, (err, html) => {
             if (err) {
                 loggerError.error('Cannot render 404 page', err);
-                htmlCache.set(lang, status404);
-            } else {
-                htmlCache.set(lang, html);
+                // Don't cache the fallback — a transient render error would
+                // otherwise lock this locale to the bare status text forever.
+                res.end(status404);
+
+                return;
             }
 
-            res.end(htmlCache.get(lang));
+            htmlCache.set(lang, html);
+            res.end(html);
         });
     };
 }());
@@ -394,11 +404,13 @@ export const send500 = (function () {
     return function (req, res, error) {
         res.statusCode = 500;
 
+        const lang = langFromRequest(req);
+
         if (req.xhr) {
-            return res.end(error.toJSON ? error.toJSON() : json500);
+            return res.end(error.toJSON ? JSON.stringify(error.toJSON(lang)) : json500);
         }
 
-        res.render('status/500', { error, t: getT(langFromRequest(req)) }, (err, html) => {
+        res.render('status/500', { error, t: getT(lang) }, (err, html) => {
             if (err) {
                 loggerError.error('Cannot render 500 page', err);
             }
