@@ -23,17 +23,6 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
         'photosToApprove',
     ];
     const imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
-    // Declension arrays are passed to Utils.format.wordEndOfNum as
-    // [singular, paucal, plural]. Russian uses all three; English collapses
-    // paucal+plural into one form, so each cell still goes through i18n so
-    // the English file can declare a single noun form per slot.
-    const declension = {
-        user: [i18n(' пользователь'), i18n(' пользователя'), i18n(' пользователей')],
-        reg: [i18n(' зарегистрирован'), i18n(' зарегистрированых'), i18n(' зарегистрированых')],
-        photo: [i18n(' фотография'), i18n(' фотографии'), i18n(' фотографий')],
-        comment: [i18n(' комментарий'), i18n(' комментария'), i18n(' комментариев')],
-        view: [i18n(' просмотр'), i18n(' просмотра'), i18n(' просмотров')],
-    };
 
     return Cliche.extend({
         pug: pug,
@@ -266,21 +255,21 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                 const ratings = self.ratings;
 
                 if (self.catLoading() === 'ratings') {
-                    ratings.pbyview.day(self.processPhotos(data.pday, data.rhash, Photo.picFormats.s, 'vdcount', declension.view));
-                    ratings.pbyview.week(self.processPhotos(data.pweek, data.rhash, Photo.picFormats.s, 'vwcount', declension.view));
-                    ratings.pbyview.all(self.processPhotos(data.pall, data.rhash, Photo.picFormats.s, 'vcount', declension.view));
+                    ratings.pbyview.day(self.processPhotos(data.pday, data.rhash, Photo.picFormats.s, 'vdcount', 'views_count'));
+                    ratings.pbyview.week(self.processPhotos(data.pweek, data.rhash, Photo.picFormats.s, 'vwcount', 'views_count'));
+                    ratings.pbyview.all(self.processPhotos(data.pall, data.rhash, Photo.picFormats.s, 'vcount', 'views_count'));
 
-                    ratings.pbycomm.day(self.processPhotos(data.pcday, data.rhash, Photo.picFormats.s, 'ccount', declension.comment));
-                    ratings.pbycomm.week(self.processPhotos(data.pcweek, data.rhash, Photo.picFormats.s, 'ccount', declension.comment));
-                    ratings.pbycomm.all(self.processPhotos(data.pcall, data.rhash, Photo.picFormats.s, 'ccount', declension.comment));
+                    ratings.pbycomm.day(self.processPhotos(data.pcday, data.rhash, Photo.picFormats.s, 'ccount', 'comments_count'));
+                    ratings.pbycomm.week(self.processPhotos(data.pcweek, data.rhash, Photo.picFormats.s, 'ccount', 'comments_count'));
+                    ratings.pbycomm.all(self.processPhotos(data.pcall, data.rhash, Photo.picFormats.s, 'ccount', 'comments_count'));
 
-                    ratings.ubycomm.day(self.processUsers(data.ucday, 'comments', 'ccount', declension.comment));
-                    ratings.ubycomm.week(self.processUsers(data.ucweek, 'comments', 'ccount', declension.comment));
-                    ratings.ubycomm.all(self.processUsers(data.ucall, 'comments', 'ccount', declension.comment));
+                    ratings.ubycomm.day(self.processUsers(data.ucday, 'comments', 'ccount', 'comments_count'));
+                    ratings.ubycomm.week(self.processUsers(data.ucweek, 'comments', 'ccount', 'comments_count'));
+                    ratings.ubycomm.all(self.processUsers(data.ucall, 'comments', 'ccount', 'comments_count'));
 
-                    ratings.ubyphoto.day(self.processUsers(data.upday, 'photo', 'pcount', declension.photo));
-                    ratings.ubyphoto.week(self.processUsers(data.upweek, 'photo', 'pcount', declension.photo));
-                    ratings.ubyphoto.all(self.processUsers(data.upall, 'photo', 'pcount', declension.photo));
+                    ratings.ubyphoto.day(self.processUsers(data.upday, 'photo', 'pcount', 'photos_count'));
+                    ratings.ubyphoto.week(self.processUsers(data.upweek, 'photo', 'pcount', 'photos_count'));
+                    ratings.ubyphoto.all(self.processUsers(data.upall, 'photo', 'pcount', 'photos_count'));
                     success = true;
                 }
 
@@ -299,9 +288,9 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                     self.stats.common = data.common;
                     self.stats.common.onlineTxt = i18n('Сейчас на сайте {{users}}, из них {{regs}}', {
                         users: globalVM.intl.num(data.common.onall) +
-                            Utils.format.wordEndOfNum(data.common.onall, declension.user),
+                            i18n('users_count', { count: data.common.onall }),
                         regs: globalVM.intl.num(data.common.onreg) +
-                            Utils.format.wordEndOfNum(data.common.onreg, declension.reg),
+                            i18n('users_registered_count', { count: data.common.onreg }),
                     });
                     success = true;
                 }
@@ -333,7 +322,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                 }
 
                 if (numField && numFormat) {
-                    photo.amount = globalVM.intl.num(photo[numField]) + Utils.format.wordEndOfNum(photo[numField], numFormat);
+                    photo.amount = globalVM.intl.num(photo[numField]) + i18n(numFormat, { count: photo[numField] });
                 }
 
                 if (regionsHash && photo.rs !== undefined) {
@@ -356,7 +345,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                 user.title = user.disp;
 
                 if (numField && numFormat) {
-                    user.amount = globalVM.intl.num(user[numField]) + Utils.format.wordEndOfNum(user[numField], numFormat);
+                    user.amount = globalVM.intl.num(user[numField]) + i18n(numFormat, { count: user[numField] });
                 }
             }
 
