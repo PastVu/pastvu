@@ -69,5 +69,12 @@ describe('commons/i18n', () => {
             expect(commentCount('en', 1, 'unread')).toBe('1 unread');
             expect(commentCount('en', 5, 'unread')).toBe('5 unread');
         });
+
+        it('falls back through resolveLang for unsupported lang and uses the fallback locale plural rule', () => {
+            // 'fr' is unsupported → resolveLang returns config.lang ('ru'),
+            // and the Russian declension rule applies, not the English one.
+            expect(commentCount('fr', 21, 'new')).toBe('21 новый комментарий');
+            expect(commentCount('fr', 5, 'new')).toBe('5 новых комментариев');
+        });
     });
 });

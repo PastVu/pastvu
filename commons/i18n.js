@@ -6,9 +6,12 @@
 const i18next = require('i18next');
 const { parse: parseCookie } = require('cookie');
 const config = require('../config');
+const Utils = require('./Utils');
 const translations = require('../public/js/lang/i18n.en.json');
 
 const DEFAULT_LANG = 'ru';
+const SUPPORTED = config.locales || ['ru', 'en'];
+const FALLBACK = config.lang || DEFAULT_LANG;
 let inited = false;
 
 function init() {
@@ -20,14 +23,14 @@ function init() {
 
     const resources = {};
 
-    (config.locales || ['ru', 'en']).forEach(lng => {
+    SUPPORTED.forEach(lng => {
         resources[lng] = { translation: lng === 'en' ? translations : {} };
     });
 
     i18next.init({
-        lng: config.lang || DEFAULT_LANG,
+        lng: FALLBACK,
         fallbackLng: DEFAULT_LANG,
-        supportedLngs: config.locales || ['ru', 'en'],
+        supportedLngs: SUPPORTED,
         // Keys are Russian source strings; turn off separators so dots/colons
         // in a key are not interpreted as namespace/key paths.
         keySeparator: false,
@@ -38,6 +41,12 @@ function init() {
         interpolation: { escapeValue: false },
         resources,
     });
+}
+
+// Normalize an arbitrary lang candidate (cookie value, user setting, etc.)
+// to one of the supported locales, falling back to config.lang/DEFAULT_LANG.
+function resolveLang(candidate) {
+    return SUPPORTED.includes(candidate) ? candidate : FALLBACK;
 }
 
 // Cache of fixed t-functions per language. getFixedT allocates a closure on
@@ -52,7 +61,7 @@ const fixedTByLang = new Map();
 function getT(lang) {
     init();
 
-    const supported = (config.locales || []).includes(lang) ? lang : config.lang || DEFAULT_LANG;
+    const supported = resolveLang(lang);
     let fixed = fixedTByLang.get(supported);
 
     if (!fixed) {
@@ -72,20 +81,11 @@ function t(lang, key, vars) {
 
 /**
  * Pick the most appropriate language for a given user document.
- * Falls back to config.lang when the user has no explicit preference.
+ * Falls back to config.lang when the user has no explicit preference,
+ * and normalizes against config.locales so stale values can't leak through.
  */
 function userLang(user) {
-    if (user && user.settings && user.settings.lang) {
-        return user.settings.lang;
-    }
-
-    return config.lang || DEFAULT_LANG;
-}
-
-// Normalize an arbitrary lang candidate (cookie value, user setting, etc.)
-// to one of the supported locales, falling back to config.lang/DEFAULT_LANG.
-function resolveLang(candidate) {
-    return (config.locales || []).includes(candidate) ? candidate : config.lang || DEFAULT_LANG;
+    return resolveLang(user && user.settings && user.settings.lang);
 }
 
 /**
@@ -113,9 +113,10 @@ function langFromRequest(req) {
     return resolveLang(parseCookie(cookieHeader).past_lang);
 }
 
-// Plural forms used in notification mail. Indexed by Russian declension
-// categories: [one, few, many]. English collapses few/many into a single
-// "other" form, but we keep three entries for shape parity.
+// Plural forms used in notification mail. Each entry is a 3-tuple matching
+// Utils.format.wordEndOfNum's title order (one, few, many). English collapses
+// few/many into a single "other" form, but we keep three entries for shape
+// parity with the Russian helper, which selects the same index for both.
 const COMMENT_FORMS = {
     ru: {
         new: ['новый комментарий', 'новых комментария', 'новых комментариев'],
@@ -127,35 +128,19 @@ const COMMENT_FORMS = {
     },
 };
 
-// Russian plural index: 0 = one, 1 = few, 2 = many.
-function ruPluralIndex(count) {
-    const mod10 = count % 10;
-    const mod100 = count % 100;
-
-    if (mod100 >= 11 && mod100 <= 14) {
-        return 2;
-    }
-
-    if (mod10 === 1) {
-        return 0;
-    }
-
-    if (mod10 >= 2 && mod10 <= 4) {
-        return 1;
-    }
-
-    return 2;
-}
-
 /**
  * Format a count + plural noun ("5 new comments" / "5 новых комментариев")
  * for the comment-notification mail. kind is 'new' or 'unread'.
  */
 function commentCount(lang, count, kind) {
-    const forms = (COMMENT_FORMS[lang] || COMMENT_FORMS.ru)[kind];
-    const idx = lang === 'ru' ? ruPluralIndex(count) : count === 1 ? 0 : 1;
+    const resolved = resolveLang(lang);
+    const forms = COMMENT_FORMS[resolved][kind];
+    // Russian: route through the shared declension helper. English: simple
+    // singular/plural. Both forms arrays carry the same 3-tuple shape so
+    // wordEndOfNum-style indexing also works for ru without a second copy.
+    const form = resolved === 'en' ? forms[count === 1 ? 0 : 1] : Utils.format.wordEndOfNum(count, forms);
 
-    return count + ' ' + forms[idx];
+    return count + ' ' + form;
 }
 
 module.exports = { getT, t, userLang, langFromHandshake, langFromRequest, commentCount, init };
