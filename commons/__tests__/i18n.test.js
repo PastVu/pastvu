@@ -76,20 +76,27 @@ describe('commons/i18n', () => {
         });
 
         it('resolves photos_count in Russian and English', () => {
-            expect(t('ru', 'photos_count', { count: 1 })).toBe(' фотография');
-            expect(t('ru', 'photos_count', { count: 3 })).toBe(' фотографии');
-            expect(t('ru', 'photos_count', { count: 5 })).toBe(' фотографий');
-            expect(t('en', 'photos_count', { count: 1 })).toBe(' photo');
-            expect(t('en', 'photos_count', { count: 5 })).toBe(' photos');
+            expect(t('ru', 'photos_count', { count: 1 })).toBe('1 фотография');
+            expect(t('ru', 'photos_count', { count: 3 })).toBe('3 фотографии');
+            expect(t('ru', 'photos_count', { count: 5 })).toBe('5 фотографий');
+            expect(t('en', 'photos_count', { count: 1 })).toBe('1 photo');
+            expect(t('en', 'photos_count', { count: 5 })).toBe('5 photos');
         });
 
         it('resolves users_count, comments_count, views_count, users_registered_count', () => {
-            expect(t('ru', 'users_count', { count: 2 })).toBe(' пользователя');
-            expect(t('ru', 'comments_count', { count: 11 })).toBe(' комментариев');
-            expect(t('ru', 'views_count', { count: 1 })).toBe(' просмотр');
-            expect(t('ru', 'users_registered_count', { count: 5 })).toBe(' зарегистрированных');
-            expect(t('en', 'users_count', { count: 1 })).toBe(' user');
-            expect(t('en', 'comments_count', { count: 2 })).toBe(' comments');
+            expect(t('ru', 'users_count', { count: 2 })).toBe('2 пользователя');
+            expect(t('ru', 'comments_count', { count: 11 })).toBe('11 комментариев');
+            expect(t('ru', 'views_count', { count: 1 })).toBe('1 просмотр');
+            expect(t('ru', 'users_registered_count', { count: 5 })).toBe('5 зарегистрированных');
+            expect(t('en', 'users_count', { count: 1 })).toBe('1 user');
+            expect(t('en', 'comments_count', { count: 2 })).toBe('2 comments');
+        });
+
+        it('thousand-separates count in plural keys per language', () => {
+            const ruFmt = new Intl.NumberFormat('ru').format(1234);
+
+            expect(t('ru', 'photos_count', { count: 1234 })).toBe(`${ruFmt} фотографии`);
+            expect(t('en', 'photos_count', { count: 1234 })).toBe('1,234 photos');
         });
     });
 
