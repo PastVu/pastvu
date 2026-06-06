@@ -74,5 +74,22 @@ describe('commons/i18n', () => {
             expect(t('ru', 'comments_new', { count: 0 })).toBe('0 новых комментариев');
             expect(t('en', 'comments_new', { count: 0 })).toBe('0 new comments');
         });
+
+        it('resolves photos_count in Russian and English', () => {
+            expect(t('ru', 'photos_count', { count: 1 })).toBe(' фотография');
+            expect(t('ru', 'photos_count', { count: 3 })).toBe(' фотографии');
+            expect(t('ru', 'photos_count', { count: 5 })).toBe(' фотографий');
+            expect(t('en', 'photos_count', { count: 1 })).toBe(' photo');
+            expect(t('en', 'photos_count', { count: 5 })).toBe(' photos');
+        });
+
+        it('resolves users_count, comments_count, views_count, users_registered_count', () => {
+            expect(t('ru', 'users_count', { count: 2 })).toBe(' пользователя');
+            expect(t('ru', 'comments_count', { count: 11 })).toBe(' комментариев');
+            expect(t('ru', 'views_count', { count: 1 })).toBe(' просмотр');
+            expect(t('ru', 'users_registered_count', { count: 5 })).toBe(' зарегистрированых');
+            expect(t('en', 'users_count', { count: 1 })).toBe(' user');
+            expect(t('en', 'comments_count', { count: 2 })).toBe(' comments');
+        });
     });
 });
