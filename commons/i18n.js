@@ -21,6 +21,10 @@ function init() {
 
     inited = true;
 
+    // Most keys are Russian source strings (e.g. 'Вход' → 'Login'). Plurals
+    // are a narrow exception — symbolic IDs (e.g. 'comments_new') get CLDR
+    // suffix lookup (_one/_few/_many/_other) per language, with forms defined
+    // in i18n.ru.json and i18n.en.json.
     const resources = {
         ru: { translation: translationsRu },
         en: { translation: translationsEn },
