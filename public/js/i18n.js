@@ -4,10 +4,11 @@
  */
 
 /*global init:true*/
-define(['i18next', 'text!./lang/i18n.en.json'], function (i18next, translationsText) {
+define(['i18next', 'text!./lang/i18n.en.json', 'text!./lang/i18n.ru.json'], function (i18next, translationsEnText, translationsRuText) {
     'use strict';
 
-    const translations = JSON.parse(translationsText);
+    const translationsEn = JSON.parse(translationsEnText);
+    const translationsRu = JSON.parse(translationsRuText);
     // Read the locale directly from window.init (set inline in the HTML
     // template), not from Params, because Params depends on `socket!` and
     // i18n is loaded from socket.js itself — going through Params would
@@ -24,8 +25,8 @@ define(['i18next', 'text!./lang/i18n.en.json'], function (i18next, translationsT
         // Knockout escapes text bindings — don't double-escape.
         interpolation: { escapeValue: false },
         resources: {
-            ru: { translation: {} },
-            en: { translation: translations },
+            ru: { translation: translationsRu },
+            en: { translation: translationsEn },
         },
     });
 
