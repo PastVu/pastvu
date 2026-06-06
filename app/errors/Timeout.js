@@ -5,7 +5,6 @@
 
 import ms from 'ms';
 import _ from 'lodash';
-import errorMsgs from './intl';
 import constants from './constants';
 import ApplicationError from './Application';
 
@@ -30,7 +29,6 @@ export default class TimeoutError extends ApplicationError {
         _.defaults(details, {
             code: constants.TIMEOUT,
             statusCode: 408,
-            message: `${errorMsgs[constants.TIMEOUT]}` + (timeout ? ` (${ms(timeout, { long: true })})` : ''),
         });
 
         super(details, rid);
@@ -40,8 +38,15 @@ export default class TimeoutError extends ApplicationError {
 
     toJSON(lang) {
         const { timeout } = this;
+        // Re-build the suffix at serialization time so the localised code
+        // message and the duration share the same language.
+        const base = super.toJSON(lang);
 
-        return Object.assign(super.toJSON(lang), { timeout });
+        if (timeout && !this.hasExplicitMessage) {
+            base.message = `${base.message} (${ms(timeout, { long: true })})`;
+        }
+
+        return Object.assign(base, { timeout });
     }
 }
 
