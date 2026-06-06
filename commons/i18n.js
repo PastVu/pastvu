@@ -82,6 +82,12 @@ function userLang(user) {
     return config.lang || DEFAULT_LANG;
 }
 
+// Normalize an arbitrary lang candidate (cookie value, user setting, etc.)
+// to one of the supported locales, falling back to config.lang/DEFAULT_LANG.
+function resolveLang(candidate) {
+    return (config.locales || []).includes(candidate) ? candidate : config.lang || DEFAULT_LANG;
+}
+
 /**
  * Read the user's preferred language from a Socket.IO / Express handshake's
  * past_lang cookie. Falls back to config.lang when the cookie is missing or
@@ -89,9 +95,22 @@ function userLang(user) {
  */
 function langFromHandshake(handshake) {
     const cookieHeader = handshake && handshake.headers && handshake.headers.cookie || '';
-    const cookieLang = parseCookie(cookieHeader).past_lang;
 
-    return (config.locales || []).includes(cookieLang) ? cookieLang : config.lang || DEFAULT_LANG;
+    return resolveLang(parseCookie(cookieHeader).past_lang);
+}
+
+/**
+ * Resolve the language for an Express request. Accepts either a parsed cookie
+ * object on req.cookie (set by app/request.js) or raw req.headers.cookie.
+ */
+function langFromRequest(req) {
+    if (req && req.cookie) {
+        return resolveLang(req.cookie.past_lang);
+    }
+
+    const cookieHeader = req && req.headers && req.headers.cookie || '';
+
+    return resolveLang(parseCookie(cookieHeader).past_lang);
 }
 
 // Plural forms used in notification mail. Indexed by Russian declension
@@ -139,4 +158,4 @@ function commentCount(lang, count, kind) {
     return count + ' ' + forms[idx];
 }
 
-module.exports = { getT, t, userLang, langFromHandshake, commentCount, init };
+module.exports = { getT, t, userLang, langFromHandshake, langFromRequest, commentCount, init };

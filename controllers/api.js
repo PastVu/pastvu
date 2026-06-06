@@ -6,9 +6,7 @@
 /* eslint-disable no-throw-literal, prefer-promise-reject-errors */
 
 import ms from 'ms';
-import config from '../config';
-import { getT } from '../commons/i18n';
-import { parse as parseCookie } from 'cookie';
+import { getT, langFromRequest } from '../commons/i18n';
 import { logIt as logAPI } from './apilog.js';
 import Utils from '../commons/Utils';
 
@@ -163,10 +161,8 @@ const methodMap = {
 
 function requestHandler(req, res) {
     if (!req._parsedUrl.query) {
-        const cookieLang = parseCookie(req.headers.cookie || '').past_lang;
-        const lang = (config.locales || []).includes(cookieLang) ? cookieLang : config.lang;
-
-        return res.set({ 'Cache-Control': 'no-cache' }).status(200).render('api/help', { t: getT(lang) });
+        return res.set({ 'Cache-Control': 'no-cache' }).status(200)
+            .render('api/help', { t: getT(langFromRequest(req)) });
     }
 
     const start = Date.now();

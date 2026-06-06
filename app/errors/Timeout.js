@@ -38,10 +38,10 @@ export default class TimeoutError extends ApplicationError {
         this.timeout = timeout;
     }
 
-    toJSON() {
+    toJSON(lang) {
         const { timeout } = this;
 
-        return Object.assign(super.toJSON(), { timeout });
+        return Object.assign(super.toJSON(lang), { timeout });
     }
 }
 

@@ -8,7 +8,7 @@ import http from 'http';
 import log4js from 'log4js';
 import config from '../config';
 import Utils from '../commons/Utils';
-import { getT } from '../commons/i18n';
+import { getT, langFromRequest } from '../commons/i18n';
 import * as session from './_session';
 import { clientParams, ready as settingsReady } from './settings';
 import NotFoundError from '../app/errors/NotFound';
@@ -28,15 +28,6 @@ const origin = config.client.origin;
 let clientParamsJSON = JSON.stringify(clientParams);
 
 settingsReady.then(() => clientParamsJSON = JSON.stringify(clientParams));
-
-// Resolve the request language from the past_lang cookie, falling back to
-// the server's default. Used by server-rendered pages (status/error, nojs)
-// to localize without going through a socket.
-function langFromRequest(req) {
-    const cookieLang = req.cookie && req.cookie.past_lang;
-
-    return config.locales.includes(cookieLang) ? cookieLang : config.lang;
-}
 
 // Map our short language codes to the full OpenGraph locale tags used in
 // meta(property="og:locale") so social previews render in the matching
