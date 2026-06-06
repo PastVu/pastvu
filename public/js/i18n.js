@@ -4,7 +4,7 @@
  */
 
 /*global init:true*/
-define(['i18next', 'text!./i18n-translations.json'], function (i18next, translationsText) {
+define(['i18next', 'text!./lang/i18n.en.json'], function (i18next, translationsText) {
     'use strict';
 
     const translations = JSON.parse(translationsText);

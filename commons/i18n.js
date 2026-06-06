@@ -6,7 +6,7 @@
 const i18next = require('i18next');
 const { parse: parseCookie } = require('cookie');
 const config = require('../config');
-const translations = require('../public/js/i18n-translations.json');
+const translations = require('../public/js/lang/i18n.en.json');
 
 const DEFAULT_LANG = 'ru';
 let inited = false;
