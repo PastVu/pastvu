@@ -47,6 +47,10 @@ function ogLocale(lang) {
     return OG_LOCALES[lang] || OG_LOCALES.ru;
 }
 
+function pickRegionTitle(region, lang) {
+    return lang === 'en' ? region.title_en || region.title_local : region.title_local;
+}
+
 function genInitDataString(req) {
     const usObj = req.handshake.usObj;
     const cookieLang = req.cookie && req.cookie.past_lang;
@@ -158,8 +162,10 @@ function meta(req) {
             desc = og.desc = twitter.desc = Utils.txtHtmlToPlain(photo.desc, true);
         } else if (!_.isEmpty(photo.regions)) {
             // If there in no description, create it as regions names
+            const lang = langFromRequest(req);
+
             desc = og.desc = twitter.desc = photo.regions.reduceRight(
-                (result, region, index) => result + region.title_local + (index ? ', ' : ''), ''
+                (result, region, index) => result + pickRegionTitle(region, lang) + (index ? ', ' : ''), ''
             );
         } else {
             desc = '';
@@ -280,9 +286,7 @@ function getRegionForGallery(req, res, next) {
 
             if (!_.isEmpty(regions)) {
                 const lang = langFromRequest(req);
-                const regionTitles = regions
-                    .map(({ title_en, title_local }) => lang === 'en' ? title_en || title_local : title_local)
-                    .join(', ');
+                const regionTitles = regions.map(region => pickRegionTitle(region, lang)).join(', ');
 
                 req.pageTitle = getT(lang)('Старые фотографии {{regions}}', { regions: regionTitles });
             }

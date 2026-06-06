@@ -703,7 +703,7 @@ define([
                     if (!error) {
                         let msg = i18n(parentIsChanged ?
                             'Регион <b>{{title}}</b> успешно перенесён и сохранен' :
-                            'Регион <b>{{title}}</b> успешно сохранен', { title: this.region.title_local() }) + '<br>';
+                            'Регион <b>{{title}}</b> успешно сохранен', { title: Utils.regionTitle(this.region) }) + '<br>';
                         let geoChangePhotosCount;
 
                         if (resultStat && Object.keys(resultStat).length) {
@@ -788,7 +788,7 @@ define([
             this.exe(true);
 
             const cid = this.region.cid();
-            const title = this.region.title_local();
+            const title = Utils.regionTitle(this.region);
             let regionParent;
             const that = this;
             const childLenArr = this.childLenArr();
@@ -806,7 +806,7 @@ define([
                 msg += i18n('Все объекты, входящие в этот регион и в дочерние, будут присвоены <b>Открытому морю</b>') + '<br>';
             } else {
                 regionParent = _.last(this.region.parents());
-                msg += i18n('Все объекты, входящие в этот регион и в дочерние, остануться в вышестоящем регионе <b>{{title}}</b>', { title: regionParent.title_local() }) + '<br>';
+                msg += i18n('Все объекты, входящие в этот регион и в дочерние, остануться в вышестоящем регионе <b>{{title}}</b>', { title: Utils.regionTitle(regionParent) }) + '<br>';
             }
 
             msg += '<br>' + i18n('Это может занять несколько минут. Подтверждаете?') + '<br>' +
@@ -900,7 +900,7 @@ define([
 
             const that = this;
             const cid = this.region.cid();
-            const title = this.region.title_local();
+            const title = Utils.regionTitle(this.region);
 
             socket.run('region.recalcStatistics', { cids: [cid] })
                 .then(function (data) {

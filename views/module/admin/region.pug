@@ -53,13 +53,13 @@
             .col-xs-8.col-sm-9.col-lg-10
                 p.form-control-static.path
                     //ko foreach: region.parents
-                    a(data-bind="text: ' ' + $data.title_local(), attr: {href: '/admin/region/' + $data.cid()}")
+                    a(data-bind="text: ' ' + $root.regionTitle($data), attr: {href: '/admin/region/' + $data.cid()}")
                     | &nbsp;
                     span.glyphicon.glyphicon-play
                     | &nbsp;
                     // /ko
                     //ko if: !createMode()
-                    span.current(data-bind="text: ' ' + region.title_local(), attr: {title: $root.i18n('Текущий регион')}")
+                    span.current(data-bind="text: ' ' + $root.regionTitle(region), attr: {title: $root.i18n('Текущий регион')}")
                     // /ko
                     //ko foreach: childLenArr
                     | &nbsp;
@@ -83,7 +83,7 @@
                     .region
                         .tltp-wrap.rytltp-wrap
                             a(data-bind="attr: {href: '/admin/region/' + $data.cid}, css: {'noPhotos': !$data.phc && !$data.pac && !$data.cc}")
-                                span(data-bind="text: $data.title")
+                                span(data-bind="text: $root.regionTitle($data)")
                                 //ko if: $data.childrenCount
                                 span(style="color:#5b6d82;font-size:10px;", data-bind="text: ' +' + $data.childrenCount, attr: {title: $root.i18n('Кол-во прямых потомков')}")
                                 // /ko

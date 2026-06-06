@@ -461,7 +461,7 @@ define([
                         this.regHomeselectVM = vm;
                     },
                     function () {
-                        const regions = this.regHomeselectVM.getSelectedRegions(['cid', 'title_local']);
+                        const regions = this.regHomeselectVM.getSelectedRegions(['cid', 'title_en', 'title_local']);
 
                         if (regions.length !== 1) {
                             return noties.alert({
@@ -495,7 +495,7 @@ define([
                         this.regselectVM = vm;
                     },
                     function () {
-                        const regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']);
+                        const regions = this.regselectVM.getSelectedRegions(['cid', 'title_en', 'title_local']);
 
                         if (regions.length > 10) {
                             return noties.alert({

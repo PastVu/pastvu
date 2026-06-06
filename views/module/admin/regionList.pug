@@ -55,7 +55,7 @@
                 span.glyphicon(data-bind="css: {'glyphicon-chevron-up': $data.opened(), 'glyphicon-chevron-down': !$data.opened()}")
             // /ko
             a.name(data-bind="attr: {href: '/admin/region/' + $data.cid, title: $root.i18n('Открыть регион')}")
-                .rname(data-bind="text: ' ' + $data.title_local")
+                .rname(data-bind="text: ' ' + $root.regionTitle($data)")
                 //ko if: $data.childLen
                 .section.childsCount(data-bind="attr: {title: $root.i18n('Дочерние по уровням')}")
                     //ko foreach: childLenArr

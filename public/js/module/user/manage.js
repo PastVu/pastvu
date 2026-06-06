@@ -210,7 +210,7 @@ define([
                                 {
                                     css: 'btn-success', text: i18n('Применить'), glyphicon: 'glyphicon-ok',
                                     click: function () {
-                                        const regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']);
+                                        const regions = this.regselectVM.getSelectedRegions(['cid', 'title_en', 'title_local']);
 
                                         if (regions.length > 20) {
                                             return noties.alert({

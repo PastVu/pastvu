@@ -98,7 +98,7 @@ define([
 
             (function recursiveSort(arr) {
                 arr.sort(function (a, b) {
-                    return sort * collator.compare(a.title_local, b.title_local);
+                    return sort * collator.compare(Utils.regionTitle(a), Utils.regionTitle(b));
                 });
 
                 arr = arr();
@@ -121,7 +121,7 @@ define([
             //Сортируем массим по уровням и названиям в пределах одного уровня
             arr.sort(function (a, b) {
                 if (a.parents.length === b.parents.length) {
-                    return collator.compare(a.title_local, b.title_local);
+                    return collator.compare(Utils.regionTitle(a), Utils.regionTitle(b));
                 }
 
                 return a.parents.length < b.parents.length ? -1 : 1;

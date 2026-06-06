@@ -462,7 +462,7 @@ export const genObjsShortRegionsArr = function (objs, showlvls = ['r0', 'r1'], d
     }
 
     if (Object.keys(shortRegionsHash).length) {
-        fillRegionsHash(shortRegionsHash, ['cid', 'title_local']);
+        fillRegionsHash(shortRegionsHash, ['cid', 'title_en', 'title_local']);
     } else {
         shortRegionsHash = undefined;
     }
@@ -830,7 +830,7 @@ async function processFeatureCollection(data) {
             featureResult.success = true;
             featureResult.edit = Boolean(existentRegion);
             featureResult.stat = saveResult.resultStat;
-            featureResult.region = _.pick(saveResult.region, 'cid', 'title_local', 'polynum', 'pointsnum');
+            featureResult.region = _.pick(saveResult.region, 'cid', 'title_en', 'title_local', 'polynum', 'pointsnum');
         } catch (err) {
             featureResult.error = err.message || err;
         }
@@ -1390,15 +1390,18 @@ async function give(data) {
         children = [];
 
         for (const cid of childrenCids) {
-            const { cdate, udate, title_local: title, childLen } = regionCacheHash[cid];
+            const { cdate, udate, title_en, title_local, childLen } = regionCacheHash[cid];
 
-            children.push({ cid, cdate, udate, title, childLen, childrenCount: _.size(regionsChildrenArrHash[cid]) || undefined });
+            children.push({
+                cid, cdate, udate, title_en, title_local, childLen,
+                childrenCount: _.size(regionsChildrenArrHash[cid]) || undefined,
+            });
         }
 
         // Add public stat for each region
         fillRegionsPublicStats(children);
 
-        children = _.sortBy(children, ['title']);
+        children = _.sortBy(children, ['title_local']);
     }
 
     // Send client stringified geojson

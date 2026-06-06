@@ -240,8 +240,7 @@ define([
                     tplObj.parr.push({ 'err': err.message });
                 } else {
                     data.regions.forEach(function (region) {
-                        // Set title propertly to current language title.
-                        region.title = region.hasOwnProperty('title_' + P.settings.lang) ? region['title_' + P.settings.lang] : region.title_local;
+                        region.title = Utils.regionTitle(region);
                     });
                     tplObj.parr = data.regions;
                 }

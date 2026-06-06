@@ -58,7 +58,7 @@
                 span.glyphicon(data-bind="css: {'glyphicon-minus': $data.opened(), 'glyphicon-plus': !$data.opened()}")
             // /ko
             .rname(data-bind="click: $data.clickNode, attr: {title: $data.selected() ? $root.i18n('Снять выбор') : ($data.selectable() ? $root.i18n('Выбрать регион') : '')}")
-                .name(data-bind="text: ' ' + $data.title_local, css: {'nameborder': $data.phc || $data.pac || $data.cc}")
+                .name(data-bind="text: ' ' + $root.regionTitle($data), css: {'nameborder': $data.phc || $data.pac || $data.cc}")
                 //ko if: $data.phc
                 .section(data-bind="attr: {title: $root.i18n('Фотографии')}")
                     span.glyphicon.glyphicon-camera

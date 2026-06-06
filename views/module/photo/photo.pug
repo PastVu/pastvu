@@ -200,7 +200,7 @@
                 //ko if: p.regions().length
                 .tltp.tltp-top.tltp-touch.tltp-hotizontal-left.tltp-animate-opacity.rytltp.ytltp(data-bind="foreach: p.regions")
                     .yregion
-                        a(data-bind="text:$parent.p.year()+' '+$data.title_local(), attr: {href: '/ps?f=r!'+$data.cid()+'_y!'+$parent.p.year()+'!'+$parent.p.year()}")
+                        a(data-bind="text:$parent.p.year()+' '+$root.regionTitle($data), attr: {href: '/ps?f=r!'+$data.cid()+'_y!'+$parent.p.year()+'!'+$parent.p.year()}")
                 // /ko
             // /ko
             //ko if: p.year2() && p.year() !== p.year2()
@@ -210,14 +210,14 @@
                 //ko if: p.regions().length
                 .tltp.tltp-top.tltp-touch.tltp-hotizontal-left.tltp-animate-opacity.rytltp.ytltpBetween(data-bind="foreach: p.regions")
                     .yregion
-                        a(data-bind="text:$parent.p.year()+' – '+$parent.p.year2()+' '+$data.title_local(), attr: {href: '/ps?f=r!'+$data.cid()+'_y!'+$parent.p.year()+'!'+$parent.p.year2()}")
+                        a(data-bind="text:$parent.p.year()+' – '+$parent.p.year2()+' '+$root.regionTitle($data), attr: {href: '/ps?f=r!'+$data.cid()+'_y!'+$parent.p.year()+'!'+$parent.p.year2()}")
                 // /ko
             span.tltp-wrap.rytltp-wrap
                 a(data-bind="text:p.year2(), attr: {href:'/ps?f=y!'+p.year2()+'!'+p.year2()}")
                 //ko if: p.regions().length
                 .tltp.tltp-top.tltp-touch.tltp-hotizontal-left.tltp-animate-opacity.rytltp.ytltp2(data-bind="foreach: p.regions")
                     .yregion
-                        a(data-bind="text:$parent.p.year2()+' '+$data.title_local(), attr: {href: '/ps?f=r!'+$data.cid()+'_y!'+$parent.p.year2()+'!'+$parent.p.year2()}")
+                        a(data-bind="text:$parent.p.year2()+' '+$root.regionTitle($data), attr: {href: '/ps?f=r!'+$data.cid()+'_y!'+$parent.p.year2()+'!'+$parent.p.year2()}")
                 // /ko
             // /ko
 
@@ -230,7 +230,7 @@
             .region
                 .tltp-wrap.rytltp-wrap
                     | <!--ko if: $index()-->&nbsp;<!-- /ko -->
-                    a(data-bind="text: $data.title_local(), attr: {href: '/ps?f=r!' + $data.cid()}")
+                    a(data-bind="text: $root.regionTitle($data), attr: {href: '/ps?f=r!' + $data.cid()}")
                     //ko if: $parent.IAdmin() || $data.phc() || $data.pac() || $data.cc()
                     .tltp.tltp-top.tltp-touch.tltp-animate-opacity.rytltp(data-bind="css: {'tltp-hotizontal-left': !$index()}")
                         //ko if: $parent.IAdmin()
@@ -321,7 +321,7 @@
             //ko if: p.regions().length
             span(data-bind="foreach: p.regions")
                 .region
-                    a(target="_blank", data-bind="text: ' ' + $data.title_local(), attr: {href: '/ps?f=r!' + $data.cid()}")
+                    a(target="_blank", data-bind="text: ' ' + $root.regionTitle($data), attr: {href: '/ps?f=r!' + $data.cid()}")
                 //ko if: $index() < $parent.p.regions().length - 1
                 | ,&#32;
                 // /ko
@@ -446,7 +446,7 @@
             //ko if: p.regions().length
             span(data-bind="foreach: p.regions")
                 .region
-                    a(target="_blank", data-bind="text: ' ' + $data.title_local(), attr: {href: '/ps?f=r!' + $data.cid()}")
+                    a(target="_blank", data-bind="text: ' ' + $root.regionTitle($data), attr: {href: '/ps?f=r!' + $data.cid()}")
                 //ko if: $index() < $parent.p.regions().length - 1
                 | ,&#32;
                 // /ko

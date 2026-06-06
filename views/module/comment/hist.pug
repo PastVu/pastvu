@@ -13,7 +13,7 @@
                     .role
                         | {{?h.role===5}}{{=it.i18n('как модератор')}}
                         | {{?h.roleregion}} {{=it.i18n('региона')}}&nbsp;
-                        a(target="_blank", href="{{='/ps?f=r!' + h.roleregion.cid}}") {{=h.roleregion.title_local}}{{?}}
+                        a(target="_blank", href="{{='/ps?f=r!' + h.roleregion.cid}}") {{=it.regionTitle(h.roleregion)}}{{?}}
                         | {{??h.role>9}}{{=it.i18n('как администратор')}}{{?}}
                     | {{?}}
                     .dotDelimeter ·

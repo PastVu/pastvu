@@ -507,6 +507,26 @@ define(['jquery', 'underscore', 'underscore.string', 'i18n', 'lib/geocoordsparse
             return str ? str[0].toUpperCase() + str.substr(1) : '';
         },
 
+        regionTitle: (function () {
+            const isEn = (typeof init !== 'undefined' && init.settings && init.settings.lang) === 'en';
+
+            const unwrap = v => typeof v === 'function' ? v() : v;
+
+            return function (region) {
+                if (!region) {
+                    return '';
+                }
+
+                const local = unwrap(region.title_local) || '';
+
+                if (!isEn) {
+                    return local;
+                }
+
+                return unwrap(region.title_en) || local;
+            };
+        }()),
+
         /**
          *
          * @param {number} time Время в миллисекундах

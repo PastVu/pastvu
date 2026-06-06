@@ -21,7 +21,7 @@
         // /ko
         //ko if: $data.success
         .region
-            a(target="_blank", data-bind="attr: {href: '/admin/region/' + $data.region.cid, title: $root.i18n('Открыть')}, text: $data.region.cid + ' ' + $data.region.title_local")
+            a(target="_blank", data-bind="attr: {href: '/admin/region/' + $data.region.cid, title: $root.i18n('Открыть')}, text: $data.region.cid + ' ' + $root.regionTitle($data.region)")
             = "; "
             div(style="display:inline-block;")
                 span(data-bind="text: $root.i18n('Полигонов:')")

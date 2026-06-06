@@ -34,7 +34,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 if (hists && hists.length) {
                     const link = '/' + (this.type === 'photo' ? 'p' : 'news') + '/' + this.objCid;
 
-                    this.$dom[0].innerHTML = tplHist({ hists: hists, fDate: Utils.format.date.relative, link: link, i18n: globalVM.i18n });
+                    this.$dom[0].innerHTML = tplHist({
+                        hists: hists,
+                        fDate: Utils.format.date.relative,
+                        link: link,
+                        i18n: globalVM.i18n,
+                        regionTitle: Utils.regionTitle,
+                    });
                 }
 
                 this.show();

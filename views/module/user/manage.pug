@@ -21,7 +21,7 @@
                             // /ko
                             //ko foreach: regions
                             span.region.candrop(data-bind="click: function() {$parent.regionDrop($data.cid);}, attr: {title: $root.i18n('Убрать регион')}")
-                                span(data-bind="text: $data.title_local")
+                                span(data-bind="text: $root.regionTitle($data)")
                             // /ko
                             span.regionEdit(data-bind="click: regionSelect")
                                 span.glyphicon.glyphicon-pencil

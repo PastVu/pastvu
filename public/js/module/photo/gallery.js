@@ -1527,7 +1527,7 @@ define([
                                         text: i18n('Применить'),
                                         glyphicon: 'glyphicon-ok',
                                         click: function () {
-                                            const regions = this.regselectVM.getSelectedRegions(['cid', 'parents', 'title_local', 'childLen']);
+                                            const regions = this.regselectVM.getSelectedRegions(['cid', 'parents', 'title_en', 'title_local', 'childLen']);
 
                                             if (regions.length > 10) {
                                                 return noties.alert({
@@ -1541,7 +1541,7 @@ define([
                                             this.filter.disp.r(regions.map(function (region) {
                                                 if (region.parents) {
                                                     region.parentRegionsArr = this.regselectVM
-                                                        .getRegionsByCids(region.parents, ['cid', 'parents', 'title_local', 'childLen'])
+                                                        .getRegionsByCids(region.parents, ['cid', 'parents', 'title_en', 'title_local', 'childLen'])
                                                         .reverse();
                                                 }
 
@@ -1621,7 +1621,7 @@ define([
                                     text: i18n('Применить'),
                                     glyphicon: 'glyphicon-ok',
                                     click: function () {
-                                        const regions = this.regselectVM.getSelectedRegions(['cid', 'parents', 'title_local']);
+                                        const regions = this.regselectVM.getSelectedRegions(['cid', 'parents', 'title_en', 'title_local']);
 
                                         if (regions.length > 10) {
                                             return noties.alert({
@@ -1635,7 +1635,7 @@ define([
                                         this.filter.disp.re(regions.map(function (region) {
                                             if (region.parents) {
                                                 region.parentRegionsArr = this.regselectVM
-                                                    .getRegionsByCids(region.parents, ['cid', 'parents', 'title_local', 'childLen'])
+                                                    .getRegionsByCids(region.parents, ['cid', 'parents', 'title_en', 'title_local', 'childLen'])
                                                     .reverse();
                                             }
 

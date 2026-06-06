@@ -846,7 +846,7 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
                                         text: i18n('Применить'),
                                         glyphicon: 'glyphicon-ok',
                                         click: function () {
-                                            const regions = this.regselectVM.getSelectedRegionsFull(['cid', 'title_local']);
+                                            const regions = this.regselectVM.getSelectedRegionsFull(['cid', 'title_en', 'title_local']);
 
                                             if (regions.length > 1) {
                                                 noties.alert({
@@ -1092,7 +1092,7 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
                 } else if (!_.isEmpty(p.regions())) {
                     // If there in no description, create it as regions names
                     desc = p.regions().reduceRight(function (result, region, index) {
-                        result += region.title_local() + (index ? ', ' : '');
+                        result += Utils.regionTitle(region) + (index ? ', ' : '');
 
                         return result;
                     }, '');

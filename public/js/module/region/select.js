@@ -43,7 +43,7 @@ define([
             if (this.selectedInit && this.selectedInit.length) {
                 this.selectedInit.forEach(function (region) {
                     this.selectedInitHash[region.cid] = region;
-                    this.selectedInitTkns.push({ cid: region.cid, value: region.title_local });
+                    this.selectedInitTkns.push({ cid: region.cid, value: Utils.regionTitle(region) });
                 }, this);
             }
 
@@ -388,7 +388,7 @@ define([
 
             if (add) {
                 if (this.selectRegion(region)) {
-                    tkn.tokenfield('createToken', { cid: region.cid, value: region.title_local });
+                    tkn.tokenfield('createToken', { cid: region.cid, value: Utils.regionTitle(region) });
                 }
             } else {
                 region.selected(false);
@@ -491,8 +491,8 @@ define([
                 cid = region.cid;
                 this.regionsTypehead.push({
                     cid: cid,
-                    value: region.title_local,
-                    parentTitle: region.parent && region.parent.title_local,
+                    value: Utils.regionTitle(region),
+                    parentTitle: region.parent && Utils.regionTitle(region.parent),
                     tokens: [String(cid), region.title_local, region.title_en],
                 });
 
@@ -566,26 +566,28 @@ define([
             const pinHome = this.pinHome();
             let field;
 
+            const titleField = Utils.regionTitle;
+
             switch (sortBy) {
                 case 'sub':
-                    field = 'childLen';
+                    field = r => r.childLen;
                     sortOrder = -sortOrder;
                     break;
                 case 'photo':
-                    field = 'phc';
+                    field = r => r.phc;
                     sortOrder = -sortOrder;
                     break;
                 case 'pic':
-                    field = 'pac';
+                    field = r => r.pac;
                     sortOrder = -sortOrder;
                     break;
                 case 'comment':
-                    field = 'cc';
+                    field = r => r.cc;
                     sortOrder = -sortOrder;
                     break;
                 case 'alphabet':
                 default:
-                    field = 'title_local';
+                    field = titleField;
             }
 
             return (function recursiveSort(arr) {
@@ -607,8 +609,8 @@ define([
                         }
                     }
 
-                    const aval = a[field];
-                    const bval = b[field];
+                    const aval = field(a);
+                    const bval = field(b);
 
                     if (!aval && bval) {
                         return 1;
@@ -622,7 +624,7 @@ define([
                         // If values are equal (exists or not)
                         if (sortBy !== 'alphabet') {
                             // If it is not alphabetical order, order by title
-                            return collator.compare(a.title_local, b.title_local);
+                            return collator.compare(titleField(a), titleField(b));
                         }
 
                         // Otherwise don't sort

@@ -19,7 +19,7 @@
                             // /ko
                             //ko foreach: filter.disp.r
                             span.fRegion.tltp-wrap(data-bind="css: {dis: $parent._.includes($parent.filter.disp.rdis(), $data.cid)}")
-                                span(data-bind="text: $data.title_local")
+                                span(data-bind="text: $root.regionTitle($data)")
                                 .tltp.tltp-bottom.tltp-touch.tltp-animate-opacity(style="padding:3px 3px 1px;white-space:nowrap;font-weight:normal;")
                                     //ko if: $parent.filter.admin()
                                     .rtgl.edit(data-bind="attr: {title: $root.i18n('Перейти в редактирование региона')}")
@@ -40,7 +40,7 @@
                                     // /ko
                                     //ko if: $data.parentRegionsArr
                                     //ko foreach: $data.parentRegionsArr
-                                    .selectParent.selectParentSelectable(data-bind="text:$data.title_local, click:function() {$parents[1].frselectparent($parent.cid, $data);}")
+                                    .selectParent.selectParentSelectable(data-bind="text:$root.regionTitle($data), click:function() {$parents[1].frselectparent($parent.cid, $data);}")
                                     // /ko
                                     // /ko
                             // /ko
@@ -69,7 +69,7 @@
                             span(data-bind="text: ' ' + $root.i18n('кроме:') + ' '")
                             //ko foreach: filter.disp.re
                             span.fRegion.tltp-wrap(data-bind="css: {dis: $parent._.includes($parent.filter.disp.redis(), $data.cid)}")
-                                span(data-bind="text: $data.title_local")
+                                span(data-bind="text: $root.regionTitle($data)")
                                 .tltp.tltp-bottom.tltp-touch.tltp-animate-opacity(style="padding:3px 3px 1px;white-space:nowrap;font-weight:normal;")
                                     //ko if: $parent.filter.admin()
                                     .rtgl.edit(data-bind="attr: {title: $root.i18n('Перейти в редактирование региона')}")
@@ -84,7 +84,7 @@
                                     // /ko
                                     //ko if: $data.parentRegionsArr
                                     //ko foreach: $data.parentRegionsArr
-                                    .selectParent(data-bind="text:$data.title_local, click:function() {$parents[1].freselectparent($parent.cid, $data);}, css: {selectParentBold: $parents[1].rHash()[$data.cid], selectParentSelectable: !$parents[1].rHashPlusParents()[$data.cid]}")
+                                    .selectParent(data-bind="text:$root.regionTitle($data), click:function() {$parents[1].freselectparent($parent.cid, $data);}, css: {selectParentBold: $parents[1].rHash()[$data.cid], selectParentSelectable: !$parents[1].rHashPlusParents()[$data.cid]}")
                                     // /ko
                                     // /ko
                             // /ko
@@ -210,7 +210,7 @@
                 //ko if: $data.rs
                 .regions(data-bind="foreach: $data.rs", title=" ")
                     | <!--ko if: $index()-->, <!-- /ko -->
-                    a.shortRegion(data-bind="css: {where: !$data.cid}, attr: {href: ($parents[1].u ? '/u/'+$parents[1].u.login()+'/photo' : '/ps')+'?f='+(!$data.cid ? 'geo!0'+($parent.rs[$index()+1] ? '_r!'+$parent.rs[$index()+1].cid : '') : 'r!'+$data.cid), title: $data.title_local}, text: $data.title_local")
+                    a.shortRegion(data-bind="css: {where: !$data.cid}, attr: {href: ($parents[1].u ? '/u/'+$parents[1].u.login()+'/photo' : '/ps')+'?f='+(!$data.cid ? 'geo!0'+($parent.rs[$index()+1] ? '_r!'+$parent.rs[$index()+1].cid : '') : 'r!'+$data.cid), title: $root.regionTitle($data)}, text: $root.regionTitle($data)")
                 // /ko
             //ko if: $data.ccount || $data.changed
             .rightBlocks

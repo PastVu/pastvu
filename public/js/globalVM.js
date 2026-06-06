@@ -62,6 +62,7 @@ define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'intl', 'i18n', 'k
         pb: ps,
         intl: intl,
         i18n: i18n,
+        regionTitle: Utils.regionTitle,
         router: null,
 
         childModules: {},
