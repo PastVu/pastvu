@@ -48,31 +48,31 @@ describe('commons/i18n', () => {
 
     describe('cldr plurals via t(lang, key, { count })', () => {
         it('resolves Russian one/few/many for comments_new', () => {
-            expect(t('ru', 'comments_new', { count: 1 })).toBe('1 новый комментарий');
-            expect(t('ru', 'comments_new', { count: 2 })).toBe('2 новых комментария');
-            expect(t('ru', 'comments_new', { count: 4 })).toBe('4 новых комментария');
-            expect(t('ru', 'comments_new', { count: 5 })).toBe('5 новых комментариев');
-            expect(t('ru', 'comments_new', { count: 11 })).toBe('11 новых комментариев');
-            expect(t('ru', 'comments_new', { count: 21 })).toBe('21 новый комментарий');
-            expect(t('ru', 'comments_new', { count: 22 })).toBe('22 новых комментария');
+            expect(t('ru', 'comments_new', { count: 1, ns: 'mail' })).toBe('1 новый комментарий');
+            expect(t('ru', 'comments_new', { count: 2, ns: 'mail' })).toBe('2 новых комментария');
+            expect(t('ru', 'comments_new', { count: 4, ns: 'mail' })).toBe('4 новых комментария');
+            expect(t('ru', 'comments_new', { count: 5, ns: 'mail' })).toBe('5 новых комментариев');
+            expect(t('ru', 'comments_new', { count: 11, ns: 'mail' })).toBe('11 новых комментариев');
+            expect(t('ru', 'comments_new', { count: 21, ns: 'mail' })).toBe('21 новый комментарий');
+            expect(t('ru', 'comments_new', { count: 22, ns: 'mail' })).toBe('22 новых комментария');
         });
 
         it('resolves English one/other for comments_new', () => {
-            expect(t('en', 'comments_new', { count: 1 })).toBe('1 new comment');
-            expect(t('en', 'comments_new', { count: 2 })).toBe('2 new comments');
-            expect(t('en', 'comments_new', { count: 21 })).toBe('21 new comments');
+            expect(t('en', 'comments_new', { count: 1, ns: 'mail' })).toBe('1 new comment');
+            expect(t('en', 'comments_new', { count: 2, ns: 'mail' })).toBe('2 new comments');
+            expect(t('en', 'comments_new', { count: 21, ns: 'mail' })).toBe('21 new comments');
         });
 
         it('resolves comments_unread in both languages', () => {
-            expect(t('ru', 'comments_unread', { count: 1 })).toBe('1 непрочитанный');
-            expect(t('ru', 'comments_unread', { count: 5 })).toBe('5 непрочитанных');
-            expect(t('en', 'comments_unread', { count: 1 })).toBe('1 unread');
-            expect(t('en', 'comments_unread', { count: 5 })).toBe('5 unread');
+            expect(t('ru', 'comments_unread', { count: 1, ns: 'mail' })).toBe('1 непрочитанный');
+            expect(t('ru', 'comments_unread', { count: 5, ns: 'mail' })).toBe('5 непрочитанных');
+            expect(t('en', 'comments_unread', { count: 1, ns: 'mail' })).toBe('1 unread');
+            expect(t('en', 'comments_unread', { count: 5, ns: 'mail' })).toBe('5 unread');
         });
 
         it('handles count: 0 correctly in both languages', () => {
-            expect(t('ru', 'comments_new', { count: 0 })).toBe('0 новых комментариев');
-            expect(t('en', 'comments_new', { count: 0 })).toBe('0 new comments');
+            expect(t('ru', 'comments_new', { count: 0, ns: 'mail' })).toBe('0 новых комментариев');
+            expect(t('en', 'comments_new', { count: 0, ns: 'mail' })).toBe('0 new comments');
         });
 
         it('resolves photos_count in Russian and English', () => {

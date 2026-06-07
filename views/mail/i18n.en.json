@@ -1,1 +1,24 @@
-{}
+{
+    "Здравствуйте, {{username}}!": "Hello, {{username}}!",
+    "Уведомление о событиях на PastVu": "PastVu activity notification",
+    "Логин: <strong>{{login}}</strong>": "Login: <strong>{{login}}</strong>",
+    "E-mail:": "E-mail:",
+    "Для лучшей безопасности мы не храним оригинал вашего пароля. Если вы его забудете, просто установите новый с помощью процедуры восстановления на сайте": "For better security we do not store your original password. If you forget it, just set a new one via the recovery procedure on the site.",
+    "Мы требуем от всех пользователей подтверждения регистрации, для проверки того, что введённый e-mail адрес реальный.": "We require every user to confirm registration so that we can verify the e-mail address is real.",
+    "Это требуется для защиты от спамеров и многократной регистрации.": "This protects us from spammers and duplicate registrations.",
+    "Для активации Вашего аккаунта, пройдите по следующей ссылке:": "To activate your account, follow this link:",
+    "Ссылка действительна {{linkvalid}}, по истечении которых Вам будет необходимо зарегистрироваться повторно": "The link is valid for {{linkvalid}}; after that you will need to register again",
+    "Вы получили это письмо, так как этот e-mail адрес был использован при регистрации. Если Вы не регистрировались на нашем сайте, то просто проигнорируйте и удалите письмо.": "You received this e-mail because this address was used during registration. If you did not register on our site, simply ignore and delete this message.",
+    "Для Вашей учетной записи был создан запрос на восстановление пароля на проекте PastVu.": "A password recovery request was created for your PastVu account.",
+    "Если Вы не производили таких действий на нашем сайте, то просто проигнорируйте и удалите письмо.": "If you did not request this, simply ignore and delete this message.",
+    "Ссылка действительна {{linkvalid}}, по истечении которых Вам будет необходимо запрашивать смену пароля повторно": "The link is valid for {{linkvalid}}; after that you will need to request a password change again",
+    "(всего {{unread}})": "({{unread}} in total)",
+    "и др.": "et al.",
+    "На момент отправки данного уведомления в темах, на которые вы подписаны, было добавлено следующее количество комментариев:": "At the time this notification was sent, the threads you are subscribed to had received the following number of comments:",
+    "Управлять материалами, на которые вы подписаны, можно на странице подписок:": "You can manage your subscriptions on the subscriptions page:",
+    "Задать интервал уведомлений или отключить их вы можете на странице настроек:": "You can adjust the notification interval or disable notifications on the settings page:",
+    "comments_new_one": "{{count}} new comment",
+    "comments_new_other": "{{count}} new comments",
+    "comments_unread_one": "{{count}} unread",
+    "comments_unread_other": "{{count}} unread"
+}
