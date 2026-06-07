@@ -8,7 +8,7 @@ import http from 'http';
 import log4js from 'log4js';
 import config from '../config';
 import Utils from '../commons/Utils';
-import { getT, langFromRequest } from '../commons/i18n';
+import { getT, langFromRequest, ogLocale, pickRegionTitle } from '../commons/i18n';
 import * as session from './_session';
 import { clientParams, ready as settingsReady } from './settings';
 import NotFoundError from '../app/errors/NotFound';
@@ -28,19 +28,6 @@ const origin = config.client.origin;
 let clientParamsJSON = JSON.stringify(clientParams);
 
 settingsReady.then(() => clientParamsJSON = JSON.stringify(clientParams));
-
-// Map our short language codes to the full OpenGraph locale tags used in
-// meta(property="og:locale") so social previews render in the matching
-// language.
-const OG_LOCALES = { ru: 'ru_RU', en: 'en_US' };
-
-function ogLocale(lang) {
-    return OG_LOCALES[lang] || OG_LOCALES.ru;
-}
-
-function pickRegionTitle(region, lang) {
-    return lang === 'en' ? region.title_en || region.title_local : region.title_local;
-}
 
 function genInitDataString(req) {
     const usObj = req.handshake.usObj;

@@ -131,4 +131,30 @@ function langFromRequest(req) {
     return resolveLang(parseCookie(cookieHeader).past_lang);
 }
 
-module.exports = { getT, t, userLang, langFromHandshake, langFromRequest, init };
+// Map our short language codes to the full OpenGraph locale tags used in
+// meta(property="og:locale") so social previews render in the matching
+// language.
+const OG_LOCALES = { ru: 'ru_RU', en: 'en_US' };
+
+/**
+ * Return the OpenGraph locale tag for the given short language code.
+ * Falls back to the configured site default (FALLBACK) so a stale cookie
+ * value can't force a mismatch between rendered text and og:locale.
+ */
+function ogLocale(lang) {
+    return OG_LOCALES[lang] || OG_LOCALES[FALLBACK];
+}
+
+/**
+ * Pick a region's display title for the given language. The shared server
+ * shape is { title_en, title_local }; English falls back to title_local when
+ * a region has no English title yet.
+ */
+function pickRegionTitle(region, lang) {
+    return lang === 'en' ? region.title_en || region.title_local : region.title_local;
+}
+
+module.exports = {
+    getT, t, userLang, langFromHandshake, langFromRequest, init,
+    OG_LOCALES, ogLocale, pickRegionTitle,
+};
