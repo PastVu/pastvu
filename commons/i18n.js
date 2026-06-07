@@ -72,18 +72,19 @@ function resolveLang(candidate) {
 const fixedTByLang = new Map();
 
 /**
- * Returns a translation function bound to the given language. Falls back to
- * config.lang (and then to 'ru') when lang is not in config.locales.
+ * Returns a translation function bound to the given language. Unsupported
+ * languages are handled by i18next's own fallbackLng — we don't normalize
+ * here. Callers that need a normalized lang for cookies or settings should
+ * use userLang/langFromHandshake/langFromRequest, which already normalize.
  */
 function getT(lang) {
     init();
 
-    const supported = resolveLang(lang);
-    let fixed = fixedTByLang.get(supported);
+    let fixed = fixedTByLang.get(lang);
 
     if (!fixed) {
-        fixed = i18next.getFixedT(supported);
-        fixedTByLang.set(supported, fixed);
+        fixed = i18next.getFixedT(lang);
+        fixedTByLang.set(lang, fixed);
     }
 
     return fixed;

@@ -31,8 +31,9 @@ describe('commons/i18n', () => {
         it('falls back to the default language for unsupported lang', () => {
             const tFr = getT('fr');
 
-            // 'fr' is not in config.locales, so we fall back to config.lang ('ru'),
-            // which has no entry for this key and therefore returns the key itself.
+            // i18next's own fallbackLng resolves 'fr' to 'ru' at lookup time;
+            // 'ru' has no entry for this key (Russian source string IS the key)
+            // and therefore returns the key itself.
             expect(tFr('Вход')).toBe('Вход');
         });
     });
