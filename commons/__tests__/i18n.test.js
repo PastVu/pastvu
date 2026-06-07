@@ -7,43 +7,41 @@ import { getT, t } from '../i18n';
 
 describe('commons/i18n', () => {
     describe('t(lang, key)', () => {
-        it('returns the English translation for a known Russian key', () => {
-            expect(t('en', 'Вход')).toBe('Login');
+        it('returns the Russian translation for a known English key', () => {
+            expect(t('ru', 'Login')).toBe('Вход');
         });
 
-        it('returns the Russian source key as-is when lang is ru', () => {
-            expect(t('ru', 'Вход')).toBe('Вход');
+        it('returns the English source key as-is when lang is en', () => {
+            expect(t('en', 'Login')).toBe('Login');
         });
 
         it('returns the key unchanged when no translation exists', () => {
-            expect(t('en', 'this-key-does-not-exist')).toBe('this-key-does-not-exist');
+            expect(t('ru', 'this-key-does-not-exist')).toBe('this-key-does-not-exist');
         });
     });
 
     describe('getT(lang)', () => {
         it('binds to a language so subsequent calls share it', () => {
-            const tEn = getT('en');
+            const tRu = getT('ru');
 
-            expect(tEn('Вход')).toBe('Login');
-            expect(tEn('Выход')).toBe('Logout');
+            expect(tRu('Login')).toBe('Вход');
+            expect(tRu('Logout')).toBe('Выход');
         });
 
         it('falls back to the default language for unsupported lang', () => {
             const tFr = getT('fr');
 
-            // i18next's own fallbackLng resolves 'fr' to 'ru' at lookup time;
-            // 'ru' has no entry for this key (Russian source string IS the key)
+            // i18next's own fallbackLng resolves 'fr' to 'en' at lookup time;
+            // 'en' has no entry for this key (English source string IS the key)
             // and therefore returns the key itself.
-            expect(tFr('Вход')).toBe('Вход');
+            expect(tFr('Login')).toBe('Login');
         });
     });
 
     describe('interpolation', () => {
         it('substitutes {{var}} placeholders', () => {
-            // 'Установить карту в домашний регион {{region}}' →
-            // 'Center map on home region {{region}}'
-            expect(t('en', 'Установить карту в домашний регион {{region}}', { region: 'Москва' }))
-                .toBe('Center map on home region Москва');
+            expect(t('ru', 'Center map on home region {{region}}', { region: 'Москва' }))
+                .toBe('Установить карту в домашний регион Москва');
         });
     });
 
@@ -145,9 +143,9 @@ describe('commons/i18n', () => {
 
     describe('namespace resolution', () => {
         it('falls back from a sub-namespace to translation for shared keys', () => {
-            // 'Вход' lives in translation. A mail call site that passes
+            // 'Login' lives in translation. A mail call site that passes
             // { ns: 'mail' } finds it via fallbackNS.
-            expect(t('en', 'Вход', { ns: 'mail' })).toBe('Login');
+            expect(t('ru', 'Login', { ns: 'mail' })).toBe('Вход');
         });
 
         it('looks up explicit ns when the key is registered there', () => {
@@ -164,7 +162,7 @@ describe('commons/i18n', () => {
 
         it('default namespace resolution unchanged for regular calls', () => {
             // Sanity check: no ns option → defaultNS (= translation) lookup.
-            expect(t('en', 'Вход')).toBe('Login');
+            expect(t('ru', 'Login')).toBe('Вход');
             expect(t('ru', 'photos_count', { count: 5 })).toBe('5 фотографий');
         });
     });

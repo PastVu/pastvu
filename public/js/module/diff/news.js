@@ -8,7 +8,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
     const newsDefault = {
         pdate: new Date(),
-        title: i18n('Нет заголовка'),
+        title: i18n('Untitled'),
         txt: '',
         ccount: 0,
         ccount_new: 0,

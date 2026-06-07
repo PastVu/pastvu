@@ -146,14 +146,14 @@ define([
                             module: 'm/user/session',
                             options: { login: this.u.login(), key: key, archive: archive, online: online },
                             modal: {
-                                topic: i18n('Детали сессии'),
+                                topic: i18n('Session details'),
                                 animateScale: true,
                                 initWidth: '800px',
                                 maxWidthRatio: 0.95,
                                 curtainClick: { click: this.handleCloseSession, ctx: this },
-                                offIcon: { text: i18n('Закрыть'), click: this.handleCloseSession, ctx: this },
+                                offIcon: { text: i18n('Close'), click: this.handleCloseSession, ctx: this },
                                 btns: [
-                                    { css: 'btn-primary', text: i18n('Закрыть'), click: this.handleCloseSession, ctx: this },
+                                    { css: 'btn-primary', text: i18n('Close'), click: this.handleCloseSession, ctx: this },
                                 ],
                             },
                             callback: function (vm) {

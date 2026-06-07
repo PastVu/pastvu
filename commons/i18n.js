@@ -13,7 +13,7 @@ const mailRu = require('../views/mail/i18n.ru.json');
 const statusEn = require('../views/status/i18n.en.json');
 const statusRu = require('../views/status/i18n.ru.json');
 
-const DEFAULT_LANG = 'ru';
+const DEFAULT_LANG = 'en';
 const SUPPORTED = config.locales || ['ru', 'en'];
 const FALLBACK = config.lang || DEFAULT_LANG;
 let inited = false;
@@ -25,16 +25,16 @@ function init() {
 
     inited = true;
 
-    // Most keys are Russian source strings (e.g. 'Вход' → 'Login'). Plurals
-    // are a narrow exception — symbolic IDs (e.g. 'comments_new') get CLDR
-    // suffix lookup (_one/_few/_many/_other) per language, with forms defined
-    // in the i18n.ru.json / i18n.en.json files.
+    // Keys are English source strings (e.g. 'Login' → 'Вход'). Plurals are a
+    // narrow exception — symbolic IDs (e.g. 'comments_new') get CLDR suffix
+    // lookup (_one/_few/_many/_other) per language, with forms defined in the
+    // i18n.ru.json / i18n.en.json files.
     //
     // Server-only namespaces (mail, status) hold strings that are never
     // rendered in the browser. Call sites in views/mail/, views/status/, and
     // controllers/subscr.js pass { ns: 'mail' } or { ns: 'status' }; everything
     // else uses the default 'translation' namespace. fallbackNS lets a mail or
-    // status call site reach a shared key (e.g. 'Вход') without per-key
+    // status call site reach a shared key (e.g. 'Login') without per-key
     // partitioning.
     const resources = {
         ru: { translation: translationsRu, mail: mailRu, status: statusRu },
@@ -48,7 +48,7 @@ function init() {
         ns: ['translation', 'mail', 'status'],
         defaultNS: 'translation',
         fallbackNS: 'translation',
-        // Keys are Russian source strings; turn off separators so dots/colons
+        // Keys are English source strings; turn off separators so dots/colons
         // in a key are not interpreted as namespace/key paths.
         keySeparator: false,
         nsSeparator: false,

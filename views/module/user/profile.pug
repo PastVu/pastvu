@@ -1,58 +1,58 @@
 .user_profile(data-bind="with: repository[M!M]")
 	form.form-horizontal(data-bind="css: {canBeEdit: canBeEdit(), cannotBeEdit: !canBeEdit()}")
 		.form-group
-			label.col-sm-3.col-md-2.control-label(for="inName", data-bind="text: $root.i18n('Псевдоним')")
+			label.col-sm-3.col-md-2.control-label(for="inName", data-bind="text: $root.i18n('Nickname')")
 			.col-sm-9.col-md-9
 				p.form-control-static
 					span.glyphicon.glyphicon-user
 					span.loginName(data-bind="text: ' ' + u.login()")
 		.form-group(data-bind="style: {display: canBeEdit() ||  u.firstName().length || u.lastName().length > 0 ? '' : 'none'}")
-			label.col-sm-3.col-md-2.control-label(for="inName", data-bind="text: $root.i18n('Реальное имя')")
+			label.col-sm-3.col-md-2.control-label(for="inName", data-bind="text: $root.i18n('Real name')")
 			.col-sm-3.col-md-2
-				input.form-control(type="text", id="inName", data-bind="attr: {size: u.firstName().length, disabled: !editMode(), placeholder: !editMode() ? '' : $root.i18n('Имя')}, value: u.firstName, valueUpdate: 'afterkeydown'")
+				input.form-control(type="text", id="inName", data-bind="attr: {size: u.firstName().length, disabled: !editMode(), placeholder: !editMode() ? '' : $root.i18n('First name')}, value: u.firstName, valueUpdate: 'afterkeydown'")
 			.col-sm-3.col-md-2
-				input.form-control(type="text", id="inLastName", data-bind="attr: {disabled: !editMode(), placeholder: !editMode() ? '': $root.i18n('Фамилия')}, value: u.lastName, valueUpdate: 'afterkeydown'")
+				input.form-control(type="text", id="inLastName", data-bind="attr: {disabled: !editMode(), placeholder: !editMode() ? '': $root.i18n('Last name')}, value: u.lastName, valueUpdate: 'afterkeydown'")
 		.form-group(data-bind="style: {display: canBeEdit() ||  u.birthdate().length ? '' : 'none'}")
-			label.col-sm-3.col-md-2.control-label(for="inBirthdate", data-bind="text: $root.i18n('Дата рождения')")
+			label.col-sm-3.col-md-2.control-label(for="inBirthdate", data-bind="text: $root.i18n('Date of birth')")
 			.col-sm-3.col-md-2
 				input#inBirthdate.form-control(type="text", data-bind="attr: {disabled: !editMode()}, value: u.birthdate, valueUpdate: 'keyup'")
 		.form-group(data-bind="style: {display: canBeEdit() ||  u.sex().length > 0 ? '' : 'none'}")
-			label.col-sm-3.col-md-2.control-label(for="inSex2", data-bind="text: $root.i18n('Пол')")
+			label.col-sm-3.col-md-2.control-label(for="inSex2", data-bind="text: $root.i18n('Sex')")
 			.col-sm-4.col-md-3
-				input.form-control(type="text", id="inSex2", disabled, data-bind="style: {display: (!canBeEdit() ? '' : 'none')}, value: $root.i18n(u.sex()=='m' ? 'Мужчина' : 'Женщина')")
+				input.form-control(type="text", id="inSex2", disabled, data-bind="style: {display: (!canBeEdit() ? '' : 'none')}, value: $root.i18n(u.sex()=='m' ? 'Male' : 'Female')")
 				div(data-bind="style: {display: canBeEdit() ? '' : 'none'}")
 					label.radio-inline
 						input(type="radio", id='inSex', name="sex", value="", data-bind="checked: u.sex, attr: {disabled: !editMode()}")
-						span(data-bind="text: ' ' + $root.i18n('Не указан')")
+						span(data-bind="text: ' ' + $root.i18n('Not set')")
 					label.radio-inline
 						input(type="radio", id='inSex', name="sex", value="m", data-bind="checked: u.sex, attr: {disabled: !editMode()}")
-						span(data-bind="text: ' ' + $root.i18n('Мужчина')")
+						span(data-bind="text: ' ' + $root.i18n('Male')")
 					label.radio-inline
 						input(type="radio", id='inSex', name="sex", value="f", data-bind="checked: u.sex, attr: {disabled: !editMode()}")
-						span(data-bind="text: ' ' + $root.i18n('Женщина')")
+						span(data-bind="text: ' ' + $root.i18n('Female')")
 		.form-group(data-bind="style: {display: canBeEdit() ||  u.country().length || u.city().length > 0 ? '' : 'none'}")
-			label.col-sm-3.col-md-2.control-label(for="inResidence", data-bind="text: $root.i18n('Откуда')")
+			label.col-sm-3.col-md-2.control-label(for="inResidence", data-bind="text: $root.i18n('Location')")
 			.col-sm-3.col-md-2
-				input.form-control(type="text", id='inResidence', data-bind="attr: {disabled: !editMode(), placeholder: !editMode() ? '': $root.i18n('Страна')}, size: u.country().length, value: u.country, valueUpdate: 'afterkeydown'")
+				input.form-control(type="text", id='inResidence', data-bind="attr: {disabled: !editMode(), placeholder: !editMode() ? '': $root.i18n('Country')}, size: u.country().length, value: u.country, valueUpdate: 'afterkeydown'")
 			.col-sm-3.col-md-2
-				input.form-control(type="text", id="inResidence2", data-bind="attr: {disabled: !editMode(), placeholder: !editMode() ? '': $root.i18n('Город')}, value: u.city, valueUpdate: 'afterkeydown'")
+				input.form-control(type="text", id="inResidence2", data-bind="attr: {disabled: !editMode(), placeholder: !editMode() ? '': $root.i18n('City')}, value: u.city, valueUpdate: 'afterkeydown'")
 		.form-group(data-bind="style: {display: canBeEdit() ||  u.work().length > 0 ? '' : 'none'}")
-			label.col-sm-3.col-md-2.control-label(for="inInterested", data-bind="text: $root.i18n('Деятельность')")
+			label.col-sm-3.col-md-2.control-label(for="inInterested", data-bind="text: $root.i18n('Occupation')")
 			.col-sm-3.col-md-2
 				input.form-control(type="text", id='inInterested', data-bind="attr: {disabled: !editMode()}, value: u.work, valueUpdate: 'afterkeydown'")
 		.form-group(data-bind="style: {display: canBeEdit() ||  u.www().length > 0 ? '' : 'none'}")
-			label.col-sm-3.col-md-2.control-label(for="inWebsite", data-bind="text: $root.i18n('Веб-сайт')")
+			label.col-sm-3.col-md-2.control-label(for="inWebsite", data-bind="text: $root.i18n('Website')")
 			.col-sm-3.col-md-2
 				input.form-control(type="text", id='inWebsite', data-bind="attr: {disabled: !editMode()}, value: u.www, valueUpdate: 'afterkeydown'")
 		.form-group(data-bind="style: {display: canBeEdit() ||  u.aboutme().length > 0 ? '' : 'none'}")
-			label.col-sm-3.col-md-2.control-label(for="inaboutme", data-bind="text: $root.i18n('Обо мне')")
+			label.col-sm-3.col-md-2.control-label(for="inaboutme", data-bind="text: $root.i18n('About me')")
 			.col-sm-7.col-md-8
 				textarea.form-control(rows="4", id='inaboutme', data-bind="attr: {disabled: !editMode()}, value: u.aboutme, valueUpdate: 'afterkeydown'")
 		.form-group(data-bind="style: {display: canBeEdit() ? '' : 'none'}")
 			.col-sm-12
 				button.btn.btn-primary(type="button", data-bind="css: {'btn-success': editMode()}, event: {click: function(data, event) { if (!data.editMode()){data.edit(true)} else{data.saveUser()}}}")
 					span.glyphicon(data-bind="css: {'glyphicon-pencil': !editMode(), 'glyphicon-ok': editMode()}")
-					span(data-bind="text: ' ' + $root.i18n(editMode() ? 'Сохранить профиль' : 'Редактировать')")
+					span(data-bind="text: ' ' + $root.i18n(editMode() ? 'Save profile' : 'Edit')")
 				button.btn.btn-danger(type="button", data-bind="style: {display: editMode() ? '' : 'none'}, event: {click: function(data, event) { if (data.editMode()) {data.cancelUser()}}}")
 					span.glyphicon.glyphicon-remove
-					span(data-bind="text: ' ' + $root.i18n('Отмена')")
+					span(data-bind="text: ' ' + $root.i18n('Cancel')")

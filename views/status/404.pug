@@ -2,7 +2,7 @@ doctype html
 html
 	head
 		include ../includes/head_meta
-		title= t('Страница не найдена [404] - PastVu', { ns: 'status' })
+		title= t('Not found [404] - PastVu', { ns: 'status' })
 		link(rel="stylesheet", type="text/css", href='/style/common.css?__='+config.hash)
 		script(type='text/javascript', src="/js/lib/jquery/jquery.js")
 		script(type='text/javascript', src="/js/lib/jquery/plugins/plaxmove.js")
@@ -43,7 +43,7 @@ html
 	body
 		.ufo
 		a.msg(href="/")
-			span= t('Запрошенная страница не найдена', { ns: 'status' })
-			span(style="display: block; font-size: 18px; line-height: 18px;")!= '&nbsp;[' + t('нажмите, чтобы вернуться на главную', { ns: 'status' }) + ']'
+			span= t('The page you requested was not found', { ns: 'status' })
+			span(style="display: block; font-size: 18px; line-height: 18px;")!= '&nbsp;[' + t('click here to go to the main page', { ns: 'status' }) + ']'
 		script.
 			$(function(){$('.ufo').plaxmove({ratioH:0.6,ratioV:0.2,reversed:true,invertH:false});});

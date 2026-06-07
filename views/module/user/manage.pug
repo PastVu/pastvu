@@ -2,7 +2,7 @@
     .panel-group#accordion
         .panel.panel-pastvu
             .panel-heading: .panel-title
-                a.accordion-toggle(data-toggle="collapse", href="#credentials", data-bind="text: $root.i18n('Полномочия')")
+                a.accordion-toggle(data-toggle="collapse", href="#credentials", data-bind="text: $root.i18n('Permissions')")
             .panel-collapse.collapse.in#credentials: .panel-body
                 form
                     .form-group
@@ -13,124 +13,124 @@
                     .form-group: .col-xs-12
                         .checkbox: label
                             input(type="checkbox", value = '5', data-bind="checked: role")
-                            span(data-bind="text: $root.i18n('Региональный:') + ' '")
+                            span(data-bind="text: $root.i18n('Regional:') + ' '")
                             //ko if: !regions().length
                             span.region
                                 span.glyphicon.glyphicon-globe
-                                span(data-bind="text: ' ' + $root.i18n('Весь мир')")
+                                span(data-bind="text: ' ' + $root.i18n('Whole world')")
                             // /ko
                             //ko foreach: regions
-                            span.region.candrop(data-bind="click: function() {$parent.regionDrop($data.cid);}, attr: {title: $root.i18n('Убрать регион')}")
+                            span.region.candrop(data-bind="click: function() {$parent.regionDrop($data.cid);}, attr: {title: $root.i18n('Remove region')}")
                                 span(data-bind="text: $root.regionTitle($data)")
                             // /ko
                             span.regionEdit(data-bind="click: regionSelect")
                                 span.glyphicon.glyphicon-pencil
-                                span(data-bind="text: $root.i18n('Изменить')")
+                                span(data-bind="text: $root.i18n('Edit')")
                         .checkbox: label
                             input(type="checkbox", disabled)
-                            span(data-bind="text: ' ' + $root.i18n('Языковой')")
+                            span(data-bind="text: ' ' + $root.i18n('Language-based')")
 
                     // /ko
                     //ko if: credentialsChanged()
                     .form-group: .col-xs-12
                         button.btn.btn-sm.btn-success(type="button", data-bind="event: {click: saveCredentials}, attr: {disabled: exe()}")
                             span.glyphicon.glyphicon-ok
-                            span(data-bind="text: ' ' + $root.i18n('Сохранить полномочия')")
+                            span(data-bind="text: ' ' + $root.i18n('Save permissions')")
                         button.btn.btn-sm.btn-danger(type="button", data-bind="event: {click: cancelCredentials}, attr: {disabled: exe()}")
                             span.glyphicon.glyphicon-remove
-                            span(data-bind="text: ' ' + $root.i18n('Отмена')")
+                            span(data-bind="text: ' ' + $root.i18n('Cancel')")
                     // /ko
 
         .panel.panel-pastvu
             .panel-heading: .panel-title
-                a.accordion-toggle(data-toggle="collapse", href="#restrictions", data-bind="text: $root.i18n('Права и ограничения')")
+                a.accordion-toggle(data-toggle="collapse", href="#restrictions", data-bind="text: $root.i18n('Rights and restrictions')")
             .panel-collapse.collapse.in#restrictions: .panel-body
                 dl.dl-horizontal
                     dt.helpexists
                         .help.tltp-wrap
                             span.glyphicon.glyphicon-info-sign
-                            .tltp.tltp-top.tltp-animate-move(data-bind="html: $root.i18n('Разрешать заходить на сайт под своим именем.<br>Будет разлогинен если в данный момент онлайн')")
-                        span(data-bind="text: ' ' + $root.i18n('Может логиниться')")
+                            .tltp.tltp-top.tltp-animate-move(data-bind="html: $root.i18n('Allow signing in with their name.<br>Will be logged out if currently online')")
+                        span(data-bind="text: ' ' + $root.i18n('Can sign in')")
                     dd
                         .btn-group.btn-group-sm
-                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nologin()}, click: changenologin, text: $root.i18n('Да')")
-                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nologin()}, click: changenologin, text: $root.i18n('Нет')")
+                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nologin()}, click: changenologin, text: $root.i18n('Yes')")
+                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nologin()}, click: changenologin, text: $root.i18n('No')")
                 dl.dl-horizontal
                     dt.helpexists
                         .help.tltp-wrap
                             span.glyphicon.glyphicon-info-sign
-                            .tltp.tltp-top.tltp-animate-move(data-bind="html: $root.i18n('Разрешать изменять информацию на странице профиля<br>и менять свою аватарку')")
-                        span(data-bind="text: ' ' + $root.i18n('Может редактировать свой профиль')")
+                            .tltp.tltp-top.tltp-animate-move(data-bind="html: $root.i18n('Allow editing profile information<br>and changing the avatar')")
+                        span(data-bind="text: ' ' + $root.i18n('Can edit own profile')")
                     dd
                         .btn-group.btn-group-sm
-                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.noprofile()}, click: changenoprofile, text: $root.i18n('Да')")
-                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.noprofile()}, click: changenoprofile, text: $root.i18n('Нет')")
+                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.noprofile()}, click: changenoprofile, text: $root.i18n('Yes')")
+                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.noprofile()}, click: changenoprofile, text: $root.i18n('No')")
                 dl.dl-horizontal
                     dt.helpexists
                         .help.tltp-wrap
                             span.glyphicon.glyphicon-info-sign
-                            .tltp.tltp-top.tltp-animate-move(data-bind="text: $root.i18n('Разрешать загружать фотографии')")
-                        span(data-bind="text: ' ' + $root.i18n('Может загружать фотографии')")
+                            .tltp.tltp-top.tltp-animate-move(data-bind="text: $root.i18n('Allow uploading photos')")
+                        span(data-bind="text: ' ' + $root.i18n('Can upload photos')")
                     dd
                         .btn-group.btn-group-sm
-                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nophotoupload()}, click: changenophotoupload, text: $root.i18n('Да')")
-                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nophotoupload()}, click: changenophotoupload, text: $root.i18n('Нет')")
+                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nophotoupload()}, click: changenophotoupload, text: $root.i18n('Yes')")
+                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nophotoupload()}, click: changenophotoupload, text: $root.i18n('No')")
                 dl.dl-horizontal
                     dt.helpexists
                         .help.tltp-wrap
                             span.glyphicon.glyphicon-info-sign
-                            .tltp.tltp-top.tltp-animate-move(data-bind="text: $root.i18n('Разрешать редактировать фотографии')")
-                        span(data-bind="text: ' ' + $root.i18n('Может редактировать свои фотографии')")
+                            .tltp.tltp-top.tltp-animate-move(data-bind="text: $root.i18n('Allow editing photos')")
+                        span(data-bind="text: ' ' + $root.i18n('Can edit own photos')")
                     dd
                         .btn-group.btn-group-sm
-                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nophotoedit()}, click: changenophotoedit, text: $root.i18n('Да')")
-                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nophotoedit()}, click: changenophotoedit, text: $root.i18n('Нет')")
+                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nophotoedit()}, click: changenophotoedit, text: $root.i18n('Yes')")
+                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nophotoedit()}, click: changenophotoedit, text: $root.i18n('No')")
                         p.text-muted(style="padding:6px 0 0 6px;line-height:1.1;font-size:11px;")
                             sup(style="margin-left:-6px;") *
-                            span(data-bind="text: ' ' + $root.i18n('Пользователь сможет редактировать свои \"Новые\" и фотографии \"На доработке\" всегда, даже с выбранной опцией Нет')")
+                            span(data-bind="text: ' ' + $root.i18n('The user will always be able to edit their \"New\" and \"In revision\" photos, even with No selected')")
                 dl.dl-horizontal
                     dt.helpexists
                         .help.tltp-wrap
                             span.glyphicon.glyphicon-info-sign
-                            .tltp.tltp-top.tltp-animate-move(data-bind="html: $root.i18n('Разрешать пользователю отзывать еще неопубликованную фотографию,<br>и удалять деактивированную')")
-                        span(data-bind="html: ' ' + $root.i18n('Может деактивировать<br>и удалять свои фотографии')")
+                            .tltp.tltp-top.tltp-animate-move(data-bind="html: $root.i18n('Allow the user to revoke a not-yet-published photo<br>and delete a deactivated one')")
+                        span(data-bind="html: ' ' + $root.i18n('Can deactivate<br>and delete own photos')")
                     dd
                         .btn-group.btn-group-sm
-                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nophotostatus()}, click: changenophotostatus, text: $root.i18n('Да')")
-                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nophotostatus()}, click: changenophotostatus, text: $root.i18n('Нет')")
+                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nophotostatus()}, click: changenophotostatus, text: $root.i18n('Yes')")
+                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nophotostatus()}, click: changenophotostatus, text: $root.i18n('No')")
                         p.text-muted(style="padding:6px 0 0 6px;line-height:1.1;font-size:11px;")
                             sup(style="margin-left:-6px;") *
-                            span(data-bind="text: ' ' + $root.i18n('Пользователь сможет отправлять на публикацию свои \"Новые\" и фотографии \"На доработке\" всегда, даже с выбранной опцией Нет')")
+                            span(data-bind="text: ' ' + $root.i18n('The user will always be able to submit their \"New\" and \"In revision\" photos for publication, even with No selected')")
                 dl.dl-horizontal
                     dt.helpexists
                         .help.tltp-wrap
                             span.glyphicon.glyphicon-info-sign
-                            .tltp.tltp-top.tltp-animate-move(data-bind="html: $root.i18n('Разрешать менять подпись на своих фотографиях,<br>управлять настройками скачивания оригинала и<br>отправлять свои фотографии на переконвертацию')")
-                        span(data-bind="text: ' ' + $root.i18n('Может менять вотермарк и правила скачивания')")
+                            .tltp.tltp-top.tltp-animate-move(data-bind="html: $root.i18n('Allow changing the signature on own photos,<br>controlling original-download settings, and<br>sending own photos for reconversion')")
+                        span(data-bind="text: ' ' + $root.i18n('Can change watermark and download rules')")
                     dd
                         .btn-group.btn-group-sm
-                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nowaterchange()}, click: changewaterchange, text: $root.i18n('Да')")
-                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nowaterchange()}, click: changewaterchange, text: $root.i18n('Нет')")
+                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nowaterchange()}, click: changewaterchange, text: $root.i18n('Yes')")
+                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nowaterchange()}, click: changewaterchange, text: $root.i18n('No')")
                         p.text-muted(style="padding:6px 0 0 6px;line-height:1.1;font-size:11px;")
                             sup(style="margin-left:-6px;") *
-                            span(data-bind="text: ' ' + $root.i18n('Это глобальная настройка для пользователя, действующая на возможность изменения им соответствующих настроек в профиле и индивидуальных настроек в каждой фотографии. При этом в каждой фотографии можно запретить/разрешить это индивидуально')")
+                            span(data-bind="text: ' ' + $root.i18n('This is a global per-user setting that controls whether they can change the matching settings in their profile and per-image. It can still be allowed or disallowed individually on each image.')")
                 dl.dl-horizontal
                     dt.helpexists
                         .help.tltp-wrap
                             span.glyphicon.glyphicon-info-sign
-                            .tltp.tltp-top.tltp-animate-move(data-bind="html: $root.i18n('Разрешать добавлять комментарии,<br>и редактировать уже добавленные')")
-                        span(data-bind="text: ' ' + $root.i18n('Может оставлять комментарии')")
+                            .tltp.tltp-top.tltp-animate-move(data-bind="html: $root.i18n('Allow adding comments<br>and editing previously added ones')")
+                        span(data-bind="text: ' ' + $root.i18n('Can leave comments')")
                     dd
                         .btn-group.btn-group-sm
-                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nocomments()}, click: changenocomments, text: $root.i18n('Да')")
-                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nocomments()}, click: changenocomments, text: $root.i18n('Нет')")
+                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nocomments()}, click: changenocomments, text: $root.i18n('Yes')")
+                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nocomments()}, click: changenocomments, text: $root.i18n('No')")
 
 
         .panel.panel-pastvu
             .panel-heading: .panel-title
-                a.accordion-toggle(data-toggle="collapse", href="#ranks", data-bind="text: $root.i18n('Специальные настройки')")
+                a.accordion-toggle(data-toggle="collapse", href="#ranks", data-bind="text: $root.i18n('Special settings')")
             .panel-collapse.collapse.in#ranks: .panel-body
-                .setTitle(data-bind="text: $root.i18n('Присваиваемые звания')")
+                .setTitle(data-bind="text: $root.i18n('Assigned ranks')")
                 form: .form-group
                     //ko foreach: ranks
                     label.checkbox-inline
@@ -138,17 +138,17 @@
                         span(data-bind="text: $root.i18n($data.desc)")
                     // /ko
 
-                .setTitle(data-bind="text: $root.i18n('Лимит количества неподтвержденных фотографий')")
-                div(data-bind="html: $root.i18n('Действующая настройка: <b>{{count, number}}</b>', {count: photoNewLimitOrigin()})", style="margin-bottom: 2px;")
-                .calcInfo(data-bind="html: $root.i18n('Доступный лимит: <b>{{count, number}}</b>', {count: photoNewCan()})")
-                .calcInfo(data-bind="html: $root.i18n('Всего неподтвержденных: <b>{{count, number}}</b>', {count: u.pfcount()})")
-                .calcInfo(data-bind="html: $root.i18n('Всего опубликованных: <b>{{count, number}}</b>', {count: u.pcount()})")
+                .setTitle(data-bind="text: $root.i18n('Unconfirmed photo limit')")
+                div(data-bind="html: $root.i18n('Effective setting: <b>{{count, number}}</b>', {count: photoNewLimitOrigin()})", style="margin-bottom: 2px;")
+                .calcInfo(data-bind="html: $root.i18n('Available limit: <b>{{count, number}}</b>', {count: photoNewCan()})")
+                .calcInfo(data-bind="html: $root.i18n('Total unconfirmed: <b>{{count, number}}</b>', {count: u.pfcount()})")
+                .calcInfo(data-bind="html: $root.i18n('Total published: <b>{{count, number}}</b>', {count: u.pcount()})")
                 form.form-inline(style="margin-top: 7px;"): .form-group
                     .radio: label.radio-inline
                         input(type="radio", value="auto", name="photo_new_radios", data-bind="checked: photoNewLimitOption")
-                        span(data-bind="text: ' ' + $root.i18n('Авто')")
+                        span(data-bind="text: ' ' + $root.i18n('Auto')")
                     .radio: label.radio-inline
                         input(type="radio", value="manual", name="photo_new_radios", data-bind="checked: photoNewLimitOption")
-                        span(data-bind="text: ' ' + $root.i18n('Вручную')")
+                        span(data-bind="text: ' ' + $root.i18n('Manual')")
                     .form-group
-                        input.form-control.input-sm.photoLimit(type="text", maxlength="5", pattern="[0-9]{1,5}", data-bind="value: photoNewLimit, valueUpdate: 'keyup', attr: {disabled: photoNewLimitOption() === 'auto', title: $root.i18n('Число от 0 до 10000')}, css: {}")
+                        input.form-control.input-sm.photoLimit(type="text", maxlength="5", pattern="[0-9]{1,5}", data-bind="value: photoNewLimit, valueUpdate: 'keyup', attr: {disabled: photoNewLimitOption() === 'auto', title: $root.i18n('A number from 0 to 10000')}, css: {}")

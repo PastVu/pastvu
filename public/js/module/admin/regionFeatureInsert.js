@@ -72,8 +72,8 @@ define([
 
                                     if (geoChangePhotosCount) {
                                         stats.push(i18n(geoChangePhotosCount > 0 ?
-                                            '<b>{{count, number}}</b> фотографий добавлено в регион вследствии изменения коордиант поолигона.' :
-                                            '<b>{{count, number}}</b> фотографий удалено из региона вследствии изменения коордиант поолигона.', { count: Math.abs(geoChangePhotosCount) }));
+                                            '<b>{{count, number}}</b> photos added to the region after the polygon coordinate change.' :
+                                            '<b>{{count, number}}</b> photos removed from the region after the polygon coordinate change.', { count: Math.abs(geoChangePhotosCount) }));
                                     }
                                 }
 
@@ -82,25 +82,25 @@ define([
 
                                     if (geoChangeCommentsCount) {
                                         stats.push(i18n(geoChangeCommentsCount > 0 ?
-                                            '<b>{{count, number}}</b> комментариев добавлено в регион вследствии переноса фотографий.' :
-                                            '<b>{{count, number}}</b> комментариев удалено из региона вследствии переноса фотографий.', { count: Math.abs(geoChangeCommentsCount) }));
+                                            '<b>{{count, number}}</b> comments added to the region as their photos moved.' :
+                                            '<b>{{count, number}}</b> comments removed from the region as their photos moved.', { count: Math.abs(geoChangeCommentsCount) }));
                                     }
                                 }
 
                                 if (stat.affectedPhotos) {
-                                    stats.push(i18n('<b>{{count, number}}</b> фотографий переехали по дереву вслед за регионом.', { count: stat.affectedPhotos }));
+                                    stats.push(i18n('<b>{{count, number}}</b> photos moved across the tree following the region.', { count: stat.affectedPhotos }));
                                 }
 
                                 if (stat.affectedComments) {
-                                    stats.push(i18n('<b>{{count, number}}</b> комментариев переехали вслед за своими фотографиями.', { count: stat.affectedComments }));
+                                    stats.push(i18n('<b>{{count, number}}</b> comments moved along with their photos.', { count: stat.affectedComments }));
                                 }
 
                                 if (stat.affectedUsers) {
-                                    stats.push(i18n('У <b>{{count, number}}</b> пользователей были сокрашены "Мои регионы".', { count: stat.affectedUsers }));
+                                    stats.push(i18n('<b>{{count, number}}</b> users had their "My regions" trimmed.', { count: stat.affectedUsers }));
                                 }
 
                                 if (stat.affectedMods) {
-                                    stats.push(i18n('У <b>{{count, number}}</b> модераторов были сокрашены модерируемые регионы.', { count: stat.affectedMods }));
+                                    stats.push(i18n('<b>{{count, number}}</b> moderators had their moderated regions trimmed.', { count: stat.affectedMods }));
                                 }
                             }
 

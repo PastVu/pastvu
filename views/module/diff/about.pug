@@ -1,24 +1,24 @@
 .about(data-bind="with: repository[M!M]")
-    header.line(data-bind="text: $root.i18n('PastVu — проект по сбору свидетельств прошлого. Взгляд на историю среды обитания человечества.')")
+    header.line(data-bind="text: $root.i18n('PastVu — a project collecting evidence of the past. A look at the history of humanity\\'s habitat.')")
     .postrow
         div.line
-            span(data-bind="text: $root.i18n('Подробная информация о проекте находится') + ' '")
-            a(target="_blank", data-bind="attr: {href: getAboutUrl()}, text: $root.i18n('в базе знаний')")
+            span(data-bind="text: $root.i18n('More information about the project is') + ' '")
+            a(target="_blank", data-bind="attr: {href: getAboutUrl()}, text: $root.i18n('in the knowledge base')")
             | .
         div.line
-            span(data-bind="text: $root.i18n('Открытая разработка ведется') + ' '")
-            a(target="_blank", href="https://github.com/PastVu", data-bind="text: $root.i18n('на GitHub')")
-            span(data-bind="text: '. ' + $root.i18n('Следите за выполнением задач и принимайте участие в развитии!')")
+            span(data-bind="text: $root.i18n('Open development happens') + ' '")
+            a(target="_blank", href="https://github.com/PastVu", data-bind="text: $root.i18n('on GitHub')")
+            span(data-bind="text: '. ' + $root.i18n('Follow our issue tracker and join in!')")
     .postrow
         hr
         div.line
-            span(data-bind="text: $root.i18n('Версия приложения') + ' '")
+            span(data-bind="text: $root.i18n('Application version') + ' '")
             span(data-bind="text: version")
-            span(data-bind="text: '. ' + $root.i18n('Исходный код доступен по лицензии') + ' '")
+            span(data-bind="text: '. ' + $root.i18n('Source code is available under the') + ' '")
             a(target="_blank", href="https://github.com/PastVu/pastvu/blob/master/COPYING") GNU AGPL v3.0
             | .
         div.line
-            span(data-bind="text: $root.i18n('Данные по границам географических и административных регионов:') + ' © '")
+            span(data-bind="text: $root.i18n('Geographic and administrative region boundary data:') + ' © '")
             a(target="_blank", href="https://www.openstreetmap.org/copyright") OpenStreetMap contributors
             | .
     .postrow

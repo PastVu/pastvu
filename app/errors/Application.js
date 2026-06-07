@@ -65,7 +65,7 @@ export default class ApplicationError extends Error {
     }
 
     // Pick the message to ship to the client. Explicit messages flow through
-    // verbatim; for code-only errors this.message is the Russian source
+    // verbatim; for code-only errors this.message is the English source
     // (set by the super constructor's `errorMsgs[code] || code` fallback)
     // and doubles as the i18next translation key. `undefined` lang means the
     // caller doesn't want translation (e.g. server-side logging).

@@ -1,20 +1,20 @@
 .comments(data-bind="with: repository[M!M]")
     .top-select
-        h4(data-bind="text: $root.i18n(itsMe() ? 'Ваши комментарии:' : 'Комментарии пользователя:')")
+        h4(data-bind="text: $root.i18n(itsMe() ? 'Your comments:' : 'User comments:')")
         //ko if: itsMe() || auth.loggedIn() && auth.iAm.role() > 9
         dd: span.panel-block(style="padding-bottom:5px;")
             label.checkbox-inline
                 input(type="checkbox", value="active" data-bind="checked: statusesCheckboxed")
-                span(data-bind="text: $root.i18n('Активные') + ' [' + $root.intl.num(statuses['active_persist']()) + ']'")
+                span(data-bind="text: $root.i18n('Active') + ' [' + $root.intl.num(statuses['active_persist']()) + ']'")
             label.checkbox-inline
                 input(type="checkbox", value="del" data-bind="checked: statusesCheckboxed")
-                span(data-bind="text: $root.i18n('Удаленные') + ' [' + $root.intl.num(statuses['del_persist']()) + ']'")
+                span(data-bind="text: $root.i18n('Removed') + ' [' + $root.intl.num(statuses['del_persist']()) + ']'")
         // /ko
     ul.nav.nav-tabs
         li(data-bind="css: {active: type() === 'photo'}")
-            a(data-bind="attr: {href: pageUrl() + getUrlParams(page(), 'photo', encodeStatuses())}, text: $root.i18n('К изображениям') + ' [' + $root.intl.num(types['photo_persist']()) + ']'")
+            a(data-bind="attr: {href: pageUrl() + getUrlParams(page(), 'photo', encodeStatuses())}, text: $root.i18n('On images') + ' [' + $root.intl.num(types['photo_persist']()) + ']'")
         li(data-bind="css: {active: type() === 'news'}")
-            a(data-bind="attr: {href: pageUrl() + getUrlParams(page(), 'news', encodeStatuses())}, text: $root.i18n('К новостям') + ' [' + $root.intl.num(types['news_persist']()) + ']'")
+            a(data-bind="attr: {href: pageUrl() + getUrlParams(page(), 'news', encodeStatuses())}, text: $root.i18n('On news') + ' [' + $root.intl.num(types['news_persist']()) + ']'")
     .navContent
         .row
             .col-xs-6.col-md-3.topcol
@@ -34,7 +34,7 @@
                     span.glyphicon(data-bind="css: $data.obj.status.icon")
                 // /ko
                 //ko if: $data.obj.my
-                .status.upper.mine.fringe(data-bind="attr: {title: $root.i18n('Это ваша фотография')}")
+                .status.upper.mine.fringe(data-bind="attr: {title: $root.i18n('This is your photo')}")
                     span.glyphicon.glyphicon-user
                 // /ko
         .commentHead
@@ -43,7 +43,7 @@
             a.commentStamp(data-bind="attr: {href: $data.link}, text: moment($data.stamp).calendar()")
             //ko if: $data.lastChanged
             .dotDelimeter ·
-            .commentChanged(data-bind="attr: {title: $root.i18n('Показать историю изменений')}, text: $root.i18n($data.del ? 'Удален' : 'Изменен') + ' ' + moment($data.lastChanged).calendar().toLowerCase(), click: function () {$parent.showHistory($data.obj.cid, $data.cid)}")
+            .commentChanged(data-bind="attr: {title: $root.i18n('Show edit history')}, text: $root.i18n($data.del ? 'Deleted' : 'Edited') + ' ' + moment($data.lastChanged).calendar().toLowerCase(), click: function () {$parent.showHistory($data.obj.cid, $data.cid)}")
             // /ko
         a.commentText(data-bind="attr: {href: $data.link}, html: $data.txt")
     | </script>
@@ -56,18 +56,18 @@
             a.commentStamp(data-bind="attr: {href: $data.link}, text: moment($data.stamp).calendar()")
             //ko if: $data.lastChanged
             .dotDelimeter ·
-            .commentChanged(data-bind="attr: {title: $root.i18n('Показать историю изменений')}, text: $root.i18n($data.del ? 'Удален' : 'Изменен') + ' ' + moment($data.lastChanged).calendar().toLowerCase(), click: function () {$parent.showHistory($data.obj.cid, $data.cid)}")
+            .commentChanged(data-bind="attr: {title: $root.i18n('Show edit history')}, text: $root.i18n($data.del ? 'Deleted' : 'Edited') + ' ' + moment($data.lastChanged).calendar().toLowerCase(), click: function () {$parent.showHistory($data.obj.cid, $data.cid)}")
             // /ko
         a.commentText(style="margin-left:29px", data-bind="attr: {href: $data.link}, html: $data.txt")
     | </script>
 
     | <script id="pagerTpl" type="text/html">
     ul.pagination
-        li.edge(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: pageUrl() + pageQuery(), title: $root.i18n('Первая страница')}") &laquo;&laquo;
-        li.edge(data-bind="css: {disabled: !pageHasPrev()}"): a(data-bind="attr: {href: pageUrl() + (page() > 1 ? '/' + (page() - 1) : '')+ pageQuery(), title: $root.i18n('Предыдущая страница')}") &laquo;
+        li.edge(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: pageUrl() + pageQuery(), title: $root.i18n('First page')}") &laquo;&laquo;
+        li.edge(data-bind="css: {disabled: !pageHasPrev()}"): a(data-bind="attr: {href: pageUrl() + (page() > 1 ? '/' + (page() - 1) : '')+ pageQuery(), title: $root.i18n('Previous page')}") &laquo;
         //ko foreach: pages
         li(data-bind="css: {active: $data === $parent.page()}"): a(data-bind="attr: {href: $parent.pageUrl() + '/' + $data + $parent.pageQuery()}, text: $root.intl.num($data)")
         // /ko
-        li.edge(data-bind="css: {disabled: !pageHasNext()}"): a(data-bind="attr: {href: pageUrl() + '/' + (page() + 1) + pageQuery(), title: $root.i18n('Следующая страница')}") &raquo;
-        li.edge(data-bind="css: {disabled: page() === pageLast()}"): a(data-bind="attr: {href: pageUrl() + '/' + pageLast() + pageQuery(), title: $root.i18n('Последняя страница')}") &raquo;&raquo;
+        li.edge(data-bind="css: {disabled: !pageHasNext()}"): a(data-bind="attr: {href: pageUrl() + '/' + (page() + 1) + pageQuery(), title: $root.i18n('Next page')}") &raquo;
+        li.edge(data-bind="css: {disabled: page() === pageLast()}"): a(data-bind="attr: {href: pageUrl() + '/' + pageLast() + pageQuery(), title: $root.i18n('Last page')}") &raquo;&raquo;
     | </script>

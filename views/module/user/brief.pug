@@ -6,18 +6,18 @@
 			.avaLoadCurtain
 			// /ko
 			//ko if: canAva()
-			button.btn.btn-sm.btn-primary.avaEdit(data-bind="click: avaActionToggle, css: {disabled: avaexe()}, attr: {disabled: avaexe(), title: $root.i18n('Редактировать аватару')}")
+			button.btn.btn-sm.btn-primary.avaEdit(data-bind="click: avaActionToggle, css: {disabled: avaexe()}, attr: {disabled: avaexe(), title: $root.i18n('Edit avatar')}")
 				span.glyphicon.glyphicon-pencil
 			//ko if: avaction()
 			.avaAction
 				input.avaInput(type="file", name="files[]")
-				button.btn.btn-primary.avaSelect(data-bind="click: avaSelect, css: {disabled: avaexe()}, attr: {disabled: avaexe(), title: $root.i18n('Загрузить новое изображение')}")
+				button.btn.btn-primary.avaSelect(data-bind="click: avaSelect, css: {disabled: avaexe()}, attr: {disabled: avaexe(), title: $root.i18n('Upload a new image')}")
 					span.glyphicon.glyphicon-cloud-upload
-					span(data-bind="text: ' ' + $root.i18n('Сменить')")
+					span(data-bind="text: ' ' + $root.i18n('Change')")
 				//ko if: avaExists()
-				button.btn.btn-primary.avaDel(data-bind="click: avaDel, css: {disabled: avaexe()}, attr: {disabled: avaexe(), title: $root.i18n('Удалить загруженное изображение')}")
+				button.btn.btn-primary.avaDel(data-bind="click: avaDel, css: {disabled: avaexe()}, attr: {disabled: avaexe(), title: $root.i18n('Delete uploaded image')}")
 					span.glyphicon.glyphicon-remove
-					span(data-bind="text: ' ' + $root.i18n('Удалить')")
+					span(data-bind="text: ' ' + $root.i18n('Delete')")
 				// /ko
 			// /ko
 			// /ko
@@ -32,24 +32,24 @@
 			span.glyphicon.glyphicon-envelope
 			span Send message
 	.briefBlock
-		.head(data-bind="text: $root.i18n('Общее')")
+		.head(data-bind="text: $root.i18n('General')")
 		.h_separator
 		table.briefTable
 			tbody
 				tr
-					td(data-bind="text: $root.i18n('Регистрация:')")
+					td(data-bind="text: $root.i18n('Registration:')")
 					td(data-bind="text: moment(user.regdate()).format('D MMMM YYYY')")
 				tr
-					td(data-bind="text: $root.i18n('Статус:')")
-					td(data-bind="text: $root.i18n(user.online() ? 'Онлайн' : 'Оффлайн'), css: {online : user.online()}")
+					td(data-bind="text: $root.i18n('Status:')")
+					td(data-bind="text: $root.i18n(user.online() ? 'Online' : 'Offline'), css: {online : user.online()}")
 	.briefBlock
-		.head(data-bind="text: $root.i18n('Краткая статистика')")
+		.head(data-bind="text: $root.i18n('Brief statistics')")
 		.h_separator
 		table.briefTable
 			tbody
 				tr
-					td(data-bind="text: $root.i18n('Фотографий:')")
+					td(data-bind="text: $root.i18n('Photo count:')")
 					td(data-bind="text: $root.intl.num(user.pcount())")
 				tr
-					td(data-bind="text: $root.i18n('Комментариев:')")
+					td(data-bind="text: $root.i18n('Comment count:')")
 					td(data-bind="text: $root.intl.num(user.ccount())")

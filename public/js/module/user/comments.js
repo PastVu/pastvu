@@ -87,13 +87,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 let txt = '';
 
                 if (count) {
-                    txt = i18n('Показаны {{from, number}}&nbsp;&ndash;&nbsp;{{to, number}} из {{total, number}}', {
+                    txt = i18n('Showing {{from, number}}&nbsp;&ndash;&nbsp;{{to, number}} of {{total, number}}', {
                         from: this.pageFirstItem(),
                         to: this.pageLastItem(),
                         total: count,
                     });
                 } else {
-                    txt = i18n('Пользователь пока не оставил комментариев в данной категории');
+                    txt = i18n('User has not left any comments in this category yet');
                 }
 
                 return txt;
@@ -288,12 +288,12 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         {
                             module: 'm/comment/hist',
                             modal: {
-                                topic: i18n('История изменений комментария'),
+                                topic: i18n('Comment edit history'),
                                 animateScale: true,
                                 curtainClick: { click: this.closeHistory, ctx: this },
-                                offIcon: { text: i18n('Закрыть'), click: this.closeHistory, ctx: this },
+                                offIcon: { text: i18n('Close'), click: this.closeHistory, ctx: this },
                                 btns: [
-                                    { css: 'btn-primary', text: i18n('Закрыть'), click: this.closeHistory, ctx: this },
+                                    { css: 'btn-primary', text: i18n('Close'), click: this.closeHistory, ctx: this },
                                 ],
                             },
                             options: { objCid: objCid, cid: cid, type: this.type() },

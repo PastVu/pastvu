@@ -264,7 +264,7 @@ function getRegionForGallery(req, res, next) {
                 const { lang, t } = res.locals;
                 const regionTitles = regions.map(region => pickRegionTitle(region, lang)).join(', ');
 
-                req.pageTitle = t('Старые фотографии {{regions}}', { regions: regionTitles });
+                req.pageTitle = t('Retro photos of {{regions}}', { regions: regionTitles });
             }
         } catch (err) {
             return next(err);
@@ -310,7 +310,7 @@ export function bindRoutes(app) {
         res.statusCode = 200;
         res.render('status/badbrowser', {
             agent: req.browser && req.browser.agent,
-            title: res.locals.t('Вы используете устаревшую версию браузера'),
+            title: res.locals.t('You are using an outdated browser version'),
         });
     });
 

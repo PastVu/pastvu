@@ -69,10 +69,10 @@ define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'intl', 'i18n', 'k
         repository: {},
 
         ranks: {
-            mec: { src: '/img/rank/bronse.jpg', title: i18n('Меценат') },
-            mec_silv: { src: '/img/rank/silver.jpg', title: i18n('Серебряный меценат') },
-            mec_gold: { src: '/img/rank/gold.jpg', title: i18n('Золотой меценат') },
-            adviser: { src: '/img/rank/adviser.jpg', title: i18n('Советник') },
+            mec: { src: '/img/rank/bronse.jpg', title: i18n('Patron') },
+            mec_silv: { src: '/img/rank/silver.jpg', title: i18n('Silver patron') },
+            mec_gold: { src: '/img/rank/gold.jpg', title: i18n('Gold patron') },
+            adviser: { src: '/img/rank/adviser.jpg', title: i18n('Adviser') },
         },
 
         func: {

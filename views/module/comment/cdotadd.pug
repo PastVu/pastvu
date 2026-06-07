@@ -8,36 +8,36 @@
         textarea.form-control.cinput(wrap="soft", maxlength="12000")
         .cinputLabel
             | {{?it.level}}
-            | {{=it.i18n('Нажмите, чтобы написать комментарий')}}
+            | {{=it.i18n('Click to write a comment')}}
             | {{??}}
-            | {{=it.i18n('Нажмите, чтобы написать комментарий первого уровня')}}
+            | {{=it.i18n('Click to write a top-level comment')}}
             br
-            small(style="font-style: italic") {{=it.i18n('Чтобы ответить на существующий комментарий, нажмите под ним Ответить')}}
+            small(style="font-style: italic") {{=it.i18n('To reply to an existing comment, click Reply below it')}}
             | {{?}}
         form.form-inline
             button.btn.btn-success.btn-sm.btnCommentSend(type="button", data-bind="click: send, attr: {disabled: exe()}")
                 span.glyphicon.glyphicon-comment
-                |  {{=it.i18n('Отправить')}}
+                |  {{=it.i18n('Submit')}}
             button.btn.btn-warning.btn-sm.btnCommentCancel(type="button", data-bind="click: cancel, attr: {disabled: exe()}")
                 span.glyphicon.glyphicon-remove
-                |  {{=it.i18n('Отмена')}}
+                |  {{=it.i18n('Cancel')}}
             // ko if: canFrag
             button.btn.btn-primary.btn-sm.btnCommentFrag(type="button", data-bind="click: fragClick, attr: {disabled: exe()}")
                 span.glyphicon.glyphicon-picture
-                |  {{=it.i18n('Фрагмент')}}
+                |  {{=it.i18n('Fragment')}}
             // ko if: fraging()
             button.btn.btn-primary.btn-sm.btnCommentFragDel(type="button", data-bind="click: fragDelete, attr: {disabled: exe()}")
                 span.glyphicon.glyphicon-remove
-                |  {{=it.i18n('Очистить фрагмент')}}
+                |  {{=it.i18n('Clear fragment')}}
             // /ko
             // /ko
             .checkbox.replySubscr
                 // ko if: subscr()
-                | {{=it.i18n('Вы подписаны на новые комментарии в данной теме')}}
+                | {{=it.i18n('You are subscribed to new comments in this thread')}}
                 // /ko
                 // ko ifnot: subscr()
                 //- Устанавливаем checked как атрибут, чтобы его нажатие не изменяло настройку пользователя
                 label
                     input.chkSubscr(type="checkbox", data-bind="attr:{checked: auth.iAm.settings.subscr_auto_reply() ? 'checked' : null}, event: {click: chkSubscrClickBind}")
-                    span(style="vertical-align: top;")  {{=it.i18n('Подписаться на тему')}}
+                    span(style="vertical-align: top;")  {{=it.i18n('Subscribe to thread')}}
                 // /ko

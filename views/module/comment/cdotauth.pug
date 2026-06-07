@@ -17,25 +17,25 @@
             .dotDelimeter ·
             a.frag(href="{{='?hl=frag-'+c.cid}}")
                 span.glyphicon.glyphicon-picture
-                |  {{=it.i18n('Комментируемый фрагмент')}}
+                |  {{=it.i18n('Discussed fragment')}}
             | {{?}}
             .dotDelimeter ·
             a.stamp(data-replace="true", href="?hl=comment-{{=c.cid}}") {{=it.fDate(new Date(c.stamp))}}
             | {{?c.lastChanged}}
             .dotDelimeter ·
-            .changed(title="{{=it.i18n('Показать историю изменений')}}") {{=it.i18n('Изменен') + ' ' + it.fDateIn(new Date(c.lastChanged))}}
+            .changed(title="{{=it.i18n('Show edit history')}}") {{=it.i18n('Edited') + ' ' + it.fDateIn(new Date(c.lastChanged))}}
             | {{?}}
         .ctext {{=c.txt}}
         .cacts
             | {{?it.reply}}
-            span.cact.reply {{=it.i18n('Ответить')}}
+            span.cact.reply {{=it.i18n('Reply')}}
             | {{?}}
             | {{?it.mod || (it.reply && c.can.edit)}}
             .dotDelimeter ·
-            span.cact.edit {{=it.i18n('Редактировать')}}
+            span.cact.edit {{=it.i18n('Edit')}}
             | {{?}}
             | {{?it.mod || (it.reply && c.can.del)}}
             .dotDelimeter ·
-            span.cact.remove {{=it.i18n('Удалить')}}
+            span.cact.remove {{=it.i18n('Delete')}}
             | {{?}}
 | {{?}}

@@ -58,7 +58,7 @@ define(['underscore', 'Utils', 'Params', 'knockout', 'knockout.mapping', 'm/_mod
             this.show();
         },
         show: function () {
-            Utils.title.setTitle({ title: i18n('Главная') });
+            Utils.title.setTitle({ title: i18n('Home') });
             this.sizesCalc();
             globalVM.func.showContainer(this.$container);
             this.showing = true;

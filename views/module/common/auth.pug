@@ -7,48 +7,48 @@
     // /ko
 
     | <script id="loginTpl" type="text/html">
-    .head(data-bind="text: $root.i18n('Авторизация')")
+    .head(data-bind="text: $root.i18n('Sign in')")
     .form-group
         dl.dl-horizontal
-            dt(data-bind="text: $root.i18n('Имя пользователя:')")
+            dt(data-bind="text: $root.i18n('Username:')")
             dd
-                span(data-bind="click: function () {mode('reg')}, text: $root.i18n('Регистрация')")
+                span(data-bind="click: function () {mode('reg')}, text: $root.i18n('Sign up')")
         .inputwrap
             span.glyphicon.glyphicon-user
             input.form-control(autocomplete="on", type="text", required="required", placeholder="Enter username or e-mail", name="login", autocorrect="off", autocapitalize="off")
     .form-group(style="margin-bottom:0;")
         dl.dl-horizontal
-            dt(data-bind="text: $root.i18n('Пароль:')")
+            dt(data-bind="text: $root.i18n('Password:')")
             dd
-                span(data-bind="click: function () {mode('recallRequest')}, text: $root.i18n('Восстановить пароль')")
+                span(data-bind="click: function () {mode('recallRequest')}, text: $root.i18n('Restore password')")
         .inputwrap
             span.glyphicon.glyphicon-lock
             input.form-control(type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}")
         .footnote
-            span(data-bind="text: $root.i18n('Для безопасной работы на чужом компьютере, используйте приватную вкладку') + ' ('")
-            a.lll(href="https://support.google.com/chrome/answer/95464", target="_blank", data-bind="text: $root.i18n('режим инкогнито')")
+            span(data-bind="text: $root.i18n('For safer use on someone else\\'s computer, open a private tab') + ' ('")
+            a.lll(href="https://support.google.com/chrome/answer/95464", target="_blank", data-bind="text: $root.i18n('incognito mode')")
             | )
     .form-group(style="margin-bottom:20px;")
         .text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}")
             span.glyphicon.glyphicon-warning-sign
-            span(data-bind="text: ' ' + $root.i18n('Caps Lock активен')")
+            span(data-bind="text: ' ' + $root.i18n('Caps Lock is on')")
         .mess
             div(data-bind="text: msg()")
         .row.btnsAction
             .col-xs-6
-                button.btn.btn-primary(type="submit", data-bind="text: $root.i18n('Вход')")
+                button.btn.btn-primary(type="submit", data-bind="text: $root.i18n('Login')")
             .col-xs-6.colright
-                button.btn.btn-primary(type="button", data-bind="click: formClose, text: $root.i18n('Отмена')")
+                button.btn.btn-primary(type="button", data-bind="click: formClose, text: $root.i18n('Cancel')")
         .cantLoging
-            a(href="", target="_blank", onclick="ga('send', 'event', 'support', 'click', 'support click login'); $(this).attr('href', 'mailto:support@pastvu.com?Subject=%5BНе%20могу%20войти%5D%20' + $(this).parents('form').find('[name=login]').val())", data-bind="text: $root.i18n('Не можете войти?')")
+            a(href="", target="_blank", onclick="ga('send', 'event', 'support', 'click', 'support click login'); $(this).attr('href', 'mailto:support@pastvu.com?Subject=%5BCan%27t%20sign%20in%5D%20' + $(this).parents('form').find('[name=login]').val())", data-bind="text: $root.i18n('Can\\'t sign in?')")
     | </script>
 
     | <script id="regTpl" type="text/html">
-    .head(data-bind="text: $root.i18n('Регистрация')")
+    .head(data-bind="text: $root.i18n('Sign up')")
     .form-group
         dl.dl-horizontal
-            dt(data-bind="text: $root.i18n('Имя пользователя:')")
-            dd: span(data-bind="click: function () {mode('login')}, text: $root.i18n('Авторизация')")
+            dt(data-bind="text: $root.i18n('Username:')")
+            dd: span(data-bind="click: function () {mode('login')}, text: $root.i18n('Sign in')")
         .inputwrap
             span.glyphicon.glyphicon-user
             input.form-control(autocomplete="off", type="text", required="required", placeholder="User", name="login", autocorrect="off", autocapitalize="off")
@@ -61,14 +61,14 @@
             input.form-control(autocomplete="on", type="email", required="required", placeholder="email", name="email", autocorrect="off", autocapitalize="off")
     .form-group
         dl.dl-horizontal
-            dt(data-bind="text: $root.i18n('Пароль:')")
+            dt(data-bind="text: $root.i18n('Password:')")
             dd
         .inputwrap
             span.glyphicon.glyphicon-lock
             input.form-control(autocomplete="off", type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}")
     .form-group
         dl.dl-horizontal
-            dt(data-bind="text: $root.i18n('Повторите пароль:')")
+            dt(data-bind="text: $root.i18n('Repeat password:')")
             dd
         .inputwrap
             span.glyphicon.glyphicon-lock
@@ -76,25 +76,25 @@
     .form-group
         .text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}")
             span.glyphicon.glyphicon-warning-sign
-            span(data-bind="text: ' ' + $root.i18n('Caps Lock активен')")
+            span(data-bind="text: ' ' + $root.i18n('Caps Lock is on')")
         .mess
             div(data-bind="text: msg()")
         .row.btnsAction
             .col-xs-6
-                button.btn.btn-primary(type="submit", data-bind="text: $root.i18n('Отправить')")
+                button.btn.btn-primary(type="submit", data-bind="text: $root.i18n('Submit')")
             .col-xs-6.colright
-                button.btn.btn-primary(type="button", data-bind="click: formClose, text: $root.i18n('Отмена')")
+                button.btn.btn-primary(type="button", data-bind="click: formClose, text: $root.i18n('Cancel')")
         .row.btnsFinish
             .col-xs-12.colcent
-                button.btn.btn-primary(type="button", data-bind="click: formClose, text: $root.i18n('Завершить')")
+                button.btn.btn-primary(type="button", data-bind="click: formClose, text: $root.i18n('Finish')")
     | </script>
 
     | <script id="recallRequestTpl" type="text/html">
-    .head(data-bind="text: $root.i18n('Восстановление пароля')")
+    .head(data-bind="text: $root.i18n('Password recovery')")
     .form-group
         dl.dl-horizontal
-            dt(data-bind="text: $root.i18n('Имя пользователя или e-mail:')")
-            dd: span(data-bind="click: function () {mode('login')}, text: $root.i18n('Авторизация')")
+            dt(data-bind="text: $root.i18n('Username or e-mail:')")
+            dd: span(data-bind="click: function () {mode('login')}, text: $root.i18n('Sign in')")
         .inputwrap
             span.glyphicon.glyphicon-user
             input.form-control(autocomplete="off", type="text", required="required", placeholder="Enter username or e-mail", name="login", autocorrect="off", autocapitalize="off")
@@ -103,29 +103,29 @@
             div(data-bind="text: msg()")
         .row.btnsAction
             .col-xs-6
-                button.btn.btn-primary(type="submit", data-bind="text: $root.i18n('Отправить')")
+                button.btn.btn-primary(type="submit", data-bind="text: $root.i18n('Submit')")
             .col-xs-6.colright
-                button.btn.btn-primary(type="button", data-bind="click: formClose, text: $root.i18n('Отмена')")
+                button.btn.btn-primary(type="button", data-bind="click: formClose, text: $root.i18n('Cancel')")
         .row.btnsFinish
             .col-xs-12.colcent
-                button.btn.btn-primary(type="button", data-bind="click: formClose, text: $root.i18n('Завершить')")
+                button.btn.btn-primary(type="button", data-bind="click: formClose, text: $root.i18n('Finish')")
     | </script>
 
     | <script id="recallRequestForMeTpl" type="text/html">
-    .head(data-bind="text: $root.i18n('Запрос нового пароля')")
+    .head(data-bind="text: $root.i18n('New password request')")
     .form-group
-        div(style="text-align: center; max-width: 350px; margin-bottom: 10px;", data-bind="text: $root.i18n('На почту придет письмо со ссылкой на установку нового пароля без ввода текущего. Отправить запрос?')")
+        div(style="text-align: center; max-width: 350px; margin-bottom: 10px;", data-bind="text: $root.i18n('An e-mail with a link to set a new password without entering the current one will be sent. Submit the request?')")
         .mess
             div(data-bind="text: msg()")
     .form-group
         .row.btnsAction
             .col-xs-6
-                button.btn.btn-primary(type="submit", data-bind="text: $root.i18n('Отправить')")
+                button.btn.btn-primary(type="submit", data-bind="text: $root.i18n('Submit')")
             .col-xs-6.colright
-                button.btn.btn-primary(type="button", data-bind="click: formClose, text: $root.i18n('Отмена')")
+                button.btn.btn-primary(type="button", data-bind="click: formClose, text: $root.i18n('Cancel')")
         .row.btnsFinish
             .col-xs-12.colcent
-                button.btn.btn-primary(type="button", data-bind="click: formClose, text: $root.i18n('Завершить')")
+                button.btn.btn-primary(type="button", data-bind="click: formClose, text: $root.i18n('Finish')")
     | </script>
 
     | <script id="passChangeRecallTpl" type="text/html">
@@ -135,14 +135,14 @@
         .userTitleLogin(data-bind="text: login()")
     .form-group
         dl.dl-horizontal
-            dt(data-bind="text: $root.i18n('Новый пароль:')")
+            dt(data-bind="text: $root.i18n('New password:')")
             dd
         .inputwrap
             span.glyphicon.glyphicon-lock
             input.form-control(type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}")
     .form-group
         dl.dl-horizontal
-            dt(data-bind="text: $root.i18n('Повторите новый пароль:')")
+            dt(data-bind="text: $root.i18n('Repeat new password:')")
             dd
         .inputwrap
             span.glyphicon.glyphicon-lock
@@ -150,38 +150,38 @@
     .form-group
         .text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}")
             span.glyphicon.glyphicon-warning-sign
-            span(data-bind="text: ' ' + $root.i18n('Caps Lock активен')")
+            span(data-bind="text: ' ' + $root.i18n('Caps Lock is on')")
         .mess
             div(data-bind="text: msg()")
         .row.btnsAction
             .col-xs-6
-                button.btn.btn-primary(type="submit", data-bind="text: $root.i18n('Сменить')")
+                button.btn.btn-primary(type="submit", data-bind="text: $root.i18n('Change')")
             .col-xs-6.colright
-                button.btn.btn-primary(type="button", data-bind="click: formClose, text: $root.i18n('Отмена')")
+                button.btn.btn-primary(type="button", data-bind="click: formClose, text: $root.i18n('Cancel')")
         .row.btnsFinish
             .col-xs-12.colcent
-                button.btn.btn-primary(type="button", data-bind="click: formClose, text: $root.i18n('Завершить')")
+                button.btn.btn-primary(type="button", data-bind="click: formClose, text: $root.i18n('Finish')")
     | </script>
 
     | <script id="passChangeTpl" type="text/html">
-    .head(data-bind="text: $root.i18n('Смена пароля')")
+    .head(data-bind="text: $root.i18n('Change password')")
     .form-group
         dl.dl-horizontal
-            dt(data-bind="text: $root.i18n('Текущий пароль:')")
+            dt(data-bind="text: $root.i18n('Current password:')")
             dd
         .inputwrap
             span.glyphicon.glyphicon-lock
             input.form-control(type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}", autocorrect="off", autocapitalize="off")
     .form-group
         dl.dl-horizontal
-            dt(data-bind="text: $root.i18n('Новый пароль:')")
+            dt(data-bind="text: $root.i18n('New password:')")
             dd
         .inputwrap
             span.glyphicon.glyphicon-lock
             input.form-control(type="password", required="required", placeholder="Enter password", name="passNew", data-bind="event: {keypress: pressHandler}")
     .form-group
         dl.dl-horizontal
-            dt(data-bind="text: $root.i18n('Повторите новый пароль:')")
+            dt(data-bind="text: $root.i18n('Repeat new password:')")
             dd
         .inputwrap
             span.glyphicon.glyphicon-lock
@@ -189,24 +189,24 @@
     .form-group
         .text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}")
             span.glyphicon.glyphicon-warning-sign
-            span(data-bind="text: ' ' + $root.i18n('Caps Lock активен')")
+            span(data-bind="text: ' ' + $root.i18n('Caps Lock is on')")
         .mess
             div(data-bind="text: msg()")
         .row.btnsAction
             .col-xs-6
-                button.btn.btn-primary(type="submit", data-bind="text: $root.i18n('Сменить')")
+                button.btn.btn-primary(type="submit", data-bind="text: $root.i18n('Change')")
             .col-xs-6.colright
-                button.btn.btn-primary(type="button", data-bind="click: formClose, text: $root.i18n('Отмена')")
+                button.btn.btn-primary(type="button", data-bind="click: formClose, text: $root.i18n('Cancel')")
         .row.btnsFinish
             .col-xs-12.colcent
-                button.btn.btn-primary(type="button", data-bind="click: formClose, text: $root.i18n('Завершить')")
+                button.btn.btn-primary(type="button", data-bind="click: formClose, text: $root.i18n('Finish')")
     | </script>
 
     | <script id="passInputTpl" type="text/html">
-    .head(data-bind="text: $root.i18n('Верификация')")
+    .head(data-bind="text: $root.i18n('Verification')")
     .form-group
         dl.dl-horizontal
-            dt(data-bind="text: $root.i18n('Введите свой пароль для подтверждения:')")
+            dt(data-bind="text: $root.i18n('Enter your password to confirm:')")
             dd
         .inputwrap
             span.glyphicon.glyphicon-lock
@@ -214,12 +214,12 @@
     .form-group
         .text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}")
             span.glyphicon.glyphicon-warning-sign
-            span(data-bind="text: ' ' + $root.i18n('Caps Lock активен')")
+            span(data-bind="text: ' ' + $root.i18n('Caps Lock is on')")
         .mess
             div(data-bind="text: msg()")
         .row.btnsAction
             .col-xs-6
-                button.btn.btn-primary(type="submit", data-bind="text: $root.i18n('Отправить')")
+                button.btn.btn-primary(type="submit", data-bind="text: $root.i18n('Submit')")
             .col-xs-6.colright
-                button.btn.btn-primary(type="button", data-bind="click: formClose, text: $root.i18n('Отмена')")
+                button.btn.btn-primary(type="button", data-bind="click: formClose, text: $root.i18n('Cancel')")
     | </script>

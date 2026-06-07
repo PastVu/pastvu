@@ -1,32 +1,32 @@
 .user_photoUpload(data-bind="with: repository[M!M]")
     //-.text-danger(style="margin-bottom: 5px;")
-        | Внимание! Временно принимаются только фотографии в пределах России, Белоруссии и УкраиныСНГ, остальные будут отклонены. Подробности&nbsp;
-        a(target="_blank", href="/news/97") здесь
+        | Warning! Temporarily only photos within Russia, Belarus and the CIS Ukraine are accepted; the rest will be rejected. Details&nbsp;
+        a(target="_blank", href="/news/97") here
     .toptext(data-bind="html: toptext()")
 
     //ko if: canLoad()
     .warn(style="font-size: 12px; color: #A57A30;")
-        span(data-bind="text: $root.i18n('Согласно') + ' '")
-        a(data-bind="attr: {href: getRulesUrl()}, text: $root.i18n('Правилам')", target="_blank")
-        span(data-bind="text: $root.i18n(', к публикации будут допущены:')")
+        span(data-bind="text: $root.i18n('According to the') + ' '")
+        a(data-bind="attr: {href: getRulesUrl()}, text: $root.i18n('Rules')", target="_blank")
+        span(data-bind="text: $root.i18n(', the following will be eligible for publication:')")
         br
-        span(data-bind="text: $root.i18n('Фотографии, снятые до 2000 года, и картины, созданные до 1980 года.')")
+        span(data-bind="text: $root.i18n('Photos taken before 2000, and paintings created before 1980.')")
         br
-        span(data-bind="text: $root.i18n('Имеющие историческую ценность и отображающие объект съемки в уникальном ракурсе или времени.')")
+        span(data-bind="text: $root.i18n('Of historical value and capturing the subject from a unique angle or moment in time.')")
     form.uploadForm(method="POST", enctype="multipart/form-data")
         #addFiles
             input.fileInput(type="file", name="files[]", accept="image/*", multiple)
             button.btn.btn-primary.fileSelect(data-bind="click: selectFile")
                 span.glyphicon.glyphicon-plus
-                span(data-bind="text: ' ' + $root.i18n('Добавить...')")
+                span(data-bind="text: ' ' + $root.i18n('Add...')")
             .addfiles_area.centering_content(data-bind="css: {hide: !filereader()}")
-                #or.centering_content(data-bind="text: $root.i18n('или')")
-                span(data-bind="text: $root.i18n('Перетащите изображения сюда')")
+                #or.centering_content(data-bind="text: $root.i18n('or')")
+                span(data-bind="text: $root.i18n('Drag images here')")
                 #dropzone
 
     //-Отображаем возможное кол-во к загрузке, если менее 25 разрешено
     //ko if: canCount() < 25
-    .canCount(data-bind="text: $root.i18n('Вы можете добавить еще {{count}} фото', {count: canCount()})")
+    .canCount(data-bind="text: $root.i18n('You can add {{count}} more photo(s)', {count: canCount()})")
     // /ko
 
     div(data-bind="style: {display: fileList().length > 0 ? '' : 'none'}")
@@ -35,14 +35,14 @@
                 .progress-bar(data-bind="style: {width: fileProgressAll() + '%'}")
             .extText(data-bind="text: fileProgressAllText()")
         table.table.table-striped.table-hover.filesTable
-            caption(data-bind="text: $root.i18n('Добавленные фотографии')")
+            caption(data-bind="text: $root.i18n('Added photos')")
             tbody
                 //ko foreach: fileList
                 tr
                     td.preview
                         div.forcanvas(data-bind="attr: {'data-fileuid': ext.uid}, css: {noValid: !ext.valid, tooBig: ext.tooBigPreview}")
                             //ko if: ext.tooBigPreview
-                            .msg(data-bind="text: $root.i18n('Слишком большая для превью')")
+                            .msg(data-bind="text: $root.i18n('Too large for preview')")
                             // /ko
                     td.desc
                         div(data-bind="text: name")
@@ -58,10 +58,10 @@
                         //ko if: ext.valid && !$parent.options.auto && !ext.uploaded()
                         button.btn.btn-success(data-bind="click: function () {$parent.startFile($data)}, css: {disabled: ext.uploading()}, attr: {disabled: ext.uploading()}")
                             span.glyphicon.glyphicon-upload
-                            span(data-bind="text: ' ' + $root.i18n('Загрузить')")
+                            span(data-bind="text: ' ' + $root.i18n('Upload')")
                         // /ko
                         button.btn(data-bind="click: function () {$parent.cancelFile($data)}, css: {'btn-warning': !ext.uploaded(), 'btn-danger': ext.uploaded()}")
                             span.glyphicon(data-bind="css: {'glyphicon-ban-circle': !ext.uploaded(), 'glyphicon-remove-circle': ext.uploaded()}")
-                            span(data-bind="text: ' ' + $root.i18n(ext.uploaded() ? 'Удалить' : 'Отменить')")
+                            span(data-bind="text: ' ' + $root.i18n(ext.uploaded() ? 'Delete' : 'Cancel')")
                 // /ko
     // /ko

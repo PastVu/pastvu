@@ -14,7 +14,7 @@ require([
 ) {
     'use strict';
 
-    Utils.title.setPostfix(i18n('Фотографии прошлого'));
+    Utils.title.setPostfix(i18n('Photos of the past'));
 
     const routerDeferred = $.Deferred();
     const routerAnatomy = {

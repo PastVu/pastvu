@@ -1,22 +1,22 @@
 include head
 p(style="padding-left: 3px; border-style: solid; border-width: 0px 0px 0px 3px; border-color: #5D88B6;")
-    | #{t('Вы указали следующие реквизиты:', { ns: 'mail' })}
+    | #{t('You provided the following details:', { ns: 'mail' })}
     br
-    != t('Логин: <strong>{{login}}</strong>', { login: login, ns: 'mail' })
+    != t('Login: <strong>{{login}}</strong>', { login: login, ns: 'mail' })
     br
     | #{t('E-mail:', { ns: 'mail' })} #{email}
     br
-    small #{t('Для лучшей безопасности мы не храним оригинал вашего пароля. Если вы его забудете, просто установите новый с помощью процедуры восстановления на сайте', { ns: 'mail' })}
+    small #{t('For better security we do not store your original password. If you forget it, just set a new one via the recovery procedure on the site.', { ns: 'mail' })}
 p
-    | #{t('Мы требуем от всех пользователей подтверждения регистрации, для проверки того, что введённый e-mail адрес реальный.', { ns: 'mail' })}
+    | #{t('We require every user to confirm registration so that we can verify the e-mail address is real.', { ns: 'mail' })}
     br
-    | #{t('Это требуется для защиты от спамеров и многократной регистрации.', { ns: 'mail' })}
+    | #{t('This protects us from spammers and duplicate registrations.', { ns: 'mail' })}
 p(style="padding-left: 3px; border-style: solid; border-width: 0px 0px 0px 3px; border-color: #5D88B6;")
-    | #{t('Для активации Вашего аккаунта, пройдите по следующей ссылке:', { ns: 'mail' })}
+    | #{t('To activate your account, follow this link:', { ns: 'mail' })}
     br
     a(href=config.client.origin + '/confirm/' + confirmKey, target='_blank')
         = config.client.host + '/confirm/' + confirmKey
     br
-    small #{t('Ссылка действительна {{linkvalid}}, по истечении которых Вам будет необходимо зарегистрироваться повторно', { linkvalid: linkvalid, ns: 'mail' })}
+    small #{t('The link is valid for {{linkvalid}}; after that you will need to register again', { linkvalid: linkvalid, ns: 'mail' })}
 p(style="color: #999;")
-    small #{t('Вы получили это письмо, так как этот e-mail адрес был использован при регистрации. Если Вы не регистрировались на нашем сайте, то просто проигнорируйте и удалите письмо.', { ns: 'mail' })}
+    small #{t('You received this e-mail because this address was used during registration. If you did not register on our site, simply ignore and delete this message.', { ns: 'mail' })}

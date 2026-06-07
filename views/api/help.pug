@@ -4,65 +4,65 @@ html
         meta(http-equiv="content-type", content="text/html; charset=utf-8")
         meta(http-equiv="X-UA-Compatible", content="IE=Edge")
         meta(name="apple-mobile-web-app-capable", content="yes")
-        title= t('Документация API PastVu')
+        title= t('PastVu API Documentation')
 
     body
-        h2= t('Документация API PastVu')
-        span(style="color: #999")= t('Версия 0.2.0')
-        h3= t('Параметры запроса')
+        h2= t('PastVu API Documentation')
+        span(style="color: #999")= t('Version 0.2.0')
+        h3= t('Request parameters')
         table
             caption
             tbody
                 tr
                     td app*
-                    td= t('Идентификатор приложения. Выдаётся администратором по запросу на адрес support@pastvu.com')
+                    td= t('Application identifier. Issued by the administrator on request at support@pastvu.com.')
                 tr
                     td rid*
-                    td= t('Идентификатор запроса. Строка, позволяющая запрашиваемому приложению соотнести ответ с запросом. Возвращается в ответе')
+                    td= t('Request identifier. A string that lets the requesting application match the response to its request. Echoed in the response.')
                 tr
                     td stamp*
-                    td= t('Время (UTC) отправки запроса в формате unix-time (количество миллисекунд с 1970/01/01). Запрос должен быть не старше 10 секунд. Возвращается в ответе')
+                    td= t('Request time (UTC) as unix-time (milliseconds since 1970/01/01). The request must be no older than 10 seconds. Echoed in the response.')
                 tr
                     td method*
-                    td= t('Метод запроса из перечисленных ниже')
+                    td= t('Request method, from the list below')
                 tr
                     td data
-                    td= t('Параметры метода в формате JSON')
-        | * #{t('Обязательные параметры запроса')}
+                    td= t('Method parameters as JSON')
+        | * #{t('Required request parameters')}
 
-        h3= t('Структура ответа')
-        | #{t('В случае корректно переданных параметров запроса сервер вернёт JSON (Content-Type: application/json; charset=utf-8) следующей структуры:')}
+        h3= t('Response structure')
+        | #{t('When the request parameters are valid, the server returns JSON (Content-Type: application/json; charset=utf-8) with this structure:')}
         table
             caption
             tbody
                 tr
                     td rid
-                    td= t('Переданный клиентом идентификатор запроса')
+                    td= t('The request identifier supplied by the client')
                 tr
                     td stamp
-                    td= t('Переданное клиентом время отправки запроса')
+                    td= t('The request time supplied by the client')
                 tr
                     td result
-                    td= t('Результат выполнения метода. Структура зависит от метода. Может отсутствовать в случае ошибки')
+                    td= t('Method result. Structure depends on the method. May be absent on error.')
                 tr
                     td error
-                    td= t('Объект в случае ошибки. {code: <Number>, text: <String>}')
+                    td= t('Object returned on error. {code: <Number>, text: <String>}')
 
-        h3= t('Методы запроса')
+        h3= t('Request methods')
         table
             tbody
                 tr
                     td photo.get
                     td
-                        | #{t('Возвращает объект фотографии')}
-                        div= t('Структура')
-                        div= t('Структура')
+                        | #{t('Returns a photo object')}
+                        div= t('Structure')
+                        div= t('Structure')
                 tr
                     td photos.near
-                    td= t('Возвращает массив фотографий, ближайших переданной координате. Массив отсортирован по возрастанию расстояния')
+                    td= t('Returns an array of photos nearest to the given coordinate, ordered by ascending distance')
                 tr
                     td map.getBounds
-                    td= t('Возвращает массивы кластеров и фотографий для карты, входящих в переданные границы')
+                    td= t('Returns the arrays of clusters and photos that fall within the given map bounds')
                 tr
                     td comments.getByObj
-                    td= t('Возвращает дерево комментариев для фотографии')
+                    td= t('Returns the comment tree for a photo')

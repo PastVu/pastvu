@@ -170,7 +170,7 @@ define([
                         selected: ko.observable(false),
                         options: {
                             urlTemplate: 'https://{s}tilecart.kosmosnimki.ru/kosmo/{z}/{x}/{y}.png',
-                            attribution: i18n('&copy; <a href="https://kosmosnimki.ru/">ООО ИТЦ "СКАНЭКС"</a> | &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'),
+                            attribution: i18n('&copy; <a href="https://kosmosnimki.ru/">SCANEX ITC LLC</a> | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'),
                             updateWhenIdle: false,
                             maxZoom: 18,
                             maxNativeZoom: 17,
@@ -182,7 +182,7 @@ define([
                         selected: ko.observable(false),
                         options: {
                             urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                            attribution: i18n('&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'),
+                            attribution: i18n('&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'),
                             updateWhenIdle: false,
                             maxZoom: 20,
                             maxNativeZoom: 19,
@@ -197,7 +197,7 @@ define([
                             updateWhenIdle: false,
                             maxZoom: 19,
                             maxNativeZoom: 18,
-                            attribution: i18n('OSM Deutsch | &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'),
+                            attribution: i18n('OSM Deutsch | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'),
                         },
                         limitZoom: 18,
                         maxAfter: 'osm.openstreetmap',
@@ -211,21 +211,21 @@ define([
                             updateWhenIdle: false,
                             maxZoom: 19,
                             maxNativeZoom: 18,
-                            attribution: i18n('OSM Française | &copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'),
+                            attribution: i18n('OSM Française | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'),
                         },
                         limitZoom: 18,
                         maxAfter: 'osm.openstreetmap',
                     },
                     {
                         id: 'opentopomap',
-                        desc: i18n('Топограф'),
+                        desc: i18n('Topo'),
                         selected: ko.observable(false),
                         options: {
                             urlTemplate: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
                             updateWhenIdle: false,
                             maxZoom: 15,
                             maxNativeZoom: 14,
-                            attribution: i18n('&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | <a href="http://viewfinderpanoramas.org">SRTM</a> | Стиль карты: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'),
+                            attribution: i18n('&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'),
                         },
                     },
                 ]),
@@ -240,7 +240,7 @@ define([
                     types: ko.observableArray([
                         {
                             id: 'scheme',
-                            desc: i18n('Схема'),
+                            desc: i18n('Map'),
                             selected: ko.observable(false),
                             options: {
                                 type: 'roadmap',
@@ -249,7 +249,7 @@ define([
                         },
                         {
                             id: 'sat',
-                            desc: i18n('Спутник'),
+                            desc: i18n('Satellite'),
                             selected: ko.observable(false),
                             options: {
                                 type: 'satellite',
@@ -258,7 +258,7 @@ define([
                         },
                         {
                             id: 'hyb',
-                            desc: i18n('Гибрид'),
+                            desc: i18n('Hybrid'),
                             selected: ko.observable(false),
                             options: {
                                 type: 'hybrid',
@@ -267,7 +267,7 @@ define([
                         },
                         {
                             id: 'land',
-                            desc: i18n('Ландшафт'),
+                            desc: i18n('Landscape'),
                             selected: ko.observable(false),
                             options: {
                                 type: 'terrain',
@@ -281,13 +281,13 @@ define([
             if (P.settings.USE_YANDEX_API()) {
                 this.layers.push({
                     id: 'yandex',
-                    desc: i18n('Яндекс'),
+                    desc: i18n('Yandex'),
                     deps: 'leaflet-extends/L.Yandex',
                     selected: ko.observable(false),
                     types: ko.observableArray([
                         {
                             id: 'scheme',
-                            desc: i18n('Схема'),
+                            desc: i18n('Map'),
                             selected: ko.observable(false),
                             options: {
                                 type: 'map',
@@ -296,7 +296,7 @@ define([
                         },
                         {
                             id: 'sat',
-                            desc: i18n('Спутник'),
+                            desc: i18n('Satellite'),
                             selected: ko.observable(false),
                             options: {
                                 type: 'satellite',
@@ -305,7 +305,7 @@ define([
                         },
                         {
                             id: 'hyb',
-                            desc: i18n('Гибрид'),
+                            desc: i18n('Hybrid'),
                             selected: ko.observable(false),
                             options: {
                                 type: 'hybrid',
@@ -318,16 +318,16 @@ define([
 
             this.layers.push({
                 id: 'other',
-                desc: i18n('Прочие'),
+                desc: i18n('Others'),
                 selected: ko.observable(false),
                 types: ko.observableArray([
                     {
                         id: 'esri_satimg',
-                        desc: i18n('Esri Снимки'),
+                        desc: i18n('Esri Imagery'),
                         selected: ko.observable(false),
                         options: {
                             urlTemplate: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-                            attribution: i18n('&copy; Esri &mdash; Источники: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, и ГИС сообщество'),
+                            attribution: i18n('&copy; Esri &mdash; Sources: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'),
                             updateWhenIdle: false,
                             maxZoom: 20,
                             maxNativeZoom: 19,
@@ -335,11 +335,11 @@ define([
                     },
                     {
                         id: 'mtb',
-                        desc: i18n('MTB пеш.'),
+                        desc: i18n('MTB hike'),
                         selected: ko.observable(false),
                         options: {
                             urlTemplate: 'https://tile.mtbmap.cz/mtbmap_tiles/{z}/{x}/{y}.png',
-                            attribution: i18n('&copy; участники сообщества <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | <a href="http://mtbmap.cz/">mtbmap.cz</a>'),
+                            attribution: i18n('&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | <a href="http://mtbmap.cz/">mtbmap.cz</a>'),
                             updateWhenIdle: false,
                             maxZoom: 19,
                             maxNativeZoom: 18,
@@ -349,11 +349,11 @@ define([
                     },
                     {
                         id: 'warfly',
-                        desc: i18n('Аэрофото ВОВ'),
+                        desc: i18n('WWII aerial photos'),
                         selected: ko.observable(false),
                         options: {
                             urlTemplate: 'https://hutun.ru/tiles/4/061942/Z{z}/{y}/{x}.jpg',
-                            attribution: i18n('Немецкая аэрофотосъемка 1939-1943 годов (доступна для отдельных городов) | <a href="http://retromap.ru/061942">retromap.ru</a>'),
+                            attribution: i18n('German aerial photography 1939-1943 (available for selected cities) | <a href="http://retromap.ru/061942">retromap.ru</a>'),
                             updateWhenIdle: false,
                             minZoom: 9,
                             maxZoom: 19,
@@ -767,7 +767,7 @@ define([
             this.pointMarkerEdit = L.marker(this.point.geo(),
                 {
                     draggable: true,
-                    title: i18n('Точка съемки'),
+                    title: i18n('Shooting point'),
                     icon: L.icon({
                         iconSize: [26, 43],
                         iconAnchor: [13, 36],
@@ -916,7 +916,7 @@ define([
                 const tooltip = $(evt.currentTarget).siblings('.tltp').hide();
 
                 Utils.copyTextToClipboard(this.geoInputComputed());
-                Utils.flashTooltip(evt.currentTarget, i18n('Скопировано')).then(function () {
+                Utils.flashTooltip(evt.currentTarget, i18n('Copied')).then(function () {
                     tooltip.show();
                 });
             }

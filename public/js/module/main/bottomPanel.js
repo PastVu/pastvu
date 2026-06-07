@@ -7,11 +7,11 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
     'use strict';
 
     const catsObj = {
-        photosToApprove: { name: 'Ожидают подтверждения', tpl: 'photosTpl' },
-        photos: { name: 'Новые фото', tpl: 'photosTpl' },
-        photosNoGeo: { name: 'Где это?', tpl: 'photosTpl' },
-        ratings: { name: 'Рейтинги', tpl: 'ratingsTpl' },
-        stats: { name: 'Статистика', tpl: 'statsTpl' },
+        photosToApprove: { name: i18n('Awaiting approval'), tpl: 'photosTpl' },
+        photos: { name: i18n('New photos'), tpl: 'photosTpl' },
+        photosNoGeo: { name: i18n('Where is this?'), tpl: 'photosTpl' },
+        ratings: { name: i18n('Ratings'), tpl: 'ratingsTpl' },
+        stats: { name: i18n('Statistics'), tpl: 'statsTpl' },
     };
     const cats = [
         'photos',
@@ -286,7 +286,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                 if (self.catLoading() === 'stats') {
                     self.stats.all = data.all;
                     self.stats.common = data.common;
-                    self.stats.common.onlineTxt = i18n('Сейчас на сайте {{users}}, из них {{regs}}', {
+                    self.stats.common.onlineTxt = i18n('Currently online: {{users}}, of which {{regs}}', {
                         users: i18n('users_count', { count: data.common.onall }),
                         regs: i18n('users_registered_count', { count: data.common.onreg }),
                     });
@@ -316,7 +316,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                 photo.link = '/p/' + photo.cid;
 
                 if (!photo.title) {
-                    photo.title = i18n('Без названия');
+                    photo.title = i18n('Untitled');
                 }
 
                 if (numField && numFormat) {
@@ -363,17 +363,17 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
             if (data.conv) {
                 content = imgFailTpl({
                     style: 'margin-top:7px;padding-top:20px; background: url(/img/misc/photoConvWhite.png) 50% 0 no-repeat;',
-                    txt: i18n('Превью уже создается<br>пожалуйста, обновите позже'),
+                    txt: i18n('Preview is being created<br>please refresh later'),
                 });
             } else if (data.convqueue) {
                 content = imgFailTpl({
                     style: 'margin-top:7px;',
-                    txt: '<span class="glyphicon glyphicon-road"></span><br>' + i18n('Превью скоро будет создано'),
+                    txt: '<span class="glyphicon glyphicon-road"></span><br>' + i18n('Preview will be created shortly'),
                 });
             } else {
                 content = imgFailTpl({
                     style: 'margin-top:7px;padding-top:25px; background: url(/img/misc/imgw.png) 50% 0 no-repeat;',
-                    txt: i18n('Превью недоступно'),
+                    txt: i18n('Preview unavailable'),
                 });
             }
 
