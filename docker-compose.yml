@@ -1,6 +1,5 @@
 x-defaults: &app-image
   build: ./.docker
-  image: pastvu_node
   environment:
     - NODE_ENV=development
   extra_hosts:
@@ -67,7 +66,7 @@ services:
       - "app"
 
   mongo:
-    image: mongo:4.4
+    image: mongo:5
     volumes:
       - mongo4:/data/db
       - ./.docker/dev-initdb.sh:/docker-entrypoint-initdb.d/dev-initdb.sh:ro
@@ -82,7 +81,7 @@ services:
       start_period: 10s
 
   redis:
-    image: redis:6.2.6
+    image: redis
 
   mailpit:
     image: axllent/mailpit:latest
