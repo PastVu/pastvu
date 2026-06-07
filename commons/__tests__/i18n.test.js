@@ -116,4 +116,29 @@ describe('commons/i18n', () => {
             expect(t('en', '{{a, number}} of {{b, number}}', { a: 100, b: 1000 })).toBe('100 of 1,000');
         });
     });
+
+    describe('built-in datetime formatter via symbolic keys', () => {
+        const sampleDate = new Date(2026, 5, 7, 14, 30, 45);
+
+        it('datetime_full resolves to the full date+time format per language', () => {
+            const ruFmt = new Intl.DateTimeFormat('ru', {
+                dateStyle: 'full', timeStyle: 'medium', hourCycle: 'h23',
+            }).format(sampleDate);
+            const enFmt = new Intl.DateTimeFormat('en', {
+                dateStyle: 'full', timeStyle: 'medium', hourCycle: 'h23',
+            }).format(sampleDate);
+
+            expect(t('ru', 'datetime_full', { date: sampleDate })).toBe(ruFmt);
+            expect(t('en', 'datetime_full', { date: sampleDate })).toBe(enFmt);
+        });
+
+        it('(до {{date, datetime(...)}}) embeds short date+time formatter', () => {
+            const ruFmt = new Intl.DateTimeFormat('ru', {
+                dateStyle: 'short', timeStyle: 'medium', hourCycle: 'h23',
+            }).format(sampleDate);
+            const key = '(до {{date, datetime(dateStyle: short; timeStyle: medium; hourCycle: h23)}})';
+
+            expect(t('ru', key, { date: sampleDate })).toBe(`(до ${ruFmt})`);
+        });
+    });
 });

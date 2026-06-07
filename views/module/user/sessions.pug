@@ -40,7 +40,7 @@
                             div
                                 span(data-bind="text: $root.i18n('Количество открытых вкладок:') + ' '")
                                 span(data-bind="text: $root.intl.num($data.sockets)")
-                            div(data-bind="text: $root.i18n('Первая активность:') + ' ' + $root.intl.dateFull($data.created)")
+                            div(data-bind="text: $root.i18n('Первая активность:') + ' ' + $root.i18n('datetime_full', {date: new Date($data.created)})")
                         //ko if: $data.isCurrent
                         div.online(style="min-width:80px; margin-right:4px; padding: 0 10px; text-align:center; font-style:italic", data-bind="text: $root.i18n('Текущая')")
                         // /ko
@@ -82,8 +82,8 @@
                                 i(data-bind="text: ' (+' + $data.ipCount + ')'")
                                 // /ko
                             div(data-bind="text: $root.i18n('Язык:') + ' ' + $data.lang")
-                            div(data-bind="text: $root.i18n('Первая активность:') + ' ' + $root.intl.dateFull($data.created)")
-                            div(data-bind="text: $root.i18n('Последняя активность:') + ' ' + $root.intl.dateFull($data.stamp)")
+                            div(data-bind="text: $root.i18n('Первая активность:') + ' ' + $root.i18n('datetime_full', {date: new Date($data.created)})")
+                            div(data-bind="text: $root.i18n('Последняя активность:') + ' ' + $root.i18n('datetime_full', {date: new Date($data.stamp)})")
                         button.btn.btn-primary(type="button", data-bind="attr: {disabled: $parent.removing.indexOf($data.key) > -1, title: $root.i18n('Уничтожить сессию')}, event:{click: $parent.handleSessionDestroy}, text: $root.i18n('Удалить')", style="min-width:80px;")
                     // /ko
                 // /ko
@@ -130,7 +130,7 @@
                             //ko if: $data.lang
                             div(data-bind="text: $root.i18n('Язык:') + ' ' + $data.lang")
                             // /ko
-                            div(data-bind="text: $root.i18n('Первая активность:') + ' ' + $root.intl.dateFull($data.created)")
-                            div(data-bind="text: $root.i18n('Последняя активность:') + ' ' + $root.intl.dateFull($data.stamp)")
+                            div(data-bind="text: $root.i18n('Первая активность:') + ' ' + $root.i18n('datetime_full', {date: new Date($data.created)})")
+                            div(data-bind="text: $root.i18n('Последняя активность:') + ' ' + $root.i18n('datetime_full', {date: new Date($data.stamp)})")
                     // /ko
                 // /ko

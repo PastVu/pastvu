@@ -223,7 +223,7 @@
     "Уникальные": "Unique",
     "История": "History",
     "Предыдущие адреса возможно были отброшены": "Earlier addresses may have been dropped",
-    "(до {{date}})": "(until {{date}})",
+    "(до {{date, datetime(dateStyle: short; timeStyle: medium; hourCycle: h23)}})": "(until {{date, datetime(dateStyle: short; timeStyle: medium; hourCycle: h23)}})",
     "(текущий адрес)": "(current address)",
     "(последний адрес)": "(last address)",
     "Клиенты:": "Clients:",
@@ -988,5 +988,6 @@
     "comments_count_one": "{{count, number}} comment",
     "comments_count_other": "{{count, number}} comments",
     "views_count_one": "{{count, number}} view",
-    "views_count_other": "{{count, number}} views"
+    "views_count_other": "{{count, number}} views",
+    "datetime_full": "{{date, datetime(dateStyle: full; timeStyle: medium; hourCycle: h23)}}"
 }

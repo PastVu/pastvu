@@ -26,5 +26,6 @@
     "views_count_one": "{{count, number}} просмотр",
     "views_count_few": "{{count, number}} просмотра",
     "views_count_many": "{{count, number}} просмотров",
-    "views_count_other": "{{count, number}} просмотров"
+    "views_count_other": "{{count, number}} просмотров",
+    "datetime_full": "{{date, datetime(dateStyle: full; timeStyle: medium; hourCycle: h23)}}"
 }

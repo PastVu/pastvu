@@ -1,10 +1,10 @@
 .user_session(data-bind="with: repository[M!M]")
     dl.dl-horizontal
         dt(data-bind="text: $root.i18n('Первая активность:')")
-        dd(data-bind="text: $root.intl.dateFull(session.created)")
+        dd(data-bind="text: $root.i18n('datetime_full', {date: new Date(session.created)})")
         //ko if: !session.sockets
         dt(data-bind="text: $root.i18n('Последняя активность:')")
-        dd(data-bind="text: $root.intl.dateFull(session.stamp)")
+        dd(data-bind="text: $root.i18n('datetime_full', {date: new Date(session.stamp)})")
         // /ko
         //ko if: session.lang
         dt(data-bind="text: $root.i18n('Язык:')")
@@ -30,7 +30,7 @@
             div
                 span.ip(data-bind="text: $data.ip")
                 //ko if: $parent.ipsHist() && $data.off
-                span(data-bind="text: ' ' + $root.i18n('(до {{date}})', {date: $root.intl.dateFullDigit($data.off)})")
+                span(data-bind="text: ' ' + $root.i18n('(до {{date, datetime(dateStyle: short; timeStyle: medium; hourCycle: h23)}})', {date: new Date($data.off)})")
                 // /ko
                 //ko if: $data.ip === $parent.ipLast && (!$parent.ipsHist() || !$data.off)
                 i(data-bind="text: ' ' + $root.i18n($parent.online ? '(текущий адрес)' : '(последний адрес)')")
@@ -55,7 +55,7 @@
                 span(data-bind="text: $data.browser")
                 // /ko
                 //ko if: $data.off
-                span(data-bind="text: ' ' + $root.i18n('(до {{date}})', {date: $root.intl.dateFullDigit($data.off)})")
+                span(data-bind="text: ' ' + $root.i18n('(до {{date, datetime(dateStyle: short; timeStyle: medium; hourCycle: h23)}})', {date: new Date($data.off)})")
                 // /ko
                 //ko if: !$data.off
                 i(data-bind="text: ' ' + $root.i18n($parent.online ? '(текущий клиент)' : '(последний клиент)')")
