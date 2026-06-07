@@ -295,8 +295,8 @@ define([
             const that = this;
 
             noties.confirm({
-                message: i18n('Перерасчет статистики регионов займет ~5 минут. Продолжить?'),
-                okText: i18n('Да, налью чаю'),
+                message: i18n('Recalculating region statistics will take ~5 minutes. Continue?'),
+                okText: i18n('Yes, I\'ll grab some tea'),
                 okClass: 'btn-success',
                 onOk: function (confirmer) {
                     confirmer.disable();
@@ -306,18 +306,18 @@ define([
                             let msg;
 
                             if (data.running) {
-                                msg = i18n('В данный момент статистика уже пересчитывается');
+                                msg = i18n('Statistics are already being recalculated');
                             } else {
-                                msg = i18n('Статистика регионам пересчитана') + '<br>';
+                                msg = i18n('Region statistics have been recalculated') + '<br>';
 
                                 if (data.valuesChanged) {
                                     if (data.regionChanged) {
-                                        msg += i18n('<b>{{count, number}}</b> регионов было обновлено', { count: data.regionChanged }) + '<br>';
+                                        msg += i18n('<b>{{count, number}}</b> regions updated', { count: data.regionChanged }) + '<br>';
                                     }
 
-                                    msg += i18n('<b>{{count, number}}</b> значений было изменено', { count: data.valuesChanged });
+                                    msg += i18n('<b>{{count, number}}</b> values changed', { count: data.valuesChanged });
                                 } else {
-                                    msg += i18n('Значения не изменились');
+                                    msg += i18n('Values are unchanged');
                                 }
                             }
 
@@ -326,10 +326,10 @@ define([
                             });
                         })
                         .catch(function (error) {
-                            confirmer.error(error, i18n('Закрыть'));
+                            confirmer.error(error, i18n('Close'));
                         });
                 },
-                cancelText: i18n('Нет'),
+                cancelText: i18n('No'),
             });
         },
     });

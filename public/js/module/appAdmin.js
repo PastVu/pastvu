@@ -15,7 +15,7 @@ require([
 ], function (domReady, $, Browser, Utils, socket, _, ko, ko_mapping, moment, globalVM, P, renderer, router, i18n, html) {
     'use strict';
 
-    Utils.title.setPostfix(i18n('Администрирование - Фотографии прошлого'));
+    Utils.title.setPostfix(i18n('Administration - Photos of the past'));
 
     const routerDeferred = $.Deferred();
     const routerAnatomy = {

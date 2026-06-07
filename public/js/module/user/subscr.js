@@ -79,13 +79,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     let txt = '';
 
                     if (count) {
-                        txt = i18n('Показаны {{from, number}}&nbsp;&ndash;&nbsp;{{to, number}} из {{total, number}}', {
+                        txt = i18n('Showing {{from, number}}&nbsp;&ndash;&nbsp;{{to, number}} of {{total, number}}', {
                             from: this.pageFirstItem(),
                             to: this.pageLastItem() || this.pageSize(),
                             total: count,
                         });
                     } else {
-                        txt = i18n('Пока нет подписок в данной категории');
+                        txt = i18n('No subscriptions in this category yet');
                     }
 
                     return txt;

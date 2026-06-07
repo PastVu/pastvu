@@ -1,12 +1,12 @@
 include head
 p
-    | #{t('Для Вашей учетной записи был создан запрос на восстановление пароля на проекте PastVu.', { ns: 'mail' })}
+    | #{t('A password recovery request was created for your PastVu account.', { ns: 'mail' })}
     br
-    | #{t('Если Вы не производили таких действий на нашем сайте, то просто проигнорируйте и удалите письмо.', { ns: 'mail' })}
+    | #{t('If you did not request this, simply ignore and delete this message.', { ns: 'mail' })}
 p
-    | #{t('Для ввода нового пароля перейдите по следующей ссылке:', { ns: 'mail' })}
+    | #{t('To set a new password, follow this link:', { ns: 'mail' })}
     br
     a(href=config.client.origin + '/confirm/' + confirmKey, target='_blank')
         = config.client.host + '/confirm/' + confirmKey
     br
-    small #{t('Ссылка действительна {{linkvalid}}, по истечении которых Вам будет необходимо запрашивать смену пароля повторно', { linkvalid: linkvalid, ns: 'mail' })}
+    small #{t('The link is valid for {{linkvalid}}; after that you will need to request a password change again', { linkvalid: linkvalid, ns: 'mail' })}

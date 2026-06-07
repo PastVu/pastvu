@@ -1,6 +1,6 @@
 .mapModuleWrapper(data-bind="with: repository[M!M]")
-    h3(data-bind="text: $root.i18n('Параметры размера кластера')")
-    p(data-bind="text: $root.i18n('Для установки нового размера кластера, захватите прозрачный прямоугольник на карте и перемещайте его или его границу в необходимых пределах. Для применения изменений нажмите кнопку Сохранить.')")
+    h3(data-bind="text: $root.i18n('Cluster size parameters')")
+    p(data-bind="text: $root.i18n('To set a new cluster size, grab the transparent rectangle on the map and drag it (or its edge) within the desired bounds. Click Save to apply the changes.')")
     .mapContainer(data-bind="css: {}")
         .map
         .clusterContainer
@@ -17,10 +17,10 @@
                     // /ko
                 // /ko
     dl.dl-horizontal
-        dt(data-bind="text: $root.i18n('Текущие размеры:')")
+        dt(data-bind="text: $root.i18n('Current size:')")
         dd(data-bind="text: '' + wCurr() + ' x ' + hCurr() + ''")
     dl.dl-horizontal(data-bind="style: {display: changed() ? '' : 'none'}")
-        dt(data-bind="text: $root.i18n('Новые размеры:')")
+        dt(data-bind="text: $root.i18n('New size:')")
         dd(data-bind="text: '' + wNew() + ' x ' + hNew() + ''")
     .clusterButt(data-bind="style: {display: changed() ? '' : 'none'}")
         button.btn.btn-primary.btnSave(type="button", data-bind="css: {disabled: exe()}, click: save, attr: {disabled: exe()}")
@@ -31,6 +31,6 @@
             |  Cancel
     button.btn.btn-primary.btnSave(type="button", data-bind="style: {display: changed() || isDefault() ? 'none' : ''}, click: setDefaults")
         | Reset to default
-    p(style="margin-top: 6px; margin-bottom: 0;", data-bind="style: {display: exe() && changed() ? '' : 'none'}, text: $root.i18n('Процесс расчета новых параметров на разных уровнях зума:')")
+    p(style="margin-top: 6px; margin-bottom: 0;", data-bind="style: {display: exe() && changed() ? '' : 'none'}, text: $root.i18n('Recomputing the parameters at each zoom level:')")
     .progress.progress-striped.active(data-bind="style: {display: exe() && changed() ? '' : 'none'}")
         .progress-bar.progress-bar-success(data-bind="style: {width: exePercent() + '%'}")

@@ -7,10 +7,10 @@
         if (window.history && window.history.replaceState) {window.history.replaceState({}, null, newpath);} else {window.location = newpath;}
         document.getElementById('nojs').style.display = 'none';
         }());
-    div #{t('К сожалению, в вашем браузере выключен JavaScript, который необходим для полноценной работы сайта PastVu.com')}
-    div #{t('Перейдите по следующей ссылке, чтобы узнать почему это важно и как это исправить:')}
+    div #{t('Unfortunately JavaScript is disabled in your browser, and it is required for PastVu.com to work properly.')}
+    div #{t('Follow the link below to learn why this is important and how to fix it:')}
     a(href="http://www.enable-javascript.com/", rel="nofollow noopener", target="_blank", style="display:inline-block;color:#3b5998;") www.enable-javascript.com
     div(style="font-size:0.8em;")
-        a(href='mailto:support@pastvu.comm?subject=Сайт выдаёт сообщение об отсутствии JavaScript&body=Добрый день! Идентификатор моего браузера: ' + (agent && agent.source ? agent.source : ''), target="_blank")
-            | #{'[' + t('Напишите, если мы ошибаемся: support@pastvu.com') + ']'}
+        a(href='mailto:support@pastvu.comm?subject=Site shows a no-JavaScript message&body=Hello! My browser ID: ' + (agent && agent.source ? agent.source : ''), target="_blank")
+            | #{'[' + t('Write to us if we are wrong: support@pastvu.com') + ']'}
 | <!--/noindex-->

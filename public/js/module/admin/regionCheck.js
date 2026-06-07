@@ -140,7 +140,7 @@ define([
                 this.goToGeo(geo);
             } else {
                 noties.alert({
-                    message: i18n('Неверный формат'),
+                    message: i18n('Wrong format'),
                     type: 'warning',
                 });
             }
@@ -159,7 +159,7 @@ define([
             this.marker = L.marker(geo,
                 {
                     draggable: true,
-                    title: i18n('Точка для проверки региона'),
+                    title: i18n('Point for checking region'),
                     icon: L.icon({
                         iconSize: [26, 43],
                         iconAnchor: [13, 36],

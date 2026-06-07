@@ -56,20 +56,20 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
                 this.menuItems = this.co.menuItems = ko.computed(function () {
                     const login = this.user.login();
                     const result = [
-                        { name: 'Профиль', href: '/u/' + login, section: 'profile' },
-                        { name: 'Изображения', href: '/u/' + login + '/photo', section: 'photo' },
-                        { name: 'Комментарии', href: '/u/' + login + '/comments', section: 'comments' },
+                        { name: 'Profile', href: '/u/' + login, section: 'profile' },
+                        { name: 'Images', href: '/u/' + login + '/photo', section: 'photo' },
+                        { name: 'Comments', href: '/u/' + login + '/comments', section: 'comments' },
                     ];
 
                     if (this.auth.loggedIn() && (this.auth.iAm.login() === login || this.auth.iAm.role() > 9)) {
-                        result.push({ name: 'Подписки', href: '/u/' + login + '/subscriptions', section: 'subscriptions' });
-                        result.push({ name: 'Настройки', href: '/u/' + login + '/settings', section: 'settings' });
-                        result.push({ name: 'Сессии', href: '/u/' + login + '/sessions', section: 'sessions' });
+                        result.push({ name: 'Subscriptions', href: '/u/' + login + '/subscriptions', section: 'subscriptions' });
+                        result.push({ name: 'Settings', href: '/u/' + login + '/settings', section: 'settings' });
+                        result.push({ name: 'Sessions', href: '/u/' + login + '/sessions', section: 'sessions' });
                         //result.push({name: 'Messages', href: "/u/" + login + '/pm', disable: true, section: 'pm'});
                     }
 
                     if (this.auth.iAm.role() > 9) {
-                        result.push({ name: 'Управление', href: '/u/' + login + '/manage', section: 'manage' });
+                        result.push({ name: 'Management', href: '/u/' + login + '/manage', section: 'manage' });
                     }
 
                     return result;
@@ -211,25 +211,25 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
                         moduleOptions.options.goUpload = true; //Если нет, говорим что надо открыть при загрузке галереи
                     }
 
-                    Utils.title.setTitle({ pre: i18n('Загрузка - '), title: this.user.disp() });
+                    Utils.title.setTitle({ pre: i18n('Upload - '), title: this.user.disp() });
                 } else {
-                    Utils.title.setTitle({ pre: i18n('Галерея - '), title: this.user.disp() });
+                    Utils.title.setTitle({ pre: i18n('Gallery - '), title: this.user.disp() });
                 }
             } else if (section === 'comments') {
                 module = 'm/user/comments';
-                Utils.title.setTitle({ pre: i18n('Комментарии - '), title: this.user.disp() });
+                Utils.title.setTitle({ pre: i18n('Comments - '), title: this.user.disp() });
             } else if (section === 'subscriptions') {
                 module = 'm/user/subscr';
-                Utils.title.setTitle({ pre: i18n('Подписки - '), title: this.user.disp() });
+                Utils.title.setTitle({ pre: i18n('Subscriptions - '), title: this.user.disp() });
             } else if (section === 'settings') {
                 module = 'm/user/settings';
-                Utils.title.setTitle({ pre: i18n('Настройки - '), title: this.user.disp() });
+                Utils.title.setTitle({ pre: i18n('Settings - '), title: this.user.disp() });
             } else if (section === 'sessions') {
                 module = 'm/user/sessions';
-                Utils.title.setTitle({ pre: i18n('Сессии - '), title: this.user.disp() });
+                Utils.title.setTitle({ pre: i18n('Sessions - '), title: this.user.disp() });
             } else if (section === 'manage') {
                 module = 'm/user/manage';
-                Utils.title.setTitle({ pre: i18n('Управление - '), title: this.user.disp() });
+                Utils.title.setTitle({ pre: i18n('Management - '), title: this.user.disp() });
             }
 
             this.section(section);

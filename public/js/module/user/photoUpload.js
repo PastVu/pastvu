@@ -7,14 +7,14 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
     'use strict';
 
     const mess = {
-        fsuccess: i18n('Файл успешно загружен'),
-        fcount: i18n('Превышено разрешенное количество файлов'),
+        fsuccess: i18n('File uploaded successfully'),
+        fcount: i18n('Allowed file count exceeded'),
 
-        ftype: i18n('Тип файла не соответствует Правилам'),
-        fmax: i18n('Файл больше разрешенного размера'),
-        fmin: i18n('Файл слишком мал'),
-        fpx: i18n('Согласно Правилам, размер изображения должен быть не менее 350px по меньшей стороне и не менее 700px по большей стороне'),
-        finvalid: i18n('Файл не прошел валидацию'),
+        ftype: i18n('File type does not comply with the Rules'),
+        fmax: i18n('File exceeds the allowed size'),
+        fmin: i18n('File is too small'),
+        fpx: i18n('Per the Rules, the image must be at least 350px on its shorter side and 700px on its longer side'),
+        finvalid: i18n('File failed validation'),
     };
 
     return Cliche.extend({
@@ -54,9 +54,9 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                             this.canCount(this.canCountTotal);
 
                             if (!this.canCount()) {
-                                this.toptext(i18n('У вас нет свободных лимитов для загрузки файлов, так как вы имеете {{count}} неподтвержденных модератором фотографий. Это максимально разрешенное количество, установленное для вашего профиля.', { count: this.u.pfcount() }));
+                                this.toptext(i18n('You have no free upload slots, because you currently have {{count}} photos awaiting moderator approval — the maximum allowed for your account.', { count: this.u.pfcount() }));
                             } else {
-                                this.toptext(this.filereader() ? i18n('Выберите файлы, нажав на кнопку добавления или перетащив их в пунктирную область') : i18n('Выберите файлы, нажав на кнопку добавления'));
+                                this.toptext(this.filereader() ? i18n('Pick files using the add button or drop them onto the dashed area') : i18n('Pick files using the add button'));
                                 this.canLoad(true);
 
                                 this.fileOptions = {
@@ -82,7 +82,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                 }, this);
             } else {
                 this.toptext(
-                    this.auth.iAm.nophotoupload() ? i18n('У вас нет прав на загрузку фотографий') : i18n('Вы не авторизованы для загрузки фотографий')
+                    this.auth.iAm.nophotoupload() ? i18n('You are not allowed to upload photos') : i18n('You must be signed in to upload photos')
                 );
                 ko.applyBindings(globalVM, this.$dom[0]);
                 this.show();
@@ -256,7 +256,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
             data.files.forEach(function (file) {
                 file.ext.uploading(true);
                 file.ext.uploaded(false);
-                this.setMessage(file, i18n('Пожалуйста подождите. Загрузка..'), 'muted');
+                this.setMessage(file, i18n('Please wait. Loading…'), 'muted');
             }, this);
         },
         onFileSend: function (e, data) {
@@ -368,7 +368,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
             const that = this;
             const options = this.fileOptions;
 
-            this.setMessage(file, i18n('Подготовка файла..'), 'muted');
+            this.setMessage(file, i18n('Preparing file…'), 'muted');
             loadImage(
                 file,
                 function (img) {

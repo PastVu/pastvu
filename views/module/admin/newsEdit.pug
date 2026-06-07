@@ -1,21 +1,21 @@
 .adminNews(data-bind="with: repository[M!M]")
-    h4(data-bind="text: $root.i18n(createMode() ? 'Создание новости' : 'Редактирование новости')")
+    h4(data-bind="text: $root.i18n(createMode() ? 'Create news' : 'Edit news')")
 
     form.form-horizontal(action='', autocomplete="off", method='POST', data-bind="event: {submit: submit}")
         .form-group
-            label.col-xs-3.col-md-2.col-lg-1.control-label(data-bind="text: $root.i18n('Заголовок')")
+            label.col-xs-3.col-md-2.col-lg-1.control-label(data-bind="text: $root.i18n('Headline')")
             .col-xs-3.col-md-2
                 input.form-control(type='text', data-bind="value: news.title, valueUpdate: 'afterkeydown'")
         .form-group
-            label.col-xs-3.col-md-2.col-lg-1.control-label(data-bind="text: $root.i18n('Публикация')")
+            label.col-xs-3.col-md-2.col-lg-1.control-label(data-bind="text: $root.i18n('Publish')")
             .col-xs-3.col-md-2
                 .input-group.date#newsPdate
                     input.form-control(data-format="DD.MM.YYYY HH:mm:ss", type="text")
                     span.input-group-addon
                         span.glyphicon.glyphicon-calendar
             .col-xs-4.col-md-3(style="text-align: right;")
-                button.btn.btn-sm.btn-primary.toggleTDate(type="button", data-bind="click: toggleTDate, attr: {title: $root.i18n('Время, когда новость пропадет с главной. В общем списке она останется')}")
-                    span(data-bind="text: $root.i18n(tDateExists() ? 'Убрать время скрытия с главной' : 'Добавить время скрытия с главной')")
+                button.btn.btn-sm.btn-primary.toggleTDate(type="button", data-bind="click: toggleTDate, attr: {title: $root.i18n('When the news disappears from the front page. It stays in the full list.')}")
+                    span(data-bind="text: $root.i18n(tDateExists() ? 'Remove hide-from-front time' : 'Add hide-from-front time')")
             //ko if: tDateExists()
             .col-xs-3.col-md-2
                 .input-group.date#newsTdate
@@ -28,21 +28,21 @@
                 .checkbox
                     label
                         input(type="checkbox", data-bind="checked: news.nocomments")
-                        span(data-bind="text: ' ' + $root.i18n('Без комментариев')")
+                        span(data-bind="text: ' ' + $root.i18n('No comments')")
         .form-group
             .textName
                 button.btn.btn-sm.btn-primary.toggleNotice(type="button", data-bind="click: toggleNotice")
-                    span(data-bind="text: $root.i18n(noticeExists() ? 'Убрать краткую версию' : 'Добавить краткую версию')")
+                    span(data-bind="text: $root.i18n(noticeExists() ? 'Remove the brief version' : 'Add a brief version')")
                 //ko if: noticeExists()
-                span.text-muted(data-bind="text: $root.i18n('Краткая версия')")
+                span.text-muted(data-bind="text: $root.i18n('Brief version')")
                 // /ko
             //ko if: noticeExists()
             textarea#newsNotice
             // /ko
         .form-group
-            .textName(data-bind="text: $root.i18n('Полная версия')")
+            .textName(data-bind="text: $root.i18n('Full version')")
             textarea#newsPrimary
         .form-group
             button.btn.btn-success(type="submit")
                 span.glyphicon.glyphicon-ok
-                span(data-bind="text: ' ' + $root.i18n('Сохранить')")
+                span(data-bind="text: ' ' + $root.i18n('Save')")

@@ -18,7 +18,7 @@
                     span(data-bind="html: ' ' + msg()")
                     //ko if: msgLink()
                     |  [
-                    a.msgLink(data-replace="true", data-bind="attr: {href: msgLink()}, text: $root.i18n('Подробнее..')")
+                    a.msgLink(data-replace="true", data-bind="attr: {href: msgLink()}, text: $root.i18n('More..')")
                     | ]
                     // /ko
                 br
@@ -38,21 +38,21 @@
                         .tool.type
                             .tltp-wrap
                                 span.glyphicon.light(data-bind="css: {'glyphicon-camera': !isPainting(), 'glyphicon-picture': isPainting()}")
-                                .tltp.tltp-right.tltp-animate-move(data-bind="text: $root.i18n(isPainting() ? 'Картина/рисунок' : 'Фотография')")
+                                .tltp.tltp-right.tltp-animate-move(data-bind="text: $root.i18n(isPainting() ? 'Painting/drawing' : 'Photograph')")
                         .tool.watched
-                            span.glyphicon.glyphicon-eye-open.light(data-bind="attr: {title: $root.i18n('Количество просмотров изображения')}")
+                            span.glyphicon.glyphicon-eye-open.light(data-bind="attr: {title: $root.i18n('Image view count')}")
                             .tltp-wrap
                                 .watch(data-bind="text: toolsNumFormat(p.vdcount())")
-                                .tltp.tltp-right.tltp-animate-move(data-bind="text: $root.i18n('{{count, number}} раз смотрели сегодня', {count: p.vdcount()})")
+                                .tltp.tltp-right.tltp-animate-move(data-bind="text: $root.i18n('{{count, number}} views today', {count: p.vdcount()})")
                             .tltp-wrap
                                 .watch(data-bind="text: toolsNumFormat(p.vwcount())")
-                                .tltp.tltp-right.tltp-animate-move(data-bind="text: $root.i18n('{{count, number}} раз смотрели за неделю', {count: p.vwcount()})")
+                                .tltp.tltp-right.tltp-animate-move(data-bind="text: $root.i18n('{{count, number}} views this week', {count: p.vwcount()})")
                             .tltp-wrap
                                 .watch(data-bind="text: toolsNumFormat(p.vcount())")
-                                .tltp.tltp-right.tltp-animate-move(data-bind="text: $root.i18n('{{count, number}} раз смотрели всего', {count: p.vcount()})")
+                                .tltp.tltp-right.tltp-animate-move(data-bind="text: $root.i18n('{{count, number}} views total', {count: p.vcount()})")
                     .toolsBtm(data-bind="style: {width: ws() + 'px'}")
                         span.toolsTxt
-                            span(data-bind="text: $root.i18n('Размеры:') + ' '")
+                            span(data-bind="text: $root.i18n('Sizes:') + ' '")
                             //ko if: ws() !== p.ws() && hs() !== p.hs()
                             .sizeThis(data-bind="text: ws() + '×' + hs()")
                             | &nbsp;|&nbsp;
@@ -64,23 +64,23 @@
                         .tltp-wrap
                             button.btn.btn-xxs.btn-primary(data-state="hscaleTumbler", data-bind="css: {active: hscaleTumbler()}, click: stateChange")
                                 span.glyphicon.glyphicon-resize-vertical
-                            .tltp.tltp-bottom.tltp-animate-move(data-bind="html: $root.i18n('Подгонять по высоте<br>видимой области')")
+                            .tltp.tltp-bottom.tltp-animate-move(data-bind="html: $root.i18n('Fit to height<br>of the visible area')")
                         // /ko
                         .tltp-wrap
                             button.btn.btn-xxs.btn-primary(data-state="watermarkShow", data-bind="css: {active: watermarkShow()}, click: stateChange")
                                 | W
-                            .tltp.tltp-bottom.tltp-animate-move(data-bind="html: $root.i18n('Показывать вотермарк<br>на изображении')")
+                            .tltp.tltp-bottom.tltp-animate-move(data-bind="html: $root.i18n('Show watermark<br>on the image')")
                         //ko if: p.s()===statuses.keys.PUBLIC
                         .tltp-wrap
                             a.btn.btn-xxs.btn-primary(href="?share=1", data-replace="true")
                                 span.glyphicon.glyphicon-share-alt
-                            .tltp.tltp-bottom.tltp-animate-move(data-bind="text: $root.i18n('Поделиться')")
+                            .tltp.tltp-bottom.tltp-animate-move(data-bind="text: $root.i18n('Share')")
                         // /ko
                         //ko if: can.download() && !edit()
                         .tltp-wrap
                             a.btn.btn-xxs(data-bind="click: download, css: downloadCSSClass(), attr: {href: p.fileroot()+'/a/'+p.file(), download:p.cid()+' '+(p.title()||'').replace(/[\/|]/g, '-')+'.jpg'}")
                                 span.glyphicon.glyphicon-save
-                            .tltp.tltp-bottom.tltp-animate-move(data-bind="html: $root.i18n(downLoadOrigin() ? 'Скачать оригинал<br>{{size}}' : 'Скачать в полном размере<br>{{size}}', {size: p.w() + '×' + p.h()})")
+                            .tltp.tltp-bottom.tltp-animate-move(data-bind="html: $root.i18n(downLoadOrigin() ? 'Download original<br>{{size}}' : 'Download full size<br>{{size}}', {size: p.w() + '×' + p.h()})")
                         // /ko
 
             //ko template: {name: edit() ? p.type() === '2' ? 'paintingEdit' : 'photoEdit' : 'photoView', afterRender: tplAfterRender}
@@ -107,7 +107,7 @@
                     // /ko
             .rightrow.photoMap.mContainer.mHidden(data-bind="allowBindings: false, style: {height: mapH()}")
             //ko if: nearestRibbon().length
-            .rightrow: .lineBehind: span(data-bind="text: $root.i18n('Ближайшие изображения')")
+            .rightrow: .lineBehind: span(data-bind="text: $root.i18n('Nearby images')")
             .rightrow.nearesTiles(data-bind="foreach: nearestRibbon")
                 a.photoPreview(data-bind="attr: {href: '/p/' + cid, title: $data.title}"): .photoBox
                     img.img(data-bind="attr: {src: sfile, title: $data.title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.thumbW, height: $parent.thumbH}")
@@ -120,57 +120,57 @@
     //ko if: can.edit()
     button.btn.btn-primary(type="button", data-bind="click: editSave, attr: {disabled: exe()}")
         span.glyphicon.glyphicon-pencil
-        span(data-bind="text: ' ' + $root.i18n('Редактировать')")
+        span(data-bind="text: ' ' + $root.i18n('Edit')")
     // /ko
     //ko if: can.ready()
-    button.btn.btn-success(type="button", data-bind="click: ready, attr: {disabled: exe(), title: $root.i18n('Отправить на премодерацию и дальнейшую публикацию')}")
+    button.btn.btn-success(type="button", data-bind="click: ready, attr: {disabled: exe(), title: $root.i18n('Send to premoderation for further publication')}")
         span.glyphicon.glyphicon-check
-        span(data-bind="text: ' ' + $root.i18n('На публикацию')")
+        span(data-bind="text: ' ' + $root.i18n('Submit for publication')")
     // /ko
     //ko if: can.approve()
-    button.btn.btn-success(type="button", data-bind="click: approve, attr: {disabled: exe(), title: $root.i18n('Подтвердить и опубликовать эту фотографию')}")
+    button.btn.btn-success(type="button", data-bind="click: approve, attr: {disabled: exe(), title: $root.i18n('Confirm and publish this photo')}")
         span.glyphicon.glyphicon-ok
-        span(data-bind="text: ' ' + $root.i18n('Опубликовать')")
+        span(data-bind="text: ' ' + $root.i18n('Publish')")
     // /ko
     //ko if: can.revision()
-    button.btn.btn-warning(type="button", data-bind="click: toRevision, attr: {disabled: exe(), title: $root.i18n('Отправить пользователю на доработку')}")
+    button.btn.btn-warning(type="button", data-bind="click: toRevision, attr: {disabled: exe(), title: $root.i18n('Send to the user for revision')}")
         span.glyphicon.glyphicon-check
-        span(data-bind="text: ' ' + $root.i18n('На доработку')")
+        span(data-bind="text: ' ' + $root.i18n('Send for revision')")
     // /ko
     //ko if: can.rereject()
     button.btn.btn-success(type="button", data-bind="click: rereject, attr: {disabled: exe()}")
         span.glyphicon.glyphicon-repeat
-        span(data-bind="text: ' ' + $root.i18n('Восстановить')")
+        span(data-bind="text: ' ' + $root.i18n('Restore')")
     // /ko
     //ko if: can.revoke()
-    button.btn.btn-danger(type="button", data-bind="click: revoke, attr: {disabled: exe(), title: $root.i18n('Отозвать эту фотографию, снять с возможной публикации')}")
+    button.btn.btn-danger(type="button", data-bind="click: revoke, attr: {disabled: exe(), title: $root.i18n('Revoke this photo, withdraw it from possible publication')}")
         span.glyphicon.glyphicon-remove
-        span(data-bind="text: ' ' + $root.i18n('Отозвать')")
+        span(data-bind="text: ' ' + $root.i18n('Revoke')")
     // /ko
     //ko if: can.reject()
-    button.btn.btn-danger(type="button", data-bind="click: reject, attr: {disabled: exe(), title: $root.i18n('Отклонить фотографию, снять с возможной публикации')}")
+    button.btn.btn-danger(type="button", data-bind="click: reject, attr: {disabled: exe(), title: $root.i18n('Reject this photo, withdraw it from possible publication')}")
         span.glyphicon.glyphicon-remove
-        span(data-bind="text: ' ' + $root.i18n('Отклонить')")
+        span(data-bind="text: ' ' + $root.i18n('Reject')")
     // /ko
     //ko if: can.activate()
     button.btn.btn-success(type="button", data-bind="click: toggleDisable, attr: {disabled: exe()}")
         span.glyphicon.glyphicon-ok-sign
-        span(data-bind="text: ' ' + $root.i18n('Активировать')")
+        span(data-bind="text: ' ' + $root.i18n('Activate')")
     // /ko
     //ko if: can.deactivate()
     button.btn.btn-warning(type="button", data-bind="click: toggleDisable, attr: {disabled: exe()}")
         span.glyphicon.glyphicon-exclamation-sign
-        span(data-bind="text: ' ' + $root.i18n('Деактивировать')")
+        span(data-bind="text: ' ' + $root.i18n('Deactivate')")
     // /ko
     //ko if: can.remove()
     button.btn.btn-danger(type="button", data-bind="click: remove, attr: {disabled: exe()}")
         span.glyphicon.glyphicon-trash
-        span(data-bind="text: ' ' + $root.i18n('Удалить')")
+        span(data-bind="text: ' ' + $root.i18n('Delete')")
     // /ko
     //ko if: can.restore()
     button.btn.btn-success(type="button", data-bind="click: restore, attr: {disabled: exe()}")
         span.glyphicon.glyphicon-repeat
-        span(data-bind="text: ' ' + $root.i18n('Восстановить')")
+        span(data-bind="text: ' ' + $root.i18n('Restore')")
     // /ko
     | </script>
 
@@ -178,12 +178,12 @@
     | <script id="photoActionsEdit" type="text/html">
     button.btn.btn-success(type="button", data-bind="click: editSave, attr: {disabled: exe()}")
         span.glyphicon.glyphicon-ok
-        span(data-bind="text: ' ' + $root.i18n('Сохранить')")
+        span(data-bind="text: ' ' + $root.i18n('Save')")
     button.btn.btn-danger(type="button", data-bind="click: editCancel, attr: {disabled: exe()}")
         span.glyphicon.glyphicon-remove
-        span(data-bind="text: ' ' + $root.i18n('Отмена редактирования')")
+        span(data-bind="text: ' ' + $root.i18n('Cancel editing')")
     .typeSelect
-        select.form-control(name="pDir", data-bind="css: {empty: !p.type()}, options: fields.types, value: p.type, optionsText: function(item) {return $root.i18n(fields.typeVals[item])}, optionsCaption: $root.i18n('Тип изображения...')")
+        select.form-control(name="pDir", data-bind="css: {empty: !p.type()}, options: fields.types, value: p.type, optionsText: function(item) {return $root.i18n(fields.typeVals[item])}, optionsCaption: $root.i18n('Image type...')")
     | </script>
 
     //-DATA VIEW MODE
@@ -234,7 +234,7 @@
                     //ko if: $parent.IAdmin() || $data.phc() || $data.pac() || $data.cc()
                     .tltp.tltp-top.tltp-touch.tltp-animate-opacity.rytltp(data-bind="css: {'tltp-hotizontal-left': !$index()}")
                         //ko if: $parent.IAdmin()
-                        .region-type-stat.region-type-stat-clickable(style="margin:1px 0;padding-right:4px;border-right:1px solid #e8e8e8;", data-bind="attr: {title: $root.i18n('Перейти в редактирование региона')}")
+                        .region-type-stat.region-type-stat-clickable(style="margin:1px 0;padding-right:4px;border-right:1px solid #e8e8e8;", data-bind="attr: {title: $root.i18n('Edit region')}")
                             a(data-bind="attr: {href: '/admin/region/' + $data.cid()}", style="color:orange;")
                                 span.glyphicon.glyphicon-pencil
                         // /ko
@@ -260,7 +260,7 @@
             //ko if: !p.geo()
             =', '
             .region
-                a(data-bind="text: $root.i18n('Где это?'), attr: {href: '/ps?f=geo!0_r!' + p.regions()[p.regions().length-1].cid()}", style="color: #BEA265;")
+                a(data-bind="text: $root.i18n('Where is this?'), attr: {href: '/ps?f=geo!0_r!' + p.regions()[p.regions().length-1].cid()}", style="color: #BEA265;")
             // /ko
             // /ko
         //ko if: p.desc().length
@@ -297,18 +297,18 @@
     //ko if: p.cdate
     .infoBlock
         .info
-            a(href="?history=1", data-replace="true", data-bind="css: {changed: p.changed()}, text: $root.i18n('Последнее изменение') + ' ' + fDateIn(p.cdate())")
+            a(href="?history=1", data-replace="true", data-bind="css: {changed: p.changed()}, text: $root.i18n('Last edit') + ' ' + fDateIn(p.cdate())")
     // /ko
 
-    //-a.help.visible-lg(href="http://start.planeta.ru/campaigns/1694", target="_blank", title="Узнайте как помочь проекту")
-        img.helpimg(src="/img/misc/fund2/bnline.jpg", title="Помогите PastVu")
+    //-a.help.visible-lg(href="http://start.planeta.ru/campaigns/1694", target="_blank", title="Learn how to help the project")
+        img.helpimg(src="/img/misc/fund2/bnline.jpg", title="Help PastVu")
     | </script>
 
     //-EDIT MODE PHOTO
     | <script id="photoEdit" type="text/html">
     .fieldWrap.mandatory(data-bind="css: {hasContent: p.title().length}")
         label(for="pName", data-bind="text: $root.i18n(fields.title)")
-        input.form-control.title(name="pName", type="text", maxlength="120", data-bind="value: p.title, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}, attr: {placeholder: $root.i18n('Введите название фотографии')}")
+        input.form-control.title(name="pName", type="text", maxlength="120", data-bind="value: p.title, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}, attr: {placeholder: $root.i18n('Enter photo title')}")
     .fieldWrap.asrow
         .yearsEdit.mandatory(data-bind="css: {hasContent: typeof p.year() === 'number'}")
             span.infoName(data-bind="text: $root.i18n(fields.y) + ':'")
@@ -327,40 +327,40 @@
                 // /ko
             // /ko
             //ko if: !p.regions().length
-            .region.err(data-bind="text: $root.i18n('Не привязан')")
+            .region.err(data-bind="text: $root.i18n('Not linked')")
             // /ko
             //ko if: !p.geo()
-            span.regionEdit(data-bind="click: regionSelect, text: '[' + $root.i18n('Выбрать') + ']'")
+            span.regionEdit(data-bind="click: regionSelect, text: '[' + $root.i18n('Select') + ']'")
             // /ko
     .fieldWrap(data-bind="css: {hasContent: p.desc().length}")
         label(for="pDesc", data-bind="text: $root.i18n(fields.desc)")
-        textarea.form-control.descInput(name="pDesc", wrap="soft", maxlength="4000", data-bind="value: p.desc, valueUpdate: 'afterkeydown', event: {focus: descFocus, blur: descBlur}, attr: {placeholder: $root.i18n('Опишите фотографию')}")
+        textarea.form-control.descInput(name="pDesc", wrap="soft", maxlength="4000", data-bind="value: p.desc, valueUpdate: 'afterkeydown', event: {focus: descFocus, blur: descBlur}, attr: {placeholder: $root.i18n('Describe the photo')}")
     .fieldWrap(data-bind="css: {hasContent: p.author().length}")
         label(for="pAuthor", data-bind="text: $root.i18n(fields.author)")
-        input.form-control(name="pAuthor", type="text", maxlength="250", data-bind="value: p.author, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}, attr: {placeholder: $root.i18n('Автор фотографии')}")
+        input.form-control(name="pAuthor", type="text", maxlength="250", data-bind="value: p.author, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}, attr: {placeholder: $root.i18n('Photo author')}")
     .fieldWrap(data-bind="css: {hasContent: p.source().length}")
         label(for="pSource", data-bind="text: $root.i18n(fields.source)")
-        input.form-control(name="pSource", type="text", maxlength="250", data-bind="value: p.source, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}, attr: {placeholder: $root.i18n('Обязательно укажите источник фотографии (ссылка, книга, скан фото из личного архива и т.д.)')}")
+        input.form-control(name="pSource", type="text", maxlength="250", data-bind="value: p.source, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}, attr: {placeholder: $root.i18n('You must specify the photo source (a link, a book, a scan of a photo from a personal archive, etc.)')}")
     .fieldWrap(data-bind="css: {hasContent: p.address().length}")
         label(for="pAddr", data-bind="text: $root.i18n(fields.address)")
-        input.form-control(name="pAddr", type="text", maxlength="250", data-bind="value: p.address, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}, attr: {placeholder: $root.i18n('Вы знаете адрес точки съемки?')}")
+        input.form-control(name="pAddr", type="text", maxlength="250", data-bind="value: p.address, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}, attr: {placeholder: $root.i18n('Do you know the shooting location address?')}")
     .fieldWrap(data-bind="css: {hasContent: !!p.dir()}")
         label(for="pDir", data-bind="text: $root.i18n(fields.dir)")
-        select.form-control.direction(name="pDir", data-bind="css: {empty: !p.dir()}, options: fields.dirValsArr, value: p.dir, optionsCaption: $root.i18n('Выберите направление съемки...'), optionsAfterRender: setDirOptionHTML")
+        select.form-control.direction(name="pDir", data-bind="css: {empty: !p.dir()}, options: fields.dirValsArr, value: p.dir, optionsCaption: $root.i18n('Choose shooting direction...'), optionsAfterRender: setDirOptionHTML")
     //ko if: can.nowaterchange()
     div(style="display:table;margin:8px 0 -6px;")
         div(style="display:table-cell;padding-right:5px;")
-            span(data-bind="text: $root.i18n('Разрешить пользователю на этой фотографии управлять подписью на вотермарке и скачиванием оригинала (текущая глобальная настройка настройка для пользователя - ')")
-            strong(data-bind="text: $root.i18n(p.user.nowaterchange() ? 'Нет' : 'Да')")
+            span(data-bind="text: $root.i18n('Allow the user, on this photo, to control the watermark signature and original-download settings (current global setting for the user — ')")
+            strong(data-bind="text: $root.i18n(p.user.nowaterchange() ? 'No' : 'Yes')")
             | )
         .btn-group.btn-group-sm(style="display:table-cell;width:65px;vertical-align:top;")
-            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !p.nowaterchange()}, click: nowaterchangeChange, text: $root.i18n('Да')")
-            button.btn.btn-primary.no(type="button", data-bind="css: {active: !!p.nowaterchange()}, click: nowaterchangeChange, text: $root.i18n('Нет')")
+            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !p.nowaterchange()}, click: nowaterchangeChange, text: $root.i18n('Yes')")
+            button.btn.btn-primary.no(type="button", data-bind="css: {active: !!p.nowaterchange()}, click: nowaterchangeChange, text: $root.i18n('No')")
     // /ko
     //ko if: !can.watersign()
     .text-danger(style="margin:8px 0 -8px;")
         span.glyphicon.glyphicon-warning-sign
-        span(data-bind="text: ' ' + $root.i18n('Администратор запретил вам менять настройки подписи на этом изображении')")
+        span(data-bind="text: ' ' + $root.i18n('The administrator has disabled changing the signature settings on this image')")
     // /ko
     .watersingcontrol(data-bind="css: {deny: !can.watersign()}")
         .fieldWrap.asrow: span.panel-block(style="padding-bottom:3px")
@@ -376,8 +376,8 @@
             div(style="margin-top:7px;")
                 span(data-bind="text: $root.i18n(fields.watersign.option) + ': '")
                 .btn-group.btn-group-sm.disabled
-                    button.btn.btn-primary.yes(type="button", data-bind="attr: {disabled: !p.watersignIndividual()}, css: {active: watersignOption()!==false}, click: watersignOptionChange, text: $root.i18n('Да')")
-                    button.btn.btn-primary.no(type="button", data-bind="attr: {disabled: !p.watersignIndividual()}, css: {active: watersignOption()===false}, click: watersignOptionChange, text: $root.i18n('Нет')")
+                    button.btn.btn-primary.yes(type="button", data-bind="attr: {disabled: !p.watersignIndividual()}, css: {active: watersignOption()!==false}, click: watersignOptionChange, text: $root.i18n('Yes')")
+                    button.btn.btn-primary.no(type="button", data-bind="attr: {disabled: !p.watersignIndividual()}, css: {active: watersignOption()===false}, click: watersignOptionChange, text: $root.i18n('No')")
                 // ko if: !!watersignOption()
                 .radio(style="margin-top:8px"): label
                     input(type="radio", name="watersign", value="true", data-bind="attr: {disabled: !p.watersignIndividual()}, checked: watersignOption")
@@ -391,14 +391,14 @@
                 // /ko
             p.text-muted(style="margin:3px 0;padding-left:8px;line-height:1.1;font-size:11px;")
                 sup(style="margin-left:-8px;") 1
-                span(data-bind="text: ' ' + $root.i18n('Указанная настройка по умолчанию применяется ко всем вашим изображениям, на которых не указана индивидуальная.')")
+                span(data-bind="text: ' ' + $root.i18n('The setting shown above applies by default to all your images that have no per-image override.')")
                 = " "
                 span(style="display:inline-block;")
-                    span(data-bind="text: $root.i18n('Изменить её можно на странице') + ' '")
-                    a(target="_blank", data-bind="attr: {href: '/u/' + p.user.login() + '/settings'}, text: $root.i18n('настроек')")
+                    span(data-bind="text: $root.i18n('You can change it on the page') + ' '")
+                    a(target="_blank", data-bind="attr: {href: '/u/' + p.user.login() + '/settings'}, text: $root.i18n('of settings')")
             p.text-muted(style="margin-bottom:0;padding-left:8px;line-height:1.1;font-size:11px;")
                 sup(style="margin-left:-8px;") *
-                span(data-bind="text: ' ' + $root.i18n('При изменении настройки подписи, изображение будет отправлено в очередь на обработку, что может занять некоторое время')")
+                span(data-bind="text: ' ' + $root.i18n('When the signature setting changes, the image is queued for processing, which may take some time')")
 
         .fieldWrap.asrow: span.panel-block(style="padding-bottom:3px")
             span.infoName(data-bind="text: $root.i18n(fields.downloadOrigin.title) + ':'")
@@ -413,18 +413,18 @@
             div(style="margin-top:7px;")
                 span(data-bind="text: $root.i18n(fields.downloadOrigin.option) + ': '")
                 .btn-group.btn-group-sm.disabled
-                    button.btn.btn-primary.yes(type="button", data-bind="attr: {disabled: !p.disallowDownloadOriginIndividual() || watersignOption()===false}, css: {active: !disallowDownloadOrigin()}, click: downloadOriginChange, text: $root.i18n('Да')")
-                    button.btn.btn-primary.no(type="button", data-bind="attr: {disabled: !p.disallowDownloadOriginIndividual()|| watersignOption()===false}, css: {active: disallowDownloadOrigin()}, click: downloadOriginChange, text: $root.i18n('Нет')")
+                    button.btn.btn-primary.yes(type="button", data-bind="attr: {disabled: !p.disallowDownloadOriginIndividual() || watersignOption()===false}, css: {active: !disallowDownloadOrigin()}, click: downloadOriginChange, text: $root.i18n('Yes')")
+                    button.btn.btn-primary.no(type="button", data-bind="attr: {disabled: !p.disallowDownloadOriginIndividual()|| watersignOption()===false}, css: {active: disallowDownloadOrigin()}, click: downloadOriginChange, text: $root.i18n('No')")
             p.text-muted(style="margin-bottom:0;padding-left:8px;line-height:1.1;font-size:11px;")
                 sup(style="margin-left:-8px;") *
-                span(data-bind="text: ' ' + $root.i18n('Запретить скачивать оригинал можно только в случае наличия подписи на вотермарке изображения')")
+                span(data-bind="text: ' ' + $root.i18n('Original downloads can only be disallowed when the image has a watermark signature')")
             p.text-muted(style="margin:3px 0;padding-left:8px;line-height:1.1;font-size:11px;")
                 sup(style="margin-left:-8px;") 1
-                span(data-bind="text: ' ' + $root.i18n('Указанная настройка по умолчанию применяется ко всем вашим изображениям, на которых не указана индивидуальная.')")
+                span(data-bind="text: ' ' + $root.i18n('The setting shown above applies by default to all your images that have no per-image override.')")
                 = " "
                 span(style="display:inline-block;")
-                    span(data-bind="text: $root.i18n('Изменить её можно на странице') + ' '")
-                    a(target="_blank", data-bind="attr: {href: '/u/' + p.user.login() + '/settings'}, text: $root.i18n('настроек')")
+                    span(data-bind="text: $root.i18n('You can change it on the page') + ' '")
+                    a(target="_blank", data-bind="attr: {href: '/u/' + p.user.login() + '/settings'}, text: $root.i18n('of settings')")
     .spanner
     | </script>
 
@@ -433,7 +433,7 @@
     | <script id="paintingEdit" type="text/html">
     .fieldWrap.mandatory(data-bind="css: {hasContent: p.title().length}")
         label(for="pName", data-bind="text: $root.i18n(fields.painting.title)")
-        input.form-control.title(name="pName", type="text", maxlength="120", data-bind="value: p.title, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}, attr: {placeholder: $root.i18n('Введите название')}")
+        input.form-control.title(name="pName", type="text", maxlength="120", data-bind="value: p.title, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}, attr: {placeholder: $root.i18n('Enter title')}")
     .fieldWrap.asrow
         .yearsEdit.mandatory(data-bind="css: {hasContent: typeof p.year() === 'number'}")
             span.infoName(data-bind="text: $root.i18n(fields.y) + ':'")
@@ -452,37 +452,37 @@
                 // /ko
             // /ko
             //ko if: !p.regions().length
-            .region.err(data-bind="text: $root.i18n('Не привязан')")
+            .region.err(data-bind="text: $root.i18n('Not linked')")
             // /ko
             //ko if: !p.geo()
-            span.regionEdit(data-bind="click: regionSelect, text: '[' + $root.i18n('Выбрать') + ']'")
+            span.regionEdit(data-bind="click: regionSelect, text: '[' + $root.i18n('Select') + ']'")
             // /ko
     .fieldWrap(data-bind="css: {hasContent: p.desc().length}")
         label(for="pDesc", data-bind="text: $root.i18n(fields.desc)")
-        textarea.form-control.descInput(name="pDesc", wrap="soft", maxlength="4000", data-bind="value: p.desc, valueUpdate: 'afterkeydown', event: {focus: descFocus, blur: descBlur}, attr: {placeholder: $root.i18n('Опишите произведение')}")
+        textarea.form-control.descInput(name="pDesc", wrap="soft", maxlength="4000", data-bind="value: p.desc, valueUpdate: 'afterkeydown', event: {focus: descFocus, blur: descBlur}, attr: {placeholder: $root.i18n('Describe the artwork')}")
     .fieldWrap(data-bind="css: {hasContent: p.author().length}")
         label(for="pAuthor", data-bind="text: $root.i18n(fields.author)")
-        input.form-control(name="pAuthor", type="text", maxlength="250", data-bind="value: p.author, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}, attr: {placeholder: $root.i18n('Автор')}")
+        input.form-control(name="pAuthor", type="text", maxlength="250", data-bind="value: p.author, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}, attr: {placeholder: $root.i18n('Author')}")
     .fieldWrap(data-bind="css: {hasContent: p.source().length}")
         label(for="pSource", data-bind="text: $root.i18n(fields.source)")
-        input.form-control(name="pSource", type="text", maxlength="250", data-bind="value: p.source, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}, attr: {placeholder: $root.i18n('Обязательно укажите источник изображения (ссылка, книга, скан фото из личного архива и т.д.)')}")
+        input.form-control(name="pSource", type="text", maxlength="250", data-bind="value: p.source, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}, attr: {placeholder: $root.i18n('You must specify the image source (a link, a book, a scan of a photo from a personal archive, etc.)')}")
     .fieldWrap(data-bind="css: {hasContent: !!p.dir()}")
         label(for="pDir", data-bind="text: $root.i18n(fields.dir)")
-        select.form-control.direction(name="pDir", data-bind="css: {empty: !p.dir()}, options: fields.dirValsArr, value: p.dir, optionsCaption: $root.i18n('Выберите направление вида...'), optionsAfterRender: setDirOptionHTML")
+        select.form-control.direction(name="pDir", data-bind="css: {empty: !p.dir()}, options: fields.dirValsArr, value: p.dir, optionsCaption: $root.i18n('Choose viewing direction...'), optionsAfterRender: setDirOptionHTML")
     //ko if: can.nowaterchange()
     div(style="display:table;margin:8px 0 -6px;")
         div(style="display:table-cell;padding-right:5px;")
-            span(data-bind="text: $root.i18n('Разрешить пользователю на этом изображении управлять подписью на вотермарке и скачиванием оригинала (текущая глобальная настройка настройка для пользователя - ')")
-            strong(data-bind="text: $root.i18n(p.user.nowaterchange() ? 'Нет' : 'Да')")
+            span(data-bind="text: $root.i18n('Allow the user, on this image, to control the watermark signature and original-download settings (current global setting for the user — ')")
+            strong(data-bind="text: $root.i18n(p.user.nowaterchange() ? 'No' : 'Yes')")
             | )
         .btn-group.btn-group-sm(style="display:table-cell;width:65px;vertical-align:top;")
-            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !p.nowaterchange()}, click: nowaterchangeChange, text: $root.i18n('Да')")
-            button.btn.btn-primary.no(type="button", data-bind="css: {active: !!p.nowaterchange()}, click: nowaterchangeChange, text: $root.i18n('Нет')")
+            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !p.nowaterchange()}, click: nowaterchangeChange, text: $root.i18n('Yes')")
+            button.btn.btn-primary.no(type="button", data-bind="css: {active: !!p.nowaterchange()}, click: nowaterchangeChange, text: $root.i18n('No')")
     // /ko
     //ko if: !can.watersign()
     .text-danger(style="margin:8px 0 -8px;")
         span.glyphicon.glyphicon-warning-sign
-        span(data-bind="text: ' ' + $root.i18n('Администратор запретил вам менять настройки подписи на этом изображении')")
+        span(data-bind="text: ' ' + $root.i18n('The administrator has disabled changing the signature settings on this image')")
     // /ko
     .watersingcontrol(data-bind="css: {deny: !can.watersign()}")
         .fieldWrap.asrow: span.panel-block(style="padding-bottom:3px")
@@ -498,8 +498,8 @@
             div(style="margin-top:7px;")
                 span(data-bind="text: $root.i18n(fields.watersign.option) + ': '")
                 .btn-group.btn-group-sm.disabled
-                    button.btn.btn-primary.yes(type="button", data-bind="attr: {disabled: !p.watersignIndividual()}, css: {active: watersignOption()!==false}, click: watersignOptionChange, text: $root.i18n('Да')")
-                    button.btn.btn-primary.no(type="button", data-bind="attr: {disabled: !p.watersignIndividual()}, css: {active: watersignOption()===false}, click: watersignOptionChange, text: $root.i18n('Нет')")
+                    button.btn.btn-primary.yes(type="button", data-bind="attr: {disabled: !p.watersignIndividual()}, css: {active: watersignOption()!==false}, click: watersignOptionChange, text: $root.i18n('Yes')")
+                    button.btn.btn-primary.no(type="button", data-bind="attr: {disabled: !p.watersignIndividual()}, css: {active: watersignOption()===false}, click: watersignOptionChange, text: $root.i18n('No')")
                 // ko if: !!watersignOption()
                 .radio(style="margin-top:8px"): label
                     input(type="radio", name="watersign", value="true", data-bind="attr: {disabled: !p.watersignIndividual()}, checked: watersignOption")
@@ -513,14 +513,14 @@
                 // /ko
             p.text-muted(style="margin:3px 0;padding-left:8px;line-height:1.1;font-size:11px;")
                 sup(style="margin-left:-8px;") 1
-                span(data-bind="text: ' ' + $root.i18n('Указанная настройка по умолчанию применяется ко всем вашим изображениям, на которых не указана индивидуальная.')")
+                span(data-bind="text: ' ' + $root.i18n('The setting shown above applies by default to all your images that have no per-image override.')")
                 = " "
                 span(style="display:inline-block;")
-                    span(data-bind="text: $root.i18n('Изменить её можно на странице') + ' '")
-                    a(target="_blank", data-bind="attr: {href: '/u/' + p.user.login() + '/settings'}, text: $root.i18n('настроек')")
+                    span(data-bind="text: $root.i18n('You can change it on the page') + ' '")
+                    a(target="_blank", data-bind="attr: {href: '/u/' + p.user.login() + '/settings'}, text: $root.i18n('of settings')")
             p.text-muted(style="margin-bottom:0;padding-left:8px;line-height:1.1;font-size:11px;")
                 sup(style="margin-left:-8px;") *
-                span(data-bind="text: ' ' + $root.i18n('При изменении настройки подписи, изображение будет отправлено в очередь на обработку, что может занять некоторое время')")
+                span(data-bind="text: ' ' + $root.i18n('When the signature setting changes, the image is queued for processing, which may take some time')")
 
         .fieldWrap.asrow: span.panel-block(style="padding-bottom:3px")
             span.infoName(data-bind="text: $root.i18n(fields.downloadOrigin.title) + ':'")
@@ -535,17 +535,17 @@
             div(style="margin-top:7px;")
                 span(data-bind="text: $root.i18n(fields.downloadOrigin.option) + ': '")
                 .btn-group.btn-group-sm.disabled
-                    button.btn.btn-primary.yes(type="button", data-bind="attr: {disabled: !p.disallowDownloadOriginIndividual() || watersignOption()===false}, css: {active: !disallowDownloadOrigin()}, click: downloadOriginChange, text: $root.i18n('Да')")
-                    button.btn.btn-primary.no(type="button", data-bind="attr: {disabled: !p.disallowDownloadOriginIndividual()|| watersignOption()===false}, css: {active: disallowDownloadOrigin()}, click: downloadOriginChange, text: $root.i18n('Нет')")
+                    button.btn.btn-primary.yes(type="button", data-bind="attr: {disabled: !p.disallowDownloadOriginIndividual() || watersignOption()===false}, css: {active: !disallowDownloadOrigin()}, click: downloadOriginChange, text: $root.i18n('Yes')")
+                    button.btn.btn-primary.no(type="button", data-bind="attr: {disabled: !p.disallowDownloadOriginIndividual()|| watersignOption()===false}, css: {active: disallowDownloadOrigin()}, click: downloadOriginChange, text: $root.i18n('No')")
             p.text-muted(style="margin-bottom:0;padding-left:8px;line-height:1.1;font-size:11px;")
                 sup(style="margin-left:-8px;") *
-                span(data-bind="text: ' ' + $root.i18n('Запретить скачивать оригинал можно только в случае наличия подписи на вотермарке')")
+                span(data-bind="text: ' ' + $root.i18n('Original downloads can only be disallowed when the watermark has a signature')")
             p.text-muted(style="margin:3px 0;padding-left:8px;line-height:1.1;font-size:11px;")
                 sup(style="margin-left:-8px;") 1
-                span(data-bind="text: ' ' + $root.i18n('Указанная настройка по умолчанию применяется ко всем вашим изображениям, на которых не указана индивидуальная.')")
+                span(data-bind="text: ' ' + $root.i18n('The setting shown above applies by default to all your images that have no per-image override.')")
                 = " "
                 span(style="display:inline-block;")
-                    span(data-bind="text: $root.i18n('Изменить её можно на странице') + ' '")
-                    a(target="_blank", data-bind="attr: {href: '/u/' + p.user.login() + '/settings'}, text: $root.i18n('настроек')")
+                    span(data-bind="text: $root.i18n('You can change it on the page') + ' '")
+                    a(target="_blank", data-bind="attr: {href: '/u/' + p.user.login() + '/settings'}, text: $root.i18n('of settings')")
     .spanner
     | </script>

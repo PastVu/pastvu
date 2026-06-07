@@ -380,7 +380,7 @@ define([
                             },
                             series: [
                                 {
-                                    name: i18n('Фотографий в очереди'),
+                                    name: i18n('Photos in queue'),
                                     data: self.conveyerLengthData,
                                     tooltip: {
                                         valueDecimals: 0,
@@ -394,7 +394,7 @@ define([
                             },
                             series: [
                                 {
-                                    name: i18n('Фотографий конвертированно'),
+                                    name: i18n('Photos converted'),
                                     data: self.conveyerConvertData,
                                     tooltip: {
                                         valueDecimals: 0,
@@ -434,13 +434,13 @@ define([
             this.exe(true);
 
             noties.confirm({
-                message: i18n('Конвейер будет очищен. Подтвердить операцию?'),
+                message: i18n('The pipeline will be cleared. Confirm?'),
                 onOk: function (confirmer) {
                     confirmer.disable();
 
                     socket.run('converter.conveyerClear', { value: true }, true)
                         .then(function (data) {
-                            confirmer.success(data.message, i18n('Закрыть'), null, function () {
+                            confirmer.success(data.message, i18n('Close'), null, function () {
                                 self.exe(false);
                                 self.statFast();
                             });

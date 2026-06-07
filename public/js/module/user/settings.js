@@ -220,8 +220,8 @@ define([
 
                     noties.alert({
                         message: warning ?
-                            i18n('Ни одной фотографии не отправлено на конвертацию') :
-                            i18n('{{count}} фотографий отправлено на повторную конвертацию', { count: result.updated }),
+                            i18n('No photos were sent for conversion') :
+                            i18n('{{count}} photos sent for reconversion', { count: result.updated }),
                         type: warning ? 'warning' : 'success',
                         layout: 'topRight',
                         timeout: 4000,
@@ -246,10 +246,10 @@ define([
 
             noties.confirm({
                 message: region ?
-                    i18n('Вы уверены что хотите сбросить индивидуальные настройки подписи в фотографиях указанного региона?') :
-                    i18n('Вы уверены что хотите сбросить индивидуальные настройки подписи в фотографиях?'),
-                okText: i18n('Да, сбросить'),
-                cancelText: i18n('Отменить'),
+                    i18n('Are you sure you want to reset individual signature settings on photos in the specified region?') :
+                    i18n('Are you sure you want to reset individual signature settings on your photos?'),
+                okText: i18n('Yes, reset'),
+                cancelText: i18n('Cancel'),
                 onOk: function (confirmer) {
                     socket.run('photo.convertByUser', { login: self.u.login(), r: region, resetIndividual: true }, true)
                         .then(function (result) {
@@ -257,8 +257,8 @@ define([
 
                             noties.alert({
                                 message: warning ?
-                                    i18n('Не найдено ни одной фотографии с индивидуальными настройками подписи') :
-                                    i18n('У {{count}} фотографий сброшены индивидуальные настройки подписи и они отправлены на повторную конвертацию', { count: result.updated }),
+                                    i18n('No photos with individual signature settings were found') :
+                                    i18n('Individual signature settings were reset on {{count}} photos and they were sent for reconversion', { count: result.updated }),
                                 type: warning ? 'warning' : 'success',
                                 layout: 'topRight',
                                 timeout: 4000,
@@ -292,10 +292,10 @@ define([
 
             noties.confirm({
                 message: region ?
-                    i18n('Вы уверены что хотите сбросить индивидуальные настройки скачивания оргиналов фотографий указанного региона?') :
-                    i18n('Вы уверены что хотите сбросить индивидуальные настройки скачивания оргиналов фотографий?'),
-                okText: i18n('Да, сбросить'),
-                cancelText: i18n('Отменить'),
+                    i18n('Are you sure you want to reset individual original-download settings on photos in the specified region?') :
+                    i18n('Are you sure you want to reset individual original-download settings on your photos?'),
+                okText: i18n('Yes, reset'),
+                cancelText: i18n('Cancel'),
                 onOk: function (confirmer) {
                     socket.run('photo.resetIndividualDownloadOrigin', { login: self.u.login(), r: region }, true)
                         .then(function (result) {
@@ -303,8 +303,8 @@ define([
 
                             noties.alert({
                                 message: warning ?
-                                    i18n('Не найдено ни одной фотографии с индивидуальными настройками скачивания') :
-                                    i18n('У {{count}} фотографий сброшены индивидуальные настройки скачивания', { count: result.updated }),
+                                    i18n('No photos with individual download settings were found') :
+                                    i18n('Individual download settings were reset on {{count}} photos', { count: result.updated }),
                                 type: warning ? 'warning' : 'success',
                                 layout: 'topRight',
                                 timeout: 4000,
@@ -456,7 +456,7 @@ define([
         },
         regionHomeSelect: function () {
             if (!this.regHomeselectVM) {
-                this.regionSelect([koMapping.toJS(this.u.regionHome)], 1, 1, i18n('Выбор домашнего региона'),
+                this.regionSelect([koMapping.toJS(this.u.regionHome)], 1, 1, i18n('Pick home region'),
                     function (vm) {
                         this.regHomeselectVM = vm;
                     },
@@ -465,7 +465,7 @@ define([
 
                         if (regions.length !== 1) {
                             return noties.alert({
-                                message: i18n('Необходимо выбрать один регион'),
+                                message: i18n('You must select exactly one region'),
                                 type: 'warning',
                                 timeout: 4000,
                                 ok: true,
@@ -490,7 +490,7 @@ define([
         },
         regionFilterSelect: function () {
             if (!this.regselectVM) {
-                this.regionSelect(koMapping.toJS(this.u.regions), 0, 10, i18n('Изменение списка регионов для фильтрации по умолчанию'),
+                this.regionSelect(koMapping.toJS(this.u.regions), 0, 10, i18n('Edit default filter region list'),
                     function (vm) {
                         this.regselectVM = vm;
                     },
@@ -499,7 +499,7 @@ define([
 
                         if (regions.length > 10) {
                             return noties.alert({
-                                message: i18n('Допускается выбирать до 10 регионов'),
+                                message: i18n('Up to 10 regions may be selected'),
                                 type: 'warning',
                                 timeout: 4000,
                                 ok: true,
@@ -538,16 +538,16 @@ define([
                             maxWidthRatio: 0.95,
                             fullHeight: true,
                             withScroll: true,
-                            offIcon: { text: i18n('Отмена'), click: onCancel, ctx: ctx },
+                            offIcon: { text: i18n('Cancel'), click: onCancel, ctx: ctx },
                             btns: [
                                 {
                                     css: 'btn-success',
-                                    text: i18n('Применить'),
+                                    text: i18n('Apply'),
                                     glyphicon: 'glyphicon-ok',
                                     click: onApply,
                                     ctx: ctx,
                                 },
-                                { css: 'btn-warning', text: i18n('Отмена'), click: onCancel, ctx: ctx },
+                                { css: 'btn-warning', text: i18n('Cancel'), click: onCancel, ctx: ctx },
                             ],
                         },
                         callback: function (vm) {

@@ -442,7 +442,7 @@ async function sendUserNotice(userId) {
         await sendMail({
             sender: 'noreply',
             receiver: { alias: String(user.disp), email: user.email },
-            subject: t('Новое уведомление'),
+            subject: t('New notification'),
             head: true,
             body: noticeTpl({
                 user,
@@ -450,7 +450,7 @@ async function sendUserNotice(userId) {
                 news: newsResult,
                 photos: photosResult,
                 username: String(user.disp),
-                greeting: t('Уведомление о событиях на PastVu', { ns: 'mail' }),
+                greeting: t('PastVu activity notification', { ns: 'mail' }),
                 t,
             }),
             text: t('comments_new', { count: totalNewestComments, ns: 'mail' }),

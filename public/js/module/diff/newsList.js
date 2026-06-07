@@ -46,7 +46,7 @@ define([
         },
         routeHandler: function () {
             this.getAllNews(function (/*data*/) {
-                Utils.title.setTitle({ title: i18n('Новости') });
+                Utils.title.setTitle({ title: i18n('News') });
                 gtag('event', 'page_view');
             });
         },

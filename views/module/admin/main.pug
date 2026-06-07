@@ -1,5 +1,5 @@
 .mainAdmin(data-bind="with: repository[M!M]")
-    h6(data-bind="text: $root.i18n('Текущие соединения')")
+    h6(data-bind="text: $root.i18n('Current connections')")
     div
         span.stateRate
             .rate(data-bind="text: onlines.users()")
@@ -7,7 +7,7 @@
             .rate(data-bind="text: (onlines.all() - onlines.users())")
             | /
             .rate(data-bind="text: onlines.all()")
-        span.stateDesc(data-bind="text: $root.i18n('Посетителей авторизованных/анонимных/всего')")
+        span.stateDesc(data-bind="text: $root.i18n('Visitors authenticated/anonymous/total')")
     div
         span.stateRate
             .rate(data-bind="text: onlines.sessUC()")
@@ -15,7 +15,7 @@
             .rate(data-bind="text: onlines.sessAC()")
             | /
             .rate(data-bind="text: (onlines.sessUC() + onlines.sessAC())")
-        span.stateDesc(data-bind="text: $root.i18n('Активных сессий авторизованных/анонимных/всего. С нулем соединений: [{{uz}}/{{az}}]. Без соединений: [{{un}}/{{an}}].', {uz: onlines.sessUZC(), az: onlines.sessAZC(), un: onlines.sessUNC(), an: onlines.sessANC()})")
+        span.stateDesc(data-bind="text: $root.i18n('Active sessions authenticated/anonymous/total. With zero connections: [{{uz}}/{{az}}]. Without connections: [{{un}}/{{an}}].', {uz: onlines.sessUZC(), az: onlines.sessAZC(), un: onlines.sessUNC(), an: onlines.sessANC()})")
 
     div
         span.stateRate
@@ -24,7 +24,7 @@
             .rate(data-bind="text: onlines.sessWCAC()")
             | /
             .rate(data-bind="text: (onlines.sessWCUC() + onlines.sessWCAC())")
-        span.stateDesc(data-bind="text: $root.i18n('Ожидающих сессий авторизованных/анонимных/всего')")
+        span.stateDesc(data-bind="text: $root.i18n('Pending sessions authenticated/anonymous/total')")
     div
         span.stateRate
             .rate(data-bind="text: onlines.sockUC()")
@@ -32,9 +32,9 @@
             .rate(data-bind="text: onlines.sockAC()")
             | /
             .rate(data-bind="text: (onlines.sockUC() + onlines.sockAC())")
-        span.stateDesc(data-bind="text: $root.i18n('Активных соединений авторизованных/анонимных/всего')")
+        span.stateDesc(data-bind="text: $root.i18n('Active connections authenticated/anonymous/total')")
     div
-        span.stateDesc(data-bind="text: $root.i18n('Хэши объектов пользователя в памяти:') + ' '")
+        span.stateDesc(data-bind="text: $root.i18n('In-memory user-object hashes:') + ' '")
         span.stateRate
             | usSid:
             .rate(data-bind="text: ' '+ onlines.cusSid()")
@@ -43,7 +43,7 @@
             | , usId:
             .rate(data-bind="text: ' '+ onlines.cusId()")
     div
-        span.stateDesc(data-bind="text: $root.i18n('Хэши сессий в памяти:') + ' '")
+        span.stateDesc(data-bind="text: $root.i18n('In-memory session hashes:') + ' '")
         span.stateRate
             | sessConnected:
             .rate(data-bind="text: ' '+ onlines.csessConnected()")
@@ -52,23 +52,23 @@
             | , sessWaitingSelect:
             .rate(data-bind="text: ' '+ onlines.csessWaitingSelect()")
     .desc
-        strong(data-bind="text: $root.i18n('Активная сессия')")
-        span(data-bind="text: ' ' + $root.i18n('- один браузер клиента с открытым pastvu хотябы на одной вкладке. Если есть с нулем соединений, значит закрытие соединения не очистило сессию (норма по нулям). Если есть без соединения, значит сессия проскочила в активную без установки реального соединения (норма по нулям).')")
+        strong(data-bind="text: $root.i18n('Active session')")
+        span(data-bind="text: ' ' + $root.i18n('- one client browser with PastVu open in at least one tab. Zero-connection entries mean a closed connection did not clear the session (zero is normal). Connection-less entries mean a session was promoted to active without ever establishing a real connection (zero is normal).')")
         br
-        strong(data-bind="text: $root.i18n('Ожидающая сессия')")
-        span(data-bind="text: ' ' + $root.i18n('- клиент, прошедший рукопожатие (handshake), но не установивший в дальнейшем реального соединения. Такая сессия удаляется через 5 минут, если соединение так и не будет установлено.')")
+        strong(data-bind="text: $root.i18n('Pending session')")
+        span(data-bind="text: ' ' + $root.i18n('- a client that completed the handshake but never established a real connection. Such sessions are dropped after 5 minutes if no connection arrives.')")
         br
-        strong(data-bind="text: $root.i18n('Активное соединение')")
-        span(data-bind="text: ' ' + $root.i18n('- каждая открытая клиентом вкладка активной сессии')")
+        strong(data-bind="text: $root.i18n('Active connection')")
+        span(data-bind="text: ' ' + $root.i18n('- each open client tab of an active session')")
         br
         br
-        span(data-bind="text: $root.i18n('В каждой сессии (браузере) клиента может быть несколько открытых соединений (вкладок)')")
+        span(data-bind="text: $root.i18n('Each client session (browser) can have several open connections (tabs)')")
         br
-        span(data-bind="text: $root.i18n('Пользователь, авторизованный (залогиненный) в нескольких браузерах одновременно, считается как один, но имеет несколько сессий, по количеству открытых браузеров. Поэтому \"активных сессий авторизованных\" может быть больше числа авторизованных.')")
+        span(data-bind="text: $root.i18n('A user authenticated (signed in) in several browsers at once counts as a single user but has multiple sessions, one per open browser. That is why \"active authenticated sessions\" can exceed the authenticated-user count.')")
     br
 
     //ko if: headers().length
-    h6(data-bind="text: $root.i18n('Заголовки АКТИВНЫХ сессий без соединений (при наличии):')")
+    h6(data-bind="text: $root.i18n('Headers of ACTIVE sessions without connections (if any):')")
     div(data-bind="foreach: headers")
         | -------
         .headers(data-bind="html: $data")
@@ -76,7 +76,7 @@
     // /ko
 
     //ko if: headersWC().length
-    h6(data-bind="text: $root.i18n('Заголовки ОЖИАЮЩИХ сессий без соединений (при наличии):')")
+    h6(data-bind="text: $root.i18n('Headers of PENDING sessions without connections (if any):')")
     div(data-bind="foreach: headersWC")
         | -------
         .headers(data-bind="html: $data")

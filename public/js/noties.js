@@ -32,7 +32,7 @@ define(['underscore', 'jquery', 'Utils', 'i18n'], function (_, $, Utils, i18n) {
     }
 
     function getErrorMessage(error) {
-        let message = i18n('Возникла ошибка');
+        let message = i18n('An error occurred');
 
         if (!_.isEmpty(error)) {
             if (_.isString(error)) {
@@ -41,7 +41,7 @@ define(['underscore', 'jquery', 'Utils', 'i18n'], function (_, $, Utils, i18n) {
                 message = _.get(error, 'message') || message;
 
                 if (error.rid && error.type !== 'NoticeError' && error.type !== 'InputError') {
-                    message += '<br><span style="color:#A7A7A7">' + i18n('Номер ошибки: {{rid}}', { rid: error.rid }) + '</span>';
+                    message += '<br><span style="color:#A7A7A7">' + i18n('Error ID: {{rid}}', { rid: error.rid }) + '</span>';
                 }
             }
         }
@@ -156,7 +156,7 @@ define(['underscore', 'jquery', 'Utils', 'i18n'], function (_, $, Utils, i18n) {
                     },
                 },
                 {
-                    addClass: cancelClass, text: params.cancelText || i18n('Отмена'),
+                    addClass: cancelClass, text: params.cancelText || i18n('Cancel'),
                     onClick: function ($noty) {
                         $noty.close();
 
@@ -252,7 +252,7 @@ define(['underscore', 'jquery', 'Utils', 'i18n'], function (_, $, Utils, i18n) {
         notyAlert({
             message: getErrorMessage(error),
             type: 'error', timeout: params.timeout || 120000,
-            ok: true, text: i18n('Закрыть'),
+            ok: true, text: i18n('Close'),
         });
     }
 

@@ -434,7 +434,7 @@ define([
                 // если зум изменился или уже был отправлен другой запрос на данные по зуму или
                 // текущий баунд уже успел выйти за пределы запрашиваемого
                 if (self.map.getZoom() !== data.z || self.startPendingAt !== data.startAt || !bound.intersects(self.calcBound)) {
-                    console.log('Полученные данные нового зума устарели');
+                    console.log('Received zoom data is stale');
 
                     return;
                 }
@@ -584,7 +584,7 @@ define([
             // Данные устарели и должны быть отброшены,
             // если текущий зум не равен запрашиваемомоу или текущий баунд уже успел выйти за пределы запрашиваемого
             if (self.map.getZoom() !== data.z || !bound.intersects(self.calcBound)) {
-                console.log('Полученные данные перемещения устарели');
+                console.log('Received pan data is stale');
 
                 return;
             }

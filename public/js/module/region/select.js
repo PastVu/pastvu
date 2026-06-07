@@ -331,7 +331,7 @@ define([
                     }
                 }
             } else {
-                $(e.relatedTarget).addClass('invalid').attr('title', i18n('Нет такого региона'));
+                $(e.relatedTarget).addClass('invalid').attr('title', i18n('No matching region'));
             }
         },
         //Событие удаления токена непосредственно из поля
@@ -363,7 +363,7 @@ define([
 
             if (this.checkBranchSelected(region)) {
                 noties.alert({
-                    message: i18n('Нельзя одновременно выбирать родительский и дочерний регионы'),
+                    message: i18n('You can\'t pick a parent and a child region at the same time'),
                     type: 'warning',
                     timeout: 4000,
                     ok: true,

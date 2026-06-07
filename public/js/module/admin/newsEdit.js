@@ -179,19 +179,19 @@ define([
         deleteNews: function () {
             if (this.news.ccount && this.news.ccount() > 0) {
                 noties.error({
-                    message: i18n('Новость содержит комментарии и не может быть удалена'),
+                    message: i18n('News item has comments and cannot be removed'),
                 });
             } else {
                 const cid = this.news.cid();
 
                 noties.confirm({
-                    message: i18n('Новость "{{title}}" будет удалена', { title: this.news.title() }),
+                    message: i18n('News item "{{title}}" will be removed', { title: this.news.title() }),
                     onOk: function (confirmer) {
                         confirmer.close();
                         socket.run('admin.deleteNews', { cid }, true)
                             .then(function () {
                                 noties.alert({
-                                    message: i18n('Новость удалена'),
+                                    message: i18n('News item removed'),
                                     type: 'success',
                                     layout: 'topRight',
                                 });
@@ -271,7 +271,7 @@ define([
             socket.run('admin.saveOrCreateNews', saveData, true)
                 .then(function (data) {
                     noties.alert({
-                        message: i18n('Сохранено'),
+                        message: i18n('Saved'),
                         type: 'success',
                         layout: 'topRight',
                     });

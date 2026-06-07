@@ -84,7 +84,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'globalVM', 'i18n'
             const descmax = selected.desc.max || 1000;
 
             if (desc.length < descmin || desc.length > descmax) {
-                this.errMsg(i18n('Длина описания должна быть в пределах {{min}} - {{max}} символов', { min: descmin, max: descmax }));
+                this.errMsg(i18n('Description length must be {{min}} - {{max}} characters', { min: descmin, max: descmax }));
 
                 return false;
             }

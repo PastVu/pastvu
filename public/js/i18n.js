@@ -13,12 +13,12 @@ define(['i18next', 'text!./lang/i18n.en.json', 'text!./lang/i18n.ru.json'], func
     // template), not from Params, because Params depends on `socket!` and
     // i18n is loaded from socket.js itself — going through Params would
     // create a circular dependency.
-    const lang = typeof init !== 'undefined' && init.settings && init.settings.lang || 'ru';
+    const lang = typeof init !== 'undefined' && init.settings && init.settings.lang || 'en';
 
     i18next.init({
         lng: lang,
-        fallbackLng: 'ru',
-        // Keys are Russian source strings; turn off separators so dots/colons in a key
+        fallbackLng: 'en',
+        // Keys are English source strings; turn off separators so dots/colons in a key
         // are not interpreted as namespace/key paths.
         keySeparator: false,
         nsSeparator: false,
