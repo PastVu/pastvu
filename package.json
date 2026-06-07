@@ -62,7 +62,6 @@
         "content-disposition": "0.5.4",
         "cookie": "0.7.2",
         "diff-match-patch": "1.0.5",
-        "docker-secret": "1.2.4",
         "express": "4.22.2",
         "express-urlrewrite": "1.4.0",
         "formidable": "3.5.4",
