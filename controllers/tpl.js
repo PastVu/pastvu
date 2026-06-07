@@ -18,9 +18,11 @@ Utils.walkParallel({ dir: path.normalize('./views/module'), onDone: (err, files)
 } });
 
 export function loadController(app) {
-    app.get('/tpl/*', (req, res) => {
-        if (tpls.includes(req.params[0])) {
-            res.status(200).render('module/' + req.params[0]);
+    app.get('/tpl/{*path}', (req, res) => {
+        const tplPath = req.params.path.join('/');
+
+        if (tpls.includes(tplPath)) {
+            res.status(200).render('module/' + tplPath);
         } else {
             res.sendStatus(404);
         }
