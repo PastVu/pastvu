@@ -9,36 +9,36 @@ mixin noticeLi(arr, path, isPhoto)
             div(style="margin-left: 13px;")
                 = val.briefFormat.newest
                 if val.briefFormat.unread
-                    = ' ' + t('(всего {{unread}})', { unread: val.briefFormat.unread })
+                    = ' ' + t('(всего {{unread}})', { unread: val.briefFormat.unread, ns: 'mail' })
             if usersLogin.length > 1
                 div(style="margin-left: 13px; margin-bottom: 4px;")
-                    | #{t('Авторы:')}
+                    | #{t('Авторы:', { ns: 'mail' })}
                     each login, index in usersLogin
                         if (index < 6)
                             if (index > 0)
                                 | ,
                             = ' ' + val.brief.users[login]
                     if usersLogin.length > 6
-                        = ' ' + t('и др.')
+                        = ' ' + t('и др.', { ns: 'mail' })
             if usersLogin.length === 1
                 div(style="margin-left: 13px; margin-bottom: 4px;")
-                    | #{t('Автор:')} #{val.brief.users[usersLogin[0]]}
+                    | #{t('Автор:', { ns: 'mail' })} #{val.brief.users[usersLogin[0]]}
 
 include head
 - var origin = config.client.origin
-p #{t('На момент отправки данного уведомления в темах, на которые вы подписаны, было добавлено следующее количество комментариев:')}
+p #{t('На момент отправки данного уведомления в темах, на которые вы подписаны, было добавлено следующее количество комментариев:', { ns: 'mail' })}
 if news.length
     p(style="margin-bottom: 2px;")
-        strong #{t('Новости:')}
+        strong #{t('Новости:', { ns: 'mail' })}
     +noticeLi(news, '/news/', false)
 if photos.length
     p(style="margin-bottom: 2px;")
-        strong #{t('Фотографии:')}
+        strong #{t('Фотографии:', { ns: 'mail' })}
     +noticeLi(photos, '/p/', true)
 div(style="border-top: 1px solid #eee; border-bottom: 1px solid #fff; margin-top: 1em;")
     p(style="font-size: smaller; margin-top: 0.5em;")
-        != t('Управлять материалами, на которые вы подписаны, можно на странице подписок:') + ' '
+        != t('Управлять материалами, на которые вы подписаны, можно на странице подписок:', { ns: 'mail' }) + ' '
         a(href=origin + '/u/' + user.login + '/subscriptions', target='_blank')= config.client.host + '/u/' + user.login + '/subscriptions'
         br
-        != t('Задать интервал уведомлений или отключить их вы можете на странице настроек:') + ' '
+        != t('Задать интервал уведомлений или отключить их вы можете на странице настроек:', { ns: 'mail' }) + ' '
         a(href=origin + '/u/' + user.login + '/settings', target='_blank')= config.client.host + '/u/' + user.login + '/settings'

@@ -418,10 +418,10 @@ async function sendUserNotice(userId) {
 
             totalNewestComments += newest;
 
-            obj.briefFormat = { newest: t('comments_new', { count: newest }) };
+            obj.briefFormat = { newest: t('comments_new', { count: newest, ns: 'mail' }) };
 
             if (newest !== unread) {
-                obj.briefFormat.unread = t('comments_unread', { count: unread });
+                obj.briefFormat.unread = t('comments_unread', { count: unread, ns: 'mail' });
             }
 
             result.push(obj);
@@ -453,7 +453,7 @@ async function sendUserNotice(userId) {
                 greeting: t('Уведомление о событиях на PastVu'),
                 t,
             }),
-            text: t('comments_new', { count: totalNewestComments }),
+            text: t('comments_new', { count: totalNewestComments, ns: 'mail' }),
         });
     }
 
