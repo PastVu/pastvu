@@ -10,7 +10,7 @@ define([], function () {
     // window.init.settings.lang reflects the resolved locale picked by the
     // server; same source public/js/i18n.js reads from. Formatter built once
     // and cached so the hot path is a single .format(n) call.
-    const lang = typeof init !== 'undefined' && init.settings && init.settings.lang || 'ru';
+    const lang = typeof init !== 'undefined' && init.settings && init.settings.lang || 'en';
     const intlNumFormat = new Intl.NumberFormat(lang).format;
 
     return {

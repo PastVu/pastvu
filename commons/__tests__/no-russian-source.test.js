@@ -24,17 +24,24 @@ const ROOTS = [
 ];
 
 const EXCLUDE_DIR = [
-    /\/node_modules\//, /\/appBuild\//, /\/public\/js\/lib\//,
+    /\/node_modules\//, /\/appBuild\//,
+    // Vendored libraries under public/js/lib/. Project-owned files in the same
+    // directory (Utils.js, Browser.js, JSExtensions.js, PubSub.js) are scanned.
+    /\/public\/js\/lib\/(?:bootstrap|highstock|jquery|knockout|leaflet|moment|require|trumbowyg)\//,
+    /\/public\/js\/lib\/(?:doT|es6-promise\.min|geocoordsparser|i18next\.min|jsuri|lodash|socket\.io\.min|turf\.min|underscore\.string)\.js\//,
     /\/public\/js\/lang\//, /\/__tests__\/__mocks__\//,
 ];
 
-// Files we keep but where Cyrillic is by design — test fixtures and the one
-// dual-language synthetic region object the server needs at boot.
+// Files we keep but where Cyrillic is by design — test fixtures, the one
+// dual-language synthetic region object the server needs at boot, and the
+// shared Utils helper that parses Russian Wikipedia coordinate markers
+// ("с.ш."/"ю.ш."/"в.д."/"з.д.") out of user input.
 const IGNORE_FILES = new Set([
     'commons/__tests__/i18n.test.js',
     'commons/__tests__/Utils.test.js',
     'commons/__tests__/no-russian-source.test.js',
     'controllers/region.js',
+    'public/js/lib/Utils.js',
 ]);
 
 function walk(dir, out) {

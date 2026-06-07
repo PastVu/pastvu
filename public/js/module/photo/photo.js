@@ -193,11 +193,7 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
             });
 
             this.userInfo = this.co.userInfo = ko.computed(function () {
-                const isFemale = this.p.user.sex && this.p.user.sex() === 'f';
-
-                return i18n(isFemale ?
-                    'Added by <a href="/u/{{login}}" {{css}}>{{name}}</a>, {{stamp}}' :
-                    'Added by <a href="/u/{{login}}" {{css}}>{{name}}</a>, {{stamp}}', {
+                return i18n('Added by <a href="/u/{{login}}" {{css}}>{{name}}</a>, {{stamp}}', {
                     login: this.p.user.login(),
                     name: this.p.user.disp(),
                     css: this.p.user.online() ? 'class="online"' : '',
