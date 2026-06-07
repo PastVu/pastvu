@@ -64,19 +64,17 @@ export default class ApplicationError extends Error {
         }
     }
 
-    // Pick the message to ship to the client. Explicit messages (constructed
-    // with { message: '…' }) flow through verbatim; for code-only errors we
-    // re-resolve the Russian source from errorMsgs[code] through i18next so
-    // the receiver sees it in their language. `undefined` lang means the
-    // caller doesn't want translation; an empty string still hits resolveLang.
+    // Pick the message to ship to the client. Explicit messages flow through
+    // verbatim; for code-only errors this.message is the Russian source
+    // (set by the super constructor's `errorMsgs[code] || code` fallback)
+    // and doubles as the i18next translation key. `undefined` lang means the
+    // caller doesn't want translation (e.g. server-side logging).
     localizedMessage(lang) {
         if (this.hasExplicitMessage || lang === undefined) {
             return this.message;
         }
 
-        const russianSource = errorMsgs[this.code] || this.code;
-
-        return translate(lang, russianSource);
+        return translate(lang, this.message);
     }
 
     toJSON(lang) {
