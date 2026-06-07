@@ -143,5 +143,9 @@
     },
     "engines": {
         "node": "24.16.0"
+    },
+    "lint-staged": {
+        "*.js": "eslint --fix",
+        "*.less": "stylelint --fix"
     }
 }
