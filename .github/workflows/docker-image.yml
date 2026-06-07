@@ -6,7 +6,7 @@ on:
       - 'master'
       - 'en'
       - 'develop'
-      - 'i18n'
+      - 'experimental'
     tags:
       - 'v*'
   workflow_dispatch:
@@ -33,7 +33,7 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Test
         run: npm run test
 
