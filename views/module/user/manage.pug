@@ -139,10 +139,10 @@
                     // /ko
 
                 .setTitle(data-bind="text: $root.i18n('Лимит количества неподтвержденных фотографий')")
-                div(data-bind="html: $root.i18n('Действующая настройка: <b>{{count}}</b>', {count: $root.intl.num(photoNewLimitOrigin())})", style="margin-bottom: 2px;")
-                .calcInfo(data-bind="html: $root.i18n('Доступный лимит: <b>{{count}}</b>', {count: $root.intl.num(photoNewCan())})")
-                .calcInfo(data-bind="html: $root.i18n('Всего неподтвержденных: <b>{{count}}</b>', {count: $root.intl.num(u.pfcount())})")
-                .calcInfo(data-bind="html: $root.i18n('Всего опубликованных: <b>{{count}}</b>', {count: $root.intl.num(u.pcount())})")
+                div(data-bind="html: $root.i18n('Действующая настройка: <b>{{count, number}}</b>', {count: photoNewLimitOrigin()})", style="margin-bottom: 2px;")
+                .calcInfo(data-bind="html: $root.i18n('Доступный лимит: <b>{{count, number}}</b>', {count: photoNewCan()})")
+                .calcInfo(data-bind="html: $root.i18n('Всего неподтвержденных: <b>{{count, number}}</b>', {count: u.pfcount()})")
+                .calcInfo(data-bind="html: $root.i18n('Всего опубликованных: <b>{{count, number}}</b>', {count: u.pcount()})")
                 form.form-inline(style="margin-top: 7px;"): .form-group
                     .radio: label.radio-inline
                         input(type="radio", value="auto", name="photo_new_radios", data-bind="checked: photoNewLimitOption")

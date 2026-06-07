@@ -133,8 +133,8 @@
                     b(data-bind="text: $root.intl.num(stats.all.userCount)")
                 .statrow
                     span(data-bind="text: $root.i18n('Фотографий:') + ' '")
-                    b(data-bind="text: $root.intl.num(stats.all.pallCount) + (auth.loggedIn() ? $root.i18n(', из них {{count}} публичных', {count: $root.intl.num(stats.all.ppubCount)}) : '')")
-                .statrow(data-bind="html: $root.i18n('Больше всего фотографий относится к {{year}} году, их <b>{{count}}</b>', {year: stats.all.photoYear.pop.year, count: $root.intl.num(stats.all.photoYear.pop.count)})")
+                    b(data-bind="text: $root.intl.num(stats.all.pallCount) + (auth.loggedIn() ? $root.i18n(', из них {{count, number}} публичных', {count: stats.all.ppubCount}) : '')")
+                .statrow(data-bind="html: $root.i18n('Больше всего фотографий относится к {{year}} году, их <b>{{count, number}}</b>', {year: stats.all.photoYear.pop.year, count: stats.all.photoYear.pop.count})")
                 .statrow
                     span(data-bind="text: $root.i18n('Сегодня новых фотографий:') + ' '")
                     b(data-bind="text: $root.intl.num(stats.all.pdayCount)")
@@ -143,7 +143,7 @@
                     b(data-bind="text: $root.intl.num(stats.all.pweekCount)")
                 .statrow
                     span(data-bind="text: $root.i18n('Комментариев:') + ' '")
-                    b(data-bind="text: $root.intl.num(stats.all.callCount) + (auth.loggedIn() ? $root.i18n(', из них {{count}} удаленных', {count: $root.intl.num(stats.all.callCount - stats.all.cpubCount)}) : '')")
+                    b(data-bind="text: $root.intl.num(stats.all.callCount) + (auth.loggedIn() ? $root.i18n(', из них {{count, number}} удаленных', {count: stats.all.callCount - stats.all.cpubCount}) : '')")
                 .statrow
                     span(data-bind="text: $root.i18n('Сегодня новых комментариев:') + ' '")
                     b(data-bind="text: $root.intl.num(stats.all.cdayCount)")

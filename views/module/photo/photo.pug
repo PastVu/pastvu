@@ -43,13 +43,13 @@
                             span.glyphicon.glyphicon-eye-open.light(data-bind="attr: {title: $root.i18n('Количество просмотров изображения')}")
                             .tltp-wrap
                                 .watch(data-bind="text: toolsNumFormat(p.vdcount())")
-                                .tltp.tltp-right.tltp-animate-move(data-bind="text: $root.i18n('{{count}} раз смотрели сегодня', {count: $root.intl.num(p.vdcount())})")
+                                .tltp.tltp-right.tltp-animate-move(data-bind="text: $root.i18n('{{count, number}} раз смотрели сегодня', {count: p.vdcount()})")
                             .tltp-wrap
                                 .watch(data-bind="text: toolsNumFormat(p.vwcount())")
-                                .tltp.tltp-right.tltp-animate-move(data-bind="text: $root.i18n('{{count}} раз смотрели за неделю', {count: $root.intl.num(p.vwcount())})")
+                                .tltp.tltp-right.tltp-animate-move(data-bind="text: $root.i18n('{{count, number}} раз смотрели за неделю', {count: p.vwcount()})")
                             .tltp-wrap
                                 .watch(data-bind="text: toolsNumFormat(p.vcount())")
-                                .tltp.tltp-right.tltp-animate-move(data-bind="text: $root.i18n('{{count}} раз смотрели всего', {count: $root.intl.num(p.vcount())})")
+                                .tltp.tltp-right.tltp-animate-move(data-bind="text: $root.i18n('{{count, number}} раз смотрели всего', {count: p.vcount()})")
                     .toolsBtm(data-bind="style: {width: ws() + 'px'}")
                         span.toolsTxt
                             span(data-bind="text: $root.i18n('Размеры:') + ' '")
