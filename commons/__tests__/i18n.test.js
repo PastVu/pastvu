@@ -141,4 +141,30 @@ describe('commons/i18n', () => {
             expect(t('ru', key, { date: sampleDate })).toBe(`(до ${ruFmt})`);
         });
     });
+
+    describe('namespace resolution', () => {
+        it('falls back from a sub-namespace to translation for shared keys', () => {
+            // 'Вход' lives in translation. A mail call site that passes
+            // { ns: 'mail' } finds it via fallbackNS.
+            expect(t('en', 'Вход', { ns: 'mail' })).toBe('Login');
+        });
+
+        it('looks up explicit ns when the key is registered there', () => {
+            // Use a key the test itself adds to the mail namespace so the
+            // test stays valid before and after Task 4 moves keys.
+            const i18next = require('i18next');
+
+            i18next.addResource('en', 'mail', '__test_mail_only__', 'mail-only-value');
+
+            expect(t('en', '__test_mail_only__', { ns: 'mail' })).toBe('mail-only-value');
+
+            i18next.removeResourceBundle('en', 'mail');
+        });
+
+        it('default namespace resolution unchanged for regular calls', () => {
+            // Sanity check: no ns option → defaultNS (= translation) lookup.
+            expect(t('en', 'Вход')).toBe('Login');
+            expect(t('ru', 'photos_count', { count: 5 })).toBe('5 фотографий');
+        });
+    });
 });
