@@ -4,7 +4,7 @@ html
 		include ../includes/head_top_cap
 body
 	.top.fringe
-		a.brand(href='/', title=t('PastVu - ретроспектива среды обитания человечества'))
+		a.brand(href='/', title=t('PastVu - ретроспектива среды обитания человечества', { ns: 'status' }))
 			img.logo(src="/img/misc/logo.png")
 			img.name(src="/img/misc/name-2x.png", srcset="/img/misc/name.png 1x, /img/misc/name-2x.png 2x")
 	style.
@@ -57,18 +57,18 @@ body
 	.cent.centering_content
 		.content.fringe
 			p
-				span= t('Команда PastVu считает, что ваш браузер')
+				span= t('Команда PastVu считает, что ваш браузер', { ns: 'status' })
 				if agent && agent.family
 					span.curr=' '+agent.family+' '+agent.major
-				span= ' ' + t('устарел и не отвечает современным требованиям, по которым разработан наш сайт')
+				span= ' ' + t('устарел и не отвечает современным требованиям, по которым разработан наш сайт', { ns: 'status' })
 				br
 				br
-				| #{t('Пожалуйста, обновите ваш браузер или установите с официального сайта один из перечисленных ниже.')}
+				| #{t('Пожалуйста, обновите ваш браузер или установите с официального сайта один из перечисленных ниже.', { ns: 'status' })}
 				br
-				| #{t('Это займет всего несколько минут, но откроет вам быстрый современный интернет.')}
+				| #{t('Это займет всего несколько минут, но откроет вам быстрый современный интернет.', { ns: 'status' })}
 				br
 				br
-				| #{t('А после установки возвращайтесь к нам - на самый большой архив исторических фотографий PastVu.com!')}
+				| #{t('А после установки возвращайтесь к нам - на самый большой архив исторических фотографий PastVu.com!', { ns: 'status' })}
 			.browsers
 				a.chrome(href="http://www.google.com/chrome", target="_blank") Google Chrome
 				a.firefox(href="http://www.mozilla.org", target="_blank") Mozilla Firefox
@@ -77,4 +77,4 @@ body
 				a.yandex(href="http://browser.yandex.net", target="_blank") Yandex
 			.support
 				a(href='mailto:support@pastvu.comm?subject=Сайт выдаёт сообщение об устаревшем браузере&body=Добрый день! Идентификатор моего браузера: '+(agent&&agent.source?agent.source:''), target="_blank")
-					| #{t('Напишите, если мы ошибаемся: support@pastvu.com')}
+					| #{t('Напишите, если мы ошибаемся: support@pastvu.com', { ns: 'status' })}

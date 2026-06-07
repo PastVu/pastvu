@@ -2,7 +2,7 @@ doctype html
 html
     head
         include ../includes/head_meta
-        title= t('Ошибка - PastVu')
+        title= t('Ошибка - PastVu', { ns: 'status' })
         link(rel="stylesheet", type="text/css", href='/style/normalize.css?__=' + config.hash)
         link(rel="stylesheet", type="text/css", href='/style/fonts.css?__=' + config.hash)
         style.
@@ -42,10 +42,10 @@ html
 
     body
         div.msg
-            span= t('К сожалению, сервер не смог выполнить запрос')
+            span= t('К сожалению, сервер не смог выполнить запрос', { ns: 'status' })
             if error && error.rid
                 div(style="font-size: 18px; line-height: 18px;")
-                    | #{t('Код:')}&nbsp;
+                    | #{t('Код:', { ns: 'status' })}&nbsp;
                     = error.rid
             a(href="/", style="margin-top:5px; font-size: 18px; line-height: 18px; text-decoration: none; color: inherit;")
-                | #{'[' + t('нажмите, чтобы вернуться на главную') + ']'}
+                | #{'[' + t('нажмите, чтобы вернуться на главную', { ns: 'status' }) + ']'}
