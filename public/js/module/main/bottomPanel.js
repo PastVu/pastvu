@@ -287,10 +287,8 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                     self.stats.all = data.all;
                     self.stats.common = data.common;
                     self.stats.common.onlineTxt = i18n('Сейчас на сайте {{users}}, из них {{regs}}', {
-                        users: globalVM.intl.num(data.common.onall) +
-                            i18n('users_count', { count: data.common.onall }),
-                        regs: globalVM.intl.num(data.common.onreg) +
-                            i18n('users_registered_count', { count: data.common.onreg }),
+                        users: i18n('users_count', { count: data.common.onall }),
+                        regs: i18n('users_registered_count', { count: data.common.onreg }),
                     });
                     success = true;
                 }
@@ -322,7 +320,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                 }
 
                 if (numField && numFormat) {
-                    photo.amount = globalVM.intl.num(photo[numField]) + i18n(numFormat, { count: photo[numField] });
+                    photo.amount = i18n(numFormat, { count: photo[numField] });
                 }
 
                 if (regionsHash && photo.rs !== undefined) {
@@ -345,7 +343,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                 user.title = user.disp;
 
                 if (numField && numFormat) {
-                    user.amount = globalVM.intl.num(user[numField]) + i18n(numFormat, { count: user[numField] });
+                    user.amount = i18n(numFormat, { count: user[numField] });
                 }
             }
 
