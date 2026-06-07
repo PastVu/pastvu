@@ -307,7 +307,7 @@ define([
 
             if (Array.isArray(data.children)) {
                 data.children.sort(function (a, b) {
-                    return collator.compare(a.title, b.title);
+                    return collator.compare(Utils.regionTitle(a), Utils.regionTitle(b));
                 });
             }
 

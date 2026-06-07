@@ -450,7 +450,7 @@ async function sendUserNotice(userId) {
                 news: newsResult,
                 photos: photosResult,
                 username: String(user.disp),
-                greeting: t('Уведомление о событиях на PastVu'),
+                greeting: t('Уведомление о событиях на PastVu', { ns: 'mail' }),
                 t,
             }),
             text: t('comments_new', { count: totalNewestComments, ns: 'mail' }),

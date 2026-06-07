@@ -19,5 +19,9 @@
     "views_count_few": "{{count, number}} просмотра",
     "views_count_many": "{{count, number}} просмотров",
     "views_count_other": "{{count, number}} просмотров",
+    "photos_sent_for_conversion_one": "{{count, number}} фотография отправлена на конвертацию",
+    "photos_sent_for_conversion_few": "{{count, number}} фотографии отправлены на конвертацию",
+    "photos_sent_for_conversion_many": "{{count, number}} фотографий отправлено на конвертацию",
+    "photos_sent_for_conversion_other": "{{count, number}} фотографий отправлено на конвертацию",
     "datetime_full": "{{date, datetime(dateStyle: full; timeStyle: medium; hourCycle: h23)}}"
 }

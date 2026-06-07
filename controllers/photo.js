@@ -2579,9 +2579,7 @@ async function convert({ cids = [] }) {
     const t = getT(langFromHandshake(this.handshake));
 
     return {
-        message: count === 1 ?
-            t('Фотография отправлена на конвертацию') :
-            t('{{count}} фотографии отправлено на конвертацию', { count }),
+        message: t('photos_sent_for_conversion', { count }),
     };
 }
 
