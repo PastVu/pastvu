@@ -6,7 +6,6 @@
 /* eslint-disable no-throw-literal, prefer-promise-reject-errors */
 
 import ms from 'ms';
-import { getT, langFromRequest } from '../commons/i18n';
 import { logIt as logAPI } from './apilog.js';
 import Utils from '../commons/Utils';
 
@@ -161,8 +160,7 @@ const methodMap = {
 
 function requestHandler(req, res) {
     if (!req._parsedUrl.query) {
-        return res.set({ 'Cache-Control': 'no-cache' }).status(200)
-            .render('api/help', { t: getT(langFromRequest(req)) });
+        return res.set({ 'Cache-Control': 'no-cache' }).status(200).render('api/help');
     }
 
     const start = Date.now();

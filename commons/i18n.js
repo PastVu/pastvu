@@ -154,7 +154,24 @@ function pickRegionTitle(region, lang) {
     return lang === 'en' ? region.title_en || region.title_local : region.title_local;
 }
 
+/**
+ * Express middleware that exposes the request's language and i18n helpers as
+ * template locals. Templates and `res.render()` callers can then read `lang`,
+ * `t`, and `ogLocale` without each handler threading them through explicitly.
+ * Callers that need a different language (e.g. accept-language for a browser
+ * detected as obsolete before the cookie is trusted) can still override by
+ * passing the keys in the `res.render(view, options)` options object.
+ */
+function i18nLocals(req, res, next) {
+    const lang = langFromRequest(req);
+
+    res.locals.lang = lang;
+    res.locals.t = getT(lang);
+    res.locals.ogLocale = ogLocale(lang);
+    next();
+}
+
 module.exports = {
     getT, t, userLang, langFromHandshake, langFromRequest, init,
-    OG_LOCALES, ogLocale, pickRegionTitle,
+    OG_LOCALES, ogLocale, pickRegionTitle, i18nLocals,
 };
