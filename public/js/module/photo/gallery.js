@@ -212,12 +212,12 @@ define([
 
                 if (count) {
                     if (this.feed() || this.coin()) {
-                        txt = i18n('Всего {{count}} фотографий', { count: globalVM.intl.num(count) });
+                        txt = i18n('Всего {{count, number}} фотографий', { count: count });
                     } else {
-                        txt = i18n('Показаны {{from}}&nbsp;&ndash;&nbsp;{{to}} из {{total}}', {
-                            from: globalVM.intl.num(this.pageFirstItem()),
-                            to: globalVM.intl.num(this.pageLastItem()),
-                            total: globalVM.intl.num(count),
+                        txt = i18n('Показаны {{from, number}}&nbsp;&ndash;&nbsp;{{to, number}} из {{total, number}}', {
+                            from: this.pageFirstItem(),
+                            to: this.pageLastItem(),
+                            total: count,
                         });
                     }
                 } else {

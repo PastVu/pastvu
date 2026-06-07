@@ -312,10 +312,10 @@ define([
 
                                 if (data.valuesChanged) {
                                     if (data.regionChanged) {
-                                        msg += i18n('<b>{{count}}</b> регионов было обновлено', { count: globalVM.intl.num(data.regionChanged) }) + '<br>';
+                                        msg += i18n('<b>{{count, number}}</b> регионов было обновлено', { count: data.regionChanged }) + '<br>';
                                     }
 
-                                    msg += i18n('<b>{{count}}</b> значений было изменено', { count: globalVM.intl.num(data.valuesChanged) });
+                                    msg += i18n('<b>{{count, number}}</b> значений было изменено', { count: data.valuesChanged });
                                 } else {
                                     msg += i18n('Значения не изменились');
                                 }

@@ -87,10 +87,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 let txt = '';
 
                 if (count) {
-                    txt = i18n('Показаны {{from}}&nbsp;&ndash;&nbsp;{{to}} из {{total}}', {
-                        from: globalVM.intl.num(this.pageFirstItem()),
-                        to: globalVM.intl.num(this.pageLastItem()),
-                        total: globalVM.intl.num(count),
+                    txt = i18n('Показаны {{from, number}}&nbsp;&ndash;&nbsp;{{to, number}} из {{total, number}}', {
+                        from: this.pageFirstItem(),
+                        to: this.pageLastItem(),
+                        total: count,
                     });
                 } else {
                     txt = i18n('Пользователь пока не оставил комментариев в данной категории');

@@ -368,9 +368,9 @@ define([
             imagestat.title = i18n('Изображений');
 
             if (paintstat.all) {
-                imagestat.alterAll = i18n('{{total}} ({{paintings}} картин)', {
-                    total: globalVM.intl.num(imagestat.all),
-                    paintings: globalVM.intl.num(paintstat.all),
+                imagestat.alterAll = i18n('{{total, number}} ({{paintings, number}} картин)', {
+                    total: imagestat.all,
+                    paintings: paintstat.all,
                 });
             }
 
@@ -912,7 +912,7 @@ define([
                         msg = i18n('Статистика по региону {{title}} пересчитана', { title: title }) + '<br>';
 
                         if (data.valuesChanged) {
-                            msg += i18n('<b>{{count}}</b> значений было изменено', { count: globalVM.intl.num(data.valuesChanged) });
+                            msg += i18n('<b>{{count, number}}</b> значений было изменено', { count: data.valuesChanged });
                         } else {
                             msg += i18n('Значения не изменились');
                         }
