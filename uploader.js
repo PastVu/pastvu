@@ -9,7 +9,6 @@ import mv from 'mv';
 import _ from 'lodash';
 import path from 'path';
 import http from 'http';
-import makeDir from 'make-dir';
 import log4js from 'log4js';
 import config from './config';
 import formidable from 'formidable';
@@ -69,7 +68,7 @@ export function configure(startStamp) {
         fileNameDir(dir, depth) {
             const result = this.file.substr(0, depth || 1).replace(/(.)/gi, '$1/');
 
-            makeDir.sync(path.join(dir, result)); // Directory creation
+            fs.mkdirSync(path.join(dir, result), { recursive: true }); // Directory creation
 
             return result;
         }

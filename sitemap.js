@@ -8,7 +8,6 @@ import _ from 'lodash';
 import path from 'path';
 import zlib from 'zlib';
 import log4js from 'log4js';
-import makeDir from 'make-dir';
 import config from './config';
 import Utils from './commons/Utils';
 import { ready as regionsReady, getObjRegionList, giveListPublic as giveRegionsListPublic } from './controllers/region';
@@ -61,7 +60,7 @@ const schedule = (function () {
 }());
 
 export async function configure(startStamp) {
-    makeDir.sync(sitemapPathAbs);
+    fs.mkdirSync(sitemapPathAbs, { recursive: true });
 
     await connectDb({ mongo: { uri: config.mongo.connection, maxPoolSize: config.mongo.pool }, logger });
     await regionsReady;

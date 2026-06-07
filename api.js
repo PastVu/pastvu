@@ -16,7 +16,6 @@ const log4js = require('log4js');
 const argv = require('optimist').argv;
 const _ = require('lodash');
 
-const makeDir = require('make-dir');
 const mongoose = require('mongoose');
 let Utils;
 const CoreClient = require('./controllers/serviceConnectorPlug');
@@ -72,7 +71,7 @@ if (conf.logPath) {
     const logPath = path.normalize(conf.logPath || __dirname + '/logs'); //Путь к папке логов
 
     console.log('\n');
-    makeDir.sync(logPath);
+    fs.mkdirSync(logPath, { recursive: true });
     log4js.configure('./config/log4js.json', { cwd: logPath });
 }
 
