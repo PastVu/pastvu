@@ -11,7 +11,7 @@ FROM base
 WORKDIR /code
 ENV NODE_ENV production
 COPY ./appBuild/ .
-RUN npm install --production
+RUN npm pkg delete scripts.prepare && npm install --production
 RUN mkdir /store && chown node:node /store
 RUN mkdir /sitemap && chown node:node /sitemap
 USER node

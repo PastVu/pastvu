@@ -45,3 +45,7 @@ babel/output*.js
 # Grunt output
 appBuild
 app*.zip
+
+# Claude
+.playwright*
+docs/superpowers
