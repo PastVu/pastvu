@@ -8,6 +8,7 @@ import http from 'http';
 import log4js from 'log4js';
 import config from '../config';
 import Utils from '../commons/Utils';
+import { getT, langFromRequest } from '../commons/i18n';
 import * as session from './_session';
 import { clientParams, ready as settingsReady } from './settings';
 import NotFoundError from '../app/errors/NotFound';
@@ -28,9 +29,32 @@ let clientParamsJSON = JSON.stringify(clientParams);
 
 settingsReady.then(() => clientParamsJSON = JSON.stringify(clientParams));
 
+// Map our short language codes to the full OpenGraph locale tags used in
+// meta(property="og:locale") so social previews render in the matching
+// language.
+const OG_LOCALES = { ru: 'ru_RU', en: 'en_US' };
+
+function ogLocale(lang) {
+    return OG_LOCALES[lang] || OG_LOCALES.ru;
+}
+
+function pickRegionTitle(region, lang) {
+    return lang === 'en' ? region.title_en || region.title_local : region.title_local;
+}
+
 function genInitDataString(req) {
     const usObj = req.handshake.usObj;
-    let resultString = `var init={settings:${clientParamsJSON},` +
+    // Prefer the persisted user preference over the cookie so a registered
+    // user opening the site in a fresh browser still gets their saved
+    // language on the very first render (before the socket round-trip).
+    const userLang = usObj.registered && usObj.user && usObj.user.settings && usObj.user.settings.lang;
+    const cookieLang = req.cookie && req.cookie.past_lang;
+    const pickedLang = config.locales.includes(userLang) ? userLang :
+        config.locales.includes(cookieLang) ? cookieLang : clientParams.lang;
+    const settingsJSON = pickedLang !== clientParams.lang ?
+        JSON.stringify({ ...clientParams, lang: pickedLang }) :
+        clientParamsJSON;
+    let resultString = `var init={settings:${settingsJSON},` +
         `user:${JSON.stringify(session.getPlainUser(usObj.user))}`;
 
     if (usObj.registered) {
@@ -135,8 +159,10 @@ function meta(req) {
             desc = og.desc = twitter.desc = Utils.txtHtmlToPlain(photo.desc, true);
         } else if (!_.isEmpty(photo.regions)) {
             // If there in no description, create it as regions names
+            const lang = langFromRequest(req);
+
             desc = og.desc = twitter.desc = photo.regions.reduceRight(
-                (result, region, index) => result + region.title_local + (index ? ', ' : ''), ''
+                (result, region, index) => result + pickRegionTitle(region, lang) + (index ? ', ' : ''), ''
             );
         } else {
             desc = '';
@@ -192,6 +218,7 @@ function meta(req) {
 function appMainHandler(req, res) {
     const { nojsUrl, nojsShow } = checkNoJS(req);
     const { browser = {}, photoData: { photo, can } = {} } = req;
+    const lang = langFromRequest(req);
 
     if (photo && photo.s !== status.PUBLIC && !can.protected) {
         res.statusCode = 403; // This is more for search engines
@@ -207,12 +234,16 @@ function appMainHandler(req, res) {
         agent: browser.agent,
         polyfills: browser.polyfills,
         initData: genInitDataString(req),
+        lang,
+        ogLocale: ogLocale(lang),
+        t: getT(lang),
     });
 }
 
 function appAdminHandler(req, res) {
     const { nojsUrl, nojsShow } = checkNoJS(req);
     const { browser = {} } = req;
+    const lang = langFromRequest(req);
 
     res.statusCode = 200;
     res.render('app', {
@@ -223,6 +254,9 @@ function appAdminHandler(req, res) {
         agent: browser.agent,
         polyfills: browser.polyfills,
         initData: genInitDataString(req),
+        lang,
+        ogLocale: ogLocale(lang),
+        t: getT(lang),
     });
 }
 
@@ -248,20 +282,10 @@ function getRegionForGallery(req, res, next) {
             const regions = getRegionsArrPublicFromCache(parseFilter(filter).r);
 
             if (!_.isEmpty(regions)) {
-                let hasRussianRegions = false;
-                let title = regions.map(({ title_en: en, title_local: local, parents }) => {
-                    if (parents[0] === 1) {
-                        hasRussianRegions = true;
+                const lang = langFromRequest(req);
+                const regionTitles = regions.map(region => pickRegionTitle(region, lang)).join(', ');
 
-                        return local;
-                    }
-
-                    return en;
-                }).join(', ');
-
-                title = (hasRussianRegions ? 'Старые фотографии ' : 'Retro photos of ') + title;
-
-                req.pageTitle = title;
+                req.pageTitle = getT(lang)('Retro photos of {{regions}}', { regions: regionTitles });
             }
         } catch (err) {
             return next(err);
@@ -304,10 +328,13 @@ export function bindRoutes(app) {
 
     // Obsolete browser
     app.get('/badbrowser', getReqBrowser, setStaticHeaders, (req, res) => {
+        const t = getT(langFromRequest(req));
+
         res.statusCode = 200;
         res.render('status/badbrowser', {
             agent: req.browser && req.browser.agent,
-            title: 'Вы используете устаревшую версию браузера',
+            title: t('You are using an outdated browser version'),
+            t,
         });
     });
 
@@ -317,7 +344,7 @@ export function bindRoutes(app) {
 
         res.statusCode = 200;
         res.setHeader('Cache-Control', 'no-cache,no-store,max-age=0,must-revalidate');
-        res.render('status/myua', { agent, accept, title });
+        res.render('status/myua', { agent, accept, title, t: getT(langFromRequest(req)) });
     });
 
     // Ping-pong to verify the server is working
@@ -337,28 +364,35 @@ export function bindRoutes(app) {
 export const send404 = (function () {
     const status404 = http.STATUS_CODES[404];
     const json404 = JSON.stringify({ error: status404 });
-    let html404;
+    const htmlCache = new Map(); // lang → rendered html
 
     return function (req, res, error) {
         res.statusCode = 404;
 
+        const lang = langFromRequest(req);
+
         if (req.xhr) {
-            return res.end(error.toJSON ? error.toJSON() : json404);
+            return res.end(error.toJSON ? JSON.stringify(error.toJSON(lang)) : json404);
         }
 
-        if (html404) {
-            return res.end(html404);
+        const cached = htmlCache.get(lang);
+
+        if (cached) {
+            return res.end(cached);
         }
 
-        res.render('status/404', (err, html) => {
+        res.render('status/404', { t: getT(lang) }, (err, html) => {
             if (err) {
                 loggerError.error('Cannot render 404 page', err);
-                html404 = status404;
-            } else {
-                html404 = html;
+                // Don't cache the fallback — a transient render error would
+                // otherwise lock this locale to the bare status text forever.
+                res.end(status404);
+
+                return;
             }
 
-            res.end(html404);
+            htmlCache.set(lang, html);
+            res.end(html);
         });
     };
 }());
@@ -370,11 +404,13 @@ export const send500 = (function () {
     return function (req, res, error) {
         res.statusCode = 500;
 
+        const lang = langFromRequest(req);
+
         if (req.xhr) {
-            return res.end(error.toJSON ? error.toJSON() : json500);
+            return res.end(error.toJSON ? JSON.stringify(error.toJSON(lang)) : json500);
         }
 
-        res.render('status/500', { error }, (err, html) => {
+        res.render('status/500', { error, t: getT(lang) }, (err, html) => {
             if (err) {
                 loggerError.error('Cannot render 500 page', err);
             }

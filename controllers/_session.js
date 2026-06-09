@@ -1192,14 +1192,30 @@ async function destroyUserSessions({ login }) {
 async function langChange(data) {
     const { socket, handshake: { session, usObj } } = this;
 
-    if (!config.locales.includes(data.lang)) {
+    if (!data || !config.locales.includes(data.lang)) {
         return;
     }
 
-    // Send client new language cookie
+    // Send the cookie + reload first so the UI flips even if the persistence
+    // path below fails — the user's session lang is the source of truth for
+    // the next page; the DB write is for background flows (notifier, mail).
     await emitLangCookie(socket, data.lang, true, usObj.registered);
 
     sendReload(session);
+
+    // Persist the chosen language on the user document so background flows
+    // can localize per-user even after the session ends.
+    if (usObj.registered && usObj.user) {
+        usObj.user.settings = usObj.user.settings || {};
+        usObj.user.settings.lang = data.lang;
+        usObj.user.markModified('settings');
+
+        try {
+            await usObj.user.save();
+        } catch (err) {
+            logger.error(`langChange: failed to persist lang ${data.lang} for ${usObj.user.login}`, err);
+        }
+    }
 }
 
 function giveInitData() {
