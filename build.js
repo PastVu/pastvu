@@ -35,6 +35,13 @@ const requireBuildConfig = {
     skipDirOptimize: false, //Оптимизировать только модули (modules array), не трогая остальные js
     optimizeCss: 'none', //Не трогаем css
     preserveLicenseComments: false, //Удаляем лицензионные комментарии
+    paths: {
+        // i18next.min.js uses modern ES syntax (optional chaining, nullish coalescing)
+        // that r.js's esprima parser can't handle. Mark it external so the optimizer
+        // skips inlining it; the file is still copied via the `dir` option and
+        // loaded at runtime per the path in public/js/_mainConfig.js.
+        'i18next': 'empty:',
+    },
     removeCombined: false, //Не удаляем файлы, которые заинлайнились в модуль
     inlineText: true, //Включать ли в модули контент, загруженный плагином text
     logLevel: 0,
