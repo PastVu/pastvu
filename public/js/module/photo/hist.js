@@ -4,8 +4,8 @@
  */
 
 define(
-    ['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/storage', 'm/photo/fields', 'm/photo/status', 'lib/doT', 'text!tpl/photo/hist.pug', 'css!style/photo/hist'],
-    function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, storage, fields, statuses, doT, pug) {
+    ['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'i18n', 'model/storage', 'm/photo/fields', 'm/photo/status', 'lib/doT', 'text!tpl/photo/hist.pug', 'css!style/photo/hist'],
+    function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, i18n, storage, fields, statuses, doT, pug) {
         'use strict';
 
         let tplHist;
@@ -228,23 +228,23 @@ define(
                                 }
 
                                 hist.values.regions = tplRegionsDiff({
-                                    base: tplRegions(regionsBase),
-                                    del: tplRegions(regionsDel),
-                                    add: tplRegions(regionsAdd),
+                                    base: tplRegions({ regions: regionsBase, regionTitle: Utils.regionTitle }),
+                                    del: tplRegions({ regions: regionsDel, regionTitle: Utils.regionTitle }),
+                                    add: tplRegions({ regions: regionsAdd, regionTitle: Utils.regionTitle }),
                                 });
                             } else {
-                                hist.values.regions = tplRegions(regionsArr);
+                                hist.values.regions = tplRegions({ regions: regionsArr, regionTitle: Utils.regionTitle });
                             }
 
                             regionsPrev = regionsArr;
                         }
 
                         if (hist.values.type) {
-                            hist.values.type = fields.typeVals[hist.values.type];
+                            hist.values.type = i18n(fields.typeVals[hist.values.type]);
                         }
 
                         if (hist.values.dir) {
-                            hist.values.dir = fields.dirVals[hist.values.dir];
+                            hist.values.dir = i18n(fields.dirVals[hist.values.dir]);
                         }
 
                         if (hist.add) {
@@ -279,6 +279,8 @@ define(
                     hists: data.hists,
                     reasonsHash: reasonsHash,
                     fDate: Utils.format.date.relative,
+                    i18n: globalVM.i18n,
+                    regionTitle: Utils.regionTitle,
                 });
             },
             getHist: function (cb, ctx) {

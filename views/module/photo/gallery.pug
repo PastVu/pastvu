@@ -4,122 +4,116 @@
             .filter
                 .fToggle.tltp-wrap(data-bind="click: function () {filter.active(!filter.active())}, css: {fToggleInactive: !filter.active()}")
                     span.glyphicon.glyphicon-filter
-                    .tltp.tltp-bottom.tltp-animate-move(data-bind="text: (filter.active() ? 'Выключить' : 'Включить') + ' фильтр'")
+                    .tltp.tltp-bottom.tltp-animate-move(data-bind="text: $root.i18n(filter.active() ? 'Disable filter' : 'Enable filter')")
                 //.fExpand.tltp-wrap(data-bind="click: function () {filter.active(!filter.active())}")
                 //    span.glyphicon.glyphicon-chevron-up
-                //    .tltp.tltp-bottom.tltp-animate-move(data-bind="text: (filter.active() ? 'Свернуть' : 'Развернуть') + ' фильтр'")
+                //    .tltp.tltp-bottom.tltp-animate-move(data-bind="text: (filter.active() ? 'Collapse' : 'Развернуть') + ' фильтр'")
                 .fCol(data-bind="css: {inactive: !filter.active()}")
                     .fRow
-                        .fName.fNameRegion Регионы:
+                        .fName.fNameRegion(data-bind="text: $root.i18n('Regions:')")
                         .fVars
                             //ko if: !filter.disp.r().length
                             span.fRegion
                                 span.glyphicon.glyphicon-globe
-                                |  Весь мир
+                                span(data-bind="text: ' ' + $root.i18n('Whole world')")
                             // /ko
                             //ko foreach: filter.disp.r
                             span.fRegion.tltp-wrap(data-bind="css: {dis: $parent._.includes($parent.filter.disp.rdis(), $data.cid)}")
-                                span(data-bind="text: $data.title_local")
+                                span(data-bind="text: $root.regionTitle($data)")
                                 .tltp.tltp-bottom.tltp-touch.tltp-animate-opacity(style="padding:3px 3px 1px;white-space:nowrap;font-weight:normal;")
                                     //ko if: $parent.filter.admin()
-                                    .rtgl.edit(title="Перейти в редактирование региона")
+                                    .rtgl.edit(data-bind="attr: {title: $root.i18n('Edit region')}")
                                         a(data-bind="attr: {href: '/admin/region/' + $data.cid}")
                                             span.glyphicon.glyphicon-pencil(style="vertical-align:text-top;")
                                     // /ko
                                     //ko if: $parent.filter.disp.r().length > 1
-                                    .rtgl.only(title="Оставить активным только этот регион", data-bind="click: function() {$parent.fronly($data.cid);}")
+                                    .rtgl.only(data-bind="click: function() {$parent.fronly($data.cid);}, attr: {title: $root.i18n('Keep only this region active')}")
                                         span.glyphicon.glyphicon-ok
                                     // /ko
-                                    .rtgl.dis(title="Переключить активность этого региона", data-bind="click: function() {$parent.frdis($data.cid);}")
+                                    .rtgl.dis(data-bind="click: function() {$parent.frdis($data.cid);}, attr: {title: $root.i18n('Toggle this region')}")
                                         span.glyphicon.glyphicon-off(style="vertical-align:text-top;")
-                                    .rtgl.del(title="Удалить регион", data-bind="click: function() {$parent.frdel($data.cid);}")
+                                    .rtgl.del(data-bind="click: function() {$parent.frdel($data.cid);}, attr: {title: $root.i18n('Remove region')}")
                                         span.glyphicon.glyphicon-remove(style="vertical-align:text-top;")
                                     //ko if: $parent.filter.disp.r().length > 1
-                                    .rtgl.del(title="Удалить остальные регионы", data-bind="click: function() {$parent.frdelothers($data.cid);}")
+                                    .rtgl.del(data-bind="click: function() {$parent.frdelothers($data.cid);}, attr: {title: $root.i18n('Remove other regions')}")
                                         span.glyphicon.glyphicon-remove-sign(style="vertical-align:text-top;")
                                     // /ko
                                     //ko if: $data.parentRegionsArr
                                     //ko foreach: $data.parentRegionsArr
-                                    .selectParent.selectParentSelectable(data-bind="text:$data.title_local, click:function() {$parents[1].frselectparent($parent.cid, $data);}")
+                                    .selectParent.selectParentSelectable(data-bind="text:$root.regionTitle($data), click:function() {$parents[1].frselectparent($parent.cid, $data);}")
                                     // /ko
                                     // /ko
                             // /ko
                             //ko if: filter.disp.r().length
-                            .rtgl.only(title="Активировать все регионы", data-bind="click: fronlyall")
+                            .rtgl.only(data-bind="click: fronlyall, attr: {title: $root.i18n('Activate all regions')}")
                                 span.glyphicon.glyphicon-ok
-                            .rtgl.dis(title="Деактивировать все регионы", data-bind="click: frdisall")
+                            .rtgl.dis(data-bind="click: frdisall, attr: {title: $root.i18n('Deactivate all regions')}")
                                 span.glyphicon.glyphicon-off(style="vertical-align:text-top;")
-                            .rtgl.del(title="Удалить все регионы", data-bind="click: frdelall")
+                            .rtgl.del(data-bind="click: frdelall, attr: {title: $root.i18n('Remove all regions')}")
                                 span.glyphicon.glyphicon-remove(style="vertical-align:text-top;")
                             // /ko
                             .rtgl.select(data-bind="click: regionSelect")
                                 span.glyphicon.glyphicon-pencil
-                                | Изменить
-                    .fRow(style="white-space:nowrap", data-bind="css: {inactive: !reIsPossible()}") Изображения привязаны также к подрегионам:
+                                span(data-bind="text: $root.i18n('Edit')")
+                    .fRow(style="white-space:nowrap", data-bind="css: {inactive: !reIsPossible()}, text: $root.i18n('Images are also linked to subregions:')")
                     .fRow: .fVars(style="max-width:550px;", data-bind="css: {inactive: !reIsPossible()}")
                         label.checkbox-inline.tltp-wrap(data-bind="css: {inactive: !rsIsPossible()}", style="min-width:auto;")
                             input(type="checkbox", value="0", data-bind="checked: filter.disp.rs, click: frsclick, attr: {disabled: !rsIsPossible()||!reIsPossible()}")
-                            span Нет
-                            .tltp.tltp-bottom.tltp-animate-move(style="white-space:nowrap")
-                                | Изображения которые привязаны только
-                                br
-                                | непосредственно к выбранным регионам
+                            span(data-bind="text: $root.i18n('No')")
+                            .tltp.tltp-bottom.tltp-animate-move(style="white-space:nowrap", data-bind="html: $root.i18n('Images linked only<br>directly to the selected regions')")
                         label.checkbox-inline.tltp-wrap(data-bind="css: {inactive: !rsIsPossible()}", style="min-width:auto;margin-right:5px;")
                             input(type="checkbox", value="1", data-bind="checked: reIsPossible() && filter.disp.rs, click: frsclick, attr: {disabled: !rsIsPossible()||!reIsPossible()}")
-                            span Да
-                            .tltp.tltp-bottom.tltp-animate-move(style="white-space:nowrap")
-                                | Изображения которые также привязаны
-                                br
-                                | к потомкам выбранных регионов
+                            span(data-bind="text: $root.i18n('Yes')")
+                            .tltp.tltp-bottom.tltp-animate-move(style="white-space:nowrap", data-bind="html: $root.i18n('Images also linked<br>to descendants of the selected regions')")
                         div(data-bind="css: {inactive: !reIsActive()}", style="display:inline-block;")
-                            = " кроме: "
+                            span(data-bind="text: ' ' + $root.i18n('except:') + ' '")
                             //ko foreach: filter.disp.re
                             span.fRegion.tltp-wrap(data-bind="css: {dis: $parent._.includes($parent.filter.disp.redis(), $data.cid)}")
-                                span(data-bind="text: $data.title_local")
+                                span(data-bind="text: $root.regionTitle($data)")
                                 .tltp.tltp-bottom.tltp-touch.tltp-animate-opacity(style="padding:3px 3px 1px;white-space:nowrap;font-weight:normal;")
                                     //ko if: $parent.filter.admin()
-                                    .rtgl.edit(title="Перейти в редактирование региона")
+                                    .rtgl.edit(data-bind="attr: {title: $root.i18n('Edit region')}")
                                         a(data-bind="attr: {href: '/admin/region/' + $data.cid}")
                                             span.glyphicon.glyphicon-pencil
                                     // /ko
-                                    .rtgl.del(title="Удалить регион", data-bind="click: function() {$parent.fredel($data.cid);}")
+                                    .rtgl.del(data-bind="click: function() {$parent.fredel($data.cid);}, attr: {title: $root.i18n('Remove region')}")
                                         span.glyphicon.glyphicon-remove(style="vertical-align:text-top;")
                                     //ko if: $parent.filter.disp.r().length > 1
-                                    .rtgl.del(title="Удалить остальные регионы", data-bind="click: function() {$parent.fredelothers($data.cid);}")
+                                    .rtgl.del(data-bind="click: function() {$parent.fredelothers($data.cid);}, attr: {title: $root.i18n('Remove other regions')}")
                                         span.glyphicon.glyphicon-remove-sign(style="vertical-align:text-top;")
                                     // /ko
                                     //ko if: $data.parentRegionsArr
                                     //ko foreach: $data.parentRegionsArr
-                                    .selectParent(data-bind="text:$data.title_local, click:function() {$parents[1].freselectparent($parent.cid, $data);}, css: {selectParentBold: $parents[1].rHash()[$data.cid], selectParentSelectable: !$parents[1].rHashPlusParents()[$data.cid]}")
+                                    .selectParent(data-bind="text:$root.regionTitle($data), click:function() {$parents[1].freselectparent($parent.cid, $data);}, css: {selectParentBold: $parents[1].rHash()[$data.cid], selectParentSelectable: !$parents[1].rHashPlusParents()[$data.cid]}")
                                     // /ko
                                     // /ko
                             // /ko
                             //ko if: filter.disp.re().length
-                            .rtgl.del(title="Удалить все исключающие регионы", data-bind="click: fredelall")
+                            .rtgl.del(data-bind="click: fredelall, attr: {title: $root.i18n('Remove all excluding regions')}")
                                 span.glyphicon.glyphicon-remove(style="vertical-align:text-top;")
                             // /ko
                             //ko if: !filter.disp.re().length
                             span.regionEdit(data-bind="click: regionExcludeSelect")
                                 span.glyphicon.glyphicon-list(style="margin-right:2px;font-size:10px;vertical-align:text-top;")
-                                | Выбрать
+                                span(data-bind="text: $root.i18n('Select')")
                             // /ko
                             //ko if: filter.disp.re().length
                             .rtgl.select(data-bind="click: regionExcludeSelect")
                                 span.glyphicon.glyphicon-pencil
-                                | Изменить
+                                span(data-bind="text: $root.i18n('Edit')")
                             // /ko
-                    .fRow(style="white-space:nowrap") Изображение имеет координату:
+                    .fRow(style="white-space:nowrap", data-bind="text: $root.i18n('Image has coordinates:')")
                     .fRow: .fVars(style="max-width:550px;")
                         label.checkbox-inline.tltp-wrap(style="min-width:auto;")
                             input(type="checkbox", value="0", data-bind="checked: filter.disp.geo, click: fgeoclk")
-                            span Нет
-                            .tltp.tltp-bottom.tltp-animate-move(style="white-space:nowrap") Раздел «Где это?»
+                            span(data-bind="text: $root.i18n('No')")
+                            .tltp.tltp-bottom.tltp-animate-move(style="white-space:nowrap", data-bind="text: $root.i18n('«Where is this?» section')")
                         label.checkbox-inline(style="min-width:auto;")
                             input(type="checkbox", value="1", data-bind="checked: filter.disp.geo, click: fgeoclk")
-                            span Да
+                            span(data-bind="text: $root.i18n('Yes')")
                 .fCol(data-bind="css: {inactive: !filter.active()}")
                     .fRow
-                        .fName Годы:
+                        .fName(data-bind="text: $root.i18n('Years:')")
                         .fVars(data-bind="css: {yearsSet:Number(filter.disp.year()) > yearsRange().min || Number(filter.disp.year2()) < yearsRange().max}")
                             input.form-control.years(type="text", data-bind="value: filter.disp.year, valueUpdate: 'keyup', event: {keydown: yearArrow}", maxlength="4")
                             = ' – '
@@ -127,30 +121,30 @@
                             = ' '
                             .tltp-wrap.resetYears(data-bind="click: yearsReset")
                                 span.glyphicon.glyphicon-remove-circle(style="top:3px")
-                                .tltp.tltp-right.tltp-animate-move(style="white-space:nowrap") Сбросить диапазон лет
+                                .tltp.tltp-right.tltp-animate-move(style="white-space:nowrap", data-bind="text: $root.i18n('Reset year range')")
                     .fRow
-                        .fName Тип:
+                        .fName(data-bind="text: $root.i18n('Type:')")
                         .fVars
                             label.checkbox-inline
                                 input(type="checkbox", value="1", data-bind="checked: filter.disp.t, click: ftclick")
-                                span Фотография
+                                span(data-bind="text: $root.i18n('Photograph')")
                             label.checkbox-inline
                                 input(type="checkbox", value="2", data-bind="checked: filter.disp.t, click: ftclick")
-                                span Картина/Рисунок
+                                span(data-bind="text: $root.i18n('Painting/Drawing')")
                     .fRow
-                        .fName Комментарии:
+                        .fName(data-bind="text: $root.i18n('Comments:')")
                         .fVars
                             label.checkbox-inline
                                 input(type="checkbox", value="0", data-bind="checked: filter.disp.c, click: fcclick")
-                                span Нет
+                                span(data-bind="text: $root.i18n('No')")
                             div(style="display:inline-block;")
                                 label.checkbox-inline(style="margin-right:0;min-width:auto;")
                                     input(type="checkbox", value="1", data-bind="checked: filter.disp.c, click: fcclick")
-                                    = 'Есть от'
+                                    span(data-bind="text: $root.i18n('At least')")
                                 = ' '
                                 input.form-control.ccount(type="text", data-bind="value: filter.disp.ccount, valueUpdate: 'keyup', event: {keydown: ccountArrow}, attr: {disabled:filter.disp.c.indexOf('1')<0}, css: {ccountSet: filter.disp.ccount()>1 && filter.disp.c.indexOf('1')>=0}", maxlength="4")
                     .fRow.svars
-                        .fName Статусы:
+                        .fName(data-bind="text: $root.i18n('Statuses:')")
                         .fVars
                             //ko if: filter.can.s()
                             //ko foreach: filter.available.s
@@ -160,9 +154,9 @@
                             // /ko
                             // /ko
                             //ko if: !auth.loggedIn()
-                            span(data-bind="click: function(data, evt){auth.show('login')}", style="cursor:pointer" title="Кликните, чтобы войти или зарегистрироваться")
+                            span(data-bind="click: function(data, evt){auth.show('login')}, attr: {title: $root.i18n('Click to log in or sign up')}", style="cursor:pointer")
                                 span.glyphicon.glyphicon-log-in
-                                |   Войдите, чтобы видеть больше
+                                span(data-bind="text: '  ' + $root.i18n('Log in to see more')")
                             // /ko
 
         .row.rowoffset
@@ -171,12 +165,12 @@
                 span.brief(data-bind="html: briefText")
                 //ko if: photos().length
                 .btn-group
-                    button.btn.btn-primary(title="Постранично", data-bind="click: function () {modeSelect(1)}, css: {active: !feed() && !coin()}")
+                    button.btn.btn-primary(data-bind="click: function () {modeSelect(1)}, css: {active: !feed() && !coin()}, attr: {title: $root.i18n('Pages')}")
                         span.glyphicon.glyphicon-book
-                    button.btn.btn-primary(title="Лента", data-bind="click: function () {modeSelect(2)}, css: {active: feed()}")
+                    button.btn.btn-primary(data-bind="click: function () {modeSelect(2)}, css: {active: feed()}, attr: {title: $root.i18n('Feed')}")
                         span.glyphicon.glyphicon-th-list
                     //ko if: !u
-                    button.btn.btn-primary(title="Монета", data-bind="click: function () {modeSelect(3)}, css: {active: coin()}")
+                    button.btn.btn-primary(data-bind="click: function () {modeSelect(3)}, css: {active: coin()}, attr: {title: $root.i18n('Coin')}")
                         span.glyphicon.glyphicon-adjust
                     // /ko
                 // /ko
@@ -187,16 +181,16 @@
                 // /ko
                 // /ko
                 //ko if: coin()
-                button.btn.btn-sm.btn-primary(type="button", title="Подбросить монетку", data-bind="click: flipCoin", style="margin-top: 1px;")
+                button.btn.btn-sm.btn-primary(type="button", data-bind="click: flipCoin, attr: {title: $root.i18n('Flip the coin')}", style="margin-top: 1px;")
                     span.glyphicon.glyphicon-refresh
-                    |  Подбросить монетку
+                    span(data-bind="text: ' ' + $root.i18n('Flip the coin')")
                 // /ko
 
         //ko if: u && canAdd()
         a.photoPreview.withInfo.fringe.addPhoto(href="/photoUpload")
             img.img(src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7", data-bind="style: {width: w, height: h}")
             .plusPhoto
-            .desc Добавить..
+            .desc(data-bind="text: $root.i18n('Add..')")
         // /ko
         //ko foreach: photos
         .photoPreview.withStatus.withInfo.fringe(data-bind="attr: {title: title}, css: ($parent.feed() ? 'trans ' : '') + 's' + $data.s")
@@ -208,7 +202,7 @@
                     span.glyphicon(data-bind="css: status.icon")
                 // /ko
                 //ko if: $data.my
-                .status.upper.mine.fringe(title="Это ваша фотография")
+                .status.upper.mine.fringe(data-bind="attr: {title: $root.i18n('This is your photo')}")
                     span.glyphicon.glyphicon-user
                 // /ko
             .info
@@ -216,22 +210,22 @@
                 //ko if: $data.rs
                 .regions(data-bind="foreach: $data.rs", title=" ")
                     | <!--ko if: $index()-->, <!-- /ko -->
-                    a.shortRegion(data-bind="css: {where: !$data.cid}, attr: {href: ($parents[1].u ? '/u/'+$parents[1].u.login()+'/photo' : '/ps')+'?f='+(!$data.cid ? 'geo!0'+($parent.rs[$index()+1] ? '_r!'+$parent.rs[$index()+1].cid : '') : 'r!'+$data.cid), title: $data.title_local}, text: $data.title_local")
+                    a.shortRegion(data-bind="css: {where: !$data.cid}, attr: {href: ($parents[1].u ? '/u/'+$parents[1].u.login()+'/photo' : '/ps')+'?f='+(!$data.cid ? 'geo!0'+($parent.rs[$index()+1] ? '_r!'+$parent.rs[$index()+1].cid : '') : 'r!'+$data.cid), title: $root.regionTitle($data)}, text: $root.regionTitle($data)")
                 // /ko
             //ko if: $data.ccount || $data.changed
             .rightBlocks
                 //ko if: $data.ccount
-                a.rightBlock.comm(data-bind="html: $data.ccount + ($data.ccount_new ? '<span class=\"cnew\"> +' + $data.ccount_new + '</span>' : ''), attr: {href: '/p/' + cid + '?hl=comments', target: $parent.feed() ? '_blank' : '_self'}", title="Комментарии")
+                a.rightBlock.comm(data-bind="html: $data.ccount + ($data.ccount_new ? '<span class=\"cnew\"> +' + $data.ccount_new + '</span>' : ''), attr: {href: '/p/' + cid + '?hl=comments', target: $parent.feed() ? '_blank' : '_self', title: $root.i18n('Comments')}")
                 // /ko
                 //ko if: $data.changed
-                a.rightBlock.changed(data-bind="attr: {href: '/p/' + cid + '?history=1', target: $parent.feed() ? '_blank' : '_self'}", title="Фотография изменена с момента прошлого просмотра")
+                a.rightBlock.changed(data-bind="attr: {href: '/p/' + cid + '?history=1', target: $parent.feed() ? '_blank' : '_self', title: $root.i18n('Photo changed since last view')}")
                     span.glyphicon.glyphicon-pencil
                 // /ko
             // /ko
         // /ko
         //ko if: feed()
         .photoPreview.withInfo.loadingPhoto(data-bind="style: {visibility: loading() ? 'visible' : 'hidden', width: w, height: h}")
-            .loadPhoto Загрузка
+            .loadPhoto(data-bind="text: $root.i18n('Loading')")
         // /ko
         //ko if: photos().length && paginationShow()
         .rowoffset.pag(data-bind="template: {name: 'photoPagerTpl'}")
@@ -239,11 +233,11 @@
 
     | <script id="photoPagerTpl" type="text/html">
     ul.pagination
-        li.edge(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: pageUrl() + pageQuery()}", title="Первая страница") &laquo;&laquo;
-        li.edge(data-bind="css: {disabled: !pageHasPrev()}"): a(data-bind="attr: {href: pageUrl() + (page() > 1 ? '/' + (page() - 1) : '')+ pageQuery()}", title="Предыдущая страница") &laquo;
+        li.edge(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: pageUrl() + pageQuery(), title: $root.i18n('First page')}") &laquo;&laquo;
+        li.edge(data-bind="css: {disabled: !pageHasPrev()}"): a(data-bind="attr: {href: pageUrl() + (page() > 1 ? '/' + (page() - 1) : '')+ pageQuery(), title: $root.i18n('Previous page')}") &laquo;
         //ko foreach: pages
         li(data-bind="css: {active: $data === $parent.page()}"): a(data-bind="attr: {href: $parent.pageUrl() + '/' + $data + $parent.pageQuery()}, text: $root.intl.num($data)")
         // /ko
-        li.edge(data-bind="css: {disabled: !pageHasNext()}"): a(data-bind="attr: {href: pageUrl() + '/' + (page() + 1) + pageQuery()}", title="Следующая страница") &raquo;
-        li.edge(data-bind="css: {disabled: page() === pageLast()}"): a(data-bind="attr: {href: pageUrl() + '/' + pageLast() + pageQuery()}", title="Последняя страница") &raquo;&raquo;
+        li.edge(data-bind="css: {disabled: !pageHasNext()}"): a(data-bind="attr: {href: pageUrl() + '/' + (page() + 1) + pageQuery(), title: $root.i18n('Next page')}") &raquo;
+        li.edge(data-bind="css: {disabled: page() === pageLast()}"): a(data-bind="attr: {href: pageUrl() + '/' + pageLast() + pageQuery(), title: $root.i18n('Last page')}") &raquo;&raquo;
     | </script>

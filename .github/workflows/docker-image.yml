@@ -6,6 +6,7 @@ on:
       - 'master'
       - 'en'
       - 'develop'
+      - 'i18n'
     tags:
       - 'v*'
   workflow_dispatch:
@@ -58,7 +59,7 @@ jobs:
         id: docker_meta_backend
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/pastvu/backend/ru
+          images: ${{ env.REGISTRY }}/pastvu/backend
 
       - name: Build and push backend
         id: docker_build_backend
@@ -76,7 +77,7 @@ jobs:
         id: docker_meta_frontend
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/pastvu/frontend/ru
+          images: ${{ env.REGISTRY }}/pastvu/frontend
 
       - name: Build and push frontend
         id: docker_build_frontend

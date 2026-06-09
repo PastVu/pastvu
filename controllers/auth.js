@@ -12,6 +12,7 @@ import log4js from 'log4js';
 import moment from 'moment';
 import config from '../config';
 import Utils from '../commons/Utils';
+import { getT, langFromHandshake, userLang } from '../commons/i18n';
 import * as session from './_session';
 import { send as sendMail } from './mail';
 import { userSettingsDef } from './settings';
@@ -25,7 +26,12 @@ import { Counter } from '../models/Counter';
 moment.locale(config.lang);
 
 const ms2d = ms('2d');
-const human2d = moment.duration(ms2d).humanize();
+
+function formatLinkValid(lang, t) {
+    return `${moment.duration(ms2d).locale(lang).humanize()} ` +
+        `(${t('until')} ${moment.utc().add(ms2d).locale(lang).format('LLL')})`;
+}
+
 const logger = log4js.getLogger('auth.js');
 
 let recallTpl;
@@ -92,6 +98,9 @@ async function logout() {
 
 // Registration
 async function register({ login, email, pass, pass2 }) {
+    const lang = langFromHandshake(this.handshake);
+    const t = getT(lang);
+
     if (!login) {
         throw new InputError(constants.INPUT_LOGIN_REQUIRED);
     }
@@ -165,7 +174,7 @@ async function register({ login, email, pass, pass2 }) {
             sender: 'noreply',
             receiver: { alias: login, email },
             bcc: config.admin.email,
-            subject: 'Подтверждение регистрации',
+            subject: t('Email confirmation'),
             head: true,
             body: regTpl({
                 email,
@@ -173,10 +182,11 @@ async function register({ login, email, pass, pass2 }) {
                 config,
                 confirmKey,
                 username: login,
-                greeting: 'Спасибо за регистрацию на проекте PastVu!',
-                linkvalid: `${human2d} (до ${moment.utc().add(ms2d).format('LLL')})`,
+                greeting: t('Thanks for signing up to PastVu!'),
+                linkvalid: formatLinkValid(lang, t),
+                t,
             }),
-            text: `Перейдите по следующей ссылке: ${config.client.origin}/confirm/${confirmKey}`,
+            text: t('Follow this link: {{link}}', { link: `${config.client.origin}/confirm/${confirmKey}` }),
         });
     } catch (err) {
         await User.deleteOne({ login }).exec();
@@ -186,8 +196,7 @@ async function register({ login, email, pass, pass2 }) {
     }
 
     return {
-        message: 'Учетная запись создана успешно. Для завершения регистрации следуйте инструкциям, ' +
-        'отправленным на указанный вами e-mail',
+        message: t('Account created. To finish signing up, follow the instructions sent to your e-mail.'),
     };
 }
 
@@ -212,6 +221,13 @@ async function recall({ login }) {
         throw new AuthenticationError(constants.AUTHENTICATION_REGISTRATION);
     }
 
+    // Prefer the recall target's saved language so the email matches their UI,
+    // even when the recall form was opened in a different language. userLang
+    // normalises against config.locales so an unsupported stored value can't
+    // leak into moment.locale(lang) below.
+    const lang = user.settings && user.settings.lang ? userLang(user) : langFromHandshake(this.handshake);
+    const t = getT(lang);
+
     const confirmKey = Utils.randomString(8);
 
     await UserConfirm.deleteOne({ user: user._id }).exec();
@@ -221,25 +237,27 @@ async function recall({ login }) {
     sendMail({
         sender: 'noreply',
         receiver: { alias: user.login, email: user.email },
-        subject: 'Запрос на восстановление пароля',
+        subject: t('Password recovery request'),
         head: true,
         body: recallTpl({
             config,
             confirmKey,
             username: user.disp,
-            linkvalid: `${human2d} (до ${moment.utc().add(ms2d).format('LLL')})`,
+            linkvalid: formatLinkValid(lang, t),
+            t,
         }),
-        text: `Перейдите по следующей ссылке: ${config.client.origin}/confirm/${confirmKey}`,
+        text: t('Follow this link: {{link}}', { link: `${config.client.origin}/confirm/${confirmKey}` }),
     });
 
     return {
-        message: 'Запрос успешно отправлен. Для продолжения процедуры следуйте инструкциям, высланным на Ваш e-mail',
+        message: t('Request submitted. To continue, follow the instructions sent to your e-mail.'),
     };
 }
 
 // Password change by recall request from email
 async function passChangeRecall({ key, pass, pass2 }) {
     const { handshake: { usObj: iAm } } = this;
+    const t = getT(langFromHandshake(this.handshake));
 
     if (!_.isString(key) || key.length !== 8) {
         throw new BadParamsError();
@@ -274,12 +292,13 @@ async function passChangeRecall({ key, pass, pass2 }) {
 
     await Promise.all([user.save(), confirm.deleteOne()]);
 
-    return { message: 'Новый пароль сохранен успешно' };
+    return { message: t('New password saved successfully') };
 }
 
 // Password changing in user's settings page with entering current password
 async function passChange({ login, pass, passNew, passNew2 }) {
     const { handshake: { usObj: iAm } } = this;
+    const t = getT(langFromHandshake(this.handshake));
 
     if (!iAm.registered || iAm.user.login !== login) {
         throw new AuthorizationError();
@@ -302,11 +321,13 @@ async function passChange({ login, pass, passNew, passNew2 }) {
     iAm.user.pass = passNew;
     await iAm.user.save();
 
-    return { message: 'Новый пароль установлен успешно' };
+    return { message: t('New password set successfully') };
 }
 
 // Check confirm key
 async function checkConfirm({ key }) {
+    const t = getT(langFromHandshake(this.handshake));
+
     if (!_.isString(key) || key.length < 7 || key.length > 8) {
         throw new BadParamsError();
     }
@@ -325,7 +346,7 @@ async function checkConfirm({ key }) {
         await Promise.all([user.save(), confirm.deleteOne()]);
 
         return {
-            message: 'Спасибо, регистрация подтверждена! Теперь вы можете войти в систему, используя ваш логин и пароль',
+            message: t('Thank you, your registration is confirmed. You can now sign in with your login and password.'),
             type: 'noty',
         };
     }
