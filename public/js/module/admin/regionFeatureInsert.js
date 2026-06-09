@@ -4,9 +4,9 @@
  */
 
 define([
-    'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
+    'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'i18n',
     'model/storage', 'noties', 'text!tpl/admin/regionFeatureInsert.pug', 'css!style/admin/regionFeatureInsert',
-], function (_, $, Utils, socket, P, ko, koMapping, Cliche, globalVM, storage, noties, pug) {
+], function (_, $, Utils, socket, P, ko, koMapping, Cliche, globalVM, i18n, storage, noties, pug) {
     'use strict';
 
     return Cliche.extend({
@@ -71,7 +71,9 @@ define([
                                     const geoChangePhotosCount = stat.photosCountAfter - stat.photosCountBefore;
 
                                     if (geoChangePhotosCount) {
-                                        stats.push('<b>' + globalVM.intl.num(Math.abs(geoChangePhotosCount)) + '</b> фотографий ' + (geoChangePhotosCount > 0 ? 'добавлено в регион' : 'удалено из региона') + ' вследствии изменения коордиант поолигона.');
+                                        stats.push(i18n(geoChangePhotosCount > 0 ?
+                                            '<b>{{count, number}}</b> photos added to the region after the polygon coordinate change.' :
+                                            '<b>{{count, number}}</b> photos removed from the region after the polygon coordinate change.', { count: Math.abs(geoChangePhotosCount) }));
                                     }
                                 }
 
@@ -79,24 +81,26 @@ define([
                                     const geoChangeCommentsCount = stat.commentsCountAfter - stat.commentsCountBefore;
 
                                     if (geoChangeCommentsCount) {
-                                        stats.push('<b>' + globalVM.intl.num(Math.abs(geoChangeCommentsCount)) + '</b> комментариев ' + (geoChangeCommentsCount > 0 ? 'добавлено в регион' : 'удалено из региона') + ' вследствии переноса фотографий.');
+                                        stats.push(i18n(geoChangeCommentsCount > 0 ?
+                                            '<b>{{count, number}}</b> comments added to the region as their photos moved.' :
+                                            '<b>{{count, number}}</b> comments removed from the region as their photos moved.', { count: Math.abs(geoChangeCommentsCount) }));
                                     }
                                 }
 
                                 if (stat.affectedPhotos) {
-                                    stats.push('<b>' + globalVM.intl.num(stat.affectedPhotos) + '</b> фотографий переехали по дереву вслед за регионом.');
+                                    stats.push(i18n('<b>{{count, number}}</b> photos moved across the tree following the region.', { count: stat.affectedPhotos }));
                                 }
 
                                 if (stat.affectedComments) {
-                                    stats.push('<b>' + globalVM.intl.num(stat.affectedComments) + '</b> комментариев переехали вслед за своими фотографиями.');
+                                    stats.push(i18n('<b>{{count, number}}</b> comments moved along with their photos.', { count: stat.affectedComments }));
                                 }
 
                                 if (stat.affectedUsers) {
-                                    stats.push('У <b>' + globalVM.intl.num(stat.affectedUsers) + '</b> пользователей были сокрашены "Мои регионы".');
+                                    stats.push(i18n('<b>{{count, number}}</b> users had their "My regions" trimmed.', { count: stat.affectedUsers }));
                                 }
 
                                 if (stat.affectedMods) {
-                                    stats.push('У <b>' + globalVM.intl.num(stat.affectedMods) + '</b> модераторов были сокрашены модерируемые регионы.');
+                                    stats.push(i18n('<b>{{count, number}}</b> moderators had their moderated regions trimmed.', { count: stat.affectedMods }));
                                 }
                             }
 

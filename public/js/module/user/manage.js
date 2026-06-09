@@ -4,18 +4,18 @@
  */
 
 define([
-    'underscore', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'noties',
+    'underscore', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'i18n', 'noties',
     'renderer', 'model/User', 'model/storage', 'text!tpl/user/manage.pug', 'css!style/user/manage', 'bs/collapse',
-], function (_, Utils, socket, P, ko, Cliche, globalVM, noties, renderer, User, storage, pug) {
+], function (_, Utils, socket, P, ko, Cliche, globalVM, i18n, noties, renderer, User, storage, pug) {
     function isYes(evt) {
         return !!evt.target.classList.contains('yes');
     }
 
     const ranksLang = {
-        mec: 'Меценат',
-        mec_silv: 'Серебряный меценат',
-        mec_gold: 'Золотой меценат',
-        adviser: 'Советник',
+        mec: 'Patron',
+        mec_silv: 'Silver patron',
+        mec_gold: 'Gold patron',
+        adviser: 'Adviser',
     };
 
     return Cliche.extend({
@@ -37,10 +37,10 @@ define([
 
             this.role = ko.observable(String(this.u_origin.role));
             this.roles = [
-                { cat: 'reg', name: 'Обычный пользователь' },
-                { cat: 'mod', name: 'Модератор' },
-                { cat: 'adm', name: 'Администратор' },
-                { cat: 'sadm', name: 'Суперадминистратор' },
+                { cat: 'reg', name: 'Regular user' },
+                { cat: 'mod', name: 'Moderator' },
+                { cat: 'adm', name: 'Administrator' },
+                { cat: 'sadm', name: 'Super administrator' },
             ];
             this.roleCategory = ko.computed({
                 read: function () {
@@ -87,7 +87,7 @@ define([
 
             this.photoNewCan = ko.observable(0);
             this.photoNewLimit = ko.observable(null);
-            this.photoNewLimitOrigin = ko.observable('Авто');
+            this.photoNewLimitOrigin = ko.observable(i18n('Auto'));
             this.photoNewLimitOption = ko.computed({
                 read: function () {
                     return _.isString(that.photoNewLimit()) ? 'manual' : 'auto';
@@ -148,7 +148,7 @@ define([
                 this.photoNewLimitOrigin(this.photoNewLimit());
             } else {
                 this.photoNewLimit(null);
-                this.photoNewLimitOrigin('Авто');
+                this.photoNewLimitOrigin(i18n('Auto'));
             }
 
             this.photoNewCan(info.canPhotoNew || 0);
@@ -200,21 +200,21 @@ define([
                             selectedInit: this.regions(),
                         },
                         modal: {
-                            topic: 'Изменение списка регионов для модерирования',
+                            topic: i18n('Edit moderated regions list'),
                             initWidth: '900px',
                             maxWidthRatio: 0.95,
                             fullHeight: true,
                             withScroll: true,
-                            offIcon: { text: 'Отмена', click: this.closeRegionSelect, ctx: this },
+                            offIcon: { text: i18n('Cancel'), click: this.closeRegionSelect, ctx: this },
                             btns: [
                                 {
-                                    css: 'btn-success', text: 'Применить', glyphicon: 'glyphicon-ok',
+                                    css: 'btn-success', text: i18n('Apply'), glyphicon: 'glyphicon-ok',
                                     click: function () {
-                                        const regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']);
+                                        const regions = this.regselectVM.getSelectedRegions(['cid', 'title_en', 'title_local']);
 
                                         if (regions.length > 20) {
                                             return noties.alert({
-                                                message: 'Допускается выбирать до 20 регионов',
+                                                message: i18n('Up to 20 regions may be selected'),
                                                 type: 'warning',
                                                 timeout: 3000,
                                             });
@@ -225,7 +225,7 @@ define([
                                     },
                                     ctx: this,
                                 },
-                                { css: 'btn-warning', text: 'Отмена', click: this.closeRegionSelect, ctx: this },
+                                { css: 'btn-warning', text: i18n('Cancel'), click: this.closeRegionSelect, ctx: this },
                             ],
                         },
                         callback: function (vm) {

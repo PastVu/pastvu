@@ -3,15 +3,15 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/Photo', 'model/User', 'model/storage', 'm/photo/status', 'text!tpl/main/bottomPanel.pug', 'css!style/main/bottomPanel'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, Photo, User, storage, statuses, pug) {
+define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'i18n', 'model/Photo', 'model/User', 'model/storage', 'm/photo/status', 'text!tpl/main/bottomPanel.pug', 'css!style/main/bottomPanel'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, i18n, Photo, User, storage, statuses, pug) {
     'use strict';
 
     const catsObj = {
-        photosToApprove: { name: 'Ожидают подтверждения', tpl: 'photosTpl' },
-        photos: { name: 'Новые фото', tpl: 'photosTpl' },
-        photosNoGeo: { name: 'Где это?', tpl: 'photosTpl' },
-        ratings: { name: 'Рейтинги', tpl: 'ratingsTpl' },
-        stats: { name: 'Статистика', tpl: 'statsTpl' },
+        photosToApprove: { name: i18n('Awaiting approval'), tpl: 'photosTpl' },
+        photos: { name: i18n('New photos'), tpl: 'photosTpl' },
+        photosNoGeo: { name: i18n('Where is this?'), tpl: 'photosTpl' },
+        ratings: { name: i18n('Ratings'), tpl: 'ratingsTpl' },
+        stats: { name: i18n('Statistics'), tpl: 'statsTpl' },
     };
     const cats = [
         'photos',
@@ -23,13 +23,6 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
         'photosToApprove',
     ];
     const imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
-    const declension = {
-        user: [' пользователь', ' пользователя', ' пользователей'],
-        reg: [' зарегистрирован', ' зарегистрированых', ' зарегистрированых'],
-        photo: [' фотография', ' фотографии', ' фотографий'],
-        comment: [' комментарий', ' комментария', ' комментариев'],
-        view: [' просмотр', ' просмотра', ' просмотров'],
-    };
 
     return Cliche.extend({
         pug: pug,
@@ -262,21 +255,21 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                 const ratings = self.ratings;
 
                 if (self.catLoading() === 'ratings') {
-                    ratings.pbyview.day(self.processPhotos(data.pday, data.rhash, Photo.picFormats.s, 'vdcount', declension.view));
-                    ratings.pbyview.week(self.processPhotos(data.pweek, data.rhash, Photo.picFormats.s, 'vwcount', declension.view));
-                    ratings.pbyview.all(self.processPhotos(data.pall, data.rhash, Photo.picFormats.s, 'vcount', declension.view));
+                    ratings.pbyview.day(self.processPhotos(data.pday, data.rhash, Photo.picFormats.s, 'vdcount', 'views_count'));
+                    ratings.pbyview.week(self.processPhotos(data.pweek, data.rhash, Photo.picFormats.s, 'vwcount', 'views_count'));
+                    ratings.pbyview.all(self.processPhotos(data.pall, data.rhash, Photo.picFormats.s, 'vcount', 'views_count'));
 
-                    ratings.pbycomm.day(self.processPhotos(data.pcday, data.rhash, Photo.picFormats.s, 'ccount', declension.comment));
-                    ratings.pbycomm.week(self.processPhotos(data.pcweek, data.rhash, Photo.picFormats.s, 'ccount', declension.comment));
-                    ratings.pbycomm.all(self.processPhotos(data.pcall, data.rhash, Photo.picFormats.s, 'ccount', declension.comment));
+                    ratings.pbycomm.day(self.processPhotos(data.pcday, data.rhash, Photo.picFormats.s, 'ccount', 'comments_count'));
+                    ratings.pbycomm.week(self.processPhotos(data.pcweek, data.rhash, Photo.picFormats.s, 'ccount', 'comments_count'));
+                    ratings.pbycomm.all(self.processPhotos(data.pcall, data.rhash, Photo.picFormats.s, 'ccount', 'comments_count'));
 
-                    ratings.ubycomm.day(self.processUsers(data.ucday, 'comments', 'ccount', declension.comment));
-                    ratings.ubycomm.week(self.processUsers(data.ucweek, 'comments', 'ccount', declension.comment));
-                    ratings.ubycomm.all(self.processUsers(data.ucall, 'comments', 'ccount', declension.comment));
+                    ratings.ubycomm.day(self.processUsers(data.ucday, 'comments', 'ccount', 'comments_count'));
+                    ratings.ubycomm.week(self.processUsers(data.ucweek, 'comments', 'ccount', 'comments_count'));
+                    ratings.ubycomm.all(self.processUsers(data.ucall, 'comments', 'ccount', 'comments_count'));
 
-                    ratings.ubyphoto.day(self.processUsers(data.upday, 'photo', 'pcount', declension.photo));
-                    ratings.ubyphoto.week(self.processUsers(data.upweek, 'photo', 'pcount', declension.photo));
-                    ratings.ubyphoto.all(self.processUsers(data.upall, 'photo', 'pcount', declension.photo));
+                    ratings.ubyphoto.day(self.processUsers(data.upday, 'photo', 'pcount', 'photos_count'));
+                    ratings.ubyphoto.week(self.processUsers(data.upweek, 'photo', 'pcount', 'photos_count'));
+                    ratings.ubyphoto.all(self.processUsers(data.upall, 'photo', 'pcount', 'photos_count'));
                     success = true;
                 }
 
@@ -293,9 +286,10 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                 if (self.catLoading() === 'stats') {
                     self.stats.all = data.all;
                     self.stats.common = data.common;
-                    self.stats.common.onlineTxt = 'Сейчас на сайте ' + globalVM.intl.num(data.common.onall) +
-                        Utils.format.wordEndOfNum(data.common.onall, declension.user) +
-                        ', из них ' + globalVM.intl.num(data.common.onreg) + Utils.format.wordEndOfNum(data.common.onall, declension.reg);
+                    self.stats.common.onlineTxt = i18n('Currently online: {{users}}, of which {{regs}}', {
+                        users: i18n('users_count', { count: data.common.onall }),
+                        regs: i18n('users_registered_count', { count: data.common.onreg }),
+                    });
                     success = true;
                 }
 
@@ -322,11 +316,11 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                 photo.link = '/p/' + photo.cid;
 
                 if (!photo.title) {
-                    photo.title = 'Без названия';
+                    photo.title = i18n('Untitled');
                 }
 
                 if (numField && numFormat) {
-                    photo.amount = globalVM.intl.num(photo[numField]) + Utils.format.wordEndOfNum(photo[numField], numFormat);
+                    photo.amount = i18n(numFormat, { count: photo[numField] });
                 }
 
                 if (regionsHash && photo.rs !== undefined) {
@@ -349,7 +343,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
                 user.title = user.disp;
 
                 if (numField && numFormat) {
-                    user.amount = globalVM.intl.num(user[numField]) + Utils.format.wordEndOfNum(user[numField], numFormat);
+                    user.amount = i18n(numFormat, { count: user[numField] });
                 }
             }
 
@@ -369,17 +363,17 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
             if (data.conv) {
                 content = imgFailTpl({
                     style: 'margin-top:7px;padding-top:20px; background: url(/img/misc/photoConvWhite.png) 50% 0 no-repeat;',
-                    txt: 'Превью уже создается<br>пожалуйста, обновите позже',
+                    txt: i18n('Preview is being created<br>please refresh later'),
                 });
             } else if (data.convqueue) {
                 content = imgFailTpl({
                     style: 'margin-top:7px;',
-                    txt: '<span class="glyphicon glyphicon-road"></span><br>Превью скоро будет создано',
+                    txt: '<span class="glyphicon glyphicon-road"></span><br>' + i18n('Preview will be created shortly'),
                 });
             } else {
                 content = imgFailTpl({
                     style: 'margin-top:7px;padding-top:25px; background: url(/img/misc/imgw.png) 50% 0 no-repeat;',
-                    txt: 'Превью недоступно',
+                    txt: i18n('Preview unavailable'),
                 });
             }
 

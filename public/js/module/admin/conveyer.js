@@ -5,10 +5,10 @@
 
 define([
     'underscore', 'jquery', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping',
-    'm/_moduleCliche', 'globalVM', 'renderer', 'model/User', 'model/storage', 'noties',
+    'm/_moduleCliche', 'globalVM', 'i18n', 'renderer', 'model/User', 'model/storage', 'noties',
     'highstock/highstock.src', 'text!tpl/admin/conveyer.pug', 'css!style/admin/conveyer', 'bs/ext/multiselect',
 ], function (_, $, Browser, Utils, socket, P, ko, koMapping, Cliche,
-             globalVM, renderer, User, storage, noties, Highcharts, pug) {
+             globalVM, i18n, renderer, User, storage, noties, Highcharts, pug) {
     'use strict';
 
     Highcharts = Highcharts || window.Highcharts;
@@ -380,7 +380,7 @@ define([
                             },
                             series: [
                                 {
-                                    name: 'Фотографий в очереди',
+                                    name: i18n('Photos in queue'),
                                     data: self.conveyerLengthData,
                                     tooltip: {
                                         valueDecimals: 0,
@@ -394,7 +394,7 @@ define([
                             },
                             series: [
                                 {
-                                    name: 'Фотографий конвертированно',
+                                    name: i18n('Photos converted'),
                                     data: self.conveyerConvertData,
                                     tooltip: {
                                         valueDecimals: 0,
@@ -434,13 +434,13 @@ define([
             this.exe(true);
 
             noties.confirm({
-                message: 'Конвейер будет очищен. Подтвердить операцию?',
+                message: i18n('The pipeline will be cleared. Confirm?'),
                 onOk: function (confirmer) {
                     confirmer.disable();
 
                     socket.run('converter.conveyerClear', { value: true }, true)
                         .then(function (data) {
-                            confirmer.success(data.message, 'Закрыть', null, function () {
+                            confirmer.success(data.message, i18n('Close'), null, function () {
                                 self.exe(false);
                                 self.statFast();
                             });
