@@ -7,7 +7,7 @@ import ms from 'ms';
 import http from 'http';
 import path from 'path';
 import moment from 'moment';
-import makeDir from 'make-dir';
+import fs from 'fs';
 import log4js from 'log4js';
 import config from './config';
 import express from 'express';
@@ -42,12 +42,12 @@ export async function configure(startStamp) {
         listen: { hostname, port },
     } = config;
 
-    makeDir.sync(path.join(storePath, 'incoming'));
-    makeDir.sync(path.join(storePath, 'private'));
-    makeDir.sync(path.join(storePath, 'protected/photos'));
-    makeDir.sync(path.join(storePath, 'public/avatars'));
-    makeDir.sync(path.join(storePath, 'public/photos'));
-    makeDir.sync(path.join(storePath, 'publicCovered/photos'));
+    fs.mkdirSync(path.join(storePath, 'incoming'), { recursive: true });
+    fs.mkdirSync(path.join(storePath, 'private'), { recursive: true });
+    fs.mkdirSync(path.join(storePath, 'protected/photos'), { recursive: true });
+    fs.mkdirSync(path.join(storePath, 'public/avatars'), { recursive: true });
+    fs.mkdirSync(path.join(storePath, 'public/photos'), { recursive: true });
+    fs.mkdirSync(path.join(storePath, 'publicCovered/photos'), { recursive: true });
 
     const logger = log4js.getLogger('app');
 

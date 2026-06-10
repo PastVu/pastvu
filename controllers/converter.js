@@ -10,7 +10,6 @@ import _ from 'lodash';
 import path from 'path';
 import util from 'util';
 import log4js from 'log4js';
-import makeDir from 'make-dir';
 import moment from 'moment';
 import config from '../config';
 import constants from './constants';
@@ -461,7 +460,7 @@ async function conveyorSubStep(photo, { isPublic = true, protectCover = false, w
             commands.push(`-quality ${variant.quality}`);
         }
 
-        await makeDir(dstDir);
+        await fsAsync.mkdir(dstDir, { recursive: true });
 
         if (!variant.noTransforn) {
             if (variant.crop) {
@@ -613,7 +612,7 @@ export async function movePhotoFiles({ photo, copy = false, toProtected = false 
         const source = path.join(sourceDir, key);
         const target = path.join(targetDir, key);
 
-        await makeDir(path.join(target, fileDir));
+        await fsAsync.mkdir(path.join(target, fileDir), { recursive: true });
 
         return Promise.all([
             method(path.join(source, filePath), path.join(target, filePath)),
