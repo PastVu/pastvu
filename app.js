@@ -150,7 +150,7 @@ export async function configure(startStamp) {
     }
 
     if (config.serveStore) {
-        const got = require('got');
+        const { default: got } = await import('got');
         const rewrite = require('express-urlrewrite');
         const { createProxyMiddleware } = require('http-proxy-middleware');
         const uploadServer = `http://${config.uploader.hostname || 'localhost'}:${config.uploader.port}`;
@@ -166,11 +166,10 @@ export async function configure(startStamp) {
         app.use('/_pr/',
             async (req, res, next) => {
                 try {
-                    const response = await got({
-                        url: `${downloadServer}${req.originalUrl}`,
+                    const response = await got(`${downloadServer}${req.originalUrl}`, {
                         headers: req.headers,
                         followRedirect: false,
-                        timeout: 1500,
+                        timeout: { request: 1500 },
                     });
 
                     if (response.statusCode === 303) { // 303 means ok, user can get protected file
