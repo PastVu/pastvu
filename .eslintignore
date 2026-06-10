@@ -4,10 +4,21 @@
 
 # App specific
 babel/output.js
+bin/**
 logs/**
 misc/**
 views/**
 basepatch/**
+
+# Third-party libs bundled under public/js — keep the exceptions
+# in sync with the eslint task in Gruntfile.js.
+public/js/shape2geojson/**
+public/js/lib/**
+!public/js/lib/Browser.js
+!public/js/lib/JSExtensions.js
+!public/js/lib/Utils.js
+!public/js/lib/knockout/extends.js
+!public/js/lib/leaflet/extends/**
 
 # Lint configs
 !.eslintrc.js
