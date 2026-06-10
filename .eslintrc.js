@@ -59,6 +59,11 @@ module.exports = {
             // mongoose.Types.ObjectId.
             'definedTypes': ['ObjectId'],
         }],
+        // Disable noise added by recommended in newer plugin versions.
+        'jsdoc/tag-lines': 0,
+        'jsdoc/no-defaults': 0,
+        'jsdoc/check-types': 0,
+        'jsdoc/no-multi-asterisks': 0,
 
         // babel inserts `'use strict';` for us
         'strict': [0, 'never'],
@@ -740,6 +745,10 @@ module.exports = {
                 'jest/max-expects': [1, { 'max': 10 }],
                 // We are not using TypeScript
                 'jest/no-untyped-mock-factory': 0,
+                // We rely on jest globals; no need to import them explicitly.
+                'jest/prefer-importing-jest-globals': 0,
+                // Not every test must end with an expect (e.g. checks via throws).
+                'jest/prefer-ending-with-an-expect': 0,
             },
         },
         {

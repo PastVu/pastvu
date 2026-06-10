@@ -237,7 +237,7 @@ module.exports = function (grunt) {
         },
         eslint: {
             options: {
-                configFile: '.eslintrc.js',
+                overrideConfigFile: '.eslintrc.js',
                 fix: grunt.option('fix'),
             },
             all: {
