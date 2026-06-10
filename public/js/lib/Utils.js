@@ -886,7 +886,7 @@ define(['jquery', 'underscore', 'underscore.string', 'i18n', 'lib/geocoordsparse
                 return new RegExp('(?:^|;\\s*)' + escape(sKey).replace(/[\-\.\+\*]/g, '\\$&') + '\\s*\\=').test(document.cookie); //eslint-disable-line no-useless-escape
             },
             keys: /* optional method: you can safely remove it! */ function () {
-                //eslint-disable-next-line no-useless-escape
+                //eslint-disable-next-line no-useless-escape, no-useless-backreference
                 const aKeys = document.cookie.replace(/((?:^|\s*;)[^\=]+)(?=;|$)|^\s*|\s*(?:\=[^;]*)?(?:\1|$)/g, '').split(/\s*(?:\=[^;]*)?;\s*/);
                 let nIdx;
 
