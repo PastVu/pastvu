@@ -128,14 +128,9 @@
         "request": "2.88.2",
         "requirejs": "2.3.8",
         "step": "1.0.0",
-        "stylelint": "15.11.0",
-        "stylelint-config-standard": "34.0.0",
+        "stylelint": "17.13.0",
+        "stylelint-config-standard": "40.0.0",
         "yamlparser": "0.0.2"
-    },
-    "overrides": {
-        "grunt-stylelint": {
-            "stylelint": "14.x || 15.x"
-        }
     },
     "engines": {
         "node": "24.16.0"
