@@ -7,13 +7,9 @@ const globals = require('globals');
 const js = require('@eslint/js');
 const jsdocPlugin = require('eslint-plugin-jsdoc');
 const jestPlugin = require('eslint-plugin-jest');
-const headerRule = require('./.eslint/header-rule');
+const headersPlugin = require('eslint-plugin-headers');
 
-const localPlugin = {
-    rules: {
-        'header': headerRule,
-    },
-};
+const HEADER_CONTENT = 'Copyright: The PastVu contributors.\nGNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)';
 
 const sharedLanguageOptions = {
     ecmaVersion: 2022,
@@ -75,7 +71,7 @@ module.exports = [
             reportUnusedDisableDirectives: true,
         },
         plugins: {
-            local: localPlugin,
+            headers: headersPlugin,
         },
         rules: {
             'jsdoc/require-jsdoc': 0,
@@ -425,7 +421,12 @@ module.exports = [
             'wrap-regex': 0,
 
             'object-curly-spacing': [2, 'always'],
-            'local/header': 2,
+            'headers/header-format': [2, {
+                source: 'string',
+                style: 'jsdoc',
+                content: HEADER_CONTENT,
+                trailingNewlines: 2,
+            }],
         },
     },
     {
@@ -478,7 +479,7 @@ module.exports = [
     {
         files: ['config/*example'],
         rules: {
-            'local/header': 0,
+            'headers/header-format': 0,
         },
     },
 ];
