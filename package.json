@@ -103,7 +103,6 @@
         "grunt-contrib-clean": "2.0.1",
         "grunt-contrib-compress": "2.0.0",
         "grunt-contrib-pug": "3.0.0",
-        "grunt-contrib-requirejs": "1.0.0",
         "grunt-contrib-uglify": "5.2.2",
         "grunt-eslint": "26.0.0",
         "grunt-exec": "3.0.0",
