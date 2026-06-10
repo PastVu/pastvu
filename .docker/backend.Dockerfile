@@ -1,4 +1,4 @@
-ARG NODE_TAG=24.16.0
+ARG NODE_TAG=26.3.0
 
 FROM node:${NODE_TAG} AS base
 RUN apt-get update && apt-get install -y \
