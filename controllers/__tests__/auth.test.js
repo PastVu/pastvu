@@ -396,7 +396,7 @@ describe('authentication', () => {
         // Define test data
         const testData = [
             ['empty login', { 'login': '' }, InputError, constants.INPUT_LOGIN_REQUIRED],
-            ['non existing user', { 'login': 'user2' }, InputError, constants.AUTHENTICATION_REGISTRATION],
+            ['non existing user', { 'login': 'user2' }, AuthenticationError, constants.AUTHENTICATION_REGISTRATION],
         ];
 
         it.each(testData)('throws on %s', async (descr, data, ErrorClass, errorMessage) => {
