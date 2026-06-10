@@ -6,7 +6,6 @@
 import ms from 'ms';
 import _ from 'lodash';
 import log4js from 'log4js';
-import locale from 'locale';
 import config from '../config';
 import Utils from '../commons/Utils';
 import * as regionController from './region';
@@ -25,10 +24,6 @@ const SESSION_USER_LIFE = ms('21d'); // Lifetime of a registered user session
 const SESSION_ANON_LIFE = ms('7d'); // Lifetime of an anonymous user session
 const loopbackIPs = new Set(['127.0.0.1', '::ffff:127.0.0.1', '::1']);
 
-// Locales Map for checking their presence after header parsing
-const localesMap = new Map(config.locales.map(locale => [locale, locale]));
-// Default locale is the first one from config
-const localeDefault = config.locales[0];
 // Method for parsing and checking user-gent
 export const checkUserAgent = Utils.checkUserAgent(config.browsers);
 
@@ -73,23 +68,6 @@ const getBrowserAgent = function (browser) {
 
     return agent;
 };
-
-// Determine user locale that we support based on 'accept-language' header
-export const identifyUserLocale = (function () {
-    // Locales for comparison
-    const localesSuported = new locale.Locales(config.locales, localeDefault);
-
-    return function (acceptLanguage) {
-        if (_.isEmpty(acceptLanguage)) {
-            return localeDefault; // If parameter is not specified, return default locale
-        }
-
-        // Find the most suitable locale for agent
-        const suggestedLocale = new locale.Locales(acceptLanguage).best(localesSuported);
-
-        return localesMap.get(suggestedLocale.normalized) || localesMap.get(suggestedLocale.language) || localeDefault;
-    };
-}());
 
 export const getPlainUser = (function () {
     const userToPublicObject = function (doc, ret/* , options */) {
