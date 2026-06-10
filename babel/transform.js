@@ -11,44 +11,37 @@ const _ = require('lodash');
 const path = require('path');
 const colors = require('ansi-colors');
 const babel = require('@babel/core');
-const desc = `
-  Tranforms script with Babel using application's config.
-  Usage: $0 <file> [options]
+const parseArgv = require('../commons/parseArgv');
 
-  By default transpiles script for server.
-  Use -c option to specify another config`;
+const help = `
+  Transforms script with Babel using application's config.
+  Usage: transform.js -f <file> [-c <config>] [-o <out>]
 
-const argv = require('yargs')
-    .usage(desc)
-    .options({
-        'c': {
-            describe: 'Config for transformation. Default is config for server',
-            default: path.join(__dirname, 'server.config.js'),
-            alias: 'config',
-            type: 'string',
-        },
-        'f': {
-            describe: 'File to transform',
-            demand: true,
-            alias: 'file',
-            type: 'string',
-        },
-        'o': {
-            describe: 'File to save transformed script into',
-            alias: 'out',
-            type: 'string',
-        },
-    })
-    .check(argv => {
-        if (!fs.existsSync(argv.file)) {
-            throw new Error(`File "${argv.file}" doesn't exist`);
-        }
+  By default transpiles script for server. Use -c to specify another config.
 
-        return true;
-    })
-    .help('help')
-    .showHelpOnFail(false, 'Run with `--help` to see usage example')
-    .argv;
+    -f, --file    File to transform (required)
+    -c, --config  Babel config (default: ./server.config.js)
+    -o, --out     Output file (omit to print to stdout)
+    --help        Show this help`;
+
+const argv = {
+    config: path.join(__dirname, 'server.config.js'),
+    ...parseArgv({ aliases: { c: 'config', f: 'file', o: 'out' } }),
+};
+
+if (argv.help) {
+    console.log(help);
+    process.exit(0);
+}
+
+if (!argv.file) {
+    console.error('Missing required option: -f / --file. Run with --help.');
+    process.exit(1);
+}
+
+if (!fs.existsSync(argv.file)) {
+    throw new Error(`File "${argv.file}" doesn't exist`);
+}
 
 const input = fs.readFileSync(argv.file, 'utf8');
 const config = require(path.resolve(argv.config));

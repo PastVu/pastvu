@@ -26,27 +26,13 @@ if (require.main !== module) { // If run.js is required by another module (for e
     const util = require('util');
     const log4js = require('log4js');
 
-    const argv = require('yargs')
-        .help('help') // --help to get help
-        .options('s', {
-            'alias': 'script',
-            'default': 'app.js',
-            describe: 'Path to script to start',
-        })
-        .options('c', {
-            alias: 'config',
-            describe: 'Alternative path to config file',
-        })
-        .options('lc', {
-            alias: 'logConfig',
-            describe: 'Log config',
-            'default': true,
-        })
-        .options('primary', {
-            boolean: true,
-            describe: 'Run as primary instance',
-        })
-        .argv;
+    const parseArgv = require('../commons/parseArgv');
+    const parsed = parseArgv({ aliases: { s: 'script', c: 'config', lc: 'logConfig' } });
+    const argv = {
+        script: 'app.js',
+        logConfig: true,
+        ...parsed,
+    };
 
     const config = require('../config');
     const env = config.env;

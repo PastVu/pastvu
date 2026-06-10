@@ -87,8 +87,7 @@
         "serve-index": "1.9.2",
         "socket.io": "4.8.3",
         "underscore.string": "3.3.6",
-        "useragent": "2.3.0",
-        "yargs": "17.7.2"
+        "useragent": "2.3.0"
     },
     "devDependencies": {
         "@babel/cli": "7.29.7",

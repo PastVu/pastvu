@@ -5,7 +5,7 @@
 
 // Migrate-mongo configuration.
 const mongoConfig = require('./').mongo;
-const argv = require('yargs').argv;
+const argv = require('../commons/parseArgv')();
 const logger = require('log4js').getLogger('migrate-mongo');
 
 // Replace node console with logger for up and down migration commands, so we have a

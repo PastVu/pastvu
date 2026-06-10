@@ -19,7 +19,7 @@ const os = require('os');
 const fs = require('fs');
 const _ = require('lodash');
 const path = require('path');
-const argv = require('yargs').argv;
+const argv = require('../commons/parseArgv')();
 const defaultConfig = require('./default.config');
 const browserConfig = require('./browsers.config');
 const log4js = require('log4js');
@@ -94,7 +94,7 @@ module.exports = (function () {
     exitHook(cb => {
         // Delay logger shutdown to capture log output when we stop other things.
         setTimeout(() => {
-            const loggerName = argv.script ? path.parse(argv.script).name : path.parse(argv.$0).name;
+            const loggerName = argv.script ? path.parse(argv.script).name : path.parse(process.argv[1]).name;
 
             log4js.getLogger(loggerName).info('Logger is stopped');
             log4js.shutdown(cb);
