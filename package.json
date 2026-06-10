@@ -118,7 +118,6 @@
         "less-middleware": "3.1.0",
         "lint-staged": "17.0.7",
         "mongodb-memory-server": "11.2.0",
-        "osm-and-geojson": "0.1.2",
         "requirejs": "2.3.8",
         "step": "1.0.0",
         "stylelint": "17.13.0",
