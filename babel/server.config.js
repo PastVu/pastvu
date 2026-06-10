@@ -11,7 +11,7 @@ module.exports = {
     ],
     env: {
         test: {
-            plugins: ['rewire'],
+            plugins: ['rewire', require.resolve('./plugin-rewire-jest-fix')],
         },
     },
 };
