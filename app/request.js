@@ -10,7 +10,7 @@ import log4js from 'log4js';
 import config from '../config';
 import webApiCall from './webapi';
 import Utils from '../commons/Utils';
-import { getT, langFromHandshake } from '../commons/i18n';
+import { langFromHandshake } from '../commons/i18n';
 import { ApplicationError } from './errors';
 import { send500 } from '../controllers/routes';
 import constantsError from './errors/constants';
@@ -211,11 +211,9 @@ export const handleHTTPRequest = async function (req, res, next) {
             return res.status(400).send(error.code);
         }
 
-        const locale = sessionController.identifyUserLocale(req.headers['accept-language']);
-
         if (error.code === constantsError.BAD_BROWSER) {
             res.statusCode = 200;
-            res.render('status/badbrowser', { agent: error.details.agent, locale, t: getT(locale) });
+            res.render('status/badbrowser', { agent: error.details.agent });
         } else if (error.code === 'ETIMEDOUT') {
             res.setHeader('Retry-After', 60);
             res.status(503).send('Service Unavailable: ' + (_.isFunction(error.toString) ? error.toString() : error));

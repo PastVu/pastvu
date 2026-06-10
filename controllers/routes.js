@@ -9,7 +9,7 @@ import express from 'express';
 import log4js from 'log4js';
 import config from '../config';
 import Utils from '../commons/Utils';
-import { getT, langFromRequest } from '../commons/i18n';
+import { langFromRequest, pickRegionTitle } from '../commons/i18n';
 import * as session from './_session';
 import { clientParams, ready as settingsReady } from './settings';
 import NotFoundError from '../app/errors/NotFound';
@@ -29,19 +29,6 @@ const origin = config.client.origin;
 let clientParamsJSON = JSON.stringify(clientParams);
 
 settingsReady.then(() => clientParamsJSON = JSON.stringify(clientParams));
-
-// Map our short language codes to the full OpenGraph locale tags used in
-// meta(property="og:locale") so social previews render in the matching
-// language.
-const OG_LOCALES = { ru: 'ru_RU', en: 'en_US' };
-
-function ogLocale(lang) {
-    return OG_LOCALES[lang] || OG_LOCALES.ru;
-}
-
-function pickRegionTitle(region, lang) {
-    return lang === 'en' ? region.title_en || region.title_local : region.title_local;
-}
 
 function genInitDataString(req) {
     const usObj = req.handshake.usObj;
@@ -219,7 +206,6 @@ function meta(req) {
 function appMainHandler(req, res) {
     const { nojsUrl, nojsShow } = checkNoJS(req);
     const { browser = {}, photoData: { photo, can } = {} } = req;
-    const lang = langFromRequest(req);
 
     if (photo && photo.s !== status.PUBLIC && !can.protected) {
         res.statusCode = 403; // This is more for search engines
@@ -235,16 +221,12 @@ function appMainHandler(req, res) {
         agent: browser.agent,
         polyfills: browser.polyfills,
         initData: genInitDataString(req),
-        lang,
-        ogLocale: ogLocale(lang),
-        t: getT(lang),
     });
 }
 
 function appAdminHandler(req, res) {
     const { nojsUrl, nojsShow } = checkNoJS(req);
     const { browser = {} } = req;
-    const lang = langFromRequest(req);
 
     res.statusCode = 200;
     res.render('app', {
@@ -255,9 +237,6 @@ function appAdminHandler(req, res) {
         agent: browser.agent,
         polyfills: browser.polyfills,
         initData: genInitDataString(req),
-        lang,
-        ogLocale: ogLocale(lang),
-        t: getT(lang),
     });
 }
 
@@ -283,10 +262,10 @@ function getRegionForGallery(req, res, next) {
             const regions = getRegionsArrPublicFromCache(parseFilter(filter).r);
 
             if (!_.isEmpty(regions)) {
-                const lang = langFromRequest(req);
+                const { lang, t } = res.locals;
                 const regionTitles = regions.map(region => pickRegionTitle(region, lang)).join(', ');
 
-                req.pageTitle = getT(lang)('Retro photos of {{regions}}', { regions: regionTitles });
+                req.pageTitle = t('Retro photos of {{regions}}', { regions: regionTitles });
             }
         } catch (err) {
             return next(err);
@@ -329,13 +308,10 @@ export function bindRoutes(app) {
 
     // Obsolete browser
     app.get('/badbrowser', getReqBrowser, setStaticHeaders, (req, res) => {
-        const t = getT(langFromRequest(req));
-
         res.statusCode = 200;
         res.render('status/badbrowser', {
             agent: req.browser && req.browser.agent,
-            title: t('You are using an outdated browser version'),
-            t,
+            title: res.locals.t('You are using an outdated browser version'),
         });
     });
 
@@ -345,7 +321,7 @@ export function bindRoutes(app) {
 
         res.statusCode = 200;
         res.setHeader('Cache-Control', 'no-cache,no-store,max-age=0,must-revalidate');
-        res.render('status/myua', { agent, accept, title, t: getT(langFromRequest(req)) });
+        res.render('status/myua', { agent, accept, title });
     });
 
     // Ping-pong to verify the server is working
@@ -370,7 +346,7 @@ export const send404 = (function () {
     return function (req, res, error) {
         res.statusCode = 404;
 
-        const lang = langFromRequest(req);
+        const { lang } = res.locals;
 
         if (req.xhr) {
             return res.end(error.toJSON ? JSON.stringify(error.toJSON(lang)) : json404);
@@ -382,7 +358,7 @@ export const send404 = (function () {
             return res.end(cached);
         }
 
-        res.render('status/404', { t: getT(lang) }, (err, html) => {
+        res.render('status/404', (err, html) => {
             if (err) {
                 loggerError.error('Cannot render 404 page', err);
                 // Don't cache the fallback — a transient render error would
@@ -405,13 +381,11 @@ export const send500 = (function () {
     return function (req, res, error) {
         res.statusCode = 500;
 
-        const lang = langFromRequest(req);
-
         if (req.xhr) {
-            return res.end(error.toJSON ? JSON.stringify(error.toJSON(lang)) : json500);
+            return res.end(error.toJSON ? JSON.stringify(error.toJSON(res.locals.lang)) : json500);
         }
 
-        res.render('status/500', { error, t: getT(lang) }, (err, html) => {
+        res.render('status/500', { error }, (err, html) => {
             if (err) {
                 loggerError.error('Cannot render 500 page', err);
             }

@@ -131,4 +131,47 @@ function langFromRequest(req) {
     return resolveLang(parseCookie(cookieHeader).past_lang);
 }
 
-module.exports = { getT, t, userLang, langFromHandshake, langFromRequest, init };
+// Map our short language codes to the full OpenGraph locale tags used in
+// meta(property="og:locale") so social previews render in the matching
+// language.
+const OG_LOCALES = { ru: 'ru_RU', en: 'en_US' };
+
+/**
+ * Return the OpenGraph locale tag for the given short language code.
+ * Falls back to the configured site default (FALLBACK) so a stale cookie
+ * value can't force a mismatch between rendered text and og:locale.
+ */
+function ogLocale(lang) {
+    return OG_LOCALES[lang] || OG_LOCALES[FALLBACK];
+}
+
+/**
+ * Pick a region's display title for the given language. The shared server
+ * shape is { title_en, title_local }; English falls back to title_local when
+ * a region has no English title yet.
+ */
+function pickRegionTitle(region, lang) {
+    return lang === 'en' ? region.title_en || region.title_local : region.title_local;
+}
+
+/**
+ * Express middleware that exposes the request's language and i18n helpers as
+ * template locals. Templates and `res.render()` callers can then read `lang`,
+ * `t`, and `ogLocale` without each handler threading them through explicitly.
+ * Callers that need a different language (e.g. accept-language for a browser
+ * detected as obsolete before the cookie is trusted) can still override by
+ * passing the keys in the `res.render(view, options)` options object.
+ */
+function i18nLocals(req, res, next) {
+    const lang = langFromRequest(req);
+
+    res.locals.lang = lang;
+    res.locals.t = getT(lang);
+    res.locals.ogLocale = ogLocale(lang);
+    next();
+}
+
+module.exports = {
+    getT, t, userLang, langFromHandshake, langFromRequest, init,
+    OG_LOCALES, ogLocale, pickRegionTitle, i18nLocals,
+};

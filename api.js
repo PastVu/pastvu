@@ -127,6 +127,7 @@ async.waterfall([
         Utils = require('./commons/Utils.js'); //Utils должны реквайрится после установки глобальных переменных, так как они там используются
 
         const ourMiddlewares = require('./controllers/middleware.js');
+        const { i18nLocals } = require('./commons/i18n.js');
 
 
         app = express();
@@ -147,6 +148,10 @@ async.waterfall([
         if (gzip) {
             app.use(require('compression')());
         }
+
+        // Expose lang/t/ogLocale on res.locals so api/help is rendered in the
+        // visitor's language without the route handler threading i18n through.
+        app.use(i18nLocals);
 
         callback(null);
     },

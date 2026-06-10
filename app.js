@@ -13,6 +13,7 @@ import config from './config';
 import express from 'express';
 import { Server } from 'socket.io';
 import Utils from './commons/Utils';
+import { i18nLocals } from './commons/i18n';
 import connectDb, { waitDb } from './controllers/connection';
 import * as session from './controllers/_session';
 import CoreServer from './controllers/serviceConnector';
@@ -237,6 +238,10 @@ export async function configure(startStamp) {
             express.static(logPath, { maxAge: 0, etag: false })
         );
     }
+
+    // Expose lang/t/ogLocale on res.locals so every res.render() picks them
+    // up without each route handler threading i18n through render options.
+    app.use(i18nLocals);
 
     // Handle appliaction routes
     routes.bindRoutes(app);
