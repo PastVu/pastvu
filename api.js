@@ -130,16 +130,16 @@ async.waterfall([
 
 
         app = express();
-        app.enable('trust proxy', true); //Если нужно брать ip пользователя через req.ips(), это вернет массив из X-Forwarded-For с переданным количеством ip. https://github.com/visionmedia/express/blob/master/History.md#430--2014-05-21
-        app.disable('x-powered-by'); //Disable default X-Powered-By
+        app.set('trust proxy', true); //Если нужно брать ip пользователя через req.ips(), это вернет массив из X-Forwarded-For с переданным количеством ip. https://github.com/visionmedia/express/blob/master/History.md#430--2014-05-21
+        app.set('x-powered-by', false); //Disable default X-Powered-By
         app.set('etag', false); //Disable etag
         app.set('views', 'views');
         app.set('view engine', 'pug');
 
         if (land === 'dev') {
-            app.disable('view cache'); //В дев выключаем только для того, чтобы можно было править шаблон без перезагрузки сервера
+            app.set('view cache', false); //В дев выключаем только для того, чтобы можно было править шаблон без перезагрузки сервера
         } else {
-            app.enable('view cache');
+            app.set('view cache', true);
         }
 
         app.use(ourMiddlewares.responseHeaderHook());

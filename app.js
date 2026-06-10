@@ -77,7 +77,7 @@ export async function configure(startStamp) {
         nolog: '\.css|\.ico|\/img\/', // eslint-disable-line no-useless-escape
     }));
 
-    app.disable('x-powered-by'); // Disable default X-Powered-By
+    app.set('x-powered-by', false); // Disable default X-Powered-By
     app.set('query parser', 'extended'); // Parse query with 'qs' module
     app.set('views', 'views');
     app.set('view engine', 'pug');
@@ -94,9 +94,9 @@ export async function configure(startStamp) {
     // Enable chache of temlates in production
     // It reduce rendering time (and correspondingly 'waiting' time of client request) dramatically
     if (env === 'development') {
-        app.disable('view cache'); // In dev disable this, so we able to edit pug templates without server reload
+        app.set('view cache', false); // In dev disable this, so we able to edit pug templates without server reload
     } else {
-        app.enable('view cache');
+        app.set('view cache', true);
     }
 
     // Set an object which properties will be available from all pug-templates as global variables
@@ -190,10 +190,10 @@ export async function configure(startStamp) {
         // Serve avatars
         app.use('/_a/', ourMiddlewares.serveImages(path.join(storePath, 'public/avatars/'), { maxAge: ms('2d') }));
         // Replace unfound avatars with default one
-        app.get('/_a/d/*', (req, res) => {
+        app.get('/_a/d/{*path}', (req, res) => {
             res.redirect(302, '/img/caps/avatar.png');
         });
-        app.get('/_a/h/*', (req, res) => {
+        app.get('/_a/h/{*path}', (req, res) => {
             res.redirect(302, '/img/caps/avatarth.png');
         });
 

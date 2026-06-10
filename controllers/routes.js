@@ -5,6 +5,7 @@
 
 import _ from 'lodash';
 import http from 'http';
+import express from 'express';
 import log4js from 'log4js';
 import config from '../config';
 import Utils from '../commons/Utils';
@@ -312,7 +313,7 @@ export function bindRoutes(app) {
     app.get(/^\/ps(?:\/(\d{1,6}))?\/?$/, handleHTTPRequest, setStaticHeaders, getRegionForGallery, appMainHandler);
 
     if (config.serveHTTPApi) {
-        app.use('/api2', require('body-parser').json({ limit: '4mb' }), handleHTTPRequest, handleHTTPAPIRequest);
+        app.use('/api2', express.json({ limit: '4mb' }), handleHTTPRequest, handleHTTPAPIRequest);
     }
 
     // Rules
@@ -354,7 +355,7 @@ export function bindRoutes(app) {
     });
 
     // Last handler. If request reaches it, means that there is no handler for this request
-    app.all('*', (req, res, next) => {
+    app.all('{*splat}', (req, res, next) => {
         const { url, method, headers: { 'user-agent': ua, referer } = {} } = req;
 
         next(new NotFoundError({ url, method, ua, referer }));
