@@ -474,17 +474,18 @@ const photosFields = {
  * @param {string} obj.userId
  * @param {number} obj.page
  * @param {string} obj.type (photo or news)
+ * @param {number} [obj.perPage] page size; defaults to `subscrPerPage`
  * @returns {Promise}
  */
-function getUserObjectRel({ userId, page, type }) {
-    const skip = page * subscrPerPage;
+export function getUserObjectRel({ userId, page, type, perPage = subscrPerPage }) {
+    const skip = page * perPage;
 
     return UserObjectRel.aggregate([
         { $match: { user: userId, type, sbscr_create: { $exists: true } } },
         { $project: { _id: 0, obj: 1, sbscr_create: 1, sbscr_noty: 1, ccount_new: { $cond: { if: { $eq: [0, '$ccount_new'] }, then: '$$REMOVE', else: '$ccount_new' } } } },
         { $sort: { ccount_new: -1, sbscr_create: -1 } },
         { $skip: skip },
-        { $limit: subscrPerPage },
+        { $limit: perPage },
     ]);
 }
 

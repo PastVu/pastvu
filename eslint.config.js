@@ -464,9 +464,7 @@ module.exports = [
             ...jestPlugin.configs['flat/all'].rules,
             'jest/prefer-expect-assertions': [1, { onlyFunctionsWithAsyncKeyword: true }],
             'jest/no-hooks': 0,
-            'no-underscore-dangle': [2, { allow: [
-                '_id', '__get__', '__set__', '__RewireAPI__', '__Rewire__', '__ResetDependency__', '__GetDependency__',
-            ] }],
+            'no-underscore-dangle': [2, { allow: ['_id'] }],
             'jest/max-expects': [1, { max: 10 }],
             'jest/no-untyped-mock-factory': 0,
             'jest/prefer-importing-jest-globals': 0,
