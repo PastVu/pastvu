@@ -37,6 +37,38 @@ export function pugToHtml(seekPath) {
     };
 }
 
+// Middleware for compiling requested .css from a sibling .less on demand, usually for development.
+// less is a devDep, so require it lazily — production should not call this factory.
+export function lessToCss(styleDir) {
+    const less = require('less');
+
+    return async (req, res, next) => {
+        if (!req.path.endsWith('.css')) {
+            return next();
+        }
+
+        const lessPath = path.join(styleDir, req.path.replace(/\.css$/, '.less'));
+
+        if (!lessPath.startsWith(styleDir + path.sep)) {
+            return next();
+        }
+
+        try {
+            const src = await fsAsync.readFile(lessPath, 'utf-8');
+            const { css } = await less.render(src, { filename: lessPath });
+
+            await fsAsync.writeFile(lessPath.replace(/\.less$/, '.css'), css);
+            next();
+        } catch (err) {
+            if (err.code === 'ENOENT') {
+                return next();
+            }
+
+            next(err);
+        }
+    };
+}
+
 // Middleware for cors switching-on for a particular domain with wildcard
 export function cors(originRoot) {
     const originRegExp = new RegExp(originRoot + '$', '');

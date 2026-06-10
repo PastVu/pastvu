@@ -123,18 +123,7 @@ export async function configure(startStamp) {
         const pub = path.resolve('./public');
 
         if (env === 'development') {
-            const lessMiddleware = require('less-middleware');
-
-            app.use('/style', lessMiddleware(path.join(pub, 'style'), {
-                force: true,
-                once: false,
-                debug: false,
-                render: {
-                    compress: false,
-                    yuicompress: false,
-                    // sourceMap: { sourceMapFileInline: true }
-                },
-            }));
+            app.use('/style', ourMiddlewares.lessToCss(path.join(pub, 'style')));
         }
 
         // Favicon need to be placed before static, because it will written from disc once and will be cached
