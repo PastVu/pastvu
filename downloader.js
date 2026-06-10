@@ -9,7 +9,7 @@ import _ from 'lodash';
 import path from 'path';
 import http from 'http';
 import mimeMap from 'mime';
-import LRU from 'lru-cache';
+import { LRUCache } from 'lru-cache';
 import log4js from 'log4js';
 import config from './config';
 import Utils from './commons/Utils';
@@ -167,7 +167,7 @@ export async function configure(startStamp) {
         // Session key in client cookies
         const SESSION_COOKIE_KEY = 'past.sid';
         // Local cache to not pull redis more then once if request/core for the same file is arrived within TTL
-        const L0Cache = new LRU({ max: 2000, maxAge: config.protectedFileLinkTTL });
+        const L0Cache = new LRUCache({ max: 2000, ttl: config.protectedFileLinkTTL });
         const hostnameRegexp = new RegExp(`^https?:\\/\\/(www\\.)?${config.client.hostname}`, 'i');
 
         (function countPrint() {
@@ -185,7 +185,7 @@ export async function configure(startStamp) {
             }
 
             // Set result to L0 lru-cache over remaining ttl, that was returned from redis
-            L0Cache.set(key, mime, ttl);
+            L0Cache.set(key, mime, { ttl });
 
             return mime;
         }
