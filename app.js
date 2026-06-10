@@ -197,8 +197,8 @@ export async function configure(startStamp) {
             res.redirect(302, '/img/caps/avatarth.png');
         });
 
-        app.use(['/upload', '/uploadava'], createProxyMiddleware({ target: uploadServer, logger }));
-        app.use('/download', createProxyMiddleware({ target: downloadServer, logger }));
+        app.use(createProxyMiddleware({ target: uploadServer, pathFilter: ['/upload', '/uploadava'], logger }));
+        app.use(createProxyMiddleware({ target: downloadServer, pathFilter: '/download', logger }));
 
         // Seal store paths, ie request that achieve this handler will receive 404
         app.get(/^\/(?:_a|_prn)(?:\/.*)$/, static404);
