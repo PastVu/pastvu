@@ -8,7 +8,7 @@ import _ from 'lodash';
 import log4js from 'log4js';
 import config from '../config';
 import Utils from '../commons/Utils';
-import { polygon as turfPolygon, intersect as turfIntersect } from '@turf/turf';
+import { polygon as turfPolygon, intersect as turfIntersect, featureCollection as turfFeatureCollection } from '@turf/turf';
 import geojsonRewind from '@mapbox/geojson-rewind';
 import { getIssues } from '@placemarkio/check-geojson';
 import geojsonArea from '@mapbox/geojson-area';
@@ -968,7 +968,9 @@ async function save(data) {
 
                     for (let i = 1; i < leftPolygons.length; i++) {
                         const polygon = leftPolygons[i];
-                        const intersectionWithExterior = turfIntersect(turfPolygon(exteriorPolygon), turfPolygon(polygon));
+                        const intersectionWithExterior = turfIntersect(
+                            turfFeatureCollection([turfPolygon(exteriorPolygon), turfPolygon(polygon)])
+                        );
 
                         if (intersectionWithExterior && intersectionWithExterior.geometry.type === 'Polygon') {
                             // If polygons intersect as Polygon, means current one is a hole (interior ring)
