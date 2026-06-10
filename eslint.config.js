@@ -5,8 +5,6 @@
 
 const globals = require('globals');
 const js = require('@eslint/js');
-const babelParser = require('@babel/eslint-parser');
-const babelPlugin = require('@babel/eslint-plugin');
 const jsdocPlugin = require('eslint-plugin-jsdoc');
 const jestPlugin = require('eslint-plugin-jest');
 const headerRule = require('./.eslint/header-rule');
@@ -18,18 +16,8 @@ const localPlugin = {
 };
 
 const sharedLanguageOptions = {
-    ecmaVersion: 2020,
+    ecmaVersion: 2022,
     sourceType: 'module',
-    parser: babelParser,
-    parserOptions: {
-        ecmaFeatures: {
-            objectLiteralDuplicateProperties: false,
-        },
-        codeFrame: true,
-        babelOptions: {
-            configFile: './babel/server.config.js',
-        },
-    },
     globals: {
         ...globals.node,
         ...globals.browser,
@@ -87,7 +75,6 @@ module.exports = [
             reportUnusedDisableDirectives: true,
         },
         plugins: {
-            '@babel': babelPlugin,
             local: localPlugin,
         },
         rules: {
@@ -240,6 +227,8 @@ module.exports = [
             'no-undef': 2,
             'no-undefined': 0,
             'no-unused-vars': [2, { vars: 'all', args: 'after-used', caughtErrors: 'none', ignoreRestSiblings: true }],
+            // Codebase intentionally nulls out vars at end of scope to release refs for GC.
+            'no-useless-assignment': 0,
             'no-use-before-define': [2, { functions: false, classes: true }],
 
             'for-direction': 2,
@@ -435,11 +424,7 @@ module.exports = [
             'unicode-bom': [2, 'never'],
             'wrap-regex': 0,
 
-            '@babel/new-cap': 0,
-            '@babel/object-curly-spacing': [2, 'always'],
-            '@babel/no-invalid-this': 0,
-            '@babel/semi': 2,
-            '@babel/no-unused-expressions': 2,
+            'object-curly-spacing': [2, 'always'],
             'local/header': 2,
         },
     },
