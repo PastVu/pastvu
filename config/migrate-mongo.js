@@ -5,12 +5,11 @@
 
 // Migrate-mongo configuration.
 const mongoConfig = require('./').mongo;
-const argv = require('../commons/parseArgv')();
 const logger = require('log4js').getLogger('migrate-mongo');
 
 // Replace node console with logger for up and down migration commands, so we have a
 // log record for these actions.
-if (argv._.includes('up') || argv._.includes('down')) {
+if (process.argv.includes('up') || process.argv.includes('down')) {
     console.log = logger.info.bind(logger);
     console.error = logger.error.bind(logger);
 }

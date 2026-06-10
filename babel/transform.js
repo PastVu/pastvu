@@ -9,9 +9,9 @@
 const fs = require('fs');
 const _ = require('lodash');
 const path = require('path');
+const util = require('util');
 const colors = require('ansi-colors');
 const babel = require('@babel/core');
-const parseArgv = require('../commons/parseArgv');
 
 const help = `
   Transforms script with Babel using application's config.
@@ -24,10 +24,14 @@ const help = `
     -o, --out     Output file (omit to print to stdout)
     --help        Show this help`;
 
-const argv = {
-    config: path.join(__dirname, 'server.config.js'),
-    ...parseArgv({ aliases: { c: 'config', f: 'file', o: 'out' } }),
-};
+const { values: argv } = util.parseArgs({
+    options: {
+        file: { type: 'string', short: 'f' },
+        config: { type: 'string', short: 'c', default: path.join(__dirname, 'server.config.js') },
+        out: { type: 'string', short: 'o' },
+        help: { type: 'boolean' },
+    },
+});
 
 if (argv.help) {
     console.log(help);

@@ -26,13 +26,14 @@ if (require.main !== module) { // If run.js is required by another module (for e
     const util = require('util');
     const log4js = require('log4js');
 
-    const parseArgv = require('../commons/parseArgv');
-    const parsed = parseArgv({ aliases: { s: 'script', c: 'config', lc: 'logConfig' } });
-    const argv = {
-        script: 'app.js',
-        logConfig: true,
-        ...parsed,
-    };
+    const { values: argv } = util.parseArgs({
+        options: {
+            script: { type: 'string', short: 's', default: 'app.js' },
+            primary: { type: 'boolean', default: false },
+            logConfig: { type: 'boolean', default: true },
+        },
+        strict: false,
+    });
 
     const config = require('../config');
     const env = config.env;
