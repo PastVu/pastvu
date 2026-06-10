@@ -513,6 +513,13 @@ Utils.copyFile = (source, target) => new Promise((resolve, reject) => {
     }
 });
 
+// Moves a file without overwriting an existing target. link+unlink is atomic
+// no-clobber on a single filesystem; all callers move within config.storePath.
+Utils.moveFile = async (source, target) => {
+    await fs.promises.link(source, target);
+    await fs.promises.unlink(source);
+};
+
 // Находит свойства объекта a, значения которых не совпадают с такими свойствами объекта b
 Utils.diff = function (a, b) {
     return _.transform(a, (result, val, key) => {

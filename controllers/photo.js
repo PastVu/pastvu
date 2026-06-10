@@ -5,7 +5,6 @@
 
 import fs from 'fs';
 import ms from 'ms';
-import mv from 'mv';
 import _ from 'lodash';
 import path from 'path';
 import log4js from 'log4js';
@@ -589,17 +588,11 @@ async function create({ files }) {
         files = files.slice(0, canCreate);
     }
 
-    await Promise.all(files.map(item => new Promise((resolve, reject) => {
+    await Promise.all(files.map(item => {
         item.fullfile = item.file.replace(/((.)(.)(.))/, '$2/$3/$4/$1');
 
-        mv(path.join(incomeDir, item.file), path.join(privateDir, item.fullfile), { clobber: false }, err => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve();
-            }
-        });
-    })));
+        return Utils.moveFile(path.join(incomeDir, item.file), path.join(privateDir, item.fullfile));
+    }));
 
     const count = await Counter.incrementBy('photo', files.length);
 

@@ -5,7 +5,6 @@
 
 import fs, { promises as fsAsync } from 'fs';
 import gm from 'gm';
-import mv from 'mv';
 import _ from 'lodash';
 import path from 'path';
 import http from 'http';
@@ -224,10 +223,8 @@ export function configure(startStamp) {
 
                 fileInfo.size = file.size;
                 fileInfo.path = path.join(incomeDir, fileInfo.file);
-                mv(file.filepath, fileInfo.path, { clobber: false }, err => {
-                    if (err) {
-                        logger.error('MV error:', err);
-                    }
+                Utils.moveFile(file.filepath, fileInfo.path).catch(err => {
+                    logger.error('MV error:', err);
                 });
             })
             .on('aborted', () => {
