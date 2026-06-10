@@ -47,7 +47,6 @@
         "sentry:sourcemaps": "sentry-cli sourcemaps inject --org pastvu --project javascript ./appBuild && sentry-cli sourcemaps upload --org pastvu --project javascript ./appBuild"
     },
     "dependencies": {
-        "@aws-sdk/client-sesv2": "3.1065.0",
         "@eslint/js": "10.0.1",
         "@mapbox/geojson-area": "0.2.2",
         "@mapbox/geojson-rewind": "0.5.2",
