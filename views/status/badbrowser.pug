@@ -58,8 +58,8 @@ body
 		.content.fringe
 			p
 				span= t('The PastVu team thinks your browser', { ns: 'status' })
-				if agent && agent.family
-					span.curr=' '+agent.family+' '+agent.major
+				if agent && agent.browser && agent.browser.name
+					span.curr=' '+agent.browser.name+' '+agent.browser.major
 				span= ' ' + t('is outdated and does not meet the modern requirements our site is built around', { ns: 'status' })
 				br
 				br
@@ -76,5 +76,5 @@ body
 				a.safari(href="http://www.apple.com/safari", target="_blank") Apple Safari
 				a.yandex(href="http://browser.yandex.net", target="_blank") Yandex
 			.support
-				a(href='mailto:support@pastvu.comm?subject=Site shows a deprecated browser message&body=Hello! My browser ID: '+(agent&&agent.source?agent.source:''), target="_blank")
+				a(href='mailto:support@pastvu.comm?subject=Site shows a deprecated browser message&body=Hello! My browser ID: '+(agent&&agent.ua?agent.ua:''), target="_blank")
 					| #{t('Write to us if we are wrong: support@pastvu.com', { ns: 'status' })}

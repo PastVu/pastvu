@@ -102,7 +102,7 @@ const setStaticHeaders = (function () {
         // https://developer.mozilla.org/en-US/docs/Web/HTTP/X-Frame-Options
         res.setHeader('X-Frame-Options', xFramePolicy);
 
-        if (req.browser && req.browser.agent.family === 'IE') {
+        if (req.browser && req.browser.agent.browser.name === 'IE') {
             // X-UA-Compatible header has greater precedence than Compatibility View
             // http://msdn.microsoft.com/en-us/library/ff955275(v=vs.85).aspx
             res.setHeader('X-UA-Compatible', xUA);

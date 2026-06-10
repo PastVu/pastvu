@@ -50,20 +50,21 @@ const createLangCookieObj = (function () {
 }());
 
 const getBrowserAgent = function (browser) {
+    const { browser: br, os, device } = browser.agent;
     const agent = {
-        n: browser.agent.family, // Agent name e.g. 'Chrome'
-        v: browser.agent.toVersion(), // Agent version string e.g. '15.0.874'
+        n: br.name, // Agent name e.g. 'Chrome'
+        v: br.version, // Agent version string e.g. '15.0.874'
     };
 
-    const device = browser.agent.device.toString(); // Device e.g 'Asus A100'
-    const os = browser.agent.os.toString(); // Operation system e.g. 'Mac OSX 10.10.1'
+    const osStr = os.name ? os.version ? `${os.name} ${os.version}` : os.name : '';
+    const deviceStr = [device.vendor, device.model].filter(Boolean).join(' ');
 
-    if (os) {
-        agent.os = os;
+    if (osStr) {
+        agent.os = osStr;
     }
 
-    if (device && device !== 'Other') {
-        agent.d = device;
+    if (deviceStr) {
+        agent.d = deviceStr;
     }
 
     return agent;
