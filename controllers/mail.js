@@ -97,12 +97,18 @@ export const ready = new Promise((resolve, reject) => {
 
         transport = nodemailer.createTransport(options);
     } else if (mailConf.type === 'SES') {
-        const aws = require('aws-sdk');
-
-        aws.config.update(mailConf.AWSConfig);
+        const { SESv2Client, SendEmailCommand } = require('@aws-sdk/client-sesv2');
+        // Translate the legacy aws-sdk v2 shape ({ accessKeyId, secretAccessKey, region })
+        // into the v3 client shape ({ region, credentials: {...} }). If creds are absent,
+        // SESv2Client falls back to the standard SDK credential chain (env, IAM role).
+        const { accessKeyId, secretAccessKey, ...rest } = { ...mailConf.AWSConfig, ...mailConf.SESConfig };
+        const sesClient = new SESv2Client({
+            ...rest,
+            ...accessKeyId && secretAccessKey ? { credentials: { accessKeyId, secretAccessKey } } : {},
+        });
 
         transport = nodemailer.createTransport({
-            SES: new aws.SES(mailConf.SESConfig),
+            SES: { sesClient, SendEmailCommand },
         });
     } else {
         logger.error('Mail not configured. Unknown transport type', mailConf.type);
