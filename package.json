@@ -55,7 +55,7 @@
         "async-exit-hook": "2.0.1",
         "basic-auth-connect": "1.1.0",
         "bcrypt": "6.0.0",
-        "bull": "4.16.5",
+        "bullmq": "5.78.0",
         "compression": "1.8.1",
         "cookie": "1.1.1",
         "diff-match-patch": "1.0.5",

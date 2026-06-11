@@ -87,7 +87,7 @@ module.exports = {
     redis: {
         host: 'localhost',
         port: '6379',
-        maxRetriesPerRequest: null, // Required for bull handling sheduled jobs after reconnection.
+        maxRetriesPerRequest: null, // Required for bullmq workers to keep processing across reconnects.
         maxReconnectTime: ms('60s'), // Used in connection controller.
     },
 
