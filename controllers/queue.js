@@ -89,29 +89,6 @@ function getQueueEvents(name) {
 }
 
 /**
- * Build a producer-side controller exposing the small subset of the legacy
- * bull Queue API used across the app: process(jobName, handler) and
- * add(jobName, data, opts).
- *
- * @param {string} name Name of the queue.
- * @returns {{name: string, process: Function, add: Function}}
- */
-function buildQueueController(name) {
-    const queue = getQueue(name);
-    const handlers = handlersByQueue.get(name);
-
-    return {
-        name,
-        process(jobName, handler) {
-            handlers.set(jobName, handler);
-        },
-        add(jobName, data, opts) {
-            return queue.add(jobName, data, opts);
-        },
-    };
-}
-
-/**
  * Initialise a queue, its worker, and per-job handler registry. This is
  * supposed to be used on worker start.
  *
@@ -119,74 +96,74 @@ function buildQueueController(name) {
  * @returns {{name: string, process: Function, add: Function}}
  */
 export async function createQueue(name) {
-    if (workerInstances.has(name)) {
-        // Queue is already created and initialised.
-        console.warn(`Calling createQueue on existing queue ${name}, use getQueue instead.`);
-
-        return buildQueueController(name);
-    }
-
     const queueLogPrefix = `Queue '${name}'`;
-
-    logger.info(`${queueLogPrefix} is initialised`);
-
     const queue = getQueue(name);
 
-    // Clear all jobs left from previous run.
-    // TODO: Check if this is needed especially if we use more than one
-    // worker.
-    await queue.obliterate({ force: true });
-    logger.info(`${queueLogPrefix} is cleared.`);
+    if (workerInstances.has(name)) {
+        console.warn(`Calling createQueue on existing queue ${name}, use getQueue instead.`);
+    } else {
+        logger.info(`${queueLogPrefix} is initialised`);
 
-    const handlers = new Map();
+        // Clear all jobs left from previous run.
+        // TODO: Check if this is needed especially if we use more than one
+        // worker.
+        await queue.obliterate({ force: true });
+        logger.info(`${queueLogPrefix} is cleared.`);
 
-    handlersByQueue.set(name, handlers);
+        const handlers = new Map();
 
-    const worker = new Worker(name, async job => {
-        const handler = handlers.get(job.name);
+        handlersByQueue.set(name, handlers);
 
-        if (!handler) {
-            throw new Error(`No handler registered for job '${job.name}' in queue '${name}'`);
-        }
+        const worker = new Worker(name, async job => {
+            const handler = handlers.get(job.name);
 
-        return handler(job);
-    }, { connection });
+            if (!handler) {
+                throw new Error(`No handler registered for job '${job.name}' in queue '${name}'`);
+            }
 
-    // Report on job start to log.
-    worker.on('active', job => {
-        logger.info(`${queueLogPrefix} job '${job.name}' processing started`);
-    });
+            return handler(job);
+        }, { connection });
 
-    // Report on job completion to log.
-    worker.on('completed', (job, result) => {
-        logger.info(`${queueLogPrefix} job '${job.name}' is completed in ${(job.finishedOn - job.processedOn) / 1000}s.`);
+        worker.on('active', job => {
+            logger.info(`${queueLogPrefix} job '${job.name}' processing started`);
+        });
 
-        if (result?.message) {
-            logger.info(`${queueLogPrefix} job '${job.name}' reported: ${result.message}`);
-        }
+        worker.on('completed', (job, result) => {
+            logger.info(`${queueLogPrefix} job '${job.name}' is completed in ${(job.finishedOn - job.processedOn) / 1000}s.`);
 
-        const every = job.opts.repeat?.every;
+            if (result?.message) {
+                logger.info(`${queueLogPrefix} job '${job.name}' reported: ${result.message}`);
+            }
 
-        if (every) {
-            const nextRunMillis = Math.floor(Date.now() / every) * every + every;
-            const nextRun = new Date(nextRunMillis).toString();
+            const every = job.opts.repeat?.every;
 
-            logger.info(`${queueLogPrefix} job '${job.name}' next run is scheduled on ${nextRun}`);
-        }
-        // TODO: Output next run info for jobs defined using cron syntax.
-    });
-    // Report on job failed to log.
-    worker.on('failed', (job, err) => {
-        logger.error(`${queueLogPrefix} job '${job?.name}' failed with error: ${err}`);
-    });
-    // Report on worker error to log.
-    worker.on('error', err => {
-        logger.error(`${queueLogPrefix} worker reported error: ${err}`);
-    });
+            if (every) {
+                const nextRunMillis = Math.floor(Date.now() / every) * every + every;
+                const nextRun = new Date(nextRunMillis).toString();
 
-    workerInstances.set(name, worker);
+                logger.info(`${queueLogPrefix} job '${job.name}' next run is scheduled on ${nextRun}`);
+            }
+            // TODO: Output next run info for jobs defined using cron syntax.
+        });
 
-    return buildQueueController(name);
+        worker.on('failed', (job, err) => {
+            logger.error(`${queueLogPrefix} job '${job?.name}' failed with error: ${err}`);
+        });
+
+        worker.on('error', err => {
+            logger.error(`${queueLogPrefix} worker reported error: ${err}`);
+        });
+
+        workerInstances.set(name, worker);
+    }
+
+    const handlers = handlersByQueue.get(name);
+
+    return {
+        name,
+        process: (jobName, handler) => handlers.set(jobName, handler),
+        add: (jobName, data, opts) => queue.add(jobName, data, opts),
+    };
 }
 
 /**
