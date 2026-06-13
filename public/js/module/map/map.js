@@ -446,12 +446,12 @@ define([
                 return mergePointType([legacy ? statuses.type.PAINTING : statuses.type.PHOTO]);
             }
 
-            // First-time default: in embedded mode, the photo's own type; otherwise photos.
+            // First-time default: in embedded mode, the photo's own type; otherwise both.
             if (this.embedded && this.options.isPainting !== undefined) {
                 return [this.options.isPainting ? statuses.type.PAINTING : statuses.type.PHOTO];
             }
 
-            return [statuses.type.PHOTO];
+            return [statuses.type.PHOTO, statuses.type.PAINTING];
         },
         // Storage suffix that groups year-range persistence per type selection: "1", "2", or "1,2".
         typeStorageKey: function () {
