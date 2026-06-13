@@ -342,27 +342,63 @@ export function getNewPhotosLimit(user) {
  */
 async function getBounds(data) {
     const { geometry, year, year2, isPainting, localWork } = data;
-    const years = isPainting ? paintYears : photoYears;
-
-    // Determine whether fetch by years needed
-    const hasYears = _.isNumber(year) && _.isNumber(year2) &&
-        year >= years.min && year2 <= years.max && year2 >= year &&
-        year2 - year < (isPainting ? paintRange : photoRange);
     let clusters;
     let photos;
 
-    if (!localWork) {
-        ({ photos, clusters } = await this.call(`cluster.${hasYears ? 'getBoundsByYear' : 'getBounds'}`, data));
-    } else {
-        const MapModel = isPainting ? PaintingMap : PhotoMap;
-        const yearCriteria = hasYears ? year === year2 ? year : { $gte: year, $lte: year2 } : false;
-        const criteria = { geo: { $geoWithin: { $geometry: geometry } } };
+    if (isPainting === null) {
+        // Both photos and paintings
+        const bothMin = -100;
+        const bothMax = 2000;
+        const bothRange = bothMax - bothMin;
+        const hasYears = _.isNumber(year) && _.isNumber(year2) &&
+            year >= bothMin && year2 <= bothMax && year2 >= year &&
+            year2 - year < bothRange;
+        const clusterMethod = `cluster.${hasYears ? 'getBoundsByYear' : 'getBounds'}`;
 
-        if (yearCriteria) {
-            criteria.year = yearCriteria;
+        if (!localWork) {
+            const [photoResult, paintResult] = await Promise.all([
+                this.call(clusterMethod, { ...data, isPainting: false }),
+                this.call(clusterMethod, { ...data, isPainting: true }),
+            ]);
+
+            photos = [...photoResult.photos, ...paintResult.photos];
+            clusters = [...photoResult.clusters, ...paintResult.clusters];
+        } else {
+            const yearCriteria = hasYears ? year === year2 ? year : { $gte: year, $lte: year2 } : false;
+            const criteria = { geo: { $geoWithin: { $geometry: geometry } } };
+
+            if (yearCriteria) {
+                criteria.year = yearCriteria;
+            }
+
+            const [photoPhotos, paintPhotos] = await Promise.all([
+                PhotoMap.find(criteria, { _id: 0 }, { lean: true }).exec(),
+                PaintingMap.find(criteria, { _id: 0 }, { lean: true }).exec(),
+            ]);
+
+            photos = [...photoPhotos, ...paintPhotos];
         }
+    } else {
+        const years = isPainting ? paintYears : photoYears;
 
-        photos = await MapModel.find(criteria, { _id: 0 }, { lean: true }).exec();
+        // Determine whether fetch by years needed
+        const hasYears = _.isNumber(year) && _.isNumber(year2) &&
+            year >= years.min && year2 <= years.max && year2 >= year &&
+            year2 - year < (isPainting ? paintRange : photoRange);
+
+        if (!localWork) {
+            ({ photos, clusters } = await this.call(`cluster.${hasYears ? 'getBoundsByYear' : 'getBounds'}`, data));
+        } else {
+            const MapModel = isPainting ? PaintingMap : PhotoMap;
+            const yearCriteria = hasYears ? year === year2 ? year : { $gte: year, $lte: year2 } : false;
+            const criteria = { geo: { $geoWithin: { $geometry: geometry } } };
+
+            if (yearCriteria) {
+                criteria.year = yearCriteria;
+            }
+
+            photos = await MapModel.find(criteria, { _id: 0 }, { lean: true }).exec();
+        }
     }
 
     // Reverse geo

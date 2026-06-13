@@ -55,17 +55,29 @@ define([
             this.embedded = this.options.embedded;
             this.editing = ko.observable(this.options.editing);
             this.openNewTab = ko.observable(!!Utils.getLocalStorage(this.embedded ? 'map.embedded.opennew' : 'map.opennew'));
+            const storedIsPainting = Utils.getLocalStorage(this.embedded ? 'map.embedded.isPainting' : 'map.isPainting');
+
             this.isPainting = ko.observable(this.options.isPainting !== undefined ?
                 this.options.isPainting :
-                !!Utils.getLocalStorage(this.embedded ? 'map.embedded.isPainting' : 'map.isPainting')
+                (storedIsPainting === undefined ? false : storedIsPainting)
             );
 
-            if (!this.embedded && qType && _.values(statuses.type).includes(qType)) {
-                this.isPainting(qType === statuses.type.PAINTING);
+            if (!this.embedded && qParams.type !== undefined) {
+                if (qParams.type === '0') {
+                    this.isPainting(null);
+                } else if (qType && _.values(statuses.type).includes(qType)) {
+                    this.isPainting(qType === statuses.type.PAINTING);
+                }
             }
 
             this.type = this.co.typeComputed = ko.computed(function () {
-                return self.isPainting() ? statuses.type.PAINTING : statuses.type.PHOTO;
+                const ip = self.isPainting();
+
+                if (ip === null) {
+                    return 'both';
+                }
+
+                return ip ? statuses.type.PAINTING : statuses.type.PHOTO;
             });
             this.linkShow = ko.observable(false); //Показывать ссылку на карту
             this.link = ko.observable(''); //Ссылка на карту
@@ -436,6 +448,24 @@ define([
 
             this.notifySubscribers();
             this.setLocalState();
+        },
+        togglePhotos: function () {
+            const ip = this.isPainting();
+
+            if (ip === false) {
+                return; // photos is the only active type, cannot deselect
+            }
+
+            this.setPainting(ip === null ? true : null);
+        },
+        togglePaintings: function () {
+            const ip = this.isPainting();
+
+            if (ip === true) {
+                return; // paintings is the only active type, cannot deselect
+            }
+
+            this.setPainting(ip === null ? false : null);
         },
         notifySubscribers: function () {
             const data = this.getStatusData();
@@ -841,11 +871,13 @@ define([
                     y += '&y2=' + this.yearHigh;
                 }
 
+                const typeParam = this.isPainting() === null ? 0 : this.type();
+
                 this.link(
                     location.host +
                     '?g=' + center.join(',') + '&z=' + this.map.getZoom() +
                     '&s=' + layerActive.sys.id + '&t=' + layerActive.type.id +
-                    '&type=' + this.type() + y
+                    '&type=' + typeParam + y
                 );
                 this.map.on('zoomstart', this.hideLink, this); //Скрываем ссылку при начале зуммирования карты
                 this.linkShow(true);

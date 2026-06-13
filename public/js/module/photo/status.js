@@ -112,6 +112,7 @@ define(['underscore', 'i18n'], function (_, i18n) {
     statuses.years = {
         1: { min: 1826, max: 2000 },
         2: { min: -100, max: 1980 },
+        both: { min: -100, max: 2000 },
     };
 
     return statuses;
