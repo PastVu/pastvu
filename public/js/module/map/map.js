@@ -55,17 +55,29 @@ define([
             this.embedded = this.options.embedded;
             this.editing = ko.observable(this.options.editing);
             this.openNewTab = ko.observable(!!Utils.getLocalStorage(this.embedded ? 'map.embedded.opennew' : 'map.opennew'));
+            const storedIsPainting = Utils.getLocalStorage(this.embedded ? 'map.embedded.isPainting' : 'map.isPainting');
+
             this.isPainting = ko.observable(this.options.isPainting !== undefined ?
                 this.options.isPainting :
-                !!Utils.getLocalStorage(this.embedded ? 'map.embedded.isPainting' : 'map.isPainting')
+                (storedIsPainting === undefined ? false : storedIsPainting)
             );
 
-            if (!this.embedded && qType && _.values(statuses.type).includes(qType)) {
-                this.isPainting(qType === statuses.type.PAINTING);
+            if (!this.embedded && qParams.type !== undefined) {
+                if (Number(qParams.type) === 0) {
+                    this.isPainting(null);
+                } else if (qType && _.values(statuses.type).includes(qType)) {
+                    this.isPainting(qType === statuses.type.PAINTING);
+                }
             }
 
             this.type = this.co.typeComputed = ko.computed(function () {
-                return self.isPainting() ? statuses.type.PAINTING : statuses.type.PHOTO;
+                const painting = self.isPainting();
+
+                if (painting === null) {
+                    return 'both';
+                }
+
+                return painting ? statuses.type.PAINTING : statuses.type.PHOTO;
             });
             this.linkShow = ko.observable(false); //Показывать ссылку на карту
             this.link = ko.observable(''); //Ссылка на карту
@@ -830,7 +842,9 @@ define([
                     document.addEventListener('click', this.showLinkBind);
                 }.bind(this), 100);
 
-                const years = statuses.years[this.type()];
+                const type = this.type();
+                const years = statuses.years[type] || statuses.years[statuses.type.PHOTO];
+                const typeParam = type === 'both' ? 0 : type;
                 let y = '';
 
                 if (this.yearLow > years.min) {
@@ -845,7 +859,7 @@ define([
                     location.host +
                     '?g=' + center.join(',') + '&z=' + this.map.getZoom() +
                     '&s=' + layerActive.sys.id + '&t=' + layerActive.type.id +
-                    '&type=' + this.type() + y
+                    '&type=' + typeParam + y
                 );
                 this.map.on('zoomstart', this.hideLink, this); //Скрываем ссылку при начале зуммирования карты
                 this.linkShow(true);

@@ -44,13 +44,18 @@
         .mapNavigation.mContainer.mHidden
         .trtools
             span.tltp-wrap
-                .trtool.button.fringe(data-bind="css: {no: isPainting()}, click: function () {setPainting(false)}" aria-describedby="showphotosonmap")
+                .trtool.button.fringe(data-bind="css: {no: isPainting() !== false}, click: function () {setPainting(false)}" aria-describedby="showphotosonmap")
                     span.glyphicon.glyphicon-camera
                 .tltp.tltp-bottom.tltp-animate-opacity(id="showphotosonmap" role="tooltip", data-bind="text: $root.i18n('Show photos on the map')")
             span.tltp-wrap
-                .trtool.button.fringe(data-bind="css: {no: !isPainting()}, click: function () {setPainting(true)}" aria-describedby="showpaintingsonmap")
+                .trtool.button.fringe(data-bind="css: {no: isPainting() !== true}, click: function () {setPainting(true)}" aria-describedby="showpaintingsonmap")
                     span.glyphicon.glyphicon-picture
                 .tltp.tltp-bottom.tltp-animate-opacity(id="showpaintingsonmap" role="tooltip", data-bind="text: $root.i18n('Show paintings/drawings on the map')")
+            span.tltp-wrap
+                .trtool.button.fringe(data-bind="css: {no: isPainting() !== null}, click: function () {setPainting(null)}" aria-describedby="showbothonmap")
+                    span.glyphicon.glyphicon-camera
+                    span.glyphicon.glyphicon-picture
+                .tltp.tltp-bottom.tltp-animate-opacity(id="showbothonmap" role="tooltip", data-bind="text: $root.i18n('Show photos and paintings on the map')")
             span.tltp-wrap
                 .trtool.button.fringe(data-bind="css: {no: !openNewTab()}, click: function () {openNewTab(!openNewTab())}" aria-describedby="opennewtab")
                     span.glyphicon.glyphicon-share

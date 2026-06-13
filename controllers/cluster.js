@@ -510,6 +510,125 @@ export async function getBoundsByYear({ geometry, z, year, year2, isPainting }) 
     return { photos, clusters };
 }
 
+/**
+ * Returns clusters within GeoJSON geometry object bounds for both photos and paintings combined.
+ */
+export async function getBothBounds({ geometry, z }) {
+    const [photoClusters, paintClusters] = await Promise.all([
+        Cluster.find({ g: { $geoWithin: { $geometry: geometry } }, z }, { _id: 0, c: 1, geo: 1, p: 1, g: 1 }, { lean: true }).exec(),
+        ClusterPaint.find({ g: { $geoWithin: { $geometry: geometry } }, z }, { _id: 0, c: 1, geo: 1, p: 1, g: 1 }, { lean: true }).exec(),
+    ]);
+
+    const merged = mergeClustersByGrid(photoClusters, paintClusters);
+    const photos = [];
+    const clusters = [];
+
+    for (const cluster of merged) {
+        if (cluster.c > 1) {
+            cluster.geo.reverse();
+            clusters.push(cluster);
+        } else if (cluster.c === 1) {
+            photos.push(cluster.p);
+        }
+    }
+
+    return { photos, clusters };
+}
+
+/**
+ * Returns clusters within GeoJSON geometry object bounds within year intervals for both types combined.
+ */
+export async function getBothBoundsByYear({ geometry, z, year, year2 }) {
+    const [photoClusters, paintClusters] = await Promise.all([
+        Cluster.find({ g: { $geoWithin: { $geometry: geometry } }, z }, { _id: 0, c: 1, geo: 1, y: 1, p: 1, g: 1 }, { lean: true }).exec(),
+        ClusterPaint.find({ g: { $geoWithin: { $geometry: geometry } }, z }, { _id: 0, c: 1, geo: 1, y: 1, p: 1, g: 1 }, { lean: true }).exec(),
+    ]);
+
+    const yearCriteria = year === year2 ? year : { $gte: year, $lte: year2 };
+    const posterPromises = [];
+
+    const applyYearFilter = (clusterList, isPainting) => {
+        const result = [];
+
+        for (const cluster of clusterList) {
+            cluster.c = 0;
+
+            for (let y = year; y <= year2; y++) {
+                cluster.c += cluster.y[y] ?? 0;
+            }
+
+            if (cluster.c > 0) {
+                result.push(cluster);
+
+                if (cluster.p.year < year || cluster.p.year > year2) {
+                    posterPromises.push(getClusterPoster(cluster, yearCriteria, isPainting));
+                }
+            }
+        }
+
+        return result;
+    };
+
+    const photoFiltered = applyYearFilter(photoClusters, false);
+    const paintFiltered = applyYearFilter(paintClusters, true);
+
+    if (posterPromises.length) {
+        await Promise.all(posterPromises);
+    }
+
+    const merged = mergeClustersByGrid(photoFiltered, paintFiltered);
+    const photos = [];
+    const clusters = [];
+
+    for (const cluster of merged) {
+        if (cluster.c > 1) {
+            cluster.geo.reverse();
+            clusters.push(cluster);
+        } else if (cluster.c === 1) {
+            photos.push(cluster.p);
+        }
+    }
+
+    return { photos, clusters };
+}
+
+/**
+ * Merges two sets of clusters from different types by their grid cell position (g field).
+ * Clusters at the same grid cell have their counts summed and centers of gravity averaged.
+ */
+function mergeClustersByGrid(primaryClusters, secondaryClusters) {
+    if (!secondaryClusters.length) {
+        return primaryClusters;
+    }
+
+    if (!primaryClusters.length) {
+        return secondaryClusters;
+    }
+
+    const clusterMap = new Map();
+
+    for (const cluster of primaryClusters) {
+        clusterMap.set(cluster.g.join(','), { ...cluster, geo: [...cluster.geo] });
+    }
+
+    for (const cluster of secondaryClusters) {
+        const key = cluster.g.join(',');
+        const existing = clusterMap.get(key);
+
+        if (existing) {
+            const newC = existing.c + cluster.c;
+            // Weighted average of centers of gravity
+            existing.geo[0] = (existing.geo[0] * existing.c + cluster.geo[0] * cluster.c) / newC;
+            existing.geo[1] = (existing.geo[1] * existing.c + cluster.geo[1] * cluster.c) / newC;
+            existing.c = newC;
+        } else {
+            clusterMap.set(key, { ...cluster, geo: [...cluster.geo] });
+        }
+    }
+
+    return [...clusterMap.values()];
+}
+
 async function getClusterPoster(cluster, yearCriteria, isPainting) {
     // Limit searching distance to improve $nearSphere performance.
     const dist = Utils.geo.getDistanceFromLatLonInKm(cluster.g[1], cluster.g[0], cluster.geo[1], cluster.geo[0]) * 2000;
@@ -549,5 +668,7 @@ export default {
     declusterPhoto,
     getBounds,
     getBoundsByYear,
+    getBothBounds,
+    getBothBoundsByYear,
     getClusterConditions,
 };
