@@ -55,17 +55,31 @@ define([
             this.embedded = this.options.embedded;
             this.editing = ko.observable(this.options.editing);
             this.openNewTab = ko.observable(!!Utils.getLocalStorage(this.embedded ? 'map.embedded.opennew' : 'map.opennew'));
+            const storedPainting = Utils.getLocalStorage(this.embedded ? 'map.embedded.isPainting' : 'map.isPainting');
+            // getLocalStorage returns JSON-parsed value: null (both), true, false, or undefined (not set)
+            const parsedPainting = storedPainting !== undefined ? storedPainting : false;
+
             this.isPainting = ko.observable(this.options.isPainting !== undefined ?
                 this.options.isPainting :
-                !!Utils.getLocalStorage(this.embedded ? 'map.embedded.isPainting' : 'map.isPainting')
+                parsedPainting
             );
 
-            if (!this.embedded && qType && _.values(statuses.type).includes(qType)) {
-                this.isPainting(qType === statuses.type.PAINTING);
+            if (!this.embedded) {
+                if (qParams.type === '0') {
+                    this.isPainting(null); // both mode
+                } else if (qType && _.values(statuses.type).includes(qType)) {
+                    this.isPainting(qType === statuses.type.PAINTING);
+                }
             }
 
             this.type = this.co.typeComputed = ko.computed(function () {
-                return self.isPainting() ? statuses.type.PAINTING : statuses.type.PHOTO;
+                const ip = self.isPainting();
+
+                if (ip === null) {
+                    return 0; // both
+                }
+
+                return ip ? statuses.type.PAINTING : statuses.type.PHOTO;
             });
             this.linkShow = ko.observable(false); //Показывать ссылку на карту
             this.link = ko.observable(''); //Ссылка на карту
@@ -436,6 +450,32 @@ define([
 
             this.notifySubscribers();
             this.setLocalState();
+        },
+        togglePhotos: function () {
+            const ip = this.isPainting();
+
+            if (ip === false) {
+                return; // photos is the only active type, can't deselect
+            }
+
+            if (ip === null) {
+                this.setPainting(true); // both → paintings only
+            } else {
+                this.setPainting(null); // paintings only → both
+            }
+        },
+        togglePaintings: function () {
+            const ip = this.isPainting();
+
+            if (ip === true) {
+                return; // paintings is the only active type, can't deselect
+            }
+
+            if (ip === null) {
+                this.setPainting(false); // both → photos only
+            } else {
+                this.setPainting(null); // photos only → both
+            }
         },
         notifySubscribers: function () {
             const data = this.getStatusData();

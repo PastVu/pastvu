@@ -110,6 +110,7 @@ define(['underscore', 'i18n'], function (_, i18n) {
         PAINTING: 2,
     };
     statuses.years = {
+        0: { min: -100, max: 2000 }, // both photos and paintings
         1: { min: 1826, max: 2000 },
         2: { min: -100, max: 1980 },
     };

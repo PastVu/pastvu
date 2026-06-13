@@ -510,6 +510,96 @@ export async function getBoundsByYear({ geometry, z, year, year2, isPainting }) 
     return { photos, clusters };
 }
 
+/**
+ * Returns clusters from both Cluster and ClusterPaint collections within geometry bounds
+ */
+export async function getBothBounds({ geometry, z }) {
+    const [photoClusters, paintClusters] = await Promise.all([
+        Cluster.find(
+            { g: { $geoWithin: { $geometry: geometry } }, z },
+            { _id: 0, c: 1, geo: 1, p: 1 },
+            { lean: true }
+        ).exec(),
+        ClusterPaint.find(
+            { g: { $geoWithin: { $geometry: geometry } }, z },
+            { _id: 0, c: 1, geo: 1, p: 1 },
+            { lean: true }
+        ).exec(),
+    ]);
+
+    const photos = [];
+    const clusters = [];
+
+    for (const cluster of [...photoClusters, ...paintClusters]) {
+        if (cluster.c > 1) {
+            cluster.geo.reverse();
+            clusters.push(cluster);
+        } else if (cluster.c === 1) {
+            photos.push(cluster.p);
+        }
+    }
+
+    return { photos, clusters };
+}
+
+/**
+ * Returns clusters from both Cluster and ClusterPaint collections within given year intervals
+ */
+export async function getBothBoundsByYear({ geometry, z, year, year2 }) {
+    const [photoClusters, paintClusters] = await Promise.all([
+        Cluster.find(
+            { g: { $geoWithin: { $geometry: geometry } }, z },
+            { _id: 0, c: 1, geo: 1, y: 1, p: 1, g: 1 },
+            { lean: true }
+        ).exec(),
+        ClusterPaint.find(
+            { g: { $geoWithin: { $geometry: geometry } }, z },
+            { _id: 0, c: 1, geo: 1, y: 1, p: 1, g: 1 },
+            { lean: true }
+        ).exec(),
+    ]);
+
+    const yearCriteria = year === year2 ? year : { $gte: year, $lte: year2 };
+    const clustersAll = [];
+    const posterPromises = [];
+
+    for (const [typeList, isPainting] of [[photoClusters, false], [paintClusters, true]]) {
+        for (const cluster of typeList) {
+            cluster.c = 0;
+
+            for (let y = year; y <= year2; y++) {
+                cluster.c += cluster.y[y] ?? 0;
+            }
+
+            if (cluster.c > 0) {
+                clustersAll.push(cluster);
+
+                if (cluster.p.year < year || cluster.p.year > year2) {
+                    posterPromises.push(getClusterPoster(cluster, yearCriteria, isPainting));
+                }
+            }
+        }
+    }
+
+    if (posterPromises.length) {
+        await Promise.all(posterPromises);
+    }
+
+    const photos = [];
+    const clusters = [];
+
+    for (const cluster of clustersAll) {
+        if (cluster.c > 1) {
+            cluster.geo.reverse();
+            clusters.push(cluster);
+        } else if (cluster.c === 1) {
+            photos.push(cluster.p);
+        }
+    }
+
+    return { photos, clusters };
+}
+
 async function getClusterPoster(cluster, yearCriteria, isPainting) {
     // Limit searching distance to improve $nearSphere performance.
     const dist = Utils.geo.getDistanceFromLatLonInKm(cluster.g[1], cluster.g[0], cluster.geo[1], cluster.geo[0]) * 2000;
@@ -549,5 +639,7 @@ export default {
     declusterPhoto,
     getBounds,
     getBoundsByYear,
+    getBothBounds,
+    getBothBoundsByYear,
     getClusterConditions,
 };
