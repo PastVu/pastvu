@@ -104,12 +104,6 @@ export async function createQueue(name) {
     } else {
         logger.info(`${queueLogPrefix} is initialised`);
 
-        // Clear all jobs left from previous run.
-        // TODO: Check if this is needed especially if we use more than one
-        // worker.
-        await queue.obliterate({ force: true });
-        logger.info(`${queueLogPrefix} is cleared.`);
-
         const handlers = new Map();
 
         handlersByQueue.set(name, handlers);
