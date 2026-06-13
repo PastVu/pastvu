@@ -65,11 +65,6 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
         const { uri, maxPoolSize = 1 } = mongo;
         let connErrorLogLevel = 'error';
 
-        // Set native Promise as mongoose promise provider
-        mongoose.Promise = Promise;
-        // For 5.x compatibility, defaults again to false in 7.x, but 'strict' in 6.x. Remove when migrating to 7.x
-        mongoose.set('strictQuery', false);
-
         connectionPromises.push(new Promise((resolve, reject) => {
             mongoose.connect(uri, {
                 maxPoolSize,
@@ -83,7 +78,7 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
                 // Connection related events are no longer regarded as errors.
                 connErrorLogLevel = 'info';
                 logger.info('MongoDB client is shutting down');
-                db.close(cb);
+                db.close().then(() => cb(), cb);
             });
 
             async function openHandler() {

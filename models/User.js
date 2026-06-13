@@ -208,37 +208,37 @@ registerModel(db => {
         return pass;
     });
 
-    UserScheme.statics.getUserPublic = function (login, cb) {
+    UserScheme.statics.getUserPublic = function (login) {
         if (!login) {
-            cb(null, 'Login is not specified');
+            return Promise.reject(new Error('Login is not specified'));
         }
 
-        this.findOne({ login: new RegExp(`^${_.escapeRegExp(login)}$`), active: true }).select({
+        return this.findOne({ login: new RegExp(`^${_.escapeRegExp(login)}$`), active: true }).select({
             _id: 0,
             pass: 0,
             activatedate: 0,
             rules: 0,
-        }).exec(cb);
+        }).exec();
     };
 
-    UserScheme.statics.getAllPublicUsers = function (cb) {
-        this.find({ active: true }).select({ _id: 0, pass: 0, activatedate: 0, rules: 0 }).exec(cb);
+    UserScheme.statics.getAllPublicUsers = function () {
+        return this.find({ active: true }).select({ _id: 0, pass: 0, activatedate: 0, rules: 0 }).exec();
     };
 
-    UserScheme.statics.getUserAll = function (login, cb) {
+    UserScheme.statics.getUserAll = function (login) {
         if (!login) {
-            cb(null, 'Login is not specified');
+            return Promise.reject(new Error('Login is not specified'));
         }
 
-        this.findOne({ login: new RegExp(`^${_.escapeRegExp(login)}$`), active: true }).exec(cb);
+        return this.findOne({ login: new RegExp(`^${_.escapeRegExp(login)}$`), active: true }).exec();
     };
 
-    UserScheme.statics.getUserAllLoginMail = function (login, cb) {
+    UserScheme.statics.getUserAllLoginMail = function (login) {
         if (!login) {
-            cb(null, 'Login is not specified');
+            return Promise.reject(new Error('Login is not specified'));
         }
 
-        this.findOne({
+        return this.findOne({
             $and: [
                 {
                     $or: [
@@ -248,7 +248,7 @@ registerModel(db => {
                 },
                 { active: true },
             ],
-        }).exec(cb);
+        }).exec();
     };
 
     UserScheme.statics.getUserID = async function (login) {
@@ -267,10 +267,10 @@ registerModel(db => {
                 if (user._id) {
                     result = user._id;
 
-                    if (result._bsontype === 'ObjectID') {
+                    if (result._bsontype === 'ObjectId') {
                         result = result.toString();
                     }
-                } else if (user._bsontype === 'ObjectID') {
+                } else if (user._bsontype === 'ObjectId') {
                     result = user.toString();
                 } else if (user.login) {
                     result = user.login;

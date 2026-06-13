@@ -100,7 +100,7 @@ export function setObjectView(objId, userId, type = 'photo', stamp = new Date())
     return UserObjectRel.findOneAndUpdate(
         { obj: objId, user: userId, type },
         { $set: { view: stamp } },
-        { upsert: true, new: true, lean: true, fields: { _id: 0 } }
+        { upsert: true, returnDocument: 'after', lean: true, fields: { _id: 0 } }
     ).exec();
 }
 
