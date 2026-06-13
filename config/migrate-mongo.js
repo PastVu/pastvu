@@ -17,10 +17,6 @@ if (process.argv.includes('up') || process.argv.includes('down')) {
 const config = {
     mongodb: {
         url: mongoConfig.connection,
-        options: {
-            useNewUrlParser: true, // removes a deprecation warning when connecting
-            useUnifiedTopology: true, // removes a deprecating warning when connecting
-        },
     },
     migrationsDir: 'migrations',
     changelogCollectionName: 'changelog',
