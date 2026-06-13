@@ -337,33 +337,76 @@ export function getNewPhotosLimit(user) {
 /**
  * Get photos and clusters by GeoJSON geometry object bounds.
  *
+ * Accepts `types` (array of type ids) for filtering by photo/painting/both.
+ * Falls back to legacy `isPainting` boolean if `types` is missing.
+ *
  * @param {object} data
  * @returns {object}
  */
 async function getBounds(data) {
-    const { geometry, year, year2, isPainting, localWork } = data;
-    const years = isPainting ? paintYears : photoYears;
+    const { geometry, year, year2, types, isPainting, localWork } = data;
+    const requestedTypes = Array.isArray(types) && types.length ?
+        types.filter(t => typesSet.has(t)) :
+        [isPainting ? constants.photo.type.PAINTING : constants.photo.type.PHOTO];
 
-    // Determine whether fetch by years needed
-    const hasYears = _.isNumber(year) && _.isNumber(year2) &&
-        year >= years.min && year2 <= years.max && year2 >= year &&
-        year2 - year < (isPainting ? paintRange : photoRange);
-    let clusters;
-    let photos;
+    if (!requestedTypes.length) {
+        return { photos: [], clusters: undefined };
+    }
 
-    if (!localWork) {
-        ({ photos, clusters } = await this.call(`cluster.${hasYears ? 'getBoundsByYear' : 'getBounds'}`, data));
-    } else {
-        const MapModel = isPainting ? PaintingMap : PhotoMap;
-        const yearCriteria = hasYears ? year === year2 ? year : { $gte: year, $lte: year2 } : false;
-        const criteria = { geo: { $geoWithin: { $geometry: geometry } } };
+    const perType = await Promise.all(requestedTypes.map(async type => {
+        const isPaintingType = type === constants.photo.type.PAINTING;
+        const years = isPaintingType ? paintYears : photoYears;
 
-        if (yearCriteria) {
-            criteria.year = yearCriteria;
+        // When the user-requested range and this type's natural range don't overlap, skip the type.
+        if (_.isNumber(year) && _.isNumber(year2) && (year > years.max || year2 < years.min)) {
+            return { photos: [], clusters: undefined };
         }
 
-        photos = await MapModel.find(criteria, { _id: 0 }, { lean: true }).exec();
-    }
+        // Clamp the requested range to this type's range so a wider combined slider still hits the per-type filter.
+        const typeYear = _.isNumber(year) ? Math.max(year, years.min) : year;
+        const typeYear2 = _.isNumber(year2) ? Math.min(year2, years.max) : year2;
+
+        // Determine whether fetch by years needed (range is a strict subset of the type's range).
+        const hasYears = _.isNumber(typeYear) && _.isNumber(typeYear2) &&
+            typeYear >= years.min && typeYear2 <= years.max && typeYear2 >= typeYear &&
+            typeYear2 - typeYear < (isPaintingType ? paintRange : photoRange);
+        let clusters;
+        let photos;
+
+        if (!localWork) {
+            ({ photos, clusters } = await this.call(
+                `cluster.${hasYears ? 'getBoundsByYear' : 'getBounds'}`,
+                { ...data, year: typeYear, year2: typeYear2, isPainting: isPaintingType }
+            ));
+        } else {
+            const MapModel = isPaintingType ? PaintingMap : PhotoMap;
+            const yearCriteria = hasYears ? typeYear === typeYear2 ? typeYear : { $gte: typeYear, $lte: typeYear2 } : false;
+            const criteria = { geo: { $geoWithin: { $geometry: geometry } } };
+
+            if (yearCriteria) {
+                criteria.year = yearCriteria;
+            }
+
+            photos = await MapModel.find(criteria, { _id: 0 }, { lean: true }).exec();
+        }
+
+        // Tag with type so client can render correct icon class for mixed results.
+        photos.forEach(photo => {
+            photo.type = type;
+        });
+
+        if (clusters) {
+            clusters.forEach(cluster => {
+                cluster.type = type;
+            });
+        }
+
+        return { photos, clusters };
+    }));
+
+    const photos = perType.flatMap(r => r.photos);
+    const hasClusters = perType.some(r => r.clusters);
+    const clusters = hasClusters ? perType.flatMap(r => r.clusters || []) : undefined;
 
     // Reverse geo
     photos.forEach(photo => photo.geo.reverse());

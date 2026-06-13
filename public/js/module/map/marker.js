@@ -9,8 +9,11 @@ define([
     'use strict';
 
     const paintingDivisionYear = Math.floor(1688 / 5) * 5;
+    const TYPE_PAINTING = 2;
 
-    function getYearClass(year, isPainting) {
+    function getYearClass(year, type) {
+        const isPainting = type === TYPE_PAINTING;
+
         if (isPainting) {
             if (year < paintingDivisionYear) {
                 year = Math.floor(year / 25) * 25;
@@ -31,7 +34,7 @@ define([
 
         this.openNewTab = options.openNewTab;
         this.embedded = options.embedded;
-        this.isPainting = options.isPainting;
+        this.displayTypes = options.displayTypes || [1];
         this.year = options.year || undefined;
         this.year2 = options.year2 || undefined;
 
@@ -212,8 +215,8 @@ define([
 
         return this;
     };
-    MarkerManager.prototype.changePainting = function (val, year, year2, fetch) {
-        this.isPainting = val;
+    MarkerManager.prototype.changeDisplayTypes = function (types, year, year2, fetch) {
+        this.displayTypes = Array.isArray(types) && types.length ? types : [1];
         this.year = year || undefined;
         this.year2 = year2 || undefined;
 
@@ -425,7 +428,7 @@ define([
                     startAt: this.startPendingAt,
                     year: this.year,
                     year2: this.year2,
-                    isPainting: this.isPainting,
+                    types: this.displayTypes,
                     localWork: localWork,
                 }
             ).then(function (data) {
@@ -474,7 +477,6 @@ define([
      * Обрабатывает входящие данные по зуму
      */
     MarkerManager.prototype.processIncomingDataZoom = function (data, boundChanged, localWork, localCluster) {
-        const isPainting = this.isPainting;
         let photos = {}; //новый хэш фотографий
         let divIcon;
         let curr;
@@ -517,7 +519,7 @@ define([
                 // Если оно новое - создаем его объект и маркер
                 curr.sfile = Photo.picFormats.m + curr.file;
                 divIcon = L.divIcon({
-                    className: 'photoIcon ' + getYearClass(curr.year, isPainting) + ' ' + curr.dir,
+                    className: 'photoIcon ' + getYearClass(curr.year, curr.type) + ' ' + curr.dir,
                     iconSize: this.sizePoint,
                 });
                 curr.marker =
@@ -577,7 +579,7 @@ define([
             geometry: turf.getGeom(queryGeometry),
             year: this.year,
             year2: this.year2,
-            isPainting: this.isPainting,
+            types: this.displayTypes,
             localWork: localWork,
         }).then(function (data) {
             // Данные устарели и должны быть отброшены,
@@ -606,7 +608,6 @@ define([
      * Обрабатывает входящие данные
      */
     MarkerManager.prototype.processIncomingDataMove = function (data, boundChanged, localWork, localCluster) {
-        const isPainting = this.isPainting;
         let photos = {};
         let divIcon;
         let curr;
@@ -636,7 +637,7 @@ define([
                         curr.sfile = Photo.picFormats.m + curr.file;
                         divIcon = L.divIcon(
                             {
-                                className: 'photoIcon ' + getYearClass(curr.year, isPainting) + ' ' + curr.dir,
+                                className: 'photoIcon ' + getYearClass(curr.year, curr.type) + ' ' + curr.dir,
                                 iconSize: this.sizePoint,
                             }
                         );
@@ -715,6 +716,9 @@ define([
                     lngs: geo[1] + clusterWHalf,
                     year: 1,
                     c: 1,
+                    // Used for cluster icon class. With mixed types in a cluster, picks the first photo's type;
+                    // visually acceptable since year-bucketing differs only between photo (1y buckets) and painting (5/25y buckets).
+                    type: photo.type,
                     photos: [],
                 };
                 clustCoordIdS.push(clustCoordId);
@@ -828,7 +832,6 @@ define([
     };
 
     MarkerManager.prototype.drawClustersLocal = function (clusters, boundChanged, add) {
-        const isPainting = this.isPainting;
         let i;
         let size;
         let measure;
@@ -857,7 +860,7 @@ define([
                     }
 
                     divIcon = L.divIcon({
-                        className: 'clusterIconLocal ' + getYearClass(cluster.year, isPainting) + ' ' + measure,
+                        className: 'clusterIconLocal ' + getYearClass(cluster.year, cluster.type) + ' ' + measure,
                         iconSize: size,
                         html: cluster.c,
                     });
