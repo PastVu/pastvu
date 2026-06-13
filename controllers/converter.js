@@ -237,10 +237,8 @@ async function collectConveyerStat() {
         converted: conveyerConverted,
     });
 
-    st.save(err => {
-        if (err) {
-            logger.error('STPhotoConveyer error.\n ' + err);
-        }
+    st.save().catch(err => {
+        logger.error('STPhotoConveyer error.\n ' + err);
     });
 
     // Update stats.
