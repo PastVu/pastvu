@@ -394,8 +394,9 @@ define([
 
             this.show();
         },
-        // Returns the initial display types array based on options, URL ?type= param, and localStorage,
-        // falling back to the legacy isPainting boolean and finally to photos.
+        // Returns the initial display types array. URL ?type= wins (non-embedded only), then localStorage,
+        // then the legacy isPainting boolean, defaulting to photos. In embedded mode the photo's own type
+        // (from options.isPainting) is always merged in so the photo itself can render.
         resolveInitialDisplayTypes: function (qParams) {
             const storageKey = this.embedded ? 'map.embedded.displayTypes' : 'map.displayTypes';
             const legacyKey = this.embedded ? 'map.embedded.isPainting' : 'map.isPainting';
@@ -413,10 +414,15 @@ define([
                 return list.length ? _.uniq(list) : null;
             };
 
-            // Explicit option (used by embedded callers that pass options.isPainting)
-            if (this.options.isPainting !== undefined) {
-                return [this.options.isPainting ? statuses.type.PAINTING : statuses.type.PHOTO];
-            }
+            const mergePointType = types => {
+                if (!this.embedded || this.options.isPainting === undefined) {
+                    return types;
+                }
+
+                const pointType = this.options.isPainting ? statuses.type.PAINTING : statuses.type.PHOTO;
+
+                return types.includes(pointType) ? types : types.concat(pointType);
+            };
 
             // URL ?type=1, ?type=2, ?type=1,2 (non-embedded only)
             if (!this.embedded) {
@@ -430,14 +436,19 @@ define([
             const fromStorage = parse(Utils.getLocalStorage(storageKey));
 
             if (fromStorage) {
-                return fromStorage;
+                return mergePointType(fromStorage);
             }
 
             // Legacy fallback: map.isPainting boolean from older versions.
             const legacy = Utils.getLocalStorage(legacyKey);
 
             if (legacy !== undefined) {
-                return [legacy ? statuses.type.PAINTING : statuses.type.PHOTO];
+                return mergePointType([legacy ? statuses.type.PAINTING : statuses.type.PHOTO]);
+            }
+
+            // First-time default: in embedded mode, the photo's own type; otherwise photos.
+            if (this.embedded && this.options.isPainting !== undefined) {
+                return [this.options.isPainting ? statuses.type.PAINTING : statuses.type.PHOTO];
             }
 
             return [statuses.type.PHOTO];
