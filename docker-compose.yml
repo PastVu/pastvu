@@ -68,14 +68,30 @@ services:
     depends_on:
       - "app"
 
+  dump-init:
+    image: curlimages/curl:8.10.1
+    user: root
+    volumes:
+      - mongo-dump:/dump
+    command: >
+      sh -c 'if [ -f /dump/pastvu.gz ]; then
+        echo "dump already present, skipping download";
+      else
+        echo "downloading pastvu.gz...";
+        curl -fL --progress-bar -o /dump/pastvu.gz https://archive.varlamov.me/pastvu/github/pastvu.gz;
+      fi'
+
   mongo:
     image: mongo:4.4
     volumes:
       - mongo4:/data/db
       - ./.docker/dev-initdb.sh:/docker-entrypoint-initdb.d/dev-initdb.sh:ro
-      - ./pastvu.gz:/pastvu.gz:ro
+      - mongo-dump:/dump:ro
     ports:
       - "127.0.0.1:27017:27017"
+    depends_on:
+      dump-init:
+        condition: service_completed_successfully
     healthcheck:
       test:
         [
@@ -97,5 +113,6 @@ services:
 
 volumes:
   mongo4:
+  mongo-dump:
   store:
   sitemap:

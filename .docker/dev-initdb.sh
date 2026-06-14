@@ -1,4 +1,4 @@
 #!/bin/sh
 set -e
 
-mongorestore --drop --gzip --db pastvu --archive=/pastvu.gz
+mongorestore --drop --gzip --db pastvu --archive=/dump/pastvu.gz

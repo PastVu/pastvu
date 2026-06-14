@@ -53,11 +53,9 @@ We expect all project participants to follow [Contributor Code of Conduct](CODE_
 ```bash
 # Create config file
 cp ./config/local.config.js.docker-example ./config/local.config.js
-# Get the dump
-wget https://archive.varlamov.me/pastvu/github/pastvu.gz
 # Install node modules
 docker compose run --rm app npm install
-# Start the application
+# Start the application (the database dump is downloaded automatically on first run)
 docker compose up
 ```
 
