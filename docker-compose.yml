@@ -1,105 +1,101 @@
 x-defaults: &app-image
-    build:
-        context: .
-        dockerfile: .docker/backend.Dockerfile
-        target: dev
-    image: pastvu_node
-    environment:
-        - NODE_ENV=development
-    extra_hosts:
-        - "host.docker.internal:host-gateway"
+  build:
+    context: .
+    dockerfile: .docker/backend.Dockerfile
+    target: dev
+  image: pastvu_node
+  environment:
+    - NODE_ENV=development
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
 
 services:
-    app:
-        <<: *app-image
-        ports:
-            - "3000:3000"
-        volumes:
-            - .:/code
-            - store:/store
-        command: run app --primary
-        depends_on:
-            mongo:
-                condition: service_healthy
-            redis:
-                condition: service_started
+  app:
+    <<: *app-image
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/code
+      - store:/store
+    command: run app --primary
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
-    worker:
-        <<: *app-image
-        volumes:
-            - .:/code
-            - store:/store
-        command: run worker
-        depends_on:
-            - "app"
+  worker:
+    <<: *app-image
+    volumes:
+      - .:/code
+      - store:/store
+    command: run worker
+    depends_on:
+      - "app"
 
-    notifier:
-        <<: *app-image
-        volumes:
-            - .:/code
-        command: run notifier
-        depends_on:
-            - "app"
+  notifier:
+    <<: *app-image
+    volumes:
+      - .:/code
+    command: run notifier
+    depends_on:
+      - "app"
 
-    uploader:
-        <<: *app-image
-        volumes:
-            - .:/code
-            - store:/store
-        command: run uploader
-        depends_on:
-            - "app"
+  uploader:
+    <<: *app-image
+    volumes:
+      - .:/code
+      - store:/store
+    command: run uploader
+    depends_on:
+      - "app"
 
-    downloader:
-        <<: *app-image
-        volumes:
-            - .:/code
-            - store:/store:ro
-        command: run downloader
-        depends_on:
-            - "app"
+  downloader:
+    <<: *app-image
+    volumes:
+      - .:/code
+      - store:/store:ro
+    command: run downloader
+    depends_on:
+      - "app"
 
-    sitemap:
-        <<: *app-image
-        volumes:
-            - .:/code
-            - sitemap:/sitemap
-        command: run sitemap
-        depends_on:
-            - "app"
+  sitemap:
+    <<: *app-image
+    volumes:
+      - .:/code
+      - sitemap:/sitemap
+    command: run sitemap
+    depends_on:
+      - "app"
 
-    mongo:
-        image: mongo:4.4
-        volumes:
-            - mongo4:/data/db
-            - ./.docker/dev-initdb.sh:/docker-entrypoint-initdb.d/dev-initdb.sh:ro
-            - ./pastvu.gz:/pastvu.gz:ro
-        ports:
-            - "127.0.0.1:27017:27017"
-        healthcheck:
-            test:
-                [
-                    "CMD",
-                    "mongo",
-                    "pastvu",
-                    "--quiet",
-                    "--eval",
-                    "if (db.getCollectionNames().length < 5) quit(1)",
-                ]
-            interval: 5s
-            timeout: 5s
-            retries: 60
-            start_period: 10s
+  mongo:
+    image: mongo:4.4
+    volumes:
+      - mongo4:/data/db
+      - ./.docker/dev-initdb.sh:/docker-entrypoint-initdb.d/dev-initdb.sh:ro
+      - ./pastvu.gz:/pastvu.gz:ro
+    ports:
+      - "127.0.0.1:27017:27017"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'mongo --host "$$(hostname -i)" --quiet --eval ''quit(0)''',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 10s
 
-    redis:
-        image: redis:6.2.6
+  redis:
+    image: redis:6.2.6
 
-    mailpit:
-        image: axllent/mailpit:latest
-        ports:
-            - "127.0.0.1:1080:8025"
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "127.0.0.1:1080:8025"
 
 volumes:
-    mongo4:
-    store:
-    sitemap:
+  mongo4:
+  store:
+  sitemap:
