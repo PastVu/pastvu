@@ -53,7 +53,7 @@ We expect all project participants to follow [Contributor Code of Conduct](CODE_
 ```bash
 # Start the application (config file, node modules and the database dump
 # are created automatically on first run)
-docker compose up
+docker compose up -d
 ```
 
 
