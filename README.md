@@ -53,9 +53,8 @@ We expect all project participants to follow [Contributor Code of Conduct](CODE_
 ```bash
 # Create config file
 cp ./config/local.config.js.docker-example ./config/local.config.js
-# Install node modules
-docker compose run --rm app npm install
-# Start the application (the database dump is downloaded automatically on first run)
+# Start the application (node modules are installed and the database dump
+# is downloaded automatically on first run)
 docker compose up
 ```
 

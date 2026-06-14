@@ -19,10 +19,19 @@ services:
       - store:/store
     command: run app --primary
     depends_on:
+      npm-install:
+        condition: service_completed_successfully
       mongo:
         condition: service_healthy
       redis:
         condition: service_started
+
+  npm-install:
+    <<: *app-image
+    entrypoint: []
+    volumes:
+      - .:/code
+    command: npm install
 
   worker:
     <<: *app-image
