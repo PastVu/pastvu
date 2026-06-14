@@ -51,10 +51,8 @@ We expect all project participants to follow [Contributor Code of Conduct](CODE_
 ### Create development environment
 
 ```bash
-# Create config file
-cp ./config/local.config.js.docker-example ./config/local.config.js
-# Start the application (node modules are installed and the database dump
-# is downloaded automatically on first run)
+# Start the application (config file, node modules and the database dump
+# are created automatically on first run)
 docker compose up
 ```
 

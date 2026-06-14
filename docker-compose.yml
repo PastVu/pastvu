@@ -19,12 +19,22 @@ services:
       - store:/store
     command: run app --primary
     depends_on:
+      config-init:
+        condition: service_completed_successfully
       npm-install:
         condition: service_completed_successfully
       mongo:
         condition: service_healthy
       redis:
         condition: service_started
+
+  config-init:
+    <<: *app-image
+    entrypoint: []
+    volumes:
+      - .:/code
+      - ./.docker/config-init.sh:/config-init.sh:ro
+    command: ["/config-init.sh"]
 
   npm-install:
     <<: *app-image
