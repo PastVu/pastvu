@@ -84,7 +84,7 @@ services:
                     "pastvu",
                     "--quiet",
                     "--eval",
-                    "if (!db.init_complete.findOne({status: 'done'})) quit(1)",
+                    "if (db.getCollectionNames().length < 5) quit(1)",
                 ]
             interval: 5s
             timeout: 5s
