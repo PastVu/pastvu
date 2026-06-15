@@ -244,7 +244,7 @@ define(
                         }
 
                         if (hist.values.dir) {
-                            hist.values.dir = i18n(fields.dirVals[hist.values.dir]);
+                            hist.values.dir = fields.dirVals[hist.values.dir];
                         }
 
                         if (hist.add) {
