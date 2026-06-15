@@ -48,7 +48,11 @@ Our [contributing guidance](https://docs.pastvu.com/en/contributing) contains mo
 
 We expect all project participants to follow [Contributor Code of Conduct](CODE_OF_CONDUCT.md)
 
-### Create development environment
+### Setup for development
+
+[Getting started](https://docs.pastvu.com/dev/setup#create-development-environment) documentation will guide you through dev environment setup process.
+
+For quick start:
 
 ```bash
 # Start the application (config file, node modules and the database dump
@@ -56,6 +60,7 @@ We expect all project participants to follow [Contributor Code of Conduct](CODE_
 docker compose up -d
 ```
 
+Then navigate to `http://localhost:3000` and login with the default user `admin`/`admin`.
 
 ## License
 
