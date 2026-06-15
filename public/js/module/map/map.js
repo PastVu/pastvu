@@ -40,6 +40,7 @@ define([
         create: function () {
             const self = this;
             const qParams = globalVM.router.params();
+            const qType = Number(qParams.type);
 
             this.auth = globalVM.repository['m/common/auth'];
             this.destroy = _.wrap(this.destroy, this.localDestroy);
@@ -54,31 +55,17 @@ define([
             this.embedded = this.options.embedded;
             this.editing = ko.observable(this.options.editing);
             this.openNewTab = ko.observable(!!Utils.getLocalStorage(this.embedded ? 'map.embedded.opennew' : 'map.opennew'));
+            this.isPainting = ko.observable(this.options.isPainting !== undefined ?
+                this.options.isPainting :
+                !!Utils.getLocalStorage(this.embedded ? 'map.embedded.isPainting' : 'map.isPainting')
+            );
 
-            // Initial display types: explicit option > URL param (?type=1, ?type=2, ?type=1,2) >
-            // localStorage > legacy map.isPainting boolean > default to photos.
-            const initialTypes = this.resolveInitialDisplayTypes(qParams);
+            if (!this.embedded && qType && _.values(statuses.type).includes(qType)) {
+                this.isPainting(qType === statuses.type.PAINTING);
+            }
 
-            this.showPhoto = ko.observable(initialTypes.includes(statuses.type.PHOTO));
-            this.showPainting = ko.observable(initialTypes.includes(statuses.type.PAINTING));
-
-            this.displayTypes = this.co.displayTypes = ko.computed(function () {
-                const result = [];
-
-                if (self.showPhoto()) {
-                    result.push(statuses.type.PHOTO);
-                }
-
-                if (self.showPainting()) {
-                    result.push(statuses.type.PAINTING);
-                }
-
-                return result;
-            });
-
-            // Backward-compatible computed: true iff only paintings are shown.
-            this.isPainting = this.co.isPainting = ko.computed(function () {
-                return self.showPainting() && !self.showPhoto();
+            this.type = this.co.typeComputed = ko.computed(function () {
+                return self.isPainting() ? statuses.type.PAINTING : statuses.type.PHOTO;
             });
             this.linkShow = ko.observable(false); //Показывать ссылку на карту
             this.link = ko.observable(''); //Ссылка на карту
@@ -132,11 +119,11 @@ define([
                 });
             }
 
-            const typeStorageKey = this.typeStorageKey();
+            const type = this.type();
 
             this.setYears(
-                !this.embedded && (Number(qParams.y) || Utils.getLocalStorage('map.year.' + typeStorageKey)),
-                !this.embedded && (Number(qParams.y2) || Utils.getLocalStorage('map.year2.' + typeStorageKey))
+                !this.embedded && (Number(qParams.y) || Utils.getLocalStorage('map.year.' + type)),
+                !this.embedded && (Number(qParams.y2) || Utils.getLocalStorage('map.year2.' + type))
             );
 
             this.yearRefreshMarkersBind = this.yearRefreshMarkers.bind(this);
@@ -394,116 +381,37 @@ define([
 
             this.show();
         },
-        // Returns the initial display types array. URL ?type= wins (non-embedded only), then localStorage,
-        // then the legacy isPainting boolean, defaulting to photos. In embedded mode the photo's own type
-        // (from options.isPainting) is always merged in so the photo itself can render.
-        resolveInitialDisplayTypes: function (qParams) {
-            const storageKey = this.embedded ? 'map.embedded.displayTypes' : 'map.displayTypes';
-            const legacyKey = this.embedded ? 'map.embedded.isPainting' : 'map.isPainting';
-            const knownTypes = _.values(statuses.type);
-
-            const parse = raw => {
-                if (raw === undefined || raw === null || raw === '') {
-                    return null;
-                }
-
-                const list = String(raw).split(',')
-                    .map(t => Number(t))
-                    .filter(t => knownTypes.includes(t));
-
-                return list.length ? _.uniq(list) : null;
-            };
-
-            const mergePointType = types => {
-                if (!this.embedded || this.options.isPainting === undefined) {
-                    return types;
-                }
-
-                const pointType = this.options.isPainting ? statuses.type.PAINTING : statuses.type.PHOTO;
-
-                return types.includes(pointType) ? types : types.concat(pointType);
-            };
-
-            // URL ?type=1, ?type=2, ?type=1,2 (non-embedded only)
-            if (!this.embedded) {
-                const fromQuery = parse(qParams.type);
-
-                if (fromQuery) {
-                    return fromQuery;
-                }
-            }
-
-            const fromStorage = parse(Utils.getLocalStorage(storageKey));
-
-            if (fromStorage) {
-                return mergePointType(fromStorage);
-            }
-
-            // Legacy fallback: map.isPainting boolean from older versions.
-            const legacy = Utils.getLocalStorage(legacyKey);
-
-            if (legacy !== undefined) {
-                return mergePointType([legacy ? statuses.type.PAINTING : statuses.type.PHOTO]);
-            }
-
-            // First-time default: in embedded mode, the photo's own type; otherwise both.
-            if (this.embedded && this.options.isPainting !== undefined) {
-                return [this.options.isPainting ? statuses.type.PAINTING : statuses.type.PHOTO];
-            }
-
-            return [statuses.type.PHOTO, statuses.type.PAINTING];
-        },
-        // Storage suffix that groups year-range persistence per type selection: "1", "2", or "1,2".
-        typeStorageKey: function () {
-            return this.displayTypes().join(',') || String(statuses.type.PHOTO);
-        },
-        // Combined year range: min of all selected types' mins and max of all selected types' maxes.
-        getDisplayYearsRange: function () {
-            const types = this.displayTypes();
-
-            if (!types.length) {
-                return statuses.years[statuses.type.PHOTO];
-            }
-
-            return types.reduce(function (result, type) {
-                const range = statuses.years[type];
-
-                result.min = Math.min(result.min, range.min);
-                result.max = Math.max(result.max, range.max);
-
-                return result;
-            }, { min: Infinity, max: -Infinity });
-        },
         setLocalState: function () {
             const layerActive = this.layerActive();
 
             Utils.setLocalStorage(this.embedded ? 'map.embedded.opennew' : 'map.opennew', this.openNewTab());
             Utils.setLocalStorage(this.embedded ? 'map.embedded.sys' : 'map.sys', layerActive.sys.id);
             Utils.setLocalStorage(this.embedded ? 'map.embedded.type' : 'map.type', layerActive.type.id);
-            Utils.setLocalStorage(this.embedded ? 'map.embedded.displayTypes' : 'map.displayTypes', this.displayTypes().join(','));
 
             if (!this.embedded) {
+                Utils.setLocalStorage('map.isPainting', this.isPainting());
                 Utils.setLocalStorage('map.center', Utils.geo.latlngToArr(this.map.getCenter()));
                 Utils.setLocalStorage('map.zoom', this.map.getZoom());
 
-                const typeStorageKey = this.typeStorageKey();
-                const years = this.getDisplayYearsRange();
+                const type = this.type();
+                const years = statuses.years[this.type()];
 
                 if (this.yearLow > years.min) {
-                    Utils.setLocalStorage('map.year.' + typeStorageKey, this.yearLow);
+                    Utils.setLocalStorage('map.year.' + type, this.yearLow);
                 } else {
-                    Utils.removeLocalStorage('map.year.' + typeStorageKey);
+                    Utils.removeLocalStorage('map.year.' + type);
                 }
 
                 if (this.yearHigh < years.max) {
-                    Utils.setLocalStorage('map.year2.' + typeStorageKey, this.yearHigh);
+                    Utils.setLocalStorage('map.year2.' + type, this.yearHigh);
                 } else {
-                    Utils.removeLocalStorage('map.year2.' + typeStorageKey);
+                    Utils.removeLocalStorage('map.year2.' + type);
                 }
             }
         },
         setYears: function (y, y2) {
-            const years = this.getDisplayYearsRange();
+            const type = this.type();
+            const years = statuses.years[type] || statuses.years[statuses.type.PHOTO];
 
             if (_.isNumber(y) && y !== 0 && y > years.min && y <= years.max) {
                 this.yearLow = y;
@@ -517,32 +425,17 @@ define([
                 this.yearHigh = years.max;
             }
         },
-        // Toggle a single type on or off, refusing to deselect the last active one.
-        toggleType: function (type) {
-            const targetObservable = type === statuses.type.PAINTING ? this.showPainting : this.showPhoto;
-            const isCurrentlyOn = targetObservable();
-
-            // Refuse to turn off the last active type — at least one must remain selected.
-            if (isCurrentlyOn && this.displayTypes().length <= 1) {
-                return;
-            }
-
-            targetObservable(!isCurrentlyOn);
+        setPainting: function (val) {
+            this.isPainting(val);
 
             this.yearSliderRefresh();
 
             if (this.markerManager) {
-                this.markerManager.changeDisplayTypes(this.displayTypes(), this.yearLow, this.yearHigh, true);
+                this.markerManager.changePainting(val, this.yearLow, this.yearHigh, true);
             }
 
             this.notifySubscribers();
             this.setLocalState();
-        },
-        togglePhoto: function () {
-            this.toggleType(statuses.type.PHOTO);
-        },
-        togglePainting: function () {
-            this.toggleType(statuses.type.PAINTING);
         },
         notifySubscribers: function () {
             const data = this.getStatusData();
@@ -553,7 +446,6 @@ define([
         },
         getStatusData: function () {
             return {
-                displayTypes: this.displayTypes(),
                 isPainting: this.isPainting(),
                 year: this.yearLow, year2: this.yearHigh,
                 center: this.getCenter(),
@@ -634,7 +526,7 @@ define([
             this.markerManager = new MarkerManager(this.map, {
                 enabled: false,
                 openNewTab: this.openNewTab(),
-                displayTypes: this.displayTypes(),
+                isPainting: this.isPainting(),
                 embedded: this.embedded,
                 year: this.yearLow,
                 year2: this.yearHigh,
@@ -744,15 +636,12 @@ define([
 
             this.point = point;
 
-            // Ensure this photo's own type is included in the displayed types; keep any other already-active type.
-            const pointTypeObservable = isPainting ? this.showPainting : this.showPhoto;
-
-            if (!pointTypeObservable()) {
-                pointTypeObservable(true);
+            if (isPainting !== this.isPainting()) {
+                this.isPainting(isPainting);
                 this.yearSliderRefresh();
 
                 if (this.markerManager) {
-                    this.markerManager.changeDisplayTypes(this.displayTypes(), this.yearLow, this.yearHigh);
+                    this.markerManager.changePainting(isPainting, this.yearLow, this.yearHigh);
                 }
             }
 
@@ -941,7 +830,7 @@ define([
                     document.addEventListener('click', this.showLinkBind);
                 }.bind(this), 100);
 
-                const years = this.getDisplayYearsRange();
+                const years = statuses.years[this.type()];
                 let y = '';
 
                 if (this.yearLow > years.min) {
@@ -956,7 +845,7 @@ define([
                     location.host +
                     '?g=' + center.join(',') + '&z=' + this.map.getZoom() +
                     '&s=' + layerActive.sys.id + '&t=' + layerActive.type.id +
-                    '&type=' + this.displayTypes().join(',') + y
+                    '&type=' + this.type() + y
                 );
                 this.map.on('zoomstart', this.hideLink, this); //Скрываем ссылку при начале зуммирования карты
                 this.linkShow(true);
@@ -1124,11 +1013,11 @@ define([
             //P.window.square.unsubscribe();
             window.clearTimeout(this.yearRefreshMarkersTimeout);
 
-            const typeStorageKey = this.typeStorageKey();
+            const type = this.type();
 
             this.setYears(
-                Utils.getLocalStorage('map.year.' + typeStorageKey),
-                Utils.getLocalStorage('map.year2.' + typeStorageKey)
+                Utils.getLocalStorage('map.year.' + type),
+                Utils.getLocalStorage('map.year2.' + type)
             );
 
             $('.mapYearSelector').replaceWith(
@@ -1141,7 +1030,7 @@ define([
         },
         yearSliderCreate: function () {
             const self = this;
-            const years = this.getDisplayYearsRange();
+            const years = statuses.years[this.type()];
             const yearLowOrigin = years.min;
             const yearHighOrigin = years.max;
             const yearsDelta = yearHighOrigin - yearLowOrigin;
