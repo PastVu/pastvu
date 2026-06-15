@@ -44,11 +44,11 @@
         .mapNavigation.mContainer.mHidden
         .trtools
             span.tltp-wrap
-                .trtool.button.fringe(data-bind="css: {no: !showPhoto()}, click: togglePhoto" aria-describedby="showphotosonmap")
+                .trtool.button.fringe(data-bind="css: {no: isPainting()}, click: function () {setPainting(false)}" aria-describedby="showphotosonmap")
                     span.glyphicon.glyphicon-camera
                 .tltp.tltp-bottom.tltp-animate-opacity(id="showphotosonmap" role="tooltip", data-bind="text: $root.i18n('Show photos on the map')")
             span.tltp-wrap
-                .trtool.button.fringe(data-bind="css: {no: !showPainting()}, click: togglePainting" aria-describedby="showpaintingsonmap")
+                .trtool.button.fringe(data-bind="css: {no: !isPainting()}, click: function () {setPainting(true)}" aria-describedby="showpaintingsonmap")
                     span.glyphicon.glyphicon-picture
                 .tltp.tltp-bottom.tltp-animate-opacity(id="showpaintingsonmap" role="tooltip", data-bind="text: $root.i18n('Show paintings/drawings on the map')")
             span.tltp-wrap
