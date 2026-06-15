@@ -287,7 +287,7 @@
             span.infoName(data-bind="text: $root.i18n(fields.dir) + ':'")
             span.direction-icon(data-bind="html: getDirIcon(p.dir())")
             | &nbsp;
-            span(data-bind="text: $root.i18n(fields.dirVals[p.dir()])", style="text-transform: lowercase;")
+            span(data-bind="text: fields.dirVals[p.dir()]", style="text-transform: lowercase;")
         // /ko
         //ko if: p.watersignText() && p.watersignTextApplied()
         .info

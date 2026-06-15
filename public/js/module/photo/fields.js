@@ -3,7 +3,7 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-define(['Browser'], function (Browser) {
+define(['Browser', 'i18n'], function (Browser, i18n) {
     const dirIcons = {
         // Arrows are not unified accross browsers and platforms.
         // The choices we use [default, FF, Mac].
@@ -48,15 +48,15 @@ define(['Browser'], function (Browser) {
         },
         types: ['1', '2'],
         dirVals: {
-            n: 'North',
-            ne: 'Northeast',
-            e: 'East',
-            se: 'Southeast',
-            s: 'South',
-            sw: 'Southwest',
-            w: 'West',
-            nw: 'Northwest',
-            aero: 'Aerial/Satellite',
+            n: i18n('North'),
+            ne: i18n('Northeast'),
+            e: i18n('East'),
+            se: i18n('Southeast'),
+            s: i18n('South'),
+            sw: i18n('Southwest'),
+            w: i18n('West'),
+            nw: i18n('Northwest'),
+            aero: i18n('Aerial/Satellite'),
         },
         dirValsArr: ['w', 'nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'aero'],
         watersign: {
