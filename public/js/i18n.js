@@ -24,6 +24,10 @@ define(['i18next', 'text!./lang/i18n.en.json', 'text!./lang/i18n.ru.json'], func
         nsSeparator: false,
         // Knockout escapes text bindings — don't double-escape.
         interpolation: { escapeValue: false },
+        // Resources are inlined above, so init can run synchronously — that way t()
+        // is usable as soon as this module's factory returns, including from other
+        // modules that call i18n() at evaluation time (e.g. m/photo/fields).
+        initAsync: false,
         resources: {
             ru: { translation: translationsRu },
             en: { translation: translationsEn },
