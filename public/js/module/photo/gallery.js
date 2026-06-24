@@ -75,6 +75,7 @@ define([
                     re: ko.observableArray(), // Array of cids of excluded regions
                     redis: ko.observableArray(), // Array of cids of inactive excluded regions, because of inactive parents
                     geo: ko.observableArray(),
+                    dir: ko.observableArray(),
                     year: ko.observable(this.year),
                     year2: ko.observable(this.year2),
                 },
@@ -400,6 +401,7 @@ define([
             const re = this.filter.disp.re();
             let s = this.filter.disp.s().map(Number);
             const geo = this.filter.disp.geo();
+            const dir = this.filter.disp.dir();
             const year = Number(this.filter.disp.year());
             const year2 = Number(this.filter.disp.year2());
             const ccount = Number(this.filter.disp.ccount());
@@ -445,6 +447,10 @@ define([
 
             if (geo.length === 1) {
                 filterString += (filterString ? '_' : '') + 'geo!' + geo[0];
+            }
+
+            if (dir.length === 1) {
+                filterString += (filterString ? '_' : '') + 'dir!' + dir[0];
             }
 
             if (s.length && this.auth.iAm) {
@@ -789,6 +795,25 @@ define([
                     data.filter.disp.geo(['1']);
                 } else {
                     data.filter.disp.geo(['0']);
+                }
+            }
+
+            this.filterChangeHandle(); //Вручную вызываем обработку фильтра
+
+            return true; //Возвращаем true, чтобы галка в браузере переключилась
+        },
+        //Обработка клика вариантов присутствия направления съемки в фильтре
+        //Чтобы поставить вторую галку, если обе сняты, т.к. должно быть хотя бы одно из состояний
+        fdirclk: function (data, event) {
+            const currDispDir = data.filter.disp.dir();
+            const clickedDir = event.target.value;
+
+            if (!currDispDir.length) {
+                //Если все варианты сняты, делаем активным второй вариант
+                if (clickedDir === '0') {
+                    data.filter.disp.dir(['1']);
+                } else {
+                    data.filter.disp.dir(['0']);
                 }
             }
 
@@ -1267,9 +1292,14 @@ define([
                             data.filter.geo = ['0', '1'];
                         }
 
+                        if (!data.filter.dir || !data.filter.dir.length) {
+                            data.filter.dir = ['0', '1'];
+                        }
+
                         this.t = data.filter.t.map(String);
                         this.filter.disp.t(this.t.slice());
                         this.filter.disp.geo(data.filter.geo);
+                        this.filter.disp.dir(data.filter.dir);
 
                         if (_.isEmpty(data.filter.y)) {
                             const yearsRange = this.getTypeYearsRange();
