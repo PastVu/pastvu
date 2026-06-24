@@ -18,6 +18,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Lint
+        run: npm run lint
+
+      - name: Check i18n translations
+        run: npm run i18n:check
+
       - name: Test
         run: npm run test
 
