@@ -12,7 +12,7 @@ import log4js from 'log4js';
 import moment from 'moment';
 import config from '../config';
 import Utils from '../commons/Utils';
-import { getT, langFromHandshake, userLang } from '../commons/i18n';
+import { getT, langFromHandshake, pickLang } from '../commons/i18n';
 import * as session from './_session';
 import { send as sendMail } from './mail';
 import { userSettingsDef } from './settings';
@@ -222,10 +222,11 @@ async function recall({ login }) {
     }
 
     // Prefer the recall target's saved language so the email matches their UI,
-    // even when the recall form was opened in a different language. userLang
-    // normalises against config.locales so an unsupported stored value can't
-    // leak into moment.locale(lang) below.
-    const lang = user.settings && user.settings.lang ? userLang(user) : langFromHandshake(this.handshake);
+    // even when the recall form was opened in a different language. pickLang
+    // normalises against config.locales, so an unsupported stored value falls
+    // through to the request cookie / default rather than leaking into
+    // moment.locale(lang) below.
+    const lang = pickLang(user, this.handshake);
     const t = getT(lang);
 
     const confirmKey = Utils.randomString(8);

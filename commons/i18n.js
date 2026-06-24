@@ -106,15 +106,27 @@ function userLang(user) {
     return resolveLang(user && user.settings && user.settings.lang);
 }
 
+// Extract the raw past_lang cookie value (un-normalized, possibly undefined)
+// from an Express request or a Socket.IO handshake. Accepts either a parsed
+// cookie object on .cookie (set by app/request.js) or a raw .headers.cookie
+// string.
+function readCookieLang(reqOrHandshake) {
+    if (reqOrHandshake && reqOrHandshake.cookie) {
+        return reqOrHandshake.cookie.past_lang;
+    }
+
+    const cookieHeader = reqOrHandshake && reqOrHandshake.headers && reqOrHandshake.headers.cookie || '';
+
+    return parseCookie(cookieHeader).past_lang;
+}
+
 /**
  * Read the user's preferred language from a Socket.IO / Express handshake's
  * past_lang cookie. Falls back to config.lang when the cookie is missing or
  * names an unsupported locale.
  */
 function langFromHandshake(handshake) {
-    const cookieHeader = handshake && handshake.headers && handshake.headers.cookie || '';
-
-    return resolveLang(parseCookie(cookieHeader).past_lang);
+    return resolveLang(readCookieLang(handshake));
 }
 
 /**
@@ -122,13 +134,29 @@ function langFromHandshake(handshake) {
  * object on req.cookie (set by app/request.js) or raw req.headers.cookie.
  */
 function langFromRequest(req) {
-    if (req && req.cookie) {
-        return resolveLang(req.cookie.past_lang);
+    return resolveLang(readCookieLang(req));
+}
+
+/**
+ * The single source of truth for choosing a request's language.
+ *
+ * Priority: the user's saved preference (settings.lang) wins, then the
+ * request's past_lang cookie, then the configured site default. Each
+ * candidate must name a supported locale or it is skipped, so a stale user
+ * setting falls through to the cookie and an unknown cookie to the default.
+ *
+ * Pass the user document only when it should count (e.g. a registered
+ * usObj.user); pass null/undefined to decide from the request alone.
+ * `reqOrHandshake` is an Express req or a Socket.IO handshake.
+ */
+function pickLang(user, reqOrHandshake) {
+    const userPref = user && user.settings && user.settings.lang;
+
+    if (SUPPORTED.includes(userPref)) {
+        return userPref;
     }
 
-    const cookieHeader = req && req.headers && req.headers.cookie || '';
-
-    return resolveLang(parseCookie(cookieHeader).past_lang);
+    return resolveLang(readCookieLang(reqOrHandshake));
 }
 
 // Map our short language codes to the full OpenGraph locale tags used in
@@ -172,6 +200,6 @@ function i18nLocals(req, res, next) {
 }
 
 module.exports = {
-    getT, t, userLang, langFromHandshake, langFromRequest, init,
+    getT, t, userLang, langFromHandshake, langFromRequest, pickLang, init,
     OG_LOCALES, ogLocale, pickRegionTitle, i18nLocals,
 };

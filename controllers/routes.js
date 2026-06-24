@@ -9,7 +9,7 @@ import express from 'express';
 import log4js from 'log4js';
 import config from '../config';
 import Utils from '../commons/Utils';
-import { langFromRequest, pickRegionTitle } from '../commons/i18n';
+import { langFromRequest, pickLang, pickRegionTitle } from '../commons/i18n';
 import * as session from './_session';
 import { clientParams, ready as settingsReady } from './settings';
 import NotFoundError from '../app/errors/NotFound';
@@ -35,10 +35,7 @@ function genInitDataString(req) {
     // Prefer the persisted user preference over the cookie so a registered
     // user opening the site in a fresh browser still gets their saved
     // language on the very first render (before the socket round-trip).
-    const userLang = usObj.registered && usObj.user && usObj.user.settings && usObj.user.settings.lang;
-    const cookieLang = req.cookie && req.cookie.past_lang;
-    const pickedLang = config.locales.includes(userLang) ? userLang :
-        config.locales.includes(cookieLang) ? cookieLang : clientParams.lang;
+    const pickedLang = pickLang(usObj.registered ? usObj.user : null, req);
     const settingsJSON = pickedLang !== clientParams.lang ?
         JSON.stringify({ ...clientParams, lang: pickedLang }) :
         clientParamsJSON;
