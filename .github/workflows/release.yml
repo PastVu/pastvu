@@ -6,6 +6,9 @@ on:
       - '*'
       - '!**-en'
 
+permissions:
+  contents: write
+
 jobs:
   release:
     name: Tagged Release
@@ -13,9 +16,9 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v6
       - name: Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           generate_release_notes: true
 
