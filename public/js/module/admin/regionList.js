@@ -4,9 +4,9 @@
  */
 
 define([
-    'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM',
+    'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'i18n',
     'model/storage', 'noties', 'text!tpl/admin/regionList.pug', 'css!style/admin/regionList',
-], function (_, $, Utils, socket, P, ko, Cliche, globalVM, storage, noties, pug) {
+], function (_, $, Utils, socket, P, ko, Cliche, globalVM, i18n, storage, noties, pug) {
     'use strict';
 
     const collator = new Intl.Collator('ru-RU', { numeric: true, sensitivity: 'base' });
@@ -98,7 +98,7 @@ define([
 
             (function recursiveSort(arr) {
                 arr.sort(function (a, b) {
-                    return sort * collator.compare(a.title_local, b.title_local);
+                    return sort * collator.compare(Utils.regionTitle(a), Utils.regionTitle(b));
                 });
 
                 arr = arr();
@@ -121,7 +121,7 @@ define([
             //Сортируем массим по уровням и названиям в пределах одного уровня
             arr.sort(function (a, b) {
                 if (a.parents.length === b.parents.length) {
-                    return collator.compare(a.title_local, b.title_local);
+                    return collator.compare(Utils.regionTitle(a), Utils.regionTitle(b));
                 }
 
                 return a.parents.length < b.parents.length ? -1 : 1;
@@ -295,8 +295,8 @@ define([
             const that = this;
 
             noties.confirm({
-                message: 'Перерасчет статистики регионов займет ~5 минут. Продолжить?',
-                okText: 'Да, налью чаю',
+                message: i18n('Recalculating region statistics will take ~5 minutes. Continue?'),
+                okText: i18n('Yes, I\'ll grab some tea'),
                 okClass: 'btn-success',
                 onOk: function (confirmer) {
                     confirmer.disable();
@@ -306,18 +306,18 @@ define([
                             let msg;
 
                             if (data.running) {
-                                msg = 'В данный момент статистика уже пересчитывается';
+                                msg = i18n('Statistics are already being recalculated');
                             } else {
-                                msg = 'Статистика регионам пересчитана<br>';
+                                msg = i18n('Region statistics have been recalculated') + '<br>';
 
                                 if (data.valuesChanged) {
                                     if (data.regionChanged) {
-                                        msg += '<b>' + globalVM.intl.num(data.regionChanged) + '</b> регионов было обновлено<br>';
+                                        msg += i18n('<b>{{count, number}}</b> regions updated', { count: data.regionChanged }) + '<br>';
                                     }
 
-                                    msg += '<b>' + globalVM.intl.num(data.valuesChanged) + '</b> значений было изменено';
+                                    msg += i18n('<b>{{count, number}}</b> values changed', { count: data.valuesChanged });
                                 } else {
-                                    msg += 'Значения не изменились';
+                                    msg += i18n('Values are unchanged');
                                 }
                             }
 
@@ -326,10 +326,10 @@ define([
                             });
                         })
                         .catch(function (error) {
-                            confirmer.error(error, 'Закрыть');
+                            confirmer.error(error, i18n('Close'));
                         });
                 },
-                cancelText: 'Нет',
+                cancelText: i18n('No'),
             });
         },
     });

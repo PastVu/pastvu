@@ -5,11 +5,9 @@
 
 import fs from 'fs';
 import gm from 'gm';
-import mv from 'mv';
 import _ from 'lodash';
 import path from 'path';
 import util from 'util';
-import makeDir from 'make-dir';
 import config from '../config';
 import childProcess from 'child_process';
 import Utils from '../commons/Utils';
@@ -429,18 +427,10 @@ async function changeAvatar({ login, file, mime }) {
 
     await Promise.all([
         // Transfer file from incoming to private
-        new Promise((resolve, reject) => {
-            mv(path.join(incomeDir, file), path.normalize(originPath), { clobber: false }, err => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve();
-                }
-            });
-        }),
+        Utils.moveFile(path.join(incomeDir, file), path.normalize(originPath)),
         // Create folders inside public
-        makeDir(path.join(publicDir, 'd/', dirPrefix)),
-        makeDir(path.join(publicDir, 'h/', dirPrefix)),
+        fs.promises.mkdir(path.join(publicDir, 'd/', dirPrefix), { recursive: true }),
+        fs.promises.mkdir(path.join(publicDir, 'h/', dirPrefix), { recursive: true }),
     ]);
 
     await Promise.all([

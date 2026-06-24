@@ -8,7 +8,7 @@ import _ from 'lodash';
 import log4js from 'log4js';
 import config from '../config';
 import Utils from '../commons/Utils';
-import { polygon as turfPolygon, intersect as turfIntersect } from '@turf/turf';
+import { polygon as turfPolygon, intersect as turfIntersect, featureCollection as turfFeatureCollection } from '@turf/turf';
 import geojsonRewind from '@mapbox/geojson-rewind';
 import { getIssues } from '@placemarkio/check-geojson';
 import geojsonArea from '@mapbox/geojson-area';
@@ -462,7 +462,7 @@ export const genObjsShortRegionsArr = function (objs, showlvls = ['r0', 'r1'], d
     }
 
     if (Object.keys(shortRegionsHash).length) {
-        fillRegionsHash(shortRegionsHash, ['cid', 'title_local']);
+        fillRegionsHash(shortRegionsHash, ['cid', 'title_en', 'title_local']);
     } else {
         shortRegionsHash = undefined;
     }
@@ -491,14 +491,14 @@ async function calcRegionIncludes(cidOrRegion) {
 
     // First clear assignment of objects with coordinates to region
     const unsetObject = { $unset: { [level]: 1 } };
-    const [{ n: photosCountBefore = 0 }, { n: commentsCountBefore = 0 }] = await Promise.all([
+    const [{ matchedCount: photosCountBefore = 0 }, { matchedCount: commentsCountBefore = 0 }] = await Promise.all([
         Photo.updateMany({ geo: { $exists: true }, [level]: region.cid }, unsetObject).exec(),
         Comment.updateMany({ geo: { $exists: true }, [level]: region.cid }, unsetObject).exec(),
     ]);
 
     // Then assign to region on located in it polygon objects
     const setObject = { $set: { [level]: region.cid } };
-    const [{ n: photosCountAfter = 0 }, { n: commentsCountAfter = 0 }] = await Promise.all([
+    const [{ matchedCount: photosCountAfter = 0 }, { matchedCount: commentsCountAfter = 0 }] = await Promise.all([
         Photo.updateMany({ geo: { $geoWithin: { $geometry: region.geo } } }, setObject).exec(),
         Comment.updateMany({ geo: { $geoWithin: { $geometry: region.geo } } }, setObject).exec(),
     ]);
@@ -643,7 +643,7 @@ async function changeRegionParentExternality(region, oldParentsArray, childLenAr
 
         movingRegionsIds.unshift(region._id);
 
-        const [{ n: affectedUsers = 0 }, { n: affectedMods = 0 }] = await Promise.all([
+        const [{ matchedCount: affectedUsers = 0 }, { matchedCount: affectedMods = 0 }] = await Promise.all([
             // Remove subscription on moving regions of those users, who have subscription on new and on parent regions,
             // because in this case they'll have subscription on children automatically
             User.updateMany({
@@ -830,7 +830,7 @@ async function processFeatureCollection(data) {
             featureResult.success = true;
             featureResult.edit = Boolean(existentRegion);
             featureResult.stat = saveResult.resultStat;
-            featureResult.region = _.pick(saveResult.region, 'cid', 'title_local', 'polynum', 'pointsnum');
+            featureResult.region = _.pick(saveResult.region, 'cid', 'title_en', 'title_local', 'polynum', 'pointsnum');
         } catch (err) {
             featureResult.error = err.message || err;
         }
@@ -968,7 +968,9 @@ async function save(data) {
 
                     for (let i = 1; i < leftPolygons.length; i++) {
                         const polygon = leftPolygons[i];
-                        const intersectionWithExterior = turfIntersect(turfPolygon(exteriorPolygon), turfPolygon(polygon));
+                        const intersectionWithExterior = turfIntersect(
+                            turfFeatureCollection([turfPolygon(exteriorPolygon), turfPolygon(polygon)])
+                        );
 
                         if (intersectionWithExterior && intersectionWithExterior.geometry.type === 'Polygon') {
                             // If polygons intersect as Polygon, means current one is a hole (interior ring)
@@ -1265,12 +1267,12 @@ async function remove(data) {
     removingRegionsIds.push(regionToRemove._id);
 
     // Replace home regions
-    const { n: homeAffectedUsers = 0 } = await User.updateMany(
+    const { matchedCount: homeAffectedUsers = 0 } = await User.updateMany(
         { regionHome: { $in: removingRegionsIds } }, { $set: { regionHome: parentRegion._id } }
     ).exec();
 
     // Unsubscribe all users from removing regions ('my regions')
-    const { n: affectedUsers = 0 } = await User.updateMany(
+    const { matchedCount: affectedUsers = 0 } = await User.updateMany(
         { regions: { $in: removingRegionsIds } }, { $pull: { regions: { $in: removingRegionsIds } } }
     ).exec();
 
@@ -1293,7 +1295,7 @@ async function remove(data) {
         }
     }
 
-    const [{ n: affectedPhotos = 0 }, { n: affectedComments = 0 }] = await Promise.all([
+    const [{ matchedCount: affectedPhotos = 0 }, { matchedCount: affectedComments = 0 }] = await Promise.all([
         // Update included photos
         Photo.updateMany(objectsMatchQuery, objectsUpdateQuery).exec(),
         // Update comments of included photos
@@ -1343,13 +1345,13 @@ async function removeRegionsFromMods(usersQuery, regionsIds) {
 
     if (modUsersCids.length) {
         // Remove regions from finded moderators
-        const { n: affectedMods = 0 } = await User.updateMany(
+        const { matchedCount: affectedMods = 0 } = await User.updateMany(
             { cid: { $in: modUsersCids } },
             { $pull: { mod_regions: { $in: regionsIds } } }
         ).exec();
 
         // Revoke moderation role from users, in whose no moderation regions left after regions removal
-        const { n: affectedModsLose = 0 } = await User.updateMany(
+        const { matchedCount: affectedModsLose = 0 } = await User.updateMany(
             { cid: { $in: modUsersCids }, mod_regions: { $size: 0 } },
             { $unset: { role: 1, mod_regions: 1 } }
         ).exec();
@@ -1390,15 +1392,18 @@ async function give(data) {
         children = [];
 
         for (const cid of childrenCids) {
-            const { cdate, udate, title_local: title, childLen } = regionCacheHash[cid];
+            const { cdate, udate, title_en, title_local, childLen } = regionCacheHash[cid];
 
-            children.push({ cid, cdate, udate, title, childLen, childrenCount: _.size(regionsChildrenArrHash[cid]) || undefined });
+            children.push({
+                cid, cdate, udate, title_en, title_local, childLen,
+                childrenCount: _.size(regionsChildrenArrHash[cid]) || undefined,
+            });
         }
 
         // Add public stat for each region
         fillRegionsPublicStats(children);
 
-        children = _.sortBy(children, ['title']);
+        children = _.sortBy(children, ['title_local']);
     }
 
     // Send client stringified geojson

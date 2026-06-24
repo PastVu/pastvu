@@ -5,6 +5,7 @@
 
 import _ from 'lodash';
 import http from 'http';
+import { t as translate } from '../../commons/i18n';
 import errorMsgs from './intl';
 import constants from './constants';
 
@@ -33,6 +34,10 @@ export default class ApplicationError extends Error {
         this.trace = trace;
         this.logged = logged;
         this.details = details;
+        // Distinguishes an explicit message (verbatim, never translated) from
+        // the fall-back lookup against errorMsgs[code] which toJSON(lang) can
+        // re-translate.
+        this.hasExplicitMessage = Boolean(message);
         this.statusCode = statusCode;
         this.statusText = http.STATUS_CODES[statusCode];
 
@@ -59,11 +64,24 @@ export default class ApplicationError extends Error {
         }
     }
 
-    toJSON() {
+    // Pick the message to ship to the client. Explicit messages flow through
+    // verbatim; for code-only errors this.message is the English source
+    // (set by the super constructor's `errorMsgs[code] || code` fallback)
+    // and doubles as the i18next translation key. `undefined` lang means the
+    // caller doesn't want translation (e.g. server-side logging).
+    localizedMessage(lang) {
+        if (this.hasExplicitMessage || lang === undefined) {
+            return this.message;
+        }
+
+        return translate(lang, this.message);
+    }
+
+    toJSON(lang) {
         const result = {
             type: this.name,
             code: this.code,
-            message: this.message,
+            message: this.localizedMessage(lang),
         };
 
         if (!_.isEmpty(this.rid)) {

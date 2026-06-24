@@ -6,7 +6,6 @@
 import ms from 'ms';
 import _ from 'lodash';
 import log4js from 'log4js';
-import locale from 'locale';
 import config from '../config';
 import Utils from '../commons/Utils';
 import * as regionController from './region';
@@ -25,10 +24,6 @@ const SESSION_USER_LIFE = ms('21d'); // Lifetime of a registered user session
 const SESSION_ANON_LIFE = ms('7d'); // Lifetime of an anonymous user session
 const loopbackIPs = new Set(['127.0.0.1', '::ffff:127.0.0.1', '::1']);
 
-// Locales Map for checking their presence after header parsing
-const localesMap = new Map(config.locales.map(locale => [locale, locale]));
-// Default locale is the first one from config
-const localeDefault = config.locales[0];
 // Method for parsing and checking user-gent
 export const checkUserAgent = Utils.checkUserAgent(config.browsers);
 
@@ -55,41 +50,25 @@ const createLangCookieObj = (function () {
 }());
 
 const getBrowserAgent = function (browser) {
+    const { browser: br, os, device } = browser.agent;
     const agent = {
-        n: browser.agent.family, // Agent name e.g. 'Chrome'
-        v: browser.agent.toVersion(), // Agent version string e.g. '15.0.874'
+        n: br.name, // Agent name e.g. 'Chrome'
+        v: br.version, // Agent version string e.g. '15.0.874'
     };
 
-    const device = browser.agent.device.toString(); // Device e.g 'Asus A100'
-    const os = browser.agent.os.toString(); // Operation system e.g. 'Mac OSX 10.10.1'
+    const osStr = os.name ? os.version ? `${os.name} ${os.version}` : os.name : '';
+    const deviceStr = [device.vendor, device.model].filter(Boolean).join(' ');
 
-    if (os) {
-        agent.os = os;
+    if (osStr) {
+        agent.os = osStr;
     }
 
-    if (device && device !== 'Other') {
-        agent.d = device;
+    if (deviceStr) {
+        agent.d = deviceStr;
     }
 
     return agent;
 };
-
-// Determine user locale that we support based on 'accept-language' header
-export const identifyUserLocale = (function () {
-    // Locales for comparison
-    const localesSuported = new locale.Locales(config.locales, localeDefault);
-
-    return function (acceptLanguage) {
-        if (_.isEmpty(acceptLanguage)) {
-            return localeDefault; // If parameter is not specified, return default locale
-        }
-
-        // Find the most suitable locale for agent
-        const suggestedLocale = new locale.Locales(acceptLanguage).best(localesSuported);
-
-        return localesMap.get(suggestedLocale.normalized) || localesMap.get(suggestedLocale.language) || localeDefault;
-    };
-}());
 
 export const getPlainUser = (function () {
     const userToPublicObject = function (doc, ret/* , options */) {
@@ -483,7 +462,7 @@ async function popUserRegions(usObj) {
         paths.push({ path: 'mod_regions', select: { _id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1 } });
     }
 
-    await user.populate(paths).execPopulate();
+    await user.populate(paths);
 
     let regionsData = regionController.buildQuery(user.regions);
     let shortRegions = regionController.getShortRegionsParams(regionsData.rhash);
@@ -754,7 +733,7 @@ export const archiveExpiredSessions = async function () {
     const anonQuery = { anonym: { $exists: true }, stamp: { $lte: new Date(start - SESSION_ANON_LIFE) } };
 
     // Simply remove anonymous sessions older then SESSION_ANON_LIFE, there is no point in storing them
-    const { n: countRemovedAnon } = await Session.deleteMany(anonQuery).exec();
+    const { deletedCount: countRemovedAnon } = await Session.deleteMany(anonQuery).exec();
 
     // Move each expired registered user session to sessions_archive
     for await (const session of Session.find(userQuery).limit(5000)) {
@@ -1192,14 +1171,30 @@ async function destroyUserSessions({ login }) {
 async function langChange(data) {
     const { socket, handshake: { session, usObj } } = this;
 
-    if (!config.locales.includes(data.lang)) {
+    if (!data || !config.locales.includes(data.lang)) {
         return;
     }
 
-    // Send client new language cookie
+    // Send the cookie + reload first so the UI flips even if the persistence
+    // path below fails — the user's session lang is the source of truth for
+    // the next page; the DB write is for background flows (notifier, mail).
     await emitLangCookie(socket, data.lang, true, usObj.registered);
 
     sendReload(session);
+
+    // Persist the chosen language on the user document so background flows
+    // can localize per-user even after the session ends.
+    if (usObj.registered && usObj.user) {
+        usObj.user.settings = usObj.user.settings || {};
+        usObj.user.settings.lang = data.lang;
+        usObj.user.markModified('settings');
+
+        try {
+            await usObj.user.save();
+        } catch (err) {
+            logger.error(`langChange: failed to persist lang ${data.lang} for ${usObj.user.login}`, err);
+        }
+    }
 }
 
 function giveInitData() {

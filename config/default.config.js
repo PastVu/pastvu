@@ -9,7 +9,7 @@ const ms = require('ms');
 module.exports = {
     env: 'development', // Enviroment: development, test, production
     locales: ['en', 'ru'], // List of supported locales. First one is the default locale, if user transferred nothing
-    lang: 'ru', // Language: ru, en
+    lang: 'en', // Language: ru, en
     admin: {
         email: '',
     },
@@ -78,7 +78,7 @@ module.exports = {
 
     mongo: {
         connection: 'mongodb://localhost:27017/pastvu',
-        pool: 5, // Number of concurrent connections to DB
+        pool: 10, // Number of concurrent connections to DB
     },
     mongo_api: {
         con: 'mongodb://localhost:27017/pastvu',
@@ -87,7 +87,7 @@ module.exports = {
     redis: {
         host: 'localhost',
         port: '6379',
-        maxRetriesPerRequest: null, // Required for bull handling sheduled jobs after reconnection.
+        maxRetriesPerRequest: null, // Required for bullmq workers to keep processing across reconnects.
         maxReconnectTime: ms('60s'), // Used in connection controller.
     },
 

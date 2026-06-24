@@ -1,11 +1,11 @@
 doctype html
-html
-    head(lang=config.lang prefix="og: http://ogp.me/ns#")
+html(lang=lang || config.lang)
+    head(prefix="og: http://ogp.me/ns#")
         include includes/head_meta
 
         if polyfills
             if polyfills.intl
-                script(type="text/javascript", src='https://cdn.polyfill.io/v2/polyfill.min.js?features=Intl.~locale.' + config.lang + '|always')
+                script(type="text/javascript", src='https://cdn.polyfill.io/v2/polyfill.min.js?features=Intl.~locale.' + (lang || config.lang) + '|always')
             if polyfills.promise
                 script(type="text/javascript", src='/js/lib/es6-promise.min.js')
 

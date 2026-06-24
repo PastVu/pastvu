@@ -9,7 +9,7 @@ const config = require('../config');
 const Utils = Object.create(null);
 const _ = require('lodash');
 const _s = require('underscore.string');
-const useragent = require('useragent');
+const { UAParser } = require('ua-parser-js');
 const DMP = require('diff-match-patch');
 const turf = require('@turf/turf');
 const ms = require('ms');
@@ -32,13 +32,7 @@ Utils.checkUserAgent = (function () {
         const semver = require('semver');
 
         // Cache for checked user-agents, to parse a unique user-agent only once
-        const cache = new (require('lru-cache'))({ max: 1500 });
-
-        // If you are paranoid and always want your RegExp library to be up to date to match with agent,
-        // this will async load the database from the https://raw.github.com/tobie/ua-parser/master/regexes.yaml
-        // and compile it to a proper JavaScript supported format.
-        // If it fails to compile or load it from the remote location it will just fall back silently to the shipped version.
-        useragent(true);
+        const cache = new (require('lru-cache').LRUCache)({ max: 1500 });
 
         if (!browserVerions) {
             browserVerions = browserVerionsDefault;
@@ -55,12 +49,13 @@ Utils.checkUserAgent = (function () {
             let result = cache.peek(userAgent);
 
             if (result === undefined) {
-                const agent = useragent.parse(userAgent);
-                const family = agent.family;
-                const version = Number(agent.major) || 0;
+                const agent = new UAParser(userAgent).getResult();
+                const family = agent.browser.name;
+                const [vMajor, vMinor, vPatch] = (agent.browser.version || '').split('.');
+                const version = Number(vMajor) || 0;
 
                 // Check version match with semver, so we should have semver string guaranteed
-                const versionString = `${version}.${Number(agent.minor) || 0}.${Number(agent.patch) || 0}`;
+                const versionString = `${version}.${Number(vMinor) || 0}.${Number(vPatch) || 0}`;
 
                 // Check for bad browser
                 const browser = badbrowserList[family];
@@ -82,30 +77,6 @@ Utils.checkUserAgent = (function () {
 
             return result;
         };
-    };
-}());
-
-//Возвращает распарсенный агент
-//Агенты некоторый соц.сетей:
-//G+ 'Mozilla/5.0 (Windows NT 6.1; rv:6.0) Gecko/20110814 Firefox/6.0 Google (+)'
-//FB 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)'
-//VK 'Mozilla/5.0 (compatible; vkShare; +http://vk.com/dev/Share)'
-Utils.getMyAgentParsed = (function () {
-    const cache = new (require('lru-cache'))({ max: 500 });
-
-    return function (userAgent) {
-        if (!userAgent) {
-            return {};
-        }
-
-        let result = cache.peek(userAgent);
-
-        if (result === undefined) {
-            result = useragent.parse(userAgent);
-            cache.set(userAgent, result);
-        }
-
-        return result;
     };
 }());
 
@@ -512,6 +483,13 @@ Utils.copyFile = (source, target) => new Promise((resolve, reject) => {
         }
     }
 });
+
+// Moves a file without overwriting an existing target. link+unlink is atomic
+// no-clobber on a single filesystem; all callers move within config.storePath.
+Utils.moveFile = async (source, target) => {
+    await fs.promises.link(source, target);
+    await fs.promises.unlink(source);
+};
 
 // Находит свойства объекта a, значения которых не совпадают с такими свойствами объекта b
 Utils.diff = function (a, b) {
@@ -982,18 +960,11 @@ Utils.format = (function () {
         return (floatValue * 100).toFixed(2) + ' %';
     }
 
-    const wordEndOfNumCases = [2, 0, 1, 1, 1, 2];
-
-    function declOfNum(number, titles) {
-        return titles[number % 100 > 4 && number % 100 < 20 ? 2 : wordEndOfNumCases[number % 10 < 5 ? number % 10 : 5]];
-    }
-
     return {
         fileSize: formatFileSize,
         bitrate: formatBitrate,
         secondsToTime,
         percentage: formatPercentage,
-        wordEndOfNum: declOfNum,
     };
 }());
 

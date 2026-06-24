@@ -9,13 +9,13 @@ require([
     'Browser', 'Utils',
     'socket!',
     'underscore', 'knockout', 'knockout.mapping', 'moment',
-    'globalVM', 'Params', 'renderer', 'router',
+    'globalVM', 'Params', 'renderer', 'router', 'i18n',
     'text!tpl/appAdmin.pug', 'css!style/appAdmin',
     'momentlang/ru', 'bs/transition', 'knockout.extends', 'noty', 'noty.layouts', 'noty.themes/pastvu', 'jquery-plugins/scrollto',
-], function (domReady, $, Browser, Utils, socket, _, ko, ko_mapping, moment, globalVM, P, renderer, router, html) {
+], function (domReady, $, Browser, Utils, socket, _, ko, ko_mapping, moment, globalVM, P, renderer, router, i18n, html) {
     'use strict';
 
-    Utils.title.setPostfix('Администрирование - Фотографии прошлого');
+    Utils.title.setPostfix(i18n('Administration - Photos of the past'));
 
     const routerDeferred = $.Deferred();
     const routerAnatomy = {
@@ -156,7 +156,7 @@ require([
         },
     };
 
-    moment.locale('ru');
+    moment.locale(P.settings.lang);
 
     $('body').append(html);
     ko.applyBindings(globalVM);

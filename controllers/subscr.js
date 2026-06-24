@@ -8,7 +8,7 @@ import _ from 'lodash';
 import path from 'path';
 import pug from 'pug';
 import log4js from 'log4js';
-import Utils from '../commons/Utils';
+import { getT, userLang } from '../commons/i18n';
 import * as session from './_session';
 import config from '../config';
 import { waitDb } from './connection';
@@ -23,7 +23,6 @@ import { AuthorizationError, BadParamsError, NotFoundError } from '../app/errors
 import { News } from '../models/News';
 import { User } from '../models/User';
 import { Photo } from '../models/Photo';
-import { Session } from '../models/Sessions';
 import { UserNoty, UserObjectRel } from '../models/UserStates';
 
 const logger = log4js.getLogger('subscr.js');
@@ -36,10 +35,6 @@ const subscrPerPage = 24;
 const sortNotice = (a, b) => a.brief.newest < b.brief.newest ? 1 : a.brief.newest > b.brief.newest ? -1 : 0;
 const sortSubscr = ({ ccount_new: aCount = 0, sbscr_create: aDate }, { ccount_new: bCount = 0, sbscr_create: bDate }) =>
     aCount < bCount ? 1 : aCount > bCount ? -1 : aDate < bDate ? 1 : aDate > bDate ? -1 : 0;
-const declension = {
-    comment: [' новый комментарий', ' новых комментария', ' новых комментариев'],
-    commentUnread: [' непрочитанный', ' непрочитанных', ' непрочитанных'],
-};
 
 // Subscribe to/unsubscribe from object (external, for current user by object cid)
 async function subscribeUser({ cid, type = 'photo', subscribe }) {
@@ -174,7 +169,7 @@ export async function commentAdded(objId, user, stamp = new Date()) {
  */
 export async function commentViewed(objId, user, setInRel) {
     if (setInRel) {
-        const { n: numberAffected = 0 } = await UserObjectRel.updateOne(
+        const { matchedCount: numberAffected = 0 } = await UserObjectRel.updateOne(
             { obj: objId, user: user._id },
             { $unset: { sbscr_noty: 1 }, $set: { sbscr_noty_change: new Date() } },
             { upsert: false }
@@ -301,28 +296,11 @@ const notifierConveyor = (function () {
     async function conveyorStep() {
         try {
             // Find noty, which time nextnoty has passed
-            let usersNoty = await UserNoty.find(
+            const usersNoty = await UserNoty.find(
                 { nextnoty: { $lte: new Date() } },
                 { _id: 0 },
                 { lean: true, limit: sendPerStep, sort: { nextnoty: 1 } }
             ).exec();
-
-            // Hack fo checking user localization. Do not notify if user's language different from this node instanse
-            // Determine user language by language in last session
-            const usersNotyWithCurrentLang = [];
-
-            for (const noty of usersNoty) {
-                const sessions = await Session.find(
-                    { user: noty.user }, { _id: 0, 'data.lang': 1 },
-                    { lean: true, limit: 1, sort: { stamp: -1 } }
-                ).exec();
-
-                if (_.get(sessions, '[0].data.lang', 'ru') === config.lang) {
-                    usersNotyWithCurrentLang.push(noty);
-                }
-            }
-
-            usersNoty = usersNotyWithCurrentLang;
 
             if (_.isEmpty(usersNoty)) {
                 return notifierConveyor();
@@ -362,11 +340,14 @@ const notifierConveyor = (function () {
 async function sendUserNotice(userId) {
     const userObj = session.getOnline({ userId });
     const user = userObj ? userObj.user :
-        await User.findOne({ _id: userId }, { _id: 1, login: 1, disp: 1, email: 1 }, { lean: true }).exec();
+        await User.findOne({ _id: userId }, { _id: 1, login: 1, disp: 1, email: 1, settings: 1 }, { lean: true }).exec();
 
     if (!user) {
         throw new NotFoundError(constantsError.NO_SUCH_USER);
     }
+
+    const lang = userLang(user);
+    const t = getT(lang);
 
     // Find all subscriptions of users, which ready for notyfication (sbscr_noty: true)
     const rels = await UserObjectRel.find(
@@ -437,10 +418,10 @@ async function sendUserNotice(userId) {
 
             totalNewestComments += newest;
 
-            obj.briefFormat = { newest: newest + Utils.format.wordEndOfNum(newest, declension.comment) };
+            obj.briefFormat = { newest: t('comments_new', { count: newest, ns: 'mail' }) };
 
             if (newest !== unread) {
-                obj.briefFormat.unread = unread + Utils.format.wordEndOfNum(unread, declension.commentUnread);
+                obj.briefFormat.unread = t('comments_unread', { count: unread, ns: 'mail' });
             }
 
             result.push(obj);
@@ -461,7 +442,7 @@ async function sendUserNotice(userId) {
         await sendMail({
             sender: 'noreply',
             receiver: { alias: String(user.disp), email: user.email },
-            subject: 'Новое уведомление',
+            subject: t('New notification'),
             head: true,
             body: noticeTpl({
                 user,
@@ -469,11 +450,10 @@ async function sendUserNotice(userId) {
                 news: newsResult,
                 photos: photosResult,
                 username: String(user.disp),
-                greeting: 'Уведомление о событиях на PastVu',
+                greeting: t('PastVu activity notification', { ns: 'mail' }),
+                t,
             }),
-            text: totalNewestComments +
-            (totalNewestComments === 1 ? ' новый коментарий' : ' новых ' +
-            (totalNewestComments < 5 ? 'комментария' : 'комментариев')),
+            text: t('comments_new', { count: totalNewestComments, ns: 'mail' }),
         });
     }
 
@@ -494,17 +474,18 @@ const photosFields = {
  * @param {string} obj.userId
  * @param {number} obj.page
  * @param {string} obj.type (photo or news)
+ * @param {number} [obj.perPage] page size; defaults to `subscrPerPage`
  * @returns {Promise}
  */
-function getUserObjectRel({ userId, page, type }) {
-    const skip = page * subscrPerPage;
+export function getUserObjectRel({ userId, page, type, perPage = subscrPerPage }) {
+    const skip = page * perPage;
 
     return UserObjectRel.aggregate([
         { $match: { user: userId, type, sbscr_create: { $exists: true } } },
         { $project: { _id: 0, obj: 1, sbscr_create: 1, sbscr_noty: 1, ccount_new: { $cond: { if: { $eq: [0, '$ccount_new'] }, then: '$$REMOVE', else: '$ccount_new' } } } },
         { $sort: { ccount_new: -1, sbscr_create: -1 } },
         { $skip: skip },
-        { $limit: subscrPerPage },
+        { $limit: perPage },
     ]);
 }
 

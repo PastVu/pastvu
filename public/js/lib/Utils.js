@@ -8,7 +8,8 @@
  *
  * @author Klimashkin
  */
-define(['jquery', 'underscore', 'underscore.string', 'lib/geocoordsparser', 'lib/jsuri', 'lib/jquery/plugins/extends', 'bs/tooltip'], function ($, _, _s, parsecoords) {
+/*global init:true*/
+define(['jquery', 'underscore', 'underscore.string', 'i18n', 'lib/geocoordsparser', 'lib/jsuri', 'lib/jquery/plugins/extends', 'bs/tooltip'], function ($, _, _s, i18n, parsecoords) {
     const Utils = {
 
         /**
@@ -506,6 +507,26 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/geocoordsparser', 'lib
             return str ? str[0].toUpperCase() + str.substr(1) : '';
         },
 
+        regionTitle: (function () {
+            const isEn = (typeof init !== 'undefined' && init.settings && init.settings.lang) === 'en';
+
+            const unwrap = v => typeof v === 'function' ? v() : v;
+
+            return function (region) {
+                if (!region) {
+                    return '';
+                }
+
+                const local = unwrap(region.title_local) || '';
+
+                if (!isEn) {
+                    return local;
+                }
+
+                return unwrap(region.title_en) || local;
+            };
+        }()),
+
         /**
          *
          * @param {number} time Время в миллисекундах
@@ -554,13 +575,16 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/geocoordsparser', 'lib
         format: (function () {
             const dateFormat = (function () {
                 const months = [
-                    'января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря',
+                    i18n('January'), i18n('February'), i18n('March'), i18n('April'), i18n('May'), i18n('June'),
+                    i18n('July'), i18n('August'), i18n('September'), i18n('October'), i18n('November'), i18n('December'),
                 ];
                 const weekDays = [
-                    'Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота',
+                    i18n('Sunday'), i18n('Monday'), i18n('Tuesday'), i18n('Wednesday'),
+                    i18n('Thursday'), i18n('Friday'), i18n('Saturday'),
                 ];
                 const weekDaysIn = [
-                    'в воскресенье', 'в понедельник', 'во вторник', 'в среду', 'в четверг', 'в пятницу', 'в субботу',
+                    i18n('on Sunday'), i18n('on Monday'), i18n('on Tuesday'), i18n('on Wednesday'),
+                    i18n('on Thursday'), i18n('on Friday'), i18n('on Saturday'),
                 ];
 
                 function dMMYYYYhhmm(date) {
@@ -588,10 +612,10 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/geocoordsparser', 'lib
                         if (dateMs < Utils.times.midnight - Utils.times.msDay) {
                             result = weekDays[date.getDay()] + ', ' + dateFormat.hhmm(date);
                         } else {
-                            result = 'Вчера в ' + dateFormat.hhmm(date);
+                            result = i18n('Yesterday at {{time}}', { time: dateFormat.hhmm(date) });
                         }
                     } else {
-                        result = 'Сегодня в ' + dateFormat.hhmm(date);
+                        result = i18n('Today at {{time}}', { time: dateFormat.hhmm(date) });
                     }
 
                     return result;
@@ -607,10 +631,10 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/geocoordsparser', 'lib
                         if (dateMs < Utils.times.midnight - Utils.times.msDay) {
                             result = weekDaysIn[date.getDay()] + ', ' + dateFormat.hhmm(date);
                         } else {
-                            result = 'вчера в ' + dateFormat.hhmm(date);
+                            result = i18n('yesterday at {{time}}', { time: dateFormat.hhmm(date) });
                         }
                     } else {
-                        result = 'сегодня в ' + dateFormat.hhmm(date);
+                        result = i18n('today at {{time}}', { time: dateFormat.hhmm(date) });
                     }
 
                     return result;
@@ -687,12 +711,6 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/geocoordsparser', 'lib
                 return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, divider || ' ');
             }
 
-            const wordEndOfNumCases = [2, 0, 1, 1, 1, 2];
-
-            function declOfNum(number, titles) {
-                return titles[number % 100 > 4 && number % 100 < 20 ? 2 : wordEndOfNumCases[number % 10 < 5 ? number % 10 : 5]];
-            }
-
             return {
                 date: dateFormat,
                 fileSize: formatFileSize,
@@ -700,7 +718,6 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/geocoordsparser', 'lib
                 secondsToTime: secondsToTime,
                 percentage: formatPercentage,
                 numberByThousands: numberByThousands,
-                wordEndOfNum: declOfNum,
             };
         }()),
 
@@ -869,7 +886,7 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/geocoordsparser', 'lib
                 return new RegExp('(?:^|;\\s*)' + escape(sKey).replace(/[\-\.\+\*]/g, '\\$&') + '\\s*\\=').test(document.cookie); //eslint-disable-line no-useless-escape
             },
             keys: /* optional method: you can safely remove it! */ function () {
-                //eslint-disable-next-line no-useless-escape
+                //eslint-disable-next-line no-useless-escape, no-useless-backreference
                 const aKeys = document.cookie.replace(/((?:^|\s*;)[^\=]+)(?=;|$)|^\s*|\s*(?:\=[^;]*)?(?:\1|$)/g, '').split(/\s*(?:\=[^;]*)?;\s*/);
                 let nIdx;
 

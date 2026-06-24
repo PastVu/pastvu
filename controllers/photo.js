@@ -5,13 +5,13 @@
 
 import fs from 'fs';
 import ms from 'ms';
-import mv from 'mv';
 import _ from 'lodash';
 import path from 'path';
 import log4js from 'log4js';
 import moment from 'moment';
 import config from '../config';
 import Utils from '../commons/Utils';
+import { getT, langFromHandshake } from '../commons/i18n';
 import { dbRedis } from './connection';
 import constants from './constants';
 import constantsError from '../app/errors/constants';
@@ -437,9 +437,9 @@ async function give(params) {
         }
     }
 
-    const regionFields = photo.geo ? ['cid', 'title_local'] :
+    const regionFields = photo.geo ? ['cid', 'title_en', 'title_local'] :
         // If photo has no coordinates, additionally take home position of regions
-        { _id: 0, cid: 1, title_local: 1, center: 1, bbox: 1, bboxhome: 1 };
+        { _id: 0, cid: 1, title_en: 1, title_local: 1, center: 1, bbox: 1, bboxhome: 1 };
 
     const regions = await this.call('region.getObjRegionList', { obj: photo, fields: regionFields, fromDb: !photo.geo });
 
@@ -617,17 +617,11 @@ async function create({ files }) {
         files = files.slice(0, canCreate);
     }
 
-    await Promise.all(files.map(item => new Promise((resolve, reject) => {
+    await Promise.all(files.map(item => {
         item.fullfile = item.file.replace(/((.)(.)(.))/, '$2/$3/$4/$1');
 
-        mv(path.join(incomeDir, item.file), path.join(privateDir, item.fullfile), { clobber: false }, err => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve();
-            }
-        });
-    })));
+        return Utils.moveFile(path.join(incomeDir, item.file), path.join(privateDir, item.fullfile));
+    }));
 
     const count = await Counter.incrementBy('photo', files.length);
 
@@ -2723,7 +2717,12 @@ async function convert({ cids = [] }) {
         await Photo.updateMany({ cid: { $in: cids } }, { $set: { convqueue: true } }).exec();
     }
 
-    return converter.addPhotos(converterData, 3);
+    const { count } = await converter.addPhotos(converterData, 3);
+    const t = getT(langFromHandshake(this.handshake));
+
+    return {
+        message: t('photos_sent_for_conversion', { count }),
+    };
 }
 
 // Sends all photo for convert
@@ -2939,7 +2938,7 @@ async function resetIndividualDownloadOrigin({ login, r }) {
         query[`r${region.level}`] = region.cid;
     }
 
-    const { n: updated = 0 } = await Photo.updateMany(
+    const { matchedCount: updated = 0 } = await Photo.updateMany(
         query, { $unset: { disallowDownloadOriginIndividual: 1 } }
     ).exec();
 
@@ -3458,7 +3457,7 @@ async function giveObjHist({ cid, fetchId, showDiff }) {
 
     // If regions exists, get theirs objects
     if (Object.keys(regions).length) {
-        result.regions = regionController.fillRegionsHash(regions, ['cid', 'title_local']);
+        result.regions = regionController.fillRegionsHash(regions, ['cid', 'title_en', 'title_local']);
     }
 
     // If reasons exists, get theirs headers
@@ -3602,7 +3601,7 @@ const planResetDisplayStat = (function () {
         try {
             logger.info(`Resetting day ${needWeek ? 'and week ' : ''}display statistics...`);
 
-            const { n: count = 0 } = await Photo.updateMany(
+            const { matchedCount: count = 0 } = await Photo.updateMany(
                 { s: { $in: [status.PUBLIC, status.DEACTIVATE, status.REMOVE] } }, { $set: setQuery }
             ).exec();
 

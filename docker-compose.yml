@@ -1,10 +1,3 @@
-version: '3.9'
-
-include:
-  - .docker/mongo.yaml
-  - .docker/redis.yaml
-  - .docker/mailpit.yaml
-
 x-defaults: &app-image
   build: ./.docker
   image: pastvu_node
@@ -24,8 +17,10 @@ services:
       - store:/store
     command: run app --primary
     depends_on:
-      - "mongo"
-      - "redis"
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
   worker:
     << : *app-image
@@ -71,6 +66,30 @@ services:
     depends_on:
       - "app"
 
+  mongo:
+    image: mongo:4.4
+    volumes:
+      - mongo4:/data/db
+      - ./.docker/dev-initdb.sh:/docker-entrypoint-initdb.d/dev-initdb.sh:ro
+      - ./pastvu.gz:/pastvu.gz:ro
+    ports:
+      - "127.0.0.1:27017:27017"
+    healthcheck:
+      test: ["CMD", "mongo", "pastvu", "--quiet", "--eval", "if (!db.init_complete.findOne({status: 'done'})) quit(1)"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 10s
+
+  redis:
+    image: redis:6.2.6
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+     - "127.0.0.1:1080:8025"
+
 volumes:
+  mongo4:
   store:
   sitemap:

@@ -7,19 +7,25 @@
  * Module for assembling configuration object on server
  * Configuration with all default parameters is located in 'config/default.config.js'
  *
- * You can specify another path to configuration file with console parameter '-c(--config) yourpath'
+ * You can specify another path to configuration file with console parameter '--config yourpath'
  * Another files will recieve object of default configuration with ability to override its properties
  * If config path is not specified it will try to take overrided config at 'config/local.config.js'
- *
- * You can override any specific parameter through console, for example, --no-gzip
  */
 'use strict';
 
 const os = require('os');
 const fs = require('fs');
 const _ = require('lodash');
+const util = require('util');
 const path = require('path');
-const argv = require('yargs').argv;
+const { values: argv } = util.parseArgs({
+    options: {
+        config: { type: 'string' },
+        script: { type: 'string' },
+        manualGarbageCollect: { type: 'string' },
+    },
+    strict: false,
+});
 const defaultConfig = require('./default.config');
 const browserConfig = require('./browsers.config');
 const log4js = require('log4js');
@@ -53,8 +59,10 @@ module.exports = (function () {
             config = execConfig(localConfigPath, config);
         }
 
-        // Read configuration parameters from console, which have maximum priority
-        _.merge(config, _.pick(argv, _.keys(defaultConfig)));
+        // Allow tuning manual GC interval from the console (e.g. --manualGarbageCollect=30000).
+        if (argv.manualGarbageCollect !== undefined) {
+            config.manualGarbageCollect = Number(argv.manualGarbageCollect);
+        }
 
         // Read version from package.json
         const version = readJSON('./package.json').version;
@@ -94,7 +102,7 @@ module.exports = (function () {
     exitHook(cb => {
         // Delay logger shutdown to capture log output when we stop other things.
         setTimeout(() => {
-            const loggerName = argv.script ? path.parse(argv.script).name : path.parse(argv.$0).name;
+            const loggerName = argv.script ? path.parse(argv.script).name : path.parse(process.argv[1]).name;
 
             log4js.getLogger(loggerName).info('Logger is stopped');
             log4js.shutdown(cb);

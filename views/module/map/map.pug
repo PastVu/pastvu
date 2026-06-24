@@ -4,37 +4,36 @@
 
         //ko if: embedded
         .mapInfos.tltp-wrap
-            .mapInfo.button.fringe(data-bind="css: {no: !point.geo()}, click: copyGeo, attr: {'aria-label': (point.geo() ? 'Скопировать координаты в буфер обмена' : 'Координаты фотографии не указаны')}")
+            .mapInfo.button.fringe(data-bind="css: {no: !point.geo()}, click: copyGeo, attr: {'aria-label': $root.i18n(point.geo() ? 'Copy coordinates to clipboard' : 'Photo coordinates are not set')}")
                 span.location-copy
             //ko if: !editing() && point.geo()
-            .tltp.tltp-right.tltp-animate-opacity(style="white-space:nowrap")
-                | Скопировать координаты в буфер обмена
+            .tltp.tltp-right.tltp-animate-opacity(style="white-space:nowrap", data-bind="text: $root.i18n('Copy coordinates to clipboard')")
             // /ko
             //ko if: editing()
             .mapInfo.geoInput
-                input(type="text", data-bind="value: geoInputComputed, valueUpdate: 'keyup', event: {focusout: geoInputBlur}", placeholder="Широта, долгота")
+                input(type="text", data-bind="value: geoInputComputed, valueUpdate: 'keyup', event: {focusout: geoInputBlur}, attr: {placeholder: $root.i18n('Latitude, longitude')}")
                 //ko if: point.geo()
                 button.btn.btn-warning(type="button", data-bind="click: delPointGeo")
                     span.material-icons-inline.location-off
-                    | &nbsp;Обнулить координаты
+                    span(data-bind="text: ' ' + $root.i18n('Clear coordinates')")
                 // /ko
             // /ko
             //ko if: editing() && !point.geo()
             .tltp.tltp-right.tltp-show(style="white-space:nowrap")
                 span.material-icons-inline.location-on
-                | &nbsp;Для установки координаты кликните по карте
+                span(data-bind="text: ' ' + $root.i18n('Click on the map to set coordinates')")
             // /ko
             //ko if: !editing() && !point.geo()
             .mapInfo.warn
                 span.glyphicon.glyphicon-warning-sign
-                | &nbsp;Координаты фотографии не указаны
+                span(data-bind="text: ' ' + $root.i18n('Photo coordinates are not set')")
             // /ko
         // /ko
         // ko if: isGeolocationSupported()
         .mapPosTools.tltp-wrap
                 .mapPosTool.button.fringe(data-bind="click: showMyLocation, css: {no: geolocationStatus() === 'denied' || geolocationStatus() === 'error', nogeo: geolocationStatus() === 'denied', pendinggeo: geolocationStatus() === 'pending' }" aria-describedby="mylocation")
                     span.material-icons.my-location
-                .tltp.tltp-left.tltp-animate-opacity(id="mylocation" role="tooltip" style="white-space:nowrap" data-bind="text: (geolocationStatus() === 'denied' ? 'Определение местоположения запрещено браузером' : geolocationStatus() === 'error' ? 'Не удается определить местоположение' : 'Моё местоположение')")
+                .tltp.tltp-left.tltp-animate-opacity(id="mylocation" role="tooltip" style="white-space:nowrap" data-bind="text: $root.i18n(geolocationStatus() === 'denied' ? 'Geolocation is blocked by the browser' : geolocationStatus() === 'error' ? 'Cannot determine location' : 'My location')")
         // /ko
         .mapYearSelector
             .yearSlider
@@ -47,17 +46,15 @@
             span.tltp-wrap
                 .trtool.button.fringe(data-bind="css: {no: isPainting()}, click: function () {setPainting(false)}" aria-describedby="showphotosonmap")
                     span.glyphicon.glyphicon-camera
-                .tltp.tltp-bottom.tltp-animate-opacity(id="showphotosonmap" role="tooltip")
-                    | Показывать на карте фотографии
+                .tltp.tltp-bottom.tltp-animate-opacity(id="showphotosonmap" role="tooltip", data-bind="text: $root.i18n('Show photos on the map')")
             span.tltp-wrap
                 .trtool.button.fringe(data-bind="css: {no: !isPainting()}, click: function () {setPainting(true)}" aria-describedby="showpaintingsonmap")
                     span.glyphicon.glyphicon-picture
-                .tltp.tltp-bottom.tltp-animate-opacity(id="showpaintingsonmap" role="tooltip")
-                    | Показывать на карте картины/рисунки
+                .tltp.tltp-bottom.tltp-animate-opacity(id="showpaintingsonmap" role="tooltip", data-bind="text: $root.i18n('Show paintings/drawings on the map')")
             span.tltp-wrap
                 .trtool.button.fringe(data-bind="css: {no: !openNewTab()}, click: function () {openNewTab(!openNewTab())}" aria-describedby="opennewtab")
                     span.glyphicon.glyphicon-share
-                .tltp.tltp-bottom.tltp-hotizontal-right.tltp-animate-opacity(id="opennewtab" role="tooltip" data-bind="text: (openNewTab() ? 'Выключить' : 'Включить') + ' открытие фотографий в новом окне'")
+                .tltp.tltp-bottom.tltp-hotizontal-right.tltp-animate-opacity(id="opennewtab" role="tooltip" data-bind="text: $root.i18n(openNewTab() ? 'Disable opening photos in a new window' : 'Enable opening photos in a new window')")
             //ko if: !embedded
             span.tltp-wrap
                 .trtool.button.link.fringe(data-bind="click: showLink", aria-describedby="showlink")
@@ -65,11 +62,10 @@
                     //ko if: linkShow()
                     input.inputLink(type="url", readonly, data-bind="click: linkClick, value: link()", autocorrect="off", autocapitalize="off")
                     // /ko
-                .tltp.tltp-bottom.tltp-hotizontal-right.tltp-animate-opacity(id="showlink" role="tooltip" data-bind="css: {hidden: linkShow()}")
-                    | Ссылка на текущую позицию карты
+                .tltp.tltp-bottom.tltp-hotizontal-right.tltp-animate-opacity(id="showlink" role="tooltip", data-bind="css: {hidden: linkShow()}, text: $root.i18n('Link to the current map position')")
             // /ko
             .trtool.layersPanel.fringe(data-bind="css: {open: layersOpen()}")
-                .currentLayer(data-bind="click: toggleLayers, attr: {title: layersOpen() ? 'Нажмите, чтобы скрыть варианты' : 'Нажмите, чтобы увидеть доступные варианты карт'}")
+                .currentLayer(data-bind="click: toggleLayers, attr: {title: $root.i18n(layersOpen() ? 'Click to hide options' : 'Click to see available map options')}")
                     .currentLayerTxt(data-bind="text: layerActiveDesc()")
                     img.layerImg(src='/img/map/layers.png')
                 .layerSystems(data-bind="style: {width: (layersOpen() ? 110 * layers().length : 64) + 'px'}")
@@ -85,5 +81,5 @@
             span.tltp-wrap
                 .trtool.button.fringe(aria-describedby="showcomments" data-bind="click: toggleCommentsFeed, attr: {'aria-expanded': (commentFeedShown() ? 'true' : 'false')}" aria-controls="commentsFeed")
                     span.glyphicon.glyphicon-comment
-                .tltp.tltp-bottom.tltp-hotizontal-right.tltp-animate-opacity(id="showcomments" role="tooltip" data-bind="text: (commentFeedShown() ? 'Скрыть комментарии' : 'Показать комментарии')")
+                .tltp.tltp-bottom.tltp-hotizontal-right.tltp-animate-opacity(id="showcomments" role="tooltip" data-bind="text: $root.i18n(commentFeedShown() ? 'Hide comments' : 'Show comments')")
             // /ko

@@ -7,7 +7,7 @@
 /**
  * Модель страницы фотографии
  */
-define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'noties', 'model/Photo', 'model/Region', 'model/storage', 'm/photo/fields', 'm/photo/status', 'text!tpl/photo/photo.pug', 'css!style/photo/photo', 'bs/ext/multiselect', 'jquery-plugins/imgareaselect'], function (_, Utils, Browser, socket, P, ko, koMapping, Cliche, globalVM, renderer, moment, noties, Photo, Region, storage, fields, statuses, pug) {
+define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'i18n', 'renderer', 'moment', 'noties', 'model/Photo', 'model/Region', 'model/storage', 'm/photo/fields', 'm/photo/status', 'text!tpl/photo/photo.pug', 'css!style/photo/photo', 'bs/ext/multiselect', 'jquery-plugins/imgareaselect'], function (_, Utils, Browser, socket, P, ko, koMapping, Cliche, globalVM, i18n, renderer, moment, noties, Photo, Region, storage, fields, statuses, pug) {
     const $window = $(window);
     const imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
     const statusKeys = statuses.keys;
@@ -76,7 +76,7 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
                 }
 
                 if (this.edit()) {
-                    this.setMessage('Фото в режиме редактирования', 'Внесите необходимую информацию и сохраните изменения', 'warning');
+                    this.setMessage(i18n('Photo in edit mode'), i18n('Enter the required information and save the changes'), 'warning');
                     //globalVM.pb.publish('/top/message',
                     //    ['Photo is in edit mode. Please fill in the underlying fields and save the changes', 'warn']);
                 } else if (status && status.title) {
@@ -192,18 +192,13 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
                 owner: this,
             });
 
-            const userInfoTpl = _.template('Добавил${ addEnd } <a href="/u/${ login }" ${ css }>${ name }</a>, ${ stamp }');
-
             this.userInfo = this.co.userInfo = ko.computed(function () {
-                return userInfoTpl(
-                    {
-                        login: this.p.user.login(),
-                        name: this.p.user.disp(),
-                        css: this.p.user.online() ? 'class="online"' : '',
-                        addEnd: this.p.user.sex && this.p.user.sex() === 'f' ? 'а' : '',
-                        stamp: moment(this.p.ldate()).format('D MMMM YYYY'),
-                    }
-                );
+                return i18n('Added by <a href="/u/{{login}}" {{css}}>{{name}}</a>, {{stamp}}', {
+                    login: this.p.user.login(),
+                    name: this.p.user.disp(),
+                    css: this.p.user.online() ? 'class="online"' : '',
+                    stamp: moment(this.p.ldate()).format('D MMMM YYYY'),
+                });
             }, this);
 
             this.downLoadOrigin = this.co.downLoadOrigin = ko.computed(function () {
@@ -835,23 +830,23 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
                                 selectedInit: selected,
                             },
                             modal: {
-                                topic: 'Выбор региона принадлежности для фотографии',
+                                topic: i18n('Pick the photo\'s owning region'),
                                 initWidth: '900px',
                                 maxWidthRatio: 0.95,
                                 fullHeight: true,
                                 withScroll: true,
-                                offIcon: { text: 'Отмена', click: this.closeRegionSelect, ctx: this },
+                                offIcon: { text: i18n('Cancel'), click: this.closeRegionSelect, ctx: this },
                                 btns: [
                                     {
                                         css: 'btn-success',
-                                        text: 'Применить',
+                                        text: i18n('Apply'),
                                         glyphicon: 'glyphicon-ok',
                                         click: function () {
-                                            const regions = this.regselectVM.getSelectedRegionsFull(['cid', 'title_local']);
+                                            const regions = this.regselectVM.getSelectedRegionsFull(['cid', 'title_en', 'title_local']);
 
                                             if (regions.length > 1) {
                                                 noties.alert({
-                                                    message: 'Допускается выбрать только один регион',
+                                                    message: i18n('Only one region may be selected'),
                                                     type: 'error',
                                                     timeout: 2500,
                                                 });
@@ -864,7 +859,7 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
                                         },
                                         ctx: this,
                                     },
-                                    { css: 'btn-warning', text: 'Отмена', click: this.closeRegionSelect, ctx: this },
+                                    { css: 'btn-warning', text: i18n('Cancel'), click: this.closeRegionSelect, ctx: this },
                                 ],
                             },
                             callback: function (vm) {
@@ -914,8 +909,7 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
 
         notifyReady: function () {
             noties.alert({
-                message: 'Чтобы фотография была опубликована, необходимо оповестить об этом модераторов<br>' +
-                'Вы можете сделать это в любое время, нажав кнопку «На публикацию»',
+                message: i18n('To publish a photo you need to notify moderators.<br>You can do this any time by pressing the «Submit for moderation» button'),
                 type: 'information',
                 layout: 'topRight',
                 timeout: 6000,
@@ -923,8 +917,7 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
         },
         notifyReconvert: function () {
             noties.alert({
-                message: 'Вы изменили настройки подписи на вотермарке фотографии.<br>' +
-                'Изображение изменится в течении нескольких минут, обновите страницу позже',
+                message: i18n('You changed the photo watermark signature settings.<br>The image will be updated within a few minutes — please refresh the page later'),
                 type: 'information',
                 layout: 'topRight',
                 timeout: 5000,
@@ -932,17 +925,13 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
         },
         askForGeo: function (cb, ctx) {
             noties.alert({
-                message: 'Вы не указали точку съемки фотографии на карте и регион, к которому она может принадлежать.<br><br>' +
-                'Установить точку можно в режиме редактирования, кликнув по карте справа и перемещая появившийся маркер.<br><br>' +
-                'Без точки на карте фотография попадет в раздел «Где это?». ' +
-                'В этом случае, чтобы сообщество в дальнейшем помогло определить координаты, необходимо указать регион, ' +
-                'в котором предположительно сделана данная фотография<br><br>',
+                message: i18n('You did not specify the photo\'s location on the map or a region it can belong to.<br><br>You can set the point in edit mode by clicking on the map on the right and moving the marker that appears.<br><br>Without a point on the map the photo will land in the «Where is this?» section. In that case, to let the community help with coordinates later, you need to specify the region where the photo was likely taken<br><br>'),
                 type: 'confirm',
                 animation: { open: 'animated fadeIn' },
                 buttons: [
                     {
                         addClass: 'btn btn-success margBott',
-                        text: 'Указать координаты',
+                        text: i18n('Specify coordinates'),
                         onClick: function ($noty) {
                             this.edit(true);
                             $noty.close();
@@ -950,7 +939,7 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
                     },
                     {
                         addClass: 'btn btn-warning margBott',
-                        text: 'Выбрать регион вручную',
+                        text: i18n('Pick the region manually'),
                         onClick: function ($noty) {
                             this.edit(true);
                             $noty.close();
@@ -958,7 +947,7 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
                         }.bind(this),
                     },
                     {
-                        addClass: 'btn btn-danger margBott', text: 'Отмена',
+                        addClass: 'btn btn-danger margBott', text: i18n('Cancel'),
                         onClick: function ($noty) {
                             if (cb) {
                                 cb.call(ctx);
@@ -987,14 +976,14 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
                         maxWidthRatio: 0.75,
                         animateScale: true,
                         offIcon: {
-                            text: 'Отмена', click: function () {
+                            text: i18n('Cancel'), click: function () {
                                 cb.call(ctx, true);
                                 this.reasonDestroy();
                             }, ctx: this,
                         },
                         btns: [
                             {
-                                css: 'btn-warning', text: 'Выполнить', glyphicon: 'glyphicon-ok',
+                                css: 'btn-warning', text: i18n('Execute'), glyphicon: 'glyphicon-ok',
                                 click: function () {
                                     const reason = this.reasonVM.getReason();
 
@@ -1005,7 +994,7 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
                                 }, ctx: this,
                             },
                             {
-                                css: 'btn-success', text: 'Отмена',
+                                css: 'btn-success', text: i18n('Cancel'),
                                 click: function () {
                                     cb.call(ctx, true);
                                     this.reasonDestroy();
@@ -1045,14 +1034,14 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
                             newSince: self.p.vdate(),
                         },
                         modal: {
-                            topic: 'История изменений изображений',
+                            topic: i18n('Image change history'),
                             initWidth: '1400px',
                             maxWidthRatio: 0.82,
                             animateScale: true,
                             curtainClick: { click: self.closeHistoryOrShare, ctx: self },
-                            offIcon: { text: 'Закрыть', click: self.closeHistoryOrShare, ctx: self },
+                            offIcon: { text: i18n('Close'), click: self.closeHistoryOrShare, ctx: self },
                             btns: [
-                                { css: 'btn-primary', text: 'Закрыть', click: self.closeHistoryOrShare, ctx: self },
+                                { css: 'btn-primary', text: i18n('Close'), click: self.closeHistoryOrShare, ctx: self },
                             ],
                         },
                         callback: function (vm) {
@@ -1099,7 +1088,7 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
                 } else if (!_.isEmpty(p.regions())) {
                     // If there in no description, create it as regions names
                     desc = p.regions().reduceRight(function (result, region, index) {
-                        result += region.title_local() + (index ? ', ' : '');
+                        result += Utils.regionTitle(region) + (index ? ', ' : '');
 
                         return result;
                     }, '');
@@ -1117,14 +1106,11 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
                             linkObject: '/_p/a/' + p.file(),
                         },
                         modal: {
-                            topic: 'Поделиться изображением',
+                            topic: i18n('Share image'),
                             initWidth: '500px',
                             animateScale: true,
                             curtainClick: { click: self.closeHistoryOrShare, ctx: self },
-                            offIcon: { text: 'Закрыть', click: self.closeHistoryOrShare, ctx: self },
-                            btns: [
-                                { css: 'btn-primary', text: 'Закрыть', click: self.closeHistoryOrShare, ctx: self },
-                            ],
+                            offIcon: { text: i18n('Close'), click: self.closeHistoryOrShare, ctx: self },
                         },
                         callback: function (vm) {
                             self.shareVM = self.childModules[vm.id] = vm;
@@ -1250,9 +1236,9 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
                         }
 
                         const message = error.message + (customChangedMessage ||
-                            '<br><a target="_blank" href="/p/' + self.p.cid() + '">Посмотреть последнюю версию</a>');
-                        const okText = proceedText || 'Продолжить операцию';
-                        const cancelText = 'Отменить операцию';
+                            '<br><a target="_blank" href="/p/' + self.p.cid() + '">' + i18n('See the latest version') + '</a>');
+                        const okText = proceedText || i18n('Continue the operation');
+                        const cancelText = i18n('Cancel the operation');
 
                         if (error.code === 'PHOTO_ANOTHER_STATUS') {
                             noties.alert({
@@ -1282,7 +1268,7 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
                     }
 
                     if (confirmer) {
-                        confirmer.error(error, 'Закрыть', 4000, function () {
+                        confirmer.error(error, i18n('Close'), 4000, function () {
                             self.exe(false);
                         });
                     } else {
@@ -1429,12 +1415,12 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
             }
 
             const params = { cid: cid, cdate: p.cdate(), s: p.s(), changes: changes };
-            const changedMessage = '<br>В случае продолжения сохранения, ваши изменения заменят более ранние' +
-                '<br><a data-replace="true" href="?history=1">Посмотреть историю изменений</a>' +
-                '<br><a target="_blank" href="/p/' + cid + '">Открыть последнюю версию</a>';
+            const changedMessage = '<br>' + i18n('If you continue saving, your changes will replace the earlier ones') +
+                '<br><a data-replace="true" href="?history=1">' + i18n('See the change history') + '</a>' +
+                '<br><a target="_blank" href="/p/' + cid + '">' + i18n('Open the latest version') + '</a>';
 
             self.tryOperation({
-                proceedText: 'Продолжить сохранение', customChangedMessage: changedMessage,
+                proceedText: i18n('Continue saving'), customChangedMessage: changedMessage,
                 requestCreater: function (ignoreChange) {
                     return socket.run('photo.save', _.assign({ ignoreChange: ignoreChange }, params))
                         .then(function (data) {
@@ -1473,9 +1459,9 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
 
             self.exe(true);
             noties.confirm({
-                message: 'Фотография будет перемещена в корзину и не попадет в очередь на публикацию<br>Подтвердить операцию?',
-                okText: 'Да',
-                cancelText: 'Нет',
+                message: i18n('The photo will be moved to the trash and will not enter the publication queue<br>Confirm?'),
+                okText: i18n('Yes'),
+                cancelText: i18n('No'),
                 onOk: function (initConfirmer) {
                     initConfirmer.disable();
 
@@ -1483,7 +1469,7 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
                     const params = { cid: p.cid(), cdate: p.cdate(), s: p.s() };
 
                     self.tryOperation({
-                        proceedText: 'Продолжить отзыв', confirmer: initConfirmer,
+                        proceedText: i18n('Continue withdrawal'), confirmer: initConfirmer,
                         requestCreater: function (ignoreChange) {
                             return socket.run('photo.revoke', _.assign({ ignoreChange: ignoreChange }, params)).then(function (data) {
                                 self.rechargeData(data.photo, data.can);
@@ -1519,7 +1505,7 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
             const params = { cid: p.cid(), cdate: p.cdate(), s: p.s() };
 
             self.tryOperation({
-                proceedText: 'Продолжить отправку',
+                proceedText: i18n('Continue submission'),
                 requestCreater: function (ignoreChange) {
                     return socket.run('photo.ready', _.assign({ ignoreChange: ignoreChange }, params)).then(function (data) {
                         self.rechargeData(data.photo, data.can);
@@ -1542,7 +1528,7 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
             }
 
             self.exe(true);
-            self.reasonSelect('photo.revision', 'Причина возврата', function (cancel, reason) {
+            self.reasonSelect('photo.revision', i18n('Reason for returning'), function (cancel, reason) {
                 if (cancel) {
                     self.exe(false);
 
@@ -1553,7 +1539,7 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
                 const params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), reason: reason };
 
                 self.tryOperation({
-                    proceedText: 'Продолжить операцию возврата',
+                    proceedText: i18n('Continue the return operation'),
                     requestCreater: function (ignoreChange) {
                         return socket.run('photo.toRevision', _.assign({ ignoreChange: ignoreChange }, params)).then(function (data) {
                             self.rechargeData(data.photo, data.can);
@@ -1577,7 +1563,7 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
             }
 
             self.exe(true);
-            self.reasonSelect('photo.reject', 'Причина отклонения', function (cancel, reason) {
+            self.reasonSelect('photo.reject', i18n('Reason for rejection'), function (cancel, reason) {
                 if (cancel) {
                     return self.exe(false);
                 }
@@ -1586,7 +1572,7 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
                 const params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), reason: reason };
 
                 self.tryOperation({
-                    proceedText: 'Продолжить отклонение',
+                    proceedText: i18n('Continue rejection'),
                     requestCreater: function (ignoreChange) {
                         return socket.run('photo.reject', _.assign({ ignoreChange: ignoreChange }, params)).then(function (data) {
                             self.rechargeData(data.photo, data.can);
@@ -1610,7 +1596,7 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
             }
 
             self.exe(true);
-            self.reasonSelect('photo.rereject', 'Причина восстановления', function (cancel, reason) {
+            self.reasonSelect('photo.rereject', i18n('Reason for restoration'), function (cancel, reason) {
                 if (cancel) {
                     return self.exe(false);
                 }
@@ -1619,7 +1605,7 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
                 const params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), reason: reason };
 
                 self.tryOperation({
-                    proceedText: 'Продолжить восстановление',
+                    proceedText: i18n('Continue restoration'),
                     requestCreater: function (ignoreChange) {
                         return socket.run('photo.rereject', _.assign({ ignoreChange: ignoreChange }, params)).then(function (data) {
                             self.rechargeData(data.photo, data.can);
@@ -1646,7 +1632,7 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
             const params = { cid: p.cid(), cdate: p.cdate(), s: p.s() };
 
             self.tryOperation({
-                proceedText: 'Продолжить публикацию',
+                proceedText: i18n('Continue publication'),
                 requestCreater: function (ignoreChange) {
                     return socket.run('photo.approve', _.assign({ ignoreChange: ignoreChange }, params)).then(function (data) {
                         self.rechargeData(data.photo, data.can);
@@ -1673,7 +1659,7 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
             self.exe(true);
 
             if (disable) {
-                self.reasonSelect('photo.deactivate', 'Причина деактивации', function (cancel, reason) {
+                self.reasonSelect('photo.deactivate', i18n('Reason for deactivation'), function (cancel, reason) {
                     if (cancel) {
                         self.exe(false);
                     } else {
@@ -1718,7 +1704,7 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
             }
 
             self.exe(true);
-            self.reasonSelect('photo.remove', 'Причина удаления', function (cancel, reason) {
+            self.reasonSelect('photo.remove', i18n('Reason for deletion'), function (cancel, reason) {
                 if (cancel) {
                     return self.exe(false);
                 }
@@ -1727,7 +1713,7 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
                 const params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), reason: reason };
 
                 self.tryOperation({
-                    proceedText: 'Продолжить удаление',
+                    proceedText: i18n('Continue removal'),
                     requestCreater: function (ignoreChange) {
                         return socket.run('photo.remove', _.assign({ ignoreChange: ignoreChange }, params)).then(function (data) {
                             self.rechargeData(data.photo, data.can);
@@ -1738,9 +1724,9 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
                             ga('send', 'event', 'photo', 'delete', 'photo delete ' + (result.error ? 'error' : 'success'));
 
                             noties.alert({
-                                message: 'Фотография удалена',
+                                message: i18n('Photo removed'),
                                 ok: true,
-                                text: 'Завершить',
+                                text: i18n('Finish'),
                                 countdown: 5,
                                 onOk: function () {
                                     globalVM.router.navigate('/u/' + p.user.login() + '/photo');
@@ -1760,7 +1746,7 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
             }
 
             self.exe(true);
-            self.reasonSelect('photo.restore', 'Причина восстановления', function (cancel, reason) {
+            self.reasonSelect('photo.restore', i18n('Reason for restoration'), function (cancel, reason) {
                 if (cancel) {
                     return self.exe(false);
                 }
@@ -1769,7 +1755,7 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
                 const params = { cid: p.cid(), cdate: p.cdate(), s: p.s(), reason: reason };
 
                 self.tryOperation({
-                    proceedText: 'Продолжить восстановление',
+                    proceedText: i18n('Continue restoration'),
                     requestCreater: function (ignoreChange) {
                         return socket.run('photo.restore', _.assign({ ignoreChange: ignoreChange }, params)).then(function (data) {
                             self.rechargeData(data.photo, data.can);
@@ -1799,7 +1785,7 @@ define(['underscore', 'Utils', 'Browser', 'socket!', 'Params', 'knockout', 'knoc
                     self.exe(false);
 
                     noties.alert({
-                        message: _.get(result, 'message') || 'Отправлено',
+                        message: _.get(result, 'message') || i18n('Sent'),
                         layout: 'topRight',
                     });
                 })

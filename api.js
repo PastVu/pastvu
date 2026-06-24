@@ -16,7 +16,6 @@ const log4js = require('log4js');
 const argv = require('optimist').argv;
 const _ = require('lodash');
 
-const makeDir = require('make-dir');
 const mongoose = require('mongoose');
 let Utils;
 const CoreClient = require('./controllers/serviceConnectorPlug');
@@ -72,7 +71,7 @@ if (conf.logPath) {
     const logPath = path.normalize(conf.logPath || __dirname + '/logs'); //Путь к папке логов
 
     console.log('\n');
-    makeDir.sync(logPath);
+    fs.mkdirSync(logPath, { recursive: true });
     log4js.configure('./config/log4js.json', { cwd: logPath });
 }
 
@@ -92,7 +91,7 @@ async.waterfall([
         db = mongoose.createConnection() // http://mongoosejs.com/docs/api.html#connection_Connection
             .once('open', openHandler)
             .once('error', errFirstHandler);
-        db.open(moongoUri, { server: { poolSize: moongoPool, auto_reconnect: true }, db: { safe: true } });
+        db.open(moongoUri, { server: { maxPoolSize: moongoPool, auto_reconnect: true }, db: { safe: true } });
 
         function openHandler() {
             const admin = new mongoose.mongo.Admin(db.db);
@@ -128,19 +127,20 @@ async.waterfall([
         Utils = require('./commons/Utils.js'); //Utils должны реквайрится после установки глобальных переменных, так как они там используются
 
         const ourMiddlewares = require('./controllers/middleware.js');
+        const { i18nLocals } = require('./commons/i18n.js');
 
 
         app = express();
-        app.enable('trust proxy', true); //Если нужно брать ip пользователя через req.ips(), это вернет массив из X-Forwarded-For с переданным количеством ip. https://github.com/visionmedia/express/blob/master/History.md#430--2014-05-21
-        app.disable('x-powered-by'); //Disable default X-Powered-By
+        app.set('trust proxy', true); //Если нужно брать ip пользователя через req.ips(), это вернет массив из X-Forwarded-For с переданным количеством ip. https://github.com/visionmedia/express/blob/master/History.md#430--2014-05-21
+        app.set('x-powered-by', false); //Disable default X-Powered-By
         app.set('etag', false); //Disable etag
         app.set('views', 'views');
         app.set('view engine', 'pug');
 
         if (land === 'dev') {
-            app.disable('view cache'); //В дев выключаем только для того, чтобы можно было править шаблон без перезагрузки сервера
+            app.set('view cache', false); //В дев выключаем только для того, чтобы можно было править шаблон без перезагрузки сервера
         } else {
-            app.enable('view cache');
+            app.set('view cache', true);
         }
 
         app.use(ourMiddlewares.responseHeaderHook());
@@ -148,6 +148,10 @@ async.waterfall([
         if (gzip) {
             app.use(require('compression')());
         }
+
+        // Expose lang/t/ogLocale on res.locals so api/help is rendered in the
+        // visitor's language without the route handler threading i18n through.
+        app.use(i18nLocals);
 
         callback(null);
     },

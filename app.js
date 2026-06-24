@@ -7,12 +7,13 @@ import ms from 'ms';
 import http from 'http';
 import path from 'path';
 import moment from 'moment';
-import makeDir from 'make-dir';
+import fs from 'fs';
 import log4js from 'log4js';
 import config from './config';
 import express from 'express';
 import { Server } from 'socket.io';
 import Utils from './commons/Utils';
+import { i18nLocals } from './commons/i18n';
 import connectDb, { waitDb } from './controllers/connection';
 import * as session from './controllers/_session';
 import CoreServer from './controllers/serviceConnector';
@@ -42,12 +43,12 @@ export async function configure(startStamp) {
         listen: { hostname, port },
     } = config;
 
-    makeDir.sync(path.join(storePath, 'incoming'));
-    makeDir.sync(path.join(storePath, 'private'));
-    makeDir.sync(path.join(storePath, 'protected/photos'));
-    makeDir.sync(path.join(storePath, 'public/avatars'));
-    makeDir.sync(path.join(storePath, 'public/photos'));
-    makeDir.sync(path.join(storePath, 'publicCovered/photos'));
+    fs.mkdirSync(path.join(storePath, 'incoming'), { recursive: true });
+    fs.mkdirSync(path.join(storePath, 'private'), { recursive: true });
+    fs.mkdirSync(path.join(storePath, 'protected/photos'), { recursive: true });
+    fs.mkdirSync(path.join(storePath, 'public/avatars'), { recursive: true });
+    fs.mkdirSync(path.join(storePath, 'public/photos'), { recursive: true });
+    fs.mkdirSync(path.join(storePath, 'publicCovered/photos'), { recursive: true });
 
     const logger = log4js.getLogger('app');
 
@@ -55,7 +56,7 @@ export async function configure(startStamp) {
 
     await connectDb({
         redis: config.redis,
-        mongo: { uri: config.mongo.connection, poolSize: config.mongo.pool },
+        mongo: { uri: config.mongo.connection, maxPoolSize: config.mongo.pool },
         logger,
     });
 
@@ -77,7 +78,7 @@ export async function configure(startStamp) {
         nolog: '\.css|\.ico|\/img\/', // eslint-disable-line no-useless-escape
     }));
 
-    app.disable('x-powered-by'); // Disable default X-Powered-By
+    app.set('x-powered-by', false); // Disable default X-Powered-By
     app.set('query parser', 'extended'); // Parse query with 'qs' module
     app.set('views', 'views');
     app.set('view engine', 'pug');
@@ -94,9 +95,9 @@ export async function configure(startStamp) {
     // Enable chache of temlates in production
     // It reduce rendering time (and correspondingly 'waiting' time of client request) dramatically
     if (env === 'development') {
-        app.disable('view cache'); // In dev disable this, so we able to edit pug templates without server reload
+        app.set('view cache', false); // In dev disable this, so we able to edit pug templates without server reload
     } else {
-        app.enable('view cache');
+        app.set('view cache', true);
     }
 
     // Set an object which properties will be available from all pug-templates as global variables
@@ -122,18 +123,7 @@ export async function configure(startStamp) {
         const pub = path.resolve('./public');
 
         if (env === 'development') {
-            const lessMiddleware = require('less-middleware');
-
-            app.use('/style', lessMiddleware(path.join(pub, 'style'), {
-                force: true,
-                once: false,
-                debug: false,
-                render: {
-                    compress: false,
-                    yuicompress: false,
-                    // sourceMap: { sourceMapFileInline: true }
-                },
-            }));
+            app.use('/style', ourMiddlewares.lessToCss(path.join(pub, 'style')));
         }
 
         // Favicon need to be placed before static, because it will written from disc once and will be cached
@@ -149,7 +139,7 @@ export async function configure(startStamp) {
     }
 
     if (config.serveStore) {
-        const got = require('got');
+        const { default: got } = await import('got');
         const rewrite = require('express-urlrewrite');
         const { createProxyMiddleware } = require('http-proxy-middleware');
         const uploadServer = `http://${config.uploader.hostname || 'localhost'}:${config.uploader.port}`;
@@ -165,11 +155,10 @@ export async function configure(startStamp) {
         app.use('/_pr/',
             async (req, res, next) => {
                 try {
-                    const response = await got({
-                        url: `${downloadServer}${req.originalUrl}`,
+                    const response = await got(`${downloadServer}${req.originalUrl}`, {
                         headers: req.headers,
                         followRedirect: false,
-                        timeout: 1500,
+                        timeout: { request: 1500 },
                     });
 
                     if (response.statusCode === 303) { // 303 means ok, user can get protected file
@@ -190,15 +179,15 @@ export async function configure(startStamp) {
         // Serve avatars
         app.use('/_a/', ourMiddlewares.serveImages(path.join(storePath, 'public/avatars/'), { maxAge: ms('2d') }));
         // Replace unfound avatars with default one
-        app.get('/_a/d/*', (req, res) => {
+        app.get('/_a/d/{*path}', (req, res) => {
             res.redirect(302, '/img/caps/avatar.png');
         });
-        app.get('/_a/h/*', (req, res) => {
+        app.get('/_a/h/{*path}', (req, res) => {
             res.redirect(302, '/img/caps/avatarth.png');
         });
 
-        app.use(['/upload', '/uploadava'], createProxyMiddleware({ target: uploadServer, logger }));
-        app.use('/download', createProxyMiddleware({ target: downloadServer, logger }));
+        app.use(createProxyMiddleware({ target: uploadServer, pathFilter: ['/upload', '/uploadava'], logger }));
+        app.use(createProxyMiddleware({ target: downloadServer, pathFilter: '/download', logger }));
 
         // Seal store paths, ie request that achieve this handler will receive 404
         app.get(/^\/(?:_a|_prn)(?:\/.*)$/, static404);
@@ -237,6 +226,10 @@ export async function configure(startStamp) {
             express.static(logPath, { maxAge: 0, etag: false })
         );
     }
+
+    // Expose lang/t/ogLocale on res.locals so every res.render() picks them
+    // up without each route handler threading i18n through render options.
+    app.use(i18nLocals);
 
     // Handle appliaction routes
     routes.bindRoutes(app);

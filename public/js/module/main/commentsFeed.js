@@ -93,7 +93,10 @@ define([
                     tplComments = doT.template(document.getElementById('cfeeddot').text);
                 }
 
-                this.$dom[0].querySelector('.commentsBody').innerHTML = tplComments(photoCommentsToInsert);
+                this.$dom[0].querySelector('.commentsBody').innerHTML = tplComments({
+                    photos: photoCommentsToInsert,
+                    regionTitle: Utils.regionTitle,
+                });
 
                 if (cb) {
                     cb.call(ctx);

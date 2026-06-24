@@ -3,7 +3,7 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-define(['Browser'], function (Browser) {
+define(['Browser', 'i18n'], function (Browser, i18n) {
     const dirIcons = {
         // Arrows are not unified accross browsers and platforms.
         // The choices we use [default, FF, Mac].
@@ -31,54 +31,54 @@ define(['Browser'], function (Browser) {
 
     return {
         getDirIcon: getDirIcon,
-        s: 'Статус',
-        y: 'Год',
-        geo: 'Координаты',
-        type: 'Тип',
-        regions: 'Регион',
-        title: 'Название фотографии',
-        desc: 'Описание',
-        source: 'Источник',
-        author: 'Автор',
-        address: 'Адрес точки съемки',
-        dir: 'Направление съемки',
+        s: 'Status',
+        y: 'Year',
+        geo: 'Coordinates',
+        type: 'Type',
+        regions: 'Region',
+        title: 'Photo title',
+        desc: 'Description',
+        source: 'Source',
+        author: 'Author',
+        address: 'Shooting location address',
+        dir: 'Shooting direction',
         typeVals: {
-            1: 'Фотография',
-            2: 'Картина/рисунок',
+            1: 'Photograph',
+            2: 'Painting/drawing',
         },
         types: ['1', '2'],
         dirVals: {
-            n: 'Север',
-            ne: 'Северо-Восток',
-            e: 'Восток',
-            se: 'Юго-Восток',
-            s: 'Юг',
-            sw: 'Юго-Запад',
-            w: 'Запад',
-            nw: 'Северо-Запад',
-            aero: 'Аэро/Спутник',
+            n: i18n('North'),
+            ne: i18n('Northeast'),
+            e: i18n('East'),
+            se: i18n('Southeast'),
+            s: i18n('South'),
+            sw: i18n('Southwest'),
+            w: i18n('West'),
+            nw: i18n('Northwest'),
+            aero: i18n('Aerial/Satellite'),
         },
         dirValsArr: ['w', 'nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'aero'],
         watersign: {
-            'title': 'Подпись на вотермарке',
-            'profile': 'Как указано в профиле',
-            'individual': 'Индивидуально',
-            'option': 'Добавлять подпись на вотермарк',
-            'default': 'Настройки системы',
-            'text': 'Текст',
+            'title': 'Watermark signature',
+            'profile': 'As set in profile',
+            'individual': 'Individually',
+            'option': 'Add signature to watermark',
+            'default': 'System settings',
+            'text': 'Text',
         },
-        watersignText: 'Подпись на вотермарке',
+        watersignText: 'Watermark signature',
         watersignLength: 65,
         watersignPattern: /[\w\.,:;\(\)\[\]\\\|/№§©®℗℠™•\?!@#\$%\^&\*\+\-={}"'<>~` ]/g, //eslint-disable-line no-useless-escape
         downloadOrigin: {
-            title: 'Скачивание оригинала',
-            profile: 'Как указано в профиле',
-            individual: 'Индивидуально',
-            option: 'Разрешать другим пользователям скачивать оригинал',
+            title: 'Original download',
+            profile: 'As set in profile',
+            individual: 'Individually',
+            option: 'Allow other users to download the original',
         },
 
         painting: {
-            title: 'Название',
+            title: 'Title',
         },
     };
 });

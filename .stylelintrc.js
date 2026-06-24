@@ -10,14 +10,14 @@ module.exports = {
     'rules': {
         'import-notation': 'string',
         'media-feature-range-notation': 'prefix',
-        'indentation': 4,
         // If we have Autoprefixer one day, remove *-no-vendor-prefix rules
         // and run stylelint with --fix param to strip prefixes.
         'property-no-vendor-prefix': null,
         'value-no-vendor-prefix': null,
         'at-rule-no-vendor-prefix': null,
         'color-function-notation': 'legacy',
-        'string-quotes': 'single',
+        // Keep rgba()/hsla()/etc. — modern syntax conversion is out of scope.
+        'color-function-alias-notation': null,
         'font-family-no-missing-generic-family-keyword': [true, {
             ignoreFontFamilies: ['Glyphicons Halflings', 'UCondensed', '/^Material Icons/'],
         }],
@@ -26,9 +26,10 @@ module.exports = {
         'keyframes-name-pattern': '^[a-z][a-zA-Z0-9]+$', // lowerCamelCase
         'no-descending-specificity': null,
         'function-url-quotes': 'never',
-        'max-line-length': null,
         'block-no-empty': null,
         'declaration-block-no-redundant-longhand-properties': null,
+        // Less variables (e.g. `8px solid @color`) confuse the parser.
+        'declaration-property-value-no-unknown': null,
         'function-no-unknown': null,
         'media-query-no-invalid': null,
         'keyframe-block-no-duplicate-selectors': null,

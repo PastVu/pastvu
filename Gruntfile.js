@@ -8,6 +8,7 @@
 module.exports = function (grunt) {
     require('./bin/run');
 
+    const fs = require('fs');
     const path = require('path');
     const Utils = require('./commons/Utils');
     const env = grunt.option('env') || 'production'; // Например, --env testing
@@ -140,32 +141,6 @@ module.exports = function (grunt) {
                 }],
             },
         },
-        copy: {
-            main: {
-                files: [
-                    {
-                        expand: true,
-                        src: [
-                            'app/**', 'bin/**', 'migrations/**', 'commons/**', 'misc/watermark/**',
-                            'controllers/systemjs.js', 'npm-shrinkwrap.json',
-                            'config/@(client|server|log4js|migrate-mongo|browsers.config|default.config).js', 'config/package.json',
-                        ],
-                        dest: targetDir,
-                    },
-                    {
-                        expand: true,
-                        src: ['views/app.pug', 'views/api/**', 'views/includes/**', 'views/mail/**', 'views/status/**', 'views/diff/**'],
-                        dest: targetDir,
-                    },
-                    // {expand: true, cwd: 'public-build', src: ['**'], dest: targetDir + 'public'},
-                    {
-                        expand: true,
-                        src: ['api.js', 'package.json', './README'],
-                        dest: targetDir,
-                    },
-                ],
-            },
-        },
         pug: {
             compileTpls: {
                 options: {
@@ -184,7 +159,10 @@ module.exports = function (grunt) {
 
                         grunt.log.write('appName: ' + name + '. ');
 
-                        return { appName: name, config: { env, hash }, pretty: false };
+                        // Build-time fallback for the i18n helper: this HTML is the
+                        // static fallback (e.g. nginx error_page); runtime renders
+                        // go through Express with a real t() from commons/i18n.
+                        return { appName: name, config: { env, hash }, pretty: false, t: s => s };
                     },
                 },
                 files: [
@@ -234,7 +212,6 @@ module.exports = function (grunt) {
         },
         eslint: {
             options: {
-                configFile: '.eslintrc.js',
                 fix: grunt.option('fix'),
             },
             all: {
@@ -277,10 +254,8 @@ module.exports = function (grunt) {
     });
 
     grunt.loadNpmTasks('grunt-contrib-clean');
-    grunt.loadNpmTasks('grunt-contrib-copy');
     grunt.loadNpmTasks('grunt-contrib-pug');
     grunt.loadNpmTasks('grunt-contrib-compress');
-    grunt.loadNpmTasks('grunt-contrib-requirejs');
     grunt.loadNpmTasks('grunt-string-replace');
     grunt.loadNpmTasks('grunt-exec');
     grunt.loadNpmTasks('grunt-mkdir');
@@ -298,7 +273,7 @@ module.exports = function (grunt) {
         'string-replace',
         'uglify:publicApps',
         'uglify:publicJs',
-        'copy:main',
+        'copy',
         'babel',
         'exec:movePublic',
         'pug:compileMainPugs',
@@ -318,6 +293,31 @@ module.exports = function (grunt) {
         'stylelint',
         'exec:jest',
     ]);
+
+    // Copy source files into the build directory, preserving paths.
+    grunt.registerTask('copy', 'Copy source files into the build directory', () => {
+        const patterns = [
+            'app/**', 'bin/**', 'migrations/**', 'commons/**', 'misc/watermark/**',
+            'controllers/systemjs.js', 'npm-shrinkwrap.json',
+            'config/@(client|server|log4js|migrate-mongo|browsers.config|default.config).js',
+            'config/package.json',
+            'views/app.pug', 'views/api/**', 'views/includes/**', 'views/mail/**', 'views/status/**', 'views/diff/**',
+            'api.js', 'package.json', 'README',
+        ];
+
+        for (const pattern of patterns) {
+            for (const match of fs.globSync(pattern)) {
+                if (fs.statSync(match).isDirectory()) {
+                    continue;
+                }
+
+                const dest = path.join(targetDir, match);
+
+                fs.mkdirSync(path.dirname(dest), { recursive: true });
+                fs.cpSync(match, dest);
+            }
+        }
+    });
 
     // Записываем параметры сборки, например hash, из которых запуск в prod возьмет данные
     grunt.registerTask('writeBuildParams', () => {

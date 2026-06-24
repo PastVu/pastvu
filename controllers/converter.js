@@ -10,7 +10,6 @@ import _ from 'lodash';
 import path from 'path';
 import util from 'util';
 import log4js from 'log4js';
-import makeDir from 'make-dir';
 import moment from 'moment';
 import config from '../config';
 import constants from './constants';
@@ -238,10 +237,8 @@ async function collectConveyerStat() {
         converted: conveyerConverted,
     });
 
-    st.save(err => {
-        if (err) {
-            logger.error('STPhotoConveyer error.\n ' + err);
-        }
+    st.save().catch(err => {
+        logger.error('STPhotoConveyer error.\n ' + err);
     });
 
     // Update stats.
@@ -258,7 +255,7 @@ async function conveyerClear({ value }) {
     if (value === true) {
         conveyerEnabled = value;
 
-        ({ n: removedCount = 0 } = await PhotoConveyer.deleteMany({ converting: { $exists: false } }).exec());
+        ({ deletedCount: removedCount = 0 } = await PhotoConveyer.deleteMany({ converting: { $exists: false } }).exec());
     }
 
     conveyerLength = await PhotoConveyer.estimatedDocumentCount().exec();
@@ -461,7 +458,7 @@ async function conveyorSubStep(photo, { isPublic = true, protectCover = false, w
             commands.push(`-quality ${variant.quality}`);
         }
 
-        await makeDir(dstDir);
+        await fsAsync.mkdir(dstDir, { recursive: true });
 
         if (!variant.noTransforn) {
             if (variant.crop) {
@@ -613,7 +610,7 @@ export async function movePhotoFiles({ photo, copy = false, toProtected = false 
         const source = path.join(sourceDir, key);
         const target = path.join(targetDir, key);
 
-        await makeDir(path.join(target, fileDir));
+        await fsAsync.mkdir(path.join(target, fileDir), { recursive: true });
 
         return Promise.all([
             method(path.join(source, filePath), path.join(target, filePath)),
@@ -674,10 +671,7 @@ export async function addPhotos(data, priority, potectPublicOnly) {
         conveyerControl();
     }
 
-    return {
-        message: (toConvertObjs.length === 1 ? 'Фотография отправлена' : `${toConvertObjs.length} фотографии отправлено`) +
-        ' на конвертацию',
-    };
+    return { count: toConvertObjs.length };
 }
 
 /**
@@ -785,7 +779,7 @@ export async function removePhotos(cids) {
         return 0;
     }
 
-    const { n: removedCount = 0 } = await PhotoConveyer.deleteMany({ cid: { $in: cids } }).exec();
+    const { deletedCount: removedCount = 0 } = await PhotoConveyer.deleteMany({ cid: { $in: cids } }).exec();
 
     conveyerLength -= removedCount;
 

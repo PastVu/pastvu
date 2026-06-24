@@ -37,7 +37,7 @@ export async function send(options) {
             'X-Laziness-level': 1000,
         },
         html: options.body,
-        text: options.text || 'Зайдите, чтобы посмотреть',
+        text: options.text || 'Open the site to see',
     };
 
     if (Array.isArray(options.attachments) && options.attachments.length) {
@@ -96,14 +96,6 @@ export const ready = new Promise((resolve, reject) => {
         }
 
         transport = nodemailer.createTransport(options);
-    } else if (mailConf.type === 'SES') {
-        const aws = require('aws-sdk');
-
-        aws.config.update(mailConf.AWSConfig);
-
-        transport = nodemailer.createTransport({
-            SES: new aws.SES(mailConf.SESConfig),
-        });
     } else {
         logger.error('Mail not configured. Unknown transport type', mailConf.type);
 
