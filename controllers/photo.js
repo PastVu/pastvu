@@ -1481,6 +1481,16 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40, random = fa
             }
         }
 
+        if (filter.dir) {
+            if (filter.dir[0] === '0') {
+                query.dir = null;
+            }
+
+            if (filter.dir[0] === '1') {
+                query.dir = { $exists: true };
+            }
+        }
+
         if (userId) {
             query.user = userId;
         }
@@ -1583,6 +1593,7 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40, random = fa
             y: buildQueryResult.y,
             c: buildQueryResult.c,
             geo: filter.geo,
+            dir: filter.dir,
         },
     };
 }
@@ -1609,7 +1620,7 @@ const givePublicNoGeoIndex = (function () {
     };
 }());
 
-const filterProps = { geo: [], r: [], rp: [], rs: [], re: [], s: [], t: [], y: [], c: [] };
+const filterProps = { geo: [], dir: [], r: [], rp: [], rs: [], re: [], s: [], t: [], y: [], c: [] };
 const delimeterParam = '_';
 const delimeterVal = '!';
 export function parseFilter(filterString) {
@@ -1755,6 +1766,12 @@ export function parseFilter(filterString) {
 
                 if (Array.isArray(filterVal) && filterVal.length === 1) {
                     result.geo = filterVal;
+                }
+            } else if (filterParam === 'dir') {
+                filterVal = filterVal.split(delimeterVal);
+
+                if (Array.isArray(filterVal) && filterVal.length === 1) {
+                    result.dir = filterVal;
                 }
             } else if (filterParam === 'c') {
                 filterVal = filterVal.split(delimeterVal);
