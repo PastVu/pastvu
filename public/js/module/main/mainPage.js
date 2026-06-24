@@ -75,6 +75,15 @@ define(['underscore', 'Utils', 'Params', 'knockout', 'knockout.mapping', 'm/_mod
             this.$dom.find('#mapContainer').css({ height: P.window.h() - (this.$container.offset().top || 33) - 29 >> 0 });
         },
         isCommentFeedShownByDefault: function () {
+            // A 'comments' query parameter (set via "Link to current map position") takes
+            // precedence, so a shared link reproduces the feed state regardless of the
+            // recipient's stored preference.
+            const commentsParam = globalVM.router.params().comments;
+
+            if (commentsParam !== undefined) {
+                return commentsParam === '1' || commentsParam === 'true';
+            }
+
             const showFeed = Utils.getLocalStorage('page.showCommentsFeed');
 
             return showFeed !== undefined ? showFeed : true;

@@ -845,7 +845,8 @@ define([
                     location.host +
                     '?g=' + center.join(',') + '&z=' + this.map.getZoom() +
                     '&s=' + layerActive.sys.id + '&t=' + layerActive.type.id +
-                    '&type=' + this.type() + y
+                    '&type=' + this.type() + y +
+                    '&comments=' + (this.commentFeedShown() ? '1' : '0')
                 );
                 this.map.on('zoomstart', this.hideLink, this); //Скрываем ссылку при начале зуммирования карты
                 this.linkShow(true);
