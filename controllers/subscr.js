@@ -443,7 +443,6 @@ async function sendUserNotice(userId) {
             sender: 'noreply',
             receiver: { alias: String(user.disp), email: user.email },
             subject: t('New notification'),
-            head: true,
             body: noticeTpl({
                 user,
                 config,
