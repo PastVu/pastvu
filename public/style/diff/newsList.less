@@ -83,6 +83,21 @@
             margin-bottom: 3px;
         }
 
+        .newsPlanned {
+            display: inline-block;
+            margin-right: 6px;
+            padding: 0 6px;
+            font-size: 11px;
+            font-weight: bold;
+            line-height: 17px;
+            text-transform: uppercase;
+            color: #fff;
+            white-space: nowrap;
+            border-radius: 3px;
+            background-color: #e0701a;
+            cursor: help;
+        }
+
         .newsTitle {
             display: inline-block;
             font-weight: bold;
@@ -132,7 +147,12 @@
             }
 
             &.future {
-                background-color: darken(@body-bg, 10%);
+                background-color: darken(@body-bg, 6%);
+                box-shadow: inset 3px 0 0 #e0701a;
+
+                &:hover {
+                    background-color: darken(@body-bg, 2%);
+                }
             }
         }
     }
