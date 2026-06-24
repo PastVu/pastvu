@@ -290,7 +290,7 @@ async function giveAllNews() {
         { lean: true, sort: { pdate: -1 } }
     ).populate({ path: 'user', select: { _id: 0, login: 1, avatar: 1, disp: 1 } }).exec();
 
-    if (iAm.registered && !news.length) {
+    if (iAm.registered && news.length) {
         // If user is logged in, fill in count of new comments for each news
         await userObjectRelController.fillObjectByRels(news, iAm.user._id, 'news');
         news.forEach(n => delete n._id);
