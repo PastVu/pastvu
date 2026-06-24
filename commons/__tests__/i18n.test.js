@@ -3,9 +3,55 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-import { getT, t } from '../i18n';
+import { getT, t, pickLang, langFromRequest, langFromHandshake } from '../i18n';
 
 describe('commons/i18n', () => {
+    describe('pickLang(user, reqOrHandshake) — language decision', () => {
+        const user = lang => ({ settings: { lang } });
+        // Express req with a parsed cookie object (set by app/request.js).
+        const reqCookie = (past_lang, acceptLanguage) => ({
+            cookie: { past_lang },
+            headers: acceptLanguage ? { 'accept-language': acceptLanguage } : {},
+        });
+        const reqHeader = acceptLanguage => ({ headers: { 'accept-language': acceptLanguage } });
+
+        it('prefers a registered user setting over cookie and Accept-Language', () => {
+            expect(pickLang(user('ru'), reqCookie('en', 'en-US,en;q=0.9'))).toBe('ru');
+        });
+
+        it('prefers the past_lang cookie over Accept-Language', () => {
+            expect(pickLang(null, reqCookie('ru', 'en-US,en;q=0.9'))).toBe('ru');
+        });
+
+        it('falls through to Accept-Language when there is no cookie', () => {
+            expect(pickLang(null, reqHeader('ru-RU,ru;q=0.9,en;q=0.8'))).toBe('ru');
+            expect(pickLang(null, reqHeader('en-US,en;q=0.9'))).toBe('en');
+        });
+
+        it('skips a stale cookie value and honours Accept-Language', () => {
+            expect(pickLang(null, reqCookie('xx', 'ru-RU,ru;q=0.9'))).toBe('ru');
+        });
+
+        it('skips a stale user setting and honours the cookie', () => {
+            expect(pickLang(user('xx'), reqCookie('ru'))).toBe('ru');
+        });
+
+        it('falls back to the site default when nothing matches a supported locale', () => {
+            expect(pickLang(null, reqHeader('fr-FR,fr;q=0.9'))).toBe('en');
+            expect(pickLang(null, {})).toBe('en');
+        });
+
+        it('matches the underscore locale form injected by the social override', () => {
+            expect(pickLang(null, reqHeader('ru_RU,en-US,en;q=0.9'))).toBe('ru');
+        });
+
+        it('langFromRequest / langFromHandshake decide from the request alone', () => {
+            expect(langFromRequest(reqHeader('ru;q=0.9'))).toBe('ru');
+            expect(langFromHandshake(reqHeader('ru-RU,en;q=0.8'))).toBe('ru');
+            expect(langFromRequest({})).toBe('en');
+        });
+    });
+
     describe('t(lang, key)', () => {
         it('returns the Russian translation for a known English key', () => {
             expect(t('ru', 'Login')).toBe('Вход');

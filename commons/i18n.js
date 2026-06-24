@@ -5,6 +5,7 @@
 
 const i18next = require('i18next');
 const { parse: parseCookie } = require('cookie');
+const Negotiator = require('negotiator');
 const config = require('../config');
 const translationsEn = require('../public/js/lang/i18n.en.json');
 const translationsRu = require('../public/js/lang/i18n.ru.json');
@@ -120,43 +121,70 @@ function readCookieLang(reqOrHandshake) {
     return parseCookie(cookieHeader).past_lang;
 }
 
-/**
- * Read the user's preferred language from a Socket.IO / Express handshake's
- * past_lang cookie. Falls back to config.lang when the cookie is missing or
- * names an unsupported locale.
- */
-function langFromHandshake(handshake) {
-    return resolveLang(readCookieLang(handshake));
-}
+// Pick the best supported locale advertised by a request's Accept-Language
+// header. Returns a supported code, or undefined when the header is absent or
+// names only unsupported languages (so the caller can fall through). The
+// header is filtered against SUPPORTED, so the result is always supported.
+// Underscores are normalized to hyphens so locale tags injected by the
+// Facebook / social override in _session.js (e.g. 'ru_RU') are matched too.
+function langFromAcceptHeader(reqOrHandshake) {
+    const header = reqOrHandshake && reqOrHandshake.headers && reqOrHandshake.headers['accept-language'];
 
-/**
- * Resolve the language for an Express request. Accepts either a parsed cookie
- * object on req.cookie (set by app/request.js) or raw req.headers.cookie.
- */
-function langFromRequest(req) {
-    return resolveLang(readCookieLang(req));
+    if (!header) {
+        return undefined;
+    }
+
+    const negotiator = new Negotiator({ headers: { 'accept-language': header.replace(/_/g, '-') } });
+
+    return negotiator.languages(SUPPORTED)[0];
 }
 
 /**
  * The single source of truth for choosing a request's language.
  *
  * Priority: the user's saved preference (settings.lang) wins, then the
- * request's past_lang cookie, then the configured site default. Each
- * candidate must name a supported locale or it is skipped, so a stale user
- * setting falls through to the cookie and an unknown cookie to the default.
+ * request's past_lang cookie, then the browser's Accept-Language header,
+ * then the configured site default. Each candidate must name a supported
+ * locale or it is skipped, so a stale user setting falls through to the
+ * cookie, an unknown cookie to Accept-Language, and an unsupported browser
+ * to the default.
  *
  * Pass the user document only when it should count (e.g. a registered
  * usObj.user); pass null/undefined to decide from the request alone.
  * `reqOrHandshake` is an Express req or a Socket.IO handshake.
  */
 function pickLang(user, reqOrHandshake) {
-    const userPref = user && user.settings && user.settings.lang;
+    const candidates = [
+        user && user.settings && user.settings.lang,
+        readCookieLang(reqOrHandshake),
+        langFromAcceptHeader(reqOrHandshake),
+    ];
 
-    if (SUPPORTED.includes(userPref)) {
-        return userPref;
+    for (const candidate of candidates) {
+        if (SUPPORTED.includes(candidate)) {
+            return candidate;
+        }
     }
 
-    return resolveLang(readCookieLang(reqOrHandshake));
+    return FALLBACK;
+}
+
+/**
+ * Resolve the language for a Socket.IO / Express handshake from the request
+ * alone (no user document): past_lang cookie, then Accept-Language, then the
+ * configured site default.
+ */
+function langFromHandshake(handshake) {
+    return pickLang(null, handshake);
+}
+
+/**
+ * Resolve the language for an Express request from the request alone (no user
+ * document). Accepts either a parsed cookie object on req.cookie (set by
+ * app/request.js) or raw req.headers.cookie.
+ */
+function langFromRequest(req) {
+    return pickLang(null, req);
 }
 
 // Map our short language codes to the full OpenGraph locale tags used in
