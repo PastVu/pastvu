@@ -25,7 +25,7 @@ const SESSION_ANON_LIFE = ms('7d'); // Lifetime of an anonymous user session
 const loopbackIPs = new Set(['127.0.0.1', '::ffff:127.0.0.1', '::1']);
 
 // Method for parsing and checking user-gent
-export const checkUserAgent = Utils.checkUserAgent();
+const checkUserAgent = Utils.checkUserAgent();
 
 // Create cookie session object
 export const createSidCookieObj = (function () {

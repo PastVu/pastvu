@@ -70,17 +70,6 @@ function checkNoJS(req) {
     return { nojsUrl, nojsShow };
 }
 
-// For paths, which don't need session, parse browser directly
-function getReqBrowser(req, res, next) {
-    const ua = req.headers['user-agent'];
-
-    if (ua) {
-        req.browser = session.checkUserAgent(ua);
-    }
-
-    next();
-}
-
 // Fill some headers for fully generated pages
 const setStaticHeaders = (function () {
     const cacheControl = 'no-cache';
@@ -300,15 +289,6 @@ export function bindRoutes(app) {
 
     // Admin section
     app.get(/^\/(?:admin)(?:\/.*)?$/, handleHTTPRequest, setStaticHeaders, appAdminHandler);
-
-    // My user-agent
-    app.get('/myua', getReqBrowser, (req, res) => {
-        const { browser: { accept, agent, agent: { source: title } = {} } = {} } = req;
-
-        res.statusCode = 200;
-        res.setHeader('Cache-Control', 'no-cache,no-store,max-age=0,must-revalidate');
-        res.render('status/myua', { agent, accept, title });
-    });
 
     // Ping-pong to verify the server is working
     app.all('/healthz', (req, res) => {
