@@ -8,6 +8,8 @@ module.exports = {
     transform: {
         '\\.js$': ['babel-jest', { configFile: './babel/server.config.js' }],
     },
+    // cookie@2 ships as ESM only, so let babel transpile it instead of ignoring it.
+    transformIgnorePatterns: ['/node_modules/(?!(cookie)/)'],
     globalSetup: './tests/globalSetup.js',
     globalTeardown: './tests/globalTeardown.js',
     setupFilesAfterEnv: ['./tests/setup.js'],

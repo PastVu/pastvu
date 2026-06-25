@@ -4,7 +4,7 @@
  */
 
 const i18next = require('i18next');
-const { parse: parseCookie } = require('cookie');
+const { parseCookie } = require('cookie');
 const Negotiator = require('negotiator');
 const config = require('../config');
 const translationsEn = require('../public/js/lang/i18n.en.json');

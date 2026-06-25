@@ -9,7 +9,7 @@ import log4js from 'log4js';
 import config from '../config';
 import Utils from '../commons/Utils';
 import * as regionController from './region';
-import { parse as parseCookie } from 'cookie';
+import { parseCookie } from 'cookie';
 import { userSettingsDef, clientParams } from './settings';
 import { Session, SessionArchive } from '../models/Sessions';
 import { User } from '../models/User';
