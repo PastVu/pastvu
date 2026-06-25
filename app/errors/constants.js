@@ -9,7 +9,6 @@ export default Utils.reflectKeys({
     DENY: null,
 
     BAD_PARAMS: null,
-    BAD_BROWSER: null,
 
     TIMEOUT: null,
     UNHANDLED_ERROR: null,

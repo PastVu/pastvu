@@ -7,7 +7,6 @@ export default {
     DENY: 'You do not have permission for this action',
 
     BAD_PARAMS: 'Invalid request parameters',
-    BAD_BROWSER: 'Bad browser, we do not support it',
 
     SESSION_CAN_REGET_REGISTERED_ONLY: 'Failed to fetch users',
     SESSION_NO_HEADERS: 'Bad request - no header or user agent',

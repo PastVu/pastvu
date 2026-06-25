@@ -211,10 +211,7 @@ export const handleHTTPRequest = async function (req, res, next) {
             return res.status(400).send(error.code);
         }
 
-        if (error.code === constantsError.BAD_BROWSER) {
-            res.statusCode = 200;
-            res.render('status/badbrowser', { agent: error.details.agent });
-        } else if (error.code === 'ETIMEDOUT') {
+        if (error.code === 'ETIMEDOUT') {
             res.setHeader('Retry-After', 60);
             res.status(503).send('Service Unavailable: ' + (_.isFunction(error.toString) ? error.toString() : error));
         } else if (error) {

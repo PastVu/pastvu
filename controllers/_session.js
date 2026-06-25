@@ -25,7 +25,7 @@ const SESSION_ANON_LIFE = ms('7d'); // Lifetime of an anonymous user session
 const loopbackIPs = new Set(['127.0.0.1', '::ffff:127.0.0.1', '::1']);
 
 // Method for parsing and checking user-gent
-export const checkUserAgent = Utils.checkUserAgent(config.browsers);
+export const checkUserAgent = Utils.checkUserAgent();
 
 // Create cookie session object
 export const createSidCookieObj = (function () {
@@ -905,10 +905,6 @@ export async function handleConnection(ip, headers, overHTTP, req) {
 
     // Parse user-agent information
     const browser = checkUserAgent(headers['user-agent']);
-
-    if (browser.badbrowser) {
-        throw new BadParamsError({ code: constantsError.BAD_BROWSER, agent: browser.agent, trace: false }, this.rid);
-    }
 
     const cookieObj = parseCookie(headers.cookie || ''); // Parse cookie
     const sid = cookieObj[SESSION_COOKIE_KEY]; // Get session key from cookie

@@ -40,7 +40,6 @@ module.exports = [
             // since flat config global ignores don't reliably honour `!` negation.
             'public/js/lib/bootstrap/**',
             'public/js/lib/doT.js',
-            'public/js/lib/es6-promise.min.js',
             'public/js/lib/geocoordsparser.js',
             'public/js/lib/highstock/**',
             'public/js/lib/i18next.min.js',

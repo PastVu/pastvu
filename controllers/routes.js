@@ -216,7 +216,6 @@ function appMainHandler(req, res) {
         appName: 'Main',
         meta: meta(req),
         agent: browser.agent,
-        polyfills: browser.polyfills,
         initData: genInitDataString(req),
     });
 }
@@ -232,7 +231,6 @@ function appAdminHandler(req, res) {
         meta: {},
         appName: 'Admin',
         agent: browser.agent,
-        polyfills: browser.polyfills,
         initData: genInitDataString(req),
     });
 }
@@ -302,15 +300,6 @@ export function bindRoutes(app) {
 
     // Admin section
     app.get(/^\/(?:admin)(?:\/.*)?$/, handleHTTPRequest, setStaticHeaders, appAdminHandler);
-
-    // Obsolete browser
-    app.get('/badbrowser', getReqBrowser, setStaticHeaders, (req, res) => {
-        res.statusCode = 200;
-        res.render('status/badbrowser', {
-            agent: req.browser && req.browser.agent,
-            title: res.locals.t('You are using an outdated browser version'),
-        });
-    });
 
     // My user-agent
     app.get('/myua', getReqBrowser, (req, res) => {
