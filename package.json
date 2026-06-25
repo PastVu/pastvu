@@ -111,7 +111,7 @@
         "husky": "9.1.7",
         "jest": "30.4.2",
         "less": "4.6.4",
-        "lint-staged": "17.0.7",
+        "lint-staged": "17.0.8",
         "mongodb-memory-server": "11.2.0",
         "requirejs": "2.3.8",
         "step": "1.0.0",
