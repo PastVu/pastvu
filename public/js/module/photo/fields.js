@@ -37,6 +37,7 @@ define(['Browser', 'i18n'], function (Browser, i18n) {
         type: 'Type',
         regions: 'Region',
         title: 'Photo title',
+        filename: 'Original filename',
         desc: 'Description',
         source: 'Source',
         author: 'Author',

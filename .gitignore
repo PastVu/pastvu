@@ -48,4 +48,3 @@ app*.zip
 
 # Claude
 .playwright*
-docs/superpowers

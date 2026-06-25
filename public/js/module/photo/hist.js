@@ -13,7 +13,7 @@ define(
         let tplRegionsDiff;
         const maxRegionLevel = 5;
         const statusNums = statuses.nums;
-        const txtFields = ['title', 'geo', 'type', 'regions', 'y', 'desc', 'source', 'author', 'address', 'dir', 'watersignText'];
+        const txtFields = ['title', 'filename', 'geo', 'type', 'regions', 'y', 'desc', 'source', 'author', 'address', 'dir', 'watersignText'];
 
         return Cliche.extend({
             pug: pug,
