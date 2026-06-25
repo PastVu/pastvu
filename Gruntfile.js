@@ -299,7 +299,7 @@ module.exports = function (grunt) {
         const patterns = [
             'app/**', 'bin/**', 'migrations/**', 'commons/**', 'misc/watermark/**',
             'controllers/systemjs.js', 'npm-shrinkwrap.json',
-            'config/@(client|server|log4js|migrate-mongo|browsers.config|default.config).js',
+            'config/@(client|server|log4js|migrate-mongo|default.config).js',
             'config/package.json',
             'views/app.pug', 'views/api/**', 'views/includes/**', 'views/mail/**', 'views/status/**', 'views/diff/**',
             'api.js', 'package.json', 'README',

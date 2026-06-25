@@ -21,25 +21,13 @@ Utils.isOdd = function (n) {
     return Math.abs(n) % 2 === 1;
 };
 
-// Check user-gent for a match with the specified versions
-// If such browser not specified - returns true
+// Parse a user-agent string into a structured result, caching by raw UA string
 Utils.checkUserAgent = (function () {
     'use strict';
 
-    const browserVerionsDefault = { badbrowserList: {}, polyfillFreelist: {} };
-
-    return function (browserVerions) {
-        const semver = require('semver');
-
+    return function () {
         // Cache for checked user-agents, to parse a unique user-agent only once
         const cache = new (require('lru-cache').LRUCache)({ max: 1500 });
-
-        if (!browserVerions) {
-            browserVerions = browserVerionsDefault;
-        }
-
-        const badbrowserList = browserVerions.badbrowserList;
-        const polyfillFreelist = browserVerions.polyfillFreelist;
 
         return function (userAgent) {
             if (!userAgent) {
@@ -50,27 +38,8 @@ Utils.checkUserAgent = (function () {
 
             if (result === undefined) {
                 const agent = new UAParser(userAgent).getResult();
-                const family = agent.browser.name;
-                const [vMajor, vMinor, vPatch] = (agent.browser.version || '').split('.');
-                const version = Number(vMajor) || 0;
 
-                // Check version match with semver, so we should have semver string guaranteed
-                const versionString = `${version}.${Number(vMinor) || 0}.${Number(vPatch) || 0}`;
-
-                // Check for bad browser
-                const browser = badbrowserList[family];
-                const isBadbrowser = browser ? semver.satisfies(versionString, browser) : false;
-
-                result = {
-                    agent,
-                    version,
-                    badbrowser: isBadbrowser,
-                    polyfills: isBadbrowser ? {} : _.transform(polyfillFreelist, (result, browsers, polyfill) => {
-                        const browser = browsers[family];
-
-                        result[polyfill] = !browser || !semver.satisfies(versionString, browser);
-                    }),
-                };
+                result = { agent };
 
                 cache.set(userAgent, result);
             }

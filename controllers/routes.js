@@ -70,23 +70,11 @@ function checkNoJS(req) {
     return { nojsUrl, nojsShow };
 }
 
-// For paths, which don't need session, parse browser directly
-function getReqBrowser(req, res, next) {
-    const ua = req.headers['user-agent'];
-
-    if (ua) {
-        req.browser = session.checkUserAgent(ua);
-    }
-
-    next();
-}
-
 // Fill some headers for fully generated pages
 const setStaticHeaders = (function () {
     const cacheControl = 'no-cache';
     const xFramePolicy = 'SAMEORIGIN';
     const xPoweredBy = 'Paul Klimashkin | klimashkin@gmail.com';
-    const xUA = 'IE=edge';
 
     return (req, res, next) => {
         // Directive to indicate the browser response caching rules
@@ -98,12 +86,6 @@ const setStaticHeaders = (function () {
         // The page can only be displayed in a frame on the same origin as the page itself
         // https://developer.mozilla.org/en-US/docs/Web/HTTP/X-Frame-Options
         res.setHeader('X-Frame-Options', xFramePolicy);
-
-        if (req.browser && req.browser.agent.browser.name === 'IE') {
-            // X-UA-Compatible header has greater precedence than Compatibility View
-            // http://msdn.microsoft.com/en-us/library/ff955275(v=vs.85).aspx
-            res.setHeader('X-UA-Compatible', xUA);
-        }
 
         res.setHeader('X-Powered-By', xPoweredBy);
 
@@ -216,7 +198,6 @@ function appMainHandler(req, res) {
         appName: 'Main',
         meta: meta(req),
         agent: browser.agent,
-        polyfills: browser.polyfills,
         initData: genInitDataString(req),
     });
 }
@@ -232,7 +213,6 @@ function appAdminHandler(req, res) {
         meta: {},
         appName: 'Admin',
         agent: browser.agent,
-        polyfills: browser.polyfills,
         initData: genInitDataString(req),
     });
 }
@@ -302,24 +282,6 @@ export function bindRoutes(app) {
 
     // Admin section
     app.get(/^\/(?:admin)(?:\/.*)?$/, handleHTTPRequest, setStaticHeaders, appAdminHandler);
-
-    // Obsolete browser
-    app.get('/badbrowser', getReqBrowser, setStaticHeaders, (req, res) => {
-        res.statusCode = 200;
-        res.render('status/badbrowser', {
-            agent: req.browser && req.browser.agent,
-            title: res.locals.t('You are using an outdated browser version'),
-        });
-    });
-
-    // My user-agent
-    app.get('/myua', getReqBrowser, (req, res) => {
-        const { browser: { accept, agent, agent: { source: title } = {} } = {} } = req;
-
-        res.statusCode = 200;
-        res.setHeader('Cache-Control', 'no-cache,no-store,max-age=0,must-revalidate');
-        res.render('status/myua', { agent, accept, title });
-    });
 
     // Ping-pong to verify the server is working
     app.all('/healthz', (req, res) => {
