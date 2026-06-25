@@ -617,6 +617,7 @@ async function create({ files }) {
             geo: undefined,
             r2d: [Math.random() * 100, Math.random() * 100],
             title: item.name ? item.name.replace(/(.*)\.[^.]+$/, '$1') : undefined, // Cut off file extension
+            filename: item.name ? Utils.escapeHtml(item.name) : undefined, // Keep original filename (with extension) for history
             frags: undefined,
             watersignText: getUserWaterSign(user),
             convqueue: true,
@@ -3231,6 +3232,23 @@ async function giveObjHist({ cid, fetchId, showDiff }) {
             stamp: photo.ldate,
             values: { s: 0, histmissing: 1 },
         }];
+    }
+
+    // The original upload filename is shown in the earliest (upload) history
+    // entry, sourced from the immutable 'photo.filename' field. It may carry
+    // personal info, so it's only exposed to the photo owner and moderators.
+    if (photo.filename) {
+        const { handshake: { usObj: iAm } } = this;
+        const canSeeFilename = iAm.registered &&
+            (User.isEqual(iAm.user._id, photo.user) || !!permissions.canModerate(photo, iAm));
+
+        if (canSeeFilename) {
+            if (!histories[0].values) {
+                histories[0].values = {};
+            }
+
+            histories[0].values.filename = photo.filename;
+        }
     }
 
     const reasons = new Set();

@@ -70,6 +70,8 @@ const PhotoSchema = new Schema({
     path: { type: String, required: true }, // Path to file in filesystem, for example 'i/n/o/ino6k6k6yz.jpg'
     file: { type: String, required: true }, // Url to file, can contain parameters, for example 'i/n/o/ino6k6k6yz.jpg?s=abcdef' to reset users cache
 
+    filename: { type: String }, // Original filename at upload time (with extension), immutable. HTML-escaped.
+
     mime: { type: String }, // like 'image/jpeg'
     format: { type: String }, // like 'JPEG', 'Zip'(png)
     sign: { type: String }, // Signature of original image

@@ -355,6 +355,21 @@ Utils.inputIncomingParse = (function () {
     };
 }());
 
+// Escapes HTML-significant characters so a value is safe to render in an
+// unescaped template context. Uses the same entity mapping as the inline
+// escaper in inputIncomingParse, plus '&'.
+Utils.escapeHtml = function (txt) {
+    'use strict';
+
+    if (txt === undefined || txt === null) {
+        return '';
+    }
+
+    const reversedEscapeChars = { '<': 'lt', '>': 'gt', '"': 'quot', '&': 'amp', "'": '#39' };
+
+    return String(txt).replace(/[<>"'&]/g, m => `&${reversedEscapeChars[m]};`);
+};
+
 Utils.txtHtmlToPlain = function (txt, brShrink) {
     'use strict';
 
