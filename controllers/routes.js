@@ -75,7 +75,6 @@ const setStaticHeaders = (function () {
     const cacheControl = 'no-cache';
     const xFramePolicy = 'SAMEORIGIN';
     const xPoweredBy = 'Paul Klimashkin | klimashkin@gmail.com';
-    const xUA = 'IE=edge';
 
     return (req, res, next) => {
         // Directive to indicate the browser response caching rules
@@ -87,12 +86,6 @@ const setStaticHeaders = (function () {
         // The page can only be displayed in a frame on the same origin as the page itself
         // https://developer.mozilla.org/en-US/docs/Web/HTTP/X-Frame-Options
         res.setHeader('X-Frame-Options', xFramePolicy);
-
-        if (req.browser && req.browser.agent.browser.name === 'IE') {
-            // X-UA-Compatible header has greater precedence than Compatibility View
-            // http://msdn.microsoft.com/en-us/library/ff955275(v=vs.85).aspx
-            res.setHeader('X-UA-Compatible', xUA);
-        }
 
         res.setHeader('X-Powered-By', xPoweredBy);
 

@@ -189,8 +189,6 @@ export const handleHTTPRequest = async function (req, res, next) {
 
         res.cookie(cookieObj.key, cookieObj.value, cookieResOptions);
 
-        // Transfer browser object further in case of future use, for example, in 'X-UA-Compatible' header
-        req.browser = data.browser;
         req.cookie = data.cookie;
 
         next();
