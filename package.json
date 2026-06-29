@@ -64,7 +64,7 @@
         "formidable": "3.5.4",
         "globals": "17.6.0",
         "gm": "1.25.1",
-        "got": "15.0.5",
+        "got": "15.0.7",
         "http-proxy-middleware": "4.1.1",
         "i18next": "26.3.1",
         "ioredis": "5.11.1",
