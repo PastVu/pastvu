@@ -121,7 +121,8 @@
     "overrides": {
         "grunt-eslint": {
             "eslint": "$eslint"
-        }
+        },
+        "js-yaml": "^4.2.0"
     },
     "engines": {
         "node": "26.3.0"
