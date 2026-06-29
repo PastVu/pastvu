@@ -71,7 +71,7 @@
         "lodash": "4.18.1",
         "log4js": "6.9.1",
         "lru-cache": "11.5.1",
-        "migrate-mongo": "14.0.5",
+        "migrate-mongo": "14.0.7",
         "mime": "4.1.0",
         "moment": "2.30.1",
         "mongoose": "8.24.0",
