@@ -1,6 +1,6 @@
 ARG NODE_TAG=26.3.0
 
-FROM node:${NODE_TAG}
+FROM --platform=linux/amd64 node:${NODE_TAG}
 RUN apt-get update && apt-get install -y \
     graphicsmagick \
     webp \

@@ -44,6 +44,7 @@ const PhotoSchema = new Schema({
     sdate: { type: Date, 'default': Date.now, required: true, index: true },
     // Last change time
     cdate: { type: Date },
+    lcomdate: { type: Date, sparse: true, index: true },
     // Time of last change, which used for notifying user about change
     // cdate - shows change time of many attributes (including status),
     // whereas ucdate tracks only human-readable attributes
