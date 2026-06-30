@@ -14,5 +14,10 @@
     "comments_count_other": "{{count, number}} comments",
     "views_count_one": "{{count, number}} view",
     "views_count_other": "{{count, number}} views",
-    "datetime_full": "{{date, datetime(dateStyle: full; timeStyle: medium; hourCycle: h23)}}"
+    "datetime_full": "{{date, datetime(dateStyle: full; timeStyle: medium; hourCycle: h23)}}",
+    "Sort by:": "Sort by:",
+    "Default (shoot/scan date)": "Default (shoot/scan date)",
+    "Upload date": "Upload date",
+    "Last action date": "Last action date",
+    "Last comment date": "Last comment date"
 }

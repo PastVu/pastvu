@@ -1458,12 +1458,16 @@ async function givePrevNextCids({ cid }) {
  * @param {object} obj.options.customQuery
  * @param {ObjectId} obj.userId _id of user, if we need gallery by user
  */
+const sortFields = new Set(['ldate', 'cdate', 'lcomdate']);
+
 async function givePhotos({ filter, options: { skip = 0, limit = 40, random = false, customQuery }, userId }) {
     const { handshake: { usObj: iAm } } = this;
 
     skip = Math.abs(Number(skip)) || 0;
     limit = Math.min(Math.abs(Number(limit)), 100) || 40;
 
+    // Determine sort field. Fall back to 'sdate' (shoot/scan date) if none specified or invalid.
+    const sortField = filter.sort && sortFields.has(filter.sort) ? filter.sort : 'sdate';
     const buildQueryResult = buildPhotosQuery(filter, userId, iAm, random);
     const { query } = buildQueryResult;
 
@@ -1515,7 +1519,7 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40, random = fa
             ]);
         } else {
             [photos, count] = await Promise.all([
-                Photo.find(query, fieldsSelect, { lean: true, skip, limit, sort: { sdate: -1 } }).exec(),
+                Photo.find(query, fieldsSelect, { lean: true, skip, limit, sort: { [sortField]: -1 } }).exec(),
                 Photo.countDocuments(query).exec(),
             ]);
         }
@@ -1621,7 +1625,7 @@ const givePublicNoGeoIndex = (function () {
     };
 }());
 
-const filterProps = { geo: [], dir: [], r: [], rp: [], rs: [], re: [], s: [], t: [], y: [], c: [] };
+const filterProps = { geo: [], dir: [], r: [], rp: [], rs: [], re: [], s: [], t: [], y: [], c: [], sort: [] };
 const delimeterParam = '_';
 const delimeterVal = '!';
 export function parseFilter(filterString) {
@@ -1801,6 +1805,10 @@ export function parseFilter(filterString) {
                             result.c = c;
                         }
                     }
+                }
+            } else if (filterParam === 'sort') {
+                if (sortFields.has(filterVal)) {
+                    result.sort = filterVal;
                 }
             }
         }
