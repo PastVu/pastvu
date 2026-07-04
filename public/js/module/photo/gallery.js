@@ -76,6 +76,9 @@ define([
                     redis: ko.observableArray(), // Array of cids of inactive excluded regions, because of inactive parents
                     geo: ko.observableArray(),
                     dir: ko.observableArray(),
+                    // Current gallery sort field. Empty means default (sdate - shoot/scan date).
+                    // Possible values: 'ldate' (upload date), 'cdate' (last action), 'lcomdate' (last comment)
+                    sort: ko.observable(''),
                     year: ko.observable(this.year),
                     year2: ko.observable(this.year2),
                 },
@@ -248,6 +251,8 @@ define([
             this.subscriptions.filter_disp_y = this.filter.disp.year.subscribe(_.debounce(this.yearHandle, 800), this);
             this.subscriptions.filter_disp_y2 = this.filter.disp.year2.subscribe(_.debounce(this.year2Handle, 800), this);
             this.subscriptions.filter_disp_ccount = this.filter.disp.ccount.subscribe(_.debounce(this.ccountHandle, 800), this);
+            // Trigger filter refresh whenever the sort field changes
+            this.subscriptions.filter_disp_sort = this.filter.disp.sort.subscribe(this.filterChangeHandle, this);
             this.subscriptions.filter_active = this.filter.active.subscribe(this.filterActiveChange, this);
             this.filterChangeHandleBlock = false;
 
@@ -402,6 +407,7 @@ define([
             let s = this.filter.disp.s().map(Number);
             const geo = this.filter.disp.geo();
             const dir = this.filter.disp.dir();
+            const sort = this.filter.disp.sort(); // Current sort field, empty string means default (sdate)
             const year = Number(this.filter.disp.year());
             const year2 = Number(this.filter.disp.year2());
             const ccount = Number(this.filter.disp.ccount());
@@ -451,6 +457,11 @@ define([
 
             if (dir.length === 1) {
                 filterString += (filterString ? '_' : '') + 'dir!' + dir[0];
+            }
+
+            // Append sort field to filter string only when non-default value is selected
+            if (sort) {
+                filterString += (filterString ? '_' : '') + 'sort!' + sort;
             }
 
             if (s.length && this.auth.iAm) {
@@ -1300,6 +1311,8 @@ define([
                         this.filter.disp.t(this.t.slice());
                         this.filter.disp.geo(data.filter.geo);
                         this.filter.disp.dir(data.filter.dir);
+                        // Restore sort field from server response, fall back to default (empty string)
+                        this.filter.disp.sort(data.filter.sort || '');
 
                         if (_.isEmpty(data.filter.y)) {
                             const yearsRange = this.getTypeYearsRange();

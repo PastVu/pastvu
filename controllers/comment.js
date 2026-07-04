@@ -986,6 +986,11 @@ async function create(data) {
 
     obj.ccount = (obj.ccount || 0) + 1;
 
+    // Track the timestamp of the most recent comment for gallery sort-by-last-comment
+    if (data.type === 'photo') {
+        obj.lcomdate = stamp;
+    }
+
     const promises = [obj.save()];
 
     iAm.user.ccount += 1;
@@ -1142,6 +1147,18 @@ async function remove(data) {
 
     obj.ccount = (obj.ccount || 0) - countCommentsRemoved;
     obj.cdcount = (obj.cdcount || 0) + countCommentsRemoved;
+
+    // Recalculate lcomdate after removal by finding the most recent non-deleted comment.
+    // If no comments remain, reset lcomdate to undefined.
+    if (data.type === 'photo') {
+        const latestComment = await Comment.findOne(
+            { obj: obj._id, del: null },
+            { _id: 0, stamp: 1 },
+            { lean: true, sort: { stamp: -1 } }
+        ).exec();
+
+        obj.lcomdate = latestComment ? latestComment.stamp : undefined;
+    }
 
     const promises = [obj.save()];
 

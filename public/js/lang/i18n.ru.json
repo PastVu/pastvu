@@ -1009,5 +1009,9 @@
     "The request timed out": "Превышено время ожидания запроса",
     "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors | <a href=\"http://viewfinderpanoramas.org\">SRTM</a> | Map style: &copy; <a href=\"https://opentopomap.org\">OpenTopoMap</a> (<a href=\"https://creativecommons.org/licenses/by-sa/3.0/\">CC-BY-SA</a>)": "&copy; участники сообщества <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> | <a href=\"http://viewfinderpanoramas.org\">SRTM</a> | Стиль карты: &copy; <a href=\"https://opentopomap.org\">OpenTopoMap</a> (<a href=\"https://creativecommons.org/licenses/by-sa/3.0/\">CC-BY-SA</a>)",
     "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors | <a href=\"http://mtbmap.cz/\">mtbmap.cz</a>": "&copy; участники сообщества <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> | <a href=\"http://mtbmap.cz/\">mtbmap.cz</a>",
-    "German aerial photography 1939-1943 (available for selected cities) | <a href=\"http://retromap.ru/061942\">retromap.ru</a>": "Немецкая аэрофотосъемка 1939-1943 годов (доступна для отдельных городов) | <a href=\"http://retromap.ru/061942\">retromap.ru</a>"
+    "German aerial photography 1939-1943 (available for selected cities) | <a href=\"http://retromap.ru/061942\">retromap.ru</a>": "Немецкая аэрофотосъемка 1939-1943 годов (доступна для отдельных городов) | <a href=\"http://retromap.ru/061942\">retromap.ru</a>",
+    "Default (shoot/scan date)": "По умолчанию (дата съёмки/сканирования)",
+    "Upload date": "Дате загрузки",
+    "Last action date": "Дате последнего действия",
+    "Last comment date": "Дате последнего комментария"
 }
