@@ -549,6 +549,9 @@ define([
                 this.filterActiveChangeBlock = true;
                 this.filter.active(true);
                 this.filterActiveChangeBlock = false;
+                // Re-invoke after silent activation so the filter URL is updated on first click
+                this.filterChangeHandle();
+                return;
             }
 
             // If number of children regions equals to zero and rs equals '1',
