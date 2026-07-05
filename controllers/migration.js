@@ -5,11 +5,21 @@
 
 import log4js from 'log4js';
 import ms from 'ms';
-import migrate from 'migrate-mongo';
 import migrateConfig from '../config/migrate-mongo';
 
 const logger = log4js.getLogger('migrate-mongo');
 const maxMigrationWaitTime = ms('120s');
+
+// migrate-mongo@14 is ESM-only. Under Babel's CommonJS transform a normal
+// `import migrate from 'migrate-mongo'` resolves to the package's CJS wrapper,
+// whose members are unresolved Promises, so `migrate.config.set(...)` throws
+// "Cannot read properties of undefined". Load the real ESM module through a
+// native dynamic import that Babel won't rewrite into require(), and cache it.
+// The Function body is a static literal (no interpolation), so this is not eval.
+// eslint-disable-next-line no-new-func
+const importESM = new Function('specifier', 'return import(specifier)');
+let migratePromise;
+const getMigrate = () => (migratePromise ??= importESM('migrate-mongo'));
 
 /**
  * List migrations that have not been applied (pending).
@@ -17,6 +27,8 @@ const maxMigrationWaitTime = ms('120s');
  * @returns {string[]}
  */
 async function listPendingMigrations() {
+    const migrate = await getMigrate();
+
     migrate.config.set(migrateConfig);
 
     const { db, client } = await migrate.database.connect();
@@ -31,6 +43,8 @@ async function listPendingMigrations() {
  * Perform migration.
  */
 async function migrateUp() {
+    const migrate = await getMigrate();
+
     migrate.config.set(migrateConfig);
     logger.info('Running database migration...');
 
