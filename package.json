@@ -115,7 +115,7 @@
         "mongodb-memory-server": "11.2.0",
         "requirejs": "2.3.8",
         "step": "1.0.0",
-        "stylelint": "17.13.0",
+        "stylelint": "17.14.0",
         "stylelint-config-standard": "40.0.0"
     },
     "overrides": {
