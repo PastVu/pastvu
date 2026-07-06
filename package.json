@@ -62,7 +62,7 @@
         "express": "5.2.1",
         "express-urlrewrite": "2.0.3",
         "formidable": "3.5.4",
-        "globals": "17.6.0",
+        "globals": "17.7.0",
         "gm": "1.25.1",
         "got": "15.0.7",
         "http-proxy-middleware": "4.1.1",
