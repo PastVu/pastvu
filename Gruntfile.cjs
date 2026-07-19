@@ -200,6 +200,7 @@ module.exports = function (grunt) {
                         '.*.js',
                         '*.js',
                         '*.cjs',
+                        '.*.cjs',
                         'app/**/*.js',
                         'controllers/**/*.js',
                         'commons/**/*.js',

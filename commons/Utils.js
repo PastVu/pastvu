@@ -1084,4 +1084,5 @@ Utils.walkSerial = function (dir, done) {
  }});*/
 
 Object.freeze(Utils);
+
 export default Utils;
