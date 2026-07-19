@@ -3,8 +3,8 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
 // Regression guard: after the i18n migration, source code holds English keys
 // only. This test fails as soon as a Cyrillic character lands in a `.js` or
@@ -14,12 +14,12 @@ const path = require('path');
 // (no migrations/, basepatch/, bin/ tooling) and we ignore comments — Cyrillic
 // in `//`, `//-`, or `/* */` doesn't reach the user.
 
-const ROOT = path.resolve(__dirname, '../..');
+const ROOT = path.resolve(import.meta.dirname, '../..');
 const CYRILLIC = /[Ѐ-ӿ]/;
 
 const ROOTS = [
     'app', 'commons', 'controllers', 'models', 'public/js', 'sitemap', 'views',
-    'api.js', 'app.js', 'downloader.js', 'notifier.js', 'sitemap.js',
+    'api.cjs', 'app.js', 'downloader.js', 'notifier.js', 'sitemap.js',
     'uploader.js', 'worker.js',
 ];
 
@@ -68,7 +68,7 @@ function walk(dir, out) {
 
         if (stat.isDirectory()) {
             walk(p, out);
-        } else if (/\.(js|pug)$/.test(p)) {
+        } else if (/\.(c?js|pug)$/.test(p)) {
             out.push(p);
         }
     }
@@ -135,7 +135,7 @@ function collectFiles() {
 
         if (stat.isDirectory()) {
             walk(abs, files);
-        } else if (/\.(js|pug)$/.test(abs)) {
+        } else if (/\.(c?js|pug)$/.test(abs)) {
             files.push(abs);
         }
     }

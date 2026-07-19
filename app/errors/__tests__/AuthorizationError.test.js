@@ -3,7 +3,7 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-import { AuthorizationError } from '../';
+import { AuthorizationError } from '../index.js';
 import constants from '../constants.js';
 import errorMsgs from '../intl.js';
 

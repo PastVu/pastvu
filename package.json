@@ -36,7 +36,7 @@
         "lint": "./node_modules/.bin/eslint .",
         "lintfix": "./node_modules/.bin/eslint . --fix",
         "i18n:check": "node bin/find-untranslated-i18n.js",
-        "jest": "jest --runInBand",
+        "jest": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand",
         "build": "grunt",
         "test": "grunt test",
         "prepare": "husky",
