@@ -5,10 +5,10 @@
 
 import fs from 'fs';
 import path from 'path';
-import parser from '@babel/parser';
+import { parse } from '@babel/parser';
 import babelTraverse from '@babel/traverse';
 
-const traverse = babelTraverse.default;
+const traverse = babelTraverse.default ?? babelTraverse;
 
 const readJSON = relPath => JSON.parse(fs.readFileSync(new URL(relPath, import.meta.url), 'utf8'));
 
@@ -246,7 +246,7 @@ function extractFromJs(file) {
     let ast;
 
     try {
-        ast = parser.parse(code, {
+        ast = parse(code, {
             sourceType: 'unambiguous',
             allowReturnOutsideFunction: true,
             errorRecovery: true,
