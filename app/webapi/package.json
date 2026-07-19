@@ -1,4 +1,5 @@
 {
     "main": "./server",
-    "browser": "./client"
+    "browser": "./client",
+    "type": "module"
 }

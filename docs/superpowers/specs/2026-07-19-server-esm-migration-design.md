@@ -1,7 +1,7 @@
 # Server ESM Migration — Design
 
 Date: 2026-07-19
-Status: Approved
+Status: Implemented
 Scope: Backend only. Frontend (`public/`, RequireJS/AMD) is explicitly out of scope.
 
 ## Goal

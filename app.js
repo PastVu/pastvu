@@ -37,7 +37,6 @@ import rewrite from 'express-urlrewrite';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import basicAuthConnect from 'basic-auth-connect';
 import serveIndex from 'serve-index';
-import { loadController as loadTplController } from './controllers/tpl.js';
 
 import './models/_initValues.js';
 
@@ -220,6 +219,10 @@ export async function configure(startStamp) {
     registerSocketRequestHandler(io); // Register handler for socket.io events
 
     if (env === 'development') {
+        // Deliberately a lazy import: tpl.js scans ./views/module at import time,
+        // which only exists in development (production builds precompile templates).
+        const { loadController: loadTplController } = await import('./controllers/tpl.js');
+
         loadTplController(app);
     }
 
