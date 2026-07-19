@@ -39,7 +39,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import parser from '@babel/parser';
+import { parse } from '@babel/parser';
 import traverseModule from '@babel/traverse';
 
 const traverse = traverseModule.default ?? traverseModule;
@@ -287,7 +287,7 @@ function rewriteJsFile(file, map) {
     let ast;
 
     try {
-        ast = parser.parse(code, {
+        ast = parse(code, {
             sourceType: 'unambiguous',
             allowReturnOutsideFunction: true,
             errorRecovery: true,
