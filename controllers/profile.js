@@ -8,18 +8,18 @@ import gm from 'gm';
 import _ from 'lodash';
 import path from 'path';
 import util from 'util';
-import config from '../config';
+import config from '../config/server.js';
 import childProcess from 'child_process';
-import Utils from '../commons/Utils';
-import * as session from './_session';
+import Utils from '../commons/Utils.js';
+import * as session from './_session.js';
 import constants from './constants.js';
-import * as photoController from './photo';
-import { userThrottleChange, userCancelNotifications } from './subscr';
-import constantsError from '../app/errors/constants';
-import { userSettingsDef, userSettingsVars } from './settings';
-import { AuthenticationError, AuthorizationError, BadParamsError, InputError, NotFoundError } from '../app/errors';
+import * as photoController from './photo.js';
+import { userThrottleChange, userCancelNotifications } from './subscr.js';
+import constantsError from '../app/errors/constants.js';
+import { userSettingsDef, userSettingsVars } from './settings.js';
+import { AuthenticationError, AuthorizationError, BadParamsError, InputError, NotFoundError } from '../app/errors/index.js';
 
-import { User } from '../models/User';
+import { User } from '../models/User.js';
 
 const incomeDir = path.join(config.storePath, 'incoming/');
 const privateDir = path.join(config.storePath, 'private/avatars/');

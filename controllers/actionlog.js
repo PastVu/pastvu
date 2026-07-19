@@ -3,7 +3,7 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-import { ActionLog } from '../models/ActionLog';
+import { ActionLog } from '../models/ActionLog.js';
 
 export const OBJTYPES = {
     USER: 1,

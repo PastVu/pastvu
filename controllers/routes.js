@@ -7,16 +7,16 @@ import _ from 'lodash';
 import http from 'http';
 import express from 'express';
 import log4js from 'log4js';
-import config from '../config';
-import Utils from '../commons/Utils';
-import { langFromRequest, pickLang, pickRegionTitle } from '../commons/i18n';
-import * as session from './_session';
-import { clientParams, ready as settingsReady } from './settings';
-import NotFoundError from '../app/errors/NotFound';
-import { getRegionsArrPublicFromCache } from './region';
-import { handleHTTPRequest, handleHTTPAPIRequest } from '../app/request';
-import { parseFilter } from './photo';
-import constants from './constants';
+import config from '../config/server.js';
+import Utils from '../commons/Utils.js';
+import { langFromRequest, pickLang, pickRegionTitle } from '../commons/i18n.js';
+import * as session from './_session.js';
+import { clientParams, ready as settingsReady } from './settings.js';
+import NotFoundError from '../app/errors/NotFound.js';
+import { getRegionsArrPublicFromCache } from './region.js';
+import { handleHTTPRequest, handleHTTPAPIRequest } from '../app/request.js';
+import { parseFilter } from './photo.js';
+import constants from './constants.js';
 
 const {
     photo: { status },

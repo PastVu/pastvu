@@ -37,14 +37,14 @@
  * text bodies, or as static attribute values that don't match any key).
  */
 
-'use strict';
+import fs from 'fs';
+import path from 'path';
+import parser from '@babel/parser';
+import traverseModule from '@babel/traverse';
 
-const fs = require('fs');
-const path = require('path');
-const parser = require('@babel/parser');
-const traverse = require('@babel/traverse').default;
+const traverse = traverseModule.default ?? traverseModule;
 
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(import.meta.dirname, '..');
 const CYRILLIC = /[А-Яа-яЁё]/;
 const I18N_NAMES = new Set(['i18n', 't']);
 

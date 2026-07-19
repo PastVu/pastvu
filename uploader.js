@@ -9,9 +9,9 @@ import _ from 'lodash';
 import path from 'path';
 import http from 'http';
 import log4js from 'log4js';
-import config from './config';
+import config from './config/server.js';
 import formidable from 'formidable';
-import Utils from './commons/Utils';
+import Utils from './commons/Utils.js';
 import exitHook from 'async-exit-hook';
 
 export function configure(startStamp) {

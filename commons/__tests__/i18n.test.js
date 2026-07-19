@@ -3,7 +3,7 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-import { getT, t, pickLang, langFromRequest, langFromHandshake } from '../i18n';
+import { getT, t, pickLang, langFromRequest, langFromHandshake } from '../i18n.js';
 
 describe('commons/i18n', () => {
     describe('pickLang(user, reqOrHandshake) — language decision', () => {

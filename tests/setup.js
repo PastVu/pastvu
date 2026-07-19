@@ -3,9 +3,9 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-import connectDb, { waitDb } from '../controllers/connection';
+import connectDb, { waitDb } from '../controllers/connection.js';
 import mongoose from 'mongoose';
-import { UserSettings } from '../models/UserSettings';
+import { UserSettings } from '../models/UserSettings.js';
 
 jest.setTimeout(10000);
 jest.mock('../controllers/mail');

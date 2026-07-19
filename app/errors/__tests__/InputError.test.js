@@ -4,8 +4,8 @@
  */
 
 import { InputError } from '../';
-import constants from '../constants';
-import errorMsgs from '../intl';
+import constants from '../constants.js';
+import errorMsgs from '../intl.js';
 
 describe('inputError test', () => {
     it('should throw default message', () => {

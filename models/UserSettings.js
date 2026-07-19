@@ -4,7 +4,7 @@
  */
 
 import { Schema } from 'mongoose';
-import { registerModel } from '../controllers/connection';
+import { registerModel } from '../controllers/connection.js';
 
 export let UserSettings = null;
 

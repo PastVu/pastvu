@@ -21,6 +21,7 @@
         "email": "support@pastvu.com"
     },
     "main": "app.js",
+    "type": "module",
     "scripts": {
         "app": "node --max-old-space-size=4096 bin/run.js",
         "appManualGC": "node --max-old-space-size=4096 --nouse-idle-notification --expose-gc bin/run.js --manualGarbageCollect=30000",

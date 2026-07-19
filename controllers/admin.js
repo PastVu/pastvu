@@ -4,13 +4,13 @@
  */
 
 import _ from 'lodash';
-import * as sessionController from './_session';
-import constantsError from '../app/errors/constants';
-import { AuthorizationError, BadParamsError, NotFoundError, NoticeError } from '../app/errors';
+import * as sessionController from './_session.js';
+import constantsError from '../app/errors/constants.js';
+import { AuthorizationError, BadParamsError, NotFoundError, NoticeError } from '../app/errors/index.js';
 
-import { News } from '../models/News';
-import { User } from '../models/User';
-import { Counter } from '../models/Counter';
+import { News } from '../models/News.js';
+import { User } from '../models/User.js';
+import { Counter } from '../models/Counter.js';
 
 function saveOrCreateNews(data) {
     const { handshake: { usObj: iAm } } = this;

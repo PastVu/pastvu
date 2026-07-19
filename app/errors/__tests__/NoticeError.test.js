@@ -4,8 +4,8 @@
  */
 
 import { NoticeError } from '../';
-import constants from '../constants';
-import errorMsgs from '../intl';
+import constants from '../constants.js';
+import errorMsgs from '../intl.js';
 
 describe('noticeError', () => {
     it('should throw default message', () => {

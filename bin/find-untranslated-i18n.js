@@ -4,12 +4,12 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-'use strict';
+import fs from 'fs';
+import path from 'path';
+import parser from '@babel/parser';
+import traverseModule from '@babel/traverse';
 
-const fs = require('fs');
-const path = require('path');
-const parser = require('@babel/parser');
-const traverse = require('@babel/traverse').default;
+const traverse = traverseModule.default ?? traverseModule;
 
 const CYRILLIC = /[Ѐ-ӿ]/;
 const I18N_NAMES = new Set(['i18n', 't']);

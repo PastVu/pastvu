@@ -13,7 +13,7 @@ const sys = require('util');
 const step = require('step');
 const requirejs = require('requirejs');
 const less = require('less');
-const Utils = require('./commons/Utils');
+const Utils = require('./commons/Utils.js').default;
 
 const lessCompileOptions = {
     compress: true,

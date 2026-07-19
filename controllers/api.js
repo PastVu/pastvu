@@ -7,7 +7,7 @@
 
 import ms from 'ms';
 import { logIt as logAPI } from './apilog.js';
-import Utils from '../commons/Utils';
+import Utils from '../commons/Utils.js';
 
 let core;
 const REQUEST_SELF_LIFE = ms('60s');
@@ -257,7 +257,7 @@ function logIt(req, start, status, errorCode, errorMessage) {
     logAPI(query.app, query.rid, query.stamp, query.method, query.data, start, ms, status, errorCode, errorMessage);
 }
 
-module.exports.loadController = function (app, c) {
+export function loadController(app, c) {
     core = c;
     app.route(/^\/0\.2\.0\/?$/).get(requestHandler).post(requestHandler);
-};
+}

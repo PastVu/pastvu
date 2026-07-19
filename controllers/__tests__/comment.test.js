@@ -3,10 +3,10 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-import { CommentN } from '../../models/Comment';
-import admin from '../admin';
-import comment from '../comment';
-import testHelpers from '../../tests/testHelpers';
+import { CommentN } from '../../models/Comment.js';
+import admin from '../admin.js';
+import comment from '../comment.js';
+import testHelpers from '../../tests/testHelpers.js';
 
 describe('comment', () => {
     beforeEach(async () => {

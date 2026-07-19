@@ -6,16 +6,16 @@
 import ms from 'ms';
 import _ from 'lodash';
 import moment from 'moment';
-import Utils from '../commons/Utils';
-import * as session from './_session';
-import * as userObjectRelController from './userobjectrel';
-import constantsError from '../app/errors/constants';
-import { BadParamsError, NotFoundError } from '../app/errors';
+import Utils from '../commons/Utils.js';
+import * as session from './_session.js';
+import * as userObjectRelController from './userobjectrel.js';
+import constantsError from '../app/errors/constants.js';
+import { BadParamsError, NotFoundError } from '../app/errors/index.js';
 
-import { News } from '../models/News';
-import { User } from '../models/User';
-import { Photo } from '../models/Photo';
-import { Comment, CommentN } from '../models/Comment';
+import { News } from '../models/News.js';
+import { User } from '../models/User.js';
+import { Photo } from '../models/Photo.js';
+import { Comment, CommentN } from '../models/Comment.js';
 
 let dayStart; // Time of day start
 let weekStart; // Time of week start

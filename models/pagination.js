@@ -3,7 +3,7 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 mongoose.Query.prototype.paginate = async function paginate(page, limit) {
     page = parseInt(page, 10) || 1;
