@@ -30,7 +30,6 @@ export default [
         ignores: [
             '.git/**',
             '.idea/**',
-            'bin/**',
             'logs/**',
             'misc/**',
             'views/**',
@@ -492,7 +491,7 @@ export default [
     },
     // CommonJS islands.
     {
-        files: ['**/*.cjs', 'config/**/*.js', 'migrations/**/*.js', 'basepatch/**/*.js'],
+        files: ['**/*.cjs', 'config/**/*.js', 'migrations/**/*.js'],
         languageOptions: { sourceType: 'commonjs' },
     },
 ];

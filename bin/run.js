@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 /**
+ * Copyright: The PastVu contributors.
+ * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
+ *
  * Entry point to application. Its purpose is to run the requested script with common setup.
  */
+
 import os from 'os';
 import path from 'path';
 import util from 'util';
@@ -25,7 +29,10 @@ const env = config.env;
 const appName = path.parse(argv.script).name;
 const logger = log4js.getLogger(appName);
 
-if (appName === 'notifier') config.notifier = true;
+if (appName === 'notifier') {
+    config.notifier = true;
+}
+
 config.primary = !!argv.primary; // If not true, the instance will run as a replica
 
 // Handling uncaught exceptions
