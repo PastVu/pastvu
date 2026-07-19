@@ -6,8 +6,6 @@
 
 'use strict';
 
-require('./bin/run');
-
 const start = Date.now();
 const fs = require('fs');
 const path = require('path');
