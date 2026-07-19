@@ -6,6 +6,7 @@
 export default {
     testEnvironment: 'node',
     transform: {},
+    testPathIgnorePatterns: ['<rootDir>/appBuild/'],
     globalSetup: './tests/globalSetup.js',
     globalTeardown: './tests/globalTeardown.js',
     setupFilesAfterEnv: ['./tests/setup.js'],

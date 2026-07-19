@@ -126,7 +126,7 @@
         "node": "26.3.0"
     },
     "lint-staged": {
-        "*.js": "eslint --fix",
+        "*.{js,cjs}": "eslint --fix",
         "*.less": "stylelint --fix"
     }
 }
