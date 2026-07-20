@@ -8,15 +8,10 @@
    regionClearPhotoTitle:true, regionsAssignPhotos:true, regionsAssignComments:true, calcPhotoStats:true, calcUserStats:true
  */
 
-/**
- * This file is not being transformed by babel
- *
- * @type {*|exports|module.exports}
- */
+import log4js from 'log4js';
+import mongoose from 'mongoose';
+import { waitDb } from './connection.js';
 
-const log4js = require('log4js');
-const mongoose = require('mongoose');
-const waitDb = require('./connection').waitDb;
 const logger = log4js.getLogger('systemjs.js');
 
 waitDb.then(db => {

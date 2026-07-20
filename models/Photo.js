@@ -5,8 +5,8 @@
 
 import _ from 'lodash';
 import { Schema } from 'mongoose';
-import constants from '../controllers/constants';
-import { registerModel } from '../controllers/connection';
+import constants from '../controllers/constants.js';
+import { registerModel } from '../controllers/connection.js';
 
 export let Photo = null;
 export let PhotoMap = null;

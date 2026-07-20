@@ -3,16 +3,18 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-const fs = require('fs');
-const path = require('path');
-const config = require('../config');
+import fs from 'fs';
+import path from 'path';
+import config from '../config/server.js';
+import _ from 'lodash';
+import _s from 'underscore.string';
+import { UAParser } from 'ua-parser-js';
+import DMP from 'diff-match-patch';
+import * as turf from '@turf/turf';
+import ms from 'ms';
+import { LRUCache } from 'lru-cache';
+
 const Utils = Object.create(null);
-const _ = require('lodash');
-const _s = require('underscore.string');
-const { UAParser } = require('ua-parser-js');
-const DMP = require('diff-match-patch');
-const turf = require('@turf/turf');
-const ms = require('ms');
 
 Utils.isEven = function (n) {
     return n % 2 === 0;
@@ -27,7 +29,7 @@ Utils.checkUserAgent = (function () {
 
     return function () {
         // Cache for checked user-agents, to parse a unique user-agent only once
-        const cache = new (require('lru-cache').LRUCache)({ max: 1500 });
+        const cache = new LRUCache({ max: 1500 });
 
         return function (userAgent) {
             if (!userAgent) {
@@ -1082,4 +1084,5 @@ Utils.walkSerial = function (dir, done) {
  }});*/
 
 Object.freeze(Utils);
-module.exports = Utils;
+
+export default Utils;

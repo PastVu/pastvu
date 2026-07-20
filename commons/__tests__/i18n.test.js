@@ -3,7 +3,8 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-import { getT, t, pickLang, langFromRequest, langFromHandshake } from '../i18n';
+import i18next from 'i18next';
+import { getT, t, pickLang, langFromRequest, langFromHandshake } from '../i18n.js';
 
 describe('commons/i18n', () => {
     describe('pickLang(user, reqOrHandshake) — language decision', () => {
@@ -197,8 +198,6 @@ describe('commons/i18n', () => {
         it('looks up explicit ns when the key is registered there', () => {
             // Use a key the test itself adds to the mail namespace so the
             // test stays valid before and after Task 4 moves keys.
-            const i18next = require('i18next');
-
             i18next.addResource('en', 'mail', '__test_mail_only__', 'mail-only-value');
 
             expect(t('en', '__test_mail_only__', { ns: 'mail' })).toBe('mail-only-value');

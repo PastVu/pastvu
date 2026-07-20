@@ -37,21 +37,21 @@
  * text bodies, or as static attribute values that don't match any key).
  */
 
-'use strict';
+import fs from 'fs';
+import path from 'path';
+import { parse } from '@babel/parser';
+import traverseModule from '@babel/traverse';
 
-const fs = require('fs');
-const path = require('path');
-const parser = require('@babel/parser');
-const traverse = require('@babel/traverse').default;
+const traverse = traverseModule.default ?? traverseModule;
 
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(import.meta.dirname, '..');
 const CYRILLIC = /[А-Яа-яЁё]/;
 const I18N_NAMES = new Set(['i18n', 't']);
 
 const JSON_PAIRS = [
     { en: 'public/js/lang/i18n.en.json', ru: 'public/js/lang/i18n.ru.json' },
-    { en: 'views/mail/i18n.en.json',     ru: 'views/mail/i18n.ru.json'     },
-    { en: 'views/status/i18n.en.json',   ru: 'views/status/i18n.ru.json'   },
+    { en: 'views/mail/i18n.en.json', ru: 'views/mail/i18n.ru.json' },
+    { en: 'views/status/i18n.en.json', ru: 'views/status/i18n.ru.json' },
 ];
 
 const SOURCE_ROOTS = [
@@ -99,12 +99,17 @@ function findDuplicates(pairs) {
         const byEnglish = new Map();
 
         for (const [ru, en] of Object.entries(russian)) {
-            if (!byEnglish.has(en)) byEnglish.set(en, []);
+            if (!byEnglish.has(en)) {
+                byEnglish.set(en, []);
+            }
+
             byEnglish.get(en).push(ru);
         }
 
         for (const [en, rus] of byEnglish) {
-            if (rus.length > 1) reports.push({ file: pair.en, en, rus });
+            if (rus.length > 1) {
+                reports.push({ file: pair.en, en, rus });
+            }
         }
     }
 
@@ -118,7 +123,9 @@ function printDuplicateReport(reports) {
         console.error(`  ${r.file}`);
         console.error(`    ${JSON.stringify(r.en)}`);
 
-        for (const ru of r.rus) console.error(`      ← ${JSON.stringify(ru)}`);
+        for (const ru of r.rus) {
+            console.error(`      ← ${JSON.stringify(ru)}`);
+        }
 
         console.error('');
     }
@@ -146,14 +153,19 @@ function rewriteJsonPair(pair) {
     // in file order wins — it becomes the canonical translation. Both Russian
     // call sites get migrated to the same English key by the source rewrite.
     for (const [ruKey, enValue] of Object.entries(enRu)) {
-        if (newRu[enValue] === undefined) newRu[enValue] = ruKey;
-        else if (newRu[enValue] !== ruKey) console.log(`  merge: ${pair.ru} keeps ${JSON.stringify(enValue)} → ${JSON.stringify(newRu[enValue])} (dropped ${JSON.stringify(ruKey)})`);
+        if (newRu[enValue] === undefined) {
+            newRu[enValue] = ruKey;
+        } else if (newRu[enValue] !== ruKey) {
+            console.log(`  merge: ${pair.ru} keeps ${JSON.stringify(enValue)} → ${JSON.stringify(newRu[enValue])} (dropped ${JSON.stringify(ruKey)})`);
+        }
     }
 
     // Any non-symbolic entries that were already in ru.json (carried over from a
     // partial run) survive untouched.
     for (const [k, v] of Object.entries(ruDirect)) {
-        if (newRu[k] === undefined) newRu[k] = v;
+        if (newRu[k] === undefined) {
+            newRu[k] = v;
+        }
     }
 
     writeJson(pair.en, newEn);
@@ -188,7 +200,9 @@ function walk(dir, out) {
     try {
         entries = fs.readdirSync(dir);
     } catch (err) {
-        if (err.code === 'ENOENT') return out;
+        if (err.code === 'ENOENT') {
+            return out;
+        }
 
         throw err;
     }
@@ -196,7 +210,9 @@ function walk(dir, out) {
     for (const name of entries) {
         const p = path.join(dir, name);
 
-        if (EXCLUDE.some(re => re.test(p + '/'))) continue;
+        if (EXCLUDE.some(re => re.test(p + '/'))) {
+            continue;
+        }
 
         const stat = fs.statSync(p);
 
@@ -216,12 +232,17 @@ function collectSourceFiles() {
     for (const rel of SOURCE_ROOTS) {
         const abs = path.join(ROOT, rel);
 
-        if (!fs.existsSync(abs)) continue;
+        if (!fs.existsSync(abs)) {
+            continue;
+        }
 
         const stat = fs.statSync(abs);
 
-        if (stat.isDirectory()) walk(abs, files);
-        else if (/\.(js|pug)$/.test(abs)) files.push(abs);
+        if (stat.isDirectory()) {
+            walk(abs, files);
+        } else if (/\.(js|pug)$/.test(abs)) {
+            files.push(abs);
+        }
     }
 
     return files;
@@ -230,9 +251,13 @@ function collectSourceFiles() {
 // -- JS rewrite (AST-aware) --------------------------------------------------
 
 function isI18nCallee(node) {
-    if (!node) return false;
+    if (!node) {
+        return false;
+    }
 
-    if (node.type === 'Identifier' && I18N_NAMES.has(node.name)) return true;
+    if (node.type === 'Identifier' && I18N_NAMES.has(node.name)) {
+        return true;
+    }
 
     if (node.type === 'MemberExpression' && !node.computed &&
         node.property.type === 'Identifier' && I18N_NAMES.has(node.property.name)) {
@@ -287,7 +312,7 @@ function rewriteJsFile(file, map) {
     let ast;
 
     try {
-        ast = parser.parse(code, {
+        ast = parse(code, {
             sourceType: 'unambiguous',
             allowReturnOutsideFunction: true,
             errorRecovery: true,
@@ -305,11 +330,17 @@ function rewriteJsFile(file, map) {
         StringLiteral(p) {
             const value = p.node.value;
 
-            if (!CYRILLIC.test(value)) return;
+            if (!CYRILLIC.test(value)) {
+                return;
+            }
 
-            if (!map.has(value)) return;
+            if (!map.has(value)) {
+                return;
+            }
 
-            if (!isI18nKey(p)) return;
+            if (!isI18nKey(p)) {
+                return;
+            }
 
             const raw = p.node.extra && p.node.extra.raw || JSON.stringify(value);
 
@@ -321,13 +352,17 @@ function rewriteJsFile(file, map) {
         },
     });
 
-    if (!edits.length) return 0;
+    if (!edits.length) {
+        return 0;
+    }
 
     edits.sort((a, b) => b.start - a.start);
 
     let out = code;
 
-    for (const e of edits) out = out.slice(0, e.start) + e.replacement + out.slice(e.end);
+    for (const e of edits) {
+        out = out.slice(0, e.start) + e.replacement + out.slice(e.end);
+    }
 
     fs.writeFileSync(file, out);
 
@@ -359,11 +394,19 @@ function isInsideDoubleQuotedPugAttr(code, pos) {
     for (let i = 0; i < offset; i++) {
         const c = line[i];
 
-        if (prevBackslash) { prevBackslash = false; continue; }
+        if (prevBackslash) {
+            prevBackslash = false;
+            continue;
+        }
 
-        if (c === '\\') { prevBackslash = true; continue; }
+        if (c === '\\') {
+            prevBackslash = true;
+            continue;
+        }
 
-        if (c === '"') inDouble = !inDouble;
+        if (c === '"') {
+            inDouble = !inDouble;
+        }
     }
 
     return inDouble;
@@ -374,7 +417,9 @@ function rewritePugFile(file, map) {
     const edits = [];
 
     for (const [ru, en] of map) {
-        if (!original.includes(ru)) continue;
+        if (!original.includes(ru)) {
+            continue;
+        }
 
         const enBase = en.replace(/\\/g, '\\\\');
         const enSingle = enBase.replace(/'/g, "\\'");
@@ -384,29 +429,36 @@ function rewritePugFile(file, map) {
         const escaped = reEscape(ru);
 
         for (const re of [new RegExp("'" + escaped + "'", 'g'), new RegExp('"' + escaped + '"', 'g')]) {
-            let m;
-
-            while ((m = re.exec(original)) !== null) {
+            for (let m = re.exec(original); m !== null; m = re.exec(original)) {
                 const isDoubleQuote = m[0][0] === '"';
                 let replacement;
 
-                if (isDoubleQuote) replacement = '"' + enDouble + '"';
-                else replacement = "'" + (isInsideDoubleQuotedPugAttr(original, m.index) ? enSingleNested : enSingle) + "'";
+                if (isDoubleQuote) {
+                    replacement = '"' + enDouble + '"';
+                } else {
+                    replacement = "'" + (isInsideDoubleQuotedPugAttr(original, m.index) ? enSingleNested : enSingle) + "'";
+                }
 
                 edits.push({ start: m.index, end: m.index + m[0].length, replacement });
             }
         }
     }
 
-    if (!edits.length) return 0;
+    if (!edits.length) {
+        return 0;
+    }
 
     edits.sort((a, b) => b.start - a.start);
 
     let out = original;
 
-    for (const e of edits) out = out.slice(0, e.start) + e.replacement + out.slice(e.end);
+    for (const e of edits) {
+        out = out.slice(0, e.start) + e.replacement + out.slice(e.end);
+    }
 
-    if (out !== original) fs.writeFileSync(file, out);
+    if (out !== original) {
+        fs.writeFileSync(file, out);
+    }
 
     return edits.length;
 }
@@ -431,7 +483,9 @@ function main() {
     if (dups.length) {
         console.log(`--merge: collapsing ${dups.length} duplicate English value(s):`);
 
-        for (const r of dups) console.log(`  ${r.file}: ${JSON.stringify(r.en)} ← keeping ${JSON.stringify(r.rus[0])} (dropping ${r.rus.slice(1).map(s => JSON.stringify(s)).join(', ')})`);
+        for (const r of dups) {
+            console.log(`  ${r.file}: ${JSON.stringify(r.en)} ← keeping ${JSON.stringify(r.rus[0])} (dropping ${r.rus.slice(1).map(s => JSON.stringify(s)).join(', ')})`);
+        }
 
         console.log('');
     } else {
@@ -454,7 +508,9 @@ function main() {
         console.log('--dry-run; not modifying anything.');
         console.log('Would rewrite JSON pairs:');
 
-        for (const p of JSON_PAIRS) console.log(`  ${p.en}  +  ${p.ru}`);
+        for (const p of JSON_PAIRS) {
+            console.log(`  ${p.en}  +  ${p.ru}`);
+        }
 
         console.log(`Would scan ${collectSourceFiles().length} source file(s).`);
 

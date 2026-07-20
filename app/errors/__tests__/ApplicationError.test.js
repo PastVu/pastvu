@@ -3,9 +3,9 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-import { ApplicationError } from '../';
-import constants from '../constants';
-import errorMsgs from '../intl';
+import { ApplicationError } from '../index.js';
+import constants from '../constants.js';
+import errorMsgs from '../intl.js';
 
 describe('applicationError test', () => {
     it('should throw default message', () => {

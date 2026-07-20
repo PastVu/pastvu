@@ -3,16 +3,19 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-const i18next = require('i18next');
-const { parseCookie } = require('cookie');
-const Negotiator = require('negotiator');
-const config = require('../config');
-const translationsEn = require('../public/js/lang/i18n.en.json');
-const translationsRu = require('../public/js/lang/i18n.ru.json');
-const mailEn = require('../views/mail/i18n.en.json');
-const mailRu = require('../views/mail/i18n.ru.json');
-const statusEn = require('../views/status/i18n.en.json');
-const statusRu = require('../views/status/i18n.ru.json');
+import fs from 'fs';
+import i18next from 'i18next';
+import { parseCookie } from 'cookie';
+import Negotiator from 'negotiator';
+import config from '../config/server.js';
+
+const readJSON = relPath => JSON.parse(fs.readFileSync(new URL(relPath, import.meta.url), 'utf8'));
+const translationsEn = readJSON('../public/js/lang/i18n.en.json');
+const translationsRu = readJSON('../public/js/lang/i18n.ru.json');
+const mailEn = readJSON('../views/mail/i18n.en.json');
+const mailRu = readJSON('../views/mail/i18n.ru.json');
+const statusEn = readJSON('../views/status/i18n.en.json');
+const statusRu = readJSON('../views/status/i18n.ru.json');
 
 const DEFAULT_LANG = 'en';
 const SUPPORTED = config.locales || ['ru', 'en'];
@@ -227,7 +230,7 @@ function i18nLocals(req, res, next) {
     next();
 }
 
-module.exports = {
+export {
     getT, t, userLang, langFromHandshake, langFromRequest, pickLang, init,
     OG_LOCALES, ogLocale, pickRegionTitle, i18nLocals,
 };

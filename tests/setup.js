@@ -3,12 +3,18 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-import connectDb, { waitDb } from '../controllers/connection';
-import mongoose from 'mongoose';
-import { UserSettings } from '../models/UserSettings';
+import { jest } from '@jest/globals';
+
+jest.unstable_mockModule('../controllers/mail.js', () => import('../controllers/__mocks__/mail.js'));
+
+const { default: connectDb, waitDb } = await import('../controllers/connection.js');
+const { default: mongoose } = await import('mongoose');
+// UserSettings is a live binding: null until the DB connection registers the
+// model. Keep the namespace and dereference at call time (destructuring here
+// would capture the pre-connection null).
+const UserSettingsModule = await import('../models/UserSettings.js');
 
 jest.setTimeout(10000);
-jest.mock('../controllers/mail');
 
 // Runs before any of the tests in test file run.
 beforeAll(async () => {
@@ -54,7 +60,7 @@ async function seedDatabase() {
     // it in model and populate on init if collection is empty.
 
     // Populate UserSettings.
-    await UserSettings.insertMany([
+    await UserSettingsModule.UserSettings.insertMany([
         { key: 'subscr_auto_reply', val: true, vars: [true, false], desc: 'Автоподписка при комментировании темы' },
         { key: 'subscr_throttle', val: 3 * 60 * 60 * 1000, vars: [5 * 60 * 1000, 30 * 60 * 1000, 60 * 60 * 1000, 3 * 60 * 60 * 1000, 6 * 60 * 60 * 1000, 24 * 60 * 60 * 1000], desc: 'Минимальный интервал между отправками письма с уведомлением' },
         { key: 'r_f_photo_user_gal', val: true, vars: [true, false], desc: 'Фильтровать галерею пользователя на странице фото' },

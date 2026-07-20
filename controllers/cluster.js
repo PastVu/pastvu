@@ -5,13 +5,13 @@
 
 import _ from 'lodash';
 import log4js from 'log4js';
-import Utils from '../commons/Utils';
+import Utils from '../commons/Utils.js';
 import constants from './constants.js';
-import { waitDb } from './connection';
-import { Photo } from '../models/Photo';
-import { Cluster, ClusterPaint, ClusterParams } from '../models/Cluster';
-import { ApplicationError, AuthorizationError, BadParamsError } from '../app/errors';
-import { runJob } from './queue';
+import { waitDb } from './connection.js';
+import { Photo } from '../models/Photo.js';
+import { Cluster, ClusterPaint, ClusterParams } from '../models/Cluster.js';
+import { ApplicationError, AuthorizationError, BadParamsError } from '../app/errors/index.js';
+import { runJob } from './queue.js';
 
 const logger = log4js.getLogger('cluster.js');
 

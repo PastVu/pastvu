@@ -6,8 +6,8 @@
 import _ from 'lodash';
 import log4js from 'log4js';
 
-import { UserObjectRel } from '../models/UserStates';
-import { Comment, CommentN } from '../models/Comment';
+import { UserObjectRel } from '../models/UserStates.js';
+import { Comment, CommentN } from '../models/Comment.js';
 
 const logger = log4js.getLogger('userobjectrel.js');
 

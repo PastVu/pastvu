@@ -7,11 +7,11 @@ import ms from 'ms';
 import _ from 'lodash';
 import bcrypt from 'bcrypt';
 import { Schema } from 'mongoose';
-import constants from '../app/errors/constants';
-import NotFoundError from '../app/errors/NotFound';
-import AuthenticationError from '../app/errors/Authentication';
-import { registerModel } from '../controllers/connection';
-import Utils from '../commons/Utils';
+import constants from '../app/errors/constants.js';
+import NotFoundError from '../app/errors/NotFound.js';
+import AuthenticationError from '../app/errors/Authentication.js';
+import { registerModel } from '../controllers/connection.js';
+import Utils from '../commons/Utils.js';
 
 const SALT_ROUNDS = 10;
 const MAX_LOGIN_ATTEMPTS = 10;

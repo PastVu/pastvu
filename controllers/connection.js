@@ -5,10 +5,12 @@
 
 import ms from 'ms';
 import log4js from 'log4js';
-import { ApplicationError } from '../app/errors';
-import constantsError from '../app/errors/constants';
+import mongoose from 'mongoose';
+import Redis from 'ioredis';
+import { ApplicationError } from '../app/errors/index.js';
+import constantsError from '../app/errors/constants.js';
 import exitHook from 'async-exit-hook';
-import { checkPendingMigrations } from './migration';
+import { checkPendingMigrations } from './migration.js';
 
 const modelPromises = [];
 let connectionPromises;
@@ -61,7 +63,6 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
     connectionPromises = [];
 
     if (mongo) {
-        const mongoose = require('mongoose');
         const { uri, maxPoolSize = 1 } = mongo;
         let connErrorLogLevel = 'error';
 
@@ -147,8 +148,6 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
         let connectedOnce = false;
 
         connectionPromises.push(new Promise((resolve, reject) => {
-            const Redis = require('ioredis');
-
             config.retryStrategy = function (times) {
                 if (!totalRetryTime) {
                     // Log warning on loosing connection.

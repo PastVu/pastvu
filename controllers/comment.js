@@ -6,16 +6,16 @@
 import ms from 'ms';
 import _ from 'lodash';
 import log4js from 'log4js';
-import Utils from '../commons/Utils';
-import constants from './constants';
-import constantsError from '../app/errors/constants';
-import * as session from './_session';
-import { giveReasonTitle } from './reason';
-import * as photoController from './photo';
-import * as subscrController from './subscr';
+import Utils from '../commons/Utils.js';
+import constants from './constants.js';
+import constantsError from '../app/errors/constants.js';
+import * as session from './_session.js';
+import { giveReasonTitle } from './reason.js';
+import * as photoController from './photo.js';
+import * as subscrController from './subscr.js';
 import * as regionController from './region.js';
 import * as actionLogController from './actionlog.js';
-import * as userObjectRelController from './userobjectrel';
+import * as userObjectRelController from './userobjectrel.js';
 import {
     ApplicationError,
     AuthorizationError,
@@ -23,13 +23,13 @@ import {
     InputError,
     NotFoundError,
     NoticeError,
-} from '../app/errors';
+} from '../app/errors/index.js';
 
-import { News } from '../models/News';
-import { User } from '../models/User';
-import { Photo } from '../models/Photo';
-import { Counter } from '../models/Counter';
-import { Comment, CommentN } from '../models/Comment';
+import { News } from '../models/News.js';
+import { User } from '../models/User.js';
+import { Photo } from '../models/Photo.js';
+import { Counter } from '../models/Counter.js';
+import { Comment, CommentN } from '../models/Comment.js';
 
 const dayMS = ms('1d');
 const commentMaxLength = 12e3;

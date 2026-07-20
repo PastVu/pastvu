@@ -11,15 +11,15 @@ import path from 'path';
 import util from 'util';
 import log4js from 'log4js';
 import moment from 'moment';
-import config from '../config';
-import constants from './constants';
-import Utils from '../commons/Utils';
+import config from '../config/server.js';
+import constants from './constants.js';
+import Utils from '../commons/Utils.js';
 import childProcess from 'child_process';
-import { Photo, PhotoConveyer, PhotoConveyerError, STPhotoConveyer } from '../models/Photo';
-import { User } from '../models/User';
-import constantsError from '../app/errors/constants';
-import { ApplicationError, AuthorizationError } from '../app/errors';
-import { runJob } from './queue';
+import { Photo, PhotoConveyer, PhotoConveyerError, STPhotoConveyer } from '../models/Photo.js';
+import { User } from '../models/User.js';
+import constantsError from '../app/errors/constants.js';
+import { ApplicationError, AuthorizationError } from '../app/errors/index.js';
+import { runJob } from './queue.js';
 import exitHook from 'async-exit-hook';
 
 const execAsync = util.promisify(childProcess.exec);
@@ -37,7 +37,7 @@ const sourceDir = path.join(config.storePath, 'private/photos/');
 const publicDir = path.join(config.storePath, 'public/photos/');
 const protectedDir = path.join(config.storePath, 'protected/photos/');
 const coveredDir = path.join(config.storePath, 'publicCovered/photos/');
-const waterDir = path.join(__dirname, '/../misc/watermark/');
+const waterDir = path.join(import.meta.dirname, '/../misc/watermark/');
 const waterFontPath = path.normalize(waterDir + 'AdobeFanHeitiStd-Bold.otf');
 
 const maxWorking = 4; // Possible to convert in parallel
