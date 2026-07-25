@@ -3,10 +3,9 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-import { jest } from '@jest/globals';
-import { PhotoHistory } from '../../models/Photo.js';
-import photo from '../photo.js';
-import testHelpers from '../../tests/testHelpers.js';
+import { PhotoHistory } from '../../models/Photo';
+import photo from '../photo';
+import testHelpers from '../../tests/testHelpers';
 
 describe('photo', () => {
     describe('giveObjHist - original filename', () => {

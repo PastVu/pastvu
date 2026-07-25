@@ -3,8 +3,8 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-import { User, UserConfirm } from '../models/User.js';
-import auth from '../controllers/auth.js';
+import { User, UserConfirm } from '../models/User';
+import auth from '../controllers/auth';
 
 /**
  * Create test user using auth controller for consistency.

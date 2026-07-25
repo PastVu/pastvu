@@ -3,12 +3,12 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-import config from '../config/server.js';
-import { waitDb } from './connection.js';
-import { Settings } from '../models/Settings.js';
-import { UserSettings } from '../models/UserSettings.js';
-import { Cluster } from '../models/Cluster.js';
-import constants from './constants.js';
+import config from '../config';
+import { waitDb } from './connection';
+import { Settings } from '../models/Settings';
+import { UserSettings } from '../models/UserSettings';
+import { Cluster } from '../models/Cluster';
+import constants from './constants';
 import { centerOfMass as turfCenter, points as turfPoints } from '@turf/turf';
 
 export const clientParams = {};

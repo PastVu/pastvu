@@ -5,11 +5,11 @@
 
 import _ from 'lodash';
 import log4js from 'log4js';
-import config from '../config/server.js';
+import config from '../config';
 import nodemailer from 'nodemailer';
-import constantsError from '../app/errors/constants.js';
-import { ApplicationError } from '../app/errors/index.js';
-import Utils from '../commons/Utils.js';
+import constantsError from '../app/errors/constants';
+import { ApplicationError } from '../app/errors';
+import Utils from '../commons/Utils';
 
 const { mail: mailConf } = config;
 

@@ -4,7 +4,7 @@
  */
 
 import path from 'path';
-import Utils from '../commons/Utils.js';
+import Utils from '../commons/Utils';
 
 let tpls = [];
 

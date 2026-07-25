@@ -3,13 +3,13 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-import { News } from '../../models/News.js';
-import { CommentN } from '../../models/Comment.js';
-import { BadParamsError, AuthorizationError, NotFoundError, NoticeError } from '../../app/errors/index.js';
-import constants from '../../app/errors/constants.js';
-import admin from '../admin.js';
-import comment from '../comment.js';
-import testHelpers from '../../tests/testHelpers.js';
+import { News } from '../../models/News';
+import { CommentN } from '../../models/Comment';
+import { BadParamsError, AuthorizationError, NotFoundError, NoticeError } from '../../app/errors';
+import constants from '../../app/errors/constants';
+import admin from '../admin';
+import comment from '../comment';
+import testHelpers from '../../tests/testHelpers';
 
 describe('admin', () => {
     beforeEach(async () => {

@@ -4,8 +4,8 @@
  */
 
 import { Schema } from 'mongoose';
-import constants from '../controllers/constants.js';
-import { registerModel } from '../controllers/connection.js';
+import constants from '../controllers/constants';
+import { registerModel } from '../controllers/connection';
 
 export let Comment = null;
 export let CommentN = null;

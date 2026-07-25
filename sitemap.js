@@ -8,13 +8,13 @@ import _ from 'lodash';
 import path from 'path';
 import zlib from 'zlib';
 import log4js from 'log4js';
-import config from './config/server.js';
-import Utils from './commons/Utils.js';
-import { ready as regionsReady, getObjRegionList, giveListPublic as giveRegionsListPublic } from './controllers/region.js';
+import config from './config';
+import Utils from './commons/Utils';
+import { ready as regionsReady, getObjRegionList, giveListPublic as giveRegionsListPublic } from './controllers/region';
 
-import connectDb from './controllers/connection.js';
-import './models/_initValues.js';
-import { Photo } from './models/Photo.js';
+import connectDb from './controllers/connection';
+import './models/_initValues';
+import { Photo } from './models/Photo';
 
 const logger = log4js.getLogger('sitemap');
 const { sitemapPath, sitemapInterval, sitemapGenerateOnStart, client: { origin } } = config;

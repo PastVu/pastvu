@@ -38,16 +38,14 @@ export function pugToHtml(seekPath) {
 }
 
 // Middleware for compiling requested .css from a sibling .less on demand, usually for development.
+// less is a devDep, so require it lazily — production should not call this factory.
 export function lessToCss(styleDir) {
-    // less is a devDep loaded on demand — production never calls this handler.
-    let lessPromise;
+    const less = require('less');
 
     return async (req, res, next) => {
         if (!req.path.endsWith('.css')) {
             return next();
         }
-
-        const { default: less } = await (lessPromise ??= import('less'));
 
         const lessPath = path.join(styleDir, req.path.replace(/\.css$/, '.less'));
 

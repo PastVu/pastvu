@@ -6,7 +6,7 @@
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
 // Substitute alternate configuration.
-process.argv.push('--config', import.meta.dirname + '/test.config.cjs');
+process.argv.push('--config', __dirname + '/test.config.js');
 
 // Define mongodb-memory-server version to use in tests.
 process.env.MONGOMS_VERSION = '4.4.29';

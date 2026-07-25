@@ -3,8 +3,8 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-import Utils from '../Utils.js';
-import config from '../../config/server.js';
+import Utils from '../Utils';
+import config from '../../config';
 
 const origin = config.client.origin;
 const host = config.client.host;

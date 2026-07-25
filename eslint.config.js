@@ -3,12 +3,11 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-import globals from 'globals';
-import js from '@eslint/js';
-import jsdocPlugin from 'eslint-plugin-jsdoc';
-import jestPlugin from 'eslint-plugin-jest';
-import headersPlugin from 'eslint-plugin-headers';
-import nPlugin from 'eslint-plugin-n';
+const globals = require('globals');
+const js = require('@eslint/js');
+const jsdocPlugin = require('eslint-plugin-jsdoc');
+const jestPlugin = require('eslint-plugin-jest');
+const headersPlugin = require('eslint-plugin-headers');
 
 const HEADER_CONTENT = 'Copyright: The PastVu contributors.\nGNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)';
 
@@ -25,11 +24,13 @@ const sharedLanguageOptions = {
     },
 };
 
-export default [
+module.exports = [
     {
         ignores: [
             '.git/**',
             '.idea/**',
+            'babel/output.js',
+            'bin/**',
             'logs/**',
             'misc/**',
             'views/**',
@@ -479,19 +480,5 @@ export default [
         rules: {
             'headers/header-format': 0,
         },
-    },
-    // Native ESM: relative imports must carry explicit extensions (server code only;
-    // public/ is AMD and has no import statements).
-    {
-        files: ['*.js', 'app/**/*.js', 'controllers/**/*.js', 'commons/**/*.js', 'models/**/*.js', 'tests/**/*.js', 'bin/**/*.js'],
-        plugins: { n: nPlugin },
-        rules: {
-            'n/file-extension-in-import': ['error', 'always'],
-        },
-    },
-    // CommonJS islands.
-    {
-        files: ['**/*.cjs', 'config/**/*.js', 'migrations/**/*.js'],
-        languageOptions: { sourceType: 'commonjs' },
     },
 ];

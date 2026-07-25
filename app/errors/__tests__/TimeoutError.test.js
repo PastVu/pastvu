@@ -3,9 +3,9 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-import { TimeoutError } from '../index.js';
-import constants from '../constants.js';
-import errorMsgs from '../intl.js';
+import { TimeoutError } from '../';
+import constants from '../constants';
+import errorMsgs from '../intl';
 
 describe('timeoutError', () => {
     it('should throw default timeout message', () => {

@@ -5,14 +5,14 @@
 
 import moment from 'moment';
 import log4js from 'log4js';
-import config from './config/server.js';
-import connectDb from './controllers/connection.js';
+import config from './config';
+import connectDb from './controllers/connection';
 
-import { ready as mailReady } from './controllers/mail.js';
-import { ready as subscrReady } from './controllers/subscr.js';
-import { ready as settingsReady } from './controllers/settings.js';
+import { ready as mailReady } from './controllers/mail';
+import { ready as subscrReady } from './controllers/subscr';
+import { ready as settingsReady } from './controllers/settings';
 
-import './models/_initValues.js';
+import './models/_initValues';
 
 export async function configure(startStamp) {
     const logger = log4js.getLogger('notifier');

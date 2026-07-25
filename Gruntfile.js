@@ -6,16 +6,16 @@
 'use strict';
 
 module.exports = function (grunt) {
+    require('./bin/run');
+
     const fs = require('fs');
     const path = require('path');
+    const Utils = require('./commons/Utils');
     const env = grunt.option('env') || 'production'; // Например, --env testing
     const currentDir = path.normalize(path.resolve('./') + '/');
     const targetDir = path.normalize(currentDir + 'appBuild/');
-    const randomString = length => Array.from(
-        { length },
-        () => '0123456789abcdefghijklmnopqrstuvwxyz'[Math.floor(Math.random() * 36)]
-    ).join('');
-    const hash = randomString(5);
+    const babelConfig = require('./babel/server.config');
+    const hash = Utils.randomString(5);
 
     grunt.file.defaultEncoding = 'utf8';
 
@@ -48,7 +48,7 @@ module.exports = function (grunt) {
         },
         exec: {
             buildjs: {
-                command: 'node build.cjs',
+                command: 'node build.js',
                 stdout: true,
                 stderr: true,
             },
@@ -176,6 +176,26 @@ module.exports = function (grunt) {
                 ],
             },
         },
+        babel: {
+            options: { ...babelConfig },
+            dist: {
+                files: [
+                    {
+                        expand: true,
+                        src: [ // May be array of regexp, or github.com/isaacs/node-glob
+                            '@(app|downloader|uploader|sitemap|notifier|worker).js',
+                            'controllers/!(systemjs|api|apilog).js',
+                            'commons/Utils.js',
+                            'models/*.js',
+                            'app/*.js',
+                            'app/webapi/*.js',
+                            'app/errors/*.js',
+                        ],
+                        dest: targetDir,
+                    },
+                ],
+            },
+        },
         compress: {
             main: {
                 options: {
@@ -199,9 +219,8 @@ module.exports = function (grunt) {
                     src: [
                         '.*.js',
                         '*.js',
-                        '.*.cjs',
-                        '*.cjs',
                         'app/**/*.js',
+                        'babel/*.js',
                         'controllers/**/*.js',
                         'commons/**/*.js',
                         'models/**/*.js',
@@ -225,7 +244,7 @@ module.exports = function (grunt) {
         },
         stylelint: {
             options: {
-                configFile: '.stylelintrc.cjs',
+                configFile: '.stylelintrc.js',
                 fix: grunt.option('fix'),
             },
             all: [
@@ -240,6 +259,7 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-string-replace');
     grunt.loadNpmTasks('grunt-exec');
     grunt.loadNpmTasks('grunt-mkdir');
+    grunt.loadNpmTasks('grunt-babel');
     grunt.loadNpmTasks('grunt-eslint');
     grunt.loadNpmTasks('grunt-stylelint');
     grunt.loadNpmTasks('grunt-contrib-uglify');
@@ -254,6 +274,7 @@ module.exports = function (grunt) {
         'uglify:publicApps',
         'uglify:publicJs',
         'copy',
+        'babel',
         'exec:movePublic',
         'pug:compileMainPugs',
         'clean:publicTpl',
@@ -277,13 +298,11 @@ module.exports = function (grunt) {
     grunt.registerTask('copy', 'Copy source files into the build directory', () => {
         const patterns = [
             'app/**', 'bin/**', 'migrations/**', 'commons/**', 'misc/watermark/**',
-            'controllers/*.js', 'npm-shrinkwrap.json',
-            '@(app|downloader|uploader|sitemap|notifier|worker).js',
-            'models/*.js',
+            'controllers/systemjs.js', 'npm-shrinkwrap.json',
             'config/@(client|server|log4js|migrate-mongo|default.config).js',
             'config/package.json',
             'views/app.pug', 'views/api/**', 'views/includes/**', 'views/mail/**', 'views/status/**', 'views/diff/**',
-            'api.cjs', 'package.json', 'README',
+            'api.js', 'package.json', 'README',
         ];
 
         for (const pattern of patterns) {

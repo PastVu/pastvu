@@ -3,14 +3,10 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-import fs from 'fs';
-import path from 'path';
-import { parse } from '@babel/parser';
-import babelTraverse from '@babel/traverse';
-
-const traverse = babelTraverse.default ?? babelTraverse;
-
-const readJSON = relPath => JSON.parse(fs.readFileSync(new URL(relPath, import.meta.url), 'utf8'));
+const fs = require('fs');
+const path = require('path');
+const parser = require('@babel/parser');
+const traverse = require('@babel/traverse').default;
 
 // Regression guard: every English i18n key called from runtime code must
 // resolve to a Russian translation. Mirrors the production i18next config:
@@ -18,27 +14,27 @@ const readJSON = relPath => JSON.parse(fs.readFileSync(new URL(relPath, import.m
 // back to `translation`, and CLDR suffixes apply to plural keys. JS call sites
 // are extracted via AST; pug call sites via a small tokeniser.
 
-const ROOT = path.resolve(import.meta.dirname, '../..');
+const ROOT = path.resolve(__dirname, '../..');
 const I18N_NAMES = new Set(['i18n', 't']);
 
 const RU = {
-    translation: readJSON('../../public/js/lang/i18n.ru.json'),
-    mail: readJSON('../../views/mail/i18n.ru.json'),
-    status: readJSON('../../views/status/i18n.ru.json'),
+    translation: require('../../public/js/lang/i18n.ru.json'),
+    mail: require('../../views/mail/i18n.ru.json'),
+    status: require('../../views/status/i18n.ru.json'),
 };
 
 // Identity entries in the en.json files — keys that the developer marked as
 // "rendered the same in both languages" (e.g. 'E-mail:'). Treat these as
 // satisfying the completeness requirement even without a ru.json mirror.
 const EN = {
-    translation: readJSON('../../public/js/lang/i18n.en.json'),
-    mail: readJSON('../../views/mail/i18n.en.json'),
-    status: readJSON('../../views/status/i18n.en.json'),
+    translation: require('../../public/js/lang/i18n.en.json'),
+    mail: require('../../views/mail/i18n.en.json'),
+    status: require('../../views/status/i18n.en.json'),
 };
 
 const ROOTS = [
     'app', 'commons', 'controllers', 'models', 'public/js', 'sitemap', 'views',
-    'api.cjs', 'app.js', 'downloader.js', 'notifier.js', 'sitemap.js',
+    'api.js', 'app.js', 'downloader.js', 'notifier.js', 'sitemap.js',
     'uploader.js', 'worker.js',
 ];
 
@@ -114,7 +110,7 @@ function walk(dir, out) {
 
         if (stat.isDirectory()) {
             walk(p, out);
-        } else if (/\.(c?js|pug)$/.test(p)) {
+        } else if (/\.(js|pug)$/.test(p)) {
             out.push(p);
         }
     }
@@ -136,7 +132,7 @@ function collectFiles() {
 
         if (stat.isDirectory()) {
             walk(abs, files);
-        } else if (/\.(c?js|pug)$/.test(abs)) {
+        } else if (/\.(js|pug)$/.test(abs)) {
             files.push(abs);
         }
     }
@@ -246,7 +242,7 @@ function extractFromJs(file) {
     let ast;
 
     try {
-        ast = parse(code, {
+        ast = parser.parse(code, {
             sourceType: 'unambiguous',
             allowReturnOutsideFunction: true,
             errorRecovery: true,
@@ -445,7 +441,7 @@ function extractFromPug(file) {
 
 function collectMissing() {
     const files = collectFiles();
-    const calls = files.flatMap(f => /\.c?js$/.test(f) ? extractFromJs(f) : extractFromPug(f));
+    const calls = files.flatMap(f => f.endsWith('.js') ? extractFromJs(f) : extractFromPug(f));
     const missing = new Map();
 
     for (const { key, ns, file, line } of calls) {

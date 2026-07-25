@@ -35,6 +35,10 @@ public/tpl/**/*.html
 ######################
 public/style/**/*.css
 
+# Output from babel/transpile #
+######################
+babel/output*.js
+
 # Sentry Config File
 .sentryclirc
 

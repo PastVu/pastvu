@@ -5,9 +5,9 @@
 
 import _ from 'lodash';
 import http from 'http';
-import { t as translate } from '../../commons/i18n.js';
-import errorMsgs from './intl.js';
-import constants from './constants.js';
+import { t as translate } from '../../commons/i18n';
+import errorMsgs from './intl';
+import constants from './constants';
 
 const CAPTURE_STACK_TRACE_SUPPORT = Boolean(Error.captureStackTrace);
 const FIREFOX_ERROR_INFO = /@(.+?):(\d+):(\d+)$/;

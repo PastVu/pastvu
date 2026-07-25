@@ -4,8 +4,8 @@
  */
 
 import log4js from 'log4js';
-import { waitDb } from './connection.js';
-import { ApiLog } from '../models/ApiLog.js';
+import { waitDb } from './connection';
+import { ApiLog } from '../models/ApiLog';
 
 const logger = log4js.getLogger('api.js');
 let bulk = [];

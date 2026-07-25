@@ -9,36 +9,30 @@ import path from 'path';
 import moment from 'moment';
 import fs from 'fs';
 import log4js from 'log4js';
-import config from './config/server.js';
+import config from './config';
 import express from 'express';
 import { Server } from 'socket.io';
-import Utils from './commons/Utils.js';
-import { i18nLocals } from './commons/i18n.js';
-import connectDb, { waitDb } from './controllers/connection.js';
-import * as session from './controllers/_session.js';
-import CoreServer from './controllers/serviceConnector.js';
-import { handleSocketConnection, registerSocketRequestHandler } from './app/request.js';
+import Utils from './commons/Utils';
+import { i18nLocals } from './commons/i18n';
+import connectDb, { waitDb } from './controllers/connection';
+import * as session from './controllers/_session';
+import CoreServer from './controllers/serviceConnector';
+import { handleSocketConnection, registerSocketRequestHandler } from './app/request';
 import exitHook from 'async-exit-hook';
-import { JobCompletionListener } from './controllers/queue.js';
+import { JobCompletionListener } from './controllers/queue';
 
-import { schedulePhotosTasks } from './controllers/photo.js';
-import { ready as mailReady } from './controllers/mail.js';
-import { ready as authReady } from './controllers/auth.js';
-import { ready as regionReady, scheduleRegionStatQueueDrain } from './controllers/region.js';
-import { ready as subscrReady } from './controllers/subscr.js';
-import { ready as settingsReady } from './controllers/settings.js';
-import * as routes from './controllers/routes.js';
-import * as ourMiddlewares from './controllers/middleware.js';
-import { converterStarter } from './controllers/converter.js';
-import { ready as reasonsReady } from './controllers/reason.js';
-import compression from 'compression';
-import serveFavicon from 'serve-favicon';
-import rewrite from 'express-urlrewrite';
-import { createProxyMiddleware } from 'http-proxy-middleware';
-import basicAuthConnect from 'basic-auth-connect';
-import serveIndex from 'serve-index';
+import { schedulePhotosTasks } from './controllers/photo';
+import { ready as mailReady } from './controllers/mail';
+import { ready as authReady } from './controllers/auth';
+import { ready as regionReady, scheduleRegionStatQueueDrain } from './controllers/region';
+import { ready as subscrReady } from './controllers/subscr';
+import { ready as settingsReady } from './controllers/settings';
+import * as routes from './controllers/routes';
+import * as ourMiddlewares from './controllers/middleware';
+import { converterStarter } from './controllers/converter';
+import { ready as reasonsReady } from './controllers/reason';
 
-import './models/_initValues.js';
+import './models/_initValues';
 
 export async function configure(startStamp) {
     const {
@@ -122,7 +116,7 @@ export async function configure(startStamp) {
     app.use(ourMiddlewares.responseHeaderHook());
 
     if (config.gzip) {
-        app.use(compression());
+        app.use(require('compression')());
     }
 
     if (config.servePublic) {
@@ -134,7 +128,7 @@ export async function configure(startStamp) {
 
         // Favicon need to be placed before static, because it will written from disc once and will be cached
         // It would be served even on next step (at static), but in this case it would be written from disc on every req
-        app.use(serveFavicon(
+        app.use(require('serve-favicon')(
             path.join(pub, 'favicon.ico'), { maxAge: ms(env === 'development' ? '1s' : '2d') })
         );
 
@@ -146,6 +140,8 @@ export async function configure(startStamp) {
 
     if (config.serveStore) {
         const { default: got } = await import('got');
+        const rewrite = require('express-urlrewrite');
+        const { createProxyMiddleware } = require('http-proxy-middleware');
         const uploadServer = `http://${config.uploader.hostname || 'localhost'}:${config.uploader.port}`;
         const downloadServer = `http://${config.downloader.hostname || 'localhost'}:${config.downloader.port}`;
 
@@ -219,18 +215,14 @@ export async function configure(startStamp) {
     registerSocketRequestHandler(io); // Register handler for socket.io events
 
     if (env === 'development') {
-        // Deliberately a lazy import: tpl.js scans ./views/module at import time,
-        // which only exists in development (production builds precompile templates).
-        const { loadController: loadTplController } = await import('./controllers/tpl.js');
-
-        loadTplController(app);
+        require('./controllers/tpl').loadController(app);
     }
 
     if (config.serveLog) {
         app.use(
             '/nodelog',
-            basicAuthConnect(config.serveLogAuth.user, config.serveLogAuth.pass),
-            serveIndex(logPath, { icons: true }),
+            require('basic-auth-connect')(config.serveLogAuth.user, config.serveLogAuth.pass),
+            require('serve-index')(logPath, { icons: true }),
             express.static(logPath, { maxAge: 0, etag: false })
         );
     }

@@ -3,19 +3,17 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-import { jest } from '@jest/globals';
 import _ from 'lodash';
-import { UserObjectRel, UserNoty } from '../../models/UserStates.js';
-import testHelpers from '../../tests/testHelpers.js';
+import { UserObjectRel, UserNoty } from '../../models/UserStates';
+import { commentAdded, commentViewed, getUserObjectRel } from '../subscr';
+import profile from '../profile';
+import testHelpers from '../../tests/testHelpers';
 
 // Mock user settings, they will be used in profile.changeSetting.
-jest.unstable_mockModule('../settings.js', () => ({
+jest.mock('../settings', () => ({
     userSettingsDef: { 'subscr_disable_noty': false },
     userSettingsVars: { 'subscr_disable_noty': [true, false] },
 }));
-
-const { commentAdded, commentViewed, getUserObjectRel } = await import('../subscr.js');
-const { default: profile } = await import('../profile.js');
 
 describe('subscription', () => {
     beforeAll(() => {

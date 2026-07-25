@@ -3,14 +3,13 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-import { jest } from '@jest/globals';
 import _ from 'lodash';
-import { User, UserConfirm } from '../../models/User.js';
-import { send } from '../mail.js';
-import { AuthenticationError, InputError, BadParamsError, AuthorizationError } from '../../app/errors/index.js';
-import constants from '../../app/errors/constants.js';
-import auth from '../auth.js';
-import testHelpers from '../../tests/testHelpers.js';
+import { User, UserConfirm } from '../../models/User';
+import { send } from '../mail';
+import { AuthenticationError, InputError, BadParamsError, AuthorizationError } from '../../app/errors';
+import constants from '../../app/errors/constants';
+import auth from '../auth';
+import testHelpers from '../../tests/testHelpers';
 
 describe('authentication', () => {
     beforeAll(() => {

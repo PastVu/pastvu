@@ -4,8 +4,8 @@
  */
 
 import { Model } from 'mongoose';
-import { Settings } from './Settings.js';
-import { waitDb } from '../controllers/connection.js';
+import { Settings } from './Settings';
+import { waitDb } from '../controllers/connection';
 
 Model.saveUpsert = async function (findQuery, properties) {
     let doc = await this.findOne(findQuery).exec();

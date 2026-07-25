@@ -11,16 +11,16 @@ import http from 'http';
 import mimeMap from 'mime';
 import { LRUCache } from 'lru-cache';
 import log4js from 'log4js';
-import config from './config/server.js';
-import Utils from './commons/Utils.js';
+import config from './config';
+import Utils from './commons/Utils';
 import { parseCookie } from 'cookie';
 import contentDisposition from 'content-disposition';
-import CorePlug from './controllers/serviceConnectorPlug.js';
-import { ApplicationError, AuthorizationError, BadParamsError, NotFoundError } from './app/errors/index.js';
+import CorePlug from './controllers/serviceConnectorPlug';
+import { ApplicationError, AuthorizationError, BadParamsError, NotFoundError } from './app/errors';
 import exitHook from 'async-exit-hook';
 
-import connectDb, { dbRedis } from './controllers/connection.js';
-import { Download } from './models/Download.js';
+import connectDb, { dbRedis } from './controllers/connection';
+import { Download } from './models/Download';
 
 export async function configure(startStamp) {
     const {

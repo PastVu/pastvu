@@ -4,8 +4,8 @@
  */
 
 import _ from 'lodash';
-import constants from './constants.js';
-import ApplicationError from './Application.js';
+import constants from './constants';
+import ApplicationError from './Application';
 
 /**
  * Input error

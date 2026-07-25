@@ -6,16 +6,16 @@
 import ms from 'ms';
 import moment from 'moment';
 import log4js from 'log4js';
-import config from './config/server.js';
-import connectDb, { waitDb, syncAllIndexes } from './controllers/connection.js';
-import { checkPendingMigrations } from './controllers/migration.js';
-import { archiveExpiredSessions, calcUserStats } from './controllers/_session.js';
-import { convertPhotosAll } from './controllers/converter.js';
-import { clusterPhotosAll } from './controllers/cluster.js';
-import { calcRegionStats } from './controllers/region.js';
-import { createQueue } from './controllers/queue.js';
+import config from './config';
+import connectDb, { waitDb, syncAllIndexes } from './controllers/connection';
+import { checkPendingMigrations } from './controllers/migration';
+import { archiveExpiredSessions, calcUserStats } from './controllers/_session';
+import { convertPhotosAll } from './controllers/converter';
+import { clusterPhotosAll } from './controllers/cluster';
+import { calcRegionStats } from './controllers/region';
+import { createQueue } from './controllers/queue';
 
-import './controllers/systemjs.js';
+import './controllers/systemjs';
 
 const logger = log4js.getLogger('worker');
 

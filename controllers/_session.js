@@ -6,17 +6,17 @@
 import ms from 'ms';
 import _ from 'lodash';
 import log4js from 'log4js';
-import config from '../config/server.js';
-import Utils from '../commons/Utils.js';
-import * as regionController from './region.js';
+import config from '../config';
+import Utils from '../commons/Utils';
+import * as regionController from './region';
 import { parseCookie } from 'cookie';
-import { userSettingsDef, clientParams } from './settings.js';
-import { Session, SessionArchive } from '../models/Sessions.js';
-import { User } from '../models/User.js';
-import { Photo } from '../models/Photo.js';
-import { Comment, CommentN } from '../models/Comment.js';
-import constantsError from '../app/errors/constants.js';
-import { AuthorizationError, ApplicationError, BadParamsError, NotFoundError/*, TimeoutError*/ } from '../app/errors/index.js';
+import { userSettingsDef, clientParams } from './settings';
+import { Session, SessionArchive } from '../models/Sessions';
+import { User } from '../models/User';
+import { Photo } from '../models/Photo';
+import { Comment, CommentN } from '../models/Comment';
+import constantsError from '../app/errors/constants';
+import { AuthorizationError, ApplicationError, BadParamsError, NotFoundError/*, TimeoutError*/ } from '../app/errors';
 
 const logger = log4js.getLogger('session');
 const SESSION_COOKIE_KEY = 'past.sid'; // Session key in client cookies

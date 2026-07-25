@@ -4,8 +4,7 @@
  */
 
 import { Schema } from 'mongoose';
-import { registerModel } from '../controllers/connection.js';
-import { AnonymScheme } from './User.js';
+import { registerModel } from '../controllers/connection';
 
 export let Session = null;
 export let SessionArchive = null;
@@ -18,7 +17,7 @@ registerModel(db => {
             created: { type: Date, 'default': Date.now }, // Creation time
             stamp: { type: Date, 'default': Date.now }, // Time of last session activity
             user: { type: Schema.Types.ObjectId, ref: 'User', index: true }, // _id of registered user
-            anonym: AnonymScheme, // Object of anonym user, which is saved directly to session
+            anonym: require('./User').AnonymScheme, // Object of anonym user, which is saved directly to session
             data: { type: Schema.Types.Mixed, 'default': {} }, // Session date
         },
         { collection: 'sessions', strict: true }
@@ -32,7 +31,7 @@ registerModel(db => {
             archived: { type: Date, 'default': Date.now }, // Time of archivation
             archive_reason: { type: String }, // Reason for archiving: login | logout | destroy | expire
             user: { type: Schema.Types.ObjectId, ref: 'User', index: true }, // _id of registered user
-            anonym: AnonymScheme, // Object of anonym user, which is saved directly to session
+            anonym: require('./User').AnonymScheme, // Object of anonym user, which is saved directly to session
             data: { type: Schema.Types.Mixed, 'default': {} }, // Session date
         },
         { collection: 'sessions_archive', strict: true }

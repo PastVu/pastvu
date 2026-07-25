@@ -3,7 +3,7 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-import Utils from '../../commons/Utils.js';
+import Utils from '../../commons/Utils';
 
 export default Utils.reflectKeys({
     DENY: null,
