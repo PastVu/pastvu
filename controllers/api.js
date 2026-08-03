@@ -7,7 +7,7 @@
 
 import ms from 'ms';
 import { logIt as logAPI } from './apilog.js';
-import Utils from '../commons/Utils';
+import Utils from '../commons/Utils.js';
 
 let core;
 const REQUEST_SELF_LIFE = ms('60s');

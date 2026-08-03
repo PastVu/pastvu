@@ -10,18 +10,18 @@ import path from 'path';
 import pug from 'pug';
 import log4js from 'log4js';
 import moment from 'moment';
-import config from '../config';
-import Utils from '../commons/Utils';
-import { getT, langFromHandshake, pickLang } from '../commons/i18n';
-import * as session from './_session';
-import { send as sendMail } from './mail';
-import { userSettingsDef } from './settings';
-import { getRegionsArrPublicFromCache } from './region';
-import constants from '../app/errors/constants';
-import { AuthenticationError, AuthorizationError, BadParamsError, InputError } from '../app/errors';
+import config from '../config/server.js';
+import Utils from '../commons/Utils.js';
+import { getT, langFromHandshake, pickLang } from '../commons/i18n.js';
+import * as session from './_session.js';
+import { send as sendMail } from './mail.js';
+import { userSettingsDef } from './settings.js';
+import { getRegionsArrPublicFromCache } from './region.js';
+import constants from '../app/errors/constants.js';
+import { AuthenticationError, AuthorizationError, BadParamsError, InputError } from '../app/errors/index.js';
 
-import { User, UserConfirm } from '../models/User';
-import { Counter } from '../models/Counter';
+import { User, UserConfirm } from '../models/User.js';
+import { Counter } from '../models/Counter.js';
 
 moment.locale(config.lang);
 

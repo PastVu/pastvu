@@ -4,10 +4,10 @@
  */
 
 import _ from 'lodash';
-import { waitDb } from './connection';
-import { Reason } from '../models/Reason';
-import { UserAction } from '../models/UserAction';
-import { BadParamsError } from '../app/errors';
+import { waitDb } from './connection.js';
+import { Reason } from '../models/Reason.js';
+import { UserAction } from '../models/UserAction.js';
+import { BadParamsError } from '../app/errors/index.js';
 
 let reasonsHash = {};
 

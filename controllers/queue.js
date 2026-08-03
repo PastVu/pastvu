@@ -5,9 +5,9 @@
 
 import log4js from 'log4js';
 import { Queue, Worker, QueueEvents } from 'bullmq';
-import config from '../config';
-import constantsError from '../app/errors/constants';
-import { ApplicationError } from '../app/errors';
+import config from '../config/server.js';
+import constantsError from '../app/errors/constants.js';
+import { ApplicationError } from '../app/errors/index.js';
 import exitHook from 'async-exit-hook';
 
 const logger = log4js.getLogger('queue');

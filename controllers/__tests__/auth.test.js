@@ -4,12 +4,12 @@
  */
 
 import _ from 'lodash';
-import { User, UserConfirm } from '../../models/User';
-import { send } from '../mail';
-import { AuthenticationError, InputError, BadParamsError, AuthorizationError } from '../../app/errors';
-import constants from '../../app/errors/constants';
-import auth from '../auth';
-import testHelpers from '../../tests/testHelpers';
+import { User, UserConfirm } from '../../models/User.js';
+import { send } from '../mail.js';
+import { AuthenticationError, InputError, BadParamsError, AuthorizationError } from '../../app/errors/index.js';
+import constants from '../../app/errors/constants.js';
+import auth from '../auth.js';
+import testHelpers from '../../tests/testHelpers.js';
 
 describe('authentication', () => {
     beforeAll(() => {

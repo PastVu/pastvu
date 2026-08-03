@@ -9,30 +9,30 @@ import path from 'path';
 import moment from 'moment';
 import fs from 'fs';
 import log4js from 'log4js';
-import config from './config';
+import config from './config/server.js';
 import express from 'express';
 import { Server } from 'socket.io';
-import Utils from './commons/Utils';
-import { i18nLocals } from './commons/i18n';
-import connectDb, { waitDb } from './controllers/connection';
-import * as session from './controllers/_session';
-import CoreServer from './controllers/serviceConnector';
-import { handleSocketConnection, registerSocketRequestHandler } from './app/request';
+import Utils from './commons/Utils.js';
+import { i18nLocals } from './commons/i18n.js';
+import connectDb, { waitDb } from './controllers/connection.js';
+import * as session from './controllers/_session.js';
+import CoreServer from './controllers/serviceConnector.js';
+import { handleSocketConnection, registerSocketRequestHandler } from './app/request.js';
 import exitHook from 'async-exit-hook';
-import { JobCompletionListener } from './controllers/queue';
+import { JobCompletionListener } from './controllers/queue.js';
 
-import { schedulePhotosTasks } from './controllers/photo';
-import { ready as mailReady } from './controllers/mail';
-import { ready as authReady } from './controllers/auth';
-import { ready as regionReady, scheduleRegionStatQueueDrain } from './controllers/region';
-import { ready as subscrReady } from './controllers/subscr';
-import { ready as settingsReady } from './controllers/settings';
-import * as routes from './controllers/routes';
-import * as ourMiddlewares from './controllers/middleware';
-import { converterStarter } from './controllers/converter';
-import { ready as reasonsReady } from './controllers/reason';
+import { schedulePhotosTasks } from './controllers/photo.js';
+import { ready as mailReady } from './controllers/mail.js';
+import { ready as authReady } from './controllers/auth.js';
+import { ready as regionReady, scheduleRegionStatQueueDrain } from './controllers/region.js';
+import { ready as subscrReady } from './controllers/subscr.js';
+import { ready as settingsReady } from './controllers/settings.js';
+import * as routes from './controllers/routes.js';
+import * as ourMiddlewares from './controllers/middleware.js';
+import { converterStarter } from './controllers/converter.js';
+import { ready as reasonsReady } from './controllers/reason.js';
 
-import './models/_initValues';
+import './models/_initValues.js';
 
 export async function configure(startStamp) {
     const {

@@ -3,10 +3,10 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-import profile from '../profile';
-import { User } from '../../models/User';
-import { BadParamsError, AuthorizationError } from '../../app/errors';
-import testHelpers from '../../tests/testHelpers';
+import profile from '../profile.js';
+import { User } from '../../models/User.js';
+import { BadParamsError, AuthorizationError } from '../../app/errors/index.js';
+import testHelpers from '../../tests/testHelpers.js';
 
 describe('profile', () => {
     describe('save user ranks', () => {

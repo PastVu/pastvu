@@ -4,10 +4,10 @@
  */
 
 import _ from 'lodash';
-import { UserObjectRel, UserNoty } from '../../models/UserStates';
-import { commentAdded, commentViewed, getUserObjectRel } from '../subscr';
-import profile from '../profile';
-import testHelpers from '../../tests/testHelpers';
+import { UserObjectRel, UserNoty } from '../../models/UserStates.js';
+import { commentAdded, commentViewed, getUserObjectRel } from '../subscr.js';
+import profile from '../profile.js';
+import testHelpers from '../../tests/testHelpers.js';
 
 // Mock user settings, they will be used in profile.changeSetting.
 jest.mock('../settings', () => ({

@@ -6,12 +6,12 @@
 import _ from 'lodash';
 import util from 'util';
 import log4js from 'log4js';
-import config from '../../config';
-import * as methods from './methods';
-import Utils from '../../commons/Utils';
-import NotFoundError from '../errors/NotFound';
-import ApplicationError from '../errors/Application';
-import constants from '../../controllers/constants';
+import config from '../../config/server.js';
+import * as methods from './methods.js';
+import Utils from '../../commons/Utils.js';
+import NotFoundError from '../errors/NotFound.js';
+import ApplicationError from '../errors/Application.js';
+import constants from '../../controllers/constants.js';
 
 const methodsHash = Utils.flattenObject(methods);
 

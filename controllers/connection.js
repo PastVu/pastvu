@@ -5,10 +5,10 @@
 
 import ms from 'ms';
 import log4js from 'log4js';
-import { ApplicationError } from '../app/errors';
-import constantsError from '../app/errors/constants';
+import { ApplicationError } from '../app/errors/index.js';
+import constantsError from '../app/errors/constants.js';
 import exitHook from 'async-exit-hook';
-import { checkPendingMigrations } from './migration';
+import { checkPendingMigrations } from './migration.js';
 
 const modelPromises = [];
 let connectionPromises;

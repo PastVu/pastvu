@@ -4,7 +4,7 @@
  */
 
 import net from 'net';
-import { handleServiceRequest } from '../app/request';
+import { handleServiceRequest } from '../app/request.js';
 import exitHook from 'async-exit-hook';
 
 class ClientSocket {

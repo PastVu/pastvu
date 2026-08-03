@@ -5,7 +5,7 @@
 
 import log4js from 'log4js';
 import ms from 'ms';
-import migrateConfig from '../config/migrate-mongo';
+import migrateConfig from '../config/migrate-mongo.js';
 
 const logger = log4js.getLogger('migrate-mongo');
 const maxMigrationWaitTime = ms('120s');
