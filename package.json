@@ -110,7 +110,7 @@
         "grunt-stylelint": "0.21.0",
         "husky": "9.1.7",
         "jest": "30.4.2",
-        "less": "4.8.1",
+        "less": "4.9.0",
         "lint-staged": "17.3.0",
         "mongodb-memory-server": "11.2.0",
         "requirejs": "2.3.8",
