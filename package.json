@@ -51,7 +51,7 @@
         "@mapbox/geojson-area": "0.2.2",
         "@mapbox/geojson-rewind": "0.5.2",
         "@placemarkio/check-geojson": "0.1.14",
-        "@turf/turf": "7.3.5",
+        "@turf/turf": "7.4.0",
         "async-exit-hook": "2.0.1",
         "basic-auth-connect": "1.1.0",
         "bcrypt": "6.0.0",
