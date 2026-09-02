@@ -6,9 +6,8 @@
 import log4js from 'log4js';
 import { Queue, Worker, QueueEvents } from 'bullmq';
 import config from '../config/server.js';
-import constantsError from '../app/errors/constants.js';
-import { ApplicationError } from '../app/errors/index.js';
 import exitHook from 'async-exit-hook';
+import { SilenceWatchdog } from './watchdog.js';
 
 const logger = log4js.getLogger('queue');
 
@@ -16,6 +15,7 @@ const queueInstances = new Map();      // name -> Queue
 const workerInstances = new Map();     // name -> Worker
 const queueEventInstances = new Map(); // name -> QueueEvents
 const handlersByQueue = new Map();     // name -> Map(jobName -> handler)
+const watchdogs = new Set();
 
 const connection = {
     host: config.redis.host,
@@ -35,6 +35,12 @@ exitHook(cb => {
  */
 function shutdownQueues() {
     const closing = [];
+
+    for (const watchdog of watchdogs) {
+        watchdog.stop();
+    }
+
+    watchdogs.clear();
 
     for (const [name, worker] of workerInstances) {
         closing.push(worker.close().then(() => logger.info(`Closed worker for queue '${name}'`)));
@@ -64,6 +70,10 @@ function getQueue(name) {
 
     const queue = new Queue(name, { connection });
 
+    queue.on('error', err => {
+        logger.error(`Queue '${name}' producer reported error: ${err}`);
+    });
+
     queueInstances.set(name, queue);
 
     return queue;
@@ -83,6 +93,10 @@ function getQueueEvents(name) {
 
     const queueEvents = new QueueEvents(name, { connection });
 
+    queueEvents.on('error', err => {
+        logger.error(`Queue '${name}' events listener reported error: ${err}`);
+    });
+
     queueEventInstances.set(name, queueEvents);
 
     return queueEvents;
@@ -93,9 +107,15 @@ function getQueueEvents(name) {
  * supposed to be used on worker start.
  *
  * @param {string} name Name of the queue.
+ * @param {object} [opts]
+ * @param {number} [opts.silenceTimeout] For queues with regular periodic jobs:
+ *   if the worker neither processes nor finishes any job for this long, it is
+ *   considered silently dead (e.g. its blocking Redis connection is gone
+ *   without an error) and the process exits to get restarted by the
+ *   supervisor. Time spent inside a job handler doesn't count as silence.
  * @returns {{name: string, process: Function, add: Function}}
  */
-export async function createQueue(name) {
+export async function createQueue(name, { silenceTimeout } = {}) {
     const queueLogPrefix = `Queue '${name}'`;
     const queue = getQueue(name);
 
@@ -105,8 +125,23 @@ export async function createQueue(name) {
         logger.info(`${queueLogPrefix} is initialised`);
 
         const handlers = new Map();
+        let watchdog = null;
 
         handlersByQueue.set(name, handlers);
+
+        if (silenceTimeout) {
+            watchdog = new SilenceWatchdog({
+                name,
+                timeout: silenceTimeout,
+                onSilence: silentFor => {
+                    logger.fatal(`${queueLogPrefix} worker processed no jobs for ${Math.round(silentFor / 1000)}s, ` +
+                        'assuming its connection died silently. Exiting for supervisor to restart the process.');
+                    process.exit(1);
+                },
+            });
+            watchdogs.add(watchdog);
+            watchdog.start();
+        }
 
         const worker = new Worker(name, async job => {
             const handler = handlers.get(job.name);
@@ -115,7 +150,17 @@ export async function createQueue(name) {
                 throw new Error(`No handler registered for job '${job.name}' in queue '${name}'`);
             }
 
-            return handler(job);
+            if (!watchdog) {
+                return handler(job);
+            }
+
+            watchdog.markBusy();
+
+            try {
+                return await handler(job);
+            } finally {
+                watchdog.markIdle();
+            }
         }, { connection });
 
         worker.on('active', job => {
@@ -166,23 +211,51 @@ export async function createQueue(name) {
  * executed following regular task completion on worker instance.
  */
 export class JobCompletionListener {
-    constructor(queueName) {
+    /**
+     * @param {string} queueName
+     * @param {object} [opts]
+     * @param {number} [opts.silenceTimeout] For queues with regular periodic
+     *   jobs: if no completion event arrives for this long, the events
+     *   connection is considered silently dead and gets recreated.
+     */
+    constructor(queueName, { silenceTimeout } = {}) {
         this.queueName = queueName;
         this.queue = getQueue(queueName);
         this.queueEvents = getQueueEvents(queueName);
         this.jobCompletionCallbacks = new Map();
+        this.watchdog = silenceTimeout ? new SilenceWatchdog({
+            name: queueName,
+            timeout: silenceTimeout,
+            onSilence: silentFor => this.restartQueueEvents(silentFor),
+        }) : null;
     }
 
     /**
      * Initialise queue completion event listening.
      */
     init() {
+        this.attachCompletedHandler();
+
+        if (this.watchdog) {
+            watchdogs.add(this.watchdog);
+            this.watchdog.start();
+        }
+
+        logger.info(`Initiaise job completion event listening in '${this.queueName}' queue`);
+    }
+
+    attachCompletedHandler() {
         this.queueEvents.on('completed', async ({ jobId, returnvalue }) => {
+            if (this.watchdog) {
+                this.watchdog.beat();
+            }
+
             const job = await this.queue.getJob(jobId);
 
             if (!job) {
                 logger.error(`${jobId} can't be located, make sure you don't remove job on completion`);
-                throw new ApplicationError(constantsError.QUEUE_JOB_NOT_FOUND);
+
+                return;
             }
 
             if (!this.jobCompletionCallbacks.has(job.name)) {
@@ -196,7 +269,25 @@ export class JobCompletionListener {
 
             callback(result?.data || null);
         });
-        logger.info(`Initiaise job completion event listening in '${this.queueName}' queue`);
+    }
+
+    /**
+     * Replace the QueueEvents instance whose blocking connection appears to
+     * have died silently (no events despite regular periodic jobs).
+     *
+     * @param {number} silentFor Silence duration in ms.
+     */
+    restartQueueEvents(silentFor) {
+        logger.error(`No completion events received from '${this.queueName}' queue for ${Math.round(silentFor / 1000)}s, ` +
+            'assuming the events connection died silently. Recreating the listener.');
+
+        const stale = this.queueEvents;
+
+        queueEventInstances.delete(this.queueName);
+        this.queueEvents = getQueueEvents(this.queueName);
+        this.attachCompletedHandler();
+
+        stale.close().catch(err => logger.error(`Failed to close stale events listener of '${this.queueName}' queue: ${err}`));
     }
 
     /**

@@ -316,7 +316,11 @@ export async function configure(startStamp) {
     // Once db is connected, register callbacks for some periodic jobs run in
     // worker instance as well as other components jobs.
     waitDb.then(async () => {
-        const listener = new JobCompletionListener('session');
+        // archiveExpiredSessions completes every 5 minutes, but a long
+        // calcUserStats run can keep the single worker busy for a while, so
+        // give the events connection a generous hour before declaring it
+        // silently dead and recreating it.
+        const listener = new JobCompletionListener('session', { silenceTimeout: ms('1h') });
 
         listener.addCallback('archiveExpiredSessions', session.cleanArchivedSessions);
         listener.addCallback('calcUserStats', session.regetUsersAfterStatsUpdate);

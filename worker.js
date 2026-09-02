@@ -42,6 +42,9 @@ export async function configure(startStamp) {
     }).then(() => {
         setupSessionQueue();
         setupUserJobsQueue();
+    }).catch(err => {
+        logger.fatal(`Worker initialisation failed, queues are not processing: ${err && err.stack || err}`);
+        process.exit(1);
     });
 }
 
@@ -49,7 +52,10 @@ export async function configure(startStamp) {
  * Setup queue for session jobs.
  */
 function setupSessionQueue() {
-    createQueue('session').then(sessionQueue => {
+    // archiveExpiredSessions runs every 5 minutes, so a silent worker means
+    // its blocking connection died without an error (that once left the queue
+    // unprocessed for 2.5 months in production); exit to get restarted.
+    createQueue('session', { silenceTimeout: ms('15m') }).then(sessionQueue => {
         // session.archiveExpiredSessions
         sessionQueue.process('archiveExpiredSessions', job => archiveExpiredSessions(job.data));
 
@@ -61,14 +67,14 @@ function setupSessionQueue() {
             removeOnComplete: 2, // Needed to be able to retrieve it on global event listener (in different runner).
             removeOnFail: true,
             repeat: { every: ms('5m') },
-        });
+        }).catch(err => logger.error(`Adding archiveExpiredSessions periodic job failed: ${err}`));
 
         // Add calcUserStatsJob periodic job.
         sessionQueue.add('calcUserStats', {}, {
             removeOnComplete: 2,
             removeOnFail: true,
             repeat: { every: ms('1d') },
-        });
+        }).catch(err => logger.error(`Adding calcUserStats periodic job failed: ${err}`));
     });
 }
 
