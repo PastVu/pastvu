@@ -1,3 +1,3 @@
 {
-  "ignorePatterns": ["public/js/lib"]
+  "ignorePatterns": ["public/js/lib", "package-lock.json"]
 }
