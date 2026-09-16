@@ -135,6 +135,7 @@
     "Most photos are dated {{year}} — <b>{{count, number}}</b> in total": "Больше всего фотографий относится к {{year}} году, их <b>{{count, number}}</b>",
     "New photos today:": "Сегодня новых фотографий:",
     "New photos this week:": "За неделю новых фотографий:",
+    "Image count:": "Изображений:",
     "Comment count:": "Комментариев:",
     "New comments today:": "Сегодня новых комментариев:",
     "New comments this week:": "За неделю новых комментариев:",
