@@ -5,7 +5,10 @@
 
 import _ from 'lodash';
 import fs, { promises as fsAsync } from 'fs';
+import log4js from 'log4js';
 import path from 'path';
+
+const logger = log4js.getLogger('middleware.js');
 
 // Middleware for checking requested html, usually for development.
 // If such pug exists - compile it, if not - pass request to the next handler
@@ -27,7 +30,7 @@ export function pugToHtml(seekPath) {
                 if (err || !renderedHTML) {
                     next();
                 } else {
-                    console.log(`${req.url} compiled from pug`);
+                    logger.info(`${req.url} compiled from pug`);
                     res.status(200).send(renderedHTML);
                 }
             });

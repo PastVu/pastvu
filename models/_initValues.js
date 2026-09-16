@@ -3,9 +3,12 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
+import log4js from 'log4js';
 import { Model } from 'mongoose';
 import { Settings } from './Settings';
 import { waitDb } from '../controllers/connection';
+
+const logger = log4js.getLogger('_initValues.js');
 
 Model.saveUpsert = async function (findQuery, properties) {
     let doc = await this.findOne(findQuery).exec();
@@ -25,11 +28,11 @@ Model.saveUpsert = async function (findQuery, properties) {
 
 waitDb.then(() => {
     Settings.saveUpsert({ key: 'USE_OSM_API' }, { val: true, desc: 'OSM Active' })
-        .catch(err => console.log('Settings ' + err));
+        .catch(err => logger.error('Settings ' + err));
     Settings.saveUpsert({ key: 'USE_YANDEX_API' }, { val: true, desc: 'Yandex Active' })
-        .catch(err => console.log('Settings ' + err));
+        .catch(err => logger.error('Settings ' + err));
     Settings.saveUpsert({ key: 'REGISTRATION_ALLOWED' }, {
         val: true,
         desc: 'Open self-registration of new users',
-    }).catch(err => console.log('Settings ' + err));
+    }).catch(err => logger.error('Settings ' + err));
 });
