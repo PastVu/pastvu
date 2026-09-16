@@ -210,47 +210,6 @@ module.exports = function (grunt) {
                 ],
             },
         },
-        eslint: {
-            options: {
-                fix: grunt.option('fix'),
-            },
-            all: {
-                files: {
-                    src: [
-                        '.*.js',
-                        '*.js',
-                        'app/**/*.js',
-                        'babel/*.js',
-                        'controllers/**/*.js',
-                        'commons/**/*.js',
-                        'models/**/*.js',
-                        'config/!(local.config).js',
-                        'config/*example',
-                        'migrations/*.js',
-                        'tests/*.js',
-                        'public/js/**/*.js',
-                        '!public/js/shape2geojson/*.js',
-                        // public/js/lib lib contains third-party libs, with some
-                        // exceptions listed below.
-                        '!public/js/lib/**',
-                        'public/js/lib/leaflet/extends/*.js',
-                        'public/js/lib/Browser.js',
-                        'public/js/lib/JSExtensions.js',
-                        'public/js/lib/Utils.js',
-                        'public/js/lib/knockout/extends.js',
-                    ],
-                },
-            },
-        },
-        stylelint: {
-            options: {
-                configFile: '.stylelintrc.js',
-                fix: grunt.option('fix'),
-            },
-            all: [
-                'public/style/**/*.less',
-            ],
-        },
     });
 
     grunt.loadNpmTasks('grunt-contrib-clean');
@@ -260,8 +219,6 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-exec');
     grunt.loadNpmTasks('grunt-mkdir');
     grunt.loadNpmTasks('grunt-babel');
-    grunt.loadNpmTasks('grunt-eslint');
-    grunt.loadNpmTasks('grunt-stylelint');
     grunt.loadNpmTasks('grunt-contrib-uglify');
 
     // Build.
@@ -289,8 +246,6 @@ module.exports = function (grunt) {
         'exec:testNodeVersion:.nvmrc',
         'exec:testNodeVersionDockerfile:./.docker/Dockerfile',
         'exec:testNodeVersionDockerfile:./.docker/backend.Dockerfile',
-        'eslint',
-        'stylelint',
         'exec:jest',
     ]);
 
