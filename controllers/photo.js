@@ -952,25 +952,32 @@ async function update({ photo, oldPhotoObj, stamp }) {
 }
 
 // Change amount of photos of user
-function userPCountUpdate(user, newDelta = 0, publicDelta = 0, inactiveDelta = 0) {
+async function userPCountUpdate(user, newDelta = 0, publicDelta = 0, inactiveDelta = 0) {
     const userId = user._id || user;
-    const ownerObj = session.getOnline({ userId });
 
-    if (ownerObj) {
-        ownerObj.user.pfcount = ownerObj.user.pfcount + newDelta;
-        ownerObj.user.pcount = ownerObj.user.pcount + publicDelta;
-        ownerObj.user.pdcount = ownerObj.user.pdcount + inactiveDelta;
-
-        return session.saveEmitUser({ usObj: ownerObj, wait: true });
-    }
-
-    return User.updateOne({ _id: userId }, {
+    // Always change counters atomically in db. Saving in-memory user instead would overwrite
+    // changes made by other instances, where the user is not online.
+    const counters = await User.findOneAndUpdate({ _id: userId }, {
         $inc: {
             pfcount: newDelta || 0,
             pcount: publicDelta || 0,
             pdcount: inactiveDelta || 0,
         },
-    }).exec();
+    }, { new: true, projection: { pfcount: 1, pcount: 1, pdcount: 1 }, lean: true }).exec();
+    const ownerObj = session.getOnline({ userId });
+
+    if (!ownerObj || !counters) {
+        return;
+    }
+
+    // Sync online user with db values. Counters must not stay marked as modified,
+    // otherwise following save of this user would write them back.
+    for (const field of ['pfcount', 'pcount', 'pdcount']) {
+        ownerObj.user.set(field, counters[field]);
+        ownerObj.user.unmarkModified(field);
+    }
+
+    return session.emitUser({ usObj: ownerObj, wait: true });
 }
 
 const protectedFileLinkTTLs = config.protectedFileLinkTTL / 1000;
