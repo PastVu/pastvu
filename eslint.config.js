@@ -32,6 +32,7 @@ module.exports = [
             'babel/output.js',
             'bin/**',
             'logs/**',
+            'public-build/**',
             'misc/**',
             'views/**',
             'basepatch/**',
