@@ -5,12 +5,20 @@
 
 import photo, { getNewPhotosLimit } from '../photo';
 import * as regionController from '../region';
+import * as converter from '../converter';
 import * as session from '../_session';
 import { createQueue, JobCompletionListener, shutdownQueues } from '../queue';
 import { User } from '../../models/User';
 import testHelpers from '../../tests/testHelpers';
 
 jest.setTimeout(20000);
+
+// Utils is frozen and can't be spied on, derive object from it with moveFile replaced (upload moves files from incoming dir).
+jest.mock('../../commons/Utils', () => {
+    const actual = jest.requireActual('../../commons/Utils');
+
+    return Object.create(actual, { moveFile: { value: jest.fn().mockResolvedValue() } });
+});
 
 function waitFor(fn, timeout = 5000) {
     return new Promise((resolve, reject) => {
@@ -126,6 +134,73 @@ describe('user new photos limit', () => {
             // Both photos are approved: 3 - 2 new and 0 + 2 public.
             expect(fresh.pfcount).toBe(1);
             expect(fresh.pcount).toBe(2);
+        });
+    });
+
+    describe('upload', () => {
+        const uploadFiles = (usObj, socket, count) => photo.create.call(
+            { socket, handshake: { usObj }, ridMark: 'test' },
+            { files: Array.from({ length: count }, (_, i) => ({ file: `abcdef${i}.jpg`, name: `f${i}.jpg`, mime: 'image/jpeg', size: 1 })) }
+        );
+        const fakeSocket = () => ({
+            // Acknowledge emit, like a real client does.
+            emit: jest.fn((...args) => {
+                const ack = args[args.length - 1];
+
+                if (typeof ack === 'function') {
+                    ack({});
+                }
+            }),
+        });
+
+        beforeEach(() => {
+            jest.spyOn(converter, 'addPhotos').mockImplementation(() => {});
+        });
+
+        it('updates counters and limit of online owner in memory and db', async () => {
+            expect.assertions(4);
+
+            const usObj = testHelpers.goOnline(owner);
+            const { cids } = await uploadFiles(usObj, fakeSocket(), 2);
+            const fresh = await User.findById(owner._id);
+
+            expect(cids).toHaveLength(2);
+            expect(usObj.user.pfcount).toBe(5);
+            expect(fresh.pfcount).toBe(5);
+            expect(getNewPhotosLimit(usObj.user)).toBe(5);
+        });
+
+        it('does not lose counters changed by another instance', async () => {
+            expect.assertions(3);
+
+            const usObj = testHelpers.goOnline(owner);
+
+            // Photo is approved on another instance: pfcount 3 -> 2, pcount 0 -> 1.
+            await User.updateOne({ _id: owner._id }, { $inc: { pfcount: -1, pcount: 1 } });
+            await uploadFiles(usObj, fakeSocket(), 2);
+
+            const fresh = await User.findById(owner._id);
+
+            expect(fresh.pfcount).toBe(4);
+            expect(fresh.pcount).toBe(1);
+            // Online user is synced with db as well.
+            expect(usObj.user.pfcount).toBe(4);
+        });
+
+        it('sends updated user to other sockets of the owner but not to the requesting one', async () => {
+            expect.assertions(3);
+
+            const requesting = fakeSocket();
+            const other = fakeSocket();
+            const usObj = testHelpers.goOnline(owner);
+
+            usObj.sessions = { s1: { sockets: { a: requesting, b: other } } };
+
+            await uploadFiles(usObj, requesting, 1);
+
+            expect(requesting.emit).not.toHaveBeenCalled();
+            expect(other.emit).toHaveBeenCalledTimes(1);
+            expect(other.emit).toHaveBeenCalledWith('youAre', expect.objectContaining({ registered: true }), expect.any(Function));
         });
     });
 

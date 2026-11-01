@@ -637,9 +637,8 @@ async function create({ files }) {
     // Add to coverter, don't wait
     converter.addPhotos(cids, 1);
 
-    user.pfcount = user.pfcount + files.length;
-
-    await session.saveEmitUser({ usObj: iAm, wait: true, excludeSocket: socket });
+    // Send updated user to all sockets of the user except the one which has requested upload.
+    await userPCountUpdate(user, files.length, 0, 0, socket);
 
     return { message: `${files.length} photo successfully saved`, cids };
 }
@@ -952,7 +951,7 @@ async function update({ photo, oldPhotoObj, stamp }) {
 }
 
 // Change amount of photos of user
-async function userPCountUpdate(user, newDelta = 0, publicDelta = 0, inactiveDelta = 0) {
+async function userPCountUpdate(user, newDelta = 0, publicDelta = 0, inactiveDelta = 0, excludeSocket) {
     const userId = user._id || user;
 
     // Always change counters atomically in db. Saving in-memory user instead would overwrite
@@ -977,7 +976,7 @@ async function userPCountUpdate(user, newDelta = 0, publicDelta = 0, inactiveDel
         ownerObj.user.unmarkModified(field);
     }
 
-    return session.emitUser({ usObj: ownerObj, wait: true });
+    return session.emitUser({ usObj: ownerObj, wait: true, excludeSocket });
 }
 
 const protectedFileLinkTTLs = config.protectedFileLinkTTL / 1000;
