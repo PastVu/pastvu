@@ -882,6 +882,16 @@ export const regetUsersAfterStatsUpdate = function () {
     logger.info(`regetUsersAfterStatsUpdate: ${onlineUserCount} online users have been synced with db and re-populated.`);
 };
 
+/**
+ * Register callbacks of periodic session jobs run by worker instance.
+ *
+ * @param {object} listener JobCompletionListener of 'session' queue.
+ */
+export const registerJobCallbacks = function (listener) {
+    listener.addCallback('archiveExpiredSessions', cleanArchivedSessions);
+    listener.addCallback('calcUserStats', regetUsersAfterStatsUpdate);
+};
+
 // Handler of http-request or websocket-connection for session and usObj create/select
 export async function handleConnection(ip, headers, overHTTP, req) {
     if (!headers || !headers['user-agent']) {
