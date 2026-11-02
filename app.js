@@ -318,8 +318,7 @@ export async function configure(startStamp) {
     waitDb.then(async () => {
         const listener = new JobCompletionListener('session');
 
-        listener.addCallback('archiveExpiredSessions', session.cleanArchivedSessions);
-        listener.addCallback('calcUserStats', session.regetUsersAfterStatsUpdate);
+        session.registerJobCallbacks(listener);
         listener.init();
 
         // TODO: Review if any/all can be moved to worker.

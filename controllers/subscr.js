@@ -8,6 +8,7 @@ import _ from 'lodash';
 import path from 'path';
 import pug from 'pug';
 import log4js from 'log4js';
+import exitHook from 'async-exit-hook';
 import { getT, userLang } from '../commons/i18n';
 import * as session from './_session';
 import config from '../config';
@@ -293,7 +294,20 @@ async function scheduleUserNotice(users) {
 // Conveyor of notificaton sending
 // Every 'sendFreq' sends 'sendPerStep' notifications
 const notifierConveyor = (function () {
+    let timer;
+    let stopping = false;
+
+    exitHook(() => {
+        // Stop scheduling new steps, the database connection is about to be closed
+        stopping = true;
+        clearTimeout(timer);
+    });
+
     async function conveyorStep() {
+        if (stopping) {
+            return;
+        }
+
         try {
             // Find noty, which time nextnoty has passed
             const usersNoty = await UserNoty.find(
@@ -320,14 +334,25 @@ const notifierConveyor = (function () {
                 { $set: { lastnoty: nowDate }, $unset: { nextnoty: 1 } }
             ).exec();
         } catch (err) {
-            logger.error('conveyorStep', err);
+            if (stopping) {
+                logger.info('conveyorStep interrupted by shutdown: ' + err.message);
+            } else if (err.name === 'MongoServerSelectionError') {
+                // Database is unavailable, the driver keeps trying to reconnect
+                logger.warn('conveyorStep: ' + err.message);
+            } else {
+                logger.error('conveyorStep', err);
+            }
         }
 
         notifierConveyor();
     }
 
     return function () {
-        setTimeout(conveyorStep, sendFreq);
+        if (stopping) {
+            return;
+        }
+
+        timer = setTimeout(conveyorStep, sendFreq);
     };
 }());
 
