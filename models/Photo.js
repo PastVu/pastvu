@@ -147,6 +147,7 @@ const PhotoHistSchema = new Schema(
         add: { type: [String] }, // Список добавившихся полей
         del: { type: [String] }, // Список удаленных полей
         diff: { type: Schema.Types.Mixed }, // Diff для некоторых полей, изменившихся в этой записи
+        restoreStamp: { type: Date }, // History record stamp that change is restoring.
     },
     { collection: 'photos_history', strict: true, versionKey: false }
 );

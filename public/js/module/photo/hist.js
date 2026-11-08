@@ -4,8 +4,8 @@
  */
 
 define(
-    ['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'i18n', 'model/storage', 'm/photo/fields', 'm/photo/status', 'lib/doT', 'text!tpl/photo/hist.pug', 'css!style/photo/hist'],
-    function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, i18n, storage, fields, statuses, doT, pug) {
+    ['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'i18n', 'model/storage', 'm/photo/fields', 'm/photo/status', 'lib/doT', 'noties', 'moment', 'text!tpl/photo/hist.pug', 'css!style/photo/hist'],
+    function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, i18n, storage, fields, statuses, doT, noties, moment, pug) {
         'use strict';
 
         let tplHist;
@@ -51,6 +51,13 @@ define(
 
                     this.show();
                 }, this);
+
+                // History records are re-rendered with innerHTML (e.g. on diff switch), so bindings
+                // can't be used inside them. Delegate the revert click instead.
+                this.$dom.on('click', '.histRevert', function (evt) {
+                    evt.preventDefault();
+                    this.revert(Number(evt.currentTarget.dataset.stamp));
+                }.bind(this));
             },
             show: function () {
                 const self = this;
@@ -166,6 +173,7 @@ define(
 
                 const newSince = this.newSince;
                 const hightlightNew = newSince > 0;
+                let canRevert = false;
 
                 for (let i = 0; i < data.hists.length; i++) {
                     hist = data.hists[i];
@@ -174,6 +182,16 @@ define(
                     // Подсвечиваем все записи после этого времени как новые
                     if (hightlightNew && i > 0 && hist.stamp > newSince) {
                         hist.isnew = true;
+                    }
+
+
+                    if (hist.restoreStamp) {
+                        // Built here, since i18n placeholders ({{date}}) can't be used inside a doT expression.
+                        // Only the date is a link, i18n doesn't escape interpolated values (see i18n.js).
+                        hist.restoredText = i18n('Restored to the version of {{date}}', {
+                            date: '<a data-replace="true" href="/p/' + this.cid + '?history=' + hist.restoreStamp + '">' +
+                                Utils.format.date.relative(new Date(hist.restoreStamp)) + '</a>',
+                        });
                     }
 
                     hist.user.avatar = hist.user.avatar ? '/_a/h/' + hist.user.avatar : '/img/caps/avatarth.png';
@@ -187,6 +205,21 @@ define(
                     if (!hist.values) {
                         hist.values = {};
                     } else {
+                        if (canRevert) {
+                            hist.canRevert = this.parentModule.can.restorehistory();
+                        }
+
+                        if (hist.values.s === 5) {
+                            // Public photos history can be reverted.
+                            canRevert = true;
+                        }
+
+                        if (hist.values.s !== undefined && hist.values.s !== 5) {
+                            // Status change to non-public, disable reverting from now on.
+                            canRevert = false;
+                            hist.canRevert = false;
+                        }
+
                         if (hist.values.s !== undefined) {
                             hist.values.s = statusNums[hist.values.s];
                         }
@@ -273,6 +306,9 @@ define(
                     }
                 }
 
+                // The latest history record is the current state, there is nothing to restore.
+                data.hists[data.hists.length - 1].canRevert = false;
+
                 this.$dom[0].querySelector('.hists').innerHTML = tplHist({
                     cid: this.cid,
                     fields: fields,
@@ -311,6 +347,62 @@ define(
                     .catch(function (err) {
                         cb.call(ctx, err);
                     });
+            },
+            revert: function (stamp) {
+                const self = this;
+
+                if (!stamp) {
+                    return;
+                }
+
+                noties.confirm({
+                    message: i18n('Restore the photo to the state of {{stamp}}?', { stamp: moment(stamp).format('D MMMM YYYY, HH:mm') }),
+                    okText: i18n('Yes'),
+                    cancelText: i18n('No'),
+                    onOk: function (initConfirmer) {
+                        initConfirmer.close();
+                        socket.run('photo.restorePointInHistory', {
+                            cid: self.cid,
+                            stamp: stamp,
+                        }, true)
+                            .then(function (data) {
+                                if (data && data.emptySave) {
+                                    // Photo already has this state, nothing has been changed
+                                    noties.alert({
+                                        message: i18n('The selected version matches the current state'),
+                                        type: 'warning',
+                                        layout: 'topRight',
+                                    });
+
+                                    return;
+                                }
+
+                                // Update photo data on the photo page behind the history window
+                                const photoModule = self.parentModule;
+
+                                photoModule.rechargeData(data.photo, data.can);
+
+                                if (data.reconvert) {
+                                    photoModule.notifyReconvert();
+                                }
+
+                                photoModule.getNearestRibbon();
+
+                                noties.alert({
+                                    message: i18n('History restored'),
+                                    type: 'success',
+                                    layout: 'topRight',
+                                });
+
+                                // Only re-render history, create() would apply bindings to the same DOM again.
+                                self.getHist(function (err, histData) {
+                                    if (histData && histData.hists && histData.hists.length) {
+                                        self.renderHist(histData);
+                                    }
+                                });
+                            });
+                    },
+                });
             },
         });
     });

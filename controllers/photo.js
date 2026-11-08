@@ -208,6 +208,8 @@ export const permissions = {
             can.restore = isAdmin && s === status.REMOVE || undefined;
             // Send to convert can only admin
             can.convert = isAdmin || undefined;
+            // Administrator and moderatro can revert changes to point in history.
+            can.restorehistory = isAdmin || canModerate || undefined;
             // Any registered user can comment public or deactivated photo. Moderator - also removed photos (except owns)
             can.comment = s === status.PUBLIC || s === status.DEACTIVATE ||
                 s === status.REMOVE && (isAdmin || canModerate && !ownPhoto) || undefined;
@@ -752,7 +754,7 @@ function getPhotoChangedFields(oldPhoto, newPhoto, parsedFileds) {
     return { fields, oldValues, newValues, diff };
 }
 
-async function saveHistory({ oldPhotoObj, photo, canModerate, reason, parsedFileds }) {
+async function saveHistory({ oldPhotoObj, photo, canModerate, reason, parsedFileds, restoreStamp }) {
     const { handshake: { usObj: iAm } } = this;
     const changes = getPhotoChangedFields(oldPhotoObj, photo.toObject ? photo.toObject() : photo, parsedFileds);
 
@@ -842,6 +844,10 @@ async function saveHistory({ oldPhotoObj, photo, canModerate, reason, parsedFile
 
     if (!_.isEmpty(changes.diff)) {
         newEntry.diff = changes.diff;
+    }
+
+    if (restoreStamp) {
+        newEntry.restoreStamp = restoreStamp;
     }
 
     newEntry.add = add.length ? add : undefined; // undefined temporary doesn't work, https://github.com/Automattic/mongoose/issues/4037
@@ -2331,6 +2337,105 @@ function photoValidate(newValues, oldValues, can) {
     return result;
 }
 
+/**
+ * Revert photo to a specific point in history
+ * Reconstructs the photo state at the given timestamp and applies it as a single edit
+ *
+ * @param {object} data
+ * @param {number} data.cid Photo cid
+ * @param {Date|string} data.stamp Timestamp to revert to
+ * @returns {Promise<object>} Result of the revert operation
+ */
+async function restorePointInHistory(data) {
+    const { handshake: { usObj: iAm } } = this;
+
+    if (!iAm.registered) {
+        throw new AuthorizationError();
+    }
+
+    const { cid, stamp } = data;
+    const targetStamp = new Date(stamp);
+
+    if (!cid || !targetStamp || isNaN(targetStamp.getTime())) {
+        throw new BadParamsError();
+    }
+
+    // Fetch the current photo with edit permissions
+    const { photo } = await this.call('photo.prefetchForEdit', {
+        data: { cid, ignoreChange: true },
+        can: 'restorehistory',
+    });
+
+    // Fetch all history records for this photo up to and including the target timestamp
+    const histories = await PhotoHistory.find(
+        { cid, stamp: { $lte: targetStamp } },
+        { _id: 0 },
+        { lean: true, sort: { stamp: 1 } }
+    ).exec();
+
+    if (_.isEmpty(histories)) {
+        throw new NotFoundError(constantsError.PHOTO_NO_HISTORY);
+    }
+
+    // Only a public stretch of history can be restored: the last status change up to the target must be to public.
+    const lastStatusEntry = _.findLast(histories, h => h.values && h.values.s !== undefined);
+
+    if (!lastStatusEntry || lastStatusEntry.values.s !== status.PUBLIC) {
+        throw new BadParamsError();
+    }
+
+    // Reconstruct the state at the target timestamp by replaying history
+    const reconstructedState = {};
+
+    for (const historyEntry of histories) {
+        // Apply values from this history entry
+        if (historyEntry.values) {
+            if (historyEntry.values.desc) {
+                historyEntry.values.desc = Utils.txtHtmlToPlain(historyEntry.values.desc);
+            }
+
+            if (historyEntry.values.author) {
+                historyEntry.values.author = Utils.txtHtmlToPlain(historyEntry.values.author);
+            }
+
+            if (historyEntry.values.source) {
+                historyEntry.values.source = Utils.txtHtmlToPlain(historyEntry.values.source);
+            }
+
+            Object.assign(reconstructedState, historyEntry.values);
+        }
+
+        // Remove deleted fields
+        if (historyEntry.del && Array.isArray(historyEntry.del)) {
+            for (const field of historyEntry.del) {
+                reconstructedState[field] = null;
+            }
+        }
+    }
+
+    if (_.isEmpty(reconstructedState.geo)) {
+        // Set region if no coordinates.
+        reconstructedState.region = _.last(reconstructedState.regions);
+    } else {
+        // Reverse coordinates as they are reversed again at validation.
+        reconstructedState.geo = reconstructedState.geo.reverse();
+    }
+
+    delete reconstructedState.regions;
+
+    // Save the photo
+    Object.assign(photo, reconstructedState);
+
+    const updatedPhoto = await this.call('photo.save', { cid, ignoreChange: true, changes: photo, restoreStamp: targetStamp });
+
+    logger.info(
+        `Photo ${cid} reverted to state at ${targetStamp.toISOString()} by user ${iAm.user.login}`
+    );
+
+    // Return the updated photo data
+    return updatedPhoto;
+}
+
 // Save photo's changes
 async function save(data) {
     const { handshake: { usObj: iAm } } = this;
@@ -2341,6 +2446,7 @@ async function save(data) {
     const isMine = User.isEqual(oldPhotoObj.user, iAm.user);
     const can = permissions.getCan(oldPhotoObj, iAm, isMine, canModerate);
     const changes = photoValidate(data.changes, oldPhotoObj, can);
+    const restoreStamp = data.restoreStamp || null;
 
     if (_.isEmpty(changes)) {
         return { emptySave: true };
@@ -2509,7 +2615,7 @@ async function save(data) {
 
     if (saveHistory) {
         await this.call(
-            'photo.saveHistory', { oldPhotoObj, photo, canModerate: isMine ? false : canModerate, parsedFileds }
+            'photo.saveHistory', { oldPhotoObj, photo, canModerate: isMine ? false : canModerate, parsedFileds, restoreStamp }
         );
     }
 
@@ -3332,6 +3438,10 @@ async function giveObjHist({ cid, fetchId, showDiff }) {
 
         history.stamp = history.stamp.getTime();
 
+        if (history.restoreStamp) {
+            history.restoreStamp = history.restoreStamp.getTime();
+        }
+
         result.push(history);
     }
 
@@ -3418,6 +3528,7 @@ convertByUser.isPublic = true;
 resetIndividualDownloadOrigin.isPublic = true;
 giveNewLimit.isPublic = true;
 getDownloadKey.isPublic = true;
+restorePointInHistory.isPublic = true;
 
 export default {
     save,
@@ -3451,6 +3562,7 @@ export default {
     resetIndividualDownloadOrigin,
     giveNewLimit,
     getDownloadKey,
+    restorePointInHistory,
 
     find,
     give,
