@@ -119,4 +119,76 @@ describe('cluster', () => {
             expect(runJob).toHaveBeenCalledWith('clusterPhotosAll', { withGravity: true, types: [PHOTO, PAINTING] });
         });
     });
+
+    describe('cluster poster', () => {
+        // One zoom level with 0.01° cells. Photo 1 is in the bottom-left corner
+        // of cell [37.60, 55.75], photo 2 is just across its left border, in
+        // cell [37.59, 55.75], but closer to the center of gravity of cell of photo 1.
+        const cornerPhoto = photoDoc(1, PHOTO, [37.6001, 55.7401], 1950);
+        const neighbourPhoto = photoDoc(2, PHOTO, [37.5999, 55.74255], 1950);
+        const geometry = {
+            type: 'Polygon',
+            coordinates: [[[37.58, 55.73], [37.62, 55.73], [37.62, 55.76], [37.58, 55.76], [37.58, 55.73]]],
+        };
+
+        const postersByCell = async () => {
+            const clusters = await Cluster.find({ z: 16 }, { _id: 0, g: 1, c: 1, 'p.cid': 1 }).lean();
+
+            return Object.fromEntries(clusters.map(({ g, c, p }) => [g.join(','), { c, cid: p?.cid }]));
+        };
+
+        beforeEach(async () => {
+            await Promise.all([Photo.syncIndexes(), Cluster.syncIndexes()]);
+
+            // Store cluster params and load them into memory (job is mocked).
+            cluster.handshake = { usObj: { registered: true, isAdmin: true } };
+            await cluster.recalcAll({ params: [{ z: 16, w: 0.01, h: 0.01 }], conditions: { sgeo: [37.6, 55.7], sz: 16, sw: 40, sh: 40 } });
+            delete cluster.handshake;
+
+            await Photo.collection.insertMany([neighbourPhoto, cornerPhoto]);
+        });
+
+        it('is taken from own cell on photo clustering', async () => {
+            expect.assertions(1);
+
+            await cluster.clusterPhoto({ photo: neighbourPhoto });
+            await cluster.clusterPhoto({ photo: cornerPhoto });
+
+            await expect(postersByCell()).resolves.toStrictEqual({
+                '37.6,55.75': { c: 1, cid: 1 },
+                '37.59,55.75': { c: 1, cid: 2 },
+            });
+        });
+
+        it('is taken from own cell on rebuilding all clusters', async () => {
+            expect.assertions(1);
+
+            await clusterPhotosAll({ withGravity: true, types: [PHOTO] });
+
+            await expect(postersByCell()).resolves.toStrictEqual({
+                '37.6,55.75': { c: 1, cid: 1 },
+                '37.59,55.75': { c: 1, cid: 2 },
+            });
+        });
+
+        it('is taken from own cell when filtered by years', async () => {
+            expect.assertions(1);
+
+            await clusterPhotosAll({ withGravity: true, types: [PHOTO] });
+            // Make poster of the corner photo cell out of requested years.
+            await Cluster.updateOne({ g: [37.6, 55.75], z: 16 }, { $set: { 'p.year': 1990 } });
+
+            const { photos } = await cluster.getBoundsByYear({ geometry, z: 16, year: 1940, year2: 1960 });
+
+            expect(photos.map(photo => photo.cid).sort()).toStrictEqual([1, 2]);
+        });
+
+        it('skips single-photo cluster without poster', async () => {
+            expect.assertions(1);
+
+            await Cluster.collection.insertOne({ g: [37.6, 55.75], geo: [37.605, 55.745], z: 16, c: 1, y: { 1950: 1 }, p: null });
+
+            await expect(cluster.getBounds({ geometry, z: 16 })).resolves.toStrictEqual({ photos: [], clusters: [] });
+        });
+    });
 });
