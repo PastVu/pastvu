@@ -202,24 +202,27 @@ define(
 
                     hist.textValuesArr = [];
 
+                    // Checked for every entry, including ones without values (e.g. only removed fields).
+                    const histStatus = hist.values ? hist.values.s : undefined;
+
+                    if (canRevert) {
+                        hist.canRevert = this.parentModule.can.restorehistory();
+                    }
+
+                    if (histStatus === 5) {
+                        // Public photos history can be reverted.
+                        canRevert = true;
+                    }
+
+                    if (histStatus !== undefined && histStatus !== 5) {
+                        // Status change to non-public, disable reverting from now on.
+                        canRevert = false;
+                        hist.canRevert = false;
+                    }
+
                     if (!hist.values) {
                         hist.values = {};
                     } else {
-                        if (canRevert) {
-                            hist.canRevert = this.parentModule.can.restorehistory();
-                        }
-
-                        if (hist.values.s === 5) {
-                            // Public photos history can be reverted.
-                            canRevert = true;
-                        }
-
-                        if (hist.values.s !== undefined && hist.values.s !== 5) {
-                            // Status change to non-public, disable reverting from now on.
-                            canRevert = false;
-                            hist.canRevert = false;
-                        }
-
                         if (hist.values.s !== undefined) {
                             hist.values.s = statusNums[hist.values.s];
                         }

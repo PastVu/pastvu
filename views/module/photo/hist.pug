@@ -54,9 +54,11 @@
             | {{?}}
 
             | {{?h.restoreStamp}}
-            .info.iconed
-                span.glyphicon.glyphicon-backward
-                | {{=h.restoredText}}
+            //- Own line, so other badges of the entry (e.g. removed fields) don't follow it.
+            div
+                .info.iconed
+                    span.glyphicon.glyphicon-backward
+                    | {{=h.restoredText}}
             | {{?}}
 
             | {{?h.del}}

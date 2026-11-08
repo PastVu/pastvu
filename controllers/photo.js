@@ -2337,6 +2337,9 @@ function photoValidate(newValues, oldValues, can) {
     return result;
 }
 
+// Fields that restoring can clear, if they were first set after the restored point (photoValidate accepts null for them).
+const restoreClearableFields = new Set(['title', 'desc', 'source', 'author', 'address', 'year', 'year2', 'dir', 'geo']);
+
 /**
  * Revert photo to a specific point in history
  * Reconstructs the photo state at the given timestamp and applies it as a single edit
@@ -2413,6 +2416,22 @@ async function restorePointInHistory(data) {
         }
     }
 
+    // Fields first set after the target don't exist in the reconstructed state, clear them,
+    // otherwise current values would be kept. Only fields that photoValidate can clear with null.
+    const laterHistories = await PhotoHistory.find(
+        { cid, stamp: { $gt: targetStamp } },
+        { _id: 0, values: 1, add: 1 },
+        { lean: true }
+    ).exec();
+
+    for (const { values, add } of laterHistories) {
+        for (const field of [...Object.keys(values || {}), ...add || []]) {
+            if (restoreClearableFields.has(field) && reconstructedState[field] === undefined) {
+                reconstructedState[field] = null;
+            }
+        }
+    }
+
     if (_.isEmpty(reconstructedState.geo)) {
         // Set region if no coordinates.
         reconstructedState.region = _.last(reconstructedState.regions);
@@ -2422,6 +2441,9 @@ async function restorePointInHistory(data) {
     }
 
     delete reconstructedState.regions;
+
+    // Restoring changes content only, status is kept as it is now (photoValidate ignores it anyway).
+    delete reconstructedState.s;
 
     // Save the photo
     Object.assign(photo, reconstructedState);
