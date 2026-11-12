@@ -20,6 +20,42 @@ define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'intl', 'i18n', 'k
 
     window.moment = moment;
 
+    const directions = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw', 'none'];
+
+    function filterByDirection(selected) {
+        const active = _.isArray(selected) ? selected : [];
+        const all = !active.length || active.length === directions.length;
+
+        $('[data-direction], .n, .ne, .e, .se, .s, .sw, .w, .nw').each(function () {
+            const direction = this.getAttribute('data-direction') ||
+                _.find(directions, dir => dir !== 'none' && this.classList.contains(dir)) || 'none';
+
+            this.classList.toggle('mHidden', !all && active.indexOf(direction) === -1);
+        });
+    }
+
+    function createDirectionFilter($container, onChange) {
+        const $select = $('<select multiple class="directionFilter">');
+
+        directions.forEach(function (direction) {
+            $select.append($('<option>').val(direction).text(direction === 'none' ? i18n('No direction') : direction.toUpperCase()));
+        });
+
+        $select.on('change', function () {
+            const selected = $select.val() || [];
+
+            filterByDirection(selected);
+
+            if (Utils.isType('function', onChange)) {
+                onChange(selected);
+            }
+        });
+
+        $container.append($select);
+
+        return $select;
+    }
+
     // Отключает скроллинг body путем задания overflow:hidden и правого marging равного ширине скроллинга
     function bodyScrollOff($body) {
         let bodyWidth;
@@ -65,6 +101,7 @@ define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'intl', 'i18n', 'k
         regionTitle: Utils.regionTitle,
         router: null,
 
+        directions: directions,
         childModules: {},
         repository: {},
 
@@ -76,6 +113,8 @@ define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'intl', 'i18n', 'k
         },
 
         func: {
+            filterByDirection: filterByDirection,
+            createDirectionFilter: createDirectionFilter,
             showContainer: function ($container, cb, ctx) {
                 const container = $container[0];
                 const isModal = container.classList.contains('neoModalContainer');
