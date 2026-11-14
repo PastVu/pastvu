@@ -86,46 +86,23 @@ ko.bindingHandlers.executeOnEnter = {
 
 const specialKeyCodes = [8, 13, 16, 17, 18, 20, 27, 35, 36, 37, 38, 39, 40, 46, 123, 144];
 
-// Возвращает и устанавливает позицию курсора на input/textarea/contenteditable элементов
-// Пример: caret(element) - взять позицию, caret(element, 7) - установить позицию
+// Возвращает позицию курсора на input/textarea/contenteditable элементах
 // Адаптированно с http://code.accursoft.com/caret/src
-const caret = function (target, pos) {
+const caret = function (target) {
     const isContentEditable = target.contentEditable === 'true';
-    let range1;
-    let range2;
-
-    // GET
-    if (pos === undefined) {
-        if (isContentEditable) { //contenteditable
-            target.focus();
-            range1 = window.getSelection().getRangeAt(0);
-            range2 = range1.cloneRange();
-            range2.selectNodeContents(target);
-            range2.setEnd(range1.endContainer, range1.endOffset);
-
-            return range2.toString().length;
-        }
-
-        return target.selectionStart; //textarea
-    }
-
-    // SET
-    if (pos === -1) {
-        pos = $(target)[isContentEditable ? 'text' : 'val']().length;
-    }
 
     if (isContentEditable) { //contenteditable
         target.focus();
-        window.getSelection().collapse(target.firstChild, pos);
-    } else {
-        target.setSelectionRange(pos, pos); //textarea
+        const range = window.getSelection().getRangeAt(0);
+        const preceding = range.cloneRange();
+
+        preceding.selectNodeContents(target);
+        preceding.setEnd(range.endContainer, range.endOffset);
+
+        return preceding.toString().length;
     }
 
-    if (!isContentEditable) {
-        target.focus();
-    }
-
-    return pos;
+    return target.selectionStart; //textarea
 };
 
 /**
