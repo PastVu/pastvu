@@ -114,7 +114,6 @@
         "mongodb-memory-server": "11.2.0",
         "redis-memory-server": "0.17.1",
         "requirejs": "2.3.8",
-        "step": "1.0.0",
         "stylelint": "17.14.0",
         "stylelint-config-standard": "40.0.0"
     },

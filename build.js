@@ -9,10 +9,8 @@
 require('./bin/run');
 
 const start = Date.now();
-const fs = require('fs');
+const fs = require('fs').promises;
 const path = require('path');
-const sys = require('util');
-const step = require('step');
 const requirejs = require('requirejs');
 const less = require('less');
 const Utils = require('./commons/Utils');
@@ -133,128 +131,69 @@ const requireBuildConfig = {
         },
     ],
 };
-let lessFiles = [];
 
-step(
+async function build() {
     // Ищем less-файлы для компиляции и создаем плоский массив
-    function searchLess() {
-        Utils.walkParallel({ dir: path.normalize('./' + requireBuildConfig.appDir + 'style'), excludeFolders: ['bs', 'fonts'], onDone: (e, files) => {
-            if (e) {
-                console.dir(e);
-                process.exit(1);
-            }
+    const files = await walkFiles({
+        dir: path.normalize('./' + requireBuildConfig.appDir + 'style'),
+        excludeFolders: ['bs', 'fonts'],
+    });
+    const lessFiles = Utils.filesListProcess(files, requireBuildConfig.appDir + 'style/', '', element => element.includes('.less'));
 
-            lessFiles = Utils.filesListProcess(files, requireBuildConfig.appDir + 'style/', '', function getOnlyLess(element) {
-                return ~element.indexOf('.less');
-            });
-            this();
-        } });
-    },
+    await lessCompile(lessFiles);
 
-    //Компилируем less
-    function startCompile() {
-        lessCompile(lessFiles, this);
-    },
-
-    // Собираем require
-    function requireBuild() {
-        console.log('~~~ Start r.js build ~~~');
-        requirejs.optimize(requireBuildConfig, (/*buildResponse*/) => {
-            //buildResponse is just a text output of the modules
-            //included. Load the built file for the contents.
-            //Use requireBuildConfig.out to get the optimized file contents.
-            //var contents = fs.readFileSync(requireBuildConfig.out, 'utf8');
-            console.dir('Require build finished');
-            this();
-        });
-    },
+    console.log('~~~ Start r.js build ~~~');
+    await new Promise((resolve, reject) => {
+        requirejs.optimize(requireBuildConfig, resolve, reject);
+    });
+    console.dir('Require build finished');
 
     //Удаляем less из собранной директории
-    function removeLessFromBuild() {
-        console.dir('Removing Less from build');
-        Utils.walkParallel({ dir: path.normalize(requireBuildConfig.dir + '/style'), onDone: (e, files) => {
-            if (e) {
-                console.dir(e);
-                process.exit(1);
+    console.dir('Removing Less from build');
+
+    const buildFiles = await walkFiles({ dir: path.normalize(requireBuildConfig.dir + '/style') });
+    const buildLessFiles = Utils.filesListProcess(buildFiles, null, '', element => element.includes('.less'));
+
+    for (const file of buildLessFiles) {
+        await fs.unlink(file);
+    }
+
+    console.dir('Build complete. Ok in ' + (Date.now() - start) / 1000 + 's');
+    process.exit(0);
+}
+
+function walkFiles(options) {
+    return new Promise((resolve, reject) => {
+        Utils.walkParallel({ ...options, onDone: (err, files) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(files);
             }
-
-            lessFiles = Utils.filesListProcess(files, null, '', function getOnlyLess(element) {
-                return ~element.indexOf('.less');
-            });
-            lessFiles.forEach(item => {
-                fs.unlinkSync(item);
-            });
-            this();
         } });
-    },
+    });
+}
 
-    function finish(e) {
-        if (e) {
-            console.dir(e);
-            process.exit(1);
-        }
-
-        console.dir('Build complete. Ok in ' + (Date.now() - start) / 1000 + 's');
-
-        process.exit(0);
-    }
-);
-
-function lessCompile(files, done) {
-    let input;
-    let output;
-    let fd;
-    let i = 0;
-
-    next();
-
-    function next() {
-        input = files[i++];
-
-        if (!input) {
-            return done();
-        }
-
-        output = lessCompileOptions.path + input.replace('.less', '.css');
-        fs.readFile(lessCompileOptions.path + input, 'utf-8', parseLessFile);
-    }
-
-    function parseLessFile(e, data) {
-        if (e) {
-            sys.puts('Error to read less ' + (lessCompileOptions.path + input) + ' file: ' + e.message);
-            process.exit(1);
-        }
+async function lessCompile(files) {
+    for (const input of files) {
+        const data = await fs.readFile(lessCompileOptions.path + input, 'utf-8');
 
         console.dir('Compiling LESS ' + lessCompileOptions.path + input);
 
-        less.render(data, {
+        const result = await less.render(data, {
             paths: [lessCompileOptions.path + path.dirname(input)],
             filename: path.basename(input),
             strictImports: lessCompileOptions.strictImports,
             compress: lessCompileOptions.compress,
-        }).then(result => {
-            try {
-                const css = result.css;
-
-                if (css) {
-                    fd = fs.openSync(output, 'w');
-                    fs.writeSync(fd, css, 0, 'utf8');
-                    fs.closeSync(fd);
-                }
-
-                next();
-            } catch (err) {
-                console.error(err, lessCompileOptions);
-                process.exit(1);
-            }
-        }, err => {
-            if (!lessCompileOptions.silent) {
-                console.error(err.toString({
-                    stylize: lessCompileOptions.color && less.lesscHelper.stylize,
-                }));
-            }
-
-            process.exit(1);
         });
+
+        if (result.css) {
+            await fs.writeFile(lessCompileOptions.path + input.replace('.less', '.css'), result.css, 'utf8');
+        }
     }
 }
+
+build().catch(err => {
+    console.error(err);
+    process.exit(1);
+});
