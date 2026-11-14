@@ -26,7 +26,7 @@ const hash = Utils.randomString(5);
 const config = { env, hash };
 const copyPatterns = [
     'app/**', 'bin/**', 'migrations/**', 'commons/**', 'misc/watermark/**',
-    'controllers/systemjs.js', 'npm-shrinkwrap.json',
+    'controllers/systemjs.js', 'package-lock.json',
     'config/@(client|server|log4js|migrate-mongo|default.config).js',
     'config/package.json',
     'views/app.pug', 'views/api/**', 'views/includes/**', 'views/mail/**', 'views/status/**', 'views/diff/**',
