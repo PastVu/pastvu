@@ -42,11 +42,23 @@
                 | {{?}}
                 .dotDelimeter ·
                 a.histStamp(data-replace="true", href="/p/{{=it.cid}}?history={{=h.stamp}}") {{=it.fDate(new Date(h.stamp))}}
+                | {{?h.canRevert}}
+                .dotDelimeter ·
+                a.histStamp.histRevert(data-stamp="{{=h.stamp}}") [{{=it.i18n('Restore')}}]
+                | {{?}}
 
             | {{?h.values.s}}
             .info.iconed(style="color: {{=h.values.s.color}};")
                 span.glyphicon(class="{{=h.values.s.icon_history||h.values.s.icon}}")
                 | {{=h.values.s.action}}
+            | {{?}}
+
+            | {{?h.restoreStamp}}
+            //- Own line, so other badges of the entry (e.g. removed fields) don't follow it.
+            div
+                .info.iconed
+                    span.glyphicon.glyphicon-backward
+                    | {{=h.restoredText}}
             | {{?}}
 
             | {{?h.del}}
