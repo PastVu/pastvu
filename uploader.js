@@ -4,7 +4,7 @@
  */
 
 import fs, { promises as fsAsync } from 'fs';
-import gm from 'gm';
+import { execFile } from 'child_process';
 import _ from 'lodash';
 import path from 'path';
 import http from 'http';
@@ -13,6 +13,14 @@ import config from './config';
 import formidable from 'formidable';
 import Utils from './commons/Utils';
 import exitHook from 'async-exit-hook';
+
+const imageSize = (src, callback) => {
+    execFile('gm', ['identify', '-ping', '-format', '%wx%h ', src], (err, stdout) => {
+        const dimensions = !err && /^(\d+)x(\d+)/.exec(stdout.trim());
+
+        callback(err, dimensions ? { width: dimensions[1], height: dimensions[2] } : undefined);
+    });
+};
 
 export function configure(startStamp) {
     const {
@@ -109,7 +117,7 @@ export function configure(startStamp) {
         }
 
         return new Promise(resolve => {
-            gm(fileInfo.path).size((err, size) => {
+            imageSize(fileInfo.path, (err, size) => {
                 if (err || !size) {
                     logger.error('GM size error:', err);
                     fileInfo.error = 'fpx';
@@ -149,7 +157,7 @@ export function configure(startStamp) {
         }
 
         return new Promise(resolve => {
-            gm(fileInfo.path).size((err, size) => {
+            imageSize(fileInfo.path, (err, size) => {
                 if (err || !size) {
                     logger.error('GM avatar size error:', err);
                     fileInfo.error = 'fpx';
@@ -169,21 +177,18 @@ export function configure(startStamp) {
 
                 if (w > 100 || h > 100) {
                     // Cut from center by smaller size and resize to 100px
-                    gm(fileInfo.path)
-                        .gravity('Center')
-                        .quality(90)
-                        .filter('Sinc')
-                        .noProfile() // Drop EXIF
-                        .crop(min, min)
-                        .resize(100, 100)
-                        .write(fileInfo.path, err => {
-                            if (err) {
-                                logger.warn('GM avatar resize error', err);
-                                fileInfo.error = 'fpx';
-                            }
+                    execFile('gm', [
+                        'convert', '-quality', '90', fileInfo.path,
+                        '-gravity', 'Center', '-filter', 'Sinc', '+profile', '*', // Drop EXIF
+                        '-crop', `${min}x${min}+0+0`, '-resize', '100x100', fileInfo.path,
+                    ], err => {
+                        if (err) {
+                            logger.warn('GM avatar resize error', err);
+                            fileInfo.error = 'fpx';
+                        }
 
-                            resolve();
-                        });
+                        resolve();
+                    });
                 } else {
                     resolve();
                 }

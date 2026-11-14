@@ -4,7 +4,6 @@
  */
 
 import fs from 'fs';
-import gm from 'gm';
 import _ from 'lodash';
 import path from 'path';
 import util from 'util';
@@ -25,6 +24,7 @@ const incomeDir = path.join(config.storePath, 'incoming/');
 const privateDir = path.join(config.storePath, 'private/avatars/');
 const publicDir = path.join(config.storePath, 'public/avatars/');
 const execAsync = util.promisify(childProcess.exec);
+const execFileAsync = util.promisify(childProcess.execFile);
 
 const restrictions = new Map([
     ['nologin', { val: false, vars: new Set([true, false]) }],
@@ -438,15 +438,10 @@ async function changeAvatar({ login, file, mime }) {
         Utils.copyFile(originPath, publicDir + 'd/' + fullfile),
 
         // Convert from private into 50px to public/h/
-        new Promise((resolve, reject) => {
-            gm(originPath).quality(90).filter('Sinc').resize(50, 50).write(publicDir + 'h/' + fullfile, err => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve();
-                }
-            });
-        }),
+        execFileAsync('gm', [
+            'convert', '-quality', '90', originPath,
+            '-filter', 'Sinc', '-resize', '50x50', publicDir + 'h/' + fullfile,
+        ]),
 
         // WebP verions
         execAsync(
