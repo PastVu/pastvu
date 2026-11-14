@@ -231,6 +231,31 @@ export async function configure(startStamp) {
     // up without each route handler threading i18n through render options.
     app.use(i18nLocals);
 
+    // Transform custom <gallery> tags in static pages (news, etc) into placeholders
+    // that are rendered client-side by the inline script below.
+    app.use((req, res, next) => {
+        const originalSend = res.send;
+
+        res.send = function (body) {
+            if (typeof body === 'string' && body.includes('<gallery')) {
+                body = body.replace(new RegExp('<gallery([^>]*)>([^]*)</gallery>', 'gi'), (match, attrs, content) => {
+                    return `<div class="gallery" data-attrs="${encodeURIComponent(attrs)}" data-content="${encodeURIComponent(content)}"></div>`;
+                });
+
+                if (!body.includes('data-gallery-script')) {
+                    const script = `<script data-gallery-script>
+(function(){'use strict';function init(){var els=document.querySelectorAll('.gallery[data-content]');if(!els.length)return;require(['socket!'],function(socket){els.forEach(function(el){var attrs=decodeURIComponent(el.getAttribute('data-attrs')||'');var content=decodeURIComponent(el.getAttribute('data-content')||'');var mode='';var modeIndex=attrs.indexOf('mode');if(modeIndex!==-1){var eqIndex=attrs.indexOf('=',modeIndex);if(eqIndex!==-1){var quote=attrs.charAt(eqIndex+1);if(quote==='"'||quote==="'"){var endIndex=attrs.indexOf(quote,eqIndex+2);if(endIndex!==-1){mode=attrs.substring(eqIndex+2,endIndex);}}}}var modes=mode.trim().split(' ').filter(function(m){return m;});var items=content.trim().split(String.fromCharCode(10)).map(function(line){line=line.replace(String.fromCharCode(13),'');var parts=line.split('|');return{cid:parseInt(parts[0].replace('#','').trim(),10),caption:parts.slice(1).join('|').trim()};}).filter(function(item){return item.cid;});var html='';var pending=items.length;if(!pending)return;items.forEach(function(item){socket.run('photo.giveForPage',{cid:item.cid}).then(function(data){var photo=data.photo||data;var title=item.caption||photo.title||'';var showTitle=modes.indexOf('titles')!==-1||(modes.indexOf('pure')===-1&&!item.caption);var showCaption=modes.indexOf('captions')!==-1||(modes.indexOf('pure')===-1&&item.caption);var showYear=modes.indexOf('years')!==-1;var showRegion=modes.indexOf('regions')!==-1;html+='<a href="/p/'+photo.cid+'" class="gallery-item"><img src="/_p/'+photo.file+'" alt="'+title+'">'+(showTitle&&title?'<div class="gallery-title">'+title+'</div>':'')+(showCaption&&item.caption?'<div class="gallery-caption">'+item.caption+'</div>':'')+(showYear&&photo.year?'<div class="gallery-year">'+photo.year+'</div>':'')+(showRegion&&photo.region?'<div class="gallery-region">'+photo.region.title+'</div>':'')+'</a>';if(--pending===0)el.innerHTML=html;}).catch(function(){if(--pending===0)el.innerHTML=html;});});});});}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();})();
+</script>`;
+                    body = body.replace('</body>', script + '</body>');
+                }
+            }
+
+            return originalSend.call(this, body);
+        };
+
+        next();
+    });
+
     // Handle appliaction routes
     routes.bindRoutes(app);
 
