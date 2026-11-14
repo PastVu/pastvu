@@ -134,25 +134,10 @@ module.exports = function (grunt) {
                 ],
             },
         },
-        compress: {
-            main: {
-                options: {
-                    archive: currentDir + 'app<%= pkg.version %>.zip',
-                    mode: 'zip',
-                    level: 9,
-                    forceUTC: true,
-                    comment: 'This PastVu application builded and compressed with Grunt',
-                },
-                files: [
-                    { expand: true, cwd: targetDir, src: ['**/*'/* , '!node_modules*' */], dest: 'app' },
-                ],
-            },
-        },
 
     });
 
     grunt.loadNpmTasks('grunt-contrib-pug');
-    grunt.loadNpmTasks('grunt-contrib-compress');
     grunt.loadNpmTasks('grunt-exec');
     grunt.loadNpmTasks('grunt-babel');
     grunt.loadNpmTasks('grunt-contrib-uglify');
@@ -173,7 +158,6 @@ module.exports = function (grunt) {
         'clean:publicTpl',
         'writeBuildParams',
         //'exec:npm',
-        'compress',
     ]);
 
     grunt.registerTask('mkdir', 'Create the build directory', () => {

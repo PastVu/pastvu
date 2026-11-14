@@ -100,7 +100,6 @@
         "globals": "17.7.0",
         "grunt": "1.6.3",
         "grunt-babel": "8.0.0",
-        "grunt-contrib-compress": "2.0.0",
         "grunt-contrib-pug": "3.0.0",
         "grunt-contrib-uglify": "5.2.2",
         "grunt-exec": "3.0.0",
