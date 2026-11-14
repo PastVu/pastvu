@@ -96,22 +96,17 @@ const caret = function (target, pos) {
 
     // GET
     if (pos === undefined) {
-        if (window.getSelection) {
-            if (isContentEditable) { //contenteditable
-                target.focus();
-                range1 = window.getSelection().getRangeAt(0);
-                range2 = range1.cloneRange();
-                range2.selectNodeContents(target);
-                range2.setEnd(range1.endContainer, range1.endOffset);
+        if (isContentEditable) { //contenteditable
+            target.focus();
+            range1 = window.getSelection().getRangeAt(0);
+            range2 = range1.cloneRange();
+            range2.selectNodeContents(target);
+            range2.setEnd(range1.endContainer, range1.endOffset);
 
-                return range2.toString().length;
-            }
-
-            return target.selectionStart; //textarea
+            return range2.toString().length;
         }
 
-        //not supported
-        return 0;
+        return target.selectionStart; //textarea
     }
 
     // SET
@@ -119,13 +114,11 @@ const caret = function (target, pos) {
         pos = $(target)[isContentEditable ? 'text' : 'val']().length;
     }
 
-    if (window.getSelection) {
-        if (isContentEditable) { //contenteditable
-            target.focus();
-            window.getSelection().collapse(target.firstChild, pos);
-        } else {
-            target.setSelectionRange(pos, pos); //textarea
-        }
+    if (isContentEditable) { //contenteditable
+        target.focus();
+        window.getSelection().collapse(target.firstChild, pos);
+    } else {
+        target.setSelectionRange(pos, pos); //textarea
     }
 
     if (!isContentEditable) {
