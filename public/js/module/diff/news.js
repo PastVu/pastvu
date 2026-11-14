@@ -6,6 +6,9 @@
 define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'i18n', 'renderer', 'moment', 'model/Photo', 'model/storage', 'text!tpl/diff/news.pug', 'css!style/diff/news'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, i18n, renderer, moment, Photo, storage, pug) {
     'use strict';
 
+    // Custom <gallery> tag. Non-greedy so each gallery is matched independently.
+    const galleryRe = /<gallery>([^]*?)<\/gallery>/g;
+
     const newsDefault = {
         pdate: new Date(),
         title: i18n('Untitled'),
@@ -123,6 +126,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 _.defaults(data.news, newsDefault);
                 data.news.user.avatar = data.news.user.avatar ? '/_a/d/' + data.news.user.avatar :
                     '/img/caps/avatar.png';
+                data.news.txt = self.renderGalleries(data.news.txt);
                 data.news.txt = self.renderGallery(data.news.txt);
 
                 if (self.news) {
@@ -137,6 +141,20 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 if (Utils.isType('function', cb)) {
                     cb.call(ctx, data);
                 }
+            });
+        },
+
+        renderGalleries: function (txt) {
+            if (!txt) {
+                return txt;
+            }
+
+            return txt.replace(galleryRe, function (match, content) {
+                const cids = content.split(/[\s,]+/).filter(Boolean);
+
+                return '<div class="gallery">' + cids.map(function (cid) {
+                    return '<a class="galleryItem" href="/p/' + cid + '"><img src="/_p/' + cid + '/' + cid + '.jpg" alt=""></a>';
+                }).join('') + '</div>';
             });
         },
 
