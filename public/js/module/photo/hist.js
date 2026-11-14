@@ -205,19 +205,14 @@ define(
                     // Checked for every entry, including ones without values (e.g. only removed fields).
                     const histStatus = hist.values ? hist.values.s : undefined;
 
+                    if (histStatus !== undefined) {
+                        // Only public stretch of history can be reverted, including the entry that
+                        // made photo public. Status change to non-public disables reverting from now on.
+                        canRevert = histStatus === 5;
+                    }
+
                     if (canRevert) {
                         hist.canRevert = this.parentModule.can.restorehistory();
-                    }
-
-                    if (histStatus === 5) {
-                        // Public photos history can be reverted.
-                        canRevert = true;
-                    }
-
-                    if (histStatus !== undefined && histStatus !== 5) {
-                        // Status change to non-public, disable reverting from now on.
-                        canRevert = false;
-                        hist.canRevert = false;
                     }
 
                     if (!hist.values) {
