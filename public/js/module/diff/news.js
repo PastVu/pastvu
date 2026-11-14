@@ -120,6 +120,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 _.defaults(data.news, newsDefault);
                 data.news.user.avatar = data.news.user.avatar ? '/_a/d/' + data.news.user.avatar :
                     '/img/caps/avatar.png';
+                data.news.txt = self.renderGallery(data.news.txt);
 
                 if (self.news) {
                     self.news = ko_mapping.fromJS(data.news, self.news);
@@ -133,6 +134,12 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 if (Utils.isType('function', cb)) {
                     cb.call(ctx, data);
                 }
+            });
+        },
+
+        renderGallery: function (txt) {
+            return txt.replace(/<gallery[^>]*>([\s\S]*?)<\/gallery>/g, function (match, content) {
+                return '<div class="gallery">' + content + '</div>';
             });
         },
 
