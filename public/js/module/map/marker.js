@@ -675,8 +675,8 @@ define([
     MarkerManager.prototype.createClusters = function (data, withGravity) {
         const start = Date.now();
         const delta = this.clientClusteringDelta[this.currZoom] || this.clientClusteringDelta.default;
-        const clusterW = Utils.math.toPrecision(Math.abs(this.map.layerPointToLatLng(new L.Point(delta, 1)).lng - this.map.layerPointToLatLng(new L.Point(0, 1)).lng)); // eslint-disable-line max-len
-        const clusterH = Utils.math.toPrecision(Math.abs(this.map.layerPointToLatLng(new L.Point(1, delta)).lat - this.map.layerPointToLatLng(new L.Point(1, 0)).lat)); // eslint-disable-line max-len
+        const clusterW = Utils.math.toPrecision(Math.abs(this.map.layerPointToLatLng(new L.Point(delta, 1)).lng - this.map.layerPointToLatLng(new L.Point(0, 1)).lng));
+        const clusterH = Utils.math.toPrecision(Math.abs(this.map.layerPointToLatLng(new L.Point(1, delta)).lat - this.map.layerPointToLatLng(new L.Point(1, 0)).lat));
         const clusterWHalf = Utils.math.toPrecision(clusterW / 2);
         const clusterHHalf = Utils.math.toPrecision(clusterH / 2);
         const result = { photos: [], clusters: [] };
@@ -701,7 +701,7 @@ define([
             geoPhoto = photo.geo;
             geoPhotoCorrection = [geoPhoto[0] > 0 ? 1 : 0, geoPhoto[1] < 0 ? -1 : 0];
 
-            geo = [~~(clusterH * (~~(geoPhoto[0] / clusterH) + geoPhotoCorrection[0]) * precisionDivider) / precisionDivider, ~~(clusterW * (~~(geoPhoto[1] / clusterW) + geoPhotoCorrection[1]) * precisionDivider) / precisionDivider]; // eslint-disable-line max-len
+            geo = [~~(clusterH * (~~(geoPhoto[0] / clusterH) + geoPhotoCorrection[0]) * precisionDivider) / precisionDivider, ~~(clusterW * (~~(geoPhoto[1] / clusterW) + geoPhotoCorrection[1]) * precisionDivider) / precisionDivider];
             clustCoordId = geo[0] + '@' + geo[1];
             cluster = clusters[clustCoordId];
 
@@ -741,7 +741,7 @@ define([
 
             if (cluster.c > 2) {
                 if (withGravity) {
-                    cluster.geo = [~~(cluster.lats / cluster.c * precisionDivider) / precisionDivider, ~~(cluster.lngs / cluster.c * precisionDivider) / precisionDivider]; // eslint-disable-line max-len
+                    cluster.geo = [~~(cluster.lats / cluster.c * precisionDivider) / precisionDivider, ~~(cluster.lngs / cluster.c * precisionDivider) / precisionDivider];
                 }
 
                 cluster.c -= 1;
