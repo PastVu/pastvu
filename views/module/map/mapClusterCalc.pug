@@ -1,21 +1,11 @@
 .mapModuleWrapper(data-bind="with: repository[M!M]")
     h3(data-bind="text: $root.i18n('Cluster size parameters')")
     p(data-bind="text: $root.i18n('To set a new cluster size, grab the transparent rectangle on the map and drag it (or its edge) within the desired bounds. Click Save to apply the changes.')")
-    .mapContainer(data-bind="css: {}")
+    .mapContainer(data-bind="css: {calculating: exe()}")
         .map
+        .mapNavigation
         .clusterContainer
             .clusterRect(data-bind="style: {borderColor: changed() ? '#FF0808' : '#2daf2e', borderStyle: changed() ? 'dashed' : 'solid'}")
-        .layersPanel.fringe(data-bind="css: {open: layersOpen()}")
-            .currentLayer(data-bind="text: layerActiveDesc(), click: toggleLayers")
-            .layerSystems(data-bind="style: {width: (104 * (layersOpen() ? layers().length : 1)) + 'px'}")
-                .h_separator
-                //ko foreach: {data: $data.layers, as: 'system'}
-                .layerSystem(data-bind="css: {selected: system.selected()}")
-                    .layerHead(data-bind="text: system.desc")
-                    //ko foreach: {data:system.types, as: 'type'}
-                    .layerType(data-bind="css: {selected: type.selected()}, text: type.desc, click: function () {$parents[1].selectLayer(system.id, type.id)}")
-                    // /ko
-                // /ko
     dl.dl-horizontal
         dt(data-bind="text: $root.i18n('Current size:')")
         dd(data-bind="text: '' + wCurr() + ' x ' + hCurr() + ''")
@@ -31,6 +21,15 @@
             |  Cancel
     button.btn.btn-primary.btnSave(type="button", data-bind="style: {display: changed() || isDefault() ? 'none' : ''}, click: setDefaults")
         | Reset to default
+    p.clusterNote(data-bind="visible: changed(), text: $root.i18n('Changing the size rebuilds clusters of both photos and paintings.')")
+    .clusterRebuild(data-bind="visible: !changed()")
+        h5(data-bind="text: $root.i18n('Rebuild clusters for current size')")
+        .clusterRebuildForm
+            select.form-control(data-bind="options: rebuildTypes, optionsText: 'desc', optionsValue: 'id', value: rebuildType, enable: !rebuilding()")
+            button.btn.btn-warning(type="button", data-bind="click: rebuild, enable: !rebuilding() && !exe()")
+                span.glyphicon.glyphicon-refresh
+                |  
+                span(data-bind="text: rebuilding() ? $root.i18n('Rebuilding...') : $root.i18n('Rebuild clusters')")
     p(style="margin-top: 6px; margin-bottom: 0;", data-bind="style: {display: exe() && changed() ? '' : 'none'}, text: $root.i18n('Recomputing the parameters at each zoom level:')")
     .progress.progress-striped.active(data-bind="style: {display: exe() && changed() ? '' : 'none'}")
         .progress-bar.progress-bar-success(data-bind="style: {width: exePercent() + '%'}")
