@@ -19,6 +19,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
     return Cliche.extend({
         pug: pug,
         create: function () {
+            this.content = ko.computed(function () {
+                return this.gallery(this.news() ? this.news().content : '');
+            }, this);
             this.binded = false;
             this.auth = globalVM.repository['m/common/auth'];
             this.news = null;
