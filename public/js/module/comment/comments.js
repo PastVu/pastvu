@@ -3,1582 +3,1594 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-define([
-    'underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping',
-    'noties', 'm/_moduleCliche', 'globalVM', 'i18n', 'renderer', 'moment', 'lib/doT', 'text!tpl/comment/comments.pug',
-    'text!tpl/comment/cdot.pug', 'text!tpl/comment/cdotanonym.pug', 'text!tpl/comment/cdotauth.pug',
-    'text!tpl/comment/cdotdel.pug', 'text!tpl/comment/cdotadd.pug', 'css!style/comment/comments',
-], function (_, _s, Browser, Utils, socket, P, ko, koMapping,
-             noties, Cliche, globalVM, i18n, renderer, moment, doT, html,
-             doTComments, doTCommentAnonym, doTCommentAuth,
-             dotCommentDel, dotCommentAdd) {
-    'use strict';
+import { loadModules } from 'frontend/lazy';
+import _ from 'underscore';
+import _s from 'underscore.string';
+import Browser from 'Browser';
+import Utils from 'Utils';
+import socket from 'socket';
+import P from 'Params';
+import ko from 'knockout';
+import 'knockout.mapping';
+import noties from 'noties';
+import Cliche from 'm/_moduleCliche';
+import globalVM from 'globalVM';
+import i18n from 'i18n';
+import renderer from 'renderer';
+import 'moment';
+import doT from 'lib/doT';
+import html from 'tpl/comment/comments.pug?raw';
+import doTComments from 'tpl/comment/cdot.pug?raw';
+import doTCommentAnonym from 'tpl/comment/cdotanonym.pug?raw';
+import doTCommentAuth from 'tpl/comment/cdotauth.pug?raw';
+import dotCommentDel from 'tpl/comment/cdotdel.pug?raw';
+import dotCommentAdd from 'tpl/comment/cdotadd.pug?raw';
+import 'style/comment/comments.css';
 
-    const $window = $(window);
-    const commentNestingMax = 9;
+const $window = $(window);
+const commentNestingMax = 9;
 
-    let tplComments; // Шаблон списка комментариев (для анонимных или авторизованных пользователей)
-    let tplCommentsDel; // Шаблон списка удалённых комментариев (при раскрытии ветки удаленных)
-    let tplCommentAuth; // Шаблон комментария для авторизованного пользователя. Нужен для вставка результата при добавлении/редактировании комментария
-    let tplCommentDel; // Шаблон свёрнутого удалённого комментария
-    let tplCommentAdd; // Шаблон ответа/редактирования. Поле ввода
+let tplComments; // Шаблон списка комментариев (для анонимных или авторизованных пользователей)
+let tplCommentsDel; // Шаблон списка удалённых комментариев (при раскрытии ветки удаленных)
+let tplCommentAuth; // Шаблон комментария для авторизованного пользователя. Нужен для вставка результата при добавлении/редактировании комментария
+let tplCommentDel; // Шаблон свёрнутого удалённого комментария
+let tplCommentAdd; // Шаблон ответа/редактирования. Поле ввода
 
-    const formatDateRelative = Utils.format.date.relative;
-    const formatDateRelativeIn = Utils.format.date.relativeIn;
+const formatDateRelative = Utils.format.date.relative;
+const formatDateRelativeIn = Utils.format.date.relativeIn;
 
-    //Берем элементы, дочерние текущему комментарию
-    //Сначала используем nextUntil для последовательной выборки элементов до достижения уровня текущего,
-    //затем выбранные тестируем, что они уровнем ниже с помощью regexp (/l[n-9]/g),
-    //так как nextUntil может вернуть комментарии уровнем выше текущего, если они встретятся сразу без равного текущему уровню
-    const getChildComments = function (comment, $c) {
-        const regexString = comment.level < commentNestingMax ? 'l[' + (comment.level + 1) + '-' + commentNestingMax + ']' : 'l' + commentNestingMax;
+//Берем элементы, дочерние текущему комментарию
+//Сначала используем nextUntil для последовательной выборки элементов до достижения уровня текущего,
+//затем выбранные тестируем, что они уровнем ниже с помощью regexp (/l[n-9]/g),
+//так как nextUntil может вернуть комментарии уровнем выше текущего, если они встретятся сразу без равного текущему уровню
+const getChildComments = function (comment, $c) {
+    const regexString = comment.level < commentNestingMax ? 'l[' + (comment.level + 1) + '-' + commentNestingMax + ']' : 'l' + commentNestingMax;
 
-        return $c.nextUntil('.l' + comment.level).filter(function () {
-            return new RegExp(regexString, 'g').test(this.className);
-        });
-    };
+    return $c.nextUntil('.l' + comment.level).filter(function () {
+        return new RegExp(regexString, 'g').test(this.className);
+    });
+};
 
-    const getCid = function (element) {
-        const cid = $(element).closest('.c').attr('id');
+const getCid = function (element) {
+    const cid = $(element).closest('.c').attr('id');
 
-        if (cid) {
-            return Number(cid.substr(1));
+    if (cid) {
+        return Number(cid.substr(1));
+    }
+};
+
+export default Cliche.extend({
+    pug: html,
+    options: {
+        type: 'photo', //Тип объекта по умолчанию (фото, новость и т.д.)
+        count: 0, //Начальное кол-во комментариев
+        countNew: 0, //Начальное кол-во новых комментариев
+        subscr: false, //Подписан ли пользователь на комментарии
+        autoShowOff: false, //Выключить автоматический show после создания
+        nocomments: false, //Запрещено ли писать комментарии
+        canReply: false, //Запрещено ли писать комментарии
+    },
+    create: function () {
+        this.destroy = _.wrap(this.destroy, this.localDestroy);
+
+        this.auth = globalVM.repository['m/common/auth'];
+        this.type = this.options.type;
+        this.cid = null;
+        this.count = ko.observable(this.options.count || 0);
+        this.countNew = ko.observable(this.options.countNew || 0);
+        this.countDel = ko.observable(0);
+        this.latestCommentCid = ko.observable(0);
+        this.subscr = ko.observable(this.options.subscr || false);
+        this.nocomments = ko.observable(this.options.nocomments);
+        this.canReply = ko.observable(this.options.canReply);
+        this.showDelComments = ko.observable(this.auth.loggedIn() &&
+            (this.auth.iAm.settings.comment_show_deleted() || globalVM.router.params().hl));
+
+        this.loading = ko.observable(false);
+        this.showTree = ko.observable(false);
+        this.exe = ko.observable(false);
+        this.navigating = ko.observable(false); //Флаг, что идет навигация к новому комментарию, чтобы избежать множества нажатий
+        this.touch = Browser.support.touch;
+
+        this.canModerate = ko.observable(false);
+        this.canFrag = this.type === 'photo';
+
+        this.commentsHash = {};
+        this.users = {};
+
+        this.chkSubscrClickBind = this.chkSubscrClick.bind(this);
+        this.inViewportCheckBind = this.inViewportCheck.bind(this);
+        this.fraging = ko.observable(false);
+
+        this.$cmts = $('.cmts', this.$dom);
+        ko.applyBindings(globalVM, this.$dom[0]);
+
+        // Subscriptions
+        if (!this.auth.loggedIn()) {
+            this.subscriptions.loggedIn = this.auth.loggedIn.subscribe(this.loggedInHandler, this);
         }
-    };
 
-    return Cliche.extend({
-        pug: html,
-        options: {
-            type: 'photo', //Тип объекта по умолчанию (фото, новость и т.д.)
-            count: 0, //Начальное кол-во комментариев
-            countNew: 0, //Начальное кол-во новых комментариев
-            subscr: false, //Подписан ли пользователь на комментарии
-            autoShowOff: false, //Выключить автоматический show после создания
-            nocomments: false, //Запрещено ли писать комментарии
-            canReply: false, //Запрещено ли писать комментарии
-        },
-        create: function () {
-            this.destroy = _.wrap(this.destroy, this.localDestroy);
+        this.subscriptions.countNew = this.countNew.subscribe(this.navCounterHandler, this);
+        this.subscriptions.showTree = this.showTree.subscribe(this.showTreeHandler, this);
 
-            this.auth = globalVM.repository['m/common/auth'];
-            this.type = this.options.type;
-            this.cid = null;
-            this.count = ko.observable(this.options.count || 0);
-            this.countNew = ko.observable(this.options.countNew || 0);
-            this.countDel = ko.observable(0);
-            this.latestCommentCid = ko.observable(0);
-            this.subscr = ko.observable(this.options.subscr || false);
-            this.nocomments = ko.observable(this.options.nocomments);
-            this.canReply = ko.observable(this.options.canReply);
-            this.showDelComments = ko.observable(this.auth.loggedIn() &&
-                (this.auth.iAm.settings.comment_show_deleted() || globalVM.router.params().hl));
+        if (!this.options.autoShowOff) {
+            this.activate();
+        }
+    },
+    show: function () {
+        globalVM.func.showContainer(this.$container);
+        this.eventsOn();
+        this.showing = true;
+    },
+    hide: function () {
+        if (!this.showing) {
+            return;
+        }
 
-            this.loading = ko.observable(false);
-            this.showTree = ko.observable(false);
-            this.exe = ko.observable(false);
-            this.navigating = ko.observable(false); //Флаг, что идет навигация к новому комментарию, чтобы избежать множества нажатий
-            this.touch = Browser.support.touch;
+        this.deactivate();
+        globalVM.func.hideContainer(this.$container);
+        this.showing = false;
+    },
+    localDestroy: function (destroy) {
+        this.hide();
 
-            this.canModerate = ko.observable(false);
-            this.canFrag = this.type === 'photo';
+        if (this.cZeroDetached) {
+            this.cZeroDetached.remove();
+        }
 
-            this.commentsHash = {};
-            this.users = {};
+        delete this.$cmts;
+        destroy.call(this);
+    },
+    activate: function (params, options, cb, ctx) {
+        const loggedIn = this.auth.loggedIn();
 
-            this.chkSubscrClickBind = this.chkSubscrClick.bind(this);
-            this.inViewportCheckBind = this.inViewportCheck.bind(this);
-            this.fraging = ko.observable(false);
+        if (params) {
+            this.cid = params.cid;
+            this.count(params.count);
+            this.countNew(params.countNew);
+            this.subscr(!!params.subscr);
+            this.nocomments(!!params.nocomments);
+            // Предварительно устанавливаем возможность комментирования, если комментарии не закрыты и пользователь зарегистрирован,
+            // так как скорее всего запрос комментариев вернёт такое же право, чтобы сразу показалась кнопка Добавить
+            this.canReply(params.canReply && !params.nocomments);
+            this.canModerate(false); // Кнопку модерирования наоборот каждый раз прячем
+        }
 
-            this.$cmts = $('.cmts', this.$dom);
-            ko.applyBindings(globalVM, this.$dom[0]);
+        //Удаляем ожидание существующей проверки и обработчик скролла,
+        //если, например, вызвали эту активацию еще раз до попадания во вьюпорт
+        this.viewScrollOff();
+        window.clearTimeout(this.viewportCheckTimeout);
+        window.clearTimeout(this.receiveTimeout);
+        this.inViewport = false;
 
-            // Subscriptions
-            if (!this.auth.loggedIn()) {
-                this.subscriptions.loggedIn = this.auth.loggedIn.subscribe(this.loggedInHandler, this);
+        this.loading(true);
+
+        if (loggedIn) {
+            this.addMeToCommentsUsers();
+        }
+
+        if (cb) {
+            this.activatorRecieveNotice = { cb: cb, ctx: ctx };
+        }
+
+        if (this.showTree() || options && options.instant) {
+            //Если дерево уже показывается или в опциях стоит немедленный показ, то запрашиваем сразу
+            this.receiveTimeout = window.setTimeout(this.receive.bind(this), 100);
+        } else {
+            //В противном случае запрашиваем только при попадании во вьюпорт с необходимой задержкой
+            this.viewportCheckTimeout = window.setTimeout(this.inViewportCheckBind, options && options.checkTimeout || 10);
+        }
+
+        if (!this.showing) {
+            //Пока данные запрашиваются в первый раз, компилим doT шаблоны для разных вариантов, если еще не скомпилили их раньше
+            if (!tplComments) {
+                tplComments = doT.template(doTComments, undefined, {
+                    comment: loggedIn ? doTCommentAuth : doTCommentAnonym,
+                    del: dotCommentDel,
+                });
             }
 
-            this.subscriptions.countNew = this.countNew.subscribe(this.navCounterHandler, this);
-            this.subscriptions.showTree = this.showTree.subscribe(this.showTreeHandler, this);
-
-            if (!this.options.autoShowOff) {
-                this.activate();
-            }
-        },
-        show: function () {
-            globalVM.func.showContainer(this.$container);
-            this.eventsOn();
-            this.showing = true;
-        },
-        hide: function () {
-            if (!this.showing) {
-                return;
+            if (loggedIn && !tplCommentAuth) {
+                tplCommentAuth = doT.template(doTCommentAuth, _.defaults({ varname: 'c,it' }, doT.templateSettings), { del: dotCommentDel });
+                tplCommentAdd = doT.template(dotCommentAdd);
             }
 
-            this.deactivate();
-            globalVM.func.hideContainer(this.$container);
-            this.showing = false;
-        },
-        localDestroy: function (destroy) {
-            this.hide();
+            this.show();
+        }
+    },
+    deactivate: function (isNewCid) {
+        if (!this.showing) {
+            return;
+        }
 
-            if (this.cZeroDetached) {
-                this.cZeroDetached.remove();
-            }
+        this.viewScrollOff();
+        window.clearTimeout(this.viewportCheckTimeout);
+        window.clearTimeout(this.receiveTimeout);
+        this.inViewport = false;
 
-            delete this.$cmts;
-            destroy.call(this);
-        },
-        activate: function (params, options, cb, ctx) {
-            const loggedIn = this.auth.loggedIn();
+        if (this.auth.loggedIn() && this.showTree()) {
+            if (isNewCid) {
+                // Loading new photo or news item. Delete zero level input, to have it rendered again
+                // to reflect subscription status of the new item.
+                if (this.cZeroDetached) {
+                    this.cZeroDetached.remove();
+                }
 
-            if (params) {
-                this.cid = params.cid;
-                this.count(params.count);
-                this.countNew(params.countNew);
-                this.subscr(!!params.subscr);
-                this.nocomments(!!params.nocomments);
-                // Предварительно устанавливаем возможность комментирования, если комментарии не закрыты и пользователь зарегистрирован,
-                // так как скорее всего запрос комментариев вернёт такое же право, чтобы сразу показалась кнопка Добавить
-                this.canReply(params.canReply && !params.nocomments);
-                this.canModerate(false); // Кнопку модерирования наоборот каждый раз прячем
-            }
-
-            //Удаляем ожидание существующей проверки и обработчик скролла,
-            //если, например, вызвали эту активацию еще раз до попадания во вьюпорт
-            this.viewScrollOff();
-            window.clearTimeout(this.viewportCheckTimeout);
-            window.clearTimeout(this.receiveTimeout);
-            this.inViewport = false;
-
-            this.loading(true);
-
-            if (loggedIn) {
-                this.addMeToCommentsUsers();
-            }
-
-            if (cb) {
-                this.activatorRecieveNotice = { cb: cb, ctx: ctx };
-            }
-
-            if (this.showTree() || options && options.instant) {
-                //Если дерево уже показывается или в опциях стоит немедленный показ, то запрашиваем сразу
-                this.receiveTimeout = window.setTimeout(this.receive.bind(this), 100);
+                this.cZeroCreated = false;
             } else {
-                //В противном случае запрашиваем только при попадании во вьюпорт с необходимой задержкой
-                this.viewportCheckTimeout = window.setTimeout(this.inViewportCheckBind, options && options.checkTimeout || 10);
+                // Likely photo page editing happens, detach zero level input and re-add it later.
+                this.inputZeroDetach();
             }
 
-            if (!this.showing) {
-                //Пока данные запрашиваются в первый раз, компилим doT шаблоны для разных вариантов, если еще не скомпилили их раньше
-                if (!tplComments) {
-                    tplComments = doT.template(doTComments, undefined, {
-                        comment: loggedIn ? doTCommentAuth : doTCommentAnonym,
-                        del: dotCommentDel,
-                    });
+            // Delete all comment inputs through jquery to detach events.
+            $('.cadd', this.$cmts).remove();
+        }
+
+        this.$cmts[0].innerHTML = ''; //Просто очищаем контент, чтобы при дестрое модуля jquery не пробегал по всем элеменат в поисках данных для удаления
+
+        this.users = {};
+        this.loading(false);
+        this.showTree(false);
+    },
+    eventsOn: function () {
+        const that = this;
+
+        this.$cmts
+            .off('click') //Отключаем все повешенные события на клик, если вызываем этот метод повторно (например, при логине)
+            .on('click', '.changed', function () {
+                const cid = getCid(this);
+
+                if (cid) {
+                    that.showHistory(cid);
                 }
+            });
 
-                if (loggedIn && !tplCommentAuth) {
-                    tplCommentAuth = doT.template(doTCommentAuth, _.defaults({ varname: 'c,it' }, doT.templateSettings), { del: dotCommentDel });
-                    tplCommentAdd = doT.template(dotCommentAdd);
-                }
-
-                this.show();
-            }
-        },
-        deactivate: function (isNewCid) {
-            if (!this.showing) {
-                return;
-            }
-
-            this.viewScrollOff();
-            window.clearTimeout(this.viewportCheckTimeout);
-            window.clearTimeout(this.receiveTimeout);
-            this.inViewport = false;
-
-            if (this.auth.loggedIn() && this.showTree()) {
-                if (isNewCid) {
-                    // Loading new photo or news item. Delete zero level input, to have it rendered again
-                    // to reflect subscription status of the new item.
-                    if (this.cZeroDetached) {
-                        this.cZeroDetached.remove();
-                    }
-
-                    this.cZeroCreated = false;
-                } else {
-                    // Likely photo page editing happens, detach zero level input and re-add it later.
-                    this.inputZeroDetach();
-                }
-
-                // Delete all comment inputs through jquery to detach events.
-                $('.cadd', this.$cmts).remove();
-            }
-
-            this.$cmts[0].innerHTML = ''; //Просто очищаем контент, чтобы при дестрое модуля jquery не пробегал по всем элеменат в поисках данных для удаления
-
-            this.users = {};
-            this.loading(false);
-            this.showTree(false);
-        },
-        eventsOn: function () {
-            const that = this;
-
+        if (this.auth.loggedIn()) {
             this.$cmts
-                .off('click') //Отключаем все повешенные события на клик, если вызываем этот метод повторно (например, при логине)
-                .on('click', '.changed', function () {
+                .on('click', '.reply', function () {
                     const cid = getCid(this);
 
                     if (cid) {
-                        that.showHistory(cid);
+                        that.reply(cid);
+                    }
+                })
+                .on('click', '.edit', function () {
+                    const $c = $(this).closest('.c');
+                    const cid = getCid($c);
+
+                    if (cid) {
+                        that.edit(cid, $c);
+                    }
+                })
+                .on('click', '.remove', function () {
+                    const $c = $(this).closest('.c');
+                    const cid = getCid($c);
+
+                    if (cid) {
+                        that.remove(cid, $c);
+                    }
+                })
+                .on('click', '.delico', function () {
+                    const $c = $(this).closest('.c');
+                    const cid = getCid($c);
+
+                    if (cid) {
+                        that.delShow(cid, $c);
                     }
                 });
+        }
+    },
+    viewScrollOn: function () {
+        if (!this.viewportScrollHandling) {
+            this.inViewportCheckDebounced = _.debounce(this.inViewportCheckBind, 50);
+            this.viewportScrollHandling = function () {
+                this.inViewportCheckDebounced();
+            }.bind(this);
+            $window.on('scroll', this.viewportScrollHandling);
+        }
+    },
+    viewScrollOff: function () {
+        if (this.viewportScrollHandling) {
+            $window.off('scroll', this.viewportScrollHandling);
+            delete this.viewportScrollHandling;
+            delete this.inViewportCheckDebounced;
+        }
+    },
+    //Проверяем, что $container находится в видимой области экрана
+    inViewportCheck: function (cb, ctx, force) {
+        window.clearTimeout(this.viewportCheckTimeout);
 
-            if (this.auth.loggedIn()) {
-                this.$cmts
-                    .on('click', '.reply', function () {
-                        const cid = getCid(this);
+        if (!this.inViewport) {
+            const cTop = this.$container.offset().top;
+            const wFold = P.window.h() + (window.pageYOffset || $window.scrollTop());
 
-                        if (cid) {
-                            that.reply(cid);
+            if (force || cTop < wFold) {
+                this.inViewport = true;
+                this.viewScrollOff();
+
+                if (force) {
+                    this.receive(function () {
+                        if (force.cb) {
+                            force.cb.call(force.ctx);
                         }
-                    })
-                    .on('click', '.edit', function () {
-                        const $c = $(this).closest('.c');
-                        const cid = getCid($c);
 
-                        if (cid) {
-                            that.edit(cid, $c);
-                        }
-                    })
-                    .on('click', '.remove', function () {
-                        const $c = $(this).closest('.c');
-                        const cid = getCid($c);
-
-                        if (cid) {
-                            that.remove(cid, $c);
-                        }
-                    })
-                    .on('click', '.delico', function () {
-                        const $c = $(this).closest('.c');
-                        const cid = getCid($c);
-
-                        if (cid) {
-                            that.delShow(cid, $c);
+                        if (cb) {
+                            cb.call(ctx);
                         }
                     });
-            }
-        },
-        viewScrollOn: function () {
-            if (!this.viewportScrollHandling) {
-                this.inViewportCheckDebounced = _.debounce(this.inViewportCheckBind, 50);
-                this.viewportScrollHandling = function () {
-                    this.inViewportCheckDebounced();
-                }.bind(this);
-                $window.on('scroll', this.viewportScrollHandling);
-            }
-        },
-        viewScrollOff: function () {
-            if (this.viewportScrollHandling) {
-                $window.off('scroll', this.viewportScrollHandling);
-                delete this.viewportScrollHandling;
-                delete this.inViewportCheckDebounced;
-            }
-        },
-        //Проверяем, что $container находится в видимой области экрана
-        inViewportCheck: function (cb, ctx, force) {
-            window.clearTimeout(this.viewportCheckTimeout);
-
-            if (!this.inViewport) {
-                const cTop = this.$container.offset().top;
-                const wFold = P.window.h() + (window.pageYOffset || $window.scrollTop());
-
-                if (force || cTop < wFold) {
-                    this.inViewport = true;
-                    this.viewScrollOff();
-
-                    if (force) {
-                        this.receive(function () {
-                            if (force.cb) {
-                                force.cb.call(force.ctx);
-                            }
-
-                            if (cb) {
-                                cb.call(ctx);
-                            }
-                        });
-                    } else {
-                        const delay = this.count() > 50 ? 750 : 400;
-
-                        this.receiveTimeout = window.setTimeout(this.receive.bind(this, cb || null, ctx || null), delay);
-                    }
                 } else {
-                    //Если после первая проверка отрицательна, вешаем следующую проверку на скроллинг
-                    this.viewScrollOn();
+                    const delay = this.count() > 50 ? 750 : 400;
+
+                    this.receiveTimeout = window.setTimeout(this.receive.bind(this, cb || null, ctx || null), delay);
                 }
-            }
-        },
-
-        loggedInHandler: function () {
-            // После логина добавляем себя в комментаторы и заново запрашиваем комментарии (если есть новые, например)
-            this.addMeToCommentsUsers();
-            //Заново вешаем события на блок комментариев с учетом логина
-            this.eventsOn();
-
-            //Компилим шаблоны для зарегистрированного пользователя
-            tplComments = doT.template(doTComments, undefined, { comment: doTCommentAuth, del: dotCommentDel });
-            tplCommentAuth = doT.template(doTCommentAuth, _.defaults({ varname: 'c,it' }, doT.templateSettings), { del: dotCommentDel });
-            tplCommentAdd = doT.template(dotCommentAdd);
-
-            if (!this.inViewport) {
-                this.inViewportCheck(null, null, true); //Если еще не во вьюпорте, форсируем
             } else {
-                this.receive(); //Если во вьюпорте, просто заново перезапрашиаваем
+                //Если после первая проверка отрицательна, вешаем следующую проверку на скроллинг
+                this.viewScrollOn();
             }
+        }
+    },
 
-            this.subscriptions.loggedIn.dispose();
-            delete this.subscriptions.loggedIn;
-        },
-        addMeToCommentsUsers: function () {
-            if (this.users[this.auth.iAm.login()] === undefined) {
-                const u = {
-                    login: this.auth.iAm.login(),
-                    avatar: this.auth.iAm.avatarth(),
-                    disp: this.auth.iAm.disp(),
-                    ranks: this.auth.iAm.ranks(),
-                    online: true,
-                };
+    loggedInHandler: function () {
+        // После логина добавляем себя в комментаторы и заново запрашиваем комментарии (если есть новые, например)
+        this.addMeToCommentsUsers();
+        //Заново вешаем события на блок комментариев с учетом логина
+        this.eventsOn();
 
-                if (u.ranks) {
-                    //Если есть звания у пользователя - обрабатываем их
-                    const rankObj = {};
+        //Компилим шаблоны для зарегистрированного пользователя
+        tplComments = doT.template(doTComments, undefined, { comment: doTCommentAuth, del: dotCommentDel });
+        tplCommentAuth = doT.template(doTCommentAuth, _.defaults({ varname: 'c,it' }, doT.templateSettings), { del: dotCommentDel });
+        tplCommentAdd = doT.template(dotCommentAdd);
 
-                    rankObj[this.auth.iAm.login()] = u;
-                    this.usersRanks(rankObj);
-                }
+        if (!this.inViewport) {
+            this.inViewportCheck(null, null, true); //Если еще не во вьюпорте, форсируем
+        } else {
+            this.receive(); //Если во вьюпорте, просто заново перезапрашиаваем
+        }
 
-                this.users[this.auth.iAm.login()] = u;
-            }
-        },
-
-        // Подписывается-отписывается от комментариев
-        subscribe: function (data, event, byCommentCreate) {
-            socket.run('subscr.subscribeUser', { cid: this.cid, type: this.type, subscribe: !this.subscr() }, true)
-                .then(function (result) {
-                    const subscrFlag = !!result.subscribe;
-                    const subscrGAction = subscrFlag ? byCommentCreate ? 'createAutoReply' : 'create' : 'delete';
-
-                    this.parentModule.setSubscr(subscrFlag);
-                    this.subscr(subscrFlag);
-                    ga('send', 'event', 'subscription', subscrGAction, 'subscription ' + subscrGAction);
-                }.bind(this));
-        },
-
-        receive: function (cb, ctx, cbBeforeRender) {
-            this.loading(true);
-            socket.run('comment.giveForObj', { type: this.type, cid: this.cid, showDel: this.showDelComments() }, true).then(function (data) {
-                if (data.cid !== this.cid) {
-                    console.info('Comments received for another ' + this.type + ' ' + data.cid);
-                } else {
-                    const canModerate = !!data.canModerate;
-                    const canReply = !!data.canReply;
-
-                    this.usersRanks(data.users);
-                    this.users = _.assign(data.users, this.users);
-
-                    // Если общее кол-во изменилось пока получали, то присваиваем заново
-                    if (this.count() !== data.countTotal) {
-                        this.parentModule.commentCountIncrement(data.countTotal - this.count());
-                        this.count(data.countTotal);
-                    }
-
-                    this.countNew(data.countNew);
-                    this.countDel(data.countDel || 0);
-                    this.canModerate(canModerate);
-                    this.canReply(canReply);
-                    this.latestCommentCid(data.latestCid);
-
-                    if (Utils.isType('function', cbBeforeRender)) {
-                        cbBeforeRender.call(ctx, data);
-                    }
-
-                    // Отрисовываем комментарии путем замены innerHTML результатом шаблона dot
-                    this.$cmts[0].innerHTML = this.renderComments(data.comments, tplComments, true);
-
-                    // Если у пользователя есть право отвечать в комментариях этого объекта,
-                    // сразу добавляем ответ нулевого уровня
-                    if (canReply) {
-                        this.inputZeroAdd();
-                    }
-
-                    this.showTree(true);
-                }
-
-                this.loading(false);
-
-                if (Utils.isType('function', cb)) {
-                    cb.call(ctx, data);
-                }
-
-                // Уведомляем активатор (родительский модуль) о получении данных
-                if (this.activatorRecieveNotice) {
-                    this.activatorRecieveNotice.cb.call(this.activatorRecieveNotice.ctx || window);
-                    delete this.activatorRecieveNotice;
-                }
-            }.bind(this));
-        },
-        renderComments: function (tree, tpl, changeHash) {
-            const usersHash = this.users;
-            const commentsPlain = [];
-            let commentsHash;
-
-            if (changeHash) {
-                commentsHash = this.commentsHash = {};
-            } else {
-                commentsHash = this.commentsHash;
-            }
-
-            (function treeRecursive(tree) {
-                let comment;
-
-                for (let i = 0, len = tree.length; i < len; i++) {
-                    comment = tree[i];
-                    comment.user = usersHash[comment.user];
-                    commentsHash[comment.cid] = comment;
-                    commentsPlain.push(comment);
-
-                    if (comment.comments) {
-                        treeRecursive(comment.comments, comment);
-                    }
-                }
-            }(tree));
-
-            return tpl({
-                comments: commentsPlain,
-                reply: this.canReply(),
-                mod: this.canModerate(),
-                fDate: formatDateRelative,
-                fDateIn: formatDateRelativeIn,
-                i18n: globalVM.i18n,
-            });
-        },
-        usersRanks: function (users) {
-            let user;
-            let rank;
-            let r;
-
-            for (const i in users) { //eslint-disable-line guard-for-in
-                user = users[i];
-
-                if (user !== undefined && user.ranks && user.ranks.length) {
-                    user.rnks = '';
-
-                    for (r = 0; r < user.ranks.length; r++) {
-                        rank = globalVM.ranks[user.ranks[r]];
-
-                        if (rank) {
-                            user.rnks += '<img class="rank" src="' + rank.src + '" title="' + rank.title + '">';
-                        }
-                    }
-                }
-            }
-        },
-
-        scrollTo: function (ccid) {
-            let $element;
-            let highlight;
-            let elementHeight;
-            let scrollTopOffset;
-            let scrollDelta;
-
-            if (ccid === true) {
-                if (this.countNew()) {
-                    this.navCheckBefore(0, true);
-                } else {
-                    $element = this.$container;
-                }
-            } else if (ccid === 'unread') {
-                if (this.countNew()) {
-                    this.navCheckBefore(0, true);
-                }
-            } else if (ccid === 'latest') {
-                $element = $('.latest', this.$cmts);
-                ccid = this.latestCommentCid();
-                highlight = true;
-            } else {
-                $element = $('#c' + ccid, this.$cmts);
-                highlight = true;
-            }
-
-            if ($element && $element.length === 1) {
-                this.highlightOff();
-
-                //Если высота комментария меньше высоты окна, позиционируем комментарий по центру окна
-                elementHeight = $element.outerHeight();
-                scrollTopOffset = $element.offset().top;
-
-                if (elementHeight < P.window.h()) {
-                    scrollTopOffset += elementHeight / 2 - P.window.h() / 2;
-                }
-
-                //Если скроллировать больше 2сек, т.е. 20тыс.пикс, то устанавливаем скролл без анимации
-                scrollDelta = Math.abs(scrollTopOffset - (window.pageYOffset || $window.scrollTop()));
-
-                if (scrollDelta > 20000) {
-                    $window.scrollTop(scrollTopOffset);
-
-                    if (highlight) {
-                        this.highlight(ccid);
-                    }
-                } else {
-                    //Анимация - 1ms на каждые 10px, но не менее 600ms
-                    $window.scrollTo(scrollTopOffset - P.window.head, {
-                        duration: Math.max(600, scrollDelta / 10 >> 0), onAfter: function () {
-                            if (highlight) {
-                                this.highlight(ccid);
-                            }
-                        }.bind(this),
-                    });
-                }
-            }
-
-            return $element;
-        },
-        highlight: function (ccid) {
-            $('#c' + ccid, this.$cmts).addClass('hl');
-        },
-        highlightOff: function () {
-            $('.c.hl', this.$cmts).removeClass('hl');
-        },
-        getLatestCommentStamp: function () {
-            if (this.commentsHash[this.latestCommentCid()]) {
-                return formatDateRelative(new Date(this.commentsHash[this.latestCommentCid()].stamp));
-            }
-
-            return '';
-        },
-        // Создаёт поле ввода комментария. Ответ или редактирование
-        inputCreate: function (relatedComment, $cedit) {
-            let $cadd;
-            let $input;
-            let $insertAfter;
-            let inputCid = 0;
-            let level = 0;
-            let txt;
-            const that = this;
-            let findCommentLastChild;
-            const setevents = function () {
-                $input.on('focus', function () {
-                    that.inputActivate($(this).closest('.cadd'));
-                });
-                $('.cinputLabel', $cadd).on('click', function () {
-                    that.inputActivate($(this).closest('.cadd'), null, true, true);
-                });
+        this.subscriptions.loggedIn.dispose();
+        delete this.subscriptions.loggedIn;
+    },
+    addMeToCommentsUsers: function () {
+        if (this.users[this.auth.iAm.login()] === undefined) {
+            const u = {
+                login: this.auth.iAm.login(),
+                avatar: this.auth.iAm.avatarth(),
+                disp: this.auth.iAm.disp(),
+                ranks: this.auth.iAm.ranks(),
+                online: true,
             };
 
-            if (relatedComment) {
-                if ($cedit) {
-                    $insertAfter = $cedit;
-                    level = relatedComment.level;
-                    txt = Utils.txtHtmlToPlain(relatedComment.txt);
-                } else {
-                    if (relatedComment.level === commentNestingMax) {
-                        // Если отвечают на комментарий максимального уровня, делаем так чтобы ответ был на его родительский
-                        relatedComment = this.commentsHash[relatedComment.parent];
-                    }
+            if (u.ranks) {
+                //Если есть звания у пользователя - обрабатываем их
+                const rankObj = {};
 
-                    findCommentLastChild = function (c) {
-                        return c.comments && c.comments.length ? findCommentLastChild(c.comments[c.comments.length - 1]) : c;
-                    };
-                    $insertAfter = $('#c' + findCommentLastChild(relatedComment).cid, this.$cmts);
-                    level = relatedComment.level + 1;
+                rankObj[this.auth.iAm.login()] = u;
+                this.usersRanks(rankObj);
+            }
+
+            this.users[this.auth.iAm.login()] = u;
+        }
+    },
+
+    // Подписывается-отписывается от комментариев
+    subscribe: function (data, event, byCommentCreate) {
+        socket.run('subscr.subscribeUser', { cid: this.cid, type: this.type, subscribe: !this.subscr() }, true)
+            .then(function (result) {
+                const subscrFlag = !!result.subscribe;
+                const subscrGAction = subscrFlag ? byCommentCreate ? 'createAutoReply' : 'create' : 'delete';
+
+                this.parentModule.setSubscr(subscrFlag);
+                this.subscr(subscrFlag);
+                ga('send', 'event', 'subscription', subscrGAction, 'subscription ' + subscrGAction);
+            }.bind(this));
+    },
+
+    receive: function (cb, ctx, cbBeforeRender) {
+        this.loading(true);
+        socket.run('comment.giveForObj', { type: this.type, cid: this.cid, showDel: this.showDelComments() }, true).then(function (data) {
+            if (data.cid !== this.cid) {
+                console.info('Comments received for another ' + this.type + ' ' + data.cid);
+            } else {
+                const canModerate = !!data.canModerate;
+                const canReply = !!data.canReply;
+
+                this.usersRanks(data.users);
+                this.users = _.assign(data.users, this.users);
+
+                // Если общее кол-во изменилось пока получали, то присваиваем заново
+                if (this.count() !== data.countTotal) {
+                    this.parentModule.commentCountIncrement(data.countTotal - this.count());
+                    this.count(data.countTotal);
                 }
 
-                inputCid = relatedComment.cid;
+                this.countNew(data.countNew);
+                this.countDel(data.countDel || 0);
+                this.canModerate(canModerate);
+                this.canReply(canReply);
+                this.latestCommentCid(data.latestCid);
+
+                if (Utils.isType('function', cbBeforeRender)) {
+                    cbBeforeRender.call(ctx, data);
+                }
+
+                // Отрисовываем комментарии путем замены innerHTML результатом шаблона dot
+                this.$cmts[0].innerHTML = this.renderComments(data.comments, tplComments, true);
+
+                // Если у пользователя есть право отвечать в комментариях этого объекта,
+                // сразу добавляем ответ нулевого уровня
+                if (canReply) {
+                    this.inputZeroAdd();
+                }
+
+                this.showTree(true);
             }
 
-            $cadd = $(tplCommentAdd({
-                user: $cedit ? relatedComment.user : this.users[this.auth.iAm.login()],
-                cid: inputCid,
-                level: level,
-                type: $cedit ? 'edit' : 'reply',
-                i18n: globalVM.i18n,
-            }));
-            ko.applyBindings(this, $cadd[0]);
+            this.loading(false);
 
-            if ($insertAfter && $insertAfter.length) {
-                $cadd.insertAfter($insertAfter);
+            if (Utils.isType('function', cb)) {
+                cb.call(ctx, data);
+            }
+
+            // Уведомляем активатор (родительский модуль) о получении данных
+            if (this.activatorRecieveNotice) {
+                this.activatorRecieveNotice.cb.call(this.activatorRecieveNotice.ctx || window);
+                delete this.activatorRecieveNotice;
+            }
+        }.bind(this));
+    },
+    renderComments: function (tree, tpl, changeHash) {
+        const usersHash = this.users;
+        const commentsPlain = [];
+        let commentsHash;
+
+        if (changeHash) {
+            commentsHash = this.commentsHash = {};
+        } else {
+            commentsHash = this.commentsHash;
+        }
+
+        (function treeRecursive(tree) {
+            let comment;
+
+            for (let i = 0, len = tree.length; i < len; i++) {
+                comment = tree[i];
+                comment.user = usersHash[comment.user];
+                commentsHash[comment.cid] = comment;
+                commentsPlain.push(comment);
+
+                if (comment.comments) {
+                    treeRecursive(comment.comments, comment);
+                }
+            }
+        }(tree));
+
+        return tpl({
+            comments: commentsPlain,
+            reply: this.canReply(),
+            mod: this.canModerate(),
+            fDate: formatDateRelative,
+            fDateIn: formatDateRelativeIn,
+            i18n: globalVM.i18n,
+        });
+    },
+    usersRanks: function (users) {
+        let user;
+        let rank;
+        let r;
+
+        for (const i in users) { //eslint-disable-line guard-for-in
+            user = users[i];
+
+            if (user !== undefined && user.ranks && user.ranks.length) {
+                user.rnks = '';
+
+                for (r = 0; r < user.ranks.length; r++) {
+                    rank = globalVM.ranks[user.ranks[r]];
+
+                    if (rank) {
+                        user.rnks += '<img class="rank" src="' + rank.src + '" title="' + rank.title + '">';
+                    }
+                }
+            }
+        }
+    },
+
+    scrollTo: function (ccid) {
+        let $element;
+        let highlight;
+        let elementHeight;
+        let scrollTopOffset;
+        let scrollDelta;
+
+        if (ccid === true) {
+            if (this.countNew()) {
+                this.navCheckBefore(0, true);
             } else {
-                // В случае, если комментариев еще нет, $insertAfter будет пуст и надо аппендить
-                this.$cmts.append($cadd);
+                $element = this.$container;
+            }
+        } else if (ccid === 'unread') {
+            if (this.countNew()) {
+                this.navCheckBefore(0, true);
+            }
+        } else if (ccid === 'latest') {
+            $element = $('.latest', this.$cmts);
+            ccid = this.latestCommentCid();
+            highlight = true;
+        } else {
+            $element = $('#c' + ccid, this.$cmts);
+            highlight = true;
+        }
+
+        if ($element && $element.length === 1) {
+            this.highlightOff();
+
+            //Если высота комментария меньше высоты окна, позиционируем комментарий по центру окна
+            elementHeight = $element.outerHeight();
+            scrollTopOffset = $element.offset().top;
+
+            if (elementHeight < P.window.h()) {
+                scrollTopOffset += elementHeight / 2 - P.window.h() / 2;
             }
 
-            $input = $('.cinput', $cadd);
+            //Если скроллировать больше 2сек, т.е. 20тыс.пикс, то устанавливаем скролл без анимации
+            scrollDelta = Math.abs(scrollTopOffset - (window.pageYOffset || $window.scrollTop()));
 
-            if (relatedComment) {
-                if ($cedit) {
-                    $input.val(txt);
-                    $cadd.addClass('hasContent');
-                    this.inputCheckHeight($cadd, $input, txt); //Задаем высоту textarea под контент
-                    this.inputActivate($cadd, 400, false, true); //Активируем область ввода после inputCheckHeight без проверки вхождения во viewport, так как это тормозит chrome и не нужно в случае редактирования
-                    setevents();
-                } else {
-                    this.inputActivate($cadd, 400, true, true, setevents); //Активируем область ввода
+            if (scrollDelta > 20000) {
+                $window.scrollTop(scrollTopOffset);
+
+                if (highlight) {
+                    this.highlight(ccid);
                 }
             } else {
-                setevents();
-            }
-
-            return $cadd;
-        },
-        // Удаление блока комментария
-        inputRemove: function ($cadd) {
-            this.fragDelete();
-            ko.cleanNode($cadd[0]);
-            $cadd.remove();
-            delete this.commentEditingFragChanged;
-        },
-        // Очистка комментария, без удаления
-        inputReset: function ($cadd) {
-            this.fragDelete();
-            window.clearTimeout(this.blurTimeout);
-            $cadd.removeClass('hasContent hasFocus').find('.cinput').off('keyup blur').val('').height('auto');
-            delete this.commentEditingFragChanged;
-        },
-        // Добавляет комментарий нулевого уровня. Если его еще не существует - создаёт, если он отсоединён - вставляет
-        inputZeroAdd: function () {
-            if (!this.cZeroCreated) {
-                this.inputCreate();
-                this.cZeroCreated = true;
-            } else if (this.cZeroDetached) {
-                this.$cmts.append(this.cZeroDetached);
-                delete this.cZeroDetached;
-            }
-        },
-        // Отсоединяет комментарий нулевого уровня от dom
-        inputZeroDetach: function () {
-            if (this.cZeroCreated && !this.cZeroDetached) {
-                this.cZeroDetached = $('.cadd[data-level="0"]', this.$cmts).detach();
-            }
-        },
-        // Активирует поле ввода. Навешивает события, проверяет вхождение во вьюпорт и
-        // устанавливает фокус, если переданы соответствующие флаги
-        inputActivate: function ($cadd, scrollDuration, checkViewport, focus, cb, ctx) {
-            const $input = $('.cinput', $cadd);
-
-            window.clearTimeout(this.blurTimeout);
-            $cadd.addClass('hasFocus');
-
-            $input
-                .off('keyup blur')
-                .on('keyup', _.debounce(this.inputKeyup.bind(this), 300))
-                .on('blur', this.inputBlur.bind(this));
-
-            if (checkViewport) {
-                this.inputCheckInViewport($cadd, scrollDuration, function () {
-                    if (focus) {
-                        $input.focus();
-                    }
-
-                    if (cb) {
-                        cb.call(ctx || this);
-                    }
+                //Анимация - 1ms на каждые 10px, но не менее 600ms
+                $window.scrollTo(scrollTopOffset - P.window.head, {
+                    duration: Math.max(600, scrollDelta / 10 >> 0), onAfter: function () {
+                        if (highlight) {
+                            this.highlight(ccid);
+                        }
+                    }.bind(this),
                 });
-            } else if (focus) {
-                $input.focus();
+            }
+        }
+
+        return $element;
+    },
+    highlight: function (ccid) {
+        $('#c' + ccid, this.$cmts).addClass('hl');
+    },
+    highlightOff: function () {
+        $('.c.hl', this.$cmts).removeClass('hl');
+    },
+    getLatestCommentStamp: function () {
+        if (this.commentsHash[this.latestCommentCid()]) {
+            return formatDateRelative(new Date(this.commentsHash[this.latestCommentCid()].stamp));
+        }
+
+        return '';
+    },
+    // Создаёт поле ввода комментария. Ответ или редактирование
+    inputCreate: function (relatedComment, $cedit) {
+        let $cadd;
+        let $input;
+        let $insertAfter;
+        let inputCid = 0;
+        let level = 0;
+        let txt;
+        const that = this;
+        let findCommentLastChild;
+        const setevents = function () {
+            $input.on('focus', function () {
+                that.inputActivate($(this).closest('.cadd'));
+            });
+            $('.cinputLabel', $cadd).on('click', function () {
+                that.inputActivate($(this).closest('.cadd'), null, true, true);
+            });
+        };
+
+        if (relatedComment) {
+            if ($cedit) {
+                $insertAfter = $cedit;
+                level = relatedComment.level;
+                txt = Utils.txtHtmlToPlain(relatedComment.txt);
+            } else {
+                if (relatedComment.level === commentNestingMax) {
+                    // Если отвечают на комментарий максимального уровня, делаем так чтобы ответ был на его родительский
+                    relatedComment = this.commentsHash[relatedComment.parent];
+                }
+
+                findCommentLastChild = function (c) {
+                    return c.comments && c.comments.length ? findCommentLastChild(c.comments[c.comments.length - 1]) : c;
+                };
+                $insertAfter = $('#c' + findCommentLastChild(relatedComment).cid, this.$cmts);
+                level = relatedComment.level + 1;
+            }
+
+            inputCid = relatedComment.cid;
+        }
+
+        $cadd = $(tplCommentAdd({
+            user: $cedit ? relatedComment.user : this.users[this.auth.iAm.login()],
+            cid: inputCid,
+            level: level,
+            type: $cedit ? 'edit' : 'reply',
+            i18n: globalVM.i18n,
+        }));
+        ko.applyBindings(this, $cadd[0]);
+
+        if ($insertAfter && $insertAfter.length) {
+            $cadd.insertAfter($insertAfter);
+        } else {
+            // В случае, если комментариев еще нет, $insertAfter будет пуст и надо аппендить
+            this.$cmts.append($cadd);
+        }
+
+        $input = $('.cinput', $cadd);
+
+        if (relatedComment) {
+            if ($cedit) {
+                $input.val(txt);
+                $cadd.addClass('hasContent');
+                this.inputCheckHeight($cadd, $input, txt); //Задаем высоту textarea под контент
+                this.inputActivate($cadd, 400, false, true); //Активируем область ввода после inputCheckHeight без проверки вхождения во viewport, так как это тормозит chrome и не нужно в случае редактирования
+                setevents();
+            } else {
+                this.inputActivate($cadd, 400, true, true, setevents); //Активируем область ввода
+            }
+        } else {
+            setevents();
+        }
+
+        return $cadd;
+    },
+    // Удаление блока комментария
+    inputRemove: function ($cadd) {
+        this.fragDelete();
+        ko.cleanNode($cadd[0]);
+        $cadd.remove();
+        delete this.commentEditingFragChanged;
+    },
+    // Очистка комментария, без удаления
+    inputReset: function ($cadd) {
+        this.fragDelete();
+        window.clearTimeout(this.blurTimeout);
+        $cadd.removeClass('hasContent hasFocus').find('.cinput').off('keyup blur').val('').height('auto');
+        delete this.commentEditingFragChanged;
+    },
+    // Добавляет комментарий нулевого уровня. Если его еще не существует - создаёт, если он отсоединён - вставляет
+    inputZeroAdd: function () {
+        if (!this.cZeroCreated) {
+            this.inputCreate();
+            this.cZeroCreated = true;
+        } else if (this.cZeroDetached) {
+            this.$cmts.append(this.cZeroDetached);
+            delete this.cZeroDetached;
+        }
+    },
+    // Отсоединяет комментарий нулевого уровня от dom
+    inputZeroDetach: function () {
+        if (this.cZeroCreated && !this.cZeroDetached) {
+            this.cZeroDetached = $('.cadd[data-level="0"]', this.$cmts).detach();
+        }
+    },
+    // Активирует поле ввода. Навешивает события, проверяет вхождение во вьюпорт и
+    // устанавливает фокус, если переданы соответствующие флаги
+    inputActivate: function ($cadd, scrollDuration, checkViewport, focus, cb, ctx) {
+        const $input = $('.cinput', $cadd);
+
+        window.clearTimeout(this.blurTimeout);
+        $cadd.addClass('hasFocus');
+
+        $input
+            .off('keyup blur')
+            .on('keyup', _.debounce(this.inputKeyup.bind(this), 300))
+            .on('blur', this.inputBlur.bind(this));
+
+        if (checkViewport) {
+            this.inputCheckInViewport($cadd, scrollDuration, function () {
+                if (focus) {
+                    $input.focus();
+                }
 
                 if (cb) {
                     cb.call(ctx || this);
                 }
+            });
+        } else if (focus) {
+            $input.focus();
+
+            if (cb) {
+                cb.call(ctx || this);
             }
-        },
-        // Отслеживанием ввод, чтобы подгонять input под высоту текста
-        inputKeyup: function (evt) {
-            const $input = $(evt.target);
-            const $cadd = $input.closest('.cadd');
-            const content = $input.val().trim();
+        }
+    },
+    // Отслеживанием ввод, чтобы подгонять input под высоту текста
+    inputKeyup: function (evt) {
+        const $input = $(evt.target);
+        const $cadd = $input.closest('.cadd');
+        const content = $input.val().trim();
 
-            $cadd[content ? 'addClass' : 'removeClass']('hasContent');
-            this.inputCheckHeight($cadd, $input, content, true);
-        },
-        chkSubscrClick: function (data, event) {
-            // После смены значения чекбокса подписки опять фокусируемся на поле ввода комментария
-            this.inputActivate($(event.target).closest('.cadd'), null, false, true);
+        $cadd[content ? 'addClass' : 'removeClass']('hasContent');
+        this.inputCheckHeight($cadd, $input, content, true);
+    },
+    chkSubscrClick: function (data, event) {
+        // После смены значения чекбокса подписки опять фокусируемся на поле ввода комментария
+        this.inputActivate($(event.target).closest('.cadd'), null, false, true);
 
-            return true; //Нужно чтобы значение поменялось
-        },
-        inputBlur: function (evt) {
-            const $input = $(evt.target);
-            const $cadd = $input.closest('.cadd');
-            const content = $.trim($input.val());
+        return true; //Нужно чтобы значение поменялось
+    },
+    inputBlur: function (evt) {
+        const $input = $(evt.target);
+        const $cadd = $input.closest('.cadd');
+        const content = $.trim($input.val());
 
-            $input.off('keyup blur');
+        $input.off('keyup blur');
 
-            this.blurTimeout = window.setTimeout(function () {
-                if (!content && !this.fraging()) {
-                    $cadd.removeClass('hasContent');
-                    $input.height('auto');
-                }
-
-                if (!content) {
-                    $input.val('');
-                }
-
-                $cadd.removeClass('hasFocus');
-            }.bind(this), 500);
-        },
-        // Проверяет что поле ввода включает весь контент по высоте, если нет - подгоняет по высоте
-        // Если checkViewport=true, то после подгонки проверит, влезает ли поле ввода в экран
-        inputCheckHeight: function ($cadd, $input, content, checkViewport) {
-            if (!content) {
+        this.blurTimeout = window.setTimeout(function () {
+            if (!content && !this.fraging()) {
+                $cadd.removeClass('hasContent');
                 $input.height('auto');
-            } else {
-                const height = $input.height();
-                const heightScroll = $input[0].scrollHeight - 8 || height;
+            }
 
-                if (heightScroll > height) {
-                    $input.height(heightScroll);
+            if (!content) {
+                $input.val('');
+            }
 
-                    if (checkViewport) {
-                        this.inputCheckInViewport($cadd);
+            $cadd.removeClass('hasFocus');
+        }.bind(this), 500);
+    },
+    // Проверяет что поле ввода включает весь контент по высоте, если нет - подгоняет по высоте
+    // Если checkViewport=true, то после подгонки проверит, влезает ли поле ввода в экран
+    inputCheckHeight: function ($cadd, $input, content, checkViewport) {
+        if (!content) {
+            $input.height('auto');
+        } else {
+            const height = $input.height();
+            const heightScroll = $input[0].scrollHeight - 8 || height;
+
+            if (heightScroll > height) {
+                $input.height(heightScroll);
+
+                if (checkViewport) {
+                    this.inputCheckInViewport($cadd);
+                }
+            }
+        }
+    },
+    // Проверяет что поле ввода нижней границей входит в экран, если нет - скроллит до нижней границе
+    inputCheckInViewport: function ($cadd, scrollDuration, cb) {
+        const wFold = P.window.h() + (window.pageYOffset || $window.scrollTop());
+        const caddBottom = $cadd.offset().top + $cadd.outerHeight();
+
+        if (wFold < caddBottom) {
+            // Adding 28px to make action buttons visible
+            $window.scrollTo('+=' + (caddBottom - wFold - P.window.head + 28) + 'px', {
+                axis: 'y', duration: scrollDuration || 200, onAfter: function () {
+                    if (_.isFunction(cb)) {
+                        cb.call(this);
                     }
-                }
+                }.bind(this),
+            });
+        } else if (_.isFunction(cb)) {
+            cb.call(this);
+        }
+    },
+
+    checkInputExists: function (cid, cb, ctx) {
+        const $withContent = $('.cadd.hasContent', this.$cmts);
+
+        if ($withContent.length) {
+            noties.alert({
+                message: i18n('You have a draft comment. Submit it or discard it, then move on to the new one'),
+                type: 'warning',
+                timeout: 4000,
+            });
+
+            return cb.call(ctx, true);
+        }
+
+        // Удаляем пустые открытые на редактирование поля ввода, кроме первого уровня
+        _.forEach($('.cadd:not([data-level="0"])'), function (item) {
+            this.inputRemove($(item));
+        }, this);
+        cb.call(ctx);
+    },
+
+    // Активирует написание комментария нулевого уровня
+    replyZero: function () {
+        this.inputActivate($('.cadd', this.$cmts).last(), 600, true, true);
+    },
+    // Комментарий на комментарий
+    reply: function (cid) {
+        const commentToReply = this.commentsHash[cid];
+
+        if (commentToReply) {
+            const $cadd = $('.cadd[data-cid="' + cid + '"]');
+
+            if ($cadd.length) {
+                //Если мы уже отвечаем на этот комментарий, просто переходим к этому полю ввода
+                this.inputActivate($cadd, 400, true, true);
+            } else {
+                //Проверяем, что нет других полей ввода в процессе написания
+                this.checkInputExists(cid, function (err) {
+                    if (!err) {
+                        this.inputCreate(commentToReply);
+                    }
+                }, this);
             }
-        },
-        // Проверяет что поле ввода нижней границей входит в экран, если нет - скроллит до нижней границе
-        inputCheckInViewport: function ($cadd, scrollDuration, cb) {
-            const wFold = P.window.h() + (window.pageYOffset || $window.scrollTop());
-            const caddBottom = $cadd.offset().top + $cadd.outerHeight();
+        }
+    },
+    edit: function (cid, $c) {
+        if (!this.canReply() && !this.canModerate()) {
+            return;
+        }
 
-            if (wFold < caddBottom) {
-                // Adding 28px to make action buttons visible
-                $window.scrollTo('+=' + (caddBottom - wFold - P.window.head + 28) + 'px', {
-                    axis: 'y', duration: scrollDuration || 200, onAfter: function () {
-                        if (_.isFunction(cb)) {
-                            cb.call(this);
-                        }
-                    }.bind(this),
-                });
-            } else if (_.isFunction(cb)) {
-                cb.call(this);
-            }
-        },
-
-        checkInputExists: function (cid, cb, ctx) {
-            const $withContent = $('.cadd.hasContent', this.$cmts);
-
-            if ($withContent.length) {
-                noties.alert({
-                    message: i18n('You have a draft comment. Submit it or discard it, then move on to the new one'),
-                    type: 'warning',
-                    timeout: 4000,
-                });
-
-                return cb.call(ctx, true);
-            }
-
-            // Удаляем пустые открытые на редактирование поля ввода, кроме первого уровня
-            _.forEach($('.cadd:not([data-level="0"])'), function (item) {
-                this.inputRemove($(item));
-            }, this);
-            cb.call(ctx);
-        },
-
-        // Активирует написание комментария нулевого уровня
-        replyZero: function () {
-            this.inputActivate($('.cadd', this.$cmts).last(), 600, true, true);
-        },
-        // Комментарий на комментарий
-        reply: function (cid) {
-            const commentToReply = this.commentsHash[cid];
-
-            if (commentToReply) {
-                const $cadd = $('.cadd[data-cid="' + cid + '"]');
-
-                if ($cadd.length) {
-                    //Если мы уже отвечаем на этот комментарий, просто переходим к этому полю ввода
-                    this.inputActivate($cadd, 400, true, true);
-                } else {
-                    //Проверяем, что нет других полей ввода в процессе написания
-                    this.checkInputExists(cid, function (err) {
-                        if (!err) {
-                            this.inputCreate(commentToReply);
-                        }
-                    }, this);
-                }
-            }
-        },
-        edit: function (cid, $c) {
-            if (!this.canReply() && !this.canModerate()) {
+        this.checkInputExists(cid, function (err) {
+            if (err) {
                 return;
             }
 
-            this.checkInputExists(cid, function (err) {
-                if (err) {
-                    return;
-                }
+            const commentToEdit = this.commentsHash[cid];
 
-                const commentToEdit = this.commentsHash[cid];
-
-                if (!commentToEdit) {
-                    return;
-                }
-
-                //Выбор фрагмента из this.p.frags. Если он есть у комментария, делаем его редактирование
-                const frag = this.canFrag && commentToEdit.frag && ko.toJS(this.parentModule.fragGetByCid(cid));
-
-                if (frag) {
-                    this.commentEditingFragChanged = false;
-                    this.fraging(true);
-                    this.parentModule.fragEdit(cid,
-                        {
-                            onSelectEnd: function () {
-                                this.commentEditingFragChanged = true;
-                            }.bind(this),
-                        }
-                    );
-                }
-
-                //Создаем поле ввода
-                this.inputCreate(commentToEdit, $c);
-                //Скрываем редактируемый комментарий
-                $c.addClass('edit');
-            }, this);
-        },
-        remove: function (cid, $c) {
-            const that = this;
-            const comment = that.commentsHash[cid];
-            const parent = comment.parent && that.commentsHash[comment.parent];
-            let action = 'comment.remove';
-
-            if (!comment || !that.canModerate() && (!that.canReply() || !comment.can.del)) {
+            if (!commentToEdit) {
                 return;
             }
 
-            // Подсвечиваем удаляемые текстом
-            getChildComments(comment, $c).add($c).addClass('hlRemove');
+            //Выбор фрагмента из this.p.frags. Если он есть у комментария, делаем его редактирование
+            const frag = this.canFrag && commentToEdit.frag && ko.toJS(this.parentModule.fragGetByCid(cid));
 
-            // Когда пользователь удаляет свой последний комментарий, независимо от прав,
-            // он должен объяснить это просто текстом. Для этого есть отдельный action
-            if (_.isEmpty(comment.comments) && comment.user.login === that.auth.iAm.login()) {
-                action += '.own';
+            if (frag) {
+                this.commentEditingFragChanged = false;
+                this.fraging(true);
+                this.parentModule.fragEdit(cid,
+                    {
+                        onSelectEnd: function () {
+                            this.commentEditingFragChanged = true;
+                        }.bind(this),
+                    }
+                );
             }
 
-            this.reasonSelect(action, i18n('Reason for deletion'), function (cancel, reason) {
-                if (cancel) {
+            //Создаем поле ввода
+            this.inputCreate(commentToEdit, $c);
+            //Скрываем редактируемый комментарий
+            $c.addClass('edit');
+        }, this);
+    },
+    remove: function (cid, $c) {
+        const that = this;
+        const comment = that.commentsHash[cid];
+        const parent = comment.parent && that.commentsHash[comment.parent];
+        let action = 'comment.remove';
+
+        if (!comment || !that.canModerate() && (!that.canReply() || !comment.can.del)) {
+            return;
+        }
+
+        // Подсвечиваем удаляемые текстом
+        getChildComments(comment, $c).add($c).addClass('hlRemove');
+
+        // Когда пользователь удаляет свой последний комментарий, независимо от прав,
+        // он должен объяснить это просто текстом. Для этого есть отдельный action
+        if (_.isEmpty(comment.comments) && comment.user.login === that.auth.iAm.login()) {
+            action += '.own';
+        }
+
+        this.reasonSelect(action, i18n('Reason for deletion'), function (cancel, reason) {
+            if (cancel) {
+                $('.hlRemove', this.$cmts).removeClass('hlRemove');
+
+                return;
+            }
+
+            socket.run('comment.remove', { type: this.type, cid: cid, reason: reason }, true)
+                .then(function (result) {
+                    const count = Number(result.countComments);
+                    let $cdel;
+
+                    if (!count) {
+                        return;
+                    }
+
+                    if (!tplCommentDel) {
+                        tplCommentDel = doT.template(
+                            dotCommentDel, _.defaults({ varname: 'c,it' }, doT.templateSettings)
+                        );
+                    }
+
+                    comment.lastChanged = result.stamp;
+                    this.count(this.count() - count);
+                    this.countDel(this.countDel() + count);
+                    this.parentModule.commentCountIncrement(-count);
+
+                    if (Array.isArray(result.frags)) {
+                        this.parentModule.fragReplace(result.frags);
+                    }
+
+                    comment.del = result.delInfo;
+                    // Очищаем массив дочерних как в delHide
+                    delete comment.comments;
+                    // Удаляем дочерние, если есть (нельзя просто удалить все .hlRemove,
+                    // т.к. могут быть дочерние уже удалённые, на которых hlRemove не распространяется,
+                    // но убрать их из дерева тоже надо)
+                    getChildComments(comment, $c).remove();
+
+                    if (this.showDelComments()) {
+                        // If user wants to see removed comments,
+                        // then replace root removed comment with the collapsed one
+                        $cdel = $(tplCommentDel(comment, {
+                            fDate: formatDateRelative,
+                            fDateIn: formatDateRelativeIn,
+                            i18n: globalVM.i18n,
+                        }));
+
+                        $c.replaceWith($cdel);
+                    } else {
+                        // Otherwise just remove it as well as its children
+                        $c.remove();
+                    }
+
+                    // Если обычный пользователь удаляет свой ответ на свой же комментарий,
+                    // пока может тот редактировать, и у того не осталось неудаленных дочерних,
+                    // то проставляем у родителя кнопку удалить
+                    if (!this.canModerate() && parent && parent.user.login === this.auth.iAm.login() && parent.can.edit) {
+                        parent.can.del = true;
+
+                        for (let i = 0; i < parent.comments.length; i++) {
+                            if (parent.comments[i].del === undefined) {
+                                parent.can.del = false;
+                                break;
+                            }
+                        }
+
+                        if (parent.can.del) {
+                            $('<div class="dotDelimeter">·</div><span class="cact remove">' + i18n('Delete') + '</span>')
+                                .insertAfter($('#c' + parent.cid + ' .cact.edit', this.$cmts));
+                        }
+                    }
+
+                    // Если после "схлопывания" ветки корневой удалемый оказался выше вьюпорта, скроллим до него
+                    if ($cdel && $cdel.offset().top < (window.pageYOffset || $window.scrollTop())) {
+                        $window.scrollTo($cdel, { offset: -P.window.head, duration: 600 });
+                    }
+
+                    ga('send', 'event', 'comment', 'delete', 'comment delete success', count);
+
+                    noties.alert({
+                        message: i18n('Deleted {{count}} comments by {{users}} user(s)', { count: count, users: result.countUsers }),
+                        type: 'information',
+                        layout: 'topRight',
+                        timeout: 5000,
+                    });
+                }.bind(this))
+                .catch(function () {
                     $('.hlRemove', this.$cmts).removeClass('hlRemove');
+                    ga('send', 'event', 'comment', 'delete', 'comment delete error');
+                }.bind(this));
+        }, this);
+    },
+    restore: function (cid, $c) {
+        const that = this;
+        const comment = that.commentsHash[cid];
 
-                    return;
-                }
+        if (!comment || !that.canModerate()) {
+            return;
+        }
 
-                socket.run('comment.remove', { type: this.type, cid: cid, reason: reason }, true)
+        $('[data-origin="' + cid + '"]', that.$cmts).add($c).addClass('hlRestore');
+
+        noties.confirm({
+            message: i18n('Restore the comment and its descendants that were deleted with it<br>(highlighted in green)?'),
+            okText: i18n('Yes'),
+            okClass: 'btn-success',
+            onOk: function (confirmer) {
+                confirmer.disable();
+
+                socket.run('comment.restore', { type: that.type, cid: cid }, true)
                     .then(function (result) {
                         const count = Number(result.countComments);
-                        let $cdel;
 
                         if (!count) {
                             return;
                         }
 
-                        if (!tplCommentDel) {
-                            tplCommentDel = doT.template(
-                                dotCommentDel, _.defaults({ varname: 'c,it' }, doT.templateSettings)
-                            );
-                        }
-
                         comment.lastChanged = result.stamp;
-                        this.count(this.count() - count);
-                        this.countDel(this.countDel() + count);
-                        this.parentModule.commentCountIncrement(-count);
+                        that.count(that.count() + count);
+                        that.countDel(that.countDel() - count);
+                        that.parentModule.commentCountIncrement(count);
 
                         if (Array.isArray(result.frags)) {
-                            this.parentModule.fragReplace(result.frags);
+                            that.parentModule.fragReplace(result.frags);
                         }
 
-                        comment.del = result.delInfo;
-                        // Очищаем массив дочерних как в delHide
-                        delete comment.comments;
-                        // Удаляем дочерние, если есть (нельзя просто удалить все .hlRemove,
-                        // т.к. могут быть дочерние уже удалённые, на которых hlRemove не распространяется,
-                        // но убрать их из дерева тоже надо)
-                        getChildComments(comment, $c).remove();
+                        const tplIt = {
+                            reply: true,
+                            mod: true,
+                            fDate: formatDateRelative,
+                            fDateIn: formatDateRelativeIn,
+                            i18n: globalVM.i18n,
+                        };
 
-                        if (this.showDelComments()) {
-                            // If user wants to see removed comments,
-                            // then replace root removed comment with the collapsed one
-                            $cdel = $(tplCommentDel(comment, {
-                                fDate: formatDateRelative,
-                                fDateIn: formatDateRelativeIn,
-                                i18n: globalVM.i18n,
-                            }));
+                        //Заменяем корневой восстанавливаемый комментарий
+                        delete comment.del;
+                        $c.replaceWith(tplCommentAuth(comment, tplIt));
 
-                            $c.replaceWith($cdel);
-                        } else {
-                            // Otherwise just remove it as well as its children
-                            $c.remove();
-                        }
+                        if (count > 1) {
+                            //Заменяем комментарии потомки, которые были удалены вместе с корневым
+                            let c;
 
-                        // Если обычный пользователь удаляет свой ответ на свой же комментарий,
-                        // пока может тот редактировать, и у того не осталось неудаленных дочерних,
-                        // то проставляем у родителя кнопку удалить
-                        if (!this.canModerate() && parent && parent.user.login === this.auth.iAm.login() && parent.can.edit) {
-                            parent.can.del = true;
+                            for (const i in that.commentsHash) { //eslint-disable-line guard-for-in
+                                c = that.commentsHash[i];
 
-                            for (let i = 0; i < parent.comments.length; i++) {
-                                if (parent.comments[i].del === undefined) {
-                                    parent.can.del = false;
-                                    break;
+                                if (c !== undefined && c.del !== undefined && c.del.origin === cid) {
+                                    delete c.del;
+                                    $('#c' + c.cid, that.$cmts).replaceWith(tplCommentAuth(c, tplIt));
                                 }
                             }
-
-                            if (parent.can.del) {
-                                $('<div class="dotDelimeter">·</div><span class="cact remove">' + i18n('Delete') + '</span>')
-                                    .insertAfter($('#c' + parent.cid + ' .cact.edit', this.$cmts));
-                            }
                         }
 
-                        // Если после "схлопывания" ветки корневой удалемый оказался выше вьюпорта, скроллим до него
-                        if ($cdel && $cdel.offset().top < (window.pageYOffset || $window.scrollTop())) {
-                            $window.scrollTo($cdel, { offset: -P.window.head, duration: 600 });
-                        }
-
-                        ga('send', 'event', 'comment', 'delete', 'comment delete success', count);
-
-                        noties.alert({
-                            message: i18n('Deleted {{count}} comments by {{users}} user(s)', { count: count, users: result.countUsers }),
-                            type: 'information',
-                            layout: 'topRight',
-                            timeout: 5000,
-                        });
-                    }.bind(this))
+                        confirmer.close();
+                    })
                     .catch(function () {
-                        $('.hlRemove', this.$cmts).removeClass('hlRemove');
-                        ga('send', 'event', 'comment', 'delete', 'comment delete error');
-                    }.bind(this));
-            }, this);
-        },
-        restore: function (cid, $c) {
-            const that = this;
-            const comment = that.commentsHash[cid];
+                        confirmer.close();
+                    });
+            },
+            cancelText: i18n('No'),
+            cancelClass: 'btn-warning',
+            onCancel: function () {
+                $('.hlRestore', that.$cmts).removeClass('hlRestore');
+            },
+        });
+    },
+    delShow: function (cid, $c) {
+        if (this.loadingDel) {
+            return;
+        }
 
-            if (!comment || !that.canModerate()) {
-                return;
-            }
+        const that = this;
+        const comment = that.commentsHash[cid];
+        const objCid = that.cid;
 
-            $('[data-origin="' + cid + '"]', that.$cmts).add($c).addClass('hlRestore');
+        that.loadingDel = true;
+        $('.delico', $c).addClass('loading').html('');
 
-            noties.confirm({
-                message: i18n('Restore the comment and its descendants that were deleted with it<br>(highlighted in green)?'),
-                okText: i18n('Yes'),
-                okClass: 'btn-success',
-                onOk: function (confirmer) {
-                    confirmer.disable();
+        socket.run('comment.giveDelTree', { type: that.type, cid: cid }, true)
+            .then(function (data) {
+                // Если пока запрашивали удалённый, уже перешли на новый объект - ничего не делаем
+                if (objCid !== that.cid) {
+                    return;
+                }
 
-                    socket.run('comment.restore', { type: that.type, cid: cid }, true)
-                        .then(function (result) {
-                            const count = Number(result.countComments);
+                that.usersRanks(data.users);
+                that.users = _.assign(data.users, that.users);
 
-                            if (!count) {
-                                return;
-                            }
-
-                            comment.lastChanged = result.stamp;
-                            that.count(that.count() + count);
-                            that.countDel(that.countDel() - count);
-                            that.parentModule.commentCountIncrement(count);
-
-                            if (Array.isArray(result.frags)) {
-                                that.parentModule.fragReplace(result.frags);
-                            }
-
-                            const tplIt = {
-                                reply: true,
-                                mod: true,
-                                fDate: formatDateRelative,
-                                fDateIn: formatDateRelativeIn,
-                                i18n: globalVM.i18n,
-                            };
-
-                            //Заменяем корневой восстанавливаемый комментарий
-                            delete comment.del;
-                            $c.replaceWith(tplCommentAuth(comment, tplIt));
-
-                            if (count > 1) {
-                                //Заменяем комментарии потомки, которые были удалены вместе с корневым
-                                let c;
-
-                                for (const i in that.commentsHash) { //eslint-disable-line guard-for-in
-                                    c = that.commentsHash[i];
-
-                                    if (c !== undefined && c.del !== undefined && c.del.origin === cid) {
-                                        delete c.del;
-                                        $('#c' + c.cid, that.$cmts).replaceWith(tplCommentAuth(c, tplIt));
-                                    }
-                                }
-                            }
-
-                            confirmer.close();
-                        })
-                        .catch(function () {
-                            confirmer.close();
-                        });
-                },
-                cancelText: i18n('No'),
-                cancelClass: 'btn-warning',
-                onCancel: function () {
-                    $('.hlRestore', that.$cmts).removeClass('hlRestore');
-                },
-            });
-        },
-        delShow: function (cid, $c) {
-            if (this.loadingDel) {
-                return;
-            }
-
-            const that = this;
-            const comment = that.commentsHash[cid];
-            const objCid = that.cid;
-
-            that.loadingDel = true;
-            $('.delico', $c).addClass('loading').html('');
-
-            socket.run('comment.giveDelTree', { type: that.type, cid: cid }, true)
-                .then(function (data) {
-                    // Если пока запрашивали удалённый, уже перешли на новый объект - ничего не делаем
-                    if (objCid !== that.cid) {
-                        return;
+                loadModules(['tpl/comment/cdotdelopen.pug?raw'], function (doTCommentDelOpen) {
+                    // Чтобы не загружать клиента, только при первом запросе удалённых
+                    // реквайрим шаблон, компилим его и вешаем нужные события на блок комментариев
+                    if (!tplCommentsDel) {
+                        tplCommentsDel = doT.template(doTComments, undefined, { comment: doTCommentDelOpen });
                     }
 
-                    that.usersRanks(data.users);
-                    that.users = _.assign(data.users, that.users);
+                    if (!that.delopenevents) {
+                        that.$cmts
+                            .on('click', '.hidedel', function () {
+                                const $c = $(this).closest('.c');
+                                const cid = getCid($c);
 
-                    require(['text!tpl/comment/cdotdelopen.pug'], function (doTCommentDelOpen) {
-                        // Чтобы не загружать клиента, только при первом запросе удалённых
-                        // реквайрим шаблон, компилим его и вешаем нужные события на блок комментариев
-                        if (!tplCommentsDel) {
-                            tplCommentsDel = doT.template(doTComments, undefined, { comment: doTCommentDelOpen });
-                        }
+                                if (cid) {
+                                    that.delHide(cid, $c);
+                                }
+                            })
+                            .on('click', '.restore', function () {
+                                const $c = $(this).closest('.c');
+                                const cid = getCid($c);
 
-                        if (!that.delopenevents) {
-                            that.$cmts
-                                .on('click', '.hidedel', function () {
-                                    const $c = $(this).closest('.c');
-                                    const cid = getCid($c);
+                                if (cid) {
+                                    that.restore(cid, $c);
+                                }
+                            });
+                        that.delopenevents = true;
+                    }
 
-                                    if (cid) {
-                                        that.delHide(cid, $c);
-                                    }
-                                })
-                                .on('click', '.restore', function () {
-                                    const $c = $(this).closest('.c');
-                                    const cid = getCid($c);
+                    // Присваиваем получаенный дочерние, если они есть, чтобы, например,
+                    // createInput ответа на родительский удаленного вставил поле ввода после удаленной ветки
+                    comment.comments = data.comments[0].comments;
+                    // Указываем, чо первый комментарий - корневой для группы
+                    data.comments[0].delroot = true;
+                    $c.replaceWith(that.renderComments(data.comments, tplCommentsDel));
 
-                                    if (cid) {
-                                        that.restore(cid, $c);
-                                    }
-                                });
-                            that.delopenevents = true;
-                        }
-
-                        // Присваиваем получаенный дочерние, если они есть, чтобы, например,
-                        // createInput ответа на родительский удаленного вставил поле ввода после удаленной ветки
-                        comment.comments = data.comments[0].comments;
-                        // Указываем, чо первый комментарий - корневой для группы
-                        data.comments[0].delroot = true;
-                        $c.replaceWith(that.renderComments(data.comments, tplCommentsDel));
-
-                        that.loadingDel = false;
-                    });
-                })
-                .catch(function () {
-                    $('.delico', $c).removeClass('loading').html(i18n('Show'));
                     that.loadingDel = false;
                 });
-        },
-        delHide: function (cid, $c) {
-            const comment = this.commentsHash[cid];
+            })
+            .catch(function () {
+                $('.delico', $c).removeClass('loading').html(i18n('Show'));
+                that.loadingDel = false;
+            });
+    },
+    delHide: function (cid, $c) {
+        const comment = this.commentsHash[cid];
 
-            if (!comment) {
-                return;
-            }
+        if (!comment) {
+            return;
+        }
 
-            if (!tplCommentDel) {
-                tplCommentDel = doT.template(dotCommentDel, _.defaults({ varname: 'c,it' }, doT.templateSettings));
-            }
+        if (!tplCommentDel) {
+            tplCommentDel = doT.template(dotCommentDel, _.defaults({ varname: 'c,it' }, doT.templateSettings));
+        }
 
-            delete comment.comments; //Обнуляем поддерево дочерних, чтобы, например, createInput ответа на родительский удаленного не искал его дочерние
-            getChildComments(comment, $c).remove(); //Удаляем дочерние элементы dom
-            $c.replaceWith(tplCommentDel(comment, { fDate: formatDateRelative, fDateIn: formatDateRelativeIn, i18n: globalVM.i18n }));
-        },
-        reasonSelect: function (action, topic, cb, ctx) {
-            if (this.reasonVM) {
-                return;
-            }
+        delete comment.comments; //Обнуляем поддерево дочерних, чтобы, например, createInput ответа на родительский удаленного не искал его дочерние
+        getChildComments(comment, $c).remove(); //Удаляем дочерние элементы dom
+        $c.replaceWith(tplCommentDel(comment, { fDate: formatDateRelative, fDateIn: formatDateRelativeIn, i18n: globalVM.i18n }));
+    },
+    reasonSelect: function (action, topic, cb, ctx) {
+        if (this.reasonVM) {
+            return;
+        }
 
-            renderer(
-                [{
-                    module: 'm/common/reason',
-                    options: {
-                        action: action,
+        renderer(
+            [{
+                module: 'm/common/reason',
+                options: {
+                    action: action,
+                },
+                modal: {
+                    topic: topic,
+                    maxWidthRatio: 0.75,
+                    animateScale: true,
+                    offIcon: {
+                        text: i18n('Cancel'), click: function () {
+                            cb.call(ctx, true);
+                            this.reasonDestroy();
+                        }, ctx: this,
                     },
-                    modal: {
-                        topic: topic,
-                        maxWidthRatio: 0.75,
-                        animateScale: true,
-                        offIcon: {
-                            text: i18n('Cancel'), click: function () {
+                    btns: [
+                        {
+                            css: 'btn-warning', text: i18n('Execute'), glyphicon: 'glyphicon-ok',
+                            click: function () {
+                                const reason = this.reasonVM.getReason();
+
+                                if (reason) {
+                                    cb.call(ctx, null, reason);
+                                    this.reasonDestroy();
+                                }
+                            }, ctx: this,
+                        },
+                        {
+                            css: 'btn-success', text: i18n('Cancel'),
+                            click: function () {
                                 cb.call(ctx, true);
                                 this.reasonDestroy();
                             }, ctx: this,
                         },
-                        btns: [
-                            {
-                                css: 'btn-warning', text: i18n('Execute'), glyphicon: 'glyphicon-ok',
-                                click: function () {
-                                    const reason = this.reasonVM.getReason();
-
-                                    if (reason) {
-                                        cb.call(ctx, null, reason);
-                                        this.reasonDestroy();
-                                    }
-                                }, ctx: this,
-                            },
-                            {
-                                css: 'btn-success', text: i18n('Cancel'),
-                                click: function () {
-                                    cb.call(ctx, true);
-                                    this.reasonDestroy();
-                                }, ctx: this,
-                            },
-                        ],
-                    },
-                    callback: function (vm) {
-                        this.reasonVM = vm;
-                        this.childModules[vm.id] = vm;
-                    }.bind(this),
-                }],
-                {
-                    parent: this,
-                    level: this.level + 1,
-                }
-            );
-        },
-        reasonDestroy: function () {
-            if (this.reasonVM) {
-                this.reasonVM.destroy();
-                delete this.reasonVM;
+                    ],
+                },
+                callback: function (vm) {
+                    this.reasonVM = vm;
+                    this.childModules[vm.id] = vm;
+                }.bind(this),
+            }],
+            {
+                parent: this,
+                level: this.level + 1,
             }
-        },
-        cancel: function (vm, event) {
-            const $cadd = $(event.target).closest('.cadd');
-            const cid = $cadd.data('cid');
-            const type = $cadd.data('type');
+        );
+    },
+    reasonDestroy: function () {
+        if (this.reasonVM) {
+            this.reasonVM.destroy();
+            delete this.reasonVM;
+        }
+    },
+    cancel: function (vm, event) {
+        const $cadd = $(event.target).closest('.cadd');
+        const cid = $cadd.data('cid');
+        const type = $cadd.data('type');
 
-            if (!cid) {
-                //Если data-cid не проставлен, значит это комментарий первого уровня и его надо просто очистить, а не удалять
-                vm.inputReset($cadd);
+        if (!cid) {
+            //Если data-cid не проставлен, значит это комментарий первого уровня и его надо просто очистить, а не удалять
+            vm.inputReset($cadd);
+        } else {
+            vm.inputRemove($cadd);
+
+            if (type === 'edit') {
+                //Если комментарий редактировался, опять показываем оригинал
+                $('#c' + cid, this.$cmts).removeClass('edit');
+            }
+        }
+    },
+    send: function (vm, event) {
+        if (!vm.canReply() && !vm.canModerate()) {
+            return;
+        }
+
+        const $cadd = $(event.target).closest('.cadd');
+        const $input = $('.cinput', $cadd);
+        const create = $cadd.data('type') === 'reply';
+        const cid = Number($cadd.data('cid'));
+        const content = $input.val(); //Операции с текстом сделает сервер
+        let dataInput;
+
+        if (_s.isBlank(content)) {
+            $input.val('');
+
+            return;
+        }
+
+        if (cid) {
+            dataInput = this.commentsHash[cid];
+        }
+
+        const dataToSend = {
+            type: vm.type, //тип объекта
+            obj: vm.cid, //cid объекта
+            txt: content,
+        };
+
+        if (vm.canFrag) {
+            dataToSend.fragObj = vm.parentModule.fragAreaObject();
+        }
+
+        vm.exe(true);
+        vm[create ? 'sendCreate' : 'sendUpdate'](dataInput, dataToSend, function (result) {
+            vm.exe(false);
+
+            if (result && !result.error && result.comment) {
+                //Если установлен checkbox подписки, то подписываемся
+                if (!vm.subscr() && $('input.chkSubscr', $cadd).prop('checked')) {
+                    vm.subscribe(null, null, true);
+                }
+
+                ga('send', 'event', 'comment', create ? 'create' : 'update', 'comment ' + (create ? 'create' : 'update') + ' success');
             } else {
-                vm.inputRemove($cadd);
-
-                if (type === 'edit') {
-                    //Если комментарий редактировался, опять показываем оригинал
-                    $('#c' + cid, this.$cmts).removeClass('edit');
-                }
+                ga('send', 'event', 'comment', create ? 'create' : 'update', 'comment ' + (create ? 'create' : 'update') + ' error');
             }
-        },
-        send: function (vm, event) {
-            if (!vm.canReply() && !vm.canModerate()) {
+        }, $cadd);
+    },
+    sendCreate: function (parent, dataSend, cb, $cadd) {
+        const self = this;
+
+        if (parent) {
+            // Значит создается дочерний комментарий
+            dataSend.parent = parent.cid;
+            dataSend.level = ~~parent.level + 1;
+        }
+
+        socket.run('comment.create', dataSend, true).then(function (result) {
+            if (!result.comment) {
                 return;
             }
 
-            const $cadd = $(event.target).closest('.cadd');
-            const $input = $('.cinput', $cadd);
-            const create = $cadd.data('type') === 'reply';
-            const cid = Number($cadd.data('cid'));
-            const content = $input.val(); //Операции с текстом сделает сервер
-            let dataInput;
+            const comment = result.comment;
 
-            if (_s.isBlank(content)) {
-                $input.val('');
+            comment.user = self.users[comment.user];
+            comment.can.edit = true;
+            comment.can.del = true;
 
-                return;
-            }
+            self.commentsHash[comment.cid] = comment;
 
-            if (cid) {
-                dataInput = this.commentsHash[cid];
-            }
+            // New comment is the latest, remove previous latest comment highlight.
+            comment.latest = true;
+            $('.latest', self.$cmts).removeClass('latest');
+            self.latestCommentCid(comment.cid);
 
-            const dataToSend = {
-                type: vm.type, //тип объекта
-                obj: vm.cid, //cid объекта
-                txt: content,
-            };
-
-            if (vm.canFrag) {
-                dataToSend.fragObj = vm.parentModule.fragAreaObject();
-            }
-
-            vm.exe(true);
-            vm[create ? 'sendCreate' : 'sendUpdate'](dataInput, dataToSend, function (result) {
-                vm.exe(false);
-
-                if (result && !result.error && result.comment) {
-                    //Если установлен checkbox подписки, то подписываемся
-                    if (!vm.subscr() && $('input.chkSubscr', $cadd).prop('checked')) {
-                        vm.subscribe(null, null, true);
-                    }
-
-                    ga('send', 'event', 'comment', create ? 'create' : 'update', 'comment ' + (create ? 'create' : 'update') + ' success');
-                } else {
-                    ga('send', 'event', 'comment', create ? 'create' : 'update', 'comment ' + (create ? 'create' : 'update') + ' error');
-                }
-            }, $cadd);
-        },
-        sendCreate: function (parent, dataSend, cb, $cadd) {
-            const self = this;
+            const $c = $(tplCommentAuth(comment, {
+                reply: self.canReply(),
+                mod: self.canModerate(),
+                fDate: formatDateRelative,
+                fDateIn: formatDateRelativeIn,
+                i18n: globalVM.i18n,
+            }));
 
             if (parent) {
-                // Значит создается дочерний комментарий
-                dataSend.parent = parent.cid;
-                dataSend.level = ~~parent.level + 1;
+                if (!parent.comments) {
+                    parent.comments = [];
+                }
+
+                parent.comments.push(comment);
+                comment.parent = parent.cid;
+
+                // Если это комментарий-ответ, заменяем поле ввода новым комментарием
+                $cadd.replaceWith($c);
+                self.fragDelete();
+                delete self.commentEditingFragChanged;
+
+                // Если обычный пользователь отвечает на свой комментарий, пока может его удалить,
+                // то отменяем у родителя возможность удалить
+                if (!self.canModerate() && parent.can.del) {
+                    parent.can.del = false;
+
+                    const $cparent = $('#c' + parent.cid, self.$cmts);
+
+                    $('.remove', $cparent).prev('.dotDelimeter').remove();
+                    $('.remove', $cparent).remove();
+                }
+            } else {
+                // Если это ответ первого уровня, сбрасываем поле ввода и вставляем перед ним результат
+                $c.insertBefore($cadd);
+                self.inputReset($cadd);
             }
 
-            socket.run('comment.create', dataSend, true).then(function (result) {
-                if (!result.comment) {
-                    return;
-                }
+            self.auth.setProps({ ccount: self.auth.iAm.ccount() + 1 }); // Инкрементим комментарии пользователя
+            self.count(self.count() + 1);
+            self.parentModule.commentCountIncrement(1);
 
-                const comment = result.comment;
+            if (self.canFrag && Utils.isType('object', result.frag)) {
+                self.parentModule.fragAdd(result.frag); // Если добавили фрагмент вставляем его в фотографию
+            }
 
-                comment.user = self.users[comment.user];
-                comment.can.edit = true;
-                comment.can.del = true;
+            cb(result);
+        });
+    },
+    sendUpdate: function (comment, dataSend, cb, $cadd) {
+        if (!this.canModerate() && (!this.canReply() || !comment.can.edit)) {
+            return;
+        }
 
-                self.commentsHash[comment.cid] = comment;
+        const fragExists = this.canFrag && comment.frag && ko.toJS(this.parentModule.fragGetByCid(comment.cid));
 
-                // New comment is the latest, remove previous latest comment highlight.
-                comment.latest = true;
-                $('.latest', self.$cmts).removeClass('latest');
-                self.latestCommentCid(comment.cid);
+        dataSend.cid = comment.cid;
 
-                const $c = $(tplCommentAuth(comment, {
-                    reply: self.canReply(),
-                    mod: self.canModerate(),
-                    fDate: formatDateRelative,
-                    fDateIn: formatDateRelativeIn,
-                    i18n: globalVM.i18n,
-                }));
+        // Если у комментария был фрагмент и он не изменился, то вставляем этот оригинальный фрагмент,
+        // потому что даже если мы не двигали его в интерфейсе, он изменится из-за округления пикселей
+        if (fragExists && !this.commentEditingFragChanged) {
+            dataSend.fragObj = _.pick(fragExists, 'cid', 'w', 'h', 't', 'l');
+        }
 
-                if (parent) {
-                    if (!parent.comments) {
-                        parent.comments = [];
-                    }
+        const self = this;
 
-                    parent.comments.push(comment);
-                    comment.parent = parent.cid;
-
-                    // Если это комментарий-ответ, заменяем поле ввода новым комментарием
-                    $cadd.replaceWith($c);
-                    self.fragDelete();
-                    delete self.commentEditingFragChanged;
-
-                    // Если обычный пользователь отвечает на свой комментарий, пока может его удалить,
-                    // то отменяем у родителя возможность удалить
-                    if (!self.canModerate() && parent.can.del) {
-                        parent.can.del = false;
-
-                        const $cparent = $('#c' + parent.cid, self.$cmts);
-
-                        $('.remove', $cparent).prev('.dotDelimeter').remove();
-                        $('.remove', $cparent).remove();
-                    }
-                } else {
-                    // Если это ответ первого уровня, сбрасываем поле ввода и вставляем перед ним результат
-                    $c.insertBefore($cadd);
-                    self.inputReset($cadd);
-                }
-
-                self.auth.setProps({ ccount: self.auth.iAm.ccount() + 1 }); // Инкрементим комментарии пользователя
-                self.count(self.count() + 1);
-                self.parentModule.commentCountIncrement(1);
-
-                if (self.canFrag && Utils.isType('object', result.frag)) {
-                    self.parentModule.fragAdd(result.frag); // Если добавили фрагмент вставляем его в фотографию
-                }
-
-                cb(result);
-            });
-        },
-        sendUpdate: function (comment, dataSend, cb, $cadd) {
-            if (!this.canModerate() && (!this.canReply() || !comment.can.edit)) {
+        socket.run('comment.update', dataSend, true).then(function (result) {
+            if (!result.comment) {
                 return;
             }
 
-            const fragExists = this.canFrag && comment.frag && ko.toJS(this.parentModule.fragGetByCid(comment.cid));
+            comment.txt = result.comment.txt;
+            comment.lastChanged = result.comment.lastChanged;
 
-            dataSend.cid = comment.cid;
+            if (self.canFrag && self.commentEditingFragChanged) {
+                if (Utils.isType('object', result.frag)) {
+                    comment.frag = true;
 
-            // Если у комментария был фрагмент и он не изменился, то вставляем этот оригинальный фрагмент,
-            // потому что даже если мы не двигали его в интерфейсе, он изменится из-за округления пикселей
-            if (fragExists && !this.commentEditingFragChanged) {
-                dataSend.fragObj = _.pick(fragExists, 'cid', 'w', 'h', 't', 'l');
-            }
-
-            const self = this;
-
-            socket.run('comment.update', dataSend, true).then(function (result) {
-                if (!result.comment) {
-                    return;
-                }
-
-                comment.txt = result.comment.txt;
-                comment.lastChanged = result.comment.lastChanged;
-
-                if (self.canFrag && self.commentEditingFragChanged) {
-                    if (Utils.isType('object', result.frag)) {
-                        comment.frag = true;
-
-                        if (!fragExists) {
-                            self.parentModule.fragAdd(result.frag);
-                        } else {
-                            self.parentModule.fragRemove(comment.cid);
-                            self.parentModule.fragAdd(result.frag);
-                        }
-                    } else if (fragExists) {
-                        comment.frag = false;
+                    if (!fragExists) {
+                        self.parentModule.fragAdd(result.frag);
+                    } else {
                         self.parentModule.fragRemove(comment.cid);
+                        self.parentModule.fragAdd(result.frag);
                     }
+                } else if (fragExists) {
+                    comment.frag = false;
+                    self.parentModule.fragRemove(comment.cid);
                 }
-
-                const $c = $(tplCommentAuth(comment, {
-                    reply: self.canReply(),
-                    mod: self.canModerate(),
-                    fDate: formatDateRelative,
-                    fDateIn: formatDateRelativeIn,
-                    i18n: globalVM.i18n,
-                }));
-
-                $('#c' + comment.cid, self.$cmts).replaceWith($c); // Заменяем комментарий на новый
-                self.inputRemove($cadd); // Удаляем поле ввода
-
-                cb(result);
-            });
-        },
-        fragClick: function (data, event) {
-            if (!this.canFrag) {
-                return;
             }
 
-            if (!this.fraging()) {
-                this.fraging(true);
-                this.commentEditingFragChanged = true;
-                $(event.target).closest('.cadd').addClass('hasContent');
-            }
+            const $c = $(tplCommentAuth(comment, {
+                reply: self.canReply(),
+                mod: self.canModerate(),
+                fDate: formatDateRelative,
+                fDateIn: formatDateRelativeIn,
+                i18n: globalVM.i18n,
+            }));
 
-            this.parentModule.scrollToPhoto(400, function () {
-                this.parentModule.fragAreaCreate();
-            }, this);
-        },
-        fragDelete: function () {
-            if (!this.canFrag) {
-                return;
-            }
+            $('#c' + comment.cid, self.$cmts).replaceWith($c); // Заменяем комментарий на новый
+            self.inputRemove($cadd); // Удаляем поле ввода
 
-            this.parentModule.fragAreaDelete();
-            this.fraging(false);
+            cb(result);
+        });
+    },
+    fragClick: function (data, event) {
+        if (!this.canFrag) {
+            return;
+        }
+
+        if (!this.fraging()) {
+            this.fraging(true);
             this.commentEditingFragChanged = true;
-        },
+            $(event.target).closest('.cadd').addClass('hasContent');
+        }
 
-        //Вызов модального окна с модулем просмотра истории комментария
-        showHistory: function (cid) {
-            if (!this.histVM) {
-                renderer(
-                    [
-                        {
-                            module: 'm/comment/hist',
-                            options: { objCid: this.cid, cid: cid, type: this.type },
-                            modal: {
-                                topic: i18n('Comment edit history'),
-                                animateScale: true,
-                                curtainClick: { click: this.closeHistory, ctx: this },
-                                offIcon: { text: i18n('Close'), click: this.closeHistory, ctx: this },
-                                btns: [
-                                    { css: 'btn-primary', text: i18n('Close'), click: this.closeHistory, ctx: this },
-                                ],
-                            },
-                            callback: function (vm) {
-                                this.histVM = this.childModules[vm.id] = vm;
-                                ga('send', 'event', 'comment', 'history');
-                            }.bind(this),
-                        },
-                    ],
+        this.parentModule.scrollToPhoto(400, function () {
+            this.parentModule.fragAreaCreate();
+        }, this);
+    },
+    fragDelete: function () {
+        if (!this.canFrag) {
+            return;
+        }
+
+        this.parentModule.fragAreaDelete();
+        this.fraging(false);
+        this.commentEditingFragChanged = true;
+    },
+
+    //Вызов модального окна с модулем просмотра истории комментария
+    showHistory: function (cid) {
+        if (!this.histVM) {
+            renderer(
+                [
                     {
-                        parent: this,
-                        level: this.level + 2,
-                    }
-                );
-            }
-        },
-        closeHistory: function () {
-            if (this.histVM) {
-                this.histVM.destroy();
-                delete this.histVM;
-            }
-        },
+                        module: 'm/comment/hist',
+                        options: { objCid: this.cid, cid: cid, type: this.type },
+                        modal: {
+                            topic: i18n('Comment edit history'),
+                            animateScale: true,
+                            curtainClick: { click: this.closeHistory, ctx: this },
+                            offIcon: { text: i18n('Close'), click: this.closeHistory, ctx: this },
+                            btns: [
+                                { css: 'btn-primary', text: i18n('Close'), click: this.closeHistory, ctx: this },
+                            ],
+                        },
+                        callback: function (vm) {
+                            this.histVM = this.childModules[vm.id] = vm;
+                            ga('send', 'event', 'comment', 'history');
+                        }.bind(this),
+                    },
+                ],
+                {
+                    parent: this,
+                    level: this.level + 2,
+                }
+            );
+        }
+    },
+    closeHistory: function () {
+        if (this.histVM) {
+            this.histVM.destroy();
+            delete this.histVM;
+        }
+    },
 
-        setNoComments: function () {
-            socket.run('comment.setNoComments', { cid: this.cid, type: this.type, val: !this.nocomments() }, true)
-                .then(function (data) {
-                    this.parentModule.setNoComments(!!data.nocomments);
-                    this.nocomments(!!data.nocomments);
-                }.bind(this));
-        },
+    setNoComments: function () {
+        socket.run('comment.setNoComments', { cid: this.cid, type: this.type, val: !this.nocomments() }, true)
+            .then(function (data) {
+                this.parentModule.setNoComments(!!data.nocomments);
+                this.nocomments(!!data.nocomments);
+            }.bind(this));
+    },
 
 
-        toggleShowDelComments: function () {
-            if (this.loading()) {
-                return;
-            }
+    toggleShowDelComments: function () {
+        if (this.loading()) {
+            return;
+        }
 
-            this.showDelComments(!this.showDelComments());
-            this.receive(null, this, function () {
-                //Перед рендером надо вынуть ответ первого уровня из dom,
-                //и положить после рендеринга заново, т.к. рендеринг заменяет innerHTML блока комментариев
-                this.inputZeroDetach();
-                //Удаляем через jquery остальные возможные поля ввода, чтобы снять с них события
-                $('.cadd', this.$cmts).remove();
-            });
-        },
+        this.showDelComments(!this.showDelComments());
+        this.receive(null, this, function () {
+            //Перед рендером надо вынуть ответ первого уровня из dom,
+            //и положить после рендеринга заново, т.к. рендеринг заменяет innerHTML блока комментариев
+            this.inputZeroDetach();
+            //Удаляем через jquery остальные возможные поля ввода, чтобы снять с них события
+            $('.cadd', this.$cmts).remove();
+        });
+    },
 
-        navUp: function () {
-            this.navCheckBefore(-1);
-        },
-        navDown: function () {
-            this.navCheckBefore(1);
-        },
-        // Сначала проверяет, не навигируется ли сейчас и есть ли дерево, если нет - запросит
-        navCheckBefore: function (dir, onlyFirst) {
-            if (this.navigating()) {
-                return;
-            }
+    navUp: function () {
+        this.navCheckBefore(-1);
+    },
+    navDown: function () {
+        this.navCheckBefore(1);
+    },
+    // Сначала проверяет, не навигируется ли сейчас и есть ли дерево, если нет - запросит
+    navCheckBefore: function (dir, onlyFirst) {
+        if (this.navigating()) {
+            return;
+        }
 
-            if (this.showTree()) {
+        if (this.showTree()) {
+            this.nav(dir, onlyFirst);
+        } else {
+            this.navigating(true);
+            this.inViewportCheck(function () {
+                this.navigating(false);
                 this.nav(dir, onlyFirst);
-            } else {
-                this.navigating(true);
-                this.inViewportCheck(function () {
-                    this.navigating(false);
-                    this.nav(dir, onlyFirst);
-                }, this, true);
-            }
-        },
-        nav: function (dir, onlyFirst) {
-            const $navigator = $('.navigator', this.$dom);
-            let waterlineOffset;
-            const elementsArr = [];
+            }, this, true);
+        }
+    },
+    nav: function (dir, onlyFirst) {
+        const $navigator = $('.navigator', this.$dom);
+        let waterlineOffset;
+        const elementsArr = [];
 
-            const newComments = this.$cmts[0].querySelectorAll('.isnew');
-            let $element;
-            let offset;
-            let i;
+        const newComments = this.$cmts[0].querySelectorAll('.isnew');
+        let $element;
+        let offset;
+        let i;
 
-            if (!newComments || !newComments.length) {
-                return;
-            }
+        if (!newComments || !newComments.length) {
+            return;
+        }
 
-            if (onlyFirst) {
-                $element = $(newComments[0]);
-                elementsArr.push({ offset: $element.offset().top, $element: $element });
-            } else {
-                waterlineOffset = $navigator.offset().top + $navigator.height() / 2 >> 0;
+        if (onlyFirst) {
+            $element = $(newComments[0]);
+            elementsArr.push({ offset: $element.offset().top, $element: $element });
+        } else {
+            waterlineOffset = $navigator.offset().top + $navigator.height() / 2 >> 0;
 
-                for (i = 0; i < newComments.length; i++) {
-                    $element = $(newComments[i]);
-                    offset = $element.offset().top;
-
-                    if (dir < 0 && offset < waterlineOffset && offset + $element.height() < waterlineOffset || dir > 0 && offset > waterlineOffset) {
-                        elementsArr.push({ offset: offset, $element: $element });
-                    }
-                }
-            }
-
-            if (elementsArr.length) {
-                this.navigating(true);
-                elementsArr.sort(function (a, b) {
-                    return a.offset - b.offset;
-                });
-                $window.scrollTo(elementsArr[dir > 0 ? 0 : elementsArr.length - 1].offset - P.window.h() / 2 + P.window.head - 2 >> 0, {
-                    duration: 400, onAfter: function () {
-                        this.navigating(false);
-                    }.bind(this),
-                });
-            }
-        },
-        showTreeHandler: function (/* val */) {
-            this.navCounterHandler();
-        },
-        navCounterHandler: function () {
-            if (this.countNew()) {
-                if (this.showTree()) {
-                    this.navTxtRecalc();
-                    this.navScrollCounterOn();
-                } else {
-                    // Если дерево еще скрыто, т.е. receive еще не было, просто пишем сколько новых комментариев ниже
-                    $('.navigator .down', this.$dom).addClass('active').find('.navTxt').attr('title', i18n('Next unread comment')).text(this.countNew());
-                    this.navScrollCounterOff();
-                }
-            } else {
-                this.navScrollCounterOff();
-            }
-        },
-        navScrollCounterOn: function () {
-            if (!this.navTxtRecalcScroll && this.showTree()) {
-                //Если дерево уже показывается, подписываемся на скролл
-                this.navTxtRecalcScroll = _.debounce(this.navTxtRecalc.bind(this), 300);
-                $window.on('scroll', this.navTxtRecalcScroll);
-            }
-        },
-        navScrollCounterOff: function () {
-            if (this.navTxtRecalcScroll) {
-                $window.off('scroll', this.navTxtRecalcScroll);
-                delete this.navTxtRecalcScroll;
-            }
-        },
-
-        navTxtRecalc: function () {
-            const $navigator = $('.navigator', this.$dom);
-
-            if (!$navigator.length) {
-                return;
-            }
-
-            const up = $navigator.find('.up')[0];
-            const down = $navigator.find('.down')[0];
-            const waterlineOffset = $navigator.offset().top + $navigator.height() / 2 >> 0;
-            let upCount = 0;
-            let downCount = 0;
-
-            const newComments = this.$cmts[0].querySelectorAll('.isnew');
-            let $element;
-            let offset;
-            let i = newComments.length;
-
-            while (i--) {
+            for (i = 0; i < newComments.length; i++) {
                 $element = $(newComments[i]);
                 offset = $element.offset().top;
 
-                if (offset < waterlineOffset && offset + $element.height() < waterlineOffset) {
-                    upCount++;
-                } else if (offset > waterlineOffset) {
-                    downCount++;
+                if (dir < 0 && offset < waterlineOffset && offset + $element.height() < waterlineOffset || dir > 0 && offset > waterlineOffset) {
+                    elementsArr.push({ offset: offset, $element: $element });
                 }
             }
+        }
 
-            up.classList[upCount ? 'add' : 'remove']('active');
-            up.querySelector('.navTxt').innerHTML = upCount ? globalVM.intl.num(upCount) : '';
-            up[upCount ? 'setAttribute' : 'removeAttribute']('title', i18n('Previous unread comment'));
+        if (elementsArr.length) {
+            this.navigating(true);
+            elementsArr.sort(function (a, b) {
+                return a.offset - b.offset;
+            });
+            $window.scrollTo(elementsArr[dir > 0 ? 0 : elementsArr.length - 1].offset - P.window.h() / 2 + P.window.head - 2 >> 0, {
+                duration: 400, onAfter: function () {
+                    this.navigating(false);
+                }.bind(this),
+            });
+        }
+    },
+    showTreeHandler: function (/* val */) {
+        this.navCounterHandler();
+    },
+    navCounterHandler: function () {
+        if (this.countNew()) {
+            if (this.showTree()) {
+                this.navTxtRecalc();
+                this.navScrollCounterOn();
+            } else {
+                // Если дерево еще скрыто, т.е. receive еще не было, просто пишем сколько новых комментариев ниже
+                $('.navigator .down', this.$dom).addClass('active').find('.navTxt').attr('title', i18n('Next unread comment')).text(this.countNew());
+                this.navScrollCounterOff();
+            }
+        } else {
+            this.navScrollCounterOff();
+        }
+    },
+    navScrollCounterOn: function () {
+        if (!this.navTxtRecalcScroll && this.showTree()) {
+            //Если дерево уже показывается, подписываемся на скролл
+            this.navTxtRecalcScroll = _.debounce(this.navTxtRecalc.bind(this), 300);
+            $window.on('scroll', this.navTxtRecalcScroll);
+        }
+    },
+    navScrollCounterOff: function () {
+        if (this.navTxtRecalcScroll) {
+            $window.off('scroll', this.navTxtRecalcScroll);
+            delete this.navTxtRecalcScroll;
+        }
+    },
 
-            down.classList[downCount ? 'add' : 'remove']('active');
-            down.querySelector('.navTxt').innerHTML = downCount ? globalVM.intl.num(downCount) : '';
-            down[downCount ? 'setAttribute' : 'removeAttribute']('title', i18n('Next unread comment'));
-        },
-    });
+    navTxtRecalc: function () {
+        const $navigator = $('.navigator', this.$dom);
+
+        if (!$navigator.length) {
+            return;
+        }
+
+        const up = $navigator.find('.up')[0];
+        const down = $navigator.find('.down')[0];
+        const waterlineOffset = $navigator.offset().top + $navigator.height() / 2 >> 0;
+        let upCount = 0;
+        let downCount = 0;
+
+        const newComments = this.$cmts[0].querySelectorAll('.isnew');
+        let $element;
+        let offset;
+        let i = newComments.length;
+
+        while (i--) {
+            $element = $(newComments[i]);
+            offset = $element.offset().top;
+
+            if (offset < waterlineOffset && offset + $element.height() < waterlineOffset) {
+                upCount++;
+            } else if (offset > waterlineOffset) {
+                downCount++;
+            }
+        }
+
+        up.classList[upCount ? 'add' : 'remove']('active');
+        up.querySelector('.navTxt').innerHTML = upCount ? globalVM.intl.num(upCount) : '';
+        up[upCount ? 'setAttribute' : 'removeAttribute']('title', i18n('Previous unread comment'));
+
+        down.classList[downCount ? 'add' : 'remove']('active');
+        down.querySelector('.navTxt').innerHTML = downCount ? globalVM.intl.num(downCount) : '';
+        down[downCount ? 'setAttribute' : 'removeAttribute']('title', i18n('Next unread comment'));
+    },
 });

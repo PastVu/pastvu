@@ -3,184 +3,196 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'i18n', 'renderer', 'moment', 'model/Photo', 'model/storage', 'text!tpl/diff/news.pug', 'css!style/diff/news'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, i18n, renderer, moment, Photo, storage, pug) {
-    'use strict';
+import _ from 'underscore';
+import Utils from 'Utils';
+import socket from 'socket';
+import P from 'Params';
+import ko from 'knockout';
+import ko_mapping from 'knockout.mapping';
+import Cliche from 'm/_moduleCliche';
+import globalVM from 'globalVM';
+import i18n from 'i18n';
+import 'renderer';
+import 'moment';
+import 'model/Photo';
+import 'model/storage';
+import pug from 'tpl/diff/news.pug?raw';
+import 'style/diff/news.css';
 
-    const newsDefault = {
-        pdate: new Date(),
-        title: i18n('Untitled'),
-        txt: '',
-        ccount: 0,
-        ccount_new: 0,
-        nocomments: false,
-        subscr: false,
-    };
+const newsDefault = {
+    pdate: new Date(),
+    title: i18n('Untitled'),
+    txt: '',
+    ccount: 0,
+    ccount_new: 0,
+    nocomments: false,
+    subscr: false,
+};
 
-    return Cliche.extend({
-        pug: pug,
-        create: function () {
-            this.binded = false;
-            this.auth = globalVM.repository['m/common/auth'];
-            this.news = null;
+export default Cliche.extend({
+    pug: pug,
+    create: function () {
+        this.binded = false;
+        this.auth = globalVM.repository['m/common/auth'];
+        this.news = null;
 
-            this.canEdit = ko.observable(this.auth.loggedIn() && this.auth.iAm.role() > 9);
+        this.canEdit = ko.observable(this.auth.loggedIn() && this.auth.iAm.role() > 9);
 
-            this.scrollTimeout = null;
-            this.scrollToBind = this.scrollTo.bind(this);
+        this.scrollTimeout = null;
+        this.scrollToBind = this.scrollTo.bind(this);
 
-            this.childs = [
-                {
-                    module: 'm/comment/comments',
-                    container: '.commentsContainer',
-                    options: { type: 'news', autoShowOff: true },
-                    ctx: this,
-                    callback: function (vm) {
-                        this.commentsVM = this.childModules[vm.id] = vm;
-                        // Так как при первом заходе, когда модуль еще не зареквайрен,
-                        // нужно вызвать самостоятельно, а последующие будут выстреливать сразу.
-                        this.routeHandler();
-                    },
+        this.childs = [
+            {
+                module: 'm/comment/comments',
+                container: '.commentsContainer',
+                options: { type: 'news', autoShowOff: true },
+                ctx: this,
+                callback: function (vm) {
+                    this.commentsVM = this.childModules[vm.id] = vm;
+                    // Так как при первом заходе, когда модуль еще не зареквайрен,
+                    // нужно вызвать самостоятельно, а последующие будут выстреливать сразу.
+                    this.routeHandler();
                 },
-            ];
+            },
+        ];
 
-            // Вызовется один раз в начале 700мс и в конце один раз, если за эти 700мс были другие вызовы
-            this.routeHandlerDebounced = _.debounce(this.routeHandler, 700, { leading: true, trailing: true });
+        // Вызовется один раз в начале 700мс и в конце один раз, если за эти 700мс были другие вызовы
+        this.routeHandlerDebounced = _.debounce(this.routeHandler, 700, { leading: true, trailing: true });
 
-            // Subscriptions
-            this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandlerDebounced, this);
+        // Subscriptions
+        this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandlerDebounced, this);
 
-            if (!this.auth.loggedIn()) {
-                this.subscriptions.loggedIn = this.auth.loggedIn.subscribe(this.loggedInHandler, this);
+        if (!this.auth.loggedIn()) {
+            this.subscriptions.loggedIn = this.auth.loggedIn.subscribe(this.loggedInHandler, this);
+        }
+    },
+    show: function () {
+        if (this.showing) {
+            return;
+        }
+
+        globalVM.func.showContainer(this.$container);
+        this.showing = true;
+    },
+    hide: function () {
+        globalVM.func.hideContainer(this.$container);
+        this.showing = false;
+    },
+    makeBinding: function () {
+        if (!this.binded) {
+            ko.applyBindings(globalVM, this.$dom[0]);
+            this.binded = true;
+        }
+
+        this.show();
+    },
+
+    routeHandler: function () {
+        const cid = Number(globalVM.router.params().cid);
+        const hl = globalVM.router.params().hl;
+
+        this.toComment = undefined;
+        window.clearTimeout(this.scrollTimeout);
+
+        if (hl) {
+            if (hl.indexOf('comment-') === 0) {
+                this.toComment = hl.substr(8) || undefined; //Навигация к конкретному комментарию
+            } else if (hl.indexOf('comments') === 0) {
+                this.toComment = true; //Навигация к секции комментариев
             }
-        },
-        show: function () {
-            if (this.showing) {
-                return;
-            }
+        }
 
-            globalVM.func.showContainer(this.$container);
-            this.showing = true;
-        },
-        hide: function () {
-            globalVM.func.hideContainer(this.$container);
-            this.showing = false;
-        },
-        makeBinding: function () {
-            if (!this.binded) {
-                ko.applyBindings(globalVM, this.$dom[0]);
-                this.binded = true;
-            }
+        if (!this.news || this.news && Utils.isType('function', this.news.cid) && this.news.cid() !== cid) {
+            this.commentsVM.deactivate(true);
 
-            this.show();
-        },
+            this.getNews(cid, function (data) {
+                Utils.title.setTitle({ title: data.news.title });
+                $(window).scrollTo($('body'), {
+                    offset: -P.window.head, duration: 400, onAfter: function () {
+                        this.commentsActivate();
+                    }.bind(this),
+                });
 
-        routeHandler: function () {
-            const cid = Number(globalVM.router.params().cid);
-            const hl = globalVM.router.params().hl;
+                this.makeBinding();
+                gtag('event', 'page_view');
+            }, this);
+        } else if (this.toComment) {
+            this.scrollTimeout = window.setTimeout(this.scrollToBind, 50);
+        }
+    },
+    loggedInHandler: function () {
+        // После логина проверяем если мы можем редактировать новости
+        this.canEdit(this.auth.iAm.role() > 9);
+        this.subscriptions.loggedIn.dispose();
+        delete this.subscriptions.loggedIn;
+    },
+    getNews: function (cid, cb, ctx) {
+        const self = this;
 
-            this.toComment = undefined;
-            window.clearTimeout(this.scrollTimeout);
+        socket.run('index.giveNewsPublic', { cid: cid }, true).then(function (data) {
+            _.defaults(data.news, newsDefault);
+            data.news.user.avatar = data.news.user.avatar ? '/_a/d/' + data.news.user.avatar :
+                '/img/caps/avatar.png';
 
-            if (hl) {
-                if (hl.indexOf('comment-') === 0) {
-                    this.toComment = hl.substr(8) || undefined; //Навигация к конкретному комментарию
-                } else if (hl.indexOf('comments') === 0) {
-                    this.toComment = true; //Навигация к секции комментариев
-                }
-            }
-
-            if (!this.news || this.news && Utils.isType('function', this.news.cid) && this.news.cid() !== cid) {
-                this.commentsVM.deactivate(true);
-
-                this.getNews(cid, function (data) {
-                    Utils.title.setTitle({ title: data.news.title });
-                    $(window).scrollTo($('body'), {
-                        offset: -P.window.head, duration: 400, onAfter: function () {
-                            this.commentsActivate();
-                        }.bind(this),
-                    });
-
-                    this.makeBinding();
-                    gtag('event', 'page_view');
-                }, this);
-            } else if (this.toComment) {
-                this.scrollTimeout = window.setTimeout(this.scrollToBind, 50);
-            }
-        },
-        loggedInHandler: function () {
-            // После логина проверяем если мы можем редактировать новости
-            this.canEdit(this.auth.iAm.role() > 9);
-            this.subscriptions.loggedIn.dispose();
-            delete this.subscriptions.loggedIn;
-        },
-        getNews: function (cid, cb, ctx) {
-            const self = this;
-
-            socket.run('index.giveNewsPublic', { cid: cid }, true).then(function (data) {
-                _.defaults(data.news, newsDefault);
-                data.news.user.avatar = data.news.user.avatar ? '/_a/d/' + data.news.user.avatar :
-                    '/img/caps/avatar.png';
-
-                if (self.news) {
-                    self.news = ko_mapping.fromJS(data.news, self.news);
-                } else {
-                    self.news = ko_mapping.fromJS(data.news);
-                    self.canComment = self.co.canComment = ko.computed(function () {
-                        return !self.news.nocomments() || self.canEdit();
-                    }, self);
-                }
-
-                if (Utils.isType('function', cb)) {
-                    cb.call(ctx, data);
-                }
-            });
-        },
-
-        /**
-         * COMMENTS
-         */
-        commentsActivate: function (options) {
-            this.commentsVM.activate(
-                {
-                    cid: this.news.cid(),
-                    count: this.news.ccount(),
-                    countNew: this.news.ccount_new(),
-                    subscr: this.news.subscr(),
-                    nocomments: this.news.nocomments(),
-                },
-                _.defaults(options || {}, {
-                    instant: !!this.toComment,
-                    checkTimeout: this.news.ccount() > 30 ? 600 : 410,
-                }),
-                function () {
-                    //На случай наличия параметра подсветки фрагментов или комментариев вызываем scrollTo, после окончания receive
-                    window.setTimeout(this.scrollToBind, 150);
-                },
-                this
-            );
-        },
-
-        scrollTo: function () {
-            if (this.toComment) {
-                this.commentsVM.scrollTo(this.toComment);
+            if (self.news) {
+                self.news = ko_mapping.fromJS(data.news, self.news);
+            } else {
+                self.news = ko_mapping.fromJS(data.news);
+                self.canComment = self.co.canComment = ko.computed(function () {
+                    return !self.news.nocomments() || self.canEdit();
+                }, self);
             }
 
-            this.toComment = undefined;
-        },
+            if (Utils.isType('function', cb)) {
+                cb.call(ctx, data);
+            }
+        });
+    },
 
-        commentCountIncrement: function (delta) {
-            this.news.ccount(this.news.ccount() + delta);
-        },
-        setNoComments: function (val) {
-            this.news.nocomments(val);
-        },
-        setSubscr: function (val) {
-            this.news.subscr(val);
-        },
+    /**
+     * COMMENTS
+     */
+    commentsActivate: function (options) {
+        this.commentsVM.activate(
+            {
+                cid: this.news.cid(),
+                count: this.news.ccount(),
+                countNew: this.news.ccount_new(),
+                subscr: this.news.subscr(),
+                nocomments: this.news.nocomments(),
+            },
+            _.defaults(options || {}, {
+                instant: !!this.toComment,
+                checkTimeout: this.news.ccount() > 30 ? 600 : 410,
+            }),
+            function () {
+                //На случай наличия параметра подсветки фрагментов или комментариев вызываем scrollTo, после окончания receive
+                window.setTimeout(this.scrollToBind, 150);
+            },
+            this
+        );
+    },
 
-        onImgLoad: function (data, event) {
-            $(event.target).animate({ opacity: 1 });
-            data = event = null;
-        },
-    });
+    scrollTo: function () {
+        if (this.toComment) {
+            this.commentsVM.scrollTo(this.toComment);
+        }
+
+        this.toComment = undefined;
+    },
+
+    commentCountIncrement: function (delta) {
+        this.news.ccount(this.news.ccount() + delta);
+    },
+    setNoComments: function (val) {
+        this.news.nocomments(val);
+    },
+    setSubscr: function (val) {
+        this.news.subscr(val);
+    },
+
+    onImgLoad: function (data, event) {
+        $(event.target).animate({ opacity: 1 });
+        data = event = null;
+    },
 });

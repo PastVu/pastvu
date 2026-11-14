@@ -3,404 +3,416 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-define(
-    ['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'i18n', 'model/storage', 'm/photo/fields', 'm/photo/status', 'lib/doT', 'noties', 'moment', 'text!tpl/photo/hist.pug', 'css!style/photo/hist'],
-    function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, i18n, storage, fields, statuses, doT, noties, moment, pug) {
-        'use strict';
+import _ from 'underscore';
+import Utils from 'Utils';
+import socket from 'socket';
+import 'Params';
+import ko from 'knockout';
+import 'knockout.mapping';
+import Cliche from 'm/_moduleCliche';
+import globalVM from 'globalVM';
+import i18n from 'i18n';
+import 'model/storage';
+import fields from 'm/photo/fields';
+import statuses from 'm/photo/status';
+import doT from 'lib/doT';
+import noties from 'noties';
+import moment from 'moment';
+import pug from 'tpl/photo/hist.pug?raw';
+import 'style/photo/hist.css';
 
-        let tplHist;
-        let tplRegions;
-        let tplRegionsDiff;
-        const maxRegionLevel = 5;
-        const statusNums = statuses.nums;
-        const txtFields = ['title', 'filename', 'geo', 'type', 'regions', 'y', 'desc', 'source', 'author', 'address', 'dir', 'watersignText'];
+let tplHist;
+    let tplRegions;
+    let tplRegionsDiff;
+    const maxRegionLevel = 5;
+    const statusNums = statuses.nums;
+    const txtFields = ['title', 'filename', 'geo', 'type', 'regions', 'y', 'desc', 'source', 'author', 'address', 'dir', 'watersignText'];
 
-        return Cliche.extend({
-            pug: pug,
-            options: {
-                cid: 0,
-                scroll: 0,
-                newSince: null,
-            },
-            create: function () {
-                this.cid = this.options.cid;
-                this.scroll = this.options.scroll;
-                this.newSince = this.options.newSince && this.options.newSince.getTime();
-                this.fetchId = 0;
-                this.haveDiff = ko.observable(false);
-                this.showDiff = ko.observable(true);
-                this.switchDiff2 = ko.observable(false);
+    export default Cliche.extend({
+        pug: pug,
+        options: {
+            cid: 0,
+            scroll: 0,
+            newSince: null,
+        },
+        create: function () {
+            this.cid = this.options.cid;
+            this.scroll = this.options.scroll;
+            this.newSince = this.options.newSince && this.options.newSince.getTime();
+            this.fetchId = 0;
+            this.haveDiff = ko.observable(false);
+            this.showDiff = ko.observable(true);
+            this.switchDiff2 = ko.observable(false);
 
-                if (!tplHist) {
-                    tplHist = doT.template(document.getElementById('dothist').text);
+            if (!tplHist) {
+                tplHist = doT.template(document.getElementById('dothist').text);
+            }
+
+            if (!tplRegions) {
+                tplRegions = doT.template(document.getElementById('dotRegions').text);
+            }
+
+            if (!tplRegionsDiff) {
+                tplRegionsDiff = doT.template(document.getElementById('dotRegionsDiff').text);
+            }
+
+            this.getHist(function (err, data) {
+                if (data && data.hists && data.hists.length) {
+                    ko.applyBindings(globalVM, this.$dom[0]);
+                    this.renderHist(data);
                 }
 
-                if (!tplRegions) {
-                    tplRegions = doT.template(document.getElementById('dotRegions').text);
+                this.show();
+            }, this);
+
+            // History records are re-rendered with innerHTML (e.g. on diff switch), so bindings
+            // can't be used inside them. Delegate the revert click instead.
+            this.$dom.on('click', '.histRevert', function (evt) {
+                evt.preventDefault();
+                this.revert(Number(evt.currentTarget.dataset.stamp));
+            }.bind(this));
+        },
+        show: function () {
+            const self = this;
+
+            globalVM.func.showContainer(self.$container);
+
+            self.scrollByParams();
+
+            if (self.modal) {
+                self.modal.$curtain.addClass('showModalCurtain');
+            }
+
+            self.showing = true;
+        },
+        hide: function () {
+            globalVM.func.hideContainer(this.$container);
+            this.showing = false;
+        },
+        switchDiff: function () {
+            this.showDiff(!this.showDiff());
+
+            this.getHist(function (err, data) {
+                if (data && data.hists && data.hists.length) {
+                    this.renderHist(data);
                 }
+            }, this);
+        },
+        scrollByParams: function (soft) {
+            const self = this;
+            const dom = self.$dom[0];
+            const $container = self.$container;
+            const viewHeight = $container.height();
+            const contentHeight = $container[0].scrollHeight;
+            let element;
+            let elementHeight;
+            let elementTop;
 
-                if (!tplRegionsDiff) {
-                    tplRegionsDiff = doT.template(document.getElementById('dotRegionsDiff').text);
-                }
+            if (self.scroll > 1) {
+                element = self.setHl(self.scroll);
+            }
 
-                this.getHist(function (err, data) {
-                    if (data && data.hists && data.hists.length) {
-                        ko.applyBindings(globalVM, this.$dom[0]);
-                        this.renderHist(data);
-                    }
-
-                    this.show();
-                }, this);
-
-                // History records are re-rendered with innerHTML (e.g. on diff switch), so bindings
-                // can't be used inside them. Delegate the revert click instead.
-                this.$dom.on('click', '.histRevert', function (evt) {
-                    evt.preventDefault();
-                    this.revert(Number(evt.currentTarget.dataset.stamp));
-                }.bind(this));
-            },
-            show: function () {
-                const self = this;
-
-                globalVM.func.showContainer(self.$container);
-
-                self.scrollByParams();
-
-                if (self.modal) {
-                    self.modal.$curtain.addClass('showModalCurtain');
-                }
-
-                self.showing = true;
-            },
-            hide: function () {
-                globalVM.func.hideContainer(this.$container);
-                this.showing = false;
-            },
-            switchDiff: function () {
-                this.showDiff(!this.showDiff());
-
-                this.getHist(function (err, data) {
-                    if (data && data.hists && data.hists.length) {
-                        this.renderHist(data);
-                    }
-                }, this);
-            },
-            scrollByParams: function (soft) {
-                const self = this;
-                const dom = self.$dom[0];
-                const $container = self.$container;
-                const viewHeight = $container.height();
-                const contentHeight = $container[0].scrollHeight;
-                let element;
-                let elementHeight;
-                let elementTop;
-
-                if (self.scroll > 1) {
-                    element = self.setHl(self.scroll);
-                }
-
-                if (contentHeight > viewHeight) {
-                    // Если в параметре scroll пришло число больше единцы, значит это stamp нужной записи истории
-                    // Если такая запись нашлась навигируемся к ней
-                    if (element) {
-                        element = $(element);
-
-                        //Если высота комментария меньше высоты контейнера, позиционируем комментарий по центру контейнера
-                        elementHeight = element.outerHeight();
-                        elementTop = element.position().top;
-
-                        if (elementHeight < viewHeight) {
-                            elementTop += elementHeight / 2 - viewHeight / 2;
-                        }
-                    }
-
-                    // Если с момента последнего посещения добавились новые записи в историю и нет навигируемой записи scroll,
-                    // Навигируемся к первой новой записи
-                    if (self.newSince > 0 && !element) {
-                        element = dom.querySelector('.isnew');
-
-                        if (element) {
-                            elementTop = $(element).position().top - 10;
-                        }
-                    }
-
-                    // Если на предыдцщих шагах ничего не нашли и стоит значение скроллить в конец, скроллимся
-                    if (self.scroll === 1 && !element) {
-                        elementTop = contentHeight;
-                    }
-
-                    // Если элемент найден, скроллим к нему
-                    if (elementTop) {
-                        if (soft) {
-                            $container.scrollTo(elementTop, 400);
-                        } else {
-                            $container[0].scrollTop = elementTop;
-                        }
-                    }
-                }
-            },
-            setNewScroll: function (scroll) {
-                this.scroll = scroll;
-                $('.hist.hl', this.$dom).removeClass('hl');
-                this.scrollByParams(true);
-            },
-            setHl: function (stamp) {
-                const element = this.$dom[0].querySelector('#h' + stamp);
-
+            if (contentHeight > viewHeight) {
+                // Если в параметре scroll пришло число больше единцы, значит это stamp нужной записи истории
+                // Если такая запись нашлась навигируемся к ней
                 if (element) {
-                    element.classList.add('hl');
+                    element = $(element);
+
+                    //Если высота комментария меньше высоты контейнера, позиционируем комментарий по центру контейнера
+                    elementHeight = element.outerHeight();
+                    elementTop = element.position().top;
+
+                    if (elementHeight < viewHeight) {
+                        elementTop += elementHeight / 2 - viewHeight / 2;
+                    }
                 }
 
-                return element;
-            },
-            renderHist: function (data) {
-                const regionsHash = data.regions;
-                const reasonsHash = data.reasons;
-                const showDiff = this.showDiff();
-                let regionsPrev;
-                let regionsArr;
-                let regionCids;
-                let regionPrev;
-                let regionCurr;
-                let regionsBase;
-                let regionsDel;
-                let regionsAdd;
-                let addHash;
-                let field;
-                let value;
-                let hist;
-                let j;
+                // Если с момента последнего посещения добавились новые записи в историю и нет навигируемой записи scroll,
+                // Навигируемся к первой новой записи
+                if (self.newSince > 0 && !element) {
+                    element = dom.querySelector('.isnew');
 
-                const newSince = this.newSince;
-                const hightlightNew = newSince > 0;
-                let canRevert = false;
-
-                for (let i = 0; i < data.hists.length; i++) {
-                    hist = data.hists[i];
-
-                    // Если указано время последнего просмотра объекта и это не первая запись,
-                    // Подсвечиваем все записи после этого времени как новые
-                    if (hightlightNew && i > 0 && hist.stamp > newSince) {
-                        hist.isnew = true;
+                    if (element) {
+                        elementTop = $(element).position().top - 10;
                     }
+                }
 
+                // Если на предыдцщих шагах ничего не нашли и стоит значение скроллить в конец, скроллимся
+                if (self.scroll === 1 && !element) {
+                    elementTop = contentHeight;
+                }
 
-                    if (hist.restoreStamp) {
-                        // Built here, since i18n placeholders ({{date}}) can't be used inside a doT expression.
-                        // Only the date is a link, i18n doesn't escape interpolated values (see i18n.js).
-                        hist.restoredText = i18n('Restored to the version of {{date}}', {
-                            date: '<a data-replace="true" href="/p/' + this.cid + '?history=' + hist.restoreStamp + '">' +
-                                Utils.format.date.relative(new Date(hist.restoreStamp)) + '</a>',
-                        });
-                    }
-
-                    hist.user.avatar = hist.user.avatar ? '/_a/h/' + hist.user.avatar : '/img/caps/avatarth.png';
-
-                    if (hist.roleregion) {
-                        hist.roleregion = regionsHash[hist.roleregion];
-                    }
-
-                    hist.textValuesArr = [];
-
-                    // Checked for every entry, including ones without values (e.g. only removed fields).
-                    const histStatus = hist.values ? hist.values.s : undefined;
-
-                    if (histStatus !== undefined) {
-                        // Only public stretch of history can be reverted, including the entry that
-                        // made photo public. Status change to non-public disables reverting from now on.
-                        canRevert = histStatus === 5;
-                    }
-
-                    if (canRevert) {
-                        hist.canRevert = this.parentModule.can.restorehistory();
-                    }
-
-                    if (!hist.values) {
-                        hist.values = {};
+                // Если элемент найден, скроллим к нему
+                if (elementTop) {
+                    if (soft) {
+                        $container.scrollTo(elementTop, 400);
                     } else {
-                        if (hist.values.s !== undefined) {
-                            hist.values.s = statusNums[hist.values.s];
-                        }
-
-                        regionCids = hist.values.regions;
-
-                        if (regionCids) {
-                            regionsArr = [];
-                            regionsBase = [];
-                            regionsDel = [];
-                            regionsAdd = [];
-
-                            for (j = 0; j < regionCids.length; j++) {
-                                if (!_.isEmpty(regionsHash[regionCids[j]])) {
-                                    regionsArr.push(regionsHash[regionCids[j]]);
-                                }
-                            }
-
-                            if (showDiff && regionsPrev) {
-                                for (j = 0; j <= maxRegionLevel; j++) {
-                                    regionPrev = regionsPrev[j];
-                                    regionCurr = regionsArr[j];
-
-                                    if (!regionPrev && !regionCurr) {
-                                        break;
-                                    }
-
-                                    if (regionPrev && regionCurr && regionPrev.cid === regionCurr.cid) {
-                                        regionsBase.push(regionCurr);
-                                    } else {
-                                        if (regionPrev) {
-                                            regionsDel.push(regionPrev);
-                                        }
-
-                                        if (regionCurr) {
-                                            regionsAdd.push(regionCurr);
-                                        }
-                                    }
-                                }
-
-                                hist.values.regions = tplRegionsDiff({
-                                    base: tplRegions({ regions: regionsBase, regionTitle: Utils.regionTitle }),
-                                    del: tplRegions({ regions: regionsDel, regionTitle: Utils.regionTitle }),
-                                    add: tplRegions({ regions: regionsAdd, regionTitle: Utils.regionTitle }),
-                                });
-                            } else {
-                                hist.values.regions = tplRegions({ regions: regionsArr, regionTitle: Utils.regionTitle });
-                            }
-
-                            regionsPrev = regionsArr;
-                        }
-
-                        if (hist.values.type) {
-                            hist.values.type = i18n(fields.typeVals[hist.values.type]);
-                        }
-
-                        if (hist.values.dir) {
-                            hist.values.dir = fields.dirVals[hist.values.dir];
-                        }
-
-                        if (hist.add) {
-                            addHash = {};
-
-                            for (j = 0; j < hist.add.length; j++) {
-                                addHash[hist.add[j]] = true;
-                            }
-                        }
-
-                        for (j = 0; j < txtFields.length; j++) {
-                            field = txtFields[j];
-                            value = hist.values[field];
-
-                            if (value) {
-                                // doT не умеет итерироваться по объектам, превращаем в массив
-                                hist.textValuesArr.push({
-                                    field: field,
-                                    val: value,
-                                    add: addHash && addHash[field],
-                                });
-                            }
-                        }
-
-                        addHash = undefined;
+                        $container[0].scrollTop = elementTop;
                     }
                 }
+            }
+        },
+        setNewScroll: function (scroll) {
+            this.scroll = scroll;
+            $('.hist.hl', this.$dom).removeClass('hl');
+            this.scrollByParams(true);
+        },
+        setHl: function (stamp) {
+            const element = this.$dom[0].querySelector('#h' + stamp);
 
-                // The latest history record is the current state, there is nothing to restore.
-                data.hists[data.hists.length - 1].canRevert = false;
+            if (element) {
+                element.classList.add('hl');
+            }
 
-                this.$dom[0].querySelector('.hists').innerHTML = tplHist({
-                    cid: this.cid,
-                    fields: fields,
-                    hists: data.hists,
-                    reasonsHash: reasonsHash,
-                    fDate: Utils.format.date.relative,
-                    i18n: globalVM.i18n,
-                    regionTitle: Utils.regionTitle,
-                });
-            },
-            getHist: function (cb, ctx) {
-                const self = this;
+            return element;
+        },
+        renderHist: function (data) {
+            const regionsHash = data.regions;
+            const reasonsHash = data.reasons;
+            const showDiff = this.showDiff();
+            let regionsPrev;
+            let regionsArr;
+            let regionCids;
+            let regionPrev;
+            let regionCurr;
+            let regionsBase;
+            let regionsDel;
+            let regionsAdd;
+            let addHash;
+            let field;
+            let value;
+            let hist;
+            let j;
 
-                self.fetchId += 1;
+            const newSince = this.newSince;
+            const hightlightNew = newSince > 0;
+            let canRevert = false;
 
-                socket
-                    .run('photo.giveObjHist', {
-                        cid: self.cid,
-                        fetchId: self.fetchId,
-                        showDiff: self.showDiff(),
-                    }, true)
-                    .then(function (result) {
-                        // Проверяем что запрос не устарел
-                        if (_.get(result, 'fetchId') !== self.fetchId) {
-                            return;
-                        }
+            for (let i = 0; i < data.hists.length; i++) {
+                hist = data.hists[i];
 
-                        if (result.haveDiff === true) {
-                            self.haveDiff(result.haveDiff);
-                        }
-
-                        self.switchDiff2(result.hists.length > 4);
-
-                        cb.call(ctx, null, result);
-                    })
-                    .catch(function (err) {
-                        cb.call(ctx, err);
-                    });
-            },
-            revert: function (stamp) {
-                const self = this;
-
-                if (!stamp) {
-                    return;
+                // Если указано время последнего просмотра объекта и это не первая запись,
+                // Подсвечиваем все записи после этого времени как новые
+                if (hightlightNew && i > 0 && hist.stamp > newSince) {
+                    hist.isnew = true;
                 }
 
-                noties.confirm({
-                    message: i18n('Restore the photo to the state of {{stamp}}?', { stamp: moment(stamp).format('D MMMM YYYY, HH:mm') }),
-                    okText: i18n('Yes'),
-                    cancelText: i18n('No'),
-                    onOk: function (initConfirmer) {
-                        initConfirmer.close();
-                        socket.run('photo.restorePointInHistory', {
-                            cid: self.cid,
-                            stamp: stamp,
-                        }, true)
-                            .then(function (data) {
-                                if (data && data.emptySave) {
-                                    // Photo already has this state, nothing has been changed
-                                    noties.alert({
-                                        message: i18n('The selected version matches the current state'),
-                                        type: 'warning',
-                                        layout: 'topRight',
-                                    });
 
-                                    return;
+                if (hist.restoreStamp) {
+                    // Built here, since i18n placeholders ({{date}}) can't be used inside a doT expression.
+                    // Only the date is a link, i18n doesn't escape interpolated values (see i18n.js).
+                    hist.restoredText = i18n('Restored to the version of {{date}}', {
+                        date: '<a data-replace="true" href="/p/' + this.cid + '?history=' + hist.restoreStamp + '">' +
+                            Utils.format.date.relative(new Date(hist.restoreStamp)) + '</a>',
+                    });
+                }
+
+                hist.user.avatar = hist.user.avatar ? '/_a/h/' + hist.user.avatar : '/img/caps/avatarth.png';
+
+                if (hist.roleregion) {
+                    hist.roleregion = regionsHash[hist.roleregion];
+                }
+
+                hist.textValuesArr = [];
+
+                // Checked for every entry, including ones without values (e.g. only removed fields).
+                const histStatus = hist.values ? hist.values.s : undefined;
+
+                if (histStatus !== undefined) {
+                    // Only public stretch of history can be reverted, including the entry that
+                    // made photo public. Status change to non-public disables reverting from now on.
+                    canRevert = histStatus === 5;
+                }
+
+                if (canRevert) {
+                    hist.canRevert = this.parentModule.can.restorehistory();
+                }
+
+                if (!hist.values) {
+                    hist.values = {};
+                } else {
+                    if (hist.values.s !== undefined) {
+                        hist.values.s = statusNums[hist.values.s];
+                    }
+
+                    regionCids = hist.values.regions;
+
+                    if (regionCids) {
+                        regionsArr = [];
+                        regionsBase = [];
+                        regionsDel = [];
+                        regionsAdd = [];
+
+                        for (j = 0; j < regionCids.length; j++) {
+                            if (!_.isEmpty(regionsHash[regionCids[j]])) {
+                                regionsArr.push(regionsHash[regionCids[j]]);
+                            }
+                        }
+
+                        if (showDiff && regionsPrev) {
+                            for (j = 0; j <= maxRegionLevel; j++) {
+                                regionPrev = regionsPrev[j];
+                                regionCurr = regionsArr[j];
+
+                                if (!regionPrev && !regionCurr) {
+                                    break;
                                 }
 
-                                // Update photo data on the photo page behind the history window
-                                const photoModule = self.parentModule;
+                                if (regionPrev && regionCurr && regionPrev.cid === regionCurr.cid) {
+                                    regionsBase.push(regionCurr);
+                                } else {
+                                    if (regionPrev) {
+                                        regionsDel.push(regionPrev);
+                                    }
 
-                                photoModule.rechargeData(data.photo, data.can);
-
-                                if (data.reconvert) {
-                                    photoModule.notifyReconvert();
+                                    if (regionCurr) {
+                                        regionsAdd.push(regionCurr);
+                                    }
                                 }
+                            }
 
-                                photoModule.getNearestRibbon();
+                            hist.values.regions = tplRegionsDiff({
+                                base: tplRegions({ regions: regionsBase, regionTitle: Utils.regionTitle }),
+                                del: tplRegions({ regions: regionsDel, regionTitle: Utils.regionTitle }),
+                                add: tplRegions({ regions: regionsAdd, regionTitle: Utils.regionTitle }),
+                            });
+                        } else {
+                            hist.values.regions = tplRegions({ regions: regionsArr, regionTitle: Utils.regionTitle });
+                        }
 
+                        regionsPrev = regionsArr;
+                    }
+
+                    if (hist.values.type) {
+                        hist.values.type = i18n(fields.typeVals[hist.values.type]);
+                    }
+
+                    if (hist.values.dir) {
+                        hist.values.dir = fields.dirVals[hist.values.dir];
+                    }
+
+                    if (hist.add) {
+                        addHash = {};
+
+                        for (j = 0; j < hist.add.length; j++) {
+                            addHash[hist.add[j]] = true;
+                        }
+                    }
+
+                    for (j = 0; j < txtFields.length; j++) {
+                        field = txtFields[j];
+                        value = hist.values[field];
+
+                        if (value) {
+                            // doT не умеет итерироваться по объектам, превращаем в массив
+                            hist.textValuesArr.push({
+                                field: field,
+                                val: value,
+                                add: addHash && addHash[field],
+                            });
+                        }
+                    }
+
+                    addHash = undefined;
+                }
+            }
+
+            // The latest history record is the current state, there is nothing to restore.
+            data.hists[data.hists.length - 1].canRevert = false;
+
+            this.$dom[0].querySelector('.hists').innerHTML = tplHist({
+                cid: this.cid,
+                fields: fields,
+                hists: data.hists,
+                reasonsHash: reasonsHash,
+                fDate: Utils.format.date.relative,
+                i18n: globalVM.i18n,
+                regionTitle: Utils.regionTitle,
+            });
+        },
+        getHist: function (cb, ctx) {
+            const self = this;
+
+            self.fetchId += 1;
+
+            socket
+                .run('photo.giveObjHist', {
+                    cid: self.cid,
+                    fetchId: self.fetchId,
+                    showDiff: self.showDiff(),
+                }, true)
+                .then(function (result) {
+                    // Проверяем что запрос не устарел
+                    if (_.get(result, 'fetchId') !== self.fetchId) {
+                        return;
+                    }
+
+                    if (result.haveDiff === true) {
+                        self.haveDiff(result.haveDiff);
+                    }
+
+                    self.switchDiff2(result.hists.length > 4);
+
+                    cb.call(ctx, null, result);
+                })
+                .catch(function (err) {
+                    cb.call(ctx, err);
+                });
+        },
+        revert: function (stamp) {
+            const self = this;
+
+            if (!stamp) {
+                return;
+            }
+
+            noties.confirm({
+                message: i18n('Restore the photo to the state of {{stamp}}?', { stamp: moment(stamp).format('D MMMM YYYY, HH:mm') }),
+                okText: i18n('Yes'),
+                cancelText: i18n('No'),
+                onOk: function (initConfirmer) {
+                    initConfirmer.close();
+                    socket.run('photo.restorePointInHistory', {
+                        cid: self.cid,
+                        stamp: stamp,
+                    }, true)
+                        .then(function (data) {
+                            if (data && data.emptySave) {
+                                // Photo already has this state, nothing has been changed
                                 noties.alert({
-                                    message: i18n('History restored'),
-                                    type: 'success',
+                                    message: i18n('The selected version matches the current state'),
+                                    type: 'warning',
                                     layout: 'topRight',
                                 });
 
-                                // Only re-render history, create() would apply bindings to the same DOM again.
-                                self.getHist(function (err, histData) {
-                                    if (histData && histData.hists && histData.hists.length) {
-                                        self.renderHist(histData);
-                                    }
-                                });
+                                return;
+                            }
+
+                            // Update photo data on the photo page behind the history window
+                            const photoModule = self.parentModule;
+
+                            photoModule.rechargeData(data.photo, data.can);
+
+                            if (data.reconvert) {
+                                photoModule.notifyReconvert();
+                            }
+
+                            photoModule.getNearestRibbon();
+
+                            noties.alert({
+                                message: i18n('History restored'),
+                                type: 'success',
+                                layout: 'topRight',
                             });
-                    },
-                });
-            },
-        });
+
+                            // Only re-render history, create() would apply bindings to the same DOM again.
+                            self.getHist(function (err, histData) {
+                                if (histData && histData.hists && histData.hists.length) {
+                                    self.renderHist(histData);
+                                }
+                            });
+                        });
+                },
+            });
+        },
     });

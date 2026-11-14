@@ -3,68 +3,71 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-define(['underscore', 'knockout', 'm/_moduleCliche', 'globalVM', 'text!tpl/admin/submenu.pug', 'css!style/admin/submenu'], function (_, ko, Cliche, globalVM, pug) {
-    'use strict';
+import 'underscore';
+import ko from 'knockout';
+import Cliche from 'm/_moduleCliche';
+import globalVM from 'globalVM';
+import pug from 'tpl/admin/submenu.pug?raw';
+import 'style/admin/submenu.css';
 
-    return Cliche.extend({
-        pug: pug,
-        create: function () {
-            const self = this;
+export default Cliche.extend({
+    pug: pug,
+    create: function () {
+        const self = this;
 
-            this.auth = globalVM.repository['m/common/auth'];
+        this.auth = globalVM.repository['m/common/auth'];
 
-            this.submenus = {
-                index: [
-                    { name: 'Home', href: '/admin', section: 'main' },
-                    { name: 'News', href: '/admin/news', section: 'news' },
-                ],
-                map: [
-                    { name: 'Clusters', href: '/admin/map/cluster', section: 'cluster' },
-                ],
-                photo: [
-                    { name: 'Conversion pipeline', href: '/admin/photo/conveyer', section: 'conveyer' },
-                ],
-                region: [
-                    { name: 'List and view', href: '/admin/region', section: 'region' },
-                    { name: 'Check by point', href: '/admin/region/check', section: 'regionCheck' },
-                ],
-            };
+        this.submenus = {
+            index: [
+                { name: 'Home', href: '/admin', section: 'main' },
+                { name: 'News', href: '/admin/news', section: 'news' },
+            ],
+            map: [
+                { name: 'Clusters', href: '/admin/map/cluster', section: 'cluster' },
+            ],
+            photo: [
+                { name: 'Conversion pipeline', href: '/admin/photo/conveyer', section: 'conveyer' },
+            ],
+            region: [
+                { name: 'List and view', href: '/admin/region', section: 'region' },
+                { name: 'Check by point', href: '/admin/region/check', section: 'regionCheck' },
+            ],
+        };
 
-            this.topmenu = ko.observable('');
-            this.section = ko.observable('');
-            this.menuItems = this.co.menuItems = ko.computed({
-                read: function () {
-                    return this.submenus[this.topmenu()] || [];
-                },
-                owner: this,
-            });
+        this.topmenu = ko.observable('');
+        this.section = ko.observable('');
+        this.menuItems = this.co.menuItems = ko.computed({
+            read: function () {
+                return this.submenus[this.topmenu()] || [];
+            },
+            owner: this,
+        });
 
-            // Subscriptions
-            this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandler, this);
+        // Subscriptions
+        this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandler, this);
 
-            // Hack for route params
-            setTimeout(function () {
-                self.routeHandler();
-                ko.applyBindings(globalVM, self.$dom[0]);
-            }, 300);
-        },
-        show: function () {
-            if (!this.showing) {
-                globalVM.func.showContainer(this.$container);
-                this.showing = true;
-            }
-        },
-        hide: function () {
-            if (this.showing) {
-                globalVM.func.hideContainer(this.$container);
-                this.showing = false;
-            }
-        },
-        routeHandler: function () {
-            const params = globalVM.router.params();
+        // Hack for route params
+        setTimeout(function () {
+            self.routeHandler();
+            ko.applyBindings(globalVM, self.$dom[0]);
+        }, 300);
+    },
+    show: function () {
+        if (!this.showing) {
+            globalVM.func.showContainer(this.$container);
+            this.showing = true;
+        }
+    },
+    hide: function () {
+        if (this.showing) {
+            globalVM.func.hideContainer(this.$container);
+            this.showing = false;
+        }
+    },
+    routeHandler: function () {
+        const params = globalVM.router.params();
 
-            this.topmenu(params._handler);
-            this.section(params.section);
-        },
-    });
+        this.topmenu(params._handler);
+        this.section(params.section);
+    },
 });
