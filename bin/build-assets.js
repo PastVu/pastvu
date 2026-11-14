@@ -6,14 +6,14 @@
 
 'use strict';
 
-require('./bin/run');
+require('./run');
 
 const start = Date.now();
 const fs = require('fs').promises;
 const path = require('path');
 const requirejs = require('requirejs');
 const less = require('less');
-const Utils = require('./commons/Utils');
+const Utils = require('../commons/Utils');
 
 const lessCompileOptions = {
     compress: true,

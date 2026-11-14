@@ -36,7 +36,7 @@
         "lintfix": "./node_modules/.bin/eslint . --fix",
         "i18n:check": "node bin/find-untranslated-i18n.js",
         "jest": "jest --runInBand",
-        "build": "grunt",
+        "build": "node bin/build.js",
         "test": "npm run check:node && npm run lint && npm run lint:styles && npm run jest -- --ci",
         "prepare": "husky",
         "migrate": "npm run migrate:up",
@@ -98,11 +98,6 @@
         "eslint-plugin-jest": "29.15.4",
         "eslint-plugin-jsdoc": "63.0.10",
         "globals": "17.7.0",
-        "grunt": "1.6.3",
-        "grunt-babel": "8.0.0",
-        "grunt-contrib-pug": "3.0.0",
-        "grunt-contrib-uglify": "5.2.2",
-        "grunt-exec": "3.0.0",
         "husky": "9.1.7",
         "jest": "30.4.2",
         "less": "4.8.1",
@@ -111,7 +106,8 @@
         "redis-memory-server": "0.17.1",
         "requirejs": "2.3.8",
         "stylelint": "17.14.0",
-        "stylelint-config-standard": "40.0.0"
+        "stylelint-config-standard": "40.0.0",
+        "uglify-js": "3.19.3"
     },
     "overrides": {
         "js-yaml": "^4.2.0",
