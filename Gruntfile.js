@@ -8,7 +8,7 @@
 module.exports = function (grunt) {
     require('./bin/run');
 
-    const fs = require('fs');
+    const fs = require('node:fs');
     const path = require('path');
     const Utils = require('./commons/Utils');
     const env = grunt.option('env') || 'production'; // Например, --env testing
@@ -22,29 +22,10 @@ module.exports = function (grunt) {
     // Project configuration
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
-        mkdir: {
-            target: {
-                options: {
-                    create: [targetDir],
-                },
-            },
-        },
         clean: {
-            options: {
-                force: true, // This overrides grunt.file.delete from blocking deletion of folders outside cwd
-            },
-            target: {
-                // Очищаем целевую директорию (кроме вложенной папки node_modules)
-                src: [targetDir + '/*'/* , '!' + targetDir + '/node_modules' */],
-            },
-            publicTpl: {
-                // Очищаем директорию скомпиленных tpl
-                src: ['public/tpl'],
-            },
-            publicCss: {
-                // Clean up compiled css.
-                src: ['public/style/**/*.css'],
-            },
+            target: [targetDir + '/*'],
+            publicTpl: ['public/tpl'],
+            publicCss: ['public/style/**/*.css'],
         },
         exec: {
             buildjs: {
@@ -57,24 +38,6 @@ module.exports = function (grunt) {
                 cwd: targetDir,
                 stdout: true,
                 stderr: true,
-            },
-            movePublic: {
-                command: `mv public-build ${targetDir}public`,
-                stdout: true,
-                stderr: true,
-            },
-
-        },
-        'string-replace': {
-            baseurl: {
-                options: {
-                    replacements: [
-                        { pattern: /__=__/ig, replacement: `__=${hash}` },
-                    ],
-                },
-                files: {
-                    'public-build/js/_mainConfig.js': 'public-build/js/_mainConfig.js',
-                },
             },
         },
         uglify: {
@@ -188,33 +151,53 @@ module.exports = function (grunt) {
 
     });
 
-    grunt.loadNpmTasks('grunt-contrib-clean');
     grunt.loadNpmTasks('grunt-contrib-pug');
     grunt.loadNpmTasks('grunt-contrib-compress');
-    grunt.loadNpmTasks('grunt-string-replace');
     grunt.loadNpmTasks('grunt-exec');
-    grunt.loadNpmTasks('grunt-mkdir');
     grunt.loadNpmTasks('grunt-babel');
     grunt.loadNpmTasks('grunt-contrib-uglify');
 
     // Build.
     grunt.registerTask('default', [
-        'mkdir:target',
+        'mkdir',
         'clean:target',
         'pug:compileTpls',
         'exec:buildjs',
-        'string-replace',
+        'replaceBaseurl',
         'uglify:publicApps',
         'uglify:publicJs',
         'copy',
         'babel',
-        'exec:movePublic',
+        'movePublic',
         'pug:compileMainPugs',
         'clean:publicTpl',
         'writeBuildParams',
         //'exec:npm',
         'compress',
     ]);
+
+    grunt.registerTask('mkdir', 'Create the build directory', () => {
+        fs.mkdirSync(targetDir, { recursive: true });
+    });
+
+    grunt.registerMultiTask('clean', 'Remove generated files', function () {
+        for (const pattern of this.data) {
+            for (const match of fs.globSync(pattern)) {
+                fs.rmSync(match, { recursive: true, force: true });
+            }
+        }
+    });
+
+    grunt.registerTask('replaceBaseurl', 'Add the build hash to asset URLs', () => {
+        const file = 'public-build/js/_mainConfig.js';
+        const source = fs.readFileSync(file, 'utf8');
+
+        fs.writeFileSync(file, source.replace(/__=__/ig, `__=${hash}`));
+    });
+
+    grunt.registerTask('movePublic', 'Move public assets into the build directory', () => {
+        fs.renameSync('public-build', path.join(targetDir, 'public'));
+    });
 
     // Copy source files into the build directory, preserving paths.
     grunt.registerTask('copy', 'Copy source files into the build directory', () => {
