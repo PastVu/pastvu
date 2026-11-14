@@ -131,6 +131,7 @@ const requireBuildConfig = {
         },
     ],
 };
+
 async function build() {
     // Ищем less-файлы для компиляции и создаем плоский массив
     const files = await walkFiles({
