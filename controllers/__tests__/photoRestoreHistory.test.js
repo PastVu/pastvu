@@ -3,8 +3,15 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-import { PhotoHistory } from '../../models/Photo';
+import { Photo, PhotoHistory } from '../../models/Photo';
 import photo from '../photo';
+import * as regionController from '../region';
+import callMethod from '../../app/webapi';
+import Utils from '../../commons/Utils';
+
+// Real webapi is used for save path. Its index controller plans a long timer on load, which keeps jest
+// from exiting, and isn't needed here.
+jest.mock('../index', () => ({ __esModule: true, default: {} }));
 import testHelpers from '../../tests/testHelpers';
 import { AuthorizationError, BadParamsError, NotFoundError } from '../../app/errors';
 
@@ -170,7 +177,7 @@ describe('photo.restorePointInHistory', () => {
         await photo.restorePointInHistory({ cid, stamp: t1.getTime() });
 
         expect(saveCall.changes.title).toBe('First');
-        expect(saveCall.changes.s).toBe(DEACTIVATE);
+        expect(saveCall.changes.s).toBeUndefined();
     });
 
     it('does not allow photo author to restore', async () => {
@@ -205,5 +212,54 @@ describe('photo.restorePointInHistory', () => {
         photo.handshake = { usObj: { registered: false } };
 
         await expect(photo.restorePointInHistory({ cid, stamp: t1.getTime() })).rejects.toThrow(AuthorizationError);
+    });
+});
+
+describe('photo.restorePointInHistory through real save', () => {
+    const cid = 100600;
+    // Stored coordinates are [lng, lat].
+    const storedGeo = [37.61, 55.75];
+    const storedDesc = Utils.inputIncomingParse('See https://example.com/page and more').result;
+    const t1 = new Date('2020-01-01T10:00:00Z');
+    const t2 = new Date('2020-01-02T10:00:00Z');
+    const t3 = new Date('2020-01-03T10:00:00Z');
+    let admin;
+
+    const callAs = (usObj, methodName, params) => callMethod.call(
+        { rid: 'test', ridMark: 'test', trace: [], call: callMethod, handshake: { usObj } }, methodName, params
+    );
+
+    beforeEach(async () => {
+        admin = await testHelpers.createUser({ login: 'admin1' });
+
+        const owner = await testHelpers.createUser({ login: 'owner1' });
+
+        jest.spyOn(regionController, 'putPhotoToRegionStatQueue').mockImplementation(() => {});
+
+        await Photo.create({
+            cid, user: owner._id, s: PUBLIC, path: 'a/b/c.jpg', file: 'a/b/c.jpg',
+            ldate: t1, sdate: t1, cdate: t3, type: 1, year: 1950, year2: 1950,
+            geo: storedGeo, r0: 1, title: 'New title', desc: storedDesc,
+        });
+
+        // Photo added before history existed: coordinates and description were never edited,
+        // so they are absent from history. Title was edited at t3, initial value went to the first entry.
+        await PhotoHistory.create({ cid, user: owner._id, stamp: t1, values: { s: 0, histmissing: 1, title: 'Old title' } });
+        await PhotoHistory.create({ cid, user: admin._id, stamp: t2, values: { s: PUBLIC } });
+        await PhotoHistory.create({ cid, user: admin._id, stamp: t3, values: { title: 'New title' } });
+    });
+
+    it('restores fields from history and keeps fields absent from it as they are', async () => {
+        expect.assertions(4);
+
+        await callAs({ registered: true, isAdmin: true, user: admin }, 'photo.restorePointInHistory', { cid, stamp: t2.getTime() });
+
+        const saved = await Photo.findOne({ cid }).lean();
+        const last = await PhotoHistory.findOne({ cid }, null, { sort: { stamp: -1 } }).lean();
+
+        expect(saved.title).toBe('Old title');
+        expect(saved.geo).toStrictEqual(storedGeo);
+        expect(saved.desc).toBe(storedDesc);
+        expect(last.restoreStamp).toStrictEqual(t2);
     });
 });

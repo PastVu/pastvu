@@ -2339,6 +2339,8 @@ function photoValidate(newValues, oldValues, can) {
 
 // Fields that restoring can clear, if they were first set after the restored point (photoValidate accepts null for them).
 const restoreClearableFields = new Set(['title', 'desc', 'source', 'author', 'address', 'year', 'year2', 'dir', 'geo']);
+// Fields that restoring sends to save. Fields absent from history up to the restored point are not sent and stay as is.
+const restoreFields = [...restoreClearableFields, 'type'];
 
 /**
  * Revert photo to a specific point in history
@@ -2364,7 +2366,8 @@ async function restorePointInHistory(data) {
     }
 
     // Fetch the current photo with edit permissions
-    const { photo } = await this.call('photo.prefetchForEdit', {
+    // Check permissions, photo itself is fetched again by save.
+    await this.call('photo.prefetchForEdit', {
         data: { cid, ignoreChange: true },
         can: 'restorehistory',
     });
@@ -2432,23 +2435,26 @@ async function restorePointInHistory(data) {
         }
     }
 
-    if (_.isEmpty(reconstructedState.geo)) {
-        // Set region if no coordinates.
-        reconstructedState.region = _.last(reconstructedState.regions);
-    } else {
-        // Reverse coordinates as they are reversed again at validation.
-        reconstructedState.geo = reconstructedState.geo.reverse();
+    // Plain changes object with restorable fields known from history only. Current photo values must not
+    // be passed, they are stored in other format (e.g. coordinates order, html text) than save expects.
+    // Status is not restored either, restoring changes content only.
+    // Fields absent from history are kept as they are, which is their state at the restored point too:
+    // saveHistory writes field's initial value to the first entry when the field changes for the first time,
+    // so a field missing in history has never changed (and fields added later are cleared above).
+    const changes = _.pick(reconstructedState, restoreFields);
+
+    if (changes.geo !== undefined) {
+        if (_.isEmpty(changes.geo)) {
+            // No coordinates at restored point, set region instead.
+            changes.geo = null;
+            changes.region = _.last(reconstructedState.regions);
+        } else {
+            // Reverse coordinates as they are reversed again at validation.
+            changes.geo = [...changes.geo].reverse();
+        }
     }
 
-    delete reconstructedState.regions;
-
-    // Restoring changes content only, status is kept as it is now (photoValidate ignores it anyway).
-    delete reconstructedState.s;
-
-    // Save the photo
-    Object.assign(photo, reconstructedState);
-
-    const updatedPhoto = await this.call('photo.save', { cid, ignoreChange: true, changes: photo, restoreStamp: targetStamp });
+    const updatedPhoto = await this.call('photo.save', { cid, ignoreChange: true, changes, restoreStamp: targetStamp });
 
     logger.info(
         `Photo ${cid} reverted to state at ${targetStamp.toISOString()} by user ${iAm.user.login}`
