@@ -33,6 +33,7 @@ module.exports = [
             'bin/**',
             'logs/**',
             'public-build/**',
+            'appBuild/**',
             'misc/**',
             'views/**',
             'basepatch/**',

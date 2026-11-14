@@ -63,32 +63,7 @@ module.exports = function (grunt) {
                 stdout: true,
                 stderr: true,
             },
-            testNodeVersion: {
-                command: filename => {
-                    const error = `Version defined in ${filename} is not matching package version of node.`;
-                    const pkgVersion = grunt.template.process('<%= pkg.engines.node %>');
 
-                    return 'if [ "$(cat ' + filename + ')" != "' + pkgVersion + '" ]; then echo "' + error + '"; exit 1; fi;';
-                },
-                stdout: true,
-                stderr: true,
-            },
-            testNodeVersionDockerfile: {
-                command: filename => {
-                    const error = `Version defined in ${filename} is not matching package version of node.`;
-                    const pkgVersion = grunt.template.process('<%= pkg.engines.node %>');
-                    const dockerParse = "sed -n -e '/^ARG NODE_TAG/ s/.*=//p' " + filename;
-
-                    return 'if [ "$(' + dockerParse + ')" != "' + pkgVersion + '" ]; then echo "' + error + '"; exit 1; fi;';
-                },
-                stdout: true,
-                stderr: true,
-            },
-            jest: {
-                command: 'npm run jest -- --ci',
-                stdout: true,
-                stderr: true,
-            },
         },
         'string-replace': {
             baseurl: {
@@ -210,47 +185,7 @@ module.exports = function (grunt) {
                 ],
             },
         },
-        eslint: {
-            options: {
-                fix: grunt.option('fix'),
-            },
-            all: {
-                files: {
-                    src: [
-                        '.*.js',
-                        '*.js',
-                        'app/**/*.js',
-                        'babel/*.js',
-                        'controllers/**/*.js',
-                        'commons/**/*.js',
-                        'models/**/*.js',
-                        'config/!(local.config).js',
-                        'config/*example',
-                        'migrations/*.js',
-                        'tests/*.js',
-                        'public/js/**/*.js',
-                        '!public/js/shape2geojson/*.js',
-                        // public/js/lib lib contains third-party libs, with some
-                        // exceptions listed below.
-                        '!public/js/lib/**',
-                        'public/js/lib/leaflet/extends/*.js',
-                        'public/js/lib/Browser.js',
-                        'public/js/lib/JSExtensions.js',
-                        'public/js/lib/Utils.js',
-                        'public/js/lib/knockout/extends.js',
-                    ],
-                },
-            },
-        },
-        stylelint: {
-            options: {
-                configFile: '.stylelintrc.js',
-                fix: grunt.option('fix'),
-            },
-            all: [
-                'public/style/**/*.less',
-            ],
-        },
+
     });
 
     grunt.loadNpmTasks('grunt-contrib-clean');
@@ -260,8 +195,6 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-exec');
     grunt.loadNpmTasks('grunt-mkdir');
     grunt.loadNpmTasks('grunt-babel');
-    grunt.loadNpmTasks('grunt-eslint');
-    grunt.loadNpmTasks('grunt-stylelint');
     grunt.loadNpmTasks('grunt-contrib-uglify');
 
     // Build.
@@ -281,17 +214,6 @@ module.exports = function (grunt) {
         'writeBuildParams',
         //'exec:npm',
         'compress',
-    ]);
-
-    // Tests.
-    grunt.registerTask('test', [
-        'exec:testNodeVersion:.node-version',
-        'exec:testNodeVersion:.nvmrc',
-        'exec:testNodeVersionDockerfile:./.docker/Dockerfile',
-        'exec:testNodeVersionDockerfile:./.docker/backend.Dockerfile',
-        'eslint',
-        'stylelint',
-        'exec:jest',
     ]);
 
     // Copy source files into the build directory, preserving paths.
