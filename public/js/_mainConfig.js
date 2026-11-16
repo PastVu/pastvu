@@ -87,6 +87,7 @@ requirejs.config({
         'noty.themes': 'lib/jquery/plugins/noty/themes',
 
         'intl': 'intl/intl',
+        'i18next': 'lib/i18next.min',
     },
 });
 require(['lib/JSExtensions']); //Делаем require вместо deps чтобы модуль заинлайнился во время оптимизации не в каждый модуль, а только в этот файл

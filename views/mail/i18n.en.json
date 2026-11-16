@@ -1,0 +1,7 @@
+{
+    "E-mail:": "E-mail:",
+    "comments_new_one": "{{count}} new comment",
+    "comments_new_other": "{{count}} new comments",
+    "comments_unread_one": "{{count}} unread",
+    "comments_unread_other": "{{count}} unread"
+}

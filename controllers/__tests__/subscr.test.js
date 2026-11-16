@@ -5,7 +5,7 @@
 
 import _ from 'lodash';
 import { UserObjectRel, UserNoty } from '../../models/UserStates';
-import subscr, { commentAdded, commentViewed } from '../subscr';
+import { commentAdded, commentViewed, getUserObjectRel } from '../subscr';
 import profile from '../profile';
 import testHelpers from '../../tests/testHelpers';
 
@@ -57,8 +57,6 @@ describe('subscription', () => {
         it('should return the correct order of photo records', async () => {
             expect.assertions(1);
 
-            const getUserObjectRel = subscr.__get__('getUserObjectRel');
-
             let rels = await getUserObjectRel({ userId: user._id, page: 0, type: 'photo' }).exec();
 
             // Extract date.
@@ -79,8 +77,6 @@ describe('subscription', () => {
         it('should return the correct order of news records', async () => {
             expect.assertions(1);
 
-            const getUserObjectRel = subscr.__get__('getUserObjectRel');
-
             let rels = await getUserObjectRel({ userId: user._id, page: 0, type: 'news' }).exec();
 
             // Extract date.
@@ -99,13 +95,8 @@ describe('subscription', () => {
         it('should paginate records', async () => {
             expect.assertions(2);
 
-            const getUserObjectRel = subscr.__get__('getUserObjectRel');
-
-            // Override subscrPerPage constant to return 4 items per page.
-            subscr.__set__('subscrPerPage', 4);
-
-            // Query page 0.
-            let rels = await getUserObjectRel({ userId: user._id, page: 0, type: 'photo' }).exec();
+            // Query page 0 with a small page size to exercise pagination.
+            let rels = await getUserObjectRel({ userId: user._id, page: 0, type: 'photo', perPage: 4 }).exec();
 
             // Extract date.
             rels = rels.map(rec => rec.sbscr_create.toISOString().split('T')[0]);
@@ -118,7 +109,7 @@ describe('subscription', () => {
                 '2019-06-11', // the rest is ordered by date staring from latest.
             ]);
 
-            rels = await getUserObjectRel({ userId: user._id, page: 1, type: 'photo' }).exec();
+            rels = await getUserObjectRel({ userId: user._id, page: 1, type: 'photo', perPage: 4 }).exec();
 
             // Extract date.
             rels = rels.map(rec => rec.sbscr_create.toISOString().split('T')[0]);

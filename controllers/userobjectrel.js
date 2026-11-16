@@ -100,7 +100,7 @@ export function setObjectView(objId, userId, type = 'photo', stamp = new Date())
     return UserObjectRel.findOneAndUpdate(
         { obj: objId, user: userId, type },
         { $set: { view: stamp } },
-        { upsert: true, new: true, lean: true, fields: { _id: 0 } }
+        { upsert: true, returnDocument: 'after', lean: true, fields: { _id: 0 } }
     ).exec();
 }
 
@@ -145,7 +145,7 @@ export async function setCommentView(objId, userId, type = 'photo', stamp = new 
  * @param {string} [type=photo] Object type
  */
 export async function onCommentAdd(objId, userId, type = 'photo') {
-    const { n: count = 0 } = await UserObjectRel.updateMany(
+    const { matchedCount: count = 0 } = await UserObjectRel.updateMany(
         { obj: objId, comments: { $exists: true }, user: { $ne: userId }, type },
         { $inc: { ccount_new: 1 } }
     ).exec();

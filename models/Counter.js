@@ -16,7 +16,7 @@ registerModel(db => {
 
     CounterSchema.statics.increment = function (counter) {
         return this.findByIdAndUpdate(counter, { $inc: { next: 1 } }, {
-            new: true,
+            returnDocument: 'after',
             upsert: true,
             select: { next: 1 },
         }).exec();
@@ -24,7 +24,7 @@ registerModel(db => {
 
     CounterSchema.statics.incrementBy = function (counter, num) {
         return this.findByIdAndUpdate(counter, { $inc: { next: num } }, {
-            new: true,
+            returnDocument: 'after',
             upsert: true,
             select: { next: 1 },
         }).exec();

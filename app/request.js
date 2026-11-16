@@ -10,6 +10,7 @@ import log4js from 'log4js';
 import config from '../config';
 import webApiCall from './webapi';
 import Utils from '../commons/Utils';
+import { langFromHandshake } from '../commons/i18n';
 import { ApplicationError } from './errors';
 import { send500 } from '../controllers/routes';
 import constantsError from './errors/constants';
@@ -100,7 +101,12 @@ const callWebApi = async function (methodName, params) {
     try {
         result = { result: await this.call(methodName, params, true) };
     } catch (error) {
-        result = { error };
+        // Serialize the error with the request's preferred language so the
+        // client sees a localized message. Falls back to the native
+        // Error.message (Russian default) for thrown non-Application errors.
+        const lang = langFromHandshake(context.handshake);
+
+        result = { error: error && typeof error.toJSON === 'function' ? error.toJSON(lang) : { message: String(error) } };
     }
 
     // Send requestId to client, so that we can find request in logs
@@ -183,8 +189,6 @@ export const handleHTTPRequest = async function (req, res, next) {
 
         res.cookie(cookieObj.key, cookieObj.value, cookieResOptions);
 
-        // Transfer browser object further in case of future use, for example, in 'X-UA-Compatible' header
-        req.browser = data.browser;
         req.cookie = data.cookie;
 
         next();
@@ -205,12 +209,7 @@ export const handleHTTPRequest = async function (req, res, next) {
             return res.status(400).send(error.code);
         }
 
-        const locale = sessionController.identifyUserLocale(req.headers['accept-language']);
-
-        if (error.code === constantsError.BAD_BROWSER) {
-            res.statusCode = 200;
-            res.render('status/badbrowser', { agent: error.details.agent, locale });
-        } else if (error.code === 'ETIMEDOUT') {
+        if (error.code === 'ETIMEDOUT') {
             res.setHeader('Retry-After', 60);
             res.status(503).send('Service Unavailable: ' + (_.isFunction(error.toString) ? error.toString() : error));
         } else if (error) {

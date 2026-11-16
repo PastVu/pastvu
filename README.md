@@ -48,8 +48,26 @@ Our [contributing guidance](https://docs.pastvu.com/en/contributing) contains mo
 
 We expect all project participants to follow [Contributor Code of Conduct](CODE_OF_CONDUCT.md)
 
+### Setup for development
+
+[Getting started](https://docs.pastvu.com/dev/setup#create-development-environment) documentation will guide you through dev environment setup process.
+
+For quick start:
+
+```bash
+# Create config file
+cp ./config/local.config.js.docker-example ./config/local.config.js
+# Get the dump
+wget https://archive.varlamov.me/pastvu/github/pastvu.gz
+# Install node modules
+docker compose run --rm app npm install
+# Start the application
+docker compose up
+```
+
+Then navigate to `http://localhost:3000` and login with the default user `admin`/`admin`.
+
 ## License
 
 * GNU Affero General Public License (AGPL) v3 or later. See [COPYING](https://github.com/pastvu/pastvu/blob/master/COPYING) for the full license text.
 * Test database used for development setup is licensed under [ODbL 1.0](https://opendatacommons.org/licenses/odbl/summary/), geographic and adminstrative boundaries data it contains: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors.
-

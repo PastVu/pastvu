@@ -94,6 +94,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'model/
             remove: false,
             restore: false,
             convert: false,
+            restorehistory: false,
             comment: false,
             watersign: false,
             nowaterchange: false,

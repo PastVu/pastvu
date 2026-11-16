@@ -6,7 +6,6 @@ Clean-param: _nojs&hl
 
 # global
 User-agent: *
-Disallow: /badbrowser
 Disallow: /nojsbrowser
 Disallow: /u/*/subscriptions
 Disallow: /u/*/settings

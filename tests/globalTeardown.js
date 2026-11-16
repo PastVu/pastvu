@@ -8,4 +8,7 @@ export default async function () {
     const instance = global.__MONGOMSINSTANCE__; // eslint-disable-line no-underscore-dangle
 
     await instance.stop();
+
+    // Stop redis-memory-server.
+    await global.__REDISMSINSTANCE__.stop(); // eslint-disable-line no-underscore-dangle
 }

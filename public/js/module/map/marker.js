@@ -24,11 +24,10 @@ define([
         return 'y' + year;
     }
 
-    function MarkerManager(map, pointHL, options) {
+    function MarkerManager(map, options) {
         const _this = this;
 
         this.map = map;
-        this.pointHighlight = pointHL; //if pointHighlight exists need to disable it from a local cluster
 
         this.openNewTab = options.openNewTab;
         this.embedded = options.embedded;
@@ -434,7 +433,7 @@ define([
                 // если зум изменился или уже был отправлен другой запрос на данные по зуму или
                 // текущий баунд уже успел выйти за пределы запрашиваемого
                 if (self.map.getZoom() !== data.z || self.startPendingAt !== data.startAt || !bound.intersects(self.calcBound)) {
-                    console.log('Полученные данные нового зума устарели');
+                    console.log('Received zoom data is stale');
 
                     return;
                 }
@@ -584,7 +583,7 @@ define([
             // Данные устарели и должны быть отброшены,
             // если текущий зум не равен запрашиваемомоу или текущий баунд уже успел выйти за пределы запрашиваемого
             if (self.map.getZoom() !== data.z || !bound.intersects(self.calcBound)) {
-                console.log('Полученные данные перемещения устарели');
+                console.log('Received pan data is stale');
 
                 return;
             }
@@ -676,8 +675,8 @@ define([
     MarkerManager.prototype.createClusters = function (data, withGravity) {
         const start = Date.now();
         const delta = this.clientClusteringDelta[this.currZoom] || this.clientClusteringDelta.default;
-        const clusterW = Utils.math.toPrecision(Math.abs(this.map.layerPointToLatLng(new L.Point(delta, 1)).lng - this.map.layerPointToLatLng(new L.Point(0, 1)).lng)); // eslint-disable-line max-len
-        const clusterH = Utils.math.toPrecision(Math.abs(this.map.layerPointToLatLng(new L.Point(1, delta)).lat - this.map.layerPointToLatLng(new L.Point(1, 0)).lat)); // eslint-disable-line max-len
+        const clusterW = Utils.math.toPrecision(Math.abs(this.map.layerPointToLatLng(new L.Point(delta, 1)).lng - this.map.layerPointToLatLng(new L.Point(0, 1)).lng));
+        const clusterH = Utils.math.toPrecision(Math.abs(this.map.layerPointToLatLng(new L.Point(1, delta)).lat - this.map.layerPointToLatLng(new L.Point(1, 0)).lat));
         const clusterWHalf = Utils.math.toPrecision(clusterW / 2);
         const clusterHHalf = Utils.math.toPrecision(clusterH / 2);
         const result = { photos: [], clusters: [] };
@@ -699,41 +698,38 @@ define([
 
         while (i) {
             photo = data[--i];
+            geoPhoto = photo.geo;
+            geoPhotoCorrection = [geoPhoto[0] > 0 ? 1 : 0, geoPhoto[1] < 0 ? -1 : 0];
 
-            if (!this.pointHighlight || this.pointHighlight && this.pointHighlight.cid() !== photo.cid) {
-                geoPhoto = photo.geo;
-                geoPhotoCorrection = [geoPhoto[0] > 0 ? 1 : 0, geoPhoto[1] < 0 ? -1 : 0];
+            geo = [~~(clusterH * (~~(geoPhoto[0] / clusterH) + geoPhotoCorrection[0]) * precisionDivider) / precisionDivider, ~~(clusterW * (~~(geoPhoto[1] / clusterW) + geoPhotoCorrection[1]) * precisionDivider) / precisionDivider];
+            clustCoordId = geo[0] + '@' + geo[1];
+            cluster = clusters[clustCoordId];
 
-                geo = [~~(clusterH * (~~(geoPhoto[0] / clusterH) + geoPhotoCorrection[0]) * precisionDivider) / precisionDivider, ~~(clusterW * (~~(geoPhoto[1] / clusterW) + geoPhotoCorrection[1]) * precisionDivider) / precisionDivider]; // eslint-disable-line max-len
-                clustCoordId = geo[0] + '@' + geo[1];
+            if (cluster === undefined) {
+                //При создании объекта в year надо присвоить минимум значащую цифру,
+                //иначе v8(>=3.19) видимо не выделяет память и при добавлении очередного photo.year крэшится через несколько итераций
+                clusters[clustCoordId] = {
+                    cid: clustCoordId,
+                    geo: geo,
+                    lats: geo[0] - clusterHHalf,
+                    lngs: geo[1] + clusterWHalf,
+                    year: 1,
+                    c: 1,
+                    photos: [],
+                };
+                clustCoordIdS.push(clustCoordId);
                 cluster = clusters[clustCoordId];
-
-                if (cluster === undefined) {
-                    //При создании объекта в year надо присвоить минимум значащую цифру,
-                    //иначе v8(>=3.19) видимо не выделяет память и при добавлении очередного photo.year крэшится через несколько итераций
-                    clusters[clustCoordId] = {
-                        cid: clustCoordId,
-                        geo: geo,
-                        lats: geo[0] - clusterHHalf,
-                        lngs: geo[1] + clusterWHalf,
-                        year: 1,
-                        c: 1,
-                        photos: [],
-                    };
-                    clustCoordIdS.push(clustCoordId);
-                    cluster = clusters[clustCoordId];
-                }
-
-                cluster.c += 1;
-                cluster.year += photo.year;
-
-                if (withGravity) {
-                    cluster.lats += photo.geo[0];
-                    cluster.lngs += photo.geo[1];
-                }
-
-                cluster.photos.push(photo);
             }
+
+            cluster.c += 1;
+            cluster.year += photo.year;
+
+            if (withGravity) {
+                cluster.lats += photo.geo[0];
+                cluster.lngs += photo.geo[1];
+            }
+
+            cluster.photos.push(photo);
         }
 
         // Заполняем массивы кластеров и фото
@@ -745,7 +741,7 @@ define([
 
             if (cluster.c > 2) {
                 if (withGravity) {
-                    cluster.geo = [~~(cluster.lats / cluster.c * precisionDivider) / precisionDivider, ~~(cluster.lngs / cluster.c * precisionDivider) / precisionDivider]; // eslint-disable-line max-len
+                    cluster.geo = [~~(cluster.lats / cluster.c * precisionDivider) / precisionDivider, ~~(cluster.lngs / cluster.c * precisionDivider) / precisionDivider];
                 }
 
                 cluster.c -= 1;

@@ -4,11 +4,11 @@
  */
 
 define([
-    'underscore', 'jquery', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM',
+    'underscore', 'jquery', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'i18n',
     'renderer', 'model/User', 'model/storage', 'leaflet', 'leaflet-extends/L.neoMap', 'noties',
     'text!tpl/map/mapClusterCalc.pug', 'css!style/map/mapClusterCalc', 'jquery-ui/draggable', 'jquery-ui/resizable',
     'jquery-ui/effect-highlight', 'css!style/jquery/ui/core', 'css!style/jquery/ui/resizable', 'css!style/jquery/ui/theme',
-], function (_, $, Browser, Utils, socket, P, ko, Cliche, globalVM, renderer, User, storage, L, Map, noties, pug) {
+], function (_, $, Browser, Utils, socket, P, ko, Cliche, globalVM, i18n, renderer, User, storage, L, Map, noties, pug) {
     'use strict';
 
     return Cliche.extend({
@@ -24,12 +24,7 @@ define([
             this.destroy = _.wrap(this.destroy, this.localDestroy);
             this.auth = globalVM.repository['m/common/auth'];
 
-            // Map objects
             this.map = null;
-            this.layers = ko.observableArray();
-            this.layersOpen = ko.observable(false);
-            this.layerActive = ko.observable({ sys: null, type: null });
-            this.layerActiveDesc = ko.observable('');
 
             this.exe = ko.observable(false); //Указывает, что сейчас идет обработка запроса на действие к серверу
             this.exePercent = ko.observable(0); //Указывает, что сейчас идет обработка запроса на действие к серверу
@@ -40,107 +35,17 @@ define([
             this.changed = this.co.changed = ko.computed(function () {
                 return this.wCurr() !== this.wNew() || this.hCurr() !== this.hNew();
             }, this);
+            // Rebuilding clusters at current size, for photos and/or paintings.
+            this.rebuildTypes = [
+                { id: 'photos', desc: i18n('Photos'), types: [1] },
+                { id: 'paintings', desc: i18n('Paintings'), types: [2] },
+                { id: 'both', desc: i18n('Photos and paintings'), types: [1, 2] },
+            ];
+            this.rebuildType = ko.observable('both');
+            this.rebuilding = ko.observable(false);
             this.isDefault = ko.computed(function () {
                 return this.wCurr() === this.defaults.w || this.hCurr() === this.defaults.h;
             }, this);
-
-            if (P.settings.USE_OSM_API()) {
-                this.layers.push({
-                    id: 'osm',
-                    desc: 'OSM',
-                    selected: ko.observable(false),
-                    types: ko.observableArray([
-                        {
-                            id: 'mapnik',
-                            desc: 'Mapnik',
-                            selected: ko.observable(false),
-                            obj: new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { updateWhenIdle: false }),
-                        },
-                        {
-                            id: 'mapquest',
-                            desc: 'Mapquest',
-                            selected: ko.observable(false),
-                            obj: new L.TileLayer('http://otile1.mqcdn.com/tiles/1.0.0/osm/{z}/{x}/{y}.png', { updateWhenIdle: false }),
-                        },
-                    ]),
-                });
-            }
-
-            if (P.settings.USE_GOOGLE_API()) {
-                this.layers.push({
-                    id: 'google',
-                    desc: 'Google',
-                    deps: 'leaflet-extends/L.Google',
-                    selected: ko.observable(false),
-                    types: ko.observableArray([
-                        {
-                            id: 'scheme',
-                            desc: 'Схема',
-                            selected: ko.observable(false),
-                            params: 'roadmap',
-                        },
-                        {
-                            id: 'sat',
-                            desc: 'Спутник',
-                            selected: ko.observable(false),
-                            params: 'satellite',
-                        },
-                        {
-                            id: 'hyb',
-                            desc: 'Гибрид',
-                            selected: ko.observable(false),
-                            params: 'hybrid',
-                        },
-                        {
-                            id: 'land',
-                            desc: 'Ландшафт',
-                            selected: ko.observable(false),
-                            params: 'terrain',
-                        },
-                    ]),
-                });
-            }
-
-            if (P.settings.USE_YANDEX_API()) {
-                this.layers.push({
-                    id: 'yandex',
-                    desc: 'Яндекс',
-                    deps: 'leaflet-extends/L.Yandex',
-                    selected: ko.observable(false),
-                    types: ko.observableArray([
-                        {
-                            id: 'scheme',
-                            desc: 'Схема',
-                            selected: ko.observable(false),
-                            params: 'map',
-                        },
-                        {
-                            id: 'sat',
-                            desc: 'Спутник',
-                            selected: ko.observable(false),
-                            params: 'satellite',
-                        },
-                        {
-                            id: 'hyb',
-                            desc: 'Гибрид',
-                            selected: ko.observable(false),
-                            params: 'hybrid',
-                        },
-                        {
-                            id: 'pub',
-                            desc: 'Народная',
-                            selected: ko.observable(false),
-                            params: 'publicMap',
-                        },
-                        {
-                            id: 'pubhyb',
-                            desc: 'Народный гибрид',
-                            selected: ko.observable(false),
-                            params: 'publicMapHybrid',
-                        },
-                    ]),
-                });
-            }
 
             ko.applyBindings(globalVM, this.$dom[0]);
 
@@ -173,9 +78,40 @@ define([
                     this.map._onResize();
                 }.bind(this));
 
-                this.map.whenReady(function () {
-                    this.selectLayer('google', 'scheme');
+                // Cluster sizes are computed in degrees, so any Web Mercator
+                // tile layer gives the same result. OSM is all we need here.
+                this.map.addLayer(new L.TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    updateWhenIdle: false,
+                    attribution: i18n('&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'),
+                }));
 
+                // Same zoom slider as on the general map.
+                renderer(
+                    [
+                        {
+                            module: 'm/map/navSlider',
+                            container: '.mapNavigation',
+                            options: {
+                                map: this.map,
+                                minZoom: this.map.getMinZoom(),
+                                maxZoom: this.map.getMaxZoom(),
+                                canOpen: true,
+                            },
+                            ctx: this,
+                            callback: function (vm) {
+                                this.childModules[vm.id] = vm;
+                                this.navSliderVM = vm;
+                            }.bind(this),
+                        },
+                    ],
+                    {
+                        parent: this,
+                        level: this.level + 1,
+                    }
+                );
+
+                this.map.whenReady(function () {
                     if (this.options.deferredWhenReady && Utils.isType('function', this.options.deferredWhenReady.resolve)) {
                         this.options.deferredWhenReady.resolve();
                     }
@@ -285,10 +221,8 @@ define([
             const _this = this;
 
             noties.confirm({
-                message: 'Новые параметры кластера посчитаны для всех ' + arr.length + ' уровней зума. <br>' +
-                'Отправить данные на сервер для формирования новой кластерной сетки всех фотографий?<br>' +
-                'Это может занять несколько минут',
-                okText: 'Да',
+                message: i18n('New cluster parameters have been calculated for all {{count}} zoom levels. <br>Send the data to the server to build a new cluster grid for all photos?<br>It may take several minutes', { count: arr.length }),
+                okText: i18n('Yes'),
                 okClass: 'btn-warning',
                 onOk: function (confirmer) {
                     confirmer.disable();
@@ -296,7 +230,7 @@ define([
                     socket.run('cluster.recalcAll', { params: arr, conditions: _this.saveParams }, true)
                         .then(function () {
                             if (confirmer) {
-                                confirmer.success('Новая кластерная сетка сформированна', 'Ok', null, function () {
+                                confirmer.success(i18n('New cluster grid built'), 'Ok', null, function () {
                                     _this.finish();
                                 });
                             }
@@ -310,15 +244,51 @@ define([
                         });
 
                     confirmer.success(
-                        'Данные отправлены на сервер для пересчета.<br>' +
-                        'Вы можете закрыть этот диалог - данные расчитываются на сервере.<br>' +
-                        'Диалог обновится при получении результата расчета с сервера', 'Закрыть', null, function () {
+                        i18n('The data has been sent to the server for recalculation.<br>You can close this dialog — the calculation continues server-side.<br>The dialog will update when the server returns the result'), i18n('Close'), null, function () {
                             confirmer = null;
                             _this.finish();
                         });
                 },
                 onCancel: function () {
                     _this.cancel();
+                },
+            });
+        },
+        rebuild: function () {
+            const _this = this;
+            const rebuildType = _.find(this.rebuildTypes, { id: this.rebuildType() });
+
+            if (!rebuildType || this.rebuilding() || this.exe()) {
+                return;
+            }
+
+            noties.confirm({
+                message: i18n('Rebuild clusters at the current cluster size for image type {{what}}?<br>It may take several minutes', { what: rebuildType.desc.toLowerCase() }),
+                okText: i18n('Yes'),
+                okClass: 'btn-warning',
+                onOk: function (confirmer) {
+                    confirmer.disable();
+                    _this.rebuilding(true);
+
+                    socket.run('cluster.rebuild', { types: rebuildType.types }, true)
+                        .then(function () {
+                            if (confirmer) {
+                                confirmer.success(i18n('Clusters rebuilt'), 'Ok', null, null);
+                            }
+                        })
+                        .catch(function () {
+                            if (confirmer) {
+                                confirmer.close();
+                            }
+                        })
+                        .finally(function () {
+                            _this.rebuilding(false);
+                        });
+
+                    confirmer.success(
+                        i18n('The request has been sent to the server.<br>You can close this dialog — the rebuild continues server-side.<br>The dialog will update when the server returns the result'), i18n('Close'), null, function () {
+                            confirmer = null;
+                        });
                 },
             });
         },
@@ -349,56 +319,6 @@ define([
             this.hCurr(this.hNew());
             this.$dom.find('.clusterRect').css({ width: this.wCurr(), height: this.hCurr() });
             delete this.saveParams;
-        },
-
-        toggleLayers: function (/*vm, event*/) {
-            this.layersOpen(!this.layersOpen());
-        },
-        selectLayer: function (sysId, typeId) {
-            let layers = this.layers();
-            const layerActive = this.layerActive();
-            let system;
-            let type;
-
-            if (layerActive.sys && layerActive.sys.id === sysId && layerActive.type.id === typeId) {
-                return;
-            }
-
-            system = _.find(layers, function (item) {
-                return item.id === sysId;
-            });
-
-            if (system) {
-                type = _.find(system.types(), function (item) {
-                    return item.id === typeId;
-                });
-
-                if (type) {
-                    if (layerActive.sys && layerActive.type) {
-                        layerActive.sys.selected(false);
-                        layerActive.type.selected(false);
-                        this.map.removeLayer(layerActive.type.obj);
-                    }
-
-                    system.selected(true);
-                    type.selected(true);
-                    this.layerActiveDesc(system.desc + ': ' + type.desc);
-
-                    this.layerActive({ sys: system, type: type });
-
-                    if (system.deps && !type.obj) {
-                        require([system.deps], function (Construct) {
-                            type.obj = new Construct(type.params);
-                            this.map.addLayer(type.obj);
-                            type = null;
-                        }.bind(this));
-                    } else {
-                        this.map.addLayer(type.obj);
-                    }
-                }
-            }
-
-            layers = system = null;
         },
     });
 });

@@ -2,7 +2,7 @@ doctype html
 html
     head
         include ../includes/head_meta
-        title Ошибка - PastVu
+        title= t('Error - PastVu', { ns: 'status' })
         link(rel="stylesheet", type="text/css", href='/style/normalize.css?__=' + config.hash)
         link(rel="stylesheet", type="text/css", href='/style/fonts.css?__=' + config.hash)
         style.
@@ -42,10 +42,10 @@ html
 
     body
         div.msg
-            span Sorry, server failed to fulfill an apparently request
+            span= t('Sorry, the server could not fulfill the request', { ns: 'status' })
             if error && error.rid
                 div(style="font-size: 18px; line-height: 18px;")
-                    | Code:&nbsp;
+                    | #{t('Code:', { ns: 'status' })}&nbsp;
                     = error.rid
             a(href="/", style="margin-top:5px; font-size: 18px; line-height: 18px; text-decoration: none; color: inherit;")
-                | [click here to go to the main page]
+                | #{'[' + t('click here to go to the main page', { ns: 'status' }) + ']'}

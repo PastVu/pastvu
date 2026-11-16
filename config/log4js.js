@@ -6,7 +6,7 @@
 // Log4js configuration.
 const path = require('path');
 const _ = require('lodash');
-const makeDir = require('make-dir');
+const fs = require('fs');
 
 // Default configuration (logging to stdout only).
 let configDefault = {
@@ -78,7 +78,7 @@ module.exports = function (config) {
     if (config.logPath) {
         // Logging to filesystem.
         config.logPath = path.resolve(config.logPath);
-        makeDir.sync(config.logPath);
+        fs.mkdirSync(config.logPath, { recursive: true });
         // Set logging path.
         _.each(configFile.appenders, appender => {
             if (appender.filename) {

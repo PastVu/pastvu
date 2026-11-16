@@ -3,7 +3,6 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-/* eslint-env jest */
 import connectDb, { waitDb } from '../controllers/connection';
 import mongoose from 'mongoose';
 import { UserSettings } from '../models/UserSettings';

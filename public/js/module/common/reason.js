@@ -3,7 +3,7 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'globalVM', 'knockout', 'm/_moduleCliche', 'text!tpl/common/reason.pug', 'css!style/common/reason'], function (_, $, Utils, socket, P, globalVM, ko, Cliche, pug) {
+define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'globalVM', 'i18n', 'knockout', 'm/_moduleCliche', 'text!tpl/common/reason.pug', 'css!style/common/reason'], function (_, $, Utils, socket, P, globalVM, i18n, ko, Cliche, pug) {
     'use strict';
 
     return Cliche.extend({
@@ -84,7 +84,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'globalVM', 'knock
             const descmax = selected.desc.max || 1000;
 
             if (desc.length < descmin || desc.length > descmax) {
-                this.errMsg('Длина описания должна быть в пределах ' + descmin + ' - ' + descmax + ' символов');
+                this.errMsg(i18n('Description length must be {{min}} - {{max}} characters', { min: descmin, max: descmax }));
 
                 return false;
             }

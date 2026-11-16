@@ -1,4 +1,4 @@
-ARG NODE_TAG=20.10.0
+ARG NODE_TAG=26.3.0
 
 FROM node:${NODE_TAG}
 RUN apt-get update && apt-get install -y \

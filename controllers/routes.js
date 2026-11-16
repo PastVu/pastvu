@@ -5,9 +5,11 @@
 
 import _ from 'lodash';
 import http from 'http';
+import express from 'express';
 import log4js from 'log4js';
 import config from '../config';
 import Utils from '../commons/Utils';
+import { langFromRequest, pickLang, pickRegionTitle } from '../commons/i18n';
 import * as session from './_session';
 import { clientParams, ready as settingsReady } from './settings';
 import NotFoundError from '../app/errors/NotFound';
@@ -30,7 +32,14 @@ settingsReady.then(() => clientParamsJSON = JSON.stringify(clientParams));
 
 function genInitDataString(req) {
     const usObj = req.handshake.usObj;
-    let resultString = `var init={settings:${clientParamsJSON},` +
+    // Prefer the persisted user preference over the cookie so a registered
+    // user opening the site in a fresh browser still gets their saved
+    // language on the very first render (before the socket round-trip).
+    const pickedLang = pickLang(usObj.registered ? usObj.user : null, req);
+    const settingsJSON = pickedLang !== clientParams.lang ?
+        JSON.stringify({ ...clientParams, lang: pickedLang }) :
+        clientParamsJSON;
+    let resultString = `var init={settings:${settingsJSON},` +
         `user:${JSON.stringify(session.getPlainUser(usObj.user))}`;
 
     if (usObj.registered) {
@@ -61,23 +70,11 @@ function checkNoJS(req) {
     return { nojsUrl, nojsShow };
 }
 
-// For paths, which don't need session, parse browser directly
-function getReqBrowser(req, res, next) {
-    const ua = req.headers['user-agent'];
-
-    if (ua) {
-        req.browser = session.checkUserAgent(ua);
-    }
-
-    next();
-}
-
 // Fill some headers for fully generated pages
 const setStaticHeaders = (function () {
     const cacheControl = 'no-cache';
     const xFramePolicy = 'SAMEORIGIN';
     const xPoweredBy = 'Paul Klimashkin | klimashkin@gmail.com';
-    const xUA = 'IE=edge';
 
     return (req, res, next) => {
         // Directive to indicate the browser response caching rules
@@ -89,12 +86,6 @@ const setStaticHeaders = (function () {
         // The page can only be displayed in a frame on the same origin as the page itself
         // https://developer.mozilla.org/en-US/docs/Web/HTTP/X-Frame-Options
         res.setHeader('X-Frame-Options', xFramePolicy);
-
-        if (req.browser && req.browser.agent.family === 'IE') {
-            // X-UA-Compatible header has greater precedence than Compatibility View
-            // http://msdn.microsoft.com/en-us/library/ff955275(v=vs.85).aspx
-            res.setHeader('X-UA-Compatible', xUA);
-        }
 
         res.setHeader('X-Powered-By', xPoweredBy);
 
@@ -135,8 +126,10 @@ function meta(req) {
             desc = og.desc = twitter.desc = Utils.txtHtmlToPlain(photo.desc, true);
         } else if (!_.isEmpty(photo.regions)) {
             // If there in no description, create it as regions names
+            const lang = langFromRequest(req);
+
             desc = og.desc = twitter.desc = photo.regions.reduceRight(
-                (result, region, index) => result + region.title_local + (index ? ', ' : ''), ''
+                (result, region, index) => result + pickRegionTitle(region, lang) + (index ? ', ' : ''), ''
             );
         } else {
             desc = '';
@@ -205,7 +198,6 @@ function appMainHandler(req, res) {
         appName: 'Main',
         meta: meta(req),
         agent: browser.agent,
-        polyfills: browser.polyfills,
         initData: genInitDataString(req),
     });
 }
@@ -221,7 +213,6 @@ function appAdminHandler(req, res) {
         meta: {},
         appName: 'Admin',
         agent: browser.agent,
-        polyfills: browser.polyfills,
         initData: genInitDataString(req),
     });
 }
@@ -248,20 +239,10 @@ function getRegionForGallery(req, res, next) {
             const regions = getRegionsArrPublicFromCache(parseFilter(filter).r);
 
             if (!_.isEmpty(regions)) {
-                let hasRussianRegions = false;
-                let title = regions.map(({ title_en: en, title_local: local, parents }) => {
-                    if (parents[0] === 1) {
-                        hasRussianRegions = true;
+                const { lang, t } = res.locals;
+                const regionTitles = regions.map(region => pickRegionTitle(region, lang)).join(', ');
 
-                        return local;
-                    }
-
-                    return en;
-                }).join(', ');
-
-                title = (hasRussianRegions ? 'Старые фотографии ' : 'Retro photos of ') + title;
-
-                req.pageTitle = title;
+                req.pageTitle = t('Retro photos of {{regions}}', { regions: regionTitles });
             }
         } catch (err) {
             return next(err);
@@ -288,7 +269,7 @@ export function bindRoutes(app) {
     app.get(/^\/ps(?:\/(\d{1,6}))?\/?$/, handleHTTPRequest, setStaticHeaders, getRegionForGallery, appMainHandler);
 
     if (config.serveHTTPApi) {
-        app.use('/api2', require('body-parser').json({ limit: '4mb' }), handleHTTPRequest, handleHTTPAPIRequest);
+        app.use('/api2', express.json({ limit: '4mb' }), handleHTTPRequest, handleHTTPAPIRequest);
     }
 
     // Rules
@@ -302,24 +283,6 @@ export function bindRoutes(app) {
     // Admin section
     app.get(/^\/(?:admin)(?:\/.*)?$/, handleHTTPRequest, setStaticHeaders, appAdminHandler);
 
-    // Obsolete browser
-    app.get('/badbrowser', getReqBrowser, setStaticHeaders, (req, res) => {
-        res.statusCode = 200;
-        res.render('status/badbrowser', {
-            agent: req.browser && req.browser.agent,
-            title: 'Вы используете устаревшую версию браузера',
-        });
-    });
-
-    // My user-agent
-    app.get('/myua', getReqBrowser, (req, res) => {
-        const { browser: { accept, agent, agent: { source: title } = {} } = {} } = req;
-
-        res.statusCode = 200;
-        res.setHeader('Cache-Control', 'no-cache,no-store,max-age=0,must-revalidate');
-        res.render('status/myua', { agent, accept, title });
-    });
-
     // Ping-pong to verify the server is working
     app.all('/healthz', (req, res) => {
         res.set('Cache-Control', 'no-store');
@@ -327,7 +290,7 @@ export function bindRoutes(app) {
     });
 
     // Last handler. If request reaches it, means that there is no handler for this request
-    app.all('*', (req, res, next) => {
+    app.all('{*splat}', (req, res, next) => {
         const { url, method, headers: { 'user-agent': ua, referer } = {} } = req;
 
         next(new NotFoundError({ url, method, ua, referer }));
@@ -337,28 +300,35 @@ export function bindRoutes(app) {
 export const send404 = (function () {
     const status404 = http.STATUS_CODES[404];
     const json404 = JSON.stringify({ error: status404 });
-    let html404;
+    const htmlCache = new Map(); // lang → rendered html
 
     return function (req, res, error) {
         res.statusCode = 404;
 
+        const { lang } = res.locals;
+
         if (req.xhr) {
-            return res.end(error.toJSON ? error.toJSON() : json404);
+            return res.end(error.toJSON ? JSON.stringify(error.toJSON(lang)) : json404);
         }
 
-        if (html404) {
-            return res.end(html404);
+        const cached = htmlCache.get(lang);
+
+        if (cached) {
+            return res.end(cached);
         }
 
         res.render('status/404', (err, html) => {
             if (err) {
                 loggerError.error('Cannot render 404 page', err);
-                html404 = status404;
-            } else {
-                html404 = html;
+                // Don't cache the fallback — a transient render error would
+                // otherwise lock this locale to the bare status text forever.
+                res.end(status404);
+
+                return;
             }
 
-            res.end(html404);
+            htmlCache.set(lang, html);
+            res.end(html);
         });
     };
 }());
@@ -371,7 +341,7 @@ export const send500 = (function () {
         res.statusCode = 500;
 
         if (req.xhr) {
-            return res.end(error.toJSON ? error.toJSON() : json500);
+            return res.end(error.toJSON ? JSON.stringify(error.toJSON(res.locals.lang)) : json500);
         }
 
         res.render('status/500', { error }, (err, html) => {

@@ -5,7 +5,10 @@
 
 import _ from 'lodash';
 import fs, { promises as fsAsync } from 'fs';
+import log4js from 'log4js';
 import path from 'path';
+
+const logger = log4js.getLogger('middleware.js');
 
 // Middleware for checking requested html, usually for development.
 // If such pug exists - compile it, if not - pass request to the next handler
@@ -27,12 +30,44 @@ export function pugToHtml(seekPath) {
                 if (err || !renderedHTML) {
                     next();
                 } else {
-                    console.log(`${req.url} compiled from pug`);
+                    logger.info(`${req.url} compiled from pug`);
                     res.status(200).send(renderedHTML);
                 }
             });
         } else {
             return next();
+        }
+    };
+}
+
+// Middleware for compiling requested .css from a sibling .less on demand, usually for development.
+// less is a devDep, so require it lazily — production should not call this factory.
+export function lessToCss(styleDir) {
+    const less = require('less');
+
+    return async (req, res, next) => {
+        if (!req.path.endsWith('.css')) {
+            return next();
+        }
+
+        const lessPath = path.join(styleDir, req.path.replace(/\.css$/, '.less'));
+
+        if (!lessPath.startsWith(styleDir + path.sep)) {
+            return next();
+        }
+
+        try {
+            const src = await fsAsync.readFile(lessPath, 'utf-8');
+            const { css } = await less.render(src, { filename: lessPath });
+
+            await fsAsync.writeFile(lessPath.replace(/\.less$/, '.css'), css);
+            next();
+        } catch (err) {
+            if (err.code === 'ENOENT') {
+                return next();
+            }
+
+            next(err);
         }
     };
 }

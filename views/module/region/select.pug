@@ -1,51 +1,50 @@
 .regsel(data-bind="with: repository[M!M]")
     //ko if: loading()
-    .loading Загрузка
+    .loading(data-bind="text: $root.i18n('Loading')")
     // /ko
 
     //ko ifnot: loading()
     h4.namehead
         span.glyphicon.glyphicon-globe
-        span(data-bind="text: ' Выбор регион' + (options.max > 1 ? 'ов' : 'а')")
-        abbr(style="margin-left:5px;vertical-align:middle;font-size:10px;", title="Для каждого региона указано кол-во публичный изображений и не удаленных комментариев")
+        span(data-bind="text: ' ' + $root.i18n(options.max > 1 ? 'Select regions' : 'Select a region')")
+        abbr(style="margin-left:5px;vertical-align:middle;font-size:10px;", data-bind="attr: {title: $root.i18n('Each region shows the number of public images and non-deleted comments')}")
             span.glyphicon.glyphicon-info-sign
     .offsetwrap
-        div Вводите имя региона непосредственно в поле выбора или найдите его вручную в дереве регионов ниже
+        div(data-bind="text: $root.i18n('Type a region name directly into the search field or find it manually in the region tree below')")
         //ko if: options.max > 1
-        div(data-bind="text: 'Возможно выбрать ' + (options.min ? 'от ' + options.min: '')+ ' до ' + options.max + ' регионов, они не должны быть вложены друг в друга'")
+        div(data-bind="text: $root.i18n(options.min ? 'You can select from {{min}} to {{max}} regions; they must not be nested' : 'You can select up to {{max}} regions; they must not be nested', {min: options.min, max: options.max})")
         // /ko
 
     .inputwrap.surrogate
     .inputwrap.origin
         .input-group.regionsgroup
-            span.input-group-addon Выбор:
-            input.regionstkn.form-control(type="text", placeholder="Начните вводить имя региона")
+            span.input-group-addon(data-bind="text: $root.i18n('Selection:')")
+            input.regionstkn.form-control(type="text", data-bind="attr: {placeholder: $root.i18n('Start typing a region name')}")
 
     .offsetwrap
         .regionsHead
-            = 'Сортировать по: '
-            .sortOption(data-bind="click:sortByAlphabet, css: {'selected':sortBy()==='alphabet'}") алфавиту
-            = ', количеству: '
-            = ' '
-            .sortOption(data-bind="click:sortByPhoto, css: {'selected':sortBy()==='photo'}") фотографий
+            span(data-bind="text: $root.i18n('Sort by:') + ' '")
+            .sortOption(data-bind="click:sortByAlphabet, css: {'selected':sortBy()==='alphabet'}, text: $root.i18n('name')")
+            span(data-bind="text: ', ' + $root.i18n('count:') + ' '")
+            .sortOption(data-bind="click:sortByPhoto, css: {'selected':sortBy()==='photo'}, text: $root.i18n('photos')")
             = ', '
-            .sortOption(data-bind="click:sortByPic, css: {'selected':sortBy()==='pic'}") картин
+            .sortOption(data-bind="click:sortByPic, css: {'selected':sortBy()==='pic'}, text: $root.i18n('paintings')")
             = ', '
-            .sortOption(data-bind="click:sortByComment, css: {'selected':sortBy()==='comment'}") комментариев
+            .sortOption(data-bind="click:sortByComment, css: {'selected':sortBy()==='comment'}, text: $root.i18n('comments')")
             = ', '
-            .sortOption(data-bind="click:sortBySub, css: {'selected':sortBy()==='sub'}") подрегионов
+            .sortOption(data-bind="click:sortBySub, css: {'selected':sortBy()==='sub'}, text: $root.i18n('subregions')")
     .offsetwrap
         .regionsHead
             .headElem.interact(data-bind="click: expandAll")
                 span.glyphicon.glyphicon-plus
-                |  Раскрыть все
+                span(data-bind="text: ' ' + $root.i18n('Expand all')")
             .headElem.interact(data-bind="click: collapseAll")
                 span.glyphicon.glyphicon-minus
-                |  Свернуть все
+                span(data-bind="text: ' ' + $root.i18n('Collapse all')")
             //ko if: auth.loggedIn() && auth.iAm.regionHome.cid() && topCidsFilter.length === 0
             label.checkbox-inline(style="margin-left:10px;padding-left:10px;")
                 input(type="checkbox", data-bind="checked: pinHome", style="margin-left:-15px;")
-                | Прикрепить домашний регион
+                span(data-bind="text: ' ' + $root.i18n('Pin home region')")
             // /ko
     .tree
         ul(data-bind="template: {name: 'treeNode', foreach: regionsTree}")
@@ -55,33 +54,33 @@
     li(data-bind="css: {isparent: $data.childLen}")
         .lirow(data-bind="css: {selected: $data.selected(), selectable: $data.selectable()}")
             //ko if: $data.childLen
-            .chevron(data-bind="click: $data.collapseToggle, attr: {title: ($data.opened() ? 'Скрыть' : 'Раскрыть') + ' дочерние регионы'}")
+            .chevron(data-bind="click: $data.collapseToggle, attr: {title: $root.i18n($data.opened() ? 'Hide child regions' : 'Expand child regions')}")
                 span.glyphicon(data-bind="css: {'glyphicon-minus': $data.opened(), 'glyphicon-plus': !$data.opened()}")
             // /ko
-            .rname(data-bind="click: $data.clickNode, attr: {title: $data.selected() ? 'Снять выбор' : ($data.selectable() ? 'Выбрать регион' : '')}")
-                .name(data-bind="text: ' ' + $data.title_local, css: {'nameborder': $data.phc || $data.pac || $data.cc}")
+            .rname(data-bind="click: $data.clickNode, attr: {title: $data.selected() ? $root.i18n('Deselect') : ($data.selectable() ? $root.i18n('Select region') : '')}")
+                .name(data-bind="text: ' ' + $root.regionTitle($data), css: {'nameborder': $data.phc || $data.pac || $data.cc}")
                 //ko if: $data.phc
-                .section(title="Фотографии")
+                .section(data-bind="attr: {title: $root.i18n('Photos')}")
                     span.glyphicon.glyphicon-camera
                     span(data-bind="text: ' ' + $root.intl.num($data.phc)")
                 // /ko
                 //ko if: $data.pac
-                .section(title="Картины")
+                .section(data-bind="attr: {title: $root.i18n('Paintings')}")
                     span.glyphicon.glyphicon-picture
                     span(data-bind="text: ' ' + $root.intl.num($data.pac)")
                 // /ko
                 //ko if: $data.cc
-                .section(title="Комментарии")
+                .section(data-bind="attr: {title: $root.i18n('Comments')}")
                     span.glyphicon.glyphicon-comment(style="vertical-align:text-top;")
                     span(data-bind="text: ' ' + $root.intl.num($data.cc)")
                 // /ko
                 //ko if: $data.childLen
-                .section(title="Подрегионы")
+                .section(data-bind="attr: {title: $root.i18n('Subregions')}")
                     span.glyphicon.glyphicon-play(style="vertical-align:text-top;")
                     span(data-bind="text: ' ' + $root.intl.num($data.childLen)")
                 // /ko
             //ko if: $data.home
-            .home(title="Домашний регион"): span.glyphicon.glyphicon-home
+            .home(data-bind="attr: {title: $root.i18n('Home region')}"): span.glyphicon.glyphicon-home
             //ko if: $parents[$data.level].pinHome() && !$data.opened()
             hr.homeDivider
             // /ko

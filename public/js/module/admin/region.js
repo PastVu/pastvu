@@ -4,10 +4,10 @@
  */
 
 define([
-    'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
+    'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'i18n',
     'leaflet', 'noties', 'm/photo/status', 'renderer',
     'text!tpl/admin/region.pug', 'css!style/admin/region', 'css!style/leaflet/leaflet',
-], function (_, $, Utils, socket, P, ko, koMapping, Cliche, globalVM, L, noties, statuses, renderer, pug) {
+], function (_, $, Utils, socket, P, ko, koMapping, Cliche, globalVM, i18n, L, noties, statuses, renderer, pug) {
     'use strict';
 
     const collator = new Intl.Collator('ru-RU', { numeric: true, sensitivity: 'base' });
@@ -307,7 +307,7 @@ define([
 
             if (Array.isArray(data.children)) {
                 data.children.sort(function (a, b) {
-                    return collator.compare(a.title, b.title);
+                    return collator.compare(Utils.regionTitle(a), Utils.regionTitle(b));
                 });
             }
 
@@ -349,7 +349,7 @@ define([
                 result.push({ status: status, count: photostat['s' + status] || 0, title: statuses[key].filter_title });
             }, []);
             photostat.icon = 'camera';
-            photostat.title = 'Фотографий';
+            photostat.title = i18n('Photo count');
             photostat.linkprefix = '/ps?f=r!' + region.cid + '_t!1';
             this.photostat(photostat);
 
@@ -357,7 +357,7 @@ define([
                 result.push({ status: status, count: paintstat['s' + status] || 0, title: statuses[key].filter_title });
             }, []);
             paintstat.icon = 'picture';
-            paintstat.title = 'Картин';
+            paintstat.title = i18n('Painting count');
             paintstat.linkprefix = '/ps?f=r!' + region.cid + '_t!2';
             this.paintstat(paintstat);
 
@@ -365,10 +365,13 @@ define([
                 result.push({ status: status, count: imagestat['s' + status] || 0, title: statuses[key].filter_title });
             }, []);
             imagestat.icon = 'camera';
-            imagestat.title = 'Изображений';
+            imagestat.title = i18n('Image count');
 
             if (paintstat.all) {
-                imagestat.alterAll = globalVM.intl.num(imagestat.all) + ' (' + globalVM.intl.num(paintstat.all) + ' картин)';
+                imagestat.alterAll = i18n('{{total, number}} ({{paintings, number}} paintings)', {
+                    total: imagestat.all,
+                    paintings: paintstat.all,
+                });
             }
 
             imagestat.linkprefix = '/ps?f=r!' + region.cid;
@@ -466,7 +469,7 @@ define([
             this.centerMarker = L.marker(this.region.center(),
                 {
                     draggable: true,
-                    title: 'Центр региона',
+                    title: i18n('Region center'),
                     icon: L.icon({
                         iconSize: [26, 43],
                         iconAnchor: [13, 36],
@@ -631,7 +634,7 @@ define([
 
             if (!saveData.geo) {
                 noties.alert({
-                    message: 'GeoJSON обязателен!',
+                    message: i18n('GeoJSON is required!'),
                     type: 'warning',
                     timeout: 2000,
                 });
@@ -645,7 +648,7 @@ define([
 
             if (!saveData.title_en) {
                 noties.alert({
-                    message: 'Нужно заполнить английское название',
+                    message: i18n('English name must be filled in'),
                     type: 'warning',
                     timeout: 2000,
                 });
@@ -665,7 +668,7 @@ define([
 
                 if (!saveData.parent) {
                     noties.alert({
-                        message: 'Если уровень региона ниже Страны, необходимо указать номер родительского региона!',
+                        message: i18n('If the region level is below Country, you must specify the parent region\'s number!'),
                         type: 'warning',
                         timeout: 5000,
                         ok: true,
@@ -698,7 +701,9 @@ define([
                     }
 
                     if (!error) {
-                        let msg = 'Регион <b>' + this.region.title_local() + '</b> успешно ' + (parentIsChanged ? 'перенесён и ' : '') + 'сохранен<br>';
+                        let msg = i18n(parentIsChanged ?
+                            'Region <b>{{title}}</b> moved and saved successfully' :
+                            'Region <b>{{title}}</b> saved successfully', { title: Utils.regionTitle(this.region) }) + '<br>';
                         let geoChangePhotosCount;
 
                         if (resultStat && Object.keys(resultStat).length) {
@@ -706,7 +711,9 @@ define([
                                 geoChangePhotosCount = resultStat.photosCountAfter - resultStat.photosCountBefore;
 
                                 if (geoChangePhotosCount) {
-                                    msg += '<br><b>' + Math.abs(geoChangePhotosCount) + '</b> фотографий ' + (geoChangePhotosCount > 0 ? 'добавлено в регион' : 'удалено из региона') + ' вследствии изменения коордиант поолигона.';
+                                    msg += '<br>' + i18n(geoChangePhotosCount > 0 ?
+                                        '<b>{{count}}</b> photos added to the region after polygon coordinates changed.' :
+                                        '<b>{{count}}</b> photos removed from the region after polygon coordinates changed.', { count: Math.abs(geoChangePhotosCount) });
                                 }
                             }
 
@@ -714,24 +721,26 @@ define([
                                 geoChangePhotosCount = resultStat.commentsCountAfter - resultStat.commentsCountBefore;
 
                                 if (geoChangePhotosCount) {
-                                    msg += '<br><b>' + Math.abs(geoChangePhotosCount) + '</b> комментариев ' + (geoChangePhotosCount > 0 ? 'добавлено в регион' : 'удалено из региона') + ' вследствии переноса фотографий.';
+                                    msg += '<br>' + i18n(geoChangePhotosCount > 0 ?
+                                        '<b>{{count}}</b> comments added to the region after photos moved.' :
+                                        '<b>{{count}}</b> comments removed from the region after photos moved.', { count: Math.abs(geoChangePhotosCount) });
                                 }
                             }
 
                             if (resultStat.affectedPhotos) {
-                                msg += '<br><b>' + resultStat.affectedPhotos + '</b> фотографий переехали по дереву вслед за регионом.';
+                                msg += '<br>' + i18n('<b>{{count}}</b> photos moved through the tree along with the region.', { count: resultStat.affectedPhotos });
                             }
 
                             if (resultStat.affectedComments) {
-                                msg += '<br><b>' + resultStat.affectedComments + '</b> комментариев переехали вслед за своими фотографиями.';
+                                msg += '<br>' + i18n('<b>{{count}}</b> comments moved along with their photos.', { count: resultStat.affectedComments });
                             }
 
                             if (resultStat.affectedUsers) {
-                                msg += '<br>У <b>' + resultStat.affectedUsers + '</b> пользователей были сокрашены "Мои регионы".';
+                                msg += '<br>' + i18n('My regions trimmed for <b>{{count}}</b> users.', { count: resultStat.affectedUsers });
                             }
 
                             if (resultStat.affectedMods) {
-                                msg += '<br>У <b>' + resultStat.affectedMods + '</b> модераторов были сокрашены модерируемые регионы.';
+                                msg += '<br>' + i18n('Moderated regions trimmed for <b>{{count}}</b> moderators.', { count: resultStat.affectedMods });
                             }
                         }
 
@@ -779,76 +788,71 @@ define([
             this.exe(true);
 
             const cid = this.region.cid();
-            const title = this.region.title_local();
+            const title = Utils.regionTitle(this.region);
             let regionParent;
             const that = this;
             const childLenArr = this.childLenArr();
-            let msg = 'Регион <b>' + title + '</b> будет удален<br>';
+            let msg = i18n('Region <b>{{title}}</b> will be removed', { title: title }) + '<br>';
 
             if (childLenArr.length) {
-                msg += '<br>Также будут удалено <b>' +
-                    childLenArr.reduce(function (previousValue, currentValue) {
+                msg += '<br>' + i18n('Also <b>{{count}}</b> child regions will be removed', {
+                    count: childLenArr.reduce(function (previousValue, currentValue) {
                         return previousValue + currentValue;
-                    }) + '</b> дочерних регионов<br>';
+                    }),
+                }) + '<br>';
             }
-
-            msg += 'Все объекты, входящие в этот регион и в дочерние, ';
 
             if (!this.region.parents().length) {
-                msg += 'будут присвоены <b>Открытому морю</b><br>';
+                msg += i18n('All objects contained in this region and its descendants will be assigned to <b>Open Sea</b>') + '<br>';
             } else {
                 regionParent = _.last(this.region.parents());
-                msg += 'остануться в вышестоящем регионе <b>' + regionParent.title_local() + '</b><br>';
+                msg += i18n('All objects contained in this region and its descendants will stay in the parent region <b>{{title}}</b>', { title: Utils.regionTitle(regionParent) }) + '<br>';
             }
 
-            msg += '<br>Это может занять несколько минут. Подтверждаете?<br>' +
-                '<small><i>Операция продолжит выполняться даже при закрытии браузера</i></small>';
+            msg += '<br>' + i18n('This may take several minutes. Confirm?') + '<br>' +
+                '<small><i>' + i18n('The operation will continue even if you close the browser') + '</i></small>';
 
             noties.confirm({
                 message: msg,
-                okText: 'Да',
+                okText: i18n('Yes'),
                 onOk: function (confirmer) {
                     confirmer.close();
 
                     noties.confirm({
-                        message: 'Изменения будут необратимы.<br>' +
-                        'Вы действительно хотите удалить регион <b>' + title + '</b>?',
-                        okText: 'Да',
+                        message: i18n('Changes are irreversible.<br>Do you really want to remove region <b>{{title}}</b>?', { title: title }),
+                        okText: i18n('Yes'),
                         onOk: function (confirmer) {
                             confirmer.disable();
 
                             socket.run('region.remove', { cid: cid })
                                 .then(function (data) {
-                                    msg = 'Регион <b>' + title + '</b> успешно удалён<br>';
+                                    msg = i18n('Region <b>{{title}}</b> removed successfully', { title: title }) + '<br>';
 
                                     if (data.affectedPhotos) {
-                                        msg += '<b>' + data.affectedPhotos + '</b> ' +
-                                            'фотографий сменили региональную принадлежность.<br>';
+                                        msg += i18n('<b>{{count}}</b> photos got reassigned to other regions.', { count: data.affectedPhotos }) + '<br>';
                                     }
 
                                     if (data.affectedComments) {
-                                        msg += '<b>' + data.affectedComments + '</b> ' +
-                                            'комментариев сменили региональную принадлежность вслед за своими фотографиями.<br>';
+                                        msg += i18n('<b>{{count}}</b> comments got reassigned to other regions following their photos.', { count: data.affectedComments }) + '<br>';
                                     }
 
                                     if (data.homeAffectedUsers) {
-                                        msg += 'У <b>' + data.homeAffectedUsers + '</b> ' +
-                                            'пользователей домашние регионы были заменены на ' +
-                                            data.homeReplacedWith.title_en + ' (номер ' + data.homeReplacedWith.cid + ').<br>';
+                                        msg += i18n('<b>{{count}}</b> users had their home region replaced with {{title}} (number {{cid}}).', {
+                                            count: data.homeAffectedUsers,
+                                            title: data.homeReplacedWith.title_en,
+                                            cid: data.homeReplacedWith.cid,
+                                        }) + '<br>';
                                     }
 
                                     if (data.affectedUsers) {
-                                        msg += 'У <b>' + data.affectedUsers + '</b> ' +
-                                            'пользователей были сокрашены "Мои регионы".<br>';
+                                        msg += i18n('My regions trimmed for <b>{{count}}</b> users.', { count: data.affectedUsers }) + '<br>';
                                     }
 
                                     if (data.affectedMods) {
-                                        msg += 'У <b>' + data.affectedMods + '</b> ' +
-                                            'модераторов были сокрашены модерируемые регионы.';
+                                        msg += i18n('Moderated regions trimmed for <b>{{count}}</b> moderators.', { count: data.affectedMods });
 
                                         if (data.affectedModsLose) {
-                                            msg += 'Из них <b>' + data.affectedModsLose + '</b> ' +
-                                                'пользователей лишились роли модератора.';
+                                            msg += i18n('Of them <b>{{count}}</b> users lost the moderator role.', { count: data.affectedModsLose });
                                         }
 
                                         msg += '<br>';
@@ -866,19 +870,19 @@ define([
                                 })
                                 .catch(function (error) {
                                     console.error(error);
-                                    confirmer.error(error, 'Закрыть', null, function () {
+                                    confirmer.error(error, i18n('Close'), null, function () {
                                         that.exe(false);
                                     });
                                 });
                         },
-                        cancelText: 'Нет',
+                        cancelText: i18n('No'),
                         cancelClass: 'btn-success',
                         onCancel: function () {
                             that.exe(false);
                         },
                     });
                 },
-                cancelText: 'Отмена',
+                cancelText: i18n('Cancel'),
                 onCancel: function () {
                     that.exe(false);
                 },
@@ -896,28 +900,28 @@ define([
 
             const that = this;
             const cid = this.region.cid();
-            const title = this.region.title_local();
+            const title = Utils.regionTitle(this.region);
 
             socket.run('region.recalcStatistics', { cids: [cid] })
                 .then(function (data) {
                     let msg;
 
                     if (data.running) {
-                        msg = 'В данный момент статистика пересчитывается по всем регионам';
+                        msg = i18n('Statistics are currently being recalculated for all regions');
                     } else {
-                        msg = 'Статистика по региону ' + title + ' пересчитана<br>';
+                        msg = i18n('Statistics for region {{title}} have been recalculated', { title: title }) + '<br>';
 
                         if (data.valuesChanged) {
-                            msg += '<b>' + globalVM.intl.num(data.valuesChanged) + '</b> значений было изменено';
+                            msg += i18n('<b>{{count, number}}</b> values changed', { count: data.valuesChanged });
                         } else {
-                            msg += 'Значения не изменились';
+                            msg += i18n('Values are unchanged');
                         }
                     }
 
                     noties.alert({
                         message: msg,
                         ok: true,
-                        text: 'Закрыть',
+                        text: i18n('Close'),
                         countdown: 10,
                         onOk: function () {
                             that.getOneRegion(cid, function () {
@@ -933,31 +937,30 @@ define([
         },
 
         changeParentWarn: function (cb, ctx) {
-            let msg = 'Вы хотите поменять положение региона в иерархии.';
+            let msg = i18n('You want to change the region\'s position in the hierarchy.');
             const childLenArr = this.childLenArr();
 
             if (childLenArr.length) {
-                msg += '<br>При этом также будут перенесены <b>' +
-                    childLenArr.reduce(function (previousValue, currentValue) {
+                msg += '<br>' + i18n('Along with it <b>{{count}}</b> child regions will be moved', {
+                    count: childLenArr.reduce(function (previousValue, currentValue) {
                         return previousValue + currentValue;
-                    }) + '</b> дочерних регионов<br>';
+                    }),
+                }) + '<br>';
             }
 
-            msg += '<br>У пользователей, одновременно подписанных на переносимые регионы и их новые родительские, ' +
-                'подписка на переносимые будет удалена, т.к. подписка родительских включает и дочерние регионы. ' +
-                'То же касается региональных модераторских прав.';
-            msg += '<br>Это может занять несколько минут. Подтверждаете?<br>' +
-                '<small><i>Операция продолжит выполняться даже при закрытии браузера</i></small>';
+            msg += '<br>' + i18n('For users subscribed to both the moved regions and their new parents, the subscription on the moved regions will be removed, since a parent subscription already covers its descendants. The same applies to regional moderator rights.');
+            msg += '<br>' + i18n('This may take several minutes. Confirm?') + '<br>' +
+                '<small><i>' + i18n('The operation will continue even if you close the browser') + '</i></small>';
 
             noties.confirm({
                 message: msg,
-                okText: 'Да',
+                okText: i18n('Yes'),
                 okClass: 'btn-warning',
                 onOk: function (confirmer) {
                     confirmer.disable();
                     cb.call(ctx, confirmer);
                 },
-                cancelText: 'Нет',
+                cancelText: i18n('No'),
                 cancelClass: 'btn-success',
                 onCancel: function () {
                     cb.call(ctx, false);
@@ -975,13 +978,13 @@ define([
                                 cid: this.region.cid(),
                             },
                             modal: {
-                                topic: 'Вставка FeatureCollection',
+                                topic: i18n('Insert FeatureCollection'),
                                 initWidth: '950px',
                                 maxWidthRatio: 0.95,
                                 fullHeight: true,
                                 withScroll: true,
-                                offIcon: { text: 'Закрыть', click: this.closeFeatures, ctx: this },
-                                btns: [{ css: 'btn-primary', text: 'Закрыть', click: this.closeFeatures, ctx: this }],
+                                offIcon: { text: i18n('Close'), click: this.closeFeatures, ctx: this },
+                                btns: [{ css: 'btn-primary', text: i18n('Close'), click: this.closeFeatures, ctx: this }],
                             },
                             callback: function (vm) {
                                 this.regfiVM = vm;

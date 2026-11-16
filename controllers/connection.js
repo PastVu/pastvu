@@ -62,24 +62,15 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
 
     if (mongo) {
         const mongoose = require('mongoose');
-        const { uri, poolSize = 1 } = mongo;
+        const { uri, maxPoolSize = 1 } = mongo;
         let connErrorLogLevel = 'error';
-
-        // Set native Promise as mongoose promise provider
-        mongoose.Promise = Promise;
 
         connectionPromises.push(new Promise((resolve, reject) => {
             mongoose.connect(uri, {
-                poolSize,
-                promiseLibrary: Promise,
+                maxPoolSize,
                 noDelay: true,
-                keepAlive: 0, // Enable keep alive connection
                 socketTimeoutMS: 0,
                 connectTimeoutMS: ms('5m'),
-                useUnifiedTopology: true, // Use new topology engine (since MongoDB driver 3.3)
-                useNewUrlParser: true, // Use new connection string parser.
-                useCreateIndex: true, // Use createIndex internally (ensureIndex is deprecated in MongoDB driver 3.2).
-                useFindAndModify: false, // Use findOneAndUpdate interally (findAndModify is deprecated in MongoDB driver 3.1).
                 autoIndex: false, // Do not attempt to create index automatically, we use syncIndexes in worker.
             }).then(openHandler, errFirstHandler);
 
@@ -87,7 +78,7 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
                 // Connection related events are no longer regarded as errors.
                 connErrorLogLevel = 'info';
                 logger.info('MongoDB client is shutting down');
-                db.close(cb);
+                db.close().then(() => cb(), cb);
             });
 
             async function openHandler() {
@@ -109,7 +100,7 @@ function init({ mongo, redis, logger = log4js.getLogger('app') }) {
                     logger.info(
                         `MongoDB[${buildInfo.version}, ${serverStatus.storageEngine.name}, x${buildInfo.bits},`,
                         `pid ${serverStatus.pid}] connected through Mongoose[${mongoose.version}]`,
-                        `with poolsize ${poolSize} at ${uri}`
+                        `with poolsize ${maxPoolSize} at ${uri}`
                     );
 
                     // Hook on events.

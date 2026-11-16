@@ -3,7 +3,7 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/Photo', 'model/storage', 'moment', 'text!tpl/user/subscr.pug', 'css!style/user/subscr'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, Photo, storage, moment, pug) {
+define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'i18n', 'model/Photo', 'model/storage', 'moment', 'text!tpl/user/subscr.pug', 'css!style/user/subscr'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, i18n, Photo, storage, moment, pug) {
     'use strict';
 
     const imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
@@ -79,9 +79,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     let txt = '';
 
                     if (count) {
-                        txt = 'Показаны ' + globalVM.intl.num(this.pageFirstItem()) + '&nbsp;&ndash;&nbsp;' + globalVM.intl.num(this.pageLastItem() || this.pageSize()) + ' из ' + globalVM.intl.num(count);
+                        txt = i18n('Showing {{from, number}}&nbsp;&ndash;&nbsp;{{to, number}} of {{total, number}}', {
+                            from: this.pageFirstItem(),
+                            to: this.pageLastItem() || this.pageSize(),
+                            total: count,
+                        });
                     } else {
-                        txt = 'Пока нет подписок в данной категории';
+                        txt = i18n('No subscriptions in this category yet');
                     }
 
                     return txt;

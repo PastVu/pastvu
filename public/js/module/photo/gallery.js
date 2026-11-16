@@ -5,9 +5,9 @@
 
 define([
     'underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche',
-    'globalVM', 'renderer', 'model/Photo', 'model/storage', 'm/photo/status', 'lib/jsuri',
+    'globalVM', 'i18n', 'renderer', 'model/Photo', 'model/storage', 'm/photo/status', 'lib/jsuri',
     'noties', 'text!tpl/photo/gallery.pug', 'css!style/photo/gallery',
-], function (_, Browser, Utils, socket, P, ko, koMapping, Cliche, globalVM,
+], function (_, Browser, Utils, socket, P, ko, koMapping, Cliche, globalVM, i18n,
              renderer, Photo, storage, statuses, Uri, noties, pug) {
     'use strict';
 
@@ -75,6 +75,7 @@ define([
                     re: ko.observableArray(), // Array of cids of excluded regions
                     redis: ko.observableArray(), // Array of cids of inactive excluded regions, because of inactive parents
                     geo: ko.observableArray(),
+                    dir: ko.observableArray(),
                     year: ko.observable(this.year),
                     year2: ko.observable(this.year2),
                 },
@@ -212,12 +213,16 @@ define([
 
                 if (count) {
                     if (this.feed() || this.coin()) {
-                        txt = 'Всего ' + globalVM.intl.num(count) + ' фотографий';
+                        txt = i18n('{{count, number}} photos total', { count: count });
                     } else {
-                        txt = 'Показаны ' + globalVM.intl.num(this.pageFirstItem()) + '&nbsp;&ndash;&nbsp;' + globalVM.intl.num(this.pageLastItem()) + ' из ' + globalVM.intl.num(count);
+                        txt = i18n('Showing {{from, number}}&nbsp;&ndash;&nbsp;{{to, number}} of {{total, number}}', {
+                            from: this.pageFirstItem(),
+                            to: this.pageLastItem(),
+                            total: count,
+                        });
                     }
                 } else {
-                    txt = 'Пока нет ни одной фотографии';
+                    txt = i18n('No photos yet');
                 }
 
                 return txt;
@@ -325,9 +330,9 @@ define([
 
             if (page === 'feed') {
                 if (this.u) {
-                    Utils.title.setTitle({ pre: preTitle + 'Лента изображений - ' });
+                    Utils.title.setTitle({ pre: preTitle + i18n('Image feed - ') });
                 } else {
-                    Utils.title.setTitle({ title: preTitle + 'Лента всех изображений' });
+                    Utils.title.setTitle({ title: preTitle + i18n('All images feed') });
                 }
 
                 if (!this.coin() && this.page() === 1 && currPhotoLength && currPhotoLength <= this.limit) {
@@ -348,7 +353,7 @@ define([
                     return;
                 }
 
-                Utils.title.setTitle({ title: preTitle + 'Случайные изображения' });
+                Utils.title.setTitle({ title: preTitle + i18n('Random images') });
 
                 page = 1;
                 this.feed(false);
@@ -356,9 +361,9 @@ define([
                 this.coin(true);
             } else {
                 if (this.u) {
-                    Utils.title.setTitle({ pre: preTitle + 'Галерея - ' });
+                    Utils.title.setTitle({ pre: preTitle + i18n('Gallery - ') });
                 } else {
-                    Utils.title.setTitle({ title: preTitle + 'Галерея' });
+                    Utils.title.setTitle({ title: preTitle + i18n('Gallery') });
                 }
 
                 if (!this.coin() && page === 1 && this.page() === 1 && currPhotoLength) {
@@ -396,6 +401,7 @@ define([
             const re = this.filter.disp.re();
             let s = this.filter.disp.s().map(Number);
             const geo = this.filter.disp.geo();
+            const dir = this.filter.disp.dir();
             const year = Number(this.filter.disp.year());
             const year2 = Number(this.filter.disp.year2());
             const ccount = Number(this.filter.disp.ccount());
@@ -441,6 +447,10 @@ define([
 
             if (geo.length === 1) {
                 filterString += (filterString ? '_' : '') + 'geo!' + geo[0];
+            }
+
+            if (dir.length === 1) {
+                filterString += (filterString ? '_' : '') + 'dir!' + dir[0];
             }
 
             if (s.length && this.auth.iAm) {
@@ -785,6 +795,25 @@ define([
                     data.filter.disp.geo(['1']);
                 } else {
                     data.filter.disp.geo(['0']);
+                }
+            }
+
+            this.filterChangeHandle(); //Вручную вызываем обработку фильтра
+
+            return true; //Возвращаем true, чтобы галка в браузере переключилась
+        },
+        //Обработка клика вариантов присутствия направления съемки в фильтре
+        //Чтобы поставить вторую галку, если обе сняты, т.к. должно быть хотя бы одно из состояний
+        fdirclk: function (data, event) {
+            const currDispDir = data.filter.disp.dir();
+            const clickedDir = event.target.value;
+
+            if (!currDispDir.length) {
+                //Если все варианты сняты, делаем активным второй вариант
+                if (clickedDir === '0') {
+                    data.filter.disp.dir(['1']);
+                } else {
+                    data.filter.disp.dir(['0']);
                 }
             }
 
@@ -1263,9 +1292,14 @@ define([
                             data.filter.geo = ['0', '1'];
                         }
 
+                        if (!data.filter.dir || !data.filter.dir.length) {
+                            data.filter.dir = ['0', '1'];
+                        }
+
                         this.t = data.filter.t.map(String);
                         this.filter.disp.t(this.t.slice());
                         this.filter.disp.geo(data.filter.geo);
+                        this.filter.disp.dir(data.filter.dir);
 
                         if (_.isEmpty(data.filter.y)) {
                             const yearsRange = this.getTypeYearsRange();
@@ -1318,7 +1352,7 @@ define([
                 Photo.factory(photo, {
                     type: 'compact',
                     pic: 'h',
-                    customDefaults: { title: 'Без названия' },
+                    customDefaults: { title: i18n('Untitled') },
                     can: { 'protected': photo.protected },
                 });
 
@@ -1381,16 +1415,16 @@ define([
                         {
                             module: 'm/user/photoUpload',
                             modal: {
-                                topic: 'Загрузка изображений',
+                                topic: i18n('Upload images'),
                                 initWidth: '1000px',
                                 offIcon: {
-                                    text: 'Отмена', click: function () {
+                                    text: i18n('Cancel'), click: function () {
                                         this.closeUpload();
                                     }, ctx: this,
                                 },
                                 btns: [
                                     {
-                                        css: 'btn-success', text: 'Завершить',
+                                        css: 'btn-success', text: i18n('Finish'),
                                         click: function () {
                                             this.uploadVM.createPhotos(function (data) {
                                                 if (data && !data.error) {
@@ -1403,7 +1437,7 @@ define([
                                         }, ctx: this,
                                     },
                                     {
-                                        css: 'btn-warning', text: 'Отмена',
+                                        css: 'btn-warning', text: i18n('Cancel'),
                                         click: function () {
                                             this.closeUpload();
                                         }, ctx: this,
@@ -1481,17 +1515,17 @@ define([
             if (data.conv) {
                 content = imgFailTpl({
                     style: 'margin-top:7px;padding-top:20px; background: url(/img/misc/photoConvWhite.png) 50% 0 no-repeat;',
-                    txt: 'Превью уже создается<br>пожалуйста, обновите позже',
+                    txt: i18n('Preview is being created<br>please refresh later'),
                 });
             } else if (data.convqueue) {
                 content = imgFailTpl({
                     style: 'margin-top:7px;',
-                    txt: '<span class="glyphicon glyphicon-road"></span><br>Превью скоро будет создано<br>пожалуйста, обновите позже',
+                    txt: '<span class="glyphicon glyphicon-road"></span><br>' + i18n('Preview will be created shortly<br>please refresh later'),
                 });
             } else {
                 content = imgFailTpl({
                     style: 'margin-top:7px;padding-top:25px; background: url(/img/misc/imgw.png) 50% 0 no-repeat;',
-                    txt: 'Превью недоступно',
+                    txt: i18n('Preview unavailable'),
                 });
             }
 
@@ -1511,23 +1545,23 @@ define([
                                 selectedInit: this.filter.disp.r(),
                             },
                             modal: {
-                                topic: 'Выбор регионов для фильтрации',
+                                topic: i18n('Select regions to filter by'),
                                 initWidth: '900px',
                                 maxWidthRatio: 0.95,
                                 fullHeight: true,
                                 withScroll: true,
-                                offIcon: { text: 'Отмена', click: this.closeRegionSelect, ctx: this },
+                                offIcon: { text: i18n('Cancel'), click: this.closeRegionSelect, ctx: this },
                                 btns: [
                                     {
                                         css: 'btn-success',
-                                        text: 'Применить',
+                                        text: i18n('Apply'),
                                         glyphicon: 'glyphicon-ok',
                                         click: function () {
-                                            const regions = this.regselectVM.getSelectedRegions(['cid', 'parents', 'title_local', 'childLen']);
+                                            const regions = this.regselectVM.getSelectedRegions(['cid', 'parents', 'title_en', 'title_local', 'childLen']);
 
                                             if (regions.length > 10) {
                                                 return noties.alert({
-                                                    message: 'Допускается выбирать до 10 регионов',
+                                                    message: i18n('Up to 10 regions may be selected'),
                                                     type: 'warning',
                                                     timeout: 4000,
                                                     ok: true,
@@ -1537,7 +1571,7 @@ define([
                                             this.filter.disp.r(regions.map(function (region) {
                                                 if (region.parents) {
                                                     region.parentRegionsArr = this.regselectVM
-                                                        .getRegionsByCids(region.parents, ['cid', 'parents', 'title_local', 'childLen'])
+                                                        .getRegionsByCids(region.parents, ['cid', 'parents', 'title_en', 'title_local', 'childLen'])
                                                         .reverse();
                                                 }
 
@@ -1548,7 +1582,7 @@ define([
                                         },
                                         ctx: this,
                                     },
-                                    { css: 'btn-warning', text: 'Отмена', click: this.closeRegionSelect, ctx: this },
+                                    { css: 'btn-warning', text: i18n('Cancel'), click: this.closeRegionSelect, ctx: this },
                                 ],
                             },
                             callback: function (vm) {
@@ -1605,23 +1639,23 @@ define([
                             neverSelectable: topcids,
                         },
                         modal: {
-                            topic: 'Выбор регионов для исключения из фильтрации',
+                            topic: i18n('Select regions to exclude from filtering'),
                             initWidth: '900px',
                             maxWidthRatio: 0.95,
                             fullHeight: true,
                             withScroll: true,
-                            offIcon: { text: 'Отмена', click: this.closeRegionExcludeSelect, ctx: this },
+                            offIcon: { text: i18n('Cancel'), click: this.closeRegionExcludeSelect, ctx: this },
                             btns: [
                                 {
                                     css: 'btn-success',
-                                    text: 'Применить',
+                                    text: i18n('Apply'),
                                     glyphicon: 'glyphicon-ok',
                                     click: function () {
-                                        const regions = this.regselectVM.getSelectedRegions(['cid', 'parents', 'title_local']);
+                                        const regions = this.regselectVM.getSelectedRegions(['cid', 'parents', 'title_en', 'title_local']);
 
                                         if (regions.length > 10) {
                                             return noties.alert({
-                                                message: 'Допускается выбирать до 10 регионов',
+                                                message: i18n('Up to 10 regions may be selected'),
                                                 type: 'warning',
                                                 timeout: 4000,
                                                 ok: true,
@@ -1631,7 +1665,7 @@ define([
                                         this.filter.disp.re(regions.map(function (region) {
                                             if (region.parents) {
                                                 region.parentRegionsArr = this.regselectVM
-                                                    .getRegionsByCids(region.parents, ['cid', 'parents', 'title_local', 'childLen'])
+                                                    .getRegionsByCids(region.parents, ['cid', 'parents', 'title_en', 'title_local', 'childLen'])
                                                     .reverse();
                                             }
 
@@ -1644,7 +1678,7 @@ define([
                                     },
                                     ctx: this,
                                 },
-                                { css: 'btn-warning', text: 'Отмена', click: this.closeRegionExcludeSelect, ctx: this },
+                                { css: 'btn-warning', text: i18n('Cancel'), click: this.closeRegionExcludeSelect, ctx: this },
                             ],
                         },
                         callback: function (vm) {

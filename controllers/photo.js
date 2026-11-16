@@ -5,13 +5,13 @@
 
 import fs from 'fs';
 import ms from 'ms';
-import mv from 'mv';
 import _ from 'lodash';
 import path from 'path';
 import log4js from 'log4js';
 import moment from 'moment';
 import config from '../config';
 import Utils from '../commons/Utils';
+import { getT, langFromHandshake } from '../commons/i18n';
 import { dbRedis } from './connection';
 import constants from './constants';
 import constantsError from '../app/errors/constants';
@@ -208,6 +208,8 @@ export const permissions = {
             can.restore = isAdmin && s === status.REMOVE || undefined;
             // Send to convert can only admin
             can.convert = isAdmin || undefined;
+            // Administrator and moderatro can revert changes to point in history.
+            can.restorehistory = isAdmin || canModerate || undefined;
             // Any registered user can comment public or deactivated photo. Moderator - also removed photos (except owns)
             can.comment = s === status.PUBLIC || s === status.DEACTIVATE ||
                 s === status.REMOVE && (isAdmin || canModerate && !ownPhoto) || undefined;
@@ -408,9 +410,9 @@ async function give(params) {
         }
     }
 
-    const regionFields = photo.geo ? ['cid', 'title_local'] :
+    const regionFields = photo.geo ? ['cid', 'title_en', 'title_local'] :
         // If photo has no coordinates, additionally take home position of regions
-        { _id: 0, cid: 1, title_local: 1, center: 1, bbox: 1, bboxhome: 1 };
+        { _id: 0, cid: 1, title_en: 1, title_local: 1, center: 1, bbox: 1, bboxhome: 1 };
 
     const regions = await this.call('region.getObjRegionList', { obj: photo, fields: regionFields, fromDb: !photo.geo });
 
@@ -588,17 +590,11 @@ async function create({ files }) {
         files = files.slice(0, canCreate);
     }
 
-    await Promise.all(files.map(item => new Promise((resolve, reject) => {
+    await Promise.all(files.map(item => {
         item.fullfile = item.file.replace(/((.)(.)(.))/, '$2/$3/$4/$1');
 
-        mv(path.join(incomeDir, item.file), path.join(privateDir, item.fullfile), { clobber: false }, err => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve();
-            }
-        });
-    })));
+        return Utils.moveFile(path.join(incomeDir, item.file), path.join(privateDir, item.fullfile));
+    }));
 
     const count = await Counter.incrementBy('photo', files.length);
 
@@ -623,6 +619,7 @@ async function create({ files }) {
             geo: undefined,
             r2d: [Math.random() * 100, Math.random() * 100],
             title: item.name ? item.name.replace(/(.*)\.[^.]+$/, '$1') : undefined, // Cut off file extension
+            filename: item.name ? Utils.escapeHtml(item.name) : undefined, // Keep original filename (with extension) for history
             frags: undefined,
             watersignText: getUserWaterSign(user),
             convqueue: true,
@@ -642,9 +639,8 @@ async function create({ files }) {
     // Add to coverter, don't wait
     converter.addPhotos(cids, 1);
 
-    user.pfcount = user.pfcount + files.length;
-
-    await session.saveEmitUser({ usObj: iAm, wait: true, excludeSocket: socket });
+    // Send updated user to all sockets of the user except the one which has requested upload.
+    await userPCountUpdate(user, files.length, 0, 0, socket);
 
     return { message: `${files.length} photo successfully saved`, cids };
 }
@@ -758,7 +754,7 @@ function getPhotoChangedFields(oldPhoto, newPhoto, parsedFileds) {
     return { fields, oldValues, newValues, diff };
 }
 
-async function saveHistory({ oldPhotoObj, photo, canModerate, reason, parsedFileds }) {
+async function saveHistory({ oldPhotoObj, photo, canModerate, reason, parsedFileds, restoreStamp }) {
     const { handshake: { usObj: iAm } } = this;
     const changes = getPhotoChangedFields(oldPhotoObj, photo.toObject ? photo.toObject() : photo, parsedFileds);
 
@@ -848,6 +844,10 @@ async function saveHistory({ oldPhotoObj, photo, canModerate, reason, parsedFile
 
     if (!_.isEmpty(changes.diff)) {
         newEntry.diff = changes.diff;
+    }
+
+    if (restoreStamp) {
+        newEntry.restoreStamp = restoreStamp;
     }
 
     newEntry.add = add.length ? add : undefined; // undefined temporary doesn't work, https://github.com/Automattic/mongoose/issues/4037
@@ -957,25 +957,32 @@ async function update({ photo, oldPhotoObj, stamp }) {
 }
 
 // Change amount of photos of user
-function userPCountUpdate(user, newDelta = 0, publicDelta = 0, inactiveDelta = 0) {
+async function userPCountUpdate(user, newDelta = 0, publicDelta = 0, inactiveDelta = 0, excludeSocket) {
     const userId = user._id || user;
-    const ownerObj = session.getOnline({ userId });
 
-    if (ownerObj) {
-        ownerObj.user.pfcount = ownerObj.user.pfcount + newDelta;
-        ownerObj.user.pcount = ownerObj.user.pcount + publicDelta;
-        ownerObj.user.pdcount = ownerObj.user.pdcount + inactiveDelta;
-
-        return session.saveEmitUser({ usObj: ownerObj, wait: true });
-    }
-
-    return User.updateOne({ _id: userId }, {
+    // Always change counters atomically in db. Saving in-memory user instead would overwrite
+    // changes made by other instances, where the user is not online.
+    const counters = await User.findOneAndUpdate({ _id: userId }, {
         $inc: {
             pfcount: newDelta || 0,
             pcount: publicDelta || 0,
             pdcount: inactiveDelta || 0,
         },
-    }).exec();
+    }, { new: true, projection: { pfcount: 1, pcount: 1, pdcount: 1 }, lean: true }).exec();
+    const ownerObj = session.getOnline({ userId });
+
+    if (!ownerObj || !counters) {
+        return;
+    }
+
+    // Sync online user with db values. Counters must not stay marked as modified,
+    // otherwise following save of this user would write them back.
+    for (const field of ['pfcount', 'pcount', 'pdcount']) {
+        ownerObj.user.set(field, counters[field]);
+        ownerObj.user.unmarkModified(field);
+    }
+
+    return session.emitUser({ usObj: ownerObj, wait: true, excludeSocket });
 }
 
 const protectedFileLinkTTLs = config.protectedFileLinkTTL / 1000;
@@ -1487,6 +1494,16 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40, random = fa
             }
         }
 
+        if (filter.dir) {
+            if (filter.dir[0] === '0') {
+                query.dir = null;
+            }
+
+            if (filter.dir[0] === '1') {
+                query.dir = { $exists: true };
+            }
+        }
+
         if (userId) {
             query.user = userId;
         }
@@ -1589,6 +1606,7 @@ async function givePhotos({ filter, options: { skip = 0, limit = 40, random = fa
             y: buildQueryResult.y,
             c: buildQueryResult.c,
             geo: filter.geo,
+            dir: filter.dir,
         },
     };
 }
@@ -1615,7 +1633,7 @@ const givePublicNoGeoIndex = (function () {
     };
 }());
 
-const filterProps = { geo: [], r: [], rp: [], rs: [], re: [], s: [], t: [], y: [], c: [] };
+const filterProps = { geo: [], dir: [], r: [], rp: [], rs: [], re: [], s: [], t: [], y: [], c: [] };
 const delimeterParam = '_';
 const delimeterVal = '!';
 export function parseFilter(filterString) {
@@ -1761,6 +1779,12 @@ export function parseFilter(filterString) {
 
                 if (Array.isArray(filterVal) && filterVal.length === 1) {
                     result.geo = filterVal;
+                }
+            } else if (filterParam === 'dir') {
+                filterVal = filterVal.split(delimeterVal);
+
+                if (Array.isArray(filterVal) && filterVal.length === 1) {
+                    result.dir = filterVal;
                 }
             } else if (filterParam === 'c') {
                 filterVal = filterVal.split(delimeterVal);
@@ -2313,6 +2337,133 @@ function photoValidate(newValues, oldValues, can) {
     return result;
 }
 
+// Fields that restoring can clear, if they were first set after the restored point (photoValidate accepts null for them).
+const restoreClearableFields = new Set(['title', 'desc', 'source', 'author', 'address', 'year', 'year2', 'dir', 'geo']);
+// Fields that restoring sends to save. Fields absent from history up to the restored point are not sent and stay as is.
+const restoreFields = [...restoreClearableFields, 'type'];
+
+/**
+ * Revert photo to a specific point in history
+ * Reconstructs the photo state at the given timestamp and applies it as a single edit
+ *
+ * @param {object} data
+ * @param {number} data.cid Photo cid
+ * @param {Date|string} data.stamp Timestamp to revert to
+ * @returns {Promise<object>} Result of the revert operation
+ */
+async function restorePointInHistory(data) {
+    const { handshake: { usObj: iAm } } = this;
+
+    if (!iAm.registered) {
+        throw new AuthorizationError();
+    }
+
+    const { cid, stamp } = data;
+    const targetStamp = new Date(stamp);
+
+    if (!cid || !targetStamp || isNaN(targetStamp.getTime())) {
+        throw new BadParamsError();
+    }
+
+    // Fetch the current photo with edit permissions
+    // Check permissions, photo itself is fetched again by save.
+    await this.call('photo.prefetchForEdit', {
+        data: { cid, ignoreChange: true },
+        can: 'restorehistory',
+    });
+
+    // Fetch all history records for this photo up to and including the target timestamp
+    const histories = await PhotoHistory.find(
+        { cid, stamp: { $lte: targetStamp } },
+        { _id: 0 },
+        { lean: true, sort: { stamp: 1 } }
+    ).exec();
+
+    if (_.isEmpty(histories)) {
+        throw new NotFoundError(constantsError.PHOTO_NO_HISTORY);
+    }
+
+    // Only a public stretch of history can be restored: the last status change up to the target must be to public.
+    const lastStatusEntry = _.findLast(histories, h => h.values && h.values.s !== undefined);
+
+    if (!lastStatusEntry || lastStatusEntry.values.s !== status.PUBLIC) {
+        throw new BadParamsError();
+    }
+
+    // Reconstruct the state at the target timestamp by replaying history
+    const reconstructedState = {};
+
+    for (const historyEntry of histories) {
+        // Apply values from this history entry
+        if (historyEntry.values) {
+            if (historyEntry.values.desc) {
+                historyEntry.values.desc = Utils.txtHtmlToPlain(historyEntry.values.desc);
+            }
+
+            if (historyEntry.values.author) {
+                historyEntry.values.author = Utils.txtHtmlToPlain(historyEntry.values.author);
+            }
+
+            if (historyEntry.values.source) {
+                historyEntry.values.source = Utils.txtHtmlToPlain(historyEntry.values.source);
+            }
+
+            Object.assign(reconstructedState, historyEntry.values);
+        }
+
+        // Remove deleted fields
+        if (historyEntry.del && Array.isArray(historyEntry.del)) {
+            for (const field of historyEntry.del) {
+                reconstructedState[field] = null;
+            }
+        }
+    }
+
+    // Fields first set after the target don't exist in the reconstructed state, clear them,
+    // otherwise current values would be kept. Only fields that photoValidate can clear with null.
+    const laterHistories = await PhotoHistory.find(
+        { cid, stamp: { $gt: targetStamp } },
+        { _id: 0, values: 1, add: 1 },
+        { lean: true }
+    ).exec();
+
+    for (const { values, add } of laterHistories) {
+        for (const field of [...Object.keys(values || {}), ...add || []]) {
+            if (restoreClearableFields.has(field) && reconstructedState[field] === undefined) {
+                reconstructedState[field] = null;
+            }
+        }
+    }
+
+    // Plain changes object with restorable fields known from history only. Current photo values must not
+    // be passed, they are stored in other format (e.g. coordinates order, html text) than save expects.
+    // Status is not restored either, restoring changes content only.
+    // Fields absent from history are kept as they are, which is their state at the restored point too:
+    // saveHistory writes field's initial value to the first entry when the field changes for the first time,
+    // so a field missing in history has never changed (and fields added later are cleared above).
+    const changes = _.pick(reconstructedState, restoreFields);
+
+    if (changes.geo !== undefined) {
+        if (_.isEmpty(changes.geo)) {
+            // No coordinates at restored point, set region instead.
+            changes.geo = null;
+            changes.region = _.last(reconstructedState.regions);
+        } else {
+            // Reverse coordinates as they are reversed again at validation.
+            changes.geo = [...changes.geo].reverse();
+        }
+    }
+
+    const updatedPhoto = await this.call('photo.save', { cid, ignoreChange: true, changes, restoreStamp: targetStamp });
+
+    logger.info(
+        `Photo ${cid} reverted to state at ${targetStamp.toISOString()} by user ${iAm.user.login}`
+    );
+
+    // Return the updated photo data
+    return updatedPhoto;
+}
+
 // Save photo's changes
 async function save(data) {
     const { handshake: { usObj: iAm } } = this;
@@ -2323,6 +2474,7 @@ async function save(data) {
     const isMine = User.isEqual(oldPhotoObj.user, iAm.user);
     const can = permissions.getCan(oldPhotoObj, iAm, isMine, canModerate);
     const changes = photoValidate(data.changes, oldPhotoObj, can);
+    const restoreStamp = data.restoreStamp || null;
 
     if (_.isEmpty(changes)) {
         return { emptySave: true };
@@ -2491,7 +2643,7 @@ async function save(data) {
 
     if (saveHistory) {
         await this.call(
-            'photo.saveHistory', { oldPhotoObj, photo, canModerate: isMine ? false : canModerate, parsedFileds }
+            'photo.saveHistory', { oldPhotoObj, photo, canModerate: isMine ? false : canModerate, parsedFileds, restoreStamp }
         );
     }
 
@@ -2574,7 +2726,12 @@ async function convert({ cids = [] }) {
         await Photo.updateMany({ cid: { $in: cids } }, { $set: { convqueue: true } }).exec();
     }
 
-    return converter.addPhotos(converterData, 3);
+    const { count } = await converter.addPhotos(converterData, 3);
+    const t = getT(langFromHandshake(this.handshake));
+
+    return {
+        message: t('photos_sent_for_conversion', { count }),
+    };
 }
 
 // Sends all photo for convert
@@ -2790,7 +2947,7 @@ async function resetIndividualDownloadOrigin({ login, r }) {
         query[`r${region.level}`] = region.cid;
     }
 
-    const { n: updated = 0 } = await Photo.updateMany(
+    const { matchedCount: updated = 0 } = await Photo.updateMany(
         query, { $unset: { disallowDownloadOriginIndividual: 1 } }
     ).exec();
 
@@ -3217,6 +3374,23 @@ async function giveObjHist({ cid, fetchId, showDiff }) {
         }];
     }
 
+    // The original upload filename is shown in the earliest (upload) history
+    // entry, sourced from the immutable 'photo.filename' field. It may carry
+    // personal info, so it's only exposed to the photo owner and moderators.
+    if (photo.filename) {
+        const { handshake: { usObj: iAm } } = this;
+        const canSeeFilename = iAm.registered &&
+            (User.isEqual(iAm.user._id, photo.user) || !!permissions.canModerate(photo, iAm));
+
+        if (canSeeFilename) {
+            if (!histories[0].values) {
+                histories[0].values = {};
+            }
+
+            histories[0].values.filename = photo.filename;
+        }
+    }
+
     const reasons = new Set();
     const regions = {};
     let result = [];
@@ -3292,6 +3466,10 @@ async function giveObjHist({ cid, fetchId, showDiff }) {
 
         history.stamp = history.stamp.getTime();
 
+        if (history.restoreStamp) {
+            history.restoreStamp = history.restoreStamp.getTime();
+        }
+
         result.push(history);
     }
 
@@ -3299,7 +3477,7 @@ async function giveObjHist({ cid, fetchId, showDiff }) {
 
     // If regions exists, get theirs objects
     if (Object.keys(regions).length) {
-        result.regions = regionController.fillRegionsHash(regions, ['cid', 'title_local']);
+        result.regions = regionController.fillRegionsHash(regions, ['cid', 'title_en', 'title_local']);
     }
 
     // If reasons exists, get theirs headers
@@ -3378,6 +3556,7 @@ convertByUser.isPublic = true;
 resetIndividualDownloadOrigin.isPublic = true;
 giveNewLimit.isPublic = true;
 getDownloadKey.isPublic = true;
+restorePointInHistory.isPublic = true;
 
 export default {
     save,
@@ -3411,6 +3590,7 @@ export default {
     resetIndividualDownloadOrigin,
     giveNewLimit,
     getDownloadKey,
+    restorePointInHistory,
 
     find,
     give,
@@ -3443,7 +3623,7 @@ const planResetDisplayStat = (function () {
         try {
             logger.info(`Resetting day ${needWeek ? 'and week ' : ''}display statistics...`);
 
-            const { n: count = 0 } = await Photo.updateMany(
+            const { matchedCount: count = 0 } = await Photo.updateMany(
                 { s: { $in: [status.PUBLIC, status.DEACTIVATE, status.REMOVE] } }, { $set: setQuery }
             ).exec();
 

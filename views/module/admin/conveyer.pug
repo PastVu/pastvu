@@ -1,50 +1,50 @@
 .conveyerModuleWrapper(data-bind="with: repository[M!M]")
-    h4 Управление конвейером конвертаций фотографий
+    h4(data-bind="text: $root.i18n('Photo conversion pipeline management')")
     .row
         .col-xs-5.col-md-4
-            h5 Действия
+            h5(data-bind="text: $root.i18n('Actions')")
             button.btn.btn-sm(type="button", data-bind="css: {disabled: exe(), 'btn-warning': conveyerEnabled(), 'btn-success': !conveyerEnabled()}, click: startstop, attr: {disabled: exe()}")
                 span.glyphicon(data-bind="css: {'glyphicon-stop': conveyerEnabled(), 'glyphicon-play': !conveyerEnabled()}")
-                span(data-bind="text: conveyerEnabled() ? ' Остановить' : ' Запустить'")
+                span(data-bind="text: ' ' + $root.i18n(conveyerEnabled() ? 'Stop' : 'Start')")
             button.btn.btn-sm.btn-danger(type="button", data-bind="css: {disabled: exe()}, click: clearConveyer, attr: {disabled: exe()}")
                 span.glyphicon.glyphicon-trash
-                |  Очистить
+                span(data-bind="text: ' ' + $root.i18n('Clear')")
             br
             br
             .toConvertSection
-                h5 Отправить на конвертацию все фото:
+                h5(data-bind="text: $root.i18n('Send all photos for conversion:')")
                 form.form-inline
                     .form-group
-                        | Номера фотографий:&nbsp;
+                        span(data-bind="text: $root.i18n('Photo numbers:') + ' '")
                         input.form-control(type="number", placeholder="min", data-bind="attr: {disabled: exe()}, value: reconvertCidMin, valueUpdate: 'afterkeydown'", style="width: 70px;")
                         input.form-control(type="number", placeholder="max", data-bind="attr: {disabled: exe()}, value: reconvertCidMax, valueUpdate: 'afterkeydown'", style="width: 70px;")
                         | &nbsp;
                 form.form-inline
                     .form-group
-                        | Номера статусов:&nbsp;
-                        input.form-control(data-bind="attr: {disabled: exe()}, value: reconvertStatuses, valueUpdate: 'afterkeydown'", style="width: 140px;", placeholder="Через запятую")
+                        span(data-bind="text: $root.i18n('Status numbers:') + ' '")
+                        input.form-control(data-bind="attr: {disabled: exe(), placeholder: $root.i18n('Comma-separated')}, value: reconvertStatuses, valueUpdate: 'afterkeydown'", style="width: 140px;")
                         | &nbsp;
                 form.form-inline
                     .form-group
-                        | Номер региона:&nbsp;
+                        span(data-bind="text: $root.i18n('Region number:') + ' '")
                         input.form-control(type="number", data-bind="attr: {disabled: exe()}, value: reconvertRegion, valueUpdate: 'afterkeydown'", style="width: 70px;")
                         | &nbsp;
-                button.btn.btn-primary(data-bind="click: toConvert, attr: {disabled: exe()}") Cтарт
+                button.btn.btn-primary(data-bind="click: toConvert, attr: {disabled: exe()}, text: $root.i18n('Start')")
         .col-xs-7.col-md-8(style="padding-left: 10px;")
-            h5 Текущее состояние конвейера
-            div(data-bind="css: {'text-success': conveyerEnabled(), 'text-error': !conveyerEnabled()}, text: conveyerEnabled() ? 'Конвейер активен' : 'Конвейер остановлен'")
+            h5(data-bind="text: $root.i18n('Current pipeline state')")
+            div(data-bind="css: {'text-success': conveyerEnabled(), 'text-error': !conveyerEnabled()}, text: $root.i18n(conveyerEnabled() ? 'Pipeline active' : 'Pipeline stopped')")
             div
                 span.stateRate(data-bind="text:converted()")
-                span.stateDesc Конвертировано за текущую 10-ти минутку
+                span.stateDesc(data-bind="text: $root.i18n('Converted in the current 10-minute window')")
             div
                 span.stateRate(data-bind="text:clength()")
-                span.stateDesc Текущая длина конвейера
+                span.stateDesc(data-bind="text: $root.i18n('Current pipeline length')")
             div
                 span.stateRate(data-bind="text:cmaxlength()")
-                span.stateDesc Максимальная длина конвейера за текущую 10-ти минутку
+                span.stateDesc(data-bind="text: $root.i18n('Maximum pipeline length in the current 10-minute window')")
     br
-    h5 Сконвертированно
+    h5(data-bind="text: $root.i18n('Converted')")
     #conveyerConvertGraph
     br
-    h5 Максимальная длина конвейера
+    h5(data-bind="text: $root.i18n('Maximum pipeline length')")
     #conveyerLengthGraph

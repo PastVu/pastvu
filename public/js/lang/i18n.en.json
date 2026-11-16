@@ -1,0 +1,18 @@
+{
+    "Delete": "Delete",
+    "Bad browser, we do not support it": "Bad browser, we do not support it",
+    "Bad request - no header or user agent": "Bad request - no header or user agent",
+    "photos_sent_for_conversion_one": "{{count, number}} photo sent for conversion",
+    "photos_sent_for_conversion_other": "{{count, number}} photos sent for conversion",
+    "users_count_one": "{{count, number}} user",
+    "users_count_other": "{{count, number}} users",
+    "users_registered_count_one": "{{count, number}} registered",
+    "users_registered_count_other": "{{count, number}} registered",
+    "photos_count_one": "{{count, number}} photo",
+    "photos_count_other": "{{count, number}} photos",
+    "comments_count_one": "{{count, number}} comment",
+    "comments_count_other": "{{count, number}} comments",
+    "views_count_one": "{{count, number}} view",
+    "views_count_other": "{{count, number}} views",
+    "datetime_full": "{{date, datetime(dateStyle: full; timeStyle: medium; hourCycle: h23)}}"
+}

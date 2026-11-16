@@ -3,14 +3,14 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/storage', 'lib/doT', 'text!tpl/comment/hist.pug', 'css!style/comment/hist'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, storage, doT, pug) {
+define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'i18n', 'model/storage', 'lib/doT', 'text!tpl/comment/hist.pug', 'css!style/comment/hist'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, i18n, storage, doT, pug) {
     'use strict';
 
     let tplHist;
     const changeFragTexts = {
-        f1: '<span class="glyphicon glyphicon-plus"></span> Добавлен фрагмент',
-        f2: '<span class="glyphicon glyphicon-retweet"></span> Изменен фрагмент',
-        f3: '<span class="glyphicon glyphicon-minus"></span> Удален фрагмент',
+        f1: '<span class="glyphicon glyphicon-plus"></span> ' + i18n('Fragment added'),
+        f2: '<span class="glyphicon glyphicon-retweet"></span> ' + i18n('Fragment changed'),
+        f3: '<span class="glyphicon glyphicon-minus"></span> ' + i18n('Fragment removed'),
     };
 
     return Cliche.extend({
@@ -34,7 +34,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 if (hists && hists.length) {
                     const link = '/' + (this.type === 'photo' ? 'p' : 'news') + '/' + this.objCid;
 
-                    this.$dom[0].innerHTML = tplHist({ hists: hists, fDate: Utils.format.date.relative, link: link });
+                    this.$dom[0].innerHTML = tplHist({
+                        hists: hists,
+                        fDate: Utils.format.date.relative,
+                        link: link,
+                        i18n: globalVM.i18n,
+                        regionTitle: Utils.regionTitle,
+                    });
                 }
 
                 this.show();
