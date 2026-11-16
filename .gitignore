@@ -39,9 +39,6 @@ public/style/**/*.css
 ######################
 babel/output*.js
 
-# Sentry Config File
-.sentryclirc
-
 # Build output
 appBuild
 app*.zip
