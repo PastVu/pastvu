@@ -101,7 +101,7 @@
         "jest": "30.4.2",
         "less": "4.8.1",
         "lint-staged": "17.3.0",
-        "mongodb-memory-server": "11.2.0",
+        "mongodb-memory-server": "11.3.0",
         "redis-memory-server": "0.17.1",
         "requirejs": "2.3.8",
         "stylelint": "17.14.0",
