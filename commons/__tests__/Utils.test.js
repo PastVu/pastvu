@@ -98,4 +98,23 @@ describe('utils', () => {
             testInputIncomingParse('', testString, expectedString);
         });
     });
+
+    describe('escapeHtml', () => {
+        it('escapes HTML-significant characters', () => {
+            expect.assertions(1);
+            expect(Utils.escapeHtml('<img src=x onerror="alert(1)">'))
+                .toBe('&lt;img src=x onerror=&quot;alert(1)&quot;&gt;');
+        });
+
+        it('leaves a plain filename untouched', () => {
+            expect.assertions(1);
+            expect(Utils.escapeHtml('IMG_20030714_grandma.jpg')).toBe('IMG_20030714_grandma.jpg');
+        });
+
+        it('returns an empty string for nullish input', () => {
+            expect.assertions(2);
+            expect(Utils.escapeHtml(undefined)).toBe('');
+            expect(Utils.escapeHtml(null)).toBe('');
+        });
+    });
 });

@@ -18,6 +18,10 @@
             a(target="_blank", href="https://github.com/PastVu/pastvu/blob/master/COPYING") GNU AGPL v3.0
             | .
         div.line
+            span(data-bind="text: $root.i18n('PastVu geographic data (coordinates, image numbers, dates and labels) are available under') + ' '")
+            a(target="_blank", data-bind="attr: {href: $root.i18n('https://creativecommons.org/publicdomain/zero/1.0/deed.en')}, text: $root.i18n('Creative Commons CC0 License')")
+            | .
+        div.line
             span(data-bind="text: $root.i18n('Geographic and administrative region boundary data:') + ' © '")
             a(target="_blank", href="https://www.openstreetmap.org/copyright") OpenStreetMap contributors
             | .

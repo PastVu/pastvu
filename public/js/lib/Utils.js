@@ -312,8 +312,8 @@ define(['jquery', 'underscore', 'underscore.string', 'i18n', 'lib/geocoordsparse
             const dualScreenLeft = window.screenLeft !== undefined ? window.screenLeft : screen.left;
             const dualScreenTop = window.screenTop !== undefined ? window.screenTop : screen.top;
 
-            const width = window.innerWidth ? window.innerWidth : document.documentElement.clientWidth ? document.documentElement.clientWidth : screen.width; // eslint-disable-line max-len
-            const height = window.innerHeight ? window.innerHeight : document.documentElement.clientHeight ? document.documentElement.clientHeight : screen.height; // eslint-disable-line max-len
+            const width = window.innerWidth ? window.innerWidth : document.documentElement.clientWidth ? document.documentElement.clientWidth : screen.width;
+            const height = window.innerHeight ? window.innerHeight : document.documentElement.clientHeight ? document.documentElement.clientHeight : screen.height;
 
             const left = width / 2 - w / 2 + dualScreenLeft >> 0;
             const top = height / 2 - h / 2 + dualScreenTop >> 0;
@@ -736,7 +736,7 @@ define(['jquery', 'underscore', 'underscore.string', 'i18n', 'lib/geocoordsparse
                     x = et.pageX;
                     y = et.pageY;
                 } else if (et.clientX || et.clientY) {
-                    x = et.clientX + (document.documentElement.scrollLeft || document.body.scrollLeft) - document.documentElement.clientLeft; // eslint-disable-line max-len
+                    x = et.clientX + (document.documentElement.scrollLeft || document.body.scrollLeft) - document.documentElement.clientLeft;
                     y = et.clientY + (document.documentElement.scrollTop || document.body.scrollTop) - document.documentElement.clientTop;
                 }
             } else if (e.pageX || e.pageY) {
@@ -1029,25 +1029,21 @@ define(['jquery', 'underscore', 'underscore.string', 'i18n', 'lib/geocoordsparse
 
             //Проверка на валидность geo [lng, lat]
             function check(geo) {
-                // eslint-disable-next-line max-len
                 return Array.isArray(geo) && geo.length === 2 && (geo[0] || geo[1]) && geo[0] > -180 && geo[0] < 180 && geo[1] > -90 && geo[1] < 90;
             }
 
             //Проверка на валидность geo [lat, lng]
             function checkLatLng(geo) {
-                // eslint-disable-next-line max-len
                 return Array.isArray(geo) && geo.length === 2 && (geo[0] || geo[1]) && geo[1] > -180 && geo[1] < 180 && geo[0] > -90 && geo[0] < 90;
             }
 
             //Проверка на валидность bbox [leftlng, bottomlat, rightlng, toplat]
             function checkbbox(bbox) {
-                // eslint-disable-next-line max-len
                 return Array.isArray(bbox) && bbox.length === 4 && check([bbox[0], bbox[1]]) && check([bbox[2], bbox[3]]) && bbox[1] < bbox[3];
             }
 
             //Проверка на валидность bbox [bottomlat, leftlng, toplat, rightlng]
             function checkbboxLatLng(bbox) {
-                // eslint-disable-next-line max-len
                 return Array.isArray(bbox) && bbox.length === 4 && checkLatLng([bbox[0], bbox[1]]) && checkLatLng([bbox[2], bbox[3]]) && bbox[0] < bbox[2];
             }
 

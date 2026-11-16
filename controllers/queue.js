@@ -33,7 +33,7 @@ exitHook(cb => {
  *
  * @returns {Promise}
  */
-function shutdownQueues() {
+export function shutdownQueues() {
     const closing = [];
 
     for (const [name, worker] of workerInstances) {

@@ -13,7 +13,7 @@ import { LRUCache } from 'lru-cache';
 import log4js from 'log4js';
 import config from './config';
 import Utils from './commons/Utils';
-import { parse as parseCookie } from 'cookie';
+import { parseCookie } from 'cookie';
 import contentDisposition from 'content-disposition';
 import CorePlug from './controllers/serviceConnectorPlug';
 import { ApplicationError, AuthorizationError, BadParamsError, NotFoundError } from './app/errors';

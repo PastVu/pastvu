@@ -39,13 +39,9 @@ public/style/**/*.css
 ######################
 babel/output*.js
 
-# Sentry Config File
-.sentryclirc
-
-# Grunt output
+# Build output
 appBuild
 app*.zip
 
 # Claude
 .playwright*
-docs/superpowers

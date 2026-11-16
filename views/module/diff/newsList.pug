@@ -19,6 +19,9 @@
                 // /ko
             .newsBody
                 .newsHead
+                    //ko if: new Date($data.pdate) > new Date()
+                    span.newsPlanned(data-bind="text: $root.i18n('Not published yet'), attr: {title: $root.i18n('Scheduled for publication') + ' ' + moment($data.pdate).format('D MMM YYYY, HH:mm')}")
+                    // /ko
                     a.newsTitle(data-bind="text: $data.title, attr: {href: '/news/' + $data.cid}")
                     .dotDelimeter ·
                     a.authorName(data-bind="text: $data.user.disp, attr: {href: '/u/' + $data.user.login}")

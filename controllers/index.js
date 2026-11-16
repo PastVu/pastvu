@@ -147,7 +147,7 @@ const giveRatings = (function () {
 const giveStats = (function () {
     const memoizeInterval = ms('5m');
     const aggregateParams = [
-        { $match: { s: 5 } },
+        { $match: { s: 5, type: { $ne: 2 } } },
         { $group: { _id: '$year', count: { $sum: 1 } } },
         { $sort: { count: -1 } },
         {
@@ -171,18 +171,23 @@ const giveStats = (function () {
     return Utils.memoizePromise(async () => {
         const [
             [photoYear],
-            pallCount, ppubCount, userCount, pdayCount, pweekCount,
+            pallCount, ppubCount, userCount, pdayCount, pweekCount, iallCount, ipubCount,
             callCount, cnallCount,
             cpubCount, cnpubCount, cdayCount, cndayCount, cweekCount, cnweekCount,
         ] = await Promise.all([
             Photo.aggregate(aggregateParams).exec(),
 
-            Photo.estimatedDocumentCount().exec(),
-            Photo.countDocuments({ s: 5 }).exec(),
+            Photo.countDocuments({ type: 1 }).exec(),
+            Photo.countDocuments({ s: 5, type: 1 }).exec(),
+
             User.countDocuments({ active: true }).exec(),
 
-            Photo.countDocuments({ s: 5, adate: { $gt: dayStart } }).exec(),
-            Photo.countDocuments({ s: 5, adate: { $gt: weekStart } }).exec(),
+            Photo.countDocuments({ s: 5, type: 1, adate: { $gt: dayStart } }).exec(),
+            Photo.countDocuments({ s: 5, type: 1, adate: { $gt: weekStart } }).exec(),
+
+            // images
+            Photo.countDocuments({ type: 2 }).exec(),
+            Photo.countDocuments({ s: 5, type: 2 }).exec(),
 
             Comment.estimatedDocumentCount().exec(),
             CommentN.estimatedDocumentCount().exec(),
@@ -197,7 +202,7 @@ const giveStats = (function () {
 
         return {
             all: {
-                photoYear, pallCount, ppubCount, userCount, pdayCount, pweekCount,
+                photoYear, pallCount, ppubCount, userCount, pdayCount, pweekCount, iallCount, ipubCount,
                 callCount: callCount + cnallCount,
                 cpubCount: cpubCount + cnpubCount,
                 cdayCount: cdayCount + cndayCount,
@@ -290,7 +295,7 @@ async function giveAllNews() {
         { lean: true, sort: { pdate: -1 } }
     ).populate({ path: 'user', select: { _id: 0, login: 1, avatar: 1, disp: 1 } }).exec();
 
-    if (iAm.registered && !news.length) {
+    if (iAm.registered && news.length) {
         // If user is logged in, fill in count of new comments for each news
         await userObjectRelController.fillObjectByRels(news, iAm.user._id, 'news');
         news.forEach(n => delete n._id);

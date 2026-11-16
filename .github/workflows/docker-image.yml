@@ -39,12 +39,6 @@ jobs:
       - name: Build
         run: npm run build
 
-      #- name: Sentry
-      #  env:
-      #    SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      #  run: |
-      #    npm run sentry:sourcemaps
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 

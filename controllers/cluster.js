@@ -18,6 +18,10 @@ const logger = log4js.getLogger('cluster.js');
 let clusterParams; // Parameters of cluster
 let clusterConditions; // Parameters of cluster settings
 
+// Photo types, each clustered into its own collection.
+const CLUSTER_TYPES = [constants.photo.type.PHOTO, constants.photo.type.PAINTING];
+const clusterModelByType = type => type === constants.photo.type.PAINTING ? ClusterPaint : Cluster;
+
 async function readClusterParams() {
     [clusterParams, clusterConditions] = await Promise.all([
         ClusterParams.find({ sgeo: { $exists: false } }, { _id: 0 }, { lean: true, sort: { z: 1 } }).exec(),
@@ -44,6 +48,56 @@ function computeClusterCoords(geoPhoto, clusterZoom) {
     ]);
 }
 
+const posterFields = { _id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1 };
+
+/**
+ * Find photo that will represent cluster (its poster): the public photo nearest
+ * to the cluster center of gravity, that belongs to this very cluster cell.
+ * Photos from neighbouring cells may be closer to the center, but must not be
+ * taken, otherwise single-photo cluster shows neighbour instead of its photo.
+ *
+ * @param {object} obj
+ * @param {number[]} obj.g Normalized top left corner of cluster cell [lng, lat]
+ * @param {number[]} obj.geo Cluster center of gravity [lng, lat]
+ * @param {object} obj.clusterZoom Zoom parameters {z, w, h}
+ * @param {number} obj.type Photo type
+ * @param {number|object} [obj.year] Year criteria
+ * @returns {object|null} poster photo
+ */
+async function findClusterPoster({ g, geo, clusterZoom, type, year }) {
+    // Limit searching distance to improve $nearSphere performance. Center of
+    // gravity is within the cell, so cell diagonal covers all its photos.
+    const dist = Utils.geo.getDistanceFromLatLonInKm(g[1], g[0], g[1] - clusterZoom.h, g[0] + clusterZoom.w) * 1000 * 1.5;
+    const query = {
+        s: constants.photo.status.PUBLIC,
+        geo: { $nearSphere: { $geometry: { type: 'Point', coordinates: geo }, $maxDistance: dist } },
+        type,
+    };
+
+    if (year !== undefined) {
+        query.year = year;
+    }
+
+    // Photos come nearest first, take the first one of this cell.
+    const cursor = Photo.find(query, posterFields).lean().cursor();
+
+    try {
+        for await (const photo of cursor) {
+            const photoG = computeClusterCoords(photo.geo, clusterZoom);
+
+            Utils.geo.normalizeCoordinates(photoG);
+
+            if (photoG[0] === g[0] && photoG[1] === g[1]) {
+                return photo;
+            }
+        }
+    } finally {
+        await cursor.close();
+    }
+
+    return null;
+}
+
 /**
  * Set new cluster parameters and send clusters to recalculate.
  *
@@ -66,15 +120,42 @@ async function recalcAll({ params, conditions }) {
     ]);
     await readClusterParams();
 
-    const result = await runJob('clusterPhotosAll', { withGravity: true });
+    // Cluster sizes are shared by photos and paintings, so both must be
+    // rebuilt on the new grid.
+    // This function used to trigger photosToMapAll db stored function,
+    // which does not seem required as photo coordinates are not affected by
+    // clusters calculation.
+    return runClusterPhotosAll(CLUSTER_TYPES);
+}
+
+/**
+ * Rebuild clusters of the given photo types using current cluster parameters.
+ *
+ * @param {object} params
+ * @param {number[]} params.types Photo types to rebuild clusters for
+ * @returns {object} Data object returned by clusterPhotosAll.
+ */
+async function rebuild({ types }) {
+    const { handshake: { usObj: iAm } } = this;
+
+    if (!iAm.isAdmin) {
+        throw new AuthorizationError();
+    }
+
+    if (!Array.isArray(types) || !types.length || types.some(type => !CLUSTER_TYPES.includes(type))) {
+        throw new BadParamsError();
+    }
+
+    return runClusterPhotosAll(_.uniq(types));
+}
+
+async function runClusterPhotosAll(types) {
+    const result = await runJob('clusterPhotosAll', { withGravity: true, types });
 
     if (result && result.error) {
         throw new ApplicationError({ message: result.error.message });
     }
 
-    // This function used to trigger photosToMapAll db stored function,
-    // which does not seem required as photo coordinates are not affected by
-    // clusters calculation.
     return result;
 }
 
@@ -86,6 +167,7 @@ async function recalcAll({ params, conditions }) {
  * @param {boolean} [params.withGravity]
  * @param {number} [params.logByNPhotos] How often to log progress
  * @param {number[]} [params.zooms] Limit to specified zooms
+ * @param {number[]} [params.types] Limit to specified photo types (all by default)
  * @returns {object} object containing message and data.
  */
 export const clusterPhotosAll = async function (params) {
@@ -97,17 +179,28 @@ export const clusterPhotosAll = async function (params) {
 
     const clusterZooms = await ClusterParams.find(clusterparamsQuery, { _id: 0 }).sort({ z: 1 }).exec();
 
-    const photosAllCount = await Photo.countDocuments({ s: constants.photo.status.PUBLIC, geo: { $exists: true } });
-    const logByNPhotos = params.logByNPhotos || photosAllCount / 20 >> 0;
     const withGravity = params.withGravity || false;
+    const result = { photos: 0, clusters: 0 };
 
-    logger.info(`clusterPhotosAll: Start to clusterize ${photosAllCount} photos, progress is logged every ${logByNPhotos}. Gravity: ${withGravity}`);
+    // Photos and paintings are clustered separately, each into its own collection.
+    for (const type of params.types || CLUSTER_TYPES) {
+        const ClusterModel = clusterModelByType(type);
+        const photoQuery = { s: constants.photo.status.PUBLIC, geo: { $exists: true }, type };
+        const photosAllCount = await Photo.countDocuments(photoQuery);
+        const logByNPhotos = params.logByNPhotos || Math.max(photosAllCount / 20 >> 0, 1);
+        const logPrefix = `clusterPhotosAll (${ClusterModel.collection.name})`;
 
-    for (const clusterZoom of clusterZooms) {
-        await clusterizeZoom(clusterZoom);
+        logger.info(`${logPrefix}: Start to clusterize ${photosAllCount} photos, progress is logged every ${logByNPhotos}. Gravity: ${withGravity}`);
+
+        for (const clusterZoom of clusterZooms) {
+            await clusterizeZoom(clusterZoom, { photoQuery, photosAllCount, logByNPhotos, logPrefix, ClusterModel, type });
+        }
+
+        result.photos += photosAllCount;
+        result.clusters += await ClusterModel.estimatedDocumentCount();
     }
 
-    async function clusterizeZoom(clusterZoom) {
+    async function clusterizeZoom(clusterZoom, { photoQuery, photosAllCount, logByNPhotos, logPrefix, ClusterModel, type }) {
         const startTime = Date.now();
         let timestamp;
 
@@ -131,7 +224,7 @@ export const clusterPhotosAll = async function (params) {
         clustersArr.push([]);
 
         // Use cursor.
-        const photos = Photo.find({ s: constants.photo.status.PUBLIC, geo: { $exists: true } }, { _id: 0, geo: 1, year: 1, year2: 1 });
+        const photos = Photo.find(photoQuery, { _id: 0, geo: 1, year: 1, year2: 1 });
 
         for await (const photo of photos) {
             photoCounter++;
@@ -170,13 +263,13 @@ export const clusterPhotosAll = async function (params) {
 
             if (photoCounter % logByNPhotos === 0) {
                 timestamp = (Date.now() - startTime) / 1000;
-                logger.info(`clusterPhotosAll: ${clusterZoom.z}: Clusterized ${photoCounter}/${photosAllCount} photos in ` +
+                logger.info(`${logPrefix}: ${clusterZoom.z}: Clusterized ${photoCounter}/${photosAllCount} photos in ` +
                     `${clustersCount} clusters in ${timestamp}s`);
             }
         }
 
-        logger.info(`clusterPhotosAll: ${clusterZoom.z}: ${clustersCount} clusters ready for inserting`);
-        await Cluster.deleteMany({ z: clusterZoom.z });
+        logger.info(`${logPrefix}: ${clusterZoom.z}: ${clustersCount} clusters ready for inserting`);
+        await ClusterModel.deleteMany({ z: clusterZoom.z });
 
         let clustersCounter = clustersArr.length;
 
@@ -203,39 +296,21 @@ export const clusterPhotosAll = async function (params) {
                     Utils.geo.normalizeCoordinates(cluster.g);
 
                     // Link it to photo that will represent cluster.
-                    const dist = Utils.geo.getDistanceFromLatLonInKm(cluster.g[1], cluster.g[0], cluster.geo[1], cluster.geo[0]) * 2000;
-
-                    cluster.p = await Photo.findOne({
-                        s: constants.photo.status.PUBLIC,
-                        geo: { $nearSphere: { $geometry: { type: 'Point', coordinates: cluster.geo }, $maxDistance: dist } },
-                    }, {
-                        _id: 0,
-                        cid: 1,
-                        geo: 1,
-                        file: 1,
-                        dir: 1,
-                        title: 1,
-                        year: 1,
-                        year2: 1,
-                    }).exec();
+                    cluster.p = await findClusterPoster({ g: cluster.g, geo: cluster.geo, clusterZoom, type });
                 }
             }
 
             // Record current batch of clusters.
-            await Cluster.insertMany(clustersArrInner);
+            await ClusterModel.insertMany(clustersArrInner);
             clustersInserted += clustersArrInner.length;
 
             const timestamp = (Date.now() - startTime) / 1000;
 
-            logger.info(`clusterPhotosAll: ${clusterZoom.z}: Inserted ${clustersInserted}/${clustersCount} clusters in ${timestamp}s`);
+            logger.info(`${logPrefix}: ${clusterZoom.z}: Inserted ${clustersInserted}/${clustersCount} clusters in ${timestamp}s`);
         }
     }
 
-    const clustersCount = await Cluster.estimatedDocumentCount();
-
-    return {
-        data: { photos: photosAllCount, clusters: clustersCount },
-    };
+    return { data: result };
 };
 
 async function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, isPainting) {
@@ -317,17 +392,9 @@ async function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, isPainting
         Utils.geo.normalizeCoordinates(geoCluster);
     }
 
-    // Limit searching distance to improve $nearSphere performance.
-    const dist = Utils.geo.getDistanceFromLatLonInKm(g[1], g[0], geoCluster[1], geoCluster[0]) * 2000;
-    const photo = await Photo.findOne(
-        {
-            s: constants.photo.status.PUBLIC,
-            geo: { $nearSphere: { $geometry: { type: 'Point', coordinates: geoCluster }, $maxDistance: dist } },
-            type: isPainting ? constants.photo.type.PAINTING : constants.photo.type.PHOTO,
-        },
-        { _id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1 },
-        { lean: true }
-    ).exec();
+    const photo = await findClusterPoster({
+        g, geo: geoCluster, clusterZoom: zParam, type: isPainting ? constants.photo.type.PAINTING : constants.photo.type.PHOTO,
+    });
 
     $update.$set.p = photo;
     $update.$set.geo = geoCluster;
@@ -452,7 +519,7 @@ export async function getBounds({ geometry, z, isPainting }) {
         if (cluster.c > 1) {
             cluster.geo.reverse(); // Reverse geo
             clusters.push(cluster);
-        } else if (cluster.c === 1) {
+        } else if (cluster.c === 1 && cluster.p) {
             photos.push(cluster.p);
         }
     }
@@ -485,8 +552,8 @@ export async function getBoundsByYear({ geometry, z, year, year2, isPainting }) 
         if (cluster.c > 0) {
             clustersAll.push(cluster);
 
-            if (cluster.p.year < year || cluster.p.year > year2) {
-                posterPromises.push(getClusterPoster(cluster, yearCriteria, isPainting));
+            if (!cluster.p || cluster.p.year < year || cluster.p.year > year2) {
+                posterPromises.push(getClusterPoster(cluster, z, yearCriteria, isPainting));
             }
         }
     }
@@ -502,7 +569,7 @@ export async function getBoundsByYear({ geometry, z, year, year2, isPainting }) 
         if (cluster.c > 1) {
             cluster.geo.reverse(); // Reverse geo
             clusters.push(cluster);
-        } else if (cluster.c === 1) {
+        } else if (cluster.c === 1 && cluster.p) {
             photos.push(cluster.p);
         }
     }
@@ -510,20 +577,16 @@ export async function getBoundsByYear({ geometry, z, year, year2, isPainting }) 
     return { photos, clusters };
 }
 
-async function getClusterPoster(cluster, yearCriteria, isPainting) {
-    // Limit searching distance to improve $nearSphere performance.
-    const dist = Utils.geo.getDistanceFromLatLonInKm(cluster.g[1], cluster.g[0], cluster.geo[1], cluster.geo[0]) * 2000;
+async function getClusterPoster(cluster, z, yearCriteria, isPainting) {
+    const clusterZoom = _.find(clusterParams, { z });
 
-    cluster.p = await Photo.findOne(
-        {
-            s: constants.photo.status.PUBLIC,
-            geo: { $nearSphere: { $geometry: { type: 'Point', coordinates: cluster.geo }, $maxDistance: dist } },
-            year: yearCriteria,
-            type: isPainting ? constants.photo.type.PAINTING : constants.photo.type.PHOTO,
-        },
-        { _id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1 },
-        { lean: true }
-    ).exec();
+    cluster.p = clusterZoom ? await findClusterPoster({
+        g: cluster.g,
+        geo: cluster.geo,
+        clusterZoom,
+        type: isPainting ? constants.photo.type.PAINTING : constants.photo.type.PHOTO,
+        year: yearCriteria,
+    }) : null;
 
     return cluster;
 }
@@ -541,10 +604,12 @@ function getClusterConditions() {
 waitDb.then(readClusterParams);
 
 recalcAll.isPublic = true;
+rebuild.isPublic = true;
 getClusterConditions.isPublic = true;
 
 export default {
     recalcAll,
+    rebuild,
     clusterPhoto,
     declusterPhoto,
     getBounds,

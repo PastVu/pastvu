@@ -142,6 +142,9 @@
                     span(data-bind="text: $root.i18n('New photos this week:') + ' '")
                     b(data-bind="text: $root.intl.num(stats.all.pweekCount)")
                 .statrow
+                    span(data-bind="text: $root.i18n('Image count:') + ' '")
+                    b(data-bind="text: $root.intl.num(stats.all.iallCount) + (auth.loggedIn() ? $root.i18n(', of which {{count, number}} public', {count: stats.all.ipubCount}) : '')")
+                .statrow
                     span(data-bind="text: $root.i18n('Comment count:') + ' '")
                     b(data-bind="text: $root.intl.num(stats.all.callCount) + (auth.loggedIn() ? $root.i18n(', of which {{count, number}} deleted', {count: stats.all.callCount - stats.all.cpubCount}) : '')")
                 .statrow

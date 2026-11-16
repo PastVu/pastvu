@@ -18,5 +18,11 @@ module.exports = function (config, appRequire) {
         primary: true,
     });
 
+    // Redis is started by redis-memory-server in globalSetup, which exports its address.
+    if (process.env.TEST_REDIS_HOST) {
+        config.redis.host = process.env.TEST_REDIS_HOST;
+        config.redis.port = process.env.TEST_REDIS_PORT;
+    }
+
     return config;
 };

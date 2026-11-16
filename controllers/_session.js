@@ -9,7 +9,7 @@ import log4js from 'log4js';
 import config from '../config';
 import Utils from '../commons/Utils';
 import * as regionController from './region';
-import { parse as parseCookie } from 'cookie';
+import { parseCookie } from 'cookie';
 import { userSettingsDef, clientParams } from './settings';
 import { Session, SessionArchive } from '../models/Sessions';
 import { User } from '../models/User';
@@ -25,7 +25,7 @@ const SESSION_ANON_LIFE = ms('7d'); // Lifetime of an anonymous user session
 const loopbackIPs = new Set(['127.0.0.1', '::ffff:127.0.0.1', '::1']);
 
 // Method for parsing and checking user-gent
-export const checkUserAgent = Utils.checkUserAgent(config.browsers);
+const checkUserAgent = Utils.checkUserAgent();
 
 // Create cookie session object
 export const createSidCookieObj = (function () {
@@ -882,6 +882,16 @@ export const regetUsersAfterStatsUpdate = function () {
     logger.info(`regetUsersAfterStatsUpdate: ${onlineUserCount} online users have been synced with db and re-populated.`);
 };
 
+/**
+ * Register callbacks of periodic session jobs run by worker instance.
+ *
+ * @param {object} listener JobCompletionListener of 'session' queue.
+ */
+export const registerJobCallbacks = function (listener) {
+    listener.addCallback('archiveExpiredSessions', cleanArchivedSessions);
+    listener.addCallback('calcUserStats', regetUsersAfterStatsUpdate);
+};
+
 // Handler of http-request or websocket-connection for session and usObj create/select
 export async function handleConnection(ip, headers, overHTTP, req) {
     if (!headers || !headers['user-agent']) {
@@ -905,10 +915,6 @@ export async function handleConnection(ip, headers, overHTTP, req) {
 
     // Parse user-agent information
     const browser = checkUserAgent(headers['user-agent']);
-
-    if (browser.badbrowser) {
-        throw new BadParamsError({ code: constantsError.BAD_BROWSER, agent: browser.agent, trace: false }, this.rid);
-    }
 
     const cookieObj = parseCookie(headers.cookie || ''); // Parse cookie
     const sid = cookieObj[SESSION_COOKIE_KEY]; // Get session key from cookie

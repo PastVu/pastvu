@@ -16,7 +16,7 @@ const babelHook = () => {
     require('@babel/register')({ sourceMap: 'inline', ...babelFiles, ...babelConfig });
 };
 
-if (require.main !== module) { // If run.js is required by another module (for example gruntfile)
+if (require.main !== module) { // If run.js is required by another module (for example a build script)
     babelHook();
     module.exports = requireModule;
 } else {

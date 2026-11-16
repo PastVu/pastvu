@@ -27,7 +27,6 @@ const { values: argv } = util.parseArgs({
     strict: false,
 });
 const defaultConfig = require('./default.config');
-const browserConfig = require('./browsers.config');
 const log4js = require('log4js');
 const exitHook = require('async-exit-hook');
 
@@ -40,7 +39,7 @@ function execConfig(configPath, defaultConfig) {
     const requireBind = require.bind(module);
     const alterConfig = require(configPath);
 
-    return browserConfig(alterConfig(defaultConfig, requireBind), requireBind);
+    return alterConfig(defaultConfig, requireBind);
 }
 
 module.exports = (function () {

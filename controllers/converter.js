@@ -5,7 +5,6 @@
 
 import { promises as fsAsync } from 'fs';
 import ms from 'ms';
-import gm from 'gm';
 import _ from 'lodash';
 import path from 'path';
 import util from 'util';
@@ -23,6 +22,7 @@ import { runJob } from './queue';
 import exitHook from 'async-exit-hook';
 
 const execAsync = util.promisify(childProcess.exec);
+const execFileAsync = util.promisify(childProcess.execFile);
 const logger = log4js.getLogger('converter.js');
 const sleep = time => new Promise(resolve => setTimeout(resolve, time));
 
@@ -329,23 +329,11 @@ async function conveyerControl() {
     }
 }
 
-const identifyImage = (src, format) =>
-    new Promise((resolve, reject) => gm(src).identify(format, (err, result) => {
-        if (err) {
-            return reject(err);
-        }
+const identifyImage = async (src, format) => {
+    const { stdout } = await execFileAsync('gm', ['identify', '-ping', '-format', format, src]);
 
-        try {
-            result = JSON.parse(result);
-        } catch (e) {
-            return reject(e);
-        }
-
-        resolve(result);
-    }));
-
-// const writeImage = (dst, gmInstance) =>
-// new Promise((resolve, reject) => gmInstance.write(dst, (err, result) => err ? reject(err) : resolve(result)));
+    return JSON.parse(stdout);
+};
 
 const originIdentifyString = '{"w": "%w", "h": "%h", "f": "%C", "signature": "%#"}';
 

@@ -175,7 +175,6 @@ async function register({ login, email, pass, pass2 }) {
             receiver: { alias: login, email },
             bcc: config.admin.email,
             subject: t('Email confirmation'),
-            head: true,
             body: regTpl({
                 email,
                 login,
@@ -239,7 +238,6 @@ async function recall({ login }) {
         sender: 'noreply',
         receiver: { alias: user.login, email: user.email },
         subject: t('Password recovery request'),
-        head: true,
         body: recallTpl({
             config,
             confirmKey,
