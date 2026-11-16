@@ -169,15 +169,15 @@
 
                     //ko if: auth.iAm && auth.iAm.role() >= 5
                     .fRow
-                        .fName Лимит пользователя:
+                        .fName(data-bind="text: $root.i18n('User Limit:')") //Лимит пользователя:
                         .fVars             
                             label.checkbox-inline
                                 input(type="checkbox", value="1", data-bind="checked: filter.disp.lf, click: flfclick")
-                                span Исчерпан
+                                span(data-bind="text: $root.i18n('Exhausted')") //Исчерпан 
                             div(style="display:inline-block;")
                                 label.checkbox-inline(style="margin-right:0;min-width:auto;")
                                     input(type="checkbox", value="1", data-bind="checked: filter.disp.l, click: flclick")
-                                    = 'Меньше'
+                                    =(data-bind="text: $root.i18n('Less')") //'Меньше'
                                 = ' '
                                 input.form-control.ccount(type="text", data-bind="value: filter.disp.lcount, valueUpdate: 'keyup', event: {keydown: lcountArrow}, attr: {disabled:filter.disp.l.indexOf('1')<0}, css: {lcountSet: filter.disp.lcount()>1 && filter.disp.l.indexOf('1')>=0}", maxlength="4")
                     // /ko
