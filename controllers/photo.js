@@ -314,7 +314,8 @@ export function getNewPhotosLimit(user) {
 export function getNewPhotosLimitCss(user) {
     const limit = getUserPhotosLimitMax(user);
 
-    return limit <= 10 ? 'photoLimit1' : limit <= 20 ? 'photoLimit2' : limit <= 75 ? 'photoLimit3' : '';
+    //return limit <= 10 ? 'photoLimit1' : limit <= 20 ? 'photoLimit2' : limit <= 75 ? 'photoLimit3' : '';
+    return limit <= 20 ? 'photoLimit1' : '';
 }
 
 export function getUserPhotosLimitMax(user) {
