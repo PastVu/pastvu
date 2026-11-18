@@ -98,6 +98,12 @@ function render(modules, options) {
      * Уничтожаем не глобальные модули, которых нет в новом списке
      */
     _.forOwn(repository, function (existingVM, existingVMKey) {
+        // forOwn iterates a snapshot of keys; destroying a module earlier in this loop also
+        // destroys its children, removing them from the repository before they are reached.
+        if (!existingVM) {
+            return;
+        }
+
         if (!existingVM.global && existingVM.parentModule === options.parent && existingVM.level === options.level) {
             let savesExisting = false;
             let sameContainer = false;
