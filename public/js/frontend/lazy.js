@@ -3,6 +3,9 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
+import i18n from 'i18n';
+import noties from 'noties';
+
 const modules = {
     'm/_moduleCliche': () => import('m/_moduleCliche'),
     'm/admin/conveyer': () => import('m/admin/conveyer'),
@@ -69,7 +72,7 @@ const modules = {
 
 export function loadModules(ids, callback) {
     // Sequential loading preserves ordering for plugins that extend other plugins.
-    return ids.reduce((promise, id) => promise.then(async values => {
+    const loading = ids.reduce((promise, id) => promise.then(async values => {
         if (!Object.hasOwn(modules, id)) {
             throw new Error('Unknown frontend module: ' + id);
         }
@@ -77,5 +80,12 @@ export function loadModules(ids, callback) {
         values.push((await modules[id]()).default);
 
         return values;
-    }), Promise.resolve([])).then(values => callback(...values));
+    }), Promise.resolve([]));
+
+    // Report failed chunk or stylesheet loads (e.g. after a deploy or network loss) instead of
+    // leaving a silent unhandled rejection. Errors thrown by the callback still propagate as before.
+    return loading.then(values => callback(...values), error => {
+        console.error('Unable to load frontend modules', ids, error);
+        noties.error({ message: i18n('Unable to load part of the page. Please refresh the page and try again') });
+    });
 }
