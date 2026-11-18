@@ -102,35 +102,127 @@ export default result === undefined ? ${filename.includes('/highstock/') ? 'wind
 `;
 }
 
-async function buildAssets({ outdir = 'public-build', hash = 'development', minify = true, env = minify ? 'production' : 'development' } = {}) {
+const styleRoot = path.resolve('public/style');
+const entries = {
+    'module/appMain': 'public/js/module/appMain.js',
+    'module/appAdmin': 'public/js/module/appAdmin.js',
+};
+
+// Recreate the output tree with static files; JS and CSS are written by the build itself.
+async function prepareOutput(outdir) {
     await fs.rm(outdir, { recursive: true, force: true });
     await fs.cp('public', outdir, {
         recursive: true,
-        filter: source => !source.startsWith(path.join('public', 'js')) && !source.endsWith('.less'),
+        filter: source => source !== path.join('public', 'js') && !source.startsWith(path.join('public', 'js') + path.sep) &&
+            !source.endsWith('.less'),
     });
+}
 
-    for await (const file of require('node:fs').globSync('**/*.less', { cwd: 'public/style' })) {
-        if (/^(bs|fonts)\//.test(file)) {
-            continue;
-        }
+const mtime = async file => (await fs.stat(file).catch(() => null))?.mtimeMs ?? Infinity;
 
-        const filename = path.resolve('public/style', file);
-        const result = await less.render(await fs.readFile(filename, 'utf8'), {
-            filename, compress: minify, strictImports: true,
-            sourceMap: { outputSourceFiles: true, sourceMapURL: path.basename(file, '.less') + '.css.map' },
-        });
-        const dest = path.join(outdir, 'style', file.replace(/\.less$/, '.css'));
+async function isFresh(state) {
+    if (!state) {
+        return false;
+    }
 
-        await fs.mkdir(path.dirname(dest), { recursive: true });
-        await fs.writeFile(dest, result.css);
-        if (result.map) {
-            await fs.writeFile(dest + '.map', result.map);
+    for (const dep of state.deps) {
+        if (await mtime(dep) > state.time) {
+            return false;
         }
     }
+
+    return true;
+}
+
+// LESS compiler that remembers each stylesheet's imports, so later runs recompile
+// only the stylesheets whose source or imported files have changed.
+function createStyles({ outdir, minify }) {
+    const compiled = new Map();
+
+    async function compile() {
+        const errors = [];
+        let count = 0;
+
+        for (const file of require('node:fs').globSync('**/*.less', { cwd: styleRoot })) {
+            const filename = path.join(styleRoot, file);
+
+            if (/^(bs|fonts)\//.test(file) || await isFresh(compiled.get(filename))) {
+                continue;
+            }
+
+            const time = Date.now();
+
+            try {
+                const result = await less.render(await fs.readFile(filename, 'utf8'), {
+                    filename, compress: minify, strictImports: true,
+                    sourceMap: { outputSourceFiles: true, sourceMapURL: path.basename(file, '.less') + '.css.map' },
+                });
+                const dest = path.join(outdir, 'style', file.replace(/\.less$/, '.css'));
+
+                await fs.mkdir(path.dirname(dest), { recursive: true });
+                await fs.writeFile(dest, result.css);
+                if (result.map) {
+                    await fs.writeFile(dest + '.map', result.map);
+                }
+
+                compiled.set(filename, { time, deps: [filename, ...result.imports.map(dep => path.resolve(dep))] });
+                count++;
+            } catch (error) {
+                compiled.delete(filename);
+                errors.push({
+                    text: error.message,
+                    location: error.filename ? {
+                        file: path.relative('.', error.filename), line: error.line, column: error.column,
+                        lineText: error.extract?.[1] ?? '',
+                    } : null,
+                });
+            }
+        }
+
+        return { count, errors };
+    }
+
+    // Every LESS source and directory, so the watcher also notices imports and new files.
+    function watchList() {
+        const files = require('node:fs').globSync('**/*.less', { cwd: styleRoot }).map(file => path.join(styleRoot, file));
+        const dirs = [styleRoot, ...require('node:fs').globSync('**/', { cwd: styleRoot }).map(dir => path.join(styleRoot, dir))];
+
+        return { watchFiles: files, watchDirs: [...new Set(dirs)] };
+    }
+
+    return { compile, watchList };
+}
+
+function esbuildOptions({ outdir, hash, minify, env, styles, onEnd }) {
+    const vendorCache = new Map();
+    const templateCache = new Map();
 
     const plugin = {
         name: 'pastvu-assets',
         setup(build) {
+            // LESS is outside the JS graph, so compile it before each build. Stylesheet
+            // modules below read the compiled CSS to fingerprint their URLs.
+            build.onStart(async () => {
+                const { count, errors } = await styles.compile();
+
+                if (count) {
+                    console.log(`Compiled ${count} stylesheet${count === 1 ? '' : 's'}`);
+                }
+
+                return { errors };
+            });
+            if (onEnd) {
+                build.onEnd(onEnd);
+            }
+
+            build.onResolve({ filter: /\.js$/ }, args => {
+                if (args.kind !== 'entry-point') {
+                    return undefined;
+                }
+
+                // Attach LESS sources to the entry points so esbuild's watcher rebuilds on style edits.
+                return { path: path.resolve(args.path), ...styles.watchList() };
+            });
             build.onResolve({ filter: /\?raw$/ }, args => {
                 const id = args.path.slice(0, -4);
                 const filename = resolveModule(id, args.importer).replace(/\.js$/, '');
@@ -141,18 +233,28 @@ async function buildAssets({ outdir = 'public-build', hash = 'development', mini
                 // Templates remain HTML strings consumed by the existing doT renderer.
                 const relative = path.relative(path.resolve('public/tpl'), args.path);
                 const filename = path.resolve('views/module', relative);
-                const template = args.path.endsWith('.pug');
-                const content = template ? pug.renderFile(filename, {
-                    config: { env, hash }, pretty: false,
-                }) : await fs.readFile(args.path, 'utf8');
+                if (!args.path.endsWith('.pug')) {
+                    return { contents: await fs.readFile(args.path, 'utf8'), loader: 'text', watchFiles: [args.path] };
+                }
 
-                return { contents: content, loader: 'text', watchFiles: [template ? filename : args.path] };
+                // Rendering every template on each rebuild is slow; reuse output until a source changes.
+                let cached = templateCache.get(filename);
+
+                if (!await isFresh(cached)) {
+                    const time = Date.now();
+                    const render = pug.compileFile(filename);
+
+                    cached = { time, deps: [filename, ...render.dependencies], contents: render({ config: { env, hash } }) };
+                    templateCache.set(filename, cached);
+                }
+
+                return { contents: cached.contents, loader: 'text', watchFiles: cached.deps };
             });
             build.onResolve({ filter: /\.css$/ }, args => ({
                 path: resolveModule(args.path, args.importer).replace(/\.js$/, ''), namespace: 'stylesheet',
             }));
             build.onLoad({ filter: /.*/, namespace: 'stylesheet' }, async args => {
-                const relative = path.relative(path.resolve('public/style'), args.path);
+                const relative = path.relative(styleRoot, args.path);
                 const contents = await fs.readFile(path.join(outdir, 'style', relative));
                 const digest = crypto.createHash('sha256').update(contents).digest('hex').slice(0, 12);
                 const url = '/style/' + relative.split(path.sep).join('/') + '?v=' + digest;
@@ -173,70 +275,88 @@ export default await ready;`, loader: 'js' };
                     return undefined;
                 }
 
-                return { contents: vendorModule(source, args.path), loader: 'js', resolveDir: path.dirname(args.path) };
+                // Plugin results are not cached by esbuild between rebuilds; wrapping parses with Babel.
+                let cached = vendorCache.get(args.path);
+
+                if (cached?.source !== source) {
+                    cached = { source, contents: vendorModule(source, args.path) };
+                    vendorCache.set(args.path, cached);
+                }
+
+                return { contents: cached.contents, loader: 'js', resolveDir: path.dirname(args.path) };
             });
         },
     };
 
-    const result = await esbuild.build({
-        entryPoints: {
-            'module/appMain': 'public/js/module/appMain.js',
-            'module/appAdmin': 'public/js/module/appAdmin.js',
-        },
+    return {
+        entryPoints: entries,
         outdir: path.join(outdir, 'js'), bundle: true, splitting: true, format: 'esm',
         target: browserslistToEsbuild(), minify, sourcemap: true, metafile: true,
         chunkNames: 'chunks/[name]-[hash]', assetNames: 'assets/[name]-[hash]',
         banner: { js: header }, plugins: [plugin], logLevel: 'silent',
-    });
-
-    for (const warning of await esbuild.formatMessages(result.warnings, { kind: 'warning', color: false })) {
-        console.warn(warning);
-    }
-
-    console.log(`Frontend built: ${Object.keys(result.metafile.outputs).length} files`);
-    await fs.writeFile(path.join(outdir, 'js/metafile.json'), JSON.stringify(result.metafile, null, 2));
+    };
 }
 
-module.exports = { buildAssets };
+async function report(result, outdir) {
+    for (const message of await esbuild.formatMessages(result.warnings, { kind: 'warning', color: false })) {
+        console.warn(message);
+    }
+
+    if (result.metafile) {
+        console.log(`Frontend built: ${Object.keys(result.metafile.outputs).length} files`);
+        await fs.writeFile(path.join(outdir, 'js/metafile.json'), JSON.stringify(result.metafile, null, 2));
+    }
+}
+
+async function buildAssets({ outdir = 'public-build', hash = 'development', minify = true, env = minify ? 'production' : 'development' } = {}) {
+    await prepareOutput(outdir);
+
+    const styles = createStyles({ outdir, minify });
+
+    await report(await esbuild.build(esbuildOptions({ outdir, hash, minify, env, styles })), outdir);
+}
+
+// Incremental development build: esbuild watches JS, templates, and LESS sources and
+// rebuilds into the existing output, which is never wiped while the watcher runs.
+async function watchAssets({ outdir = 'public-build', hash = 'development', minify = false, env = 'development' } = {}) {
+    await prepareOutput(outdir);
+
+    const styles = createStyles({ outdir, minify });
+    const ctx = await esbuild.context(esbuildOptions({
+        outdir, hash, minify, env, styles,
+        onEnd: async result => {
+            if (result.errors.length) {
+                for (const message of await esbuild.formatMessages(result.errors, { kind: 'error', color: false })) {
+                    console.error(message);
+                }
+
+                console.error(`Frontend build failed with ${result.errors.length} error(s); watching for changes`);
+
+                return;
+            }
+
+            await report(result, outdir);
+        },
+    }));
+
+    await ctx.watch();
+    console.log('Watching frontend sources for changes');
+
+    return ctx;
+}
+
+module.exports = { buildAssets, watchAssets };
 
 if (require.main === module) {
-    const watch = process.argv.includes('--watch');
-    let running = false;
-    let pending = false;
-    let timer;
-    const rebuild = async () => {
-        if (running) {
-            pending = true;
-
-            return;
-        }
-
-        running = true;
-
-        try {
-            await buildAssets({ minify: !watch });
-        } catch (error) {
+    if (process.argv.includes('--watch')) {
+        watchAssets().catch(error => {
             console.error(error);
-            if (!watch) {
-                process.exitCode = 1;
-            }
-        } finally {
-            running = false;
-            if (pending) {
-                pending = false;
-                rebuild();
-            }
-        }
-    };
-
-    rebuild();
-
-    if (watch) {
-        for (const dir of ['public/js', 'public/style', 'views/module']) {
-            require('node:fs').watch(dir, { recursive: true }, () => {
-                clearTimeout(timer);
-                timer = setTimeout(rebuild, 150);
-            });
-        }
+            process.exitCode = 1;
+        });
+    } else {
+        buildAssets().catch(error => {
+            console.error(error);
+            process.exitCode = 1;
+        });
     }
 }

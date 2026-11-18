@@ -17,8 +17,14 @@ npm run watch:assets
 docker compose exec app npm run watch:assets
 ```
 
-The watcher rebuilds JavaScript, module Pug templates, and LESS. Refresh the page
-after a rebuild; there is no hot module replacement. `npm run build:assets`
+The watcher uses an esbuild context and rebuilds incrementally into the existing
+`public-build/`, which it clears only once at startup. esbuild polls the JavaScript,
+module Pug templates, and LESS sources (including imported LESS files and new files
+in `public/style/`), so it also works on Docker bind mounts without file system events.
+Only stylesheets whose source or imports changed are recompiled. Build errors are
+reported and the watcher keeps running. Restart it after changing `bin/`
+configuration, `.browserslistrc`, or static files such as images and fonts. Refresh
+the page after a rebuild; there is no hot module replacement. `npm run build:assets`
 produces a standalone minified frontend in `public-build/`.
 
 ## Production
