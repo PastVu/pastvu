@@ -34,8 +34,7 @@ The two module-script entry URLs remain `/js/module/appMain.js` and
 hash in their query string. Shared and lazy JavaScript chunks use content hashes
 in their filenames. Feature CSS uses a content hash in its URL. Deploy the entire
 `public/` tree together, including `js/chunks/`, stylesheet files, fonts, images,
-and adjacent JS/CSS source maps. The Sentry sourcemap upload command still targets
-`appBuild/`.
+and adjacent JS/CSS source maps.
 
 LESS compiles directly to the output tree, without writing generated CSS into
 source directories. Pug module templates compile to HTML strings at build time;
@@ -54,10 +53,11 @@ the old startup connection barrier.
 
 ## Compatibility and limits
 
-- The frontend targets ES2022 and requires native module scripts, dynamic import,
-  and top-level await. Older browsers covered by the historical `.browserslistrc`
-  are no longer supported by this frontend build; that file is not esbuild's
-  target configuration.
+- esbuild targets come from `.browserslistrc` via `browserslist-to-esbuild`.
+  The frontend requires native module scripts, dynamic import, and top-level
+  await (Chrome/Edge/Firefox 89, Safari 15), so the query must not reach below
+  those versions. esbuild fails the build if it does. The `BROWSERSLIST`
+  environment variable overrides the file for experiments.
 - Vendored libraries retain their upstream AMD/UMD sources. A build adapter
   statically imports their dependencies and gives each wrapper an isolated local
   registration function. There is no global `define`, `require`, RequireJS loader,

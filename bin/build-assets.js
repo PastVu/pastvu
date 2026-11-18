@@ -10,6 +10,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const esbuild = require('esbuild-wasm');
+const browserslistToEsbuild = require('browserslist-to-esbuild').default;
 const babel = require('@babel/core');
 const less = require('less');
 const pug = require('pug');
@@ -183,7 +184,7 @@ export default await ready;`, loader: 'js' };
             'module/appAdmin': 'public/js/module/appAdmin.js',
         },
         outdir: path.join(outdir, 'js'), bundle: true, splitting: true, format: 'esm',
-        target: 'es2022', minify, sourcemap: true, metafile: true,
+        target: browserslistToEsbuild(), minify, sourcemap: true, metafile: true,
         chunkNames: 'chunks/[name]-[hash]', assetNames: 'assets/[name]-[hash]',
         banner: { js: header }, plugins: [plugin], logLevel: 'silent',
     });
