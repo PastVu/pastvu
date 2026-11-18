@@ -67,9 +67,10 @@ the old startup connection barrier.
 - The vendored underscore.string `wrap` helper needed local variable declarations
   because ES modules execute in strict mode. This is a compatibility fix, not an
   intentional behavior change.
-- esbuild reports pre-existing warnings in geocoordsparser (`== NaN`) and
-  knockout.mapping (`typeof … !== 'array'`). These library bugs remain outside
-  this tooling migration.
+- Two vendored libraries carry small local patches for esbuild warnings:
+  geocoordsparser uses `Number.isNaN` instead of the always-false `== NaN`, and
+  knockout.mapping drops a `typeof … != "array"` clause that was always true.
+  Neither changes behaviour PastVu relies on. Keep them when updating either library.
 - The unused `m/common/dummy` scaffold still references missing template/style
   files. It is intentionally absent from the lazy allowlist.
 - Google/Yandex APIs, API keys, external script failures, and all editor/upload
