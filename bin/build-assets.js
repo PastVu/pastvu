@@ -15,6 +15,7 @@ const babel = require('@babel/core');
 const less = require('less');
 const pug = require('pug');
 const aliases = require('./frontend-paths');
+const shimConfig = require('./frontend-shims');
 
 const root = path.resolve('public/js');
 const header = '/** Built from the PastVu frontend sources. See COPYING for license. */';
@@ -34,6 +35,17 @@ function resolveModule(id, importer = path.join(root, '_mainConfig.js')) {
 
     return path.extname(filename) === '.js' ? filename : filename + '.js';
 }
+
+// Shims keyed by resolved filename, so lookups do not depend on how a library was imported.
+const shims = new Map(Object.entries(shimConfig).map(([id, shim]) => {
+    const filename = resolveModule(id);
+
+    if (!require('node:fs').existsSync(filename)) {
+        throw new Error(`bin/frontend-shims.js: '${id}' does not resolve to a file (${path.relative('.', filename)})`);
+    }
+
+    return [filename, shim];
+}));
 
 // Vendored UMD/AMD libraries retain their upstream sources. Statically import their
 // declared dependencies at build time; the factory executes in an isolated scope.
@@ -58,27 +70,20 @@ function vendorModule(source, filename) {
         },
     });
 
-    // Browser-only plugins depend on globals; imports enforce execution order.
-    if (!deps.size && !source.includes('define(')) {
-        if (/jquery|bootstrap|trumbowyg|highstock/.test(filename)) {
-            deps.add('jquery');
-        }
+    // Browser-only plugins depend on globals and declare nothing; their shim imports
+    // the dependencies first to enforce execution order.
+    const shim = shims.get(filename);
+    const relative = path.relative('.', filename);
 
-        if (filename.includes('/trumbowyg/plugins/') || filename.includes('/trumbowyg/langs/')) {
-            deps.add('trumbowyg');
+    if (source.includes('define(')) {
+        if (shim) {
+            throw new Error(`${relative} declares its dependencies with define(); remove it from bin/frontend-shims.js`);
         }
-
-        if (filename.includes('resizimg')) {
-            deps.add('jquery-plugins/jquery-resizable.min');
-        }
-
-        if (filename.includes('/leaflet/plugins/')) {
-            deps.add('leaflet');
-        }
-
-        if (filename.includes('tokenfield')) {
-            deps.add('jquery-plugins/typeahead.bundle');
-        }
+    } else if (!shim) {
+        throw new Error(`${relative} is a vendored library without define() or ES module syntax; ` +
+            'declare its dependencies in bin/frontend-shims.js');
+    } else {
+        shim.deps.forEach(dep => deps.add(dep));
     }
 
     const imports = [...deps].filter(id => !['exports', 'module', 'require'].includes(id));
@@ -98,7 +103,7 @@ register.amd = {};
 (function(define, module, exports) {
 ${source}
 }).call(window, register, undefined, undefined);
-export default result === undefined ? ${filename.includes('/highstock/') ? 'window.Highcharts' : 'vendorExports'} : result;
+export default result === undefined ? ${shim?.exports ? 'window.' + shim.exports : 'vendorExports'} : result;
 `;
 }
 
