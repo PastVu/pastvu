@@ -29,6 +29,8 @@ const copyPatterns = [
     'config/package.json',
     'views/app.pug', 'views/api/**', 'views/includes/**', 'views/mail/**', 'views/status/**', 'views/diff/**',
     'api.js', 'package.json', 'README',
+    // Server-side i18n reads the translations; the frontend bundles its own copy.
+    'public/js/lang/*.json',
 ];
 const babelPatterns = [
     '@(app|downloader|uploader|sitemap|notifier|worker).js',
