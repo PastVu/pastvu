@@ -96,7 +96,7 @@ Validated on 2026-11-15:
 - Browser smoke tests against the real `localhost:3000` backend: main map,
   lazy About dialog, authenticated admin dashboard, lazy news editor (including
   Trumbowyg add-ons and date picker), and the photo upload dialog. No JavaScript
-  errors; the existing Apple mobile-web-app meta deprecation warning remains.
+  errors.
 - Main/About and admin news-editor checks also pass with minified production
   JS/CSS served from `appBuild/public/` through a temporary local static server,
   while keeping HTML, authentication, and Socket.IO on the real backend.
