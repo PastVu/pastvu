@@ -723,7 +723,7 @@
         function ignoreDuplicates() {
             return false;
         }
-    })(this);
+    })(window);
     var html = function() {
         return {
             wrapper: '<span class="twitter-typeahead"></span>',

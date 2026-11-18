@@ -77,6 +77,11 @@ the old startup connection barrier.
   geocoordsparser uses `Number.isNaN` instead of the always-false `== NaN`, and
   knockout.mapping drops a `typeof … != "array"` clause that was always true.
   Neither changes behaviour PastVu relies on. Keep them when updating either library.
+- Vendored code runs as ES modules, which are always strict, so `this` inside a
+  function called without a receiver is `undefined` rather than `window`. The
+  build wrapper binds only the top-level `this` to `window`. typeahead.bundle
+  passed `this` from such a function to register the global `Bloodhound`; it now
+  passes `window`. Other vendored libraries already fall back to the global object.
 - The unused `m/common/dummy` scaffold still references missing template/style
   files. It is intentionally absent from the lazy allowlist.
 - Google/Yandex APIs, API keys, external script failures, and all editor/upload
