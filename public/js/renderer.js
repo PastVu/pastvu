@@ -152,6 +152,10 @@ function render(modules, options) {
     /**
      * Создаем новые модули
      */
+    // Modules load in parallel but are created in the listed order: some read others from
+    // the repository while being created (e.g. top uses the global auth module).
+    let created = Promise.resolve();
+
     _.forOwn(modules, function (item) {
         const dfd = $.Deferred();
 
@@ -167,7 +171,13 @@ function render(modules, options) {
             item.container = item.modal.$curtain[0].querySelector('.neoModalContainer');
         }
 
-        loadModules([item.module], function (VM) {
+        const loaded = loadModules([item.module], VM => VM);
+
+        created = created.then(() => loaded).then(function (VM) {
+            if (!VM) {
+                return; // Failed to load; loadModules already reported it.
+            }
+
             if (replacedContainers[item.container]) {
                 repository[replacedContainers[item.container]].destroy();
             }
@@ -194,6 +204,9 @@ function render(modules, options) {
 
             promisesWhenNew[item.module] = true;
             dfd.resolve(vm);
+        }).catch(error => {
+            // Surface the error as uncaught without blocking the modules listed after this one.
+            reportError(error);
         });
     });
 
