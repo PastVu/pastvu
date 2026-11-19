@@ -18,6 +18,7 @@ const aliases = require('./frontend-paths');
 const shimConfig = require('./frontend-shims');
 
 const root = path.resolve('public/js');
+const npmPackages = new Set(['underscore.string']);
 const header = '/** Built from the PastVu frontend sources. See COPYING for license. */';
 
 function resolveModule(id, importer = path.join(root, '_mainConfig.js')) {
@@ -272,8 +273,16 @@ const ready = new Promise((resolve, reject) => {
 document.head.appendChild(link);
 export default await ready;`, loader: 'js' };
             });
-            build.onResolve({ filter: /^[\w@]/ }, args => ({ path: resolveModule(args.path, args.importer) }));
+            build.onResolve({ filter: /^[\w@]/ }, args => {
+                if (args.importer.startsWith(root + path.sep) && !npmPackages.has(args.path)) {
+                    return { path: resolveModule(args.path, args.importer) };
+                }
+            });
             build.onLoad({ filter: /\/lib\/.*\.js$/ }, async args => {
+                if (!args.path.startsWith(path.join(root, 'lib') + path.sep)) {
+                    return undefined;
+                }
+
                 const source = await fs.readFile(args.path, 'utf8');
 
                 if (/^import |^export /m.test(source) || args.path.endsWith('/JSExtensions.js')) {

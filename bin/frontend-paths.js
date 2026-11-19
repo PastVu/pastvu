@@ -18,7 +18,6 @@ module.exports = {
     "Browser": "lib/Browser",
     "lodash": "lib/lodash",
     "underscore": "lib/lodash",
-    "underscore.string": "lib/underscore.string",
     "knockout": "lib/knockout/knockout",
     "knockout.extends": "lib/knockout/extends",
     "knockout.mapping": "lib/knockout/knockout.mapping",
