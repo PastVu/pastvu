@@ -1022,5 +1022,6 @@
     "Restore the photo to the state of {{stamp}}?": "Восстановить историю на состояние {{stamp}}?",
     "The selected version matches the current state": "Выбранная версия совпадает с текущим состоянием",
     "History restored": "История восстановлена",
-    "Restored to the version of {{date}}": "Восстановлено к версии от {{date}}"
+    "Restored to the version of {{date}}": "Восстановлено к версии от {{date}}",
+    "Unable to load part of the page. Please refresh the page and try again": "Не удалось загрузить часть страницы. Обновите страницу и попробуйте снова"
 }

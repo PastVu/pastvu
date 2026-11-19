@@ -50,7 +50,6 @@ module.exports = [
             'public/js/lib/lodash.js',
             'public/js/lib/moment/**',
             'public/js/lib/PubSub.js',
-            'public/js/lib/require/**',
             'public/js/lib/socket.io.min.js',
             'public/js/lib/trumbowyg/**',
             'public/js/lib/turf.min.js',

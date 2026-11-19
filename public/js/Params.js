@@ -7,67 +7,70 @@
 /**
  * Params
  */
-define(['jquery', 'underscore', 'socket!', 'Utils', 'knockout', 'knockout.mapping'], function ($, _, socket, Utils, ko, koMapping) {
-    'use strict';
+import $ from 'jquery';
+import _ from 'underscore';
+import socket from 'socket';
+import 'Utils';
+import 'knockout';
+import koMapping from 'knockout.mapping';
 
-    const head = document.head;
-    const $window = $(window);
+const head = document.head;
+const $window = $(window);
 
-    let Params = {
-        window: {
-            w: $window.width(),
-            h: $window.height(),
-            head: 35, // Top bar height
-            square: null,
-        },
-        settings: {
-            appName: head.dataset && head.dataset.appname || head.getAttribute('data-appname') || 'Main',
+let Params = {
+    window: {
+        w: $window.width(),
+        h: $window.height(),
+        head: 35, // Top bar height
+        square: null,
+    },
+    settings: {
+        appName: head.dataset && head.dataset.appname || head.getAttribute('data-appname') || 'Main',
 
-            USE_OSM_API: true,
-            USE_GOOGLE_API: true,
-            USE_YANDEX_API: true,
+        USE_OSM_API: true,
+        USE_GOOGLE_API: true,
+        USE_YANDEX_API: true,
 
-            FIRST_CLIENT_WORK_ZOOM: 17,
-            CLUSTERING_ON_CLIENT: true,
-            CLUSTERING_ON_CLIENT_PIX_DELTA: { 17: 25, 18: 20, 19: 15, 20: 5, 'default': 15 },
+        FIRST_CLIENT_WORK_ZOOM: 17,
+        CLUSTERING_ON_CLIENT: true,
+        CLUSTERING_ON_CLIENT_PIX_DELTA: { 17: 25, 18: 20, 19: 15, 20: 5, 'default': 15 },
 
-            REGISTRATION_ALLOWED: false,
-        },
-    };
+        REGISTRATION_ALLOWED: false,
+    },
+};
 
-    Params.window.square = Params.window.w * Params.window.h;
-    updateSettings(init.settings, true);
+Params.window.square = Params.window.w * Params.window.h;
+updateSettings(init.settings, true);
 
-    // Create Params view model, define properties that will not be observable
-    // when view model is converted to JS object.
-    const noObserve = ['window.head', 'settings.lang', 'settings.publicApiKeys', 'settings.analytics', 'settings.docs', 'settings.env', 'settings.locDef', 'settings.cdn'];
+// Create Params view model, define properties that will not be observable
+// when view model is converted to JS object.
+const noObserve = ['window.head', 'settings.lang', 'settings.publicApiKeys', 'settings.analytics', 'settings.docs', 'settings.env', 'settings.locDef', 'settings.cdn'];
 
-    Params = koMapping.fromJS(Params, { copy: noObserve });
+Params = koMapping.fromJS(Params, { copy: noObserve });
 
-    // Пересчитываем размеры при ресайзе окна
-    $window.on('resize', _.debounce(function () {
-        const w = $window.width();
-        const h = $window.height();
+// Пересчитываем размеры при ресайзе окна
+$window.on('resize', _.debounce(function () {
+    const w = $window.width();
+    const h = $window.height();
 
-        Params.window.w(w);
-        Params.window.h(h);
-        Params.window.square(w * h);
-    }, 50));
+    Params.window.w(w);
+    Params.window.h(h);
+    Params.window.square(w * h);
+}, 50));
 
-    // Обновляем настройки и в случае наличия поддоменов формируем их массив
-    function updateSettings(settings, plain) {
-        if (plain) {
-            _.merge(Params.settings, settings);
-        } else {
-            // Update Params.settings view model with settings returned by the server.
-            koMapping.fromJS({ settings: settings }, Params);
-        }
+// Обновляем настройки и в случае наличия поддоменов формируем их массив
+function updateSettings(settings, plain) {
+    if (plain) {
+        _.merge(Params.settings, settings);
+    } else {
+        // Update Params.settings view model with settings returned by the server.
+        koMapping.fromJS({ settings: settings }, Params);
     }
+}
 
-    // Подписываемся на получение новых первоначальных данных (пользователь, куки, настройки)
-    socket.on('takeInitData', function (data) {
-        updateSettings(data.p); // Обновляем настройки
-    });
-
-    return Params;
+// Подписываемся на получение новых первоначальных данных (пользователь, куки, настройки)
+socket.on('takeInitData', function (data) {
+    updateSettings(data.p); // Обновляем настройки
 });
+
+export default Params;

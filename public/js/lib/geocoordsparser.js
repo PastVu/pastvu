@@ -470,7 +470,7 @@ function _typeof(obj) {
       function coordsCloseEnough(coordsToTest) {
         if (coordsToTest.includes(',')) {
           var coords = coordsToTest.split(',');
-          if (Number(coords[0]) == NaN || Number(coords[1]) == NaN) {
+          if (Number.isNaN(Number(coords[0])) || Number.isNaN(Number(coords[1]))) {
             throw new Error("coords are not valid decimals");
           } else {
             return decimalsCloseEnough(this.decimalLatitude, Number(coords[0])) && decimalsCloseEnough(this.decimalLongitude, coords[1]); //this here will be the converted coordinates object

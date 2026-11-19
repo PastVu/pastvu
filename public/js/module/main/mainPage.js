@@ -3,90 +3,98 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-define(['underscore', 'Utils', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'i18n', 'model/Photo', 'text!tpl/main/mainPage.pug', 'css!style/main/mainPage'], function (_, Utils, P, ko, ko_mapping, Cliche, globalVM, i18n, Photo, pug) {
-    'use strict';
+import 'underscore';
+import Utils from 'Utils';
+import P from 'Params';
+import ko from 'knockout';
+import 'knockout.mapping';
+import Cliche from 'm/_moduleCliche';
+import globalVM from 'globalVM';
+import i18n from 'i18n';
+import 'model/Photo';
+import pug from 'tpl/main/mainPage.pug?raw';
+import 'style/main/mainPage.css';
 
-    return Cliche.extend({
-        pug: pug,
-        create: function () {
-            this.map = {};
-            this.childs = [
-                {
-                    module: 'm/map/map',
-                    container: '#mapContainer',
-                    options: {},
-                    ctx: this,
-                    callback: function (vm) {
-                        this.childModules[vm.id] = vm;
-                        this.map = vm;
-                        this.map.commentFeedShown(this.isCommentFeedShownByDefault());
-                    },
+export default Cliche.extend({
+    pug: pug,
+    create: function () {
+        this.map = {};
+        this.childs = [
+            {
+                module: 'm/map/map',
+                container: '#mapContainer',
+                options: {},
+                ctx: this,
+                callback: function (vm) {
+                    this.childModules[vm.id] = vm;
+                    this.map = vm;
+                    this.map.commentFeedShown(this.isCommentFeedShownByDefault());
                 },
-                {
-                    module: 'm/main/commentsFeed',
-                    container: '#commentsFeed',
-                    options: {},
-                    ctx: this,
-                    callback: function (vm) {
-                        this.childModules[vm.id] = vm;
-                    },
+            },
+            {
+                module: 'm/main/commentsFeed',
+                container: '#commentsFeed',
+                options: {},
+                ctx: this,
+                callback: function (vm) {
+                    this.childModules[vm.id] = vm;
                 },
-                {
-                    module: 'm/main/bottomPanel',
-                    container: '#bottomPanel',
-                    options: {},
-                    ctx: this,
-                    callback: function (vm) {
-                        this.childModules[vm.id] = vm;
-                    },
+            },
+            {
+                module: 'm/main/bottomPanel',
+                container: '#bottomPanel',
+                options: {},
+                ctx: this,
+                callback: function (vm) {
+                    this.childModules[vm.id] = vm;
                 },
-            ];
+            },
+        ];
 
-            this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
-            ko.applyBindings(globalVM, this.$dom[0]);
+        this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
+        ko.applyBindings(globalVM, this.$dom[0]);
 
-            // When comments container is toggled, update state and map bounds.
-            $('#commentsFeed').on('hidden.bs.collapse', function () {
-                this.map.commentFeedShown(false);
-                Utils.setLocalStorage('page.showCommentsFeed', false);
-            }.bind(this));
-            $('#commentsFeed').on('shown.bs.collapse', function () {
-                this.map.commentFeedShown(true);
-                Utils.setLocalStorage('page.showCommentsFeed', true);
-            }.bind(this));
+        // When comments container is toggled, update state and map bounds.
+        $('#commentsFeed').on('hidden.bs.collapse', function () {
+            this.map.commentFeedShown(false);
+            Utils.setLocalStorage('page.showCommentsFeed', false);
+        }.bind(this));
+        $('#commentsFeed').on('shown.bs.collapse', function () {
+            this.map.commentFeedShown(true);
+            Utils.setLocalStorage('page.showCommentsFeed', true);
+        }.bind(this));
 
-            this.show();
-        },
-        show: function () {
-            Utils.title.setTitle({ title: i18n('Home') });
-            this.sizesCalc();
-            globalVM.func.showContainer(this.$container);
-            this.showing = true;
-            gtag('event', 'page_view');
-        },
-        hide: function () {
-            globalVM.func.hideContainer(this.$container);
-            this.showing = false;
-        },
-        sizesCalc: function () {
-            this.mapSize();
-        },
-        mapSize: function () {
-            this.$dom.find('#mapContainer').css({ height: P.window.h() - (this.$container.offset().top || 33) - 29 >> 0 });
-        },
-        isCommentFeedShownByDefault: function () {
-            // A 'comments' query parameter (set via "Link to current map position") takes
-            // precedence, so a shared link reproduces the feed state regardless of the
-            // recipient's stored preference.
-            const commentsParam = globalVM.router.params().comments;
+        this.show();
+    },
+    show: function () {
+        Utils.title.setTitle({ title: i18n('Home') });
+        this.sizesCalc();
+        globalVM.func.showContainer(this.$container);
+        this.showing = true;
+        gtag('event', 'page_view');
+    },
+    hide: function () {
+        globalVM.func.hideContainer(this.$container);
+        this.showing = false;
+    },
+    sizesCalc: function () {
+        this.mapSize();
+    },
+    mapSize: function () {
+        this.$dom.find('#mapContainer').css({ height: P.window.h() - (this.$container.offset().top || 33) - 29 >> 0 });
+    },
+    isCommentFeedShownByDefault: function () {
+        // A 'comments' query parameter (set via "Link to current map position") takes
+        // precedence, so a shared link reproduces the feed state regardless of the
+        // recipient's stored preference.
+        const commentsParam = globalVM.router.params().comments;
 
-            if (commentsParam !== undefined) {
-                return commentsParam === '1' || commentsParam === 'true';
-            }
+        if (commentsParam !== undefined) {
+            return commentsParam === '1' || commentsParam === 'true';
+        }
 
-            const showFeed = Utils.getLocalStorage('page.showCommentsFeed');
+        const showFeed = Utils.getLocalStorage('page.showCommentsFeed');
 
-            return showFeed !== undefined ? showFeed : true;
-        },
-    });
+        return showFeed !== undefined ? showFeed : true;
+    },
 });

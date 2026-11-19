@@ -4,18 +4,16 @@
  */
 
 /*global init:true*/
-define([], function () {
-    'use strict';
 
-    // window.init.settings.lang reflects the resolved locale picked by the
-    // server; same source public/js/i18n.js reads from. Formatter built once
-    // and cached so the hot path is a single .format(n) call.
-    const lang = typeof init !== 'undefined' && init.settings && init.settings.lang || 'en';
-    const intlNumFormat = new Intl.NumberFormat(lang).format;
 
-    return {
-        num: function (number) {
-            return typeof number === 'number' ? intlNumFormat(number) : number;
-        },
-    };
-});
+// window.init.settings.lang reflects the resolved locale picked by the
+// server; same source public/js/i18n.js reads from. Formatter built once
+// and cached so the hot path is a single .format(n) call.
+const lang = typeof init !== 'undefined' && init.settings && init.settings.lang || 'en';
+const intlNumFormat = new Intl.NumberFormat(lang).format;
+
+export default {
+    num: function (number) {
+        return typeof number === 'number' ? intlNumFormat(number) : number;
+    },
+};

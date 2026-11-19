@@ -3,133 +3,140 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'intl', 'i18n', 'knockout', 'lib/PubSub', 'moment'], function ($, Browser, Utils, _, P, intl, i18n, ko, ps, moment) {
-    'use strict';
+import $ from 'jquery';
+import Browser from 'Browser';
+import Utils from 'Utils';
+import 'underscore';
+import P from 'Params';
+import intl from 'intl';
+import i18n from 'i18n';
+import 'knockout';
+import ps from 'lib/PubSub';
+import moment from 'moment';
 
-    window.G = {
-        imgLoadOk: function (target) {
-            target.parentNode.classList.add('showPrv');
-        },
-        imgLoadFail: function (target) {
-            const classList = target.parentNode.classList;
+window.G = {
+    imgLoadOk: function (target) {
+        target.parentNode.classList.add('showPrv');
+    },
+    imgLoadFail: function (target) {
+        const classList = target.parentNode.classList;
 
-            classList.add('fail'); //Множестенная установка пока не работает в ie<=11
-            classList.add('showPrv');
-        },
-    };
+        classList.add('fail'); //Множестенная установка пока не работает в ie<=11
+        classList.add('showPrv');
+    },
+};
 
-    window.moment = moment;
+window.moment = moment;
 
-    // Отключает скроллинг body путем задания overflow:hidden и правого marging равного ширине скроллинга
-    function bodyScrollOff($body) {
-        let bodyWidth;
+// Отключает скроллинг body путем задания overflow:hidden и правого marging равного ширине скроллинга
+function bodyScrollOff($body) {
+    let bodyWidth;
 
-        if (!$body) {
-            $body = $(document.body);
-        }
-
-        if (!$body.hasClass('modal')) {
-            bodyWidth = $body.innerWidth();
-
-            $(document.documentElement).addClass('modal');
-            $body
-                .addClass('modal')
-                .add('#topContainer')
-                .css({ marginRight: $body.innerWidth() - bodyWidth + 'px' });
-        }
-
-        return $body;
+    if (!$body) {
+        $body = $(document.body);
     }
 
-    function bodyScrollOn($body) {
-        if (!$body) {
-            $body = $(document.body);
-        }
+    if (!$body.hasClass('modal')) {
+        bodyWidth = $body.innerWidth();
 
-        if ($body.hasClass('modal') && $('.neoModalCurtain').length <= 1) {
-            $(document.documentElement).removeClass('modal');
-            $body
-                .removeClass('modal')
-                .add('#topContainer')
-                .css({ marginRight: '0px' });
-        }
-
-        return $body;
+        $(document.documentElement).addClass('modal');
+        $body
+            .addClass('modal')
+            .add('#topContainer')
+            .css({ marginRight: $body.innerWidth() - bodyWidth + 'px' });
     }
 
-    return {
-        P: P,
-        pb: ps,
-        intl: intl,
-        i18n: i18n,
-        regionTitle: Utils.regionTitle,
-        router: null,
+    return $body;
+}
 
-        childModules: {},
-        repository: {},
+function bodyScrollOn($body) {
+    if (!$body) {
+        $body = $(document.body);
+    }
 
-        ranks: {
-            mec: { src: '/img/rank/bronse.jpg', title: i18n('Patron') },
-            mec_silv: { src: '/img/rank/silver.jpg', title: i18n('Silver patron') },
-            mec_gold: { src: '/img/rank/gold.jpg', title: i18n('Gold patron') },
-            adviser: { src: '/img/rank/adviser.jpg', title: i18n('Adviser') },
-        },
+    if ($body.hasClass('modal') && $('.neoModalCurtain').length <= 1) {
+        $(document.documentElement).removeClass('modal');
+        $body
+            .removeClass('modal')
+            .add('#topContainer')
+            .css({ marginRight: '0px' });
+    }
 
-        func: {
-            showContainer: function ($container, cb, ctx) {
-                const container = $container[0];
-                const isModal = container.classList.contains('neoModalContainer');
-                const noDisplay = container.classList.contains('mNoDisplay');
-                const hidden = container.classList.contains('mHidden');
-                const fade = container.classList.contains('mFadeIn');
+    return $body;
+}
 
-                if (isModal) {
-                    // Отключаем скроллинг body, если это модальное окно
-                    bodyScrollOff();
-                }
+export default {
+    P: P,
+    pb: ps,
+    intl: intl,
+    i18n: i18n,
+    regionTitle: Utils.regionTitle,
+    router: null,
 
-                if (noDisplay || hidden) {
-                    if (fade && Browser.support.cssAnimation) {
-                        // Меняем по таймауту, чтобы класс успел удалится с этого контейнера, если для него меняется модуль
-                        window.setTimeout(function () {
-                            container.classList.add('mShow');
+    childModules: {},
+    repository: {},
 
-                            if (Utils.isType('function', cb)) {
-                                window.setTimeout(cb.bind(ctx || window), 310);
-                            }
-                        }, 50);
-                    } else {
+    ranks: {
+        mec: { src: '/img/rank/bronse.jpg', title: i18n('Patron') },
+        mec_silv: { src: '/img/rank/silver.jpg', title: i18n('Silver patron') },
+        mec_gold: { src: '/img/rank/gold.jpg', title: i18n('Gold patron') },
+        adviser: { src: '/img/rank/adviser.jpg', title: i18n('Adviser') },
+    },
+
+    func: {
+        showContainer: function ($container, cb, ctx) {
+            const container = $container[0];
+            const isModal = container.classList.contains('neoModalContainer');
+            const noDisplay = container.classList.contains('mNoDisplay');
+            const hidden = container.classList.contains('mHidden');
+            const fade = container.classList.contains('mFadeIn');
+
+            if (isModal) {
+                // Отключаем скроллинг body, если это модальное окно
+                bodyScrollOff();
+            }
+
+            if (noDisplay || hidden) {
+                if (fade && Browser.support.cssAnimation) {
+                    // Меняем по таймауту, чтобы класс успел удалится с этого контейнера, если для него меняется модуль
+                    window.setTimeout(function () {
                         container.classList.add('mShow');
 
                         if (Utils.isType('function', cb)) {
-                            cb.call(ctx || window);
+                            window.setTimeout(cb.bind(ctx || window), 310);
                         }
+                    }, 50);
+                } else {
+                    container.classList.add('mShow');
+
+                    if (Utils.isType('function', cb)) {
+                        cb.call(ctx || window);
                     }
-                } else if (Utils.isType('function', cb)) {
-                    cb.call(ctx || window);
                 }
-            },
-            hideContainer: function ($container, cb, ctx) {
-                const container = $container[0];
-                const isModal = container.classList.contains('neoModalContainer');
-                const noDisplay = container.classList.contains('mNoDisplay');
-                const hidden = container.classList.contains('mHidden');
-
-                if (noDisplay || hidden) {
-                    container.classList.remove('mShow');
-                }
-
-                if (isModal) {
-                    // Включаем скроллинг body, если это было модальное окно
-                    bodyScrollOn();
-                }
-
-                if (Utils.isType('function', cb)) {
-                    cb.call(ctx || window);
-                }
-            },
-            bodyScrollOff: bodyScrollOff,
-            bodyScrollOn: bodyScrollOn,
+            } else if (Utils.isType('function', cb)) {
+                cb.call(ctx || window);
+            }
         },
-    };
-});
+        hideContainer: function ($container, cb, ctx) {
+            const container = $container[0];
+            const isModal = container.classList.contains('neoModalContainer');
+            const noDisplay = container.classList.contains('mNoDisplay');
+            const hidden = container.classList.contains('mHidden');
+
+            if (noDisplay || hidden) {
+                container.classList.remove('mShow');
+            }
+
+            if (isModal) {
+                // Включаем скроллинг body, если это было модальное окно
+                bodyScrollOn();
+            }
+
+            if (Utils.isType('function', cb)) {
+                cb.call(ctx || window);
+            }
+        },
+        bodyScrollOff: bodyScrollOff,
+        bodyScrollOn: bodyScrollOn,
+    },
+};

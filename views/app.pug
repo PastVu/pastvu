@@ -3,19 +3,14 @@ html(lang=lang || config.lang)
     head(prefix="og: http://ogp.me/ns#")
         include includes/head_meta
 
-        link(rel="stylesheet", href="/style/common.css")
+        link(rel="stylesheet", href='/style/common.css?__=' + config.hash)
 
         | <script type="text/javascript">
         //-Вставляем в скрипт сгенерированную для клиента строку глобальных переменных с изначальными данными
         != initData
         | </script>
-        if config.env === 'development'
-            | <script type="text/javascript">
-            include ../public/js/lib/require/require.js
-            include ../public/js/_mainConfig.js
-            | </script>
 
     body
         if nojsShow
             include includes/nojs
-        script(type="text/javascript", src='/js/module/app' + appName + '.js?__=' + config.hash)
+        script(type="module", src='/js/module/app' + appName + '.js?__=' + config.hash)
