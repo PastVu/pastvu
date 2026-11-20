@@ -27,7 +27,7 @@ import fields from 'm/photo/fields';
 import statuses from 'm/photo/status';
 import pug from 'tpl/photo/photo.pug?raw';
 import 'style/photo/photo.css';
-import 'bs/ext/multiselect';
+import 'bs/dropdown';
 import 'jquery-plugins/imgareaselect';
 
 const $window = $(window);

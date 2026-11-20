@@ -21,7 +21,7 @@ import noties from 'noties';
 import HighchartsModule from 'highstock/highstock.src';
 import pug from 'tpl/admin/conveyer.pug?raw';
 import 'style/admin/conveyer.css';
-import 'bs/ext/multiselect';
+import 'bs/dropdown';
 
 const Highcharts = HighchartsModule || window.Highcharts;
 Highcharts.theme = {
