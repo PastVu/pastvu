@@ -12,7 +12,7 @@ import ko_mapping from 'knockout.mapping';
 import globalVM from 'globalVM';
 import L from 'leaflet';
 import Photo from 'model/Photo';
-import turf from 'turf';
+import { bboxPolygon, difference, featureCollection, flip, getCoords, getGeom, getType } from '@turf/turf';
 
 const paintingDivisionYear = Math.floor(1688 / 5) * 5;
 
@@ -383,14 +383,14 @@ MarkerManager.prototype.refreshDataByZoom = function (init) {
         // Local work level. We are expecting photo object at those zoom
         // levels, so we need to fetch photos for area that become visible
         // as result of zoom change.
-        const poly = turf.bboxPolygon(bound.toBBoxString().split(','));
-        const prevPoly = turf.bboxPolygon(this.calcBoundPrev.toBBoxString().split(','));
+        const poly = bboxPolygon(bound.toBBoxString().split(',').map(Number));
+        const prevPoly = bboxPolygon(this.calcBoundPrev.toBBoxString().split(',').map(Number));
 
         // Если на клиенте уже есть все фотографии для данного зума
         if (!direction) {
             //Если зум не изменился, то считаем дополнительные баунды, если они есть, запрашиваем их
             //а если их нет (т.е. баунд тоже не изменился), то просто пересчитываем локальные кластеры
-            queryGeometry = turf.difference(poly, prevPoly);
+            queryGeometry = difference(featureCollection([poly, prevPoly]));
 
             if (queryGeometry !== null) {
                 this.cropByBound(null, true);
@@ -407,7 +407,7 @@ MarkerManager.prototype.refreshDataByZoom = function (init) {
         } else {
             // If new zoom is lower, determine the difference and query
             // opbjects just for the polygon with an inner ring (hole).
-            queryGeometry = turf.difference(poly, prevPoly);
+            queryGeometry = difference(featureCollection([poly, prevPoly]));
         }
     } else {
         // При пересечении границы "вверх" обнуляем массив всех фото на клиенте
@@ -416,7 +416,7 @@ MarkerManager.prototype.refreshDataByZoom = function (init) {
         }
 
         // Query objects for new .
-        queryGeometry = turf.bboxPolygon(bound.toBBoxString().split(','));
+        queryGeometry = bboxPolygon(bound.toBBoxString().split(',').map(Number));
     }
 
     if (pollServer) {
@@ -427,7 +427,7 @@ MarkerManager.prototype.refreshDataByZoom = function (init) {
         socket.run('photo.getByBounds',
             {
                 z: newZoom,
-                geometry: turf.getGeom(queryGeometry),
+                geometry: getGeom(queryGeometry),
                 startAt: this.startPendingAt,
                 year: this.year,
                 year2: this.year2,
@@ -464,7 +464,7 @@ MarkerManager.prototype.refreshDataByZoom = function (init) {
 MarkerManager.prototype.drawBounds = function (geometry, zoom, localWork) {
     const summary = zoom === true ? 'Refresh by Zoom' : 'Refresh by Move';
 
-    console.log(summary + `, localWork=${localWork}, ` + turf.getType(geometry) + ' (Lng,Lat):', JSON.stringify(turf.getCoords(geometry)));
+    console.log(summary + `, localWork=${localWork}, ` + getType(geometry) + ' (Lng,Lat):', JSON.stringify(getCoords(geometry)));
 
     // Remove previous drawings.
     if (this.b !== undefined) {
@@ -473,7 +473,7 @@ MarkerManager.prototype.drawBounds = function (geometry, zoom, localWork) {
     }
 
     // Draw new polygon, reverse coordinates.
-    this.b = L.polygon(turf.getCoords(turf.flip(geometry)), { color: '#25CE00', weight: 1 }).addTo(this.map);
+    this.b = L.polygon(getCoords(flip(geometry)), { color: '#25CE00', weight: 1 }).addTo(this.map);
 };
 
 /**
@@ -563,9 +563,9 @@ MarkerManager.prototype.refreshDataByMove = function () {
     let bound = L.latLngBounds(this.calcBound.getSouthWest(), this.calcBound.getNorthEast());
     const localWork = zoom >= this.firstClientWorkZoom;
 
-    const poly = turf.bboxPolygon(bound.toBBoxString().split(','));
-    const prevPoly = turf.bboxPolygon(this.calcBoundPrev.toBBoxString().split(','));
-    const queryGeometry = turf.difference(poly, prevPoly);
+    const poly = bboxPolygon(bound.toBBoxString().split(',').map(Number));
+    const prevPoly = bboxPolygon(this.calcBoundPrev.toBBoxString().split(',').map(Number));
+    const queryGeometry = difference(featureCollection([poly, prevPoly]));
 
     if (queryGeometry === null) {
         // Likely map is far beyond antimeridian on either side.
@@ -580,7 +580,7 @@ MarkerManager.prototype.refreshDataByMove = function () {
 
     socket.run('photo.getByBounds', {
         z: zoom,
-        geometry: turf.getGeom(queryGeometry),
+        geometry: getGeom(queryGeometry),
         year: this.year,
         year2: this.year2,
         isPainting: this.isPainting,

@@ -26,7 +26,6 @@ module.exports = {
     "leaflet": "lib/leaflet/leaflet.min",
     "leaflet-plugins": "lib/leaflet/plugins",
     "leaflet-extends": "lib/leaflet/extends",
-    "turf": "lib/turf.min",
     "trumbowyg": "lib/trumbowyg/trumbowyg.min",
     "trumbowyg-plugins": "lib/trumbowyg/plugins",
     "trumbowyg-langs": "lib/trumbowyg/langs",
