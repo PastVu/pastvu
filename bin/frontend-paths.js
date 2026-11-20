@@ -15,6 +15,7 @@ module.exports = {
     "jquery-ui": jqueryUiDir,
     "jquery-ui/slider": "lib/jquery/ui/slider",
     "jquery-plugins": "lib/jquery/plugins",
+    "imgareaselect": require.resolve('imgareaselect/jquery.imgareaselect.dev.js'),
     "jquery-resizable-dom": require.resolve('jquery-resizable-dom'),
     "typeahead.js": require.resolve('typeahead.js/dist/typeahead.bundle.js'),
     "bs": bootstrapJs,

@@ -24,6 +24,29 @@ module.exports = {
                 "// Create token\n          datum.value = _self.$input.typeahead('val');\n          if (_self.createToken( datum )) {"),
     },
 
+    'imgareaselect': {
+        deps: ['jquery'],
+        transform: source => {
+            const dimensions = [
+                'imgWidth = $img.innerWidth();',
+                'imgHeight = $img.innerHeight();',
+                '($img.outerHeight() - imgHeight)',
+                '($img.outerWidth() - imgWidth)',
+            ];
+
+            if (!dimensions.every(expression => source.includes(expression))) {
+                throw new Error('Unexpected imgAreaSelect source; check the watermark shim');
+            }
+
+            // Limit selection to the photo above the watermark.
+            return source
+                .replace(dimensions[0], 'imgWidth = options.imageWidthScaled || $img.innerWidth();')
+                .replace(dimensions[1], 'imgHeight = options.imageHeightScaled || $img.innerHeight();')
+                .replace(dimensions[2], '((options.imageHeightScaled || $img.outerHeight()) - imgHeight)')
+                .replace(dimensions[3], '((options.imageWidthScaled || $img.outerWidth()) - imgWidth)');
+        },
+    },
+
     'bs/affix': { deps: ['jquery'] },
     'bs/collapse': { deps: ['jquery', 'bs/transition'] },
     'bs/dropdown': { deps: ['jquery'] },

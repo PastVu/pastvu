@@ -28,7 +28,7 @@ import statuses from 'm/photo/status';
 import pug from 'tpl/photo/photo.pug?raw';
 import 'style/photo/photo.css';
 import 'bs/dropdown';
-import 'jquery-plugins/imgareaselect';
+import 'imgareaselect';
 
 const $window = $(window);
 const imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');

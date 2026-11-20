@@ -160,6 +160,10 @@ async function prepareOutput(outdir) {
     const jqueryUiTheme = require.resolve('jquery-ui/themes/smoothness/jquery.ui.theme.css');
     await fs.cp(path.join(path.dirname(jqueryUiTheme), 'images'), path.join(outdir, 'style/jquery/ui/images'), { recursive: true });
 
+    for (const file of ['border-anim-h.gif', 'border-anim-v.gif']) {
+        await fs.copyFile(require.resolve(`imgareaselect/distfiles/css/${file}`), path.join(outdir, 'img/misc', file));
+    }
+
     const trumbowygDist = path.dirname(require.resolve('trumbowyg'));
     const trumbowygStyles = path.join(outdir, 'style/trumbowyg');
     const trumbowygImages = path.join(outdir, 'img/trumbowyg');
