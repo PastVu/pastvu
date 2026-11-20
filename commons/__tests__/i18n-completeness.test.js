@@ -43,7 +43,6 @@ const EXCLUDE_DIR = [
     // Vendored libraries under public/js/lib/. Project-owned files in the same
     // directory (Utils.js, Browser.js, JSExtensions.js, PubSub.js) are scanned.
     /\/public\/js\/lib\/(?:bootstrap|highstock|jquery|knockout|leaflet|require)\//,
-    /\/public\/js\/lib\/geocoordsparser\.js\//,
     /\/public\/js\/lang\//, /\/__mocks__\//, /\/__tests__\//,
 ];
 

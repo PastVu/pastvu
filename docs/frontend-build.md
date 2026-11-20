@@ -79,8 +79,6 @@ the old startup connection barrier.
 - The vendored underscore.string `wrap` helper needed local variable declarations
   because ES modules execute in strict mode. This is a compatibility fix, not an
   intentional behavior change.
-- Vendored geocoordsparser uses `Number.isNaN` to avoid an esbuild warning
-  about the always-false `== NaN` check.
 - Vendored code runs as ES modules, which are always strict, so `this` inside a
   function called without a receiver is `undefined` rather than `window`. The
   build wrapper binds only the top-level `this` to `window`. typeahead.bundle

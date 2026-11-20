@@ -18,7 +18,7 @@ const aliases = require('./frontend-paths');
 const shimConfig = require('./frontend-shims');
 
 const root = path.resolve('public/js');
-const npmPackages = new Set(['@turf/turf', 'dot/doT', 'i18next', 'jquery', 'knockout', 'knockout-mapping', 'leaflet', 'lodash', 'moment', 'moment/locale/ru', 'socket.io-client', 'underscore.string']);
+const npmPackages = new Set(['@turf/turf', 'dot/doT', 'geo-coordinates-parser', 'i18next', 'jquery', 'knockout', 'knockout-mapping', 'leaflet', 'lodash', 'moment', 'moment/locale/ru', 'socket.io-client', 'underscore.string']);
 // Preserve jQuery's browser globals and the Knockout packages' AMD exports.
 const jqueryCore = require.resolve('jquery');
 const amdPackages = new Set([jqueryCore, require.resolve('knockout'), require.resolve('knockout-mapping')]);

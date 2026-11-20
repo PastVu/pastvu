@@ -64,6 +64,7 @@
         "express": "5.2.1",
         "express-urlrewrite": "2.0.3",
         "formidable": "3.5.4",
+        "geo-coordinates-parser": "1.7.4",
         "got": "15.0.7",
         "http-proxy-middleware": "4.2.0",
         "i18next": "26.3.6",

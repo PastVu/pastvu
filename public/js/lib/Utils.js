@@ -13,7 +13,7 @@ import $ from 'jquery';
 import _ from 'lodash';
 import _s from 'underscore.string';
 import i18n from 'i18n';
-import parsecoords from 'lib/geocoordsparser';
+import { convert as parsecoords } from 'geo-coordinates-parser';
 import 'lib/jquery/plugins/extends';
 import 'bs/tooltip';
 

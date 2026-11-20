@@ -41,7 +41,6 @@ module.exports = [
             // Vendored third-party libs under public/js/lib — explicit per-subdir,
             // since flat config global ignores don't reliably honour `!` negation.
             'public/js/lib/bootstrap/**',
-            'public/js/lib/geocoordsparser.js',
             'public/js/lib/highstock/**',
             'public/js/lib/jquery/**',
             'public/js/lib/PubSub.js',
