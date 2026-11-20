@@ -139,6 +139,6 @@
     },
     "lint-staged": {
         "*.js": "eslint --fix",
-        "*.less": "stylelint --fix"
+        "*.less": "stylelint --fix --allow-empty-input"
     }
 }
