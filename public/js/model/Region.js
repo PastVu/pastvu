@@ -7,7 +7,7 @@ import 'jquery';
 import _ from 'lodash';
 import Utils from 'Utils';
 import 'knockout';
-import ko_mapping from 'knockout.mapping';
+import ko_mapping from 'knockout-mapping';
 
 const defaults = {
     base: {

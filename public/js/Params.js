@@ -12,7 +12,7 @@ import _ from 'lodash';
 import socket from 'socket';
 import 'Utils';
 import 'knockout';
-import koMapping from 'knockout.mapping';
+import koMapping from 'knockout-mapping';
 
 const head = document.head;
 const $window = $(window);

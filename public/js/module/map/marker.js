@@ -8,7 +8,7 @@ import Utils from 'Utils';
 import socket from 'socket';
 import P from 'Params';
 import 'knockout';
-import ko_mapping from 'knockout.mapping';
+import ko_mapping from 'knockout-mapping';
 import globalVM from 'globalVM';
 import L from 'leaflet';
 import Photo from 'model/Photo';

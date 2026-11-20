@@ -7,7 +7,7 @@ import 'jquery';
 import _ from 'lodash';
 import 'Utils';
 import 'knockout';
-import ko_mapping from 'knockout.mapping';
+import ko_mapping from 'knockout-mapping';
 import 'Params';
 import Region from 'model/Region';
 

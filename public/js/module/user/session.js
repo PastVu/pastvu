@@ -8,7 +8,7 @@ import 'Utils';
 import socket from 'socket';
 import 'Params';
 import ko from 'knockout';
-import 'knockout.mapping';
+import 'knockout-mapping';
 import Cliche from 'm/_moduleCliche';
 import globalVM from 'globalVM';
 import 'model/storage';

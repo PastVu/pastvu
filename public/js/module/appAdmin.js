@@ -11,7 +11,7 @@ import Utils from 'Utils';
 import 'socket';
 import _ from 'lodash';
 import ko from 'knockout';
-import 'knockout.mapping';
+import 'knockout-mapping';
 import moment from 'moment';
 import globalVM from 'globalVM';
 import P from 'Params';

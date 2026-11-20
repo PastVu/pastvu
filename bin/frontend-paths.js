@@ -22,7 +22,6 @@ module.exports = {
     "Utils": "lib/Utils",
     "Browser": "lib/Browser",
     "knockout.extends": "lib/knockout/extends",
-    "knockout.mapping": "lib/knockout/knockout.mapping",
     "knockout.postbox": "lib/knockout/knockout-postbox",
     "knockout.bs": "lib/knockout/knockout-bootstrap",
     "leaflet-plugins": "lib/leaflet/plugins",

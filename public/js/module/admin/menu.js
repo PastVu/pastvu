@@ -4,7 +4,7 @@
  */
 
 import ko from 'knockout';
-import 'knockout.mapping';
+import 'knockout-mapping';
 import Cliche from 'm/_moduleCliche';
 import globalVM from 'globalVM';
 import pug from 'tpl/admin/menu.pug?raw';

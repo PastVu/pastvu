@@ -8,7 +8,7 @@ import Utils from 'Utils';
 import P from 'Params';
 import renderer from 'renderer';
 import ko from 'knockout';
-import 'knockout.mapping';
+import 'knockout-mapping';
 import Cliche from 'm/_moduleCliche';
 import globalVM from 'globalVM';
 import i18n from 'i18n';

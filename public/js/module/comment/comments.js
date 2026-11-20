@@ -11,7 +11,7 @@ import Utils from 'Utils';
 import socket from 'socket';
 import P from 'Params';
 import ko from 'knockout';
-import 'knockout.mapping';
+import 'knockout-mapping';
 import noties from 'noties';
 import Cliche from 'm/_moduleCliche';
 import globalVM from 'globalVM';
