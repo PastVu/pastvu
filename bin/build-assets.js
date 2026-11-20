@@ -152,8 +152,10 @@ async function prepareOutput(outdir) {
         filter: source => source !== path.join('public', 'js') && !source.startsWith(path.join('public', 'js') + path.sep) &&
             !source.endsWith('.less'),
     });
-    const leafletDist = path.dirname(require.resolve('leaflet/dist/leaflet.css'));
-    await fs.cp(path.join(leafletDist, 'images'), path.join(outdir, 'style/leaflet/images'), { recursive: true });
+    const leafletCss = require.resolve('leaflet/dist/leaflet.css');
+    const leafletOutput = path.join(outdir, 'style/leaflet');
+    await fs.cp(path.join(path.dirname(leafletCss), 'images'), path.join(leafletOutput, 'images'), { recursive: true });
+    await fs.copyFile(leafletCss, path.join(leafletOutput, 'leaflet.css'));
 }
 
 const mtime = async file => (await fs.stat(file).catch(() => null))?.mtimeMs ?? Infinity;
