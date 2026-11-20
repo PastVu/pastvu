@@ -36,8 +36,6 @@ module.exports = {
         // Bloodhound's enclosing function has no receiver in a strict module.
         transform: source => source.replace('    })(this);', '    })(window);'),
     },
-    'jquery-plugins/plaxmove': { deps: ['jquery'] },
-
     'leaflet-plugins/Leaflet.GoogleMutant': { deps: ['leaflet'] },
     'leaflet-plugins/Yandex': { deps: ['leaflet'] },
 
