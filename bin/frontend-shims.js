@@ -21,6 +21,7 @@ module.exports = {
                 "// Create token\n          datum.value = _self.$input.typeahead('val');\n          if (_self.createToken( datum )) {"),
     },
 
+    'bs/affix': { deps: ['jquery'] },
     'bs/collapse': { deps: ['jquery', 'bs/transition'] },
     'bs/dropdown': { deps: ['jquery'] },
     'bs/popover': { deps: ['jquery', 'bs/tooltip'] },
