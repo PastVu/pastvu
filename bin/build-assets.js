@@ -20,7 +20,8 @@ const shimConfig = require('./frontend-shims');
 const root = path.resolve('public/js');
 const npmPackages = new Set(['@turf/turf', 'dot/doT', 'i18next', 'jquery', 'knockout', 'leaflet', 'lodash', 'moment', 'moment/locale/ru', 'socket.io-client', 'underscore.string']);
 // Preserve jQuery's browser globals and Knockout 2.3.0's AMD export.
-const amdPackages = new Set([require.resolve('jquery'), require.resolve('knockout')]);
+const jqueryCore = require.resolve('jquery');
+const amdPackages = new Set([jqueryCore, require.resolve('knockout')]);
 const header = '/** Built from the PastVu frontend sources. See COPYING for license. */';
 
 function resolveModule(id, importer = path.join(root, '_mainConfig.js')) {
@@ -102,6 +103,8 @@ function vendorModule(source, filename) {
         return `import dep${index} from ${JSON.stringify(specifier)};`;
     }).join('\n');
     const values = imports.map((id, index) => `${JSON.stringify(id)}: dep${index}`).join(',');
+    // The npm jQuery UI modules expect require('jquery') to return the jQuery function.
+    const exportResult = filename === jqueryCore ? 'module.exports =' : 'export default';
 
     return `${bindings}
 const vendorExports = {};
@@ -116,7 +119,7 @@ register.amd = {};
 (function(define, module, exports) {
 ${source}
 }).call(window, register, undefined, undefined);
-export default result === undefined ? ${shim?.exports ? 'window.' + shim.exports : 'vendorExports'} : result;
+${exportResult} result === undefined ? ${shim?.exports ? 'window.' + shim.exports : 'vendorExports'} : result;
 `;
 }
 

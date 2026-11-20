@@ -5,13 +5,15 @@
 
 const path = require('node:path');
 const bootstrapJs = path.join(path.dirname(require.resolve('bootstrap/package.json')), 'js');
+const jqueryUiDir = path.dirname(require.resolve('jquery-ui/package.json'));
 const trumbowygDist = path.dirname(require.resolve('trumbowyg'));
 
 module.exports = {
     "tpl": "../tpl",
     "style": "../style",
     "m": "module",
-    "jquery-ui": "lib/jquery/ui",
+    "jquery-ui": jqueryUiDir,
+    "jquery-ui/slider": "lib/jquery/ui/slider",
     "jquery-plugins": "lib/jquery/plugins",
     "bs": bootstrapJs,
     "bs/affix": "lib/bootstrap/affix",

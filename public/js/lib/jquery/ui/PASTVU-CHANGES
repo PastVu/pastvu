@@ -1,6 +1,7 @@
 === jquery-ui ===
 
-jQuery user interface library is deployed manually from its repo https://github.com/jquery/jquery-ui.
+The asset build uses the jquery-ui npm package for all modules except slider.js.
+PastVu keeps its patched slider here.
 
 Theme (Smoothness) files are located at public/style/jquery/ui/ and public/img/jqueryui/
 

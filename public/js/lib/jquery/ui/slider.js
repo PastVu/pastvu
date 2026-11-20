@@ -1,4 +1,4 @@
-define(['jquery','./core','./mouse','./widget'], function (jQuery) {
+define(['jquery','jquery-ui/core','jquery-ui/mouse','jquery-ui/widget'], function (jQuery) {
 /*!
  * jQuery UI Slider 1.10.4
  * http://jqueryui.com
