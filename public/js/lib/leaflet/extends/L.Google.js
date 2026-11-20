@@ -8,7 +8,7 @@ import { loadScript } from 'frontend/loadScript';
 import P from 'Params';
 import L from 'leaflet';
 import { LRUCache } from 'lru-cache';
-import 'leaflet-plugins/Leaflet.GoogleMutant';
+import 'leaflet.gridlayer.googlemutant';
 
 const keyParam = P.settings.publicApiKeys.googleMaps.length ? '&key=' + P.settings.publicApiKeys.googleMaps : '';
 const url = 'https://maps.googleapis.com/maps/api/js?v=weekly&region=RU' + keyParam;

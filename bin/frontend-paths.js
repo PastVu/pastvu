@@ -26,6 +26,7 @@ module.exports = {
     "knockout.extends": "lib/knockout/extends",
     "knockout.bs": "lib/knockout/knockout-bootstrap",
     "leaflet-plugins": "lib/leaflet/plugins",
+    "leaflet.gridlayer.googlemutant": require.resolve('leaflet.gridlayer.googlemutant/dist/Leaflet.GoogleMutant.js'),
     "leaflet-extends": "lib/leaflet/extends",
     "trumbowyg": path.join(trumbowygDist, 'trumbowyg.min'),
     "trumbowyg-plugins": path.join(trumbowygDist, 'plugins'),

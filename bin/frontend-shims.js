@@ -36,7 +36,20 @@ module.exports = {
         // Bloodhound's enclosing function has no receiver in a strict module.
         transform: source => source.replace('    })(this);', '    })(window);'),
     },
-    'leaflet-plugins/Leaflet.GoogleMutant': { deps: ['leaflet'] },
+    'leaflet.gridlayer.googlemutant': {
+        deps: ['leaflet'],
+        transform: source => {
+            // The pinned browser bundle embeds an LRU implementation. PastVu passes its own cache.
+            const bundledCache = /\n\t\/\/ This implementation of LRUMap[\s\S]+?(?=\n\t\/\/ GoogleMutant by)/;
+            const cacheInitializer = 'this._lru = new LRUMap(100);';
+
+            if (!bundledCache.test(source) || !source.includes(cacheInitializer)) {
+                throw new Error('Unexpected GoogleMutant bundle; check the tile-cache shim');
+            }
+
+            return source.replace(bundledCache, '').replace(cacheInitializer, 'this._lru = options.lru;');
+        },
+    },
     'leaflet-plugins/Yandex': { deps: ['leaflet'] },
 
     'noty': { deps: ['jquery'] },
