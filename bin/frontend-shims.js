@@ -13,6 +13,7 @@ module.exports = {
     'highstock/highstock.src': { deps: ['jquery'], exports: 'Highcharts' },
 
     'jquery-plugins/typeahead.bundle': { deps: ['jquery'] },
+    'jquery-plugins/plaxmove': { deps: ['jquery'] },
 
     'leaflet-plugins/Leaflet.GoogleMutant': { deps: ['leaflet'] },
     'leaflet-plugins/Yandex': { deps: ['leaflet'] },

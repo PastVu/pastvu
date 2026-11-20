@@ -66,8 +66,8 @@
 
 		$('html').on('mousemove', function(e) {
 
-				x = eqH(e)
-				y = eqW(e)
+				var x = eqH(e)
+				var y = eqW(e)
 
 				$(layer).css({top:y,left:x})
 

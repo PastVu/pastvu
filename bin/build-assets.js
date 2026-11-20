@@ -18,8 +18,9 @@ const aliases = require('./frontend-paths');
 const shimConfig = require('./frontend-shims');
 
 const root = path.resolve('public/js');
-const npmPackages = new Set(['@turf/turf', 'dot/doT', 'i18next', 'knockout', 'lodash', 'moment', 'moment/locale/ru', 'socket.io-client', 'underscore.string']);
-const knockoutCore = require.resolve('knockout');
+const npmPackages = new Set(['@turf/turf', 'dot/doT', 'i18next', 'jquery', 'knockout', 'lodash', 'moment', 'moment/locale/ru', 'socket.io-client', 'underscore.string']);
+// Preserve jQuery's browser globals and Knockout 2.3.0's AMD export.
+const amdPackages = new Set([require.resolve('jquery'), require.resolve('knockout')]);
 const header = '/** Built from the PastVu frontend sources. See COPYING for license. */';
 
 function resolveModule(id, importer = path.join(root, '_mainConfig.js')) {
@@ -123,6 +124,7 @@ const styleRoot = path.resolve('public/style');
 const entries = {
     'module/appMain': 'public/js/module/appMain.js',
     'module/appAdmin': 'public/js/module/appAdmin.js',
+    'status/404': 'public/js/status/404.js',
 };
 
 // Recreate the output tree with static files; JS and CSS are written by the build itself.
@@ -289,9 +291,8 @@ export default await ready;`, loader: 'js' };
                     return { path: resolveModule(args.path, args.importer) };
                 }
             });
-            build.onLoad({ filter: /\/(?:lib\/.*|knockout-latest\.debug)\.js$/ }, async args => {
-                // Knockout 2.3.0 requires a global require to select its CommonJS branch.
-                if (args.path !== knockoutCore && !args.path.startsWith(path.join(root, 'lib') + path.sep)) {
+            build.onLoad({ filter: /\/(?:lib\/.*|jquery|knockout-latest\.debug)\.js$/ }, async args => {
+                if (!amdPackages.has(args.path) && !args.path.startsWith(path.join(root, 'lib') + path.sep)) {
                     return undefined;
                 }
 

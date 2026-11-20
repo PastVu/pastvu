@@ -4,8 +4,7 @@ html
 		include ../includes/head_meta
 		title= t('Not found [404] - PastVu', { ns: 'status' })
 		link(rel="stylesheet", type="text/css", href='/style/common.css?__='+config.hash)
-		script(type='text/javascript', src="/js/lib/jquery/jquery.js")
-		script(type='text/javascript', src="/js/lib/jquery/plugins/plaxmove.js")
+		script(type="module", src='/js/status/404.js?__=' + config.hash)
 		style.
 			html,body{height:100%; min-height:100%; overflow:hidden;}
 			body {background: #c7c3c0 url(/img/misc/404.jpg) center center / cover no-repeat fixed;}
@@ -45,5 +44,3 @@ html
 		a.msg(href="/")
 			span= t('The page you requested was not found', { ns: 'status' })
 			span(style="display: block; font-size: 18px; line-height: 18px;")!= '&nbsp;[' + t('click here to go to the main page', { ns: 'status' }) + ']'
-		script.
-			$(function(){$('.ufo').plaxmove({ratioH:0.6,ratioV:0.2,reversed:true,invertH:false});});

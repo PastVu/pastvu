@@ -7,7 +7,6 @@ module.exports = {
     "tpl": "../tpl",
     "style": "../style",
     "m": "module",
-    "jquery": "lib/jquery/jquery",
     "jquery-ui": "lib/jquery/ui",
     "jquery-plugins": "lib/jquery/plugins",
     "bs": "lib/bootstrap",
