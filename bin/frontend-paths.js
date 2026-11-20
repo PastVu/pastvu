@@ -16,7 +16,6 @@ module.exports = {
     "knockout.mapping": "lib/knockout/knockout.mapping",
     "knockout.postbox": "lib/knockout/knockout-postbox",
     "knockout.bs": "lib/knockout/knockout-bootstrap",
-    "leaflet": "lib/leaflet/leaflet.min",
     "leaflet-plugins": "lib/leaflet/plugins",
     "leaflet-extends": "lib/leaflet/extends",
     "trumbowyg": "lib/trumbowyg/trumbowyg.min",

@@ -48,7 +48,6 @@ module.exports = [
             'public/js/lib/trumbowyg/**',
             'public/js/lib/knockout/!(extends.js)*',
             'public/js/lib/leaflet/!(extends)/**',
-            'public/js/lib/leaflet/leaflet.min.js',
         ],
     },
     {

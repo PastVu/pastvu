@@ -18,7 +18,7 @@ const aliases = require('./frontend-paths');
 const shimConfig = require('./frontend-shims');
 
 const root = path.resolve('public/js');
-const npmPackages = new Set(['@turf/turf', 'dot/doT', 'i18next', 'jquery', 'knockout', 'lodash', 'moment', 'moment/locale/ru', 'socket.io-client', 'underscore.string']);
+const npmPackages = new Set(['@turf/turf', 'dot/doT', 'i18next', 'jquery', 'knockout', 'leaflet', 'lodash', 'moment', 'moment/locale/ru', 'socket.io-client', 'underscore.string']);
 // Preserve jQuery's browser globals and Knockout 2.3.0's AMD export.
 const amdPackages = new Set([require.resolve('jquery'), require.resolve('knockout')]);
 const header = '/** Built from the PastVu frontend sources. See COPYING for license. */';

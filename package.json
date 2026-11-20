@@ -69,6 +69,7 @@
         "ioredis": "5.11.1",
         "jquery": "2.2.3",
         "knockout": "2.3.0",
+        "leaflet": "1.7.1",
         "lodash": "4.18.1",
         "log4js": "6.9.1",
         "lru-cache": "11.5.2",
