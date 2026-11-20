@@ -10,6 +10,9 @@
 // Every bundled vendored library without define() or ES module syntax must be listed here;
 // the build fails otherwise. Use `deps: []` for a library with no dependencies.
 module.exports = {
+    'bootstrap-datepicker': { deps: ['jquery'] },
+    'bootstrap-datepicker/ru': { deps: ['jquery', 'bootstrap-datepicker'] },
+
     'bs/collapse': { deps: ['jquery', 'bs/transition'] },
     'bs/dropdown': { deps: ['jquery'] },
     'bs/popover': { deps: ['jquery', 'bs/tooltip'] },

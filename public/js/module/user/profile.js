@@ -58,7 +58,7 @@ export default Cliche.extend({
     },
     editModeHandler: function (val) {
         if (val) {
-            loadModules(['bs/ext/datepicker/datepicker', 'bs/ext/datepicker/lang/ru', 'style/bsext/datepicker.css'], function () {
+            loadModules(['bootstrap-datepicker', 'bootstrap-datepicker/ru', 'style/bsext/datepicker.css'], function () {
                 if (this.$dom instanceof jQuery) {
                     this.$dom
                         .find('#inBirthdate')

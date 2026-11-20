@@ -17,6 +17,8 @@ module.exports = {
     "jquery-plugins": "lib/jquery/plugins",
     "typeahead.js": require.resolve('typeahead.js/dist/typeahead.bundle.js'),
     "bs": bootstrapJs,
+    "bootstrap-datepicker": require.resolve('bootstrap-datepicker/dist/js/bootstrap-datepicker.js'),
+    "bootstrap-datepicker/ru": require.resolve('bootstrap-datepicker/js/locales/bootstrap-datepicker.ru.js'),
     "bs/affix": "lib/bootstrap/affix",
     "bs/ext": "lib/bootstrap/ext",
     "bs/tab": "lib/bootstrap/tab",
