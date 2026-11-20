@@ -15,7 +15,7 @@ import i18n from 'i18n';
 import 'model/storage';
 import fields from 'm/photo/fields';
 import statuses from 'm/photo/status';
-import doT from 'lib/doT';
+import doT from 'dot/doT';
 import noties from 'noties';
 import moment from 'moment';
 import pug from 'tpl/photo/hist.pug?raw';

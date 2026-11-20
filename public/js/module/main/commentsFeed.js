@@ -11,7 +11,7 @@ import 'knockout.mapping';
 import Cliche from 'm/_moduleCliche';
 import globalVM from 'globalVM';
 import Photo from 'model/Photo';
-import doT from 'lib/doT';
+import doT from 'dot/doT';
 import pug from 'tpl/main/commentsFeed.pug?raw';
 import 'style/main/commentsFeed.css';
 

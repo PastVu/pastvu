@@ -12,7 +12,6 @@ import 'knockout.mapping';
 import Cliche from 'm/_moduleCliche';
 import globalVM from 'globalVM';
 import 'model/storage';
-import 'lib/doT';
 import pug from 'tpl/user/session.pug?raw';
 import 'style/user/session.css';
 

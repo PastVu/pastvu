@@ -15,7 +15,7 @@ import globalVM from 'globalVM';
 import i18n from 'i18n';
 import noties from 'noties';
 import L from 'leaflet';
-import doT from 'lib/doT';
+import doT from 'dot/doT';
 import pug from 'tpl/admin/regionCheck.pug?raw';
 import 'style/admin/regionCheck.css';
 import 'style/leaflet/leaflet.css';

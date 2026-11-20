@@ -59,6 +59,7 @@
         "compression": "1.8.2",
         "cookie": "2.0.1",
         "diff-match-patch": "1.0.5",
+        "dot": "1.0.3",
         "express": "5.2.1",
         "express-urlrewrite": "2.0.3",
         "formidable": "3.5.4",

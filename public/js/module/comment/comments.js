@@ -18,7 +18,7 @@ import globalVM from 'globalVM';
 import i18n from 'i18n';
 import renderer from 'renderer';
 import 'moment';
-import doT from 'lib/doT';
+import doT from 'dot/doT';
 import html from 'tpl/comment/comments.pug?raw';
 import doTComments from 'tpl/comment/cdot.pug?raw';
 import doTCommentAnonym from 'tpl/comment/cdotanonym.pug?raw';

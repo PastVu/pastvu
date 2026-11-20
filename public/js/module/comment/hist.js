@@ -12,7 +12,7 @@ import Cliche from 'm/_moduleCliche';
 import globalVM from 'globalVM';
 import i18n from 'i18n';
 import 'model/storage';
-import doT from 'lib/doT';
+import doT from 'dot/doT';
 import pug from 'tpl/comment/hist.pug?raw';
 import 'style/comment/hist.css';
 

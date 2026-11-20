@@ -9,7 +9,7 @@ import Utils from 'Utils';
 import _ from 'lodash';
 import ko from 'knockout';
 import globalVM from 'globalVM';
-import doT from 'lib/doT';
+import doT from 'dot/doT';
 import dotModal from 'tpl/modal.pug?raw';
 
 const repository = globalVM.repository;
