@@ -18,6 +18,7 @@ import 'model/storage';
 import noties from 'noties';
 import pug from 'tpl/region/select.pug?raw';
 import 'style/region/select.css';
+import 'style/bsext/tokenfield.css';
 import 'bootstrap-tokenfield';
 
 const collator = new Intl.Collator('ru-RU', { numeric: true, sensitivity: 'base' });

@@ -18,7 +18,7 @@ module.exports = {
     'bootstrap-datepicker/ru': { deps: ['jquery', 'bootstrap-datepicker'] },
     'bootstrap-tokenfield': {
         transform: source => source
-            .replace("define(['jquery'], factory);", "define(['jquery', 'typeahead.js', 'css!style/bsext/tokenfield'], factory);")
+            .replace("define(['jquery'], factory);", "define(['jquery', 'typeahead.js'], factory);")
             // Typeahead selections carry the displayed value and the region's other attributes.
             .replace('// Create token\n          if (_self.createToken( datum )) {',
                 "// Create token\n          datum.value = _self.$input.typeahead('val');\n          if (_self.createToken( datum )) {"),

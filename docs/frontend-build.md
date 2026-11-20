@@ -67,9 +67,9 @@ the old startup connection barrier.
 - Vendored libraries retain their upstream AMD/UMD sources. A build adapter
   statically imports their dependencies and gives each wrapper an isolated local
   registration function. There is no global `define`, `require`, RequireJS loader,
-  r.js optimizer, or separate UglifyJS pass in the browser/build pipeline. Two
-  vendored Bootstrap extensions still spell their stylesheet dependency as
-  `css!…`; the build adapter converts those to normal stylesheet imports.
+  r.js optimizer, or separate UglifyJS pass in the browser/build pipeline. Bootstrap extension
+  styles are sourced from their installed packages and loaded with the features
+  that use them.
 - Vendored libraries that rely on globals instead of `define()` (typeahead,
   Trumbowyg and its plugins, the Google/Yandex Leaflet plugins) declare
   their dependencies, and optionally an exported global, in `bin/frontend-shims.js`,

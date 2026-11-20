@@ -107,9 +107,7 @@ function vendorModule(source, filename) {
     const bindings = imports.map((id, index) => {
         let specifier = id;
 
-        if (id.startsWith('css!')) {
-            specifier = id.slice(4) + '.css';
-        } else if (id === 'jquery') {
+        if (id === 'jquery') {
             // AMD plugins must extend PastVu's jQuery, even when npm installs a nested copy.
             specifier = jqueryCore;
         } else if (!npmPackages.has(id)) {
