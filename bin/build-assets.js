@@ -24,6 +24,7 @@ const jqueryCore = require.resolve('jquery');
 const amdPackages = new Set([
     jqueryCore,
     require.resolve('eonasdan-bootstrap-datetimepicker'),
+    require.resolve('jquery-resizable-dom'),
     require.resolve('knockout'),
     require.resolve('knockout-mapping'),
 ]);
@@ -106,6 +107,9 @@ function vendorModule(source, filename) {
 
         if (id.startsWith('css!')) {
             specifier = id.slice(4) + '.css';
+        } else if (id === 'jquery') {
+            // AMD plugins must extend PastVu's jQuery, even when npm installs a nested copy.
+            specifier = jqueryCore;
         } else if (!npmPackages.has(id)) {
             specifier = resolveModule(id, filename);
         }

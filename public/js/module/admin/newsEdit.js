@@ -67,7 +67,6 @@ const trumbowygAddons = [
     'trumbowyg-plugins/history/trumbowyg.history.min',
     'trumbowyg-plugins/indent/trumbowyg.indent.min',
     'trumbowyg-plugins/noembed/trumbowyg.noembed.min',
-    'jquery-plugins/jquery-resizable.min', // Required for trumbowyg.resizimg.min
     'trumbowyg-plugins/resizimg/trumbowyg.resizimg.min',
     'trumbowyg-plugins/table/trumbowyg.table.min',
 ];

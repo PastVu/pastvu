@@ -47,7 +47,7 @@ module.exports = {
     'trumbowyg-plugins/indent/trumbowyg.indent.min': { deps: ['jquery', 'trumbowyg'] },
     'trumbowyg-plugins/noembed/trumbowyg.noembed.min': { deps: ['jquery', 'trumbowyg'] },
     'trumbowyg-plugins/resizimg/trumbowyg.resizimg.min': {
-        deps: ['jquery', 'trumbowyg', 'jquery-plugins/jquery-resizable.min'],
+        deps: ['jquery', 'trumbowyg', 'jquery-resizable-dom'],
     },
     'trumbowyg-plugins/table/trumbowyg.table.min': { deps: ['jquery', 'trumbowyg'] },
 };

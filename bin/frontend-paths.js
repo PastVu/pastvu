@@ -15,6 +15,7 @@ module.exports = {
     "jquery-ui": jqueryUiDir,
     "jquery-ui/slider": "lib/jquery/ui/slider",
     "jquery-plugins": "lib/jquery/plugins",
+    "jquery-resizable-dom": require.resolve('jquery-resizable-dom'),
     "typeahead.js": require.resolve('typeahead.js/dist/typeahead.bundle.js'),
     "bs": bootstrapJs,
     "bootstrap-datepicker": require.resolve('bootstrap-datepicker/dist/js/bootstrap-datepicker.js'),

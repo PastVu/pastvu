@@ -64,7 +64,6 @@ const modules = {
     'trumbowyg-plugins/history/trumbowyg.history.min': () => import('trumbowyg-plugins/history/trumbowyg.history.min'),
     'trumbowyg-plugins/indent/trumbowyg.indent.min': () => import('trumbowyg-plugins/indent/trumbowyg.indent.min'),
     'trumbowyg-plugins/noembed/trumbowyg.noembed.min': () => import('trumbowyg-plugins/noembed/trumbowyg.noembed.min'),
-    'jquery-plugins/jquery-resizable.min': () => import('jquery-plugins/jquery-resizable.min'),
     'trumbowyg-plugins/resizimg/trumbowyg.resizimg.min': () => import('trumbowyg-plugins/resizimg/trumbowyg.resizimg.min'),
     'trumbowyg-plugins/table/trumbowyg.table.min': () => import('trumbowyg-plugins/table/trumbowyg.table.min'),
     'trumbowyg-langs/ru.min': () => import('trumbowyg-langs/ru.min'),
