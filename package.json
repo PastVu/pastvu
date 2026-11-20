@@ -55,6 +55,7 @@
         "async-exit-hook": "2.0.1",
         "basic-auth-connect": "1.1.0",
         "bcrypt": "6.0.0",
+        "bootstrap": "https://codeload.github.com/twbs/bootstrap/tar.gz/refs/tags/v3.0.0",
         "bullmq": "5.79.1",
         "compression": "1.8.2",
         "cookie": "2.0.1",

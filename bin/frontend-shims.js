@@ -10,6 +10,12 @@
 // Every bundled vendored library without define() or ES module syntax must be listed here;
 // the build fails otherwise. Use `deps: []` for a library with no dependencies.
 module.exports = {
+    'bs/collapse': { deps: ['jquery', 'bs/transition'] },
+    'bs/dropdown': { deps: ['jquery'] },
+    'bs/popover': { deps: ['jquery', 'bs/tooltip'] },
+    'bs/tooltip': { deps: ['jquery'] },
+    'bs/transition': { deps: ['jquery'] },
+
     'highstock/highstock.src': { deps: ['jquery'], exports: 'Highcharts' },
 
     'jquery-plugins/typeahead.bundle': { deps: ['jquery'] },

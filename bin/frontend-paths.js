@@ -4,6 +4,7 @@
  */
 
 const path = require('node:path');
+const bootstrapJs = path.join(path.dirname(require.resolve('bootstrap/package.json')), 'js');
 const trumbowygDist = path.dirname(require.resolve('trumbowyg'));
 
 module.exports = {
@@ -12,7 +13,10 @@ module.exports = {
     "m": "module",
     "jquery-ui": "lib/jquery/ui",
     "jquery-plugins": "lib/jquery/plugins",
-    "bs": "lib/bootstrap",
+    "bs": bootstrapJs,
+    "bs/affix": "lib/bootstrap/affix",
+    "bs/ext": "lib/bootstrap/ext",
+    "bs/tab": "lib/bootstrap/tab",
     "Utils": "lib/Utils",
     "Browser": "lib/Browser",
     "knockout.extends": "lib/knockout/extends",
