@@ -291,8 +291,8 @@ export default await ready;`, loader: 'js' };
                     return { path: resolveModule(args.path, args.importer) };
                 }
             });
-            build.onLoad({ filter: /\/(?:lib\/.*|jquery|knockout-latest\.debug)\.js$/ }, async args => {
-                if (!amdPackages.has(args.path) && !args.path.startsWith(path.join(root, 'lib') + path.sep)) {
+            build.onLoad({ filter: /\.js$/ }, async args => {
+                if (!shims.has(args.path) && !amdPackages.has(args.path) && !args.path.startsWith(path.join(root, 'lib') + path.sep)) {
                     return undefined;
                 }
 

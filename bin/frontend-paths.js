@@ -3,6 +3,9 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
+const path = require('node:path');
+const trumbowygDist = path.dirname(require.resolve('trumbowyg'));
+
 module.exports = {
     "tpl": "../tpl",
     "style": "../style",
@@ -18,9 +21,9 @@ module.exports = {
     "knockout.bs": "lib/knockout/knockout-bootstrap",
     "leaflet-plugins": "lib/leaflet/plugins",
     "leaflet-extends": "lib/leaflet/extends",
-    "trumbowyg": "lib/trumbowyg/trumbowyg.min",
-    "trumbowyg-plugins": "lib/trumbowyg/plugins",
-    "trumbowyg-langs": "lib/trumbowyg/langs",
+    "trumbowyg": path.join(trumbowygDist, 'trumbowyg.min'),
+    "trumbowyg-plugins": path.join(trumbowygDist, 'plugins'),
+    "trumbowyg-langs": path.join(trumbowygDist, 'langs'),
     "highstock": "lib/highstock",
     "jfileupload": "lib/jquery/plugins/fileupload",
     "load-image": "lib/jquery/plugins/fileupload/load-image",
