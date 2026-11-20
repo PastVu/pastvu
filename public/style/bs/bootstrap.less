@@ -18,13 +18,25 @@
 // Components
 @import "../../../node_modules/bootstrap/less/component-animations.less";
 @import "glyphicons.less";
-@import "dropdowns.less";
+@import "../../../node_modules/bootstrap/less/dropdowns.less";
+
+// Use the original caret styling for regular dropdowns.
+.caret {
+  content: normal;
+}
+
 @import "button-groups.less";
 @import "input-groups.less";
 @import "navs.less";
 @import "navbar.less";
 @import "pagination.less";
-@import "labels.less";
+@import "../../../node_modules/bootstrap/less/labels.less";
+
+// Keep PastVu's square labels.
+.label {
+  border-radius: 0;
+}
+
 @import "progress-bars.less";
 @import "../../../node_modules/bootstrap/less/media.less";
 @import "panels.less";
