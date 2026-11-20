@@ -17,8 +17,8 @@ import storage from 'model/storage';
 import loadImage from 'blueimp-load-image';
 import pug from 'tpl/user/photoUpload.pug?raw';
 import 'style/user/photoUpload.css';
-import 'jfileupload/jquery.iframe-transport';
-import 'jfileupload/jquery.fileupload';
+import 'blueimp-file-upload/iframe-transport';
+import 'blueimp-file-upload';
 
 const mess = {
     fsuccess: i18n('File uploaded successfully'),

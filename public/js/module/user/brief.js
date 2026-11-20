@@ -123,7 +123,7 @@ export default Cliche.extend({
             this.avaction(false);
         } else {
             this.avaction(true);
-            loadModules(['jfileupload/jquery.iframe-transport', 'jfileupload/jquery.fileupload'], function () {
+            loadModules(['blueimp-file-upload/iframe-transport', 'blueimp-file-upload'], function () {
                 this.$fileupload = this.$dom.find('.avaInput');
                 this.$fileupload.fileupload();
                 this.$fileupload.fileupload('option', {

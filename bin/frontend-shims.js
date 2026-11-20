@@ -11,6 +11,9 @@
 // Every bundled vendored library without define() or ES module syntax must be listed here;
 // the build fails otherwise. Use `deps: []` for a library with no dependencies.
 module.exports = {
+    'blueimp-file-upload': {
+        transform: source => source.replace("'jquery.ui.widget'", "'jquery-ui/widget'"),
+    },
     'bootstrap-datepicker': { deps: ['jquery'] },
     'bootstrap-datepicker/ru': { deps: ['jquery', 'bootstrap-datepicker'] },
     'bootstrap-tokenfield': {
