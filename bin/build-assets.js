@@ -152,6 +152,8 @@ async function prepareOutput(outdir) {
         filter: source => source !== path.join('public', 'js') && !source.startsWith(path.join('public', 'js') + path.sep) &&
             !source.endsWith('.less'),
     });
+    const leafletDist = path.dirname(require.resolve('leaflet/dist/leaflet.css'));
+    await fs.cp(path.join(leafletDist, 'images'), path.join(outdir, 'style/leaflet/images'), { recursive: true });
 }
 
 const mtime = async file => (await fs.stat(file).catch(() => null))?.mtimeMs ?? Infinity;
