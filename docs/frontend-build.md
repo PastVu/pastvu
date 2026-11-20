@@ -70,8 +70,8 @@ the old startup connection barrier.
   r.js optimizer, or separate UglifyJS pass in the browser/build pipeline. Two
   vendored Bootstrap extensions still spell their stylesheet dependency as
   `css!…`; the build adapter converts those to normal stylesheet imports.
-- Vendored libraries that rely on globals instead of `define()` (highstock,
-  typeahead, Trumbowyg and its plugins, the Google/Yandex Leaflet plugins) declare
+- Vendored libraries that rely on globals instead of `define()` (typeahead,
+  Trumbowyg and its plugins, the Google/Yandex Leaflet plugins) declare
   their dependencies, and optionally an exported global, in `bin/frontend-shims.js`,
   like the old RequireJS `shim` config. The build fails if such a library is bundled
   without an entry, if an entry does not resolve to a file, or if a library has both

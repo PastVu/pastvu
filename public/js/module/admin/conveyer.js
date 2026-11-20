@@ -18,13 +18,12 @@ import 'renderer';
 import 'model/User';
 import 'model/storage';
 import noties from 'noties';
-import HighchartsModule from 'highstock/highstock.src';
+import Highcharts from 'highcharts/esm/highstock.js';
 import pug from 'tpl/admin/conveyer.pug?raw';
 import 'style/admin/conveyer.css';
 import 'bs/dropdown';
 
-const Highcharts = HighchartsModule || window.Highcharts;
-Highcharts.theme = {
+Highcharts.setOptions({
     colors: [
         '#DDDF0D', '#7798BF', '#55BF3B', '#DF5353', '#aaeeee', '#ff0066', '#eeaaee',
         '#55BF3B', '#DF5353', '#7798BF', '#aaeeee',
@@ -275,9 +274,7 @@ Highcharts.theme = {
     dataLabelsColor: '#444',
     textColor: '#E0E0E0',
     maskColor: 'rgba(255,255,255,0.3)',
-};
-
-Highcharts.setOptions(Highcharts.theme);
+});
 
 export default Cliche.extend({
     pug: pug,
@@ -309,6 +306,7 @@ export default Cliche.extend({
         this.chartsOptions = {
             yAxis: {
                 min: 0,
+                opposite: false,
             },
             rangeSelector: {
                 selected: 1,
@@ -386,7 +384,7 @@ export default Cliche.extend({
                         );
                     }
 
-                    self.conveyerLengthChart = new Highcharts.StockChart(_.assign({
+                    self.conveyerLengthChart = Highcharts.stockChart(_.assign({
                         chart: {
                             renderTo: 'conveyerLengthGraph',
                         },
@@ -400,7 +398,7 @@ export default Cliche.extend({
                             },
                         ],
                     }, self.chartsOptions));
-                    self.conveyerConvertChart = new Highcharts.StockChart(_.assign({
+                    self.conveyerConvertChart = Highcharts.stockChart(_.assign({
                         chart: {
                             renderTo: 'conveyerConvertGraph',
                         },

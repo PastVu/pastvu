@@ -28,8 +28,6 @@ module.exports = {
     'bs/tooltip': { deps: ['jquery'] },
     'bs/transition': { deps: ['jquery'] },
 
-    'highstock/highstock.src': { deps: ['jquery'], exports: 'Highcharts' },
-
     'typeahead.js': {
         deps: ['jquery'],
         // Bloodhound's enclosing function has no receiver in a strict module.

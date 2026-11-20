@@ -30,7 +30,6 @@ module.exports = {
     "trumbowyg": path.join(trumbowygDist, 'trumbowyg.min'),
     "trumbowyg-plugins": path.join(trumbowygDist, 'plugins'),
     "trumbowyg-langs": path.join(trumbowygDist, 'langs'),
-    "highstock": "lib/highstock",
     "jfileupload": "lib/jquery/plugins/fileupload",
     "load-image": "lib/jquery/plugins/fileupload/load-image",
     "tmpl": "lib/jquery/plugins/fileupload/tmpl",

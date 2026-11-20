@@ -69,6 +69,7 @@
         "formidable": "3.5.4",
         "geo-coordinates-parser": "1.7.4",
         "got": "15.0.7",
+        "highcharts": "13.1.1",
         "http-proxy-middleware": "4.2.0",
         "i18next": "26.3.6",
         "ioredis": "5.11.1",

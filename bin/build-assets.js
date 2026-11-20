@@ -18,7 +18,7 @@ const aliases = require('./frontend-paths');
 const shimConfig = require('./frontend-shims');
 
 const root = path.resolve('public/js');
-const npmPackages = new Set(['@turf/turf', 'dot/doT', 'eonasdan-bootstrap-datetimepicker', 'geo-coordinates-parser', 'i18next', 'jquery', 'jquery.scrollto', 'knockout', 'knockout-mapping', 'leaflet', 'lodash', 'moment', 'moment/locale/ru', 'socket.io-client', 'underscore.string']);
+const npmPackages = new Set(['@turf/turf', 'dot/doT', 'eonasdan-bootstrap-datetimepicker', 'geo-coordinates-parser', 'highcharts/esm/highstock.js', 'i18next', 'jquery', 'jquery.scrollto', 'knockout', 'knockout-mapping', 'leaflet', 'lodash', 'moment', 'moment/locale/ru', 'socket.io-client', 'underscore.string']);
 // Preserve the AMD behavior these packages used when vendored.
 const jqueryCore = require.resolve('jquery');
 const amdPackages = new Set([
