@@ -7,7 +7,7 @@
 import { loadScript } from 'frontend/loadScript';
 import P from 'Params';
 import L from 'leaflet';
-import lru from 'leaflet-plugins/lru';
+import { LRUCache } from 'lru-cache';
 import 'leaflet-plugins/Leaflet.GoogleMutant';
 
 const keyParam = P.settings.publicApiKeys.googleMaps.length ? '&key=' + P.settings.publicApiKeys.googleMaps : '';
@@ -20,7 +20,7 @@ L.GridLayer.GoogleMutant.addInitHook(function () {
 
 export default function (options) {
     options = options || {};
-    options.lru = new lru.LRUMap(100); // Tile LRU cache.
+    options.lru = new LRUCache({ max: 100 }); // Tile LRU cache.
 
     return new L.GridLayer.GoogleMutant(options);
 };
