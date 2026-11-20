@@ -159,6 +159,9 @@ async function prepareOutput(outdir) {
     await fs.cp(path.join(path.dirname(leafletCss), 'images'), path.join(leafletOutput, 'images'), { recursive: true });
     await fs.copyFile(leafletCss, path.join(leafletOutput, 'leaflet.css'));
 
+    const jqueryUiTheme = require.resolve('jquery-ui/themes/smoothness/jquery.ui.theme.css');
+    await fs.cp(path.join(path.dirname(jqueryUiTheme), 'images'), path.join(outdir, 'style/jquery/ui/images'), { recursive: true });
+
     const trumbowygDist = path.dirname(require.resolve('trumbowyg'));
     const trumbowygStyles = path.join(outdir, 'style/trumbowyg');
     const trumbowygImages = path.join(outdir, 'img/trumbowyg');

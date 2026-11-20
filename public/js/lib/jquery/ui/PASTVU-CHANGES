@@ -3,7 +3,8 @@
 The asset build uses the jquery-ui npm package for all modules except slider.js.
 PastVu keeps its patched slider here.
 
-Theme (Smoothness) files are located at public/style/jquery/ui/ and public/img/jqueryui/
+The asset build also uses the npm package for the Smoothness theme, with
+PastVu's typography and slider dimensions in public/style/jquery/ui/.
 
 === Local changes to jquery-ui ===
 
