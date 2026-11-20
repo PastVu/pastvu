@@ -158,6 +158,18 @@ async function prepareOutput(outdir) {
     const leafletOutput = path.join(outdir, 'style/leaflet');
     await fs.cp(path.join(path.dirname(leafletCss), 'images'), path.join(leafletOutput, 'images'), { recursive: true });
     await fs.copyFile(leafletCss, path.join(leafletOutput, 'leaflet.css'));
+
+    const trumbowygDist = path.dirname(require.resolve('trumbowyg'));
+    const trumbowygStyles = path.join(outdir, 'style/trumbowyg');
+    const trumbowygImages = path.join(outdir, 'img/trumbowyg');
+    await fs.mkdir(trumbowygStyles, { recursive: true });
+    await fs.mkdir(trumbowygImages, { recursive: true });
+    await fs.copyFile(path.join(trumbowygDist, 'ui/trumbowyg.css'), path.join(trumbowygStyles, 'trumbowyg.css'));
+    for (const plugin of ['colors', 'table']) {
+        const stylesheet = `trumbowyg.${plugin}.css`;
+        await fs.copyFile(path.join(trumbowygDist, 'plugins', plugin, 'ui', stylesheet), path.join(trumbowygStyles, stylesheet));
+    }
+    await fs.copyFile(path.join(trumbowygDist, 'ui/icons.svg'), path.join(trumbowygImages, 'icons.svg'));
 }
 
 const mtime = async file => (await fs.stat(file).catch(() => null))?.mtimeMs ?? Infinity;
