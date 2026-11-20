@@ -13,7 +13,6 @@ module.exports = {
     "bs": "lib/bootstrap",
     "Utils": "lib/Utils",
     "Browser": "lib/Browser",
-    "knockout": "lib/knockout/knockout",
     "knockout.extends": "lib/knockout/extends",
     "knockout.mapping": "lib/knockout/knockout.mapping",
     "knockout.postbox": "lib/knockout/knockout-postbox",

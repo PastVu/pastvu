@@ -18,7 +18,8 @@ const aliases = require('./frontend-paths');
 const shimConfig = require('./frontend-shims');
 
 const root = path.resolve('public/js');
-const npmPackages = new Set(['@turf/turf', 'dot/doT', 'i18next', 'lodash', 'moment', 'moment/locale/ru', 'socket.io-client', 'underscore.string']);
+const npmPackages = new Set(['@turf/turf', 'dot/doT', 'i18next', 'knockout', 'lodash', 'moment', 'moment/locale/ru', 'socket.io-client', 'underscore.string']);
+const knockoutCore = require.resolve('knockout');
 const header = '/** Built from the PastVu frontend sources. See COPYING for license. */';
 
 function resolveModule(id, importer = path.join(root, '_mainConfig.js')) {
@@ -288,8 +289,9 @@ export default await ready;`, loader: 'js' };
                     return { path: resolveModule(args.path, args.importer) };
                 }
             });
-            build.onLoad({ filter: /\/lib\/.*\.js$/ }, async args => {
-                if (!args.path.startsWith(path.join(root, 'lib') + path.sep)) {
+            build.onLoad({ filter: /\/(?:lib\/.*|knockout-latest\.debug)\.js$/ }, async args => {
+                // Knockout 2.3.0 requires a global require to select its CommonJS branch.
+                if (args.path !== knockoutCore && !args.path.startsWith(path.join(root, 'lib') + path.sep)) {
                     return undefined;
                 }
 
