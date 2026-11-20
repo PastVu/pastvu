@@ -44,7 +44,6 @@ module.exports = [
             'public/js/lib/doT.js',
             'public/js/lib/geocoordsparser.js',
             'public/js/lib/highstock/**',
-            'public/js/lib/i18next.min.js',
             'public/js/lib/jquery/**',
             'public/js/lib/jsuri.js',
             'public/js/lib/lodash.js',
