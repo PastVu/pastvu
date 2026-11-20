@@ -7,7 +7,7 @@
 (function (factory) {
   if (typeof define === 'function' && define.amd) {
     // AMD. Register as an anonymous module.
-    define(['jquery', 'jquery-plugins/typeahead.bundle', 'css!style/bsext/tokenfield'], factory);
+    define(['jquery', 'typeahead.js', 'css!style/bsext/tokenfield'], factory);
   } else if (typeof exports === 'object') {
     // For CommonJS and CommonJS-like environments where a window with jQuery
     // is present, execute the factory with the jQuery instance from the window object

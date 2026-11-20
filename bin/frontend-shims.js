@@ -18,7 +18,11 @@ module.exports = {
 
     'highstock/highstock.src': { deps: ['jquery'], exports: 'Highcharts' },
 
-    'jquery-plugins/typeahead.bundle': { deps: ['jquery'] },
+    'typeahead.js': {
+        deps: ['jquery'],
+        // Bloodhound's enclosing function has no receiver in a strict module.
+        transform: source => source.replace('    })(this);', '    })(window);'),
+    },
     'jquery-plugins/plaxmove': { deps: ['jquery'] },
 
     'leaflet-plugins/Leaflet.GoogleMutant': { deps: ['leaflet'] },

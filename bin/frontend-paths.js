@@ -15,6 +15,7 @@ module.exports = {
     "jquery-ui": jqueryUiDir,
     "jquery-ui/slider": "lib/jquery/ui/slider",
     "jquery-plugins": "lib/jquery/plugins",
+    "typeahead.js": require.resolve('typeahead.js/dist/typeahead.bundle.js'),
     "bs": bootstrapJs,
     "bs/affix": "lib/bootstrap/affix",
     "bs/ext": "lib/bootstrap/ext",

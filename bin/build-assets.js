@@ -55,6 +55,12 @@ const shims = new Map(Object.entries(shimConfig).map(([id, shim]) => {
 // declared dependencies at build time; the factory executes in an isolated scope.
 // This is not a browser module registry or a runtime dependency resolver.
 function vendorModule(source, filename) {
+    const shim = shims.get(filename);
+
+    if (shim?.transform) {
+        source = shim.transform(source);
+    }
+
     const ast = babel.parseSync(source, { sourceType: 'script', configFile: false, babelrc: false });
     const deps = new Set();
 
@@ -76,7 +82,6 @@ function vendorModule(source, filename) {
 
     // Browser-only plugins depend on globals and declare nothing; their shim imports
     // the dependencies first to enforce execution order.
-    const shim = shims.get(filename);
     const relative = path.relative('.', filename);
 
     if (source.includes('define(')) {
