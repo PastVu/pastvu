@@ -55,6 +55,7 @@
         "async-exit-hook": "2.0.1",
         "basic-auth-connect": "1.1.0",
         "bcrypt": "6.0.0",
+        "blueimp-load-image": "1.7.0",
         "bootstrap": "https://codeload.github.com/twbs/bootstrap/tar.gz/refs/tags/v3.0.0",
         "bootstrap-datepicker": "1.4.0",
         "bootstrap-tokenfield": "https://codeload.github.com/sliptree/bootstrap-tokenfield/tar.gz/ff5b9295b2901237f035d346e7fedd389287b8dd",

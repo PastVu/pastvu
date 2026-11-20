@@ -14,7 +14,7 @@ import Cliche from 'm/_moduleCliche';
 import globalVM from 'globalVM';
 import i18n from 'i18n';
 import storage from 'model/storage';
-import loadImage from 'load-image';
+import loadImage from 'blueimp-load-image';
 import pug from 'tpl/user/photoUpload.pug?raw';
 import 'style/user/photoUpload.css';
 import 'jfileupload/jquery.iframe-transport';

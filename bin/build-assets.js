@@ -23,6 +23,7 @@ const npmPackages = new Set(['@turf/turf', 'dot/doT', 'eonasdan-bootstrap-dateti
 const jqueryCore = require.resolve('jquery');
 const amdPackages = new Set([
     jqueryCore,
+    require.resolve('blueimp-load-image'),
     require.resolve('eonasdan-bootstrap-datetimepicker'),
     require.resolve('jquery-resizable-dom'),
     require.resolve('knockout'),
