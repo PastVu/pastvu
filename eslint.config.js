@@ -44,7 +44,6 @@ module.exports = [
             'public/js/lib/highstock/**',
             'public/js/lib/jquery/**',
             'public/js/lib/PubSub.js',
-            'public/js/lib/knockout/!(extends.js)*',
             'public/js/lib/leaflet/!(extends)/**',
         ],
     },
