@@ -26,7 +26,7 @@ import 'knockout.extends';
 import 'noty';
 import 'noty.layouts';
 import 'noty.themes/pastvu';
-import 'jquery-plugins/scrollto';
+import 'jquery.scrollto';
 
 Utils.title.setPostfix(i18n('Administration - Photos of the past'));
 
