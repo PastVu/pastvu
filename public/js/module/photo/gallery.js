@@ -17,7 +17,6 @@ import renderer from 'renderer';
 import Photo from 'model/Photo';
 import 'model/storage';
 import statuses from 'm/photo/status';
-import Uri from 'lib/jsuri';
 import noties from 'noties';
 import pug from 'tpl/photo/gallery.pug?raw';
 import 'style/photo/gallery.css';
@@ -1095,15 +1094,15 @@ export default Cliche.extend({
         }
     },
     updateFilterUrl: function (filterString) {
-        const uri = new Uri(location.pathname + location.search);
+        const url = new URL(location.href);
 
         if (filterString) {
-            uri.replaceQueryParam('f', filterString);
+            url.searchParams.set('f', filterString);
         } else {
-            uri.deleteQueryParam('f');
+            url.searchParams.delete('f');
         }
 
-        globalVM.router.navigate(uri.toString());
+        globalVM.router.navigate(url.pathname + url.search);
     },
 
     feedSelect: function (feed) {

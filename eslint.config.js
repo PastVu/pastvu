@@ -45,7 +45,6 @@ module.exports = [
             'public/js/lib/geocoordsparser.js',
             'public/js/lib/highstock/**',
             'public/js/lib/jquery/**',
-            'public/js/lib/jsuri.js',
             'public/js/lib/PubSub.js',
             'public/js/lib/trumbowyg/**',
             'public/js/lib/knockout/!(extends.js)*',

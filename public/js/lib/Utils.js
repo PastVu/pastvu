@@ -14,7 +14,6 @@ import _ from 'lodash';
 import _s from 'underscore.string';
 import i18n from 'i18n';
 import parsecoords from 'lib/geocoordsparser';
-import 'lib/jsuri';
 import 'lib/jquery/plugins/extends';
 import 'bs/tooltip';
 
