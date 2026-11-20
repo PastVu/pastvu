@@ -90,10 +90,10 @@ function vendorModule(source, filename) {
     const relative = path.relative('.', filename);
 
     if (source.includes('define(')) {
-        if (shim) {
-            throw new Error(`${relative} declares its dependencies with define(); remove it from bin/frontend-shims.js`);
+        if (shim?.deps) {
+            throw new Error(`${relative} declares its dependencies with define(); remove deps from its shim`);
         }
-    } else if (!shim) {
+    } else if (!shim?.deps) {
         throw new Error(`${relative} is a vendored library without define() or ES module syntax; ` +
             'declare its dependencies in bin/frontend-shims.js');
     } else {

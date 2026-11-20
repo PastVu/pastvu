@@ -19,6 +19,7 @@ module.exports = {
     "bs": bootstrapJs,
     "bootstrap-datepicker": require.resolve('bootstrap-datepicker/dist/js/bootstrap-datepicker.js'),
     "bootstrap-datepicker/ru": require.resolve('bootstrap-datepicker/js/locales/bootstrap-datepicker.ru.js'),
+    "bootstrap-tokenfield": require.resolve('bootstrap-tokenfield/js/bootstrap-tokenfield.js'),
     "bs/affix": "lib/bootstrap/affix",
     "bs/ext": "lib/bootstrap/ext",
     "bs/tab": "lib/bootstrap/tab",

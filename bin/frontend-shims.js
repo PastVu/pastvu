@@ -7,11 +7,19 @@
 // These libraries rely on globals (jQuery, L, …), so their dependencies are imported first
 // to run before them. Keys and deps use the same module ids as frontend imports.
 // `exports` names the global to use as the module's default export.
+// AMD libraries can have a source transform and declare their own dependencies.
 // Every bundled vendored library without define() or ES module syntax must be listed here;
 // the build fails otherwise. Use `deps: []` for a library with no dependencies.
 module.exports = {
     'bootstrap-datepicker': { deps: ['jquery'] },
     'bootstrap-datepicker/ru': { deps: ['jquery', 'bootstrap-datepicker'] },
+    'bootstrap-tokenfield': {
+        transform: source => source
+            .replace("define(['jquery'], factory);", "define(['jquery', 'typeahead.js', 'css!style/bsext/tokenfield'], factory);")
+            // Typeahead selections carry the displayed value and the region's other attributes.
+            .replace('// Create token\n          if (_self.createToken( datum )) {',
+                "// Create token\n          datum.value = _self.$input.typeahead('val');\n          if (_self.createToken( datum )) {"),
+    },
 
     'bs/collapse': { deps: ['jquery', 'bs/transition'] },
     'bs/dropdown': { deps: ['jquery'] },
