@@ -113,6 +113,7 @@
         "@babel/register": "7.29.7",
         "@eslint/js": "10.0.1",
         "babel-jest": "30.4.1",
+        "bootstrap-less": "https://codeload.github.com/twbs/bootstrap/tar.gz/refs/tags/v3.0.1",
         "browserslist-to-esbuild": "2.1.1",
         "esbuild-wasm": "0.28.2",
         "eslint": "10.8.0",
