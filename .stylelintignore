@@ -1,6 +1,7 @@
 # Exclude third-party libs
 public/style/bs/**
 public/style/bsext/**
+!public/style/bsext/datetimepicker.less
 public/style/jquery/**
 public/style/leaflet/**
 
