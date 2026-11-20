@@ -36,6 +36,5 @@ OSM:
 
 Вариант с shpefile:
 	Сайт http://www.gadm.org/ может отдать shapefile полигонов административных областе (с не очень хорошей точностью)
-	Онлайн иструмент: http://mapshaper.org/
+	Конвертация в GeoJSON: откройте файлы shapefile в https://mapshaper.org/ и выберите GeoJSON при экспорте.
 	Утилита: http://vallandingham.me/shapefile_to_geojson.html
-	Клиентский скрипт для конвертации shapefile в geojson: https://github.com/wavded/js-shapefile-to-geojson (Реализован в pastvu: pastvu.com/js/shape2geojson/leaf.html)

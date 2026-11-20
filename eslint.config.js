@@ -37,7 +37,6 @@ module.exports = [
             'misc/**',
             'views/**',
             'basepatch/**',
-            'public/js/shape2geojson/**',
             // Vendored third-party libs under public/js/lib — explicit per-subdir,
             // since flat config global ignores don't reliably honour `!` negation.
             'public/js/lib/bootstrap/**',
