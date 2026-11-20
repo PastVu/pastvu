@@ -73,7 +73,11 @@ module.exports = {
             return source.replace(bundledCache, '').replace(cacheInitializer, 'this._lru = options.lru;');
         },
     },
-    'leaflet-plugins/Yandex': { deps: ['leaflet'] },
+    'leaflet-plugins/Yandex': {
+        deps: ['leaflet'],
+        // The layer can be removed before the Yandex API creates its container.
+        transform: source => source.replace('this._container.remove();', 'this._container?.remove();'),
+    },
 
     'noty': { deps: ['jquery'] },
     // Preserve PastVu's notification widths and the offset below the header.

@@ -83,6 +83,7 @@
         "knockout": "2.3.0",
         "knockout-mapping": "2.5.0",
         "leaflet": "1.7.1",
+        "leaflet-plugins": "3.3.2",
         "leaflet.gridlayer.googlemutant": "0.13.5",
         "lodash": "4.18.1",
         "log4js": "6.9.1",

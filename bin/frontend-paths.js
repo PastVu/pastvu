@@ -25,7 +25,7 @@ module.exports = {
     "Utils": "lib/Utils",
     "Browser": "lib/Browser",
     "knockout.extends": "lib/knockout/extends",
-    "leaflet-plugins": "lib/leaflet/plugins",
+    "leaflet-plugins/Yandex": require.resolve('leaflet-plugins/layer/tile/Yandex.js'),
     "leaflet.gridlayer.googlemutant": require.resolve('leaflet.gridlayer.googlemutant/dist/Leaflet.GoogleMutant.js'),
     "leaflet-extends": "lib/leaflet/extends",
     "trumbowyg": path.join(trumbowygDist, 'trumbowyg.min'),
