@@ -12,8 +12,6 @@ module.exports = {
     "jquery-plugins": "lib/jquery/plugins",
     "bs": "lib/bootstrap",
     "socket.io": "lib/socket.io.min",
-    "moment": "lib/moment/moment",
-    "momentlang": "lib/moment/lang",
     "Utils": "lib/Utils",
     "Browser": "lib/Browser",
     "lodash": "lib/lodash",

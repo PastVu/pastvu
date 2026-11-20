@@ -20,7 +20,7 @@ import router from 'router';
 import i18n from 'i18n';
 import html from 'tpl/appAdmin.pug?raw';
 import 'style/appAdmin.css';
-import 'momentlang/ru';
+import 'moment/locale/ru';
 import 'bs/transition';
 import 'knockout.extends';
 import 'noty';

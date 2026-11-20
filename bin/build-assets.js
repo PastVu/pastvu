@@ -18,7 +18,7 @@ const aliases = require('./frontend-paths');
 const shimConfig = require('./frontend-shims');
 
 const root = path.resolve('public/js');
-const npmPackages = new Set(['@turf/turf', 'i18next', 'underscore.string']);
+const npmPackages = new Set(['@turf/turf', 'i18next', 'moment', 'moment/locale/ru', 'underscore.string']);
 const header = '/** Built from the PastVu frontend sources. See COPYING for license. */';
 
 function resolveModule(id, importer = path.join(root, '_mainConfig.js')) {
@@ -88,7 +88,17 @@ function vendorModule(source, filename) {
     }
 
     const imports = [...deps].filter(id => !['exports', 'module', 'require'].includes(id));
-    const bindings = imports.map((id, index) => `import dep${index} from ${JSON.stringify(id.startsWith('css!') ? id.slice(4) + '.css' : resolveModule(id, filename))};`).join('\n');
+    const bindings = imports.map((id, index) => {
+        let specifier = id;
+
+        if (id.startsWith('css!')) {
+            specifier = id.slice(4) + '.css';
+        } else if (!npmPackages.has(id)) {
+            specifier = resolveModule(id, filename);
+        }
+
+        return `import dep${index} from ${JSON.stringify(specifier)};`;
+    }).join('\n');
     const values = imports.map((id, index) => `${JSON.stringify(id)}: dep${index}`).join(',');
 
     return `${bindings}

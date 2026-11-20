@@ -23,7 +23,7 @@ import noties from 'noties';
 import analytics from 'analytics';
 import html from 'tpl/appMain.pug?raw';
 import 'style/appMain.css';
-import 'momentlang/ru';
+import 'moment/locale/ru';
 import 'bs/transition';
 import 'bs/popover';
 import 'knockout.extends';
