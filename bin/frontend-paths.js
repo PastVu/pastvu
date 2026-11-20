@@ -11,7 +11,6 @@ module.exports = {
     "jquery-ui": "lib/jquery/ui",
     "jquery-plugins": "lib/jquery/plugins",
     "bs": "lib/bootstrap",
-    "socket.io": "lib/socket.io.min",
     "Utils": "lib/Utils",
     "Browser": "lib/Browser",
     "knockout": "lib/knockout/knockout",

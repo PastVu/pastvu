@@ -4,7 +4,7 @@
  */
 
 import _ from 'lodash';
-import io from 'socket.io';
+import { io } from 'socket.io-client';
 import noties from 'noties';
 import TimeoutError from 'errors/Timeout';
 import i18n from 'i18n';

@@ -47,7 +47,6 @@ module.exports = [
             'public/js/lib/jquery/**',
             'public/js/lib/jsuri.js',
             'public/js/lib/PubSub.js',
-            'public/js/lib/socket.io.min.js',
             'public/js/lib/trumbowyg/**',
             'public/js/lib/knockout/!(extends.js)*',
             'public/js/lib/leaflet/!(extends)/**',
