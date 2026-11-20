@@ -4,7 +4,7 @@
  */
 
 import { loadModules } from 'frontend/lazy';
-import _ from 'underscore';
+import _ from 'lodash';
 import $ from 'jquery';
 import 'Browser';
 import 'Utils';

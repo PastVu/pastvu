@@ -6,7 +6,6 @@
 /**
  * Share dialog for social networks
  */
-import 'underscore';
 import 'jquery';
 import Utils from 'Utils';
 import 'socket';

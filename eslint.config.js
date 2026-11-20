@@ -46,7 +46,6 @@ module.exports = [
             'public/js/lib/highstock/**',
             'public/js/lib/jquery/**',
             'public/js/lib/jsuri.js',
-            'public/js/lib/lodash.js',
             'public/js/lib/PubSub.js',
             'public/js/lib/socket.io.min.js',
             'public/js/lib/trumbowyg/**',

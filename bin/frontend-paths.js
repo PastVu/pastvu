@@ -14,8 +14,6 @@ module.exports = {
     "socket.io": "lib/socket.io.min",
     "Utils": "lib/Utils",
     "Browser": "lib/Browser",
-    "lodash": "lib/lodash",
-    "underscore": "lib/lodash",
     "knockout": "lib/knockout/knockout",
     "knockout.extends": "lib/knockout/extends",
     "knockout.mapping": "lib/knockout/knockout.mapping",

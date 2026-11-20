@@ -4,7 +4,7 @@
  */
 
 import { loadModules } from 'frontend/lazy';
-import _ from 'underscore';
+import _ from 'lodash';
 import _s from 'underscore.string';
 import Browser from 'Browser';
 import Utils from 'Utils';

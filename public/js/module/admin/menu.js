@@ -3,7 +3,6 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-import 'underscore';
 import ko from 'knockout';
 import 'knockout.mapping';
 import Cliche from 'm/_moduleCliche';

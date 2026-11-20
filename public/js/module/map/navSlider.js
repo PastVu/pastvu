@@ -4,7 +4,7 @@
  */
 
 import $ from 'jquery';
-import _ from 'underscore';
+import _ from 'lodash';
 import 'Browser';
 import Utils from 'Utils';
 import P from 'Params';
