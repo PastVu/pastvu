@@ -24,7 +24,8 @@ import 'moment/locale/ru';
 import 'bs/transition';
 import 'knockout.extends';
 import 'noty';
-import 'noty.layouts';
+import 'noty/layouts/center';
+import 'noty/layouts/topRight';
 import 'noty.themes/pastvu';
 import 'jquery.scrollto';
 

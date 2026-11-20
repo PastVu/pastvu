@@ -42,6 +42,18 @@ module.exports = {
     'leaflet-plugins/Yandex': { deps: ['leaflet'] },
 
     'noty': { deps: ['jquery'] },
+    // Preserve PastVu's notification widths and the offset below the header.
+    'noty/layouts/center': {
+        deps: ['noty'],
+        transform: source => source.replaceAll("'310px'", "'360px'"),
+    },
+    'noty/layouts/topRight': {
+        deps: ['noty'],
+        transform: source => source
+            .replaceAll("'310px'", "'382px'")
+            .replace('top          : 20,', 'top          : 39,')
+            .replace('right        : 20,', 'right        : 10,'),
+    },
 
     'trumbowyg': { deps: ['jquery'] },
     'trumbowyg-langs/ru.min': { deps: ['jquery', 'trumbowyg'] },

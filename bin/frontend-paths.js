@@ -34,7 +34,8 @@ module.exports = {
     "blueimp-file-upload/iframe-transport": require.resolve('blueimp-file-upload/js/jquery.iframe-transport.js'),
     "blueimp-load-image": require.resolve('blueimp-load-image'),
     "noty": require.resolve('noty/js/noty/jquery.noty.js'),
-    "noty.layouts": "lib/jquery/plugins/noty/layouts",
+    "noty/layouts/center": require.resolve('noty/js/noty/layouts/center.js'),
+    "noty/layouts/topRight": require.resolve('noty/js/noty/layouts/topRight.js'),
     "noty.themes": "lib/jquery/plugins/noty/themes",
     "intl": "intl/intl"
 };
