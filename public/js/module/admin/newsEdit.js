@@ -24,7 +24,7 @@ import 'trumbowyg';
 import 'style/trumbowyg/trumbowyg.css';
 import 'style/trumbowyg/trumbowyg.table.css';
 import 'style/trumbowyg/trumbowyg.colors.css';
-import 'bs/ext/datetimepicker/datetimepicker';
+import 'eonasdan-bootstrap-datetimepicker';
 
 const trumbowygOptions = {
     lang: P.settings.lang,
