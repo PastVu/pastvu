@@ -41,6 +41,8 @@ module.exports = {
     'leaflet-plugins/Leaflet.GoogleMutant': { deps: ['leaflet'] },
     'leaflet-plugins/Yandex': { deps: ['leaflet'] },
 
+    'noty': { deps: ['jquery'] },
+
     'trumbowyg': { deps: ['jquery'] },
     'trumbowyg-langs/ru.min': { deps: ['jquery', 'trumbowyg'] },
     'trumbowyg-plugins/cleanpaste/trumbowyg.cleanpaste.min': { deps: ['jquery', 'trumbowyg'] },
