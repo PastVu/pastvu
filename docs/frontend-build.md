@@ -76,9 +76,6 @@ the old startup connection barrier.
   like the old RequireJS `shim` config. The build fails if such a library is bundled
   without an entry, if an entry does not resolve to a file, or if a library has both
   `define()` and an entry. Add an entry when vendoring a new library of this kind.
-- The vendored underscore.string `wrap` helper needed local variable declarations
-  because ES modules execute in strict mode. This is a compatibility fix, not an
-  intentional behavior change.
 - Two vendored libraries carry small local patches for esbuild warnings:
   geocoordsparser uses `Number.isNaN` instead of the always-false `== NaN`, and
   knockout.mapping drops a `typeof … != "array"` clause that was always true.

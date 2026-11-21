@@ -6,7 +6,6 @@
 import $ from 'jquery';
 import Browser from 'Browser';
 import Utils from 'Utils';
-import 'underscore';
 import P from 'Params';
 import intl from 'intl';
 import i18n from 'i18n';

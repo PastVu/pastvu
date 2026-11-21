@@ -4,7 +4,7 @@
  */
 
 /* global Bloodhound: true */
-import _ from 'underscore';
+import _ from 'lodash';
 import $ from 'jquery';
 import Utils from 'Utils';
 import socket from 'socket';

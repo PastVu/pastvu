@@ -9,7 +9,7 @@ import $ from 'jquery';
 import 'Browser';
 import Utils from 'Utils';
 import 'socket';
-import _ from 'underscore';
+import _ from 'lodash';
 import ko from 'knockout';
 import 'knockout.mapping';
 import moment from 'moment';
