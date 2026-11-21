@@ -3,7 +3,7 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-import _ from 'underscore';
+import _ from 'lodash';
 import io from 'socket.io';
 import noties from 'noties';
 import TimeoutError from 'errors/Timeout';

@@ -7,7 +7,7 @@
 /**
  * Модель страницы фотографии
  */
-import _ from 'underscore';
+import _ from 'lodash';
 import Utils from 'Utils';
 import 'Browser';
 import socket from 'socket';

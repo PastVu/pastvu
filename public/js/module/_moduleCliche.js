@@ -5,7 +5,7 @@
 
 import $ from 'jquery';
 import Utils from 'Utils';
-import _ from 'underscore';
+import _ from 'lodash';
 import ko from 'knockout';
 import globalVM from 'globalVM';
 import renderer from 'renderer';

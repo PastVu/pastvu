@@ -4,7 +4,6 @@
  */
 
 import { loadModules } from 'frontend/lazy';
-import 'underscore';
 import 'Params';
 import ko from 'knockout';
 import socket from 'socket';

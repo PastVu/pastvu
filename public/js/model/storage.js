@@ -4,7 +4,7 @@
  */
 
 import 'jquery';
-import _ from 'underscore';
+import _ from 'lodash';
 import 'knockout';
 import 'knockout.mapping';
 import 'Utils';

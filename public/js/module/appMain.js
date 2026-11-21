@@ -9,7 +9,7 @@ import $ from 'jquery';
 import 'Browser';
 import Utils from 'Utils';
 import socket from 'socket';
-import _ from 'underscore';
+import _ from 'lodash';
 import ko from 'knockout';
 import moment from 'moment';
 import globalVM from 'globalVM';
