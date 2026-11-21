@@ -39,6 +39,5 @@ module.exports = {
     "noty": "lib/jquery/plugins/noty/jquery.noty",
     "noty.layouts": "lib/jquery/plugins/noty/layouts",
     "noty.themes": "lib/jquery/plugins/noty/themes",
-    "intl": "intl/intl",
-    "i18next": "lib/i18next.min"
+    "intl": "intl/intl"
 };

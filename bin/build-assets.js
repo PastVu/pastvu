@@ -272,7 +272,14 @@ const ready = new Promise((resolve, reject) => {
 document.head.appendChild(link);
 export default await ready;`, loader: 'js' };
             });
-            build.onResolve({ filter: /^[\w@]/ }, args => ({ path: resolveModule(args.path, args.importer) }));
+            build.onResolve({ filter: /^[\w@]/ }, args => {
+                // Let esbuild resolve the npm package and its browser entry point.
+                if (args.path === 'i18next') {
+                    return undefined;
+                }
+
+                return { path: resolveModule(args.path, args.importer) };
+            });
             build.onLoad({ filter: /\/lib\/.*\.js$/ }, async args => {
                 const source = await fs.readFile(args.path, 'utf8');
 
