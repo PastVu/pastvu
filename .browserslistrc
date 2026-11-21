@@ -1,2 +1,4 @@
-> 0.5%, since 2016, not dead # Browsers that we support, needs to be reviewed using browserslist-ga.
-maintained node versions
+# Frontend browser targets, used by esbuild via browserslist-to-esbuild.
+# The floor is native module scripts and top-level await (Chrome/Edge/Firefox 89, Safari 15).
+# Review periodically against real traffic, e.g. using browserslist-ga.
+> 0.5%, since 2022, not dead

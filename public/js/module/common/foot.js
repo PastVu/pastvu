@@ -3,88 +3,93 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'renderer', 'text!tpl/common/foot.pug', 'css!style/common/foot'], function (_, P, ko, Cliche, globalVM, renderer, pug) {
-    'use strict';
+import _ from 'underscore';
+import P from 'Params';
+import ko from 'knockout';
+import Cliche from 'm/_moduleCliche';
+import globalVM from 'globalVM';
+import renderer from 'renderer';
+import pug from 'tpl/common/foot.pug?raw';
+import 'style/common/foot.css';
 
-    return Cliche.extend({
-        pug: pug,
-        create: function () {
-            ko.applyBindings(globalVM, this.$dom[0]);
+export default Cliche.extend({
+    pug: pug,
+    create: function () {
+        ko.applyBindings(globalVM, this.$dom[0]);
 
-            window.setTimeout(function () {
-                this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandler, this);
-                this.routeHandler();
-                this.show();
-            }.bind(this), 800);
-        },
-        show: function () {
-            globalVM.func.showContainer(this.$container);
-            this.showing = true;
-        },
-        hide: function () {
-            globalVM.func.hideContainer(this.$container);
-            this.showing = false;
-        },
-        routeHandler: function () {
-            const params = globalVM.router.params();
+        window.setTimeout(function () {
+            this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandler, this);
+            this.routeHandler();
+            this.show();
+        }.bind(this), 800);
+    },
+    show: function () {
+        globalVM.func.showContainer(this.$container);
+        this.showing = true;
+    },
+    hide: function () {
+        globalVM.func.hideContainer(this.$container);
+        this.showing = false;
+    },
+    routeHandler: function () {
+        const params = globalVM.router.params();
 
-            if (params.about) {
-                this.showAbout();
-            } else if (this.aboutVM) {
-                this.destroyAbout();
-            }
-        },
+        if (params.about) {
+            this.showAbout();
+        } else if (this.aboutVM) {
+            this.destroyAbout();
+        }
+    },
 
-        navigateAbout: function () {
-            globalVM.router.navigate('/about');
-        },
-        showAbout: function () {
-            if (!this.aboutVM) {
-                renderer(
-                    [
-                        {
-                            module: 'm/diff/about',
-                            modal: {
-                                topic: globalVM.i18n('About'),
-                                initWidth: '1000px',
-                                //animateScale: true,
-                                curtainClick: { click: this.closePopup, ctx: this },
-                                offIcon: { text: globalVM.i18n('Close'), click: this.closePopup, ctx: this },
-                                btns: [
-                                    { css: 'btn-primary', text: globalVM.i18n('Close'), click: this.closePopup, ctx: this },
-                                ],
-                            },
-                            callback: function (vm) {
-                                this.aboutVM = this.childModules[vm.id] = vm;
-                            }.bind(this),
-                        },
-                    ],
+    navigateAbout: function () {
+        globalVM.router.navigate('/about');
+    },
+    showAbout: function () {
+        if (!this.aboutVM) {
+            renderer(
+                [
                     {
-                        parent: this,
-                        level: this.level + 2,
-                    }
-                );
-            }
-        },
-        destroyAbout: function () {
-            if (this.aboutVM) {
-                this.aboutVM.destroy();
-                delete this.aboutVM;
-            }
-        },
+                        module: 'm/diff/about',
+                        modal: {
+                            topic: globalVM.i18n('About'),
+                            initWidth: '1000px',
+                            //animateScale: true,
+                            curtainClick: { click: this.closePopup, ctx: this },
+                            offIcon: { text: globalVM.i18n('Close'), click: this.closePopup, ctx: this },
+                            btns: [
+                                { css: 'btn-primary', text: globalVM.i18n('Close'), click: this.closePopup, ctx: this },
+                            ],
+                        },
+                        callback: function (vm) {
+                            this.aboutVM = this.childModules[vm.id] = vm;
+                        }.bind(this),
+                    },
+                ],
+                {
+                    parent: this,
+                    level: this.level + 2,
+                }
+            );
+        }
+    },
+    destroyAbout: function () {
+        if (this.aboutVM) {
+            this.aboutVM.destroy();
+            delete this.aboutVM;
+        }
+    },
 
-        closePopup: function () {
-            // Закрытие будет вызвано автоматиечски после срабатывания routeHandler
-            if (globalVM.router.navigated) {
-                globalVM.router.back();
-            } else {
-                globalVM.router.navigate('/');
-            }
-        },
-        getRulesUrl: function () {
-            const template = _.template(P.settings.docs.rulesUrl);
+    closePopup: function () {
+        // Закрытие будет вызвано автоматиечски после срабатывания routeHandler
+        if (globalVM.router.navigated) {
+            globalVM.router.back();
+        } else {
+            globalVM.router.navigate('/');
+        }
+    },
+    getRulesUrl: function () {
+        const template = _.template(P.settings.docs.rulesUrl);
 
-            return template({ lang: P.settings.lang });
-        },
-    });
+        return template({ lang: P.settings.lang });
+    },
 });

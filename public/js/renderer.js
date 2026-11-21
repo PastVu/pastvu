@@ -3,204 +3,226 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-define([
-    'jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'lib/doT', 'text!tpl/modal.pug',
-], function ($, Utils, _, ko, globalVM, doT, dotModal) {
-    'use strict';
+import { loadModules } from 'frontend/lazy';
+import $ from 'jquery';
+import Utils from 'Utils';
+import _ from 'underscore';
+import ko from 'knockout';
+import globalVM from 'globalVM';
+import doT from 'lib/doT';
+import dotModal from 'tpl/modal.pug?raw';
 
-    const repository = globalVM.repository;
-    let tplModal;
-    const defaultOptions = {
-        parent: globalVM,
-        level: 0,
-        context: window,
+const repository = globalVM.repository;
+let tplModal;
+const defaultOptions = {
+    parent: globalVM,
+    level: 0,
+    context: window,
+};
+
+//Помещаем объект промиса в массив, на место имени модуля если есть,
+//чтобы в коллбэке рендера сохранить последовательнсть модулей,
+//даже если какие-то уже были отрендерены ранее в своих контейнерах
+function pushPromise(arr, promise, moduleName) {
+    let indexToPush = arr.length;
+
+    if (moduleName) {
+        indexToPush = arr.indexOf(moduleName);
+    }
+
+    arr.splice(indexToPush, +!!moduleName, promise);
+}
+
+function createModal(modal) {
+    if (!tplModal) {
+        tplModal = doT.template(dotModal);
+    }
+
+    const $modal = $(tplModal(modal));
+    let $btns;
+    let btn;
+    let i;
+    const btnClickClosure = function (b) {
+        return function (evt) {
+            evt.stopPropagation();
+            b.click.call(b.ctx, $(this), evt);
+        };
     };
 
-    //Помещаем объект промиса в массив, на место имени модуля если есть,
-    //чтобы в коллбэке рендера сохранить последовательнсть модулей,
-    //даже если какие-то уже были отрендерены ранее в своих контейнерах
-    function pushPromise(arr, promise, moduleName) {
-        let indexToPush = arr.length;
+    if (modal.btns) {
+        $btns = $('.neoModalFoot > .btn', $modal);
 
-        if (moduleName) {
-            indexToPush = arr.indexOf(moduleName);
+        for (i = 0; i < modal.btns.length; i++) {
+            btn = modal.btns[i];
+            $($btns[i]).on('click', btnClickClosure(btn));
         }
-
-        arr.splice(indexToPush, +!!moduleName, promise);
     }
 
-    function createModal(modal) {
-        if (!tplModal) {
-            tplModal = doT.template(dotModal);
-        }
+    if (modal.offIcon && modal.offIcon.click) {
+        $('.off', $modal).on('click', function (evt) {
+            evt.stopPropagation();
+            modal.offIcon.click.call(modal.offIcon.ctx, $(this), evt);
+        });
+    }
 
-        const $modal = $(tplModal(modal));
-        let $btns;
-        let btn;
-        let i;
-        const btnClickClosure = function (b) {
-            return function (evt) {
-                evt.stopPropagation();
-                b.click.call(b.ctx, $(this), evt);
-            };
-        };
-
-        if (modal.btns) {
-            $btns = $('.neoModalFoot > .btn', $modal);
-
-            for (i = 0; i < modal.btns.length; i++) {
-                btn = modal.btns[i];
-                $($btns[i]).on('click', btnClickClosure(btn));
-            }
-        }
-
-        if (modal.offIcon && modal.offIcon.click) {
-            $('.off', $modal).on('click', function (evt) {
-                evt.stopPropagation();
-                modal.offIcon.click.call(modal.offIcon.ctx, $(this), evt);
+    if (modal.curtainClick) {
+        $modal
+            .on('click', function (evt) {
+                if (!$(evt.target).closest('a').length) {
+                    // Блокируем всплытие события, только если это не ahref, т.к. в этом случае
+                    // должен сработать обработчик ссылок RoutManager на document.
+                    evt.stopPropagation();
+                    modal.curtainClick.click.call(modal.curtainClick.ctx, $(this), evt);
+                }
+            })
+            .find('.neoModal').on('click', function (evt) {
+                if (!$(evt.target).closest('a').length) {
+                    // Блокируем всплытие события, только если это не ahref, т.к. в этом случае
+                    // должен сработать обработчик ссылок RoutManager на document.
+                    evt.stopPropagation();
+                }
             });
-        }
-
-        if (modal.curtainClick) {
-            $modal
-                .on('click', function (evt) {
-                    if (!$(evt.target).closest('a').length) {
-                        // Блокируем всплытие события, только если это не ahref, т.к. в этом случае
-                        // должен сработать обработчик ссылок RoutManager на document.
-                        evt.stopPropagation();
-                        modal.curtainClick.click.call(modal.curtainClick.ctx, $(this), evt);
-                    }
-                })
-                .find('.neoModal').on('click', function (evt) {
-                    if (!$(evt.target).closest('a').length) {
-                        // Блокируем всплытие события, только если это не ahref, т.к. в этом случае
-                        // должен сработать обработчик ссылок RoutManager на document.
-                        evt.stopPropagation();
-                    }
-                });
-        }
-
-        return $modal.appendTo(document.body);
     }
 
-    function render(modules, options) {
-        const replacedContainers = {};
-        const promises = _.map(modules, 'module'); // Массив промисов для возврата модулей в callback функцию
-        const promisesWhenNew = {}; //Хеш имен модулей, которые рендерятся первый раз. Передается последним параметром в коллбэк рендера
+    return $modal.appendTo(document.body);
+}
 
-        options = _.defaults(options || {}, defaultOptions);
+function render(modules, options) {
+    const replacedContainers = {};
+    const promises = _.map(modules, 'module'); // Массив промисов для возврата модулей в callback функцию
+    const promisesWhenNew = {}; //Хеш имен модулей, которые рендерятся первый раз. Передается последним параметром в коллбэк рендера
 
-        /**
-         * Уничтожаем не глобальные модули, которых нет в новом списке
-         */
-        _.forOwn(repository, function (existingVM, existingVMKey) {
-            if (!existingVM.global && existingVM.parentModule === options.parent && existingVM.level === options.level) {
-                let savesExisting = false;
-                let sameContainer = false;
-                let i = modules.length - 1;
-                let item;
-                let dfd;
+    options = _.defaults(options || {}, defaultOptions);
 
-                while (i >= 0) {
-                    item = modules[i];
+    /**
+     * Уничтожаем не глобальные модули, которых нет в новом списке
+     */
+    _.forOwn(repository, function (existingVM, existingVMKey) {
+        // forOwn iterates a snapshot of keys; destroying a module earlier in this loop also
+        // destroys its children, removing them from the repository before they are reached.
+        if (!existingVM) {
+            return;
+        }
 
-                    if (existingVM.container === item.container) {
-                        if (existingVM.module === item.module) {
-                            savesExisting = true;
-                            modules.splice(i, 1);
+        if (!existingVM.global && existingVM.parentModule === options.parent && existingVM.level === options.level) {
+            let savesExisting = false;
+            let sameContainer = false;
+            let i = modules.length - 1;
+            let item;
+            let dfd;
 
-                            //Вызываем коллбэк для уже существующего модуля
-                            if (Utils.isType('function', item.callback)) {
-                                item.callback.call(window, existingVM);
-                            }
+            while (i >= 0) {
+                item = modules[i];
 
-                            //Помещаем модуль в промисы для передачи в общий коллбэк рендера
-                            dfd = $.Deferred();
-                            pushPromise(promises, dfd.promise(), existingVM.module);
-                            dfd.resolve(existingVM);
-                        } else {
-                            sameContainer = true;
+                if (existingVM.container === item.container) {
+                    if (existingVM.module === item.module) {
+                        savesExisting = true;
+                        modules.splice(i, 1);
+
+                        //Вызываем коллбэк для уже существующего модуля
+                        if (Utils.isType('function', item.callback)) {
+                            item.callback.call(window, existingVM);
                         }
 
-                        break;
-                    }
-
-                    i = i - 1;
-                }
-
-                if (!savesExisting) {
-                    if (sameContainer) {
-                        existingVM.awaitDestroy();
-                        replacedContainers[existingVM.container] = existingVMKey;
+                        //Помещаем модуль в промисы для передачи в общий коллбэк рендера
+                        dfd = $.Deferred();
+                        pushPromise(promises, dfd.promise(), existingVM.module);
+                        dfd.resolve(existingVM);
                     } else {
-                        existingVM.destroy();
+                        sameContainer = true;
                     }
+
+                    break;
                 }
-            }
-        });
 
-        /**
-         * Создаем новые модули
-         */
-        _.forOwn(modules, function (item) {
-            const dfd = $.Deferred();
-
-            pushPromise(promises, dfd.promise(), item.module);
-
-            //Если передан объект modal, то модуль должен появится в модальном окне.
-            //Создаем разметку модального окна с контейнером внутри и передаем этот параметр в клише модуля
-            if (Utils.isType('object', item.modal)) {
-                item.modal.$curtain = createModal(item.modal);
-
-                //Для подсчета параметров размера, необходимо забайндить
-                ko.applyBindings(globalVM, item.modal.$curtain[0]);
-                item.container = item.modal.$curtain[0].querySelector('.neoModalContainer');
+                i = i - 1;
             }
 
-            require([item.module], function (VM) {
-                if (replacedContainers[item.container]) {
-                    repository[replacedContainers[item.container]].destroy();
+            if (!savesExisting) {
+                if (sameContainer) {
+                    existingVM.awaitDestroy();
+                    replacedContainers[existingVM.container] = existingVMKey;
+                } else {
+                    existingVM.destroy();
                 }
-
-                const vm = new VM({
-                    parent: options.parent,
-                    moduleName: item.module,
-                    modal: item.modal,
-                    container: item.container,
-                    level: options.level,
-                    options: item.options || {},
-                    global: item.global,
-                });
-
-                //Коллбэк, вызываемый только при создании модуля, один раз
-                if (Utils.isType('function', item.callbackWhenNew)) {
-                    item.callbackWhenNew.call(item.ctx, vm);
-                }
-
-                //Вызываем коллбэк для модуля
-                if (Utils.isType('function', item.callback)) {
-                    item.callback.call(item.ctx, vm);
-                }
-
-                promisesWhenNew[item.module] = true;
-                dfd.resolve(vm);
-            });
-        });
-
-        if (Utils.isType('function', options.callback)) {
-            $.when.apply($, promises)
-                .pipe(function () {
-                    const dfd = $.Deferred();
-                    const args = _.toArray(arguments);
-
-                    args.push(promisesWhenNew); //Вставляем последним параметром хэш новых модулей
-                    dfd.resolveWith.apply(dfd, [options.context, args]);
-
-                    return dfd;
-                })
-                .then(options.callback);
+            }
         }
-    }
+    });
 
-    return render;
-});
+    /**
+     * Создаем новые модули
+     */
+    // Modules load in parallel but are created in the listed order: some read others from
+    // the repository while being created (e.g. top uses the global auth module).
+    let created = Promise.resolve();
+
+    _.forOwn(modules, function (item) {
+        const dfd = $.Deferred();
+
+        pushPromise(promises, dfd.promise(), item.module);
+
+        //Если передан объект modal, то модуль должен появится в модальном окне.
+        //Создаем разметку модального окна с контейнером внутри и передаем этот параметр в клише модуля
+        if (Utils.isType('object', item.modal)) {
+            item.modal.$curtain = createModal(item.modal);
+
+            //Для подсчета параметров размера, необходимо забайндить
+            ko.applyBindings(globalVM, item.modal.$curtain[0]);
+            item.container = item.modal.$curtain[0].querySelector('.neoModalContainer');
+        }
+
+        const loaded = loadModules([item.module], VM => VM);
+
+        created = created.then(() => loaded).then(function (VM) {
+            if (!VM) {
+                return; // Failed to load; loadModules already reported it.
+            }
+
+            if (replacedContainers[item.container]) {
+                repository[replacedContainers[item.container]].destroy();
+            }
+
+            const vm = new VM({
+                parent: options.parent,
+                moduleName: item.module,
+                modal: item.modal,
+                container: item.container,
+                level: options.level,
+                options: item.options || {},
+                global: item.global,
+            });
+
+            //Коллбэк, вызываемый только при создании модуля, один раз
+            if (Utils.isType('function', item.callbackWhenNew)) {
+                item.callbackWhenNew.call(item.ctx, vm);
+            }
+
+            //Вызываем коллбэк для модуля
+            if (Utils.isType('function', item.callback)) {
+                item.callback.call(item.ctx, vm);
+            }
+
+            promisesWhenNew[item.module] = true;
+            dfd.resolve(vm);
+        }).catch(error => {
+            // Surface the error as uncaught without blocking the modules listed after this one.
+            reportError(error);
+        });
+    });
+
+    if (Utils.isType('function', options.callback)) {
+        $.when.apply($, promises)
+            .pipe(function () {
+                const dfd = $.Deferred();
+                const args = _.toArray(arguments);
+
+                args.push(promisesWhenNew); //Вставляем последним параметром хэш новых модулей
+                dfd.resolveWith.apply(dfd, [options.context, args]);
+
+                return dfd;
+            })
+            .then(options.callback);
+    }
+}
+
+export default render;

@@ -67,6 +67,9 @@ docker compose up
 
 Then navigate to `http://localhost:3000` and login with the default user `admin`/`admin`.
 
+See [Frontend build](docs/frontend-build.md) for asset watching, production output,
+and browser compatibility.
+
 ## License
 
 * GNU Affero General Public License (AGPL) v3 or later. See [COPYING](https://github.com/pastvu/pastvu/blob/master/COPYING) for the full license text.

@@ -456,7 +456,7 @@
 						return;
 					}
 
-					if(typeof rootObject[indexer] != "object" && typeof rootObject[indexer] != "array" && options.observe.length > 0 && ko.utils.arrayIndexOf(options.observe, fullPropertyName) == -1)
+					if(typeof rootObject[indexer] != "object" && options.observe.length > 0 && ko.utils.arrayIndexOf(options.observe, fullPropertyName) == -1)
 					{
 						mappedRootObject[indexer] = rootObject[indexer];
 						options.copiedProperties[fullPropertyName] = true;

@@ -123,7 +123,9 @@ export async function configure(startStamp) {
         const pub = path.resolve('./public');
 
         if (env === 'development') {
-            app.use('/style', ourMiddlewares.lessToCss(path.join(pub, 'style')));
+            // Keep frontend bundling out of the production server and Docker runtime.
+            await require('./bin/build-assets').buildAssets({ minify: false });
+            app.use(express.static(path.resolve('public-build'), { maxAge: 0 }));
         }
 
         // Favicon need to be placed before static, because it will written from disc once and will be cached
