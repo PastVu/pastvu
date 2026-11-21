@@ -3,52 +3,35 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-define([
-    'underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche',
-    'globalVM', 'i18n', 'renderer', 'model/Photo', 'model/storage', 'm/photo/status', 'lib/jsuri',
-    'noties', 'text!tpl/photo/gallery.pug', 'css!style/photo/gallery',
-], function (_, Browser, Utils, socket, P, ko, koMapping, Cliche, globalVM, i18n,
-             renderer, Photo, storage, statuses, Uri, noties, pug) {
-    'use strict';
+import _ from 'underscore';
+import 'Browser';
+import Utils from 'Utils';
+import socket from 'socket';
+import P from 'Params';
+import ko from 'knockout';
+import 'knockout.mapping';
+import Cliche from 'm/_moduleCliche';
+import globalVM from 'globalVM';
+import i18n from 'i18n';
+import renderer from 'renderer';
+import Photo from 'model/Photo';
+import 'model/storage';
+import statuses from 'm/photo/status';
+import Uri from 'lib/jsuri';
+import noties from 'noties';
+import pug from 'tpl/photo/gallery.pug?raw';
+import 'style/photo/gallery.css';
 
-    const $window = $(window);
-    const imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
-    const statusNums = statuses.nums;
+const $window = $(window);
+const imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
+const statusNums = statuses.nums;
 
-    const filterS = _.transform(statusNums, function (result, status, num) {
-        result.push({ s: num, title: status.filter_title });
-    }, []);
-    const filterSPublic = filterS.filter(function (filter) {
-        return filter.s >= statuses.keys.PUBLIC;
-    });
-
-    return Cliche.extend({
-        pug: pug,
-        options: {
-            addPossible: false,
-            userVM: null,
-            goUpload: false,
-            filter: {},
-        },
-        create: function () {
-            this.auth = globalVM.repository['m/common/auth'];
-            this.u = this.options.userVM;
-            this._ = _;
-
-            this.photos = ko.observableArray();
-            this.feed = ko.observable(false);
-            this.coin = ko.observable(false);
-
-            this.t = [];
-            this.ccount = 1;
-            this.lcount = 75;
-            this.year = statuses.years[statuses.type.PAINTING].min;
-            this.year2 = statuses.years[statuses.type.PHOTO].max;
-
-            this.count = ko.observable(0);
-            this.limit = 30; //Стараемся подобрать кол-во, чтобы выводилось по-строчного. Самое популярное - 6 на строку
-            this.loading = ko.observable(false);
-            this.loadedFirst = ko.observable(false); //Говорит, что данные были загружены, хотя бы раз
+const filterS = _.transform(statusNums, function (result, status, num) {
+    result.push({ s: num, title: status.filter_title });
+}, []);
+const filterSPublic = filterS.filter(function (filter) {
+    return filter.s >= statuses.keys.PUBLIC;
+});
 
 export default Cliche.extend({
     pug: pug,
@@ -69,6 +52,7 @@ export default Cliche.extend({
 
         this.t = [];
         this.ccount = 1;
+        this.lcount = 75;
         this.year = statuses.years[statuses.type.PAINTING].min;
         this.year2 = statuses.years[statuses.type.PHOTO].max;
 
@@ -97,6 +81,9 @@ export default Cliche.extend({
                 s: ko.observableArray(),
                 c: ko.observableArray(),
                 ccount: ko.observable(this.ccount),
+                l: ko.observableArray(),
+                lcount: ko.observable(this.lcount),
+                lf: ko.observableArray(), // limit for user is full
                 r: ko.observableArray(), // Array of selected regions
                 rdis: ko.observableArray(), // Array of cids of inactive regions
                 rs: ko.observableArray(), // Enable/disable subregions
@@ -126,42 +113,43 @@ export default Cliche.extend({
                         return filterSPublic;
                     }
 
-            this.filter = {
-                //Параметры фильтра для запросов
-                origin: '',
-                //Значения фильтра для отображения
-                disp: {
-                    t: ko.observableArray(),
-                    s: ko.observableArray(),
-                    c: ko.observableArray(),
-                    ccount: ko.observable(this.ccount),
-                    l: ko.observableArray(),
-                    lcount: ko.observable(this.lcount),
-                    lf: ko.observableArray(), // limit for user is full
-                    r: ko.observableArray(), // Array of selected regions
-                    rdis: ko.observableArray(), // Array of cids of inactive regions
-                    rs: ko.observableArray(), // Enable/disable subregions
-                    re: ko.observableArray(), // Array of cids of excluded regions
-                    redis: ko.observableArray(), // Array of cids of inactive excluded regions, because of inactive parents
-                    geo: ko.observableArray(),
-                    dir: ko.observableArray(),
-                    year: ko.observable(this.year),
-                    year2: ko.observable(this.year2),
-                },
-                active: ko.observable(true),
-                inactivateString: '',
-                can: {
-                    s: this.co.filtercans = ko.computed(function () {
-                        return this.auth.loggedIn();
-                    }, this),
-                },
-                available: {
-                    s: this.co.filteravailables = ko.computed(function () {
-                        if (this.auth.iAm) {
-                            // Владелец или модератор видят все статусы, можно регулировать
-                            if (this.auth.iAm.role() > 4 || this.itsMine()) {
-                                return filterS;
-                            }
+                    return [];
+                }, this),
+            },
+            admin: ko.computed(function () {
+                return this.auth.loggedIn() && this.auth.iAm.role() >= 10;
+            }, this),
+        };
+
+        this.panelW = ko.observable('0px');
+        this.w = ko.observable('0px');
+        this.h = ko.observable('0px');
+
+        this.page = ko.observable(1);
+        this.pageSize = ko.observable(this.limit);
+        this.pageSlide = ko.observable(2);
+
+        this.pageLast = this.co.pageLast = ko.computed(function () {
+            return ((this.count() - 1) / this.pageSize() >> 0) + 1;
+        }, this);
+        this.pageHasNext = this.co.pageHasNext = ko.computed(function () {
+            return this.page() < this.pageLast();
+        }, this);
+        this.pageHasPrev = this.co.pageHasPrev = ko.computed(function () {
+            return this.page() > 1;
+        }, this);
+        this.pageFirstItem = this.co.pageFirstItem = ko.computed(function () {
+            return this.pageSize() * (this.page() - 1) + 1;
+        }, this);
+        this.pageLastItem = this.co.pageLastItem = ko.computed(function () {
+            return Math.min(this.pageFirstItem() + this.pageSize() - 1, this.count());
+        }, this);
+        this.pages = this.co.pages = ko.computed(function () {
+            const pageCount = this.pageLast();
+            let pageFrom = Math.max(1, this.page() - this.pageSlide());
+            let pageTo = Math.min(pageCount, this.page() + this.pageSlide());
+            const result = [];
+            let i;
 
             pageFrom = Math.max(1, Math.min(pageTo - 2 * this.pageSlide(), pageFrom));
             pageTo = Math.min(pageCount, Math.max(pageFrom + 2 * this.pageSlide(), pageTo));
@@ -275,6 +263,7 @@ export default Cliche.extend({
         this.subscriptions.filter_disp_y = this.filter.disp.year.subscribe(_.debounce(this.yearHandle, 800), this);
         this.subscriptions.filter_disp_y2 = this.filter.disp.year2.subscribe(_.debounce(this.year2Handle, 800), this);
         this.subscriptions.filter_disp_ccount = this.filter.disp.ccount.subscribe(_.debounce(this.ccountHandle, 800), this);
+        this.subscriptions.filter_disp_lcount = this.filter.disp.lcount.subscribe(_.debounce(this.lcountHandle, 800), this);
         this.subscriptions.filter_active = this.filter.active.subscribe(this.filterActiveChange, this);
         this.filterChangeHandleBlock = false;
 
@@ -362,83 +351,10 @@ export default Cliche.extend({
                 Utils.title.setTitle({ title: preTitle + i18n('All images feed') });
             }
 
-            this.pageQuery = ko.observable('');
-
-            this.routeHandlerDebounced = _.throttle(this.routeHandler, 700, { leading: true, trailing: true });
-
-            // Subscriptions
-            this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandlerDebounced, this);
-            this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
-            this.subscriptions.filter_disp_r = this.filter.disp.r.subscribe(this.filterRHandle, this);
-            this.subscriptions.filter_disp_rdis = this.filter.disp.rdis.subscribe(this.filterRdisHandle, this);
-            this.subscriptions.filter_disp_s = this.filter.disp.s.subscribe(this.filterSHandle, this);
-            this.subscriptions.filter_disp_y = this.filter.disp.year.subscribe(_.debounce(this.yearHandle, 800), this);
-            this.subscriptions.filter_disp_y2 = this.filter.disp.year2.subscribe(_.debounce(this.year2Handle, 800), this);
-            this.subscriptions.filter_disp_ccount = this.filter.disp.ccount.subscribe(_.debounce(this.ccountHandle, 800), this);
-            this.subscriptions.filter_disp_lcount = this.filter.disp.lcount.subscribe(_.debounce(this.lcountHandle, 800), this);
-            this.subscriptions.filter_active = this.filter.active.subscribe(this.filterActiveChange, this);
-            this.filterChangeHandleBlock = false;
-
-            this.sizesCalc();
-            this.routeHandler();
-        },
-        show: function () {
-            globalVM.func.showContainer(this.$container);
-
-            if (this.u && this.options.goUpload) {
-                window.setTimeout(this.showUpload.bind(this), 500);
-            }
-
-            this.showing = true;
-        },
-        hide: function () {
-            this.scrollDeActivate();
-            globalVM.func.hideContainer(this.$container);
-            this.showing = false;
-        },
-        userModeAdditions: function () {
-            this.canAdd = this.co.canAdd = ko.computed(function () {
-                return this.options.addPossible && this.itsMine() && (this.feed() || this.page() === 1);
-            }, this);
-
-            this.subscriptions.login = this.u.login.subscribe(this.changeUserHandler, this); //Срабатывает при смене пользователя
-
-            if (!this.auth.loggedIn()) {
-                this.subscriptions.loggedIn = this.auth.loggedIn.subscribe(this.loggedInHandler, this);
-            }
-        },
-        loggedInHandler: function () {
-            //После логина перезапрашиваем фотографии пользователя
-            //В режиме ленты также перезапрашиваем всё, а не только приватные,
-            //т.к. необходимо обновить по регионам пользователя
-            this.refreshPhotos();
-            this.subscriptions.loggedIn.dispose();
-            delete this.subscriptions.loggedIn;
-        },
-        changeUserHandler: function () {
-            this.photos([]);
-        },
-
-        makeBinding: function () {
-            if (!this.binded) {
-                ko.applyBindings(globalVM, this.$dom[0]);
-                this.binded = true;
-                this.show();
-            }
-        },
-        routeHandler: function () {
-            const params = globalVM.router.params();
-            let page = params.page;
-            const filterString = params.f || '';
-            let filterChange = false;
-            const currPhotoLength = this.photos().length;
-            let needRecieve = true;
-            const preTitle = '';
-
-            // Если сразу открываем загрузку, то обрабатываем галерею как обычный запуск, т.е. page будет 1
-            // Если галерея уже загружена и затем открываем загрузку, то ничего делать не надо
-            if (this.binded && params.photoUpload) {
-                return;
+            if (!this.coin() && this.page() === 1 && currPhotoLength && currPhotoLength <= this.limit) {
+                needRecieve = false; //Если переключаемся на ленту с первой заполненной страницы, то оставляем её данные
+            } else {
+                this.photos([]);
             }
 
             page = 1;
@@ -497,6 +413,8 @@ export default Cliche.extend({
         let filterString = '';
         const t = this.filter.disp.t().map(Number).sort();
         const c = this.filter.disp.c().map(Number).sort();
+        const l = this.filter.disp.l().map(Number).sort();
+        const lf = this.filter.disp.lf().map(Number).sort();
         const r = this.filter.disp.r();
         const re = this.filter.disp.re();
         let s = this.filter.disp.s().map(Number);
@@ -505,6 +423,7 @@ export default Cliche.extend({
         const year = Number(this.filter.disp.year());
         const year2 = Number(this.filter.disp.year2());
         const ccount = Number(this.filter.disp.ccount());
+        const lcount = Number(this.filter.disp.lcount());
         const yearsRange = this.getTypeYearsRange();
         let i;
 
@@ -514,31 +433,6 @@ export default Cliche.extend({
             for (i = 0; i < r.length; i++) {
                 filterString += '!' + r[i].cid;
             }
-        },
-        buildFilterString: function () {
-            let filterString = '';
-            const t = this.filter.disp.t().map(Number).sort();
-            const c = this.filter.disp.c().map(Number).sort();
-            const l = this.filter.disp.l().map(Number).sort();
-            const lf = this.filter.disp.lf().map(Number).sort();
-            const r = this.filter.disp.r();
-            const re = this.filter.disp.re();
-            let s = this.filter.disp.s().map(Number);
-            const geo = this.filter.disp.geo();
-            const dir = this.filter.disp.dir();
-            const year = Number(this.filter.disp.year());
-            const year2 = Number(this.filter.disp.year2());
-            const ccount = Number(this.filter.disp.ccount());
-            const lcount = Number(this.filter.disp.lcount());
-            const yearsRange = this.getTypeYearsRange();
-            let i;
-
-            if (r.length) {
-                filterString += (filterString ? '_' : '') + 'r';
-
-                for (i = 0; i < r.length; i++) {
-                    filterString += '!' + r[i].cid;
-                }
 
             const rhash = this.rHash();
             const rp = _.sortBy(this.filter.disp.rdis().filter(function (cid) {
@@ -608,45 +502,8 @@ export default Cliche.extend({
             }
         }
 
-            if (l.length && (_.isEqual(l, [0]) || lcount > 0)) {
-                this.lcount = lcount;
-
-                filterString += (filterString ? '_' : '') + 'l';
-
-                if (_.includes(l, 0)) {
-                    filterString += '!0';
-                }
-
-                if (_.includes(l, 1)) {
-                    filterString += '!' + (lcount > 1 ? lcount : 1);
-                }
-            }
-
-            if (lf.length && _.isEqual(lf, [1])) {
-                filterString += (filterString ? '_' : '') + 'lf!1';
-            }
-
-            return filterString;
-        },
-        filterActiveChange: function (val) {
-            if (this.filterActiveChangeBlock) {
-                return;
-            }
-
-            if (val) {
-                this.filter.origin = this.filter.inactivateString;
-                this.filter.inactivateString = '';
-            } else if (!val) {
-                this.filter.inactivateString = this.filter.origin;
-                this.filter.origin = this.itsMine() ? '' : 'r!0'; //Своя галерея всегда отдается по всем по умолчанию
-            }
-
-            this.refreshPhotos();
-        },
-        filterChangeHandle: function () {
-            if (this.filterChangeHandleBlock) {
-                return;
-            }
+        if (t.length && !_.isEqual(t, [1, 2])) {
+            filterString += (filterString ? '_' : '') + 't';
 
             for (i = 0; i < t.length; i++) {
                 filterString += '!' + t[i];
@@ -671,6 +528,24 @@ export default Cliche.extend({
             if (_.includes(c, 1)) {
                 filterString += '!' + (ccount > 1 ? ccount : 1);
             }
+        }
+
+        if (l.length && (_.isEqual(l, [0]) || lcount > 0)) {
+            this.lcount = lcount;
+
+            filterString += (filterString ? '_' : '') + 'l';
+
+            if (_.includes(l, 0)) {
+                filterString += '!0';
+            }
+
+            if (_.includes(l, 1)) {
+                filterString += '!' + (lcount > 1 ? lcount : 1);
+            }
+        }
+
+        if (lf.length && _.isEqual(lf, [1])) {
+            filterString += (filterString ? '_' : '') + 'lf!1';
         }
 
         return filterString;
@@ -1172,82 +1047,29 @@ export default Cliche.extend({
                     }
                 }
 
-                    break;
-                default:
-                    return true;
-            }
-        },
-        flclick: function (data, event) {
-            const currL = data.filter.disp.l();
-            const clicked = event.target.value;
+                break;
+            default:
+                return true;
+        }
+    },
+    yearsReset: function () {
+        clearTimeout(this.yearApplyTimeout);
 
-            if (currL.length === 2) {
-                data.filter.disp.l([clicked]);
-            }
+        const yearsRange = this.getTypeYearsRange();
 
-            this.filterChangeHandle(); //Вручную вызываем обработку фильтра
+        this.filter.disp.year(yearsRange.min);
+        this.filter.disp.year2(yearsRange.max);
 
-            return true; //Возвращаем true, чтобы галка в браузере переключилась
-        },
-        lcountHandle: function (lcount) {
-            lcount = Number(lcount);
+        this.filterChangeHandle();
+    },
+    fcclick: function (data, event) {
+        const currC = data.filter.disp.c();
+        const clicked = event.target.value;
 
-            if (!lcount || lcount < 1) {
-                this.filter.disp.lcount('1');
-
-                return;
-            }
-
-            if (lcount > 9999) {
-                this.filter.disp.lcount('9999');
-
-                return;
-            }
-
-            if (_.includes(this.filter.disp.l(), '1') && lcount !== this.lcount) {
-                // Вручную вызываем обработку фильтра
-                this.filterChangeHandle();
-            }
-        },
-        lcountArrow: function (data, evt) {
-            let lcount = Number(this.filter.disp.lcount());
-
-            switch (evt.key) {
-                case 'ArrowUp':
-                    if (lcount < 9999) {
-                        lcount = lcount + 1;
-                        this.filter.disp.lcount(String(lcount));
-                    }
-
-                    break;
-                case 'ArrowDown':
-                    if (lcount > 1) {
-                        this.filter.disp.lcount(String(lcount - 1));
-                    }
-
-                    break;
-                default:
-                    return true;
-            }
-        },
-        flfclick: function (data, event) {
-            const checkedType = event.target.checked;
-
-            if (checkedType) {
-                data.filter.disp.lf(['1']);
-            } else {
-                data.filter.disp.lf(['0']);
-            }
-
-            this.filterChangeHandle(); //Вручную вызываем обработку фильтра
-
-            return true; //Возвращаем true, чтобы галка в браузере переключилась
-        },
-        updateFilterUrl: function (filterString) {
-            const uri = new Uri(location.pathname + location.search);
-
-            if (filterString) {
-                uri.replaceQueryParam('f', filterString);
+        if (!currC.length) {
+            //Если все варианты сняты, делаем активным второй вариант
+            if (clicked === '0') {
+                data.filter.disp.c(['1']);
             } else {
                 data.filter.disp.c(['0']);
             }
@@ -1297,6 +1119,72 @@ export default Cliche.extend({
             default:
                 return true;
         }
+    },
+    flclick: function (data, event) {
+        const currL = data.filter.disp.l();
+        const clicked = event.target.value;
+
+        if (currL.length === 2) {
+            data.filter.disp.l([clicked]);
+        }
+
+        this.filterChangeHandle(); //Вручную вызываем обработку фильтра
+
+        return true; //Возвращаем true, чтобы галка в браузере переключилась
+    },
+    lcountHandle: function (lcount) {
+        lcount = Number(lcount);
+
+        if (!lcount || lcount < 1) {
+            this.filter.disp.lcount('1');
+
+            return;
+        }
+
+        if (lcount > 9999) {
+            this.filter.disp.lcount('9999');
+
+            return;
+        }
+
+        if (_.includes(this.filter.disp.l(), '1') && lcount !== this.lcount) {
+            // Вручную вызываем обработку фильтра
+            this.filterChangeHandle();
+        }
+    },
+    lcountArrow: function (data, evt) {
+        let lcount = Number(this.filter.disp.lcount());
+
+        switch (evt.key) {
+            case 'ArrowUp':
+                if (lcount < 9999) {
+                    lcount = lcount + 1;
+                    this.filter.disp.lcount(String(lcount));
+                }
+
+                break;
+            case 'ArrowDown':
+                if (lcount > 1) {
+                    this.filter.disp.lcount(String(lcount - 1));
+                }
+
+                break;
+            default:
+                return true;
+        }
+    },
+    flfclick: function (data, event) {
+        const checkedType = event.target.checked;
+
+        if (checkedType) {
+            data.filter.disp.lf(['1']);
+        } else {
+            data.filter.disp.lf(['0']);
+        }
+
+        this.filterChangeHandle(); //Вручную вызываем обработку фильтра
+
+        return true; //Возвращаем true, чтобы галка в браузере переключилась
     },
     updateFilterUrl: function (filterString) {
         const uri = new Uri(location.pathname + location.search);
@@ -1519,28 +1407,7 @@ export default Cliche.extend({
                     if (_.isEmpty(data.filter.y)) {
                         const yearsRange = this.getTypeYearsRange();
 
-                        let l;
-
-                        if (!_.isEmpty(data.filter.l)) {
-                            l = [];
-
-                            if (data.filter.l.max > 0) {
-                                l.push(1);
-                                this.lcount = data.filter.l.max;
-                                this.filter.disp.lcount(String(this.lcount));
-                            }
-
-                            this.filter.disp.l(l.map(String));
-                        }
-
-                        if (!data.filter.lf || !data.filter.lf.length) {
-                            data.filter.lf = [0];
-                        }
-
-                        this.lf = data.filter.lf.map(String);
-                        this.filter.disp.lf(this.lf.slice());
-
-                        this.filterChangeHandleBlock = false;
+                        data.filter.y = [yearsRange.min, yearsRange.max];
                     }
 
                     this.year = data.filter.y[0];
@@ -1569,6 +1436,27 @@ export default Cliche.extend({
                     }
 
                     this.filter.disp.c(c.map(String));
+
+                    let l;
+
+                    if (!_.isEmpty(data.filter.l)) {
+                        l = [];
+
+                        if (data.filter.l.max > 0) {
+                            l.push(1);
+                            this.lcount = data.filter.l.max;
+                            this.filter.disp.lcount(String(this.lcount));
+                        }
+
+                        this.filter.disp.l(l.map(String));
+                    }
+
+                    if (!data.filter.lf || !data.filter.lf.length) {
+                        data.filter.lf = [0];
+                    }
+
+                    this.lf = data.filter.lf.map(String);
+                    this.filter.disp.lf(this.lf.slice());
 
                     this.filterChangeHandleBlock = false;
                 }
