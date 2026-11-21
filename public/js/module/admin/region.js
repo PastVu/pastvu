@@ -3,1009 +3,1019 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-define([
-    'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'i18n',
-    'leaflet', 'noties', 'm/photo/status', 'renderer',
-    'text!tpl/admin/region.pug', 'css!style/admin/region', 'css!style/leaflet/leaflet',
-], function (_, $, Utils, socket, P, ko, koMapping, Cliche, globalVM, i18n, L, noties, statuses, renderer, pug) {
-    'use strict';
+import _ from 'underscore';
+import $ from 'jquery';
+import Utils from 'Utils';
+import socket from 'socket';
+import P from 'Params';
+import ko from 'knockout';
+import koMapping from 'knockout.mapping';
+import Cliche from 'm/_moduleCliche';
+import globalVM from 'globalVM';
+import i18n from 'i18n';
+import L from 'leaflet';
+import noties from 'noties';
+import statuses from 'm/photo/status';
+import renderer from 'renderer';
+import pug from 'tpl/admin/region.pug?raw';
+import 'style/admin/region.css';
+import 'style/leaflet/leaflet.css';
 
-    const collator = new Intl.Collator('ru-RU', { numeric: true, sensitivity: 'base' });
-    const regionDef = {
-        cid: 0,
-        parents: [],
-        geo: '',
-        pointsnum: 0,
-        polynum: { exterior: 0, interior: 0 },
-        center: null,
-        centerAuto: true,
-        bbox: undefined,
-        bboxhome: undefined,
-        title_en: '',
-        title_local: '',
-    };
+const collator = new Intl.Collator('ru-RU', { numeric: true, sensitivity: 'base' });
+const regionDef = {
+    cid: 0,
+    parents: [],
+    geo: '',
+    pointsnum: 0,
+    polynum: { exterior: 0, interior: 0 },
+    center: null,
+    centerAuto: true,
+    bbox: undefined,
+    bboxhome: undefined,
+    title_en: '',
+    title_local: '',
+};
 
-    ko.bindingHandlers.centerInput = {
-        init: function (element, valueAccessor, allBindingsAccessor, viewModel) {
-            const $element = $(element);
+ko.bindingHandlers.centerInput = {
+    init: function (element, valueAccessor, allBindingsAccessor, viewModel) {
+        const $element = $(element);
 
-            setFromObserve(viewModel.region.center());
-            subscrObserve();
+        setFromObserve(viewModel.region.center());
+        subscrObserve();
 
-            $(element)
-                .on('focus', function () {
-                    if (!viewModel.region.centerAuto()) {
-                        viewModel.subscriptions.centerInput.dispose();
-                        $(element).on('keyup', function () {
-                            let geo = '[' + $element.val() + ']';
+        $(element)
+            .on('focus', function () {
+                if (!viewModel.region.centerAuto()) {
+                    viewModel.subscriptions.centerInput.dispose();
+                    $(element).on('keyup', function () {
+                        let geo = '[' + $element.val() + ']';
 
-                            try {
-                                geo = JSON.parse(geo);
-                            } catch (err) {
-                                console.log(err);
-                            }
+                        try {
+                            geo = JSON.parse(geo);
+                        } catch (err) {
+                            console.log(err);
+                        }
 
-                            if (Utils.geo.checkLatLng(geo)) {
-                                viewModel.centerSet(geo);
-                            } else {
-                                viewModel.centerValid(false);
-                            }
-                        });
-                    }
-                })
-                .on('blur', function () {
-                    if (!viewModel.region.centerAuto()) {
-                        $(element).off('keyup');
-                        subscrObserve();
-                    }
-                });
-
-            function subscrObserve() {
-                viewModel.subscriptions.centerInput = viewModel.region.center.subscribe(setFromObserve, viewModel);
-            }
-
-            function setFromObserve(val) {
-                $element.val(Utils.geo.checkLatLng(val) ? val.join(', ') : '');
-            }
-        },
-    };
-    ko.bindingHandlers.bboxhomeInput = {
-        init: function (element, valueAccessor, allBindingsAccessor, viewModel) {
-            const $element = $(element);
-
-            setFromObserve(viewModel.region.bboxhome());
-            subscrObserve();
-
-            $(element)
-                .on('focus', function () {
-                    if (!viewModel.bboxAuto()) {
-                        viewModel.subscriptions.bboxhomeInput.dispose();
-                        $(element).on('keyup', function () {
-                            let bbox = '[' + $element.val() + ']';
-
-                            try {
-                                bbox = JSON.parse(bbox);
-                            } catch (err) {
-                                console.log(err);
-                            }
-
-                            if (Utils.geo.checkbboxLatLng(bbox)) {
-                                viewModel.bboxhomeSet(bbox);
-                            } else {
-                                viewModel.bboxhomeValid(false);
-                            }
-                        });
-                    }
-                })
-                .on('blur', function () {
-                    if (!viewModel.bboxAuto()) {
-                        $(element).off('keyup');
-                        subscrObserve();
-                    }
-                });
-
-            function subscrObserve() {
-                viewModel.subscriptions.bboxhomeInput = viewModel.region.bboxhome.subscribe(setFromObserve, viewModel);
-            }
-
-            function setFromObserve(val) {
-                $element.val(Utils.geo.checkbboxLatLng(val) ? val.join(', ') : '');
-            }
-        },
-    };
-
-    return Cliche.extend({
-        pug: pug,
-        create: function () {
-            this.destroy = _.wrap(this.destroy, this.localDestroy);
-            this.auth = globalVM.repository['m/common/auth'];
-            this.createMode = ko.observable(true);
-            this.exe = ko.observable(true); //Указывает, что сейчас идет обработка запроса на действие к серверу
-
-            this.showGeo = ko.observable(false);
-            this.statuses = statuses;
-            this.maxRegionLevel = 5;
-
-            this.region = koMapping.fromJS(regionDef);
-            this.haveParent = ko.observable('0');
-            this.parentCid = ko.observable(0);
-            this.parentCidOrigin = 0;
-            this.children = ko.observableArray();
-            this.childLenArr = ko.observableArray();
-            this.imagesByType = ko.observable(Utils.getLocalStorage('region.imagesStatByType') || false);
-            this.imagestat = ko.observableArray();
-            this.photostat = ko.observableArray();
-            this.paintstat = ko.observableArray();
-            this.cstat = ko.observableArray();
-            this.childrenExpand = ko.observable(Utils.getLocalStorage('region.childrenExpand') || 0);
-            this.geoStringOrigin = null;
-            this.geoObj = null;
-
-            this.bboxLBound = null;
-            this.bboxhomeLBound = null;
-            this.bboxAuto = this.co.bboxAuto = ko.computed({
-                read: function () {
-                    return !this.region.bboxhome();
-                },
-                owner: this,
+                        if (Utils.geo.checkLatLng(geo)) {
+                            viewModel.centerSet(geo);
+                        } else {
+                            viewModel.centerValid(false);
+                        }
+                    });
+                }
+            })
+            .on('blur', function () {
+                if (!viewModel.region.centerAuto()) {
+                    $(element).off('keyup');
+                    subscrObserve();
+                }
             });
 
-            this.map = null;
-            this.markerLayer = L.layerGroup();
-            this.layerGeo = null;
-            this.layerBBOX = null;
-            this.layerBBOXHome = null;
+        function subscrObserve() {
+            viewModel.subscriptions.centerInput = viewModel.region.center.subscribe(setFromObserve, viewModel);
+        }
 
-            this.centerValid = ko.observable(true);
-            this.bboxhomeValid = ko.observable(true);
+        function setFromObserve(val) {
+            $element.val(Utils.geo.checkLatLng(val) ? val.join(', ') : '');
+        }
+    },
+};
+ko.bindingHandlers.bboxhomeInput = {
+    init: function (element, valueAccessor, allBindingsAccessor, viewModel) {
+        const $element = $(element);
 
-            this.mh = ko.observable('300px'); //Высота карты
-            this.fDateIn = Utils.format.date.relativeIn;
+        setFromObserve(viewModel.region.bboxhome());
+        subscrObserve();
 
-            this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandler, this);
-            this.routeHandler();
-        },
-        show: function () {
-            globalVM.func.showContainer(this.$container);
-            this.showing = true;
-            this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
-            this.sizesCalc();
-        },
-        hide: function () {
-            globalVM.func.hideContainer(this.$container);
-            this.showing = false;
-        },
-        localDestroy: function (destroy) {
-            this.centerMarkerDestroy();
-            this.map.remove();
-            delete this.map;
+        $(element)
+            .on('focus', function () {
+                if (!viewModel.bboxAuto()) {
+                    viewModel.subscriptions.bboxhomeInput.dispose();
+                    $(element).on('keyup', function () {
+                        let bbox = '[' + $element.val() + ']';
 
-            this.hide();
-            destroy.call(this);
-        },
-        makeBinding: function () {
-            if (!this.binded) {
-                ko.applyBindings(globalVM, this.$dom[0]);
-                this.show();
-                this.binded = true;
-            }
-        },
-        //Пересчитывает размер карты
-        sizesCalc: function (square) {
-            this.mapCalc();
+                        try {
+                            bbox = JSON.parse(bbox);
+                        } catch (err) {
+                            console.log(err);
+                        }
 
-            if (square) {
-                this.childrenCalc();
-            }
-        },
-        mapCalc: function () {
-            const height = P.window.h() - this.$dom.find('.map').offset().top >> 0;
-
-            this.mh(height + 'px');
-
-            if (this.map) {
-                //Самостоятельно обновляем размеры карты
-                this.map.whenReady(function () {
-                    this.map._onResize();
-                    this.map.fitBounds(this.bboxLBound);
-                }, this);
-            }
-        },
-        childrenCalc: function () {
-            if (this.region.parents().length >= this.maxRegionLevel) {
-                return;
-            }
-
-            const $children = this.$dom.find('.children');
-            const childrenExpand = this.childrenExpand();
-
-            if (!childrenExpand && $children[0].scrollWidth > $children.width()) {
-                this.childrenExpand(1);
-            } else if (childrenExpand && $children[0].scrollWidth <= $children.width()) {
-                const $expand = this.$dom.find('.expand');
-                let childrenHight = $children.height();
-
-                if (childrenExpand === 2 && $expand.length) {
-                    childrenHight -= $expand.height() / 2 + 2;
+                        if (Utils.geo.checkbboxLatLng(bbox)) {
+                            viewModel.bboxhomeSet(bbox);
+                        } else {
+                            viewModel.bboxhomeValid(false);
+                        }
+                    });
                 }
-
-                if (childrenHight < 30) {
-                    this.childrenExpand(0);
+            })
+            .on('blur', function () {
+                if (!viewModel.bboxAuto()) {
+                    $(element).off('keyup');
+                    subscrObserve();
                 }
-            }
-        },
-        routeHandler: function () {
-            this.exe(true);
-
-            let cid = globalVM.router.params().cid;
-
-            if (cid === 'create') {
-                this.createMode(true);
-                this.resetData();
-
-                if (Number(globalVM.router.params().parent)) {
-                    this.parentCid(Number(globalVM.router.params().parent));
-                    this.haveParent('1');
-                }
-
-                this.createMap();
-                this.exe(false);
-            } else {
-                cid = Number(cid);
-
-                if (!cid) {
-                    return globalVM.router.navigate('/admin/region');
-                }
-
-                this.createMode(false);
-                this.getOneRegion(cid, function () {
-                    this.exe(false);
-                }, this);
-            }
-        },
-        resetData: function () {
-            this.removeLayers();
-            this.bboxLBound = null;
-            this.bboxhomeLBound = null;
-
-            this.regionOrigin = regionDef;
-            koMapping.fromJS(regionDef, this.region);
-
-            this.haveParent('0');
-            this.parentCid(0);
-            this.children([]);
-            this.childLenArr([]);
-        },
-        removeLayers: function () {
-            this.centerMarkerDestroy().bboxhomeLayerDestroy();
-
-            if (this.layerGeo) {
-                this.map.removeLayer(this.layerGeo);
-                this.layerGeo = null;
-            }
-
-            if (this.layerBBOX) {
-                this.map.removeLayer(this.layerBBOX);
-                this.layerBBOX = null;
-            }
-        },
-
-        fillData: function (data, needRedraw) {
-            const region = data.region;
-
-            this.regionOrigin = region;
-            koMapping.fromJS(region, this.region);
-
-            if (region.bbox) {
-                this.bboxLBound = [
-                    [region.bbox[0], region.bbox[1]],
-                    [region.bbox[2], region.bbox[3]],
-                ];
-            } else {
-                this.bboxLBound = null;
-            }
-
-            if (Array.isArray(data.children)) {
-                data.children.sort(function (a, b) {
-                    return collator.compare(Utils.regionTitle(a), Utils.regionTitle(b));
-                });
-            }
-
-            this.children(data.children || []);
-            this.childLenArr(data.childLenArr || []);
-
-            if (data.region.parents && data.region.parents.length) {
-                this.parentCidOrigin = data.region.parents[data.region.parents.length - 1].cid;
-                this.haveParent('1');
-            } else {
-                this.haveParent('0');
-                this.parentCidOrigin = 0;
-            }
-
-            this.parentCid(this.parentCidOrigin);
-
-            if (region.geo) {
-                this.geoStringOrigin = region.geo;
-
-                try {
-                    this.geoObj = JSON.parse(region.geo);
-                } catch (err) {
-                    console.log(err);
-                    noties.error({ message: 'GeoJSON client parse error!<br>' + err.message });
-                    this.geoStringOrigin = null;
-                    this.geoObj = null;
-
-                    return false;
-                }
-            }
-
-            const photostat = region.photostat || {};
-            const paintstat = region.paintstat || {};
-            const imagestat = _.mergeWith(_.cloneDeep(photostat), paintstat, function (photoval, paintval) {
-                return (photoval || 0) + (paintval || 0);
             });
 
-            photostat.statuses = _.transform(statuses.keys, function (result, status, key) {
-                result.push({ status: status, count: photostat['s' + status] || 0, title: statuses[key].filter_title });
-            }, []);
-            photostat.icon = 'camera';
-            photostat.title = i18n('Photo count');
-            photostat.linkprefix = '/ps?f=r!' + region.cid + '_t!1';
-            this.photostat(photostat);
+        function subscrObserve() {
+            viewModel.subscriptions.bboxhomeInput = viewModel.region.bboxhome.subscribe(setFromObserve, viewModel);
+        }
 
-            paintstat.statuses = _.transform(statuses.keys, function (result, status, key) {
-                result.push({ status: status, count: paintstat['s' + status] || 0, title: statuses[key].filter_title });
-            }, []);
-            paintstat.icon = 'picture';
-            paintstat.title = i18n('Painting count');
-            paintstat.linkprefix = '/ps?f=r!' + region.cid + '_t!2';
-            this.paintstat(paintstat);
+        function setFromObserve(val) {
+            $element.val(Utils.geo.checkbboxLatLng(val) ? val.join(', ') : '');
+        }
+    },
+};
 
-            imagestat.statuses = _.transform(statuses.keys, function (result, status, key) {
-                result.push({ status: status, count: imagestat['s' + status] || 0, title: statuses[key].filter_title });
-            }, []);
-            imagestat.icon = 'camera';
-            imagestat.title = i18n('Image count');
+export default Cliche.extend({
+    pug: pug,
+    create: function () {
+        this.destroy = _.wrap(this.destroy, this.localDestroy);
+        this.auth = globalVM.repository['m/common/auth'];
+        this.createMode = ko.observable(true);
+        this.exe = ko.observable(true); //Указывает, что сейчас идет обработка запроса на действие к серверу
 
-            if (paintstat.all) {
-                imagestat.alterAll = i18n('{{total, number}} ({{paintings, number}} paintings)', {
-                    total: imagestat.all,
-                    paintings: paintstat.all,
-                });
-            }
+        this.showGeo = ko.observable(false);
+        this.statuses = statuses;
+        this.maxRegionLevel = 5;
 
-            imagestat.linkprefix = '/ps?f=r!' + region.cid;
-            this.imagestat(imagestat);
+        this.region = koMapping.fromJS(regionDef);
+        this.haveParent = ko.observable('0');
+        this.parentCid = ko.observable(0);
+        this.parentCidOrigin = 0;
+        this.children = ko.observableArray();
+        this.childLenArr = ko.observableArray();
+        this.imagesByType = ko.observable(Utils.getLocalStorage('region.imagesStatByType') || false);
+        this.imagestat = ko.observableArray();
+        this.photostat = ko.observableArray();
+        this.paintstat = ko.observableArray();
+        this.cstat = ko.observableArray();
+        this.childrenExpand = ko.observable(Utils.getLocalStorage('region.childrenExpand') || 0);
+        this.geoStringOrigin = null;
+        this.geoObj = null;
 
-            const cstat = region.cstat || {};
+        this.bboxLBound = null;
+        this.bboxhomeLBound = null;
+        this.bboxAuto = this.co.bboxAuto = ko.computed({
+            read: function () {
+                return !this.region.bboxhome();
+            },
+            owner: this,
+        });
 
-            cstat.statuses = _.transform(statuses.keys, function (result, status, key) {
-                if (_.isNumber(cstat['s' + status])) {
-                    result.push({ status: status, count: cstat['s' + status], title: statuses[key].filter_title });
-                }
-            }, []);
-            this.cstat(cstat);
+        this.map = null;
+        this.markerLayer = L.layerGroup();
+        this.layerGeo = null;
+        this.layerBBOX = null;
+        this.layerBBOXHome = null;
 
-            imagestat.cid = photostat.cid = paintstat.cid = cstat.cid = region.cid;
+        this.centerValid = ko.observable(true);
+        this.bboxhomeValid = ko.observable(true);
 
-            if (needRedraw) {
-                this.drawData();
-            }
+        this.mh = ko.observable('300px'); //Высота карты
+        this.fDateIn = Utils.format.date.relativeIn;
 
+        this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandler, this);
+        this.routeHandler();
+    },
+    show: function () {
+        globalVM.func.showContainer(this.$container);
+        this.showing = true;
+        this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
+        this.sizesCalc();
+    },
+    hide: function () {
+        globalVM.func.hideContainer(this.$container);
+        this.showing = false;
+    },
+    localDestroy: function (destroy) {
+        this.centerMarkerDestroy();
+        this.map.remove();
+        delete this.map;
+
+        this.hide();
+        destroy.call(this);
+    },
+    makeBinding: function () {
+        if (!this.binded) {
+            ko.applyBindings(globalVM, this.$dom[0]);
+            this.show();
+            this.binded = true;
+        }
+    },
+    //Пересчитывает размер карты
+    sizesCalc: function (square) {
+        this.mapCalc();
+
+        if (square) {
             this.childrenCalc();
+        }
+    },
+    mapCalc: function () {
+        const height = P.window.h() - this.$dom.find('.map').offset().top >> 0;
 
-            return true;
-        },
-        drawData: function () {
-            const mapInit = !this.map;
+        this.mh(height + 'px');
+
+        if (this.map) {
+            //Самостоятельно обновляем размеры карты
+            this.map.whenReady(function () {
+                this.map._onResize();
+                this.map.fitBounds(this.bboxLBound);
+            }, this);
+        }
+    },
+    childrenCalc: function () {
+        if (this.region.parents().length >= this.maxRegionLevel) {
+            return;
+        }
+
+        const $children = this.$dom.find('.children');
+        const childrenExpand = this.childrenExpand();
+
+        if (!childrenExpand && $children[0].scrollWidth > $children.width()) {
+            this.childrenExpand(1);
+        } else if (childrenExpand && $children[0].scrollWidth <= $children.width()) {
+            const $expand = this.$dom.find('.expand');
+            let childrenHight = $children.height();
+
+            if (childrenExpand === 2 && $expand.length) {
+                childrenHight -= $expand.height() / 2 + 2;
+            }
+
+            if (childrenHight < 30) {
+                this.childrenExpand(0);
+            }
+        }
+    },
+    routeHandler: function () {
+        this.exe(true);
+
+        let cid = globalVM.router.params().cid;
+
+        if (cid === 'create') {
+            this.createMode(true);
+            this.resetData();
+
+            if (Number(globalVM.router.params().parent)) {
+                this.parentCid(Number(globalVM.router.params().parent));
+                this.haveParent('1');
+            }
 
             this.createMap();
-            this.removeLayers();
+            this.exe(false);
+        } else {
+            cid = Number(cid);
 
-            this.map.whenReady(function () {
-                const addLayers = function () {
-                    if (this.bboxLBound) {
-                        this.layerBBOX = L.rectangle(this.bboxLBound,
-                            { color: '#F70', weight: 1, opacity: 0.9, fillOpacity: 0.1, clickable: false }
-                        ).addTo(this.map);
-                    }
+            if (!cid) {
+                return globalVM.router.navigate('/admin/region');
+            }
 
-                    if (this.geoObj) {
-                        this.layerGeo = L.geoJson(this.geoObj, {
-                            style: { color: '#F00', weight: 2, opacity: 0.8, clickable: false },
-                        }).addTo(this.map);
-                    }
-
-                    if (this.region.bboxhome()) {
-                        this.bboxhomeSet(this.region.bboxhome());
-                    }
-
-                    this.centerMarkerCreate();
-                }.bind(this);
-
-                if (mapInit) {
-                    addLayers();
-                } else {
-                    this.map.fitBounds(this.bboxLBound);
-                    window.setTimeout(addLayers, 500); //Рисуем после анимации fitBounds
-                }
+            this.createMode(false);
+            this.getOneRegion(cid, function () {
+                this.exe(false);
             }, this);
-        },
-        createMap: function () {
-            //Bind и show должны вызываться перед созданием карты для правильно расчета её высоты
-            this.makeBinding();
+        }
+    },
+    resetData: function () {
+        this.removeLayers();
+        this.bboxLBound = null;
+        this.bboxhomeLBound = null;
 
-            if (this.map) {
-                return;
-            }
+        this.regionOrigin = regionDef;
+        koMapping.fromJS(regionDef, this.region);
 
-            this.map = new L.Map(this.$dom.find('.map')[0], {
-                center: [36, -25],
-                zoom: 3,
-                minZoom: 2,
-                maxZoom: 16,
-                trackResize: false,
+        this.haveParent('0');
+        this.parentCid(0);
+        this.children([]);
+        this.childLenArr([]);
+    },
+    removeLayers: function () {
+        this.centerMarkerDestroy().bboxhomeLayerDestroy();
+
+        if (this.layerGeo) {
+            this.map.removeLayer(this.layerGeo);
+            this.layerGeo = null;
+        }
+
+        if (this.layerBBOX) {
+            this.map.removeLayer(this.layerBBOX);
+            this.layerBBOX = null;
+        }
+    },
+
+    fillData: function (data, needRedraw) {
+        const region = data.region;
+
+        this.regionOrigin = region;
+        koMapping.fromJS(region, this.region);
+
+        if (region.bbox) {
+            this.bboxLBound = [
+                [region.bbox[0], region.bbox[1]],
+                [region.bbox[2], region.bbox[3]],
+            ];
+        } else {
+            this.bboxLBound = null;
+        }
+
+        if (Array.isArray(data.children)) {
+            data.children.sort(function (a, b) {
+                return collator.compare(Utils.regionTitle(a), Utils.regionTitle(b));
             });
+        }
 
-            if (this.bboxLBound) {
+        this.children(data.children || []);
+        this.childLenArr(data.childLenArr || []);
+
+        if (data.region.parents && data.region.parents.length) {
+            this.parentCidOrigin = data.region.parents[data.region.parents.length - 1].cid;
+            this.haveParent('1');
+        } else {
+            this.haveParent('0');
+            this.parentCidOrigin = 0;
+        }
+
+        this.parentCid(this.parentCidOrigin);
+
+        if (region.geo) {
+            this.geoStringOrigin = region.geo;
+
+            try {
+                this.geoObj = JSON.parse(region.geo);
+            } catch (err) {
+                console.log(err);
+                noties.error({ message: 'GeoJSON client parse error!<br>' + err.message });
+                this.geoStringOrigin = null;
+                this.geoObj = null;
+
+                return false;
+            }
+        }
+
+        const photostat = region.photostat || {};
+        const paintstat = region.paintstat || {};
+        const imagestat = _.mergeWith(_.cloneDeep(photostat), paintstat, function (photoval, paintval) {
+            return (photoval || 0) + (paintval || 0);
+        });
+
+        photostat.statuses = _.transform(statuses.keys, function (result, status, key) {
+            result.push({ status: status, count: photostat['s' + status] || 0, title: statuses[key].filter_title });
+        }, []);
+        photostat.icon = 'camera';
+        photostat.title = i18n('Photo count');
+        photostat.linkprefix = '/ps?f=r!' + region.cid + '_t!1';
+        this.photostat(photostat);
+
+        paintstat.statuses = _.transform(statuses.keys, function (result, status, key) {
+            result.push({ status: status, count: paintstat['s' + status] || 0, title: statuses[key].filter_title });
+        }, []);
+        paintstat.icon = 'picture';
+        paintstat.title = i18n('Painting count');
+        paintstat.linkprefix = '/ps?f=r!' + region.cid + '_t!2';
+        this.paintstat(paintstat);
+
+        imagestat.statuses = _.transform(statuses.keys, function (result, status, key) {
+            result.push({ status: status, count: imagestat['s' + status] || 0, title: statuses[key].filter_title });
+        }, []);
+        imagestat.icon = 'camera';
+        imagestat.title = i18n('Image count');
+
+        if (paintstat.all) {
+            imagestat.alterAll = i18n('{{total, number}} ({{paintings, number}} paintings)', {
+                total: imagestat.all,
+                paintings: paintstat.all,
+            });
+        }
+
+        imagestat.linkprefix = '/ps?f=r!' + region.cid;
+        this.imagestat(imagestat);
+
+        const cstat = region.cstat || {};
+
+        cstat.statuses = _.transform(statuses.keys, function (result, status, key) {
+            if (_.isNumber(cstat['s' + status])) {
+                result.push({ status: status, count: cstat['s' + status], title: statuses[key].filter_title });
+            }
+        }, []);
+        this.cstat(cstat);
+
+        imagestat.cid = photostat.cid = paintstat.cid = cstat.cid = region.cid;
+
+        if (needRedraw) {
+            this.drawData();
+        }
+
+        this.childrenCalc();
+
+        return true;
+    },
+    drawData: function () {
+        const mapInit = !this.map;
+
+        this.createMap();
+        this.removeLayers();
+
+        this.map.whenReady(function () {
+            const addLayers = function () {
+                if (this.bboxLBound) {
+                    this.layerBBOX = L.rectangle(this.bboxLBound,
+                        { color: '#F70', weight: 1, opacity: 0.9, fillOpacity: 0.1, clickable: false }
+                    ).addTo(this.map);
+                }
+
+                if (this.geoObj) {
+                    this.layerGeo = L.geoJson(this.geoObj, {
+                        style: { color: '#F00', weight: 2, opacity: 0.8, clickable: false },
+                    }).addTo(this.map);
+                }
+
+                if (this.region.bboxhome()) {
+                    this.bboxhomeSet(this.region.bboxhome());
+                }
+
+                this.centerMarkerCreate();
+            }.bind(this);
+
+            if (mapInit) {
+                addLayers();
+            } else {
                 this.map.fitBounds(this.bboxLBound);
+                window.setTimeout(addLayers, 500); //Рисуем после анимации fitBounds
             }
+        }, this);
+    },
+    createMap: function () {
+        //Bind и show должны вызываться перед созданием карты для правильно расчета её высоты
+        this.makeBinding();
 
-            this.map
-                .addLayer(this.markerLayer)
-                .on('click', function (e) {
-                    const geo = Utils.geo.geoToPrecision([e.latlng.lat, e.latlng.lng]);
+        if (this.map) {
+            return;
+        }
 
-                    this.centerSet(geo);
-                    this.region.centerAuto(false);
-                }, this);
+        this.map = new L.Map(this.$dom.find('.map')[0], {
+            center: [36, -25],
+            zoom: 3,
+            minZoom: 2,
+            maxZoom: 16,
+            trackResize: false,
+        });
 
-            L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 15 }).addTo(this.map);
-        },
-        //Создание маркера центра региона
-        centerMarkerCreate: function () {
-            const _this = this;
+        if (this.bboxLBound) {
+            this.map.fitBounds(this.bboxLBound);
+        }
 
-            this.centerMarker = L.marker(this.region.center(),
-                {
-                    draggable: true,
-                    title: i18n('Region center'),
-                    icon: L.icon({
-                        iconSize: [26, 43],
-                        iconAnchor: [13, 36],
-                        iconUrl: '/img/map/pinEdit.png',
-                        className: 'centerMarker',
-                    }),
-                })
-                .on('dragstart', function () {
-                    _this.region.centerAuto(false);
-                    _this.centerValid(true);
-                })
-                .on('drag', function () {
-                    _this.region.center(Utils.geo.geoToPrecision(Utils.geo.latlngToArr(this.getLatLng())));
-                })
-                .addTo(this.markerLayer);
+        this.map
+            .addLayer(this.markerLayer)
+            .on('click', function (e) {
+                const geo = Utils.geo.geoToPrecision([e.latlng.lat, e.latlng.lng]);
 
-            return this;
-        },
-        //Удаление маркера центра
-        centerMarkerDestroy: function () {
-            if (this.centerMarker) {
-                this.centerMarker.off('dragend');
-                this.markerLayer.removeLayer(this.centerMarker);
-                delete this.centerMarker;
-            }
+                this.centerSet(geo);
+                this.region.centerAuto(false);
+            }, this);
 
-            return this;
-        },
-        centerSet: function (geo) {
-            this.region.center(geo);
+        L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 15 }).addTo(this.map);
+    },
+    //Создание маркера центра региона
+    centerMarkerCreate: function () {
+        const _this = this;
+
+        this.centerMarker = L.marker(this.region.center(),
+            {
+                draggable: true,
+                title: i18n('Region center'),
+                icon: L.icon({
+                    iconSize: [26, 43],
+                    iconAnchor: [13, 36],
+                    iconUrl: '/img/map/pinEdit.png',
+                    className: 'centerMarker',
+                }),
+            })
+            .on('dragstart', function () {
+                _this.region.centerAuto(false);
+                _this.centerValid(true);
+            })
+            .on('drag', function () {
+                _this.region.center(Utils.geo.geoToPrecision(Utils.geo.latlngToArr(this.getLatLng())));
+            })
+            .addTo(this.markerLayer);
+
+        return this;
+    },
+    //Удаление маркера центра
+    centerMarkerDestroy: function () {
+        if (this.centerMarker) {
+            this.centerMarker.off('dragend');
+            this.markerLayer.removeLayer(this.centerMarker);
+            delete this.centerMarker;
+        }
+
+        return this;
+    },
+    centerSet: function (geo) {
+        this.region.center(geo);
+        this.centerValid(true);
+
+        if (this.centerMarker) {
+            this.centerMarker.setLatLng(geo);
+        } else {
+            this.centerMarkerCreate();
+        }
+    },
+    //Переключаем задание центра Авто/Вручную
+    centerAutoToggle: function () {
+        const newCenterAuto = !this.region.centerAuto();
+
+        this.region.centerAuto(newCenterAuto);
+
+        if (newCenterAuto) {
+            //Если ставим Авто, то возвращаем оригинальное значение центра
+            this.region.center(this.regionOrigin.center || null);
             this.centerValid(true);
 
-            if (this.centerMarker) {
-                this.centerMarker.setLatLng(geo);
+            if (this.regionOrigin.center) {
+                //Если есть предрасчитанный центр, то ставим маркер в него
+                this.centerMarker.setLatLng(this.regionOrigin.center);
             } else {
-                this.centerMarkerCreate();
+                //Если в оригинале центр еще не расчитан (регион новый), то удаляем маркер
+                this.centerMarkerDestroy();
             }
-        },
-        //Переключаем задание центра Авто/Вручную
-        centerAutoToggle: function () {
-            const newCenterAuto = !this.region.centerAuto();
-
-            this.region.centerAuto(newCenterAuto);
-
-            if (newCenterAuto) {
-                //Если ставим Авто, то возвращаем оригинальное значение центра
-                this.region.center(this.regionOrigin.center || null);
-                this.centerValid(true);
-
-                if (this.regionOrigin.center) {
-                    //Если есть предрасчитанный центр, то ставим маркер в него
-                    this.centerMarker.setLatLng(this.regionOrigin.center);
-                } else {
-                    //Если в оригинале центр еще не расчитан (регион новый), то удаляем маркер
-                    this.centerMarkerDestroy();
-                }
-            }
-        },
-        childrenExpandToggle: function () {
-            if (this.childrenExpand()) {
-                this.childrenExpand(this.childrenExpand() === 1 ? 2 : 1);
-                this.mapCalc();
-                Utils.setLocalStorage('region.childrenExpand', this.childrenExpand());
-            }
-        },
-        toggleGeo: function () {
-            this.showGeo(!this.showGeo());
+        }
+    },
+    childrenExpandToggle: function () {
+        if (this.childrenExpand()) {
+            this.childrenExpand(this.childrenExpand() === 1 ? 2 : 1);
             this.mapCalc();
-        },
-        toggleImagesStatType: function () {
-            this.imagesByType(!this.imagesByType());
-            Utils.setLocalStorage('region.imagesStatByType', this.imagesByType());
-        },
+            Utils.setLocalStorage('region.childrenExpand', this.childrenExpand());
+        }
+    },
+    toggleGeo: function () {
+        this.showGeo(!this.showGeo());
+        this.mapCalc();
+    },
+    toggleImagesStatType: function () {
+        this.imagesByType(!this.imagesByType());
+        Utils.setLocalStorage('region.imagesStatByType', this.imagesByType());
+    },
 
-        //Создание прямоугольника bboxhome
-        bboxhomeLayerCreate: function () {
-            this.layerBBOXHome = L.rectangle(this.bboxhomeLBound,
-                {
-                    color: '#070',
-                    weight: 1,
-                    dashArray: [5, 3],
-                    opacity: 1,
-                    fillColor: '#F70',
-                    fillOpacity: 0.1,
-                    clickable: false,
+    //Создание прямоугольника bboxhome
+    bboxhomeLayerCreate: function () {
+        this.layerBBOXHome = L.rectangle(this.bboxhomeLBound,
+            {
+                color: '#070',
+                weight: 1,
+                dashArray: [5, 3],
+                opacity: 1,
+                fillColor: '#F70',
+                fillOpacity: 0.1,
+                clickable: false,
+            }
+        ).addTo(this.map);
+
+        return this;
+    },
+    //Удаление прямоугольника bboxhome
+    bboxhomeLayerDestroy: function () {
+        if (this.layerBBOXHome) {
+            this.map.removeLayer(this.layerBBOXHome);
+            this.layerBBOXHome = null;
+        }
+
+        return this;
+    },
+    bboxhomeSet: function (bbox) {
+        if (bbox[1] < -180) {
+            bbox[1] += 360;
+        } else if (bbox[1] > 180) {
+            bbox[1] -= 360;
+        }
+
+        if (bbox[3] < -180) {
+            bbox[3] += 360;
+        } else if (bbox[3] > 180) {
+            bbox[3] -= 360;
+        }
+
+        this.region.bboxhome(bbox);
+        this.bboxhomeLBound = [
+            [bbox[0], bbox[1]],
+            [bbox[2], bbox[3]],
+        ];
+        this.bboxhomeValid(true);
+
+        if (this.layerBBOXHome) {
+            this.layerBBOXHome.setBounds(this.bboxhomeLBound);
+        } else {
+            this.bboxhomeLayerCreate();
+        }
+    },
+    bboxhomeUnSet: function () {
+        this.bboxhomeLayerDestroy();
+        this.region.bboxhome(undefined);
+        this.bboxhomeLBound = null;
+    },
+    //Переключаем вид домашнего положения bbox
+    bboxHomeToggle: function () {
+        if (this.bboxAuto()) {
+            //Если было оригинальное значение, возвращаем его. Если его не было нет - значение bbox
+            //Если нет и bbox(режим создания), то берем ученьшенный bounds экрана карты
+            this.bboxhomeSet(this.regionOrigin.bboxhome || this.region.bbox() || Utils.geo.bboxReverse(this.map.getBounds().pad(-0.2).toBBoxString().split(',')).map(Utils.math.toPrecision6));
+        } else {
+            this.bboxhomeUnSet();
+        }
+    },
+
+    getOneRegion: function (cid, cb, ctx) {
+        socket.run('region.give', { cid: cid }, true)
+            .then(function (data) {
+                // Выборке региона подставляем дефолтные значения
+                _.defaults(data.region, regionDef);
+
+                const error = !this.fillData(data, true);
+
+                if (Utils.isType('function', cb)) {
+                    cb.call(ctx, data, error);
                 }
-            ).addTo(this.map);
+            }.bind(this));
+    },
+    save: function () {
+        if (this.exe()) {
+            return false;
+        }
 
-            return this;
-        },
-        //Удаление прямоугольника bboxhome
-        bboxhomeLayerDestroy: function () {
-            if (this.layerBBOXHome) {
-                this.map.removeLayer(this.layerBBOXHome);
-                this.layerBBOXHome = null;
-            }
+        const saveData = koMapping.toJS(this.region);
+        let parentIsChanged;
 
-            return this;
-        },
-        bboxhomeSet: function (bbox) {
-            if (bbox[1] < -180) {
-                bbox[1] += 360;
-            } else if (bbox[1] > 180) {
-                bbox[1] -= 360;
-            }
+        if (!saveData.geo) {
+            noties.alert({
+                message: i18n('GeoJSON is required!'),
+                type: 'warning',
+                timeout: 2000,
+            });
 
-            if (bbox[3] < -180) {
-                bbox[3] += 360;
-            } else if (bbox[3] > 180) {
-                bbox[3] -= 360;
-            }
+            return false;
+        }
 
-            this.region.bboxhome(bbox);
-            this.bboxhomeLBound = [
-                [bbox[0], bbox[1]],
-                [bbox[2], bbox[3]],
-            ];
-            this.bboxhomeValid(true);
+        if (saveData.geo === this.geoStringOrigin) {
+            delete saveData.geo;
+        }
 
-            if (this.layerBBOXHome) {
-                this.layerBBOXHome.setBounds(this.bboxhomeLBound);
-            } else {
-                this.bboxhomeLayerCreate();
-            }
-        },
-        bboxhomeUnSet: function () {
-            this.bboxhomeLayerDestroy();
-            this.region.bboxhome(undefined);
-            this.bboxhomeLBound = null;
-        },
-        //Переключаем вид домашнего положения bbox
-        bboxHomeToggle: function () {
-            if (this.bboxAuto()) {
-                //Если было оригинальное значение, возвращаем его. Если его не было нет - значение bbox
-                //Если нет и bbox(режим создания), то берем ученьшенный bounds экрана карты
-                this.bboxhomeSet(this.regionOrigin.bboxhome || this.region.bbox() || Utils.geo.bboxReverse(this.map.getBounds().pad(-0.2).toBBoxString().split(',')).map(Utils.math.toPrecision6));
-            } else {
-                this.bboxhomeUnSet();
-            }
-        },
+        if (!saveData.title_en) {
+            noties.alert({
+                message: i18n('English name must be filled in'),
+                type: 'warning',
+                timeout: 2000,
+            });
 
-        getOneRegion: function (cid, cb, ctx) {
-            socket.run('region.give', { cid: cid }, true)
-                .then(function (data) {
-                    // Выборке региона подставляем дефолтные значения
-                    _.defaults(data.region, regionDef);
+            return false;
+        }
 
-                    const error = !this.fillData(data, true);
+        if (!saveData.bboxhome && this.regionOrigin.bboxhome) {
+            saveData.bboxhome = null; //Если bboxhome был и ставим auto, то надо передать на сервер null, чтобы обнулить его
+        }
 
-                    if (Utils.isType('function', cb)) {
-                        cb.call(ctx, data, error);
-                    }
-                }.bind(this));
-        },
-        save: function () {
-            if (this.exe()) {
-                return false;
-            }
+        //Перерисовка будет нужна, если изменился geojson(сл-во и bbox) или расчет центра поставили auto
+        const needRedraw = !!saveData.geo || saveData.centerAuto && !this.regionOrigin.centerAuto;
 
-            const saveData = koMapping.toJS(this.region);
-            let parentIsChanged;
+        if (this.haveParent() === '1') {
+            saveData.parent = Number(this.parentCid());
 
-            if (!saveData.geo) {
+            if (!saveData.parent) {
                 noties.alert({
-                    message: i18n('GeoJSON is required!'),
+                    message: i18n('If the region level is below Country, you must specify the parent region\'s number!'),
                     type: 'warning',
-                    timeout: 2000,
+                    timeout: 5000,
+                    ok: true,
                 });
 
                 return false;
             }
+        } else {
+            saveData.parent = 0;
+        }
 
-            if (saveData.geo === this.geoStringOrigin) {
-                delete saveData.geo;
-            }
-
-            if (!saveData.title_en) {
-                noties.alert({
-                    message: i18n('English name must be filled in'),
-                    type: 'warning',
-                    timeout: 2000,
-                });
-
-                return false;
-            }
-
-            if (!saveData.bboxhome && this.regionOrigin.bboxhome) {
-                saveData.bboxhome = null; //Если bboxhome был и ставим auto, то надо передать на сервер null, чтобы обнулить его
-            }
-
-            //Перерисовка будет нужна, если изменился geojson(сл-во и bbox) или расчет центра поставили auto
-            const needRedraw = !!saveData.geo || saveData.centerAuto && !this.regionOrigin.centerAuto;
-
-            if (this.haveParent() === '1') {
-                saveData.parent = Number(this.parentCid());
-
-                if (!saveData.parent) {
-                    noties.alert({
-                        message: i18n('If the region level is below Country, you must specify the parent region\'s number!'),
-                        type: 'warning',
-                        timeout: 5000,
-                        ok: true,
-                    });
-
-                    return false;
+        if (!this.createMode() && saveData.parent !== this.parentCidOrigin) {
+            parentIsChanged = true;
+            this.changeParentWarn(function (confirmer) {
+                if (confirmer) {
+                    processSave.call(this, confirmer);
                 }
-            } else {
-                saveData.parent = 0;
-            }
+            }, this);
+        } else {
+            processSave.call(this);
+        }
 
-            if (!this.createMode() && saveData.parent !== this.parentCidOrigin) {
-                parentIsChanged = true;
-                this.changeParentWarn(function (confirmer) {
-                    if (confirmer) {
-                        processSave.call(this, confirmer);
-                    }
-                }, this);
-            } else {
-                processSave.call(this);
-            }
+        function processSave(confirmer) {
+            this.exe(true);
+            this.sendSave(saveData, needRedraw, function (data, error) {
+                const resultStat = data && data.resultStat;
 
-            function processSave(confirmer) {
-                this.exe(true);
-                this.sendSave(saveData, needRedraw, function (data, error) {
-                    const resultStat = data && data.resultStat;
+                if (confirmer) {
+                    confirmer.close();
+                }
 
-                    if (confirmer) {
-                        confirmer.close();
-                    }
+                if (!error) {
+                    let msg = i18n(parentIsChanged ?
+                        'Region <b>{{title}}</b> moved and saved successfully' :
+                        'Region <b>{{title}}</b> saved successfully', { title: Utils.regionTitle(this.region) }) + '<br>';
+                    let geoChangePhotosCount;
 
-                    if (!error) {
-                        let msg = i18n(parentIsChanged ?
-                            'Region <b>{{title}}</b> moved and saved successfully' :
-                            'Region <b>{{title}}</b> saved successfully', { title: Utils.regionTitle(this.region) }) + '<br>';
-                        let geoChangePhotosCount;
+                    if (resultStat && Object.keys(resultStat).length) {
+                        if (typeof resultStat.photosCountBefore === 'number' && typeof resultStat.photosCountAfter === 'number') {
+                            geoChangePhotosCount = resultStat.photosCountAfter - resultStat.photosCountBefore;
 
-                        if (resultStat && Object.keys(resultStat).length) {
-                            if (typeof resultStat.photosCountBefore === 'number' && typeof resultStat.photosCountAfter === 'number') {
-                                geoChangePhotosCount = resultStat.photosCountAfter - resultStat.photosCountBefore;
-
-                                if (geoChangePhotosCount) {
-                                    msg += '<br>' + i18n(geoChangePhotosCount > 0 ?
-                                        '<b>{{count}}</b> photos added to the region after polygon coordinates changed.' :
-                                        '<b>{{count}}</b> photos removed from the region after polygon coordinates changed.', { count: Math.abs(geoChangePhotosCount) });
-                                }
-                            }
-
-                            if (typeof resultStat.commentsCountBefore === 'number' && typeof resultStat.commentsCountAfter === 'number') {
-                                geoChangePhotosCount = resultStat.commentsCountAfter - resultStat.commentsCountBefore;
-
-                                if (geoChangePhotosCount) {
-                                    msg += '<br>' + i18n(geoChangePhotosCount > 0 ?
-                                        '<b>{{count}}</b> comments added to the region after photos moved.' :
-                                        '<b>{{count}}</b> comments removed from the region after photos moved.', { count: Math.abs(geoChangePhotosCount) });
-                                }
-                            }
-
-                            if (resultStat.affectedPhotos) {
-                                msg += '<br>' + i18n('<b>{{count}}</b> photos moved through the tree along with the region.', { count: resultStat.affectedPhotos });
-                            }
-
-                            if (resultStat.affectedComments) {
-                                msg += '<br>' + i18n('<b>{{count}}</b> comments moved along with their photos.', { count: resultStat.affectedComments });
-                            }
-
-                            if (resultStat.affectedUsers) {
-                                msg += '<br>' + i18n('My regions trimmed for <b>{{count}}</b> users.', { count: resultStat.affectedUsers });
-                            }
-
-                            if (resultStat.affectedMods) {
-                                msg += '<br>' + i18n('Moderated regions trimmed for <b>{{count}}</b> moderators.', { count: resultStat.affectedMods });
+                            if (geoChangePhotosCount) {
+                                msg += '<br>' + i18n(geoChangePhotosCount > 0 ?
+                                    '<b>{{count}}</b> photos added to the region after polygon coordinates changed.' :
+                                    '<b>{{count}}</b> photos removed from the region after polygon coordinates changed.', { count: Math.abs(geoChangePhotosCount) });
                             }
                         }
 
-                        noties.alert({
-                            message: msg,
-                            type: 'alert',
-                            ok: true,
-                        });
-                    }
+                        if (typeof resultStat.commentsCountBefore === 'number' && typeof resultStat.commentsCountAfter === 'number') {
+                            geoChangePhotosCount = resultStat.commentsCountAfter - resultStat.commentsCountBefore;
 
-                    this.exe(false);
-                }, this);
-            }
+                            if (geoChangePhotosCount) {
+                                msg += '<br>' + i18n(geoChangePhotosCount > 0 ?
+                                    '<b>{{count}}</b> comments added to the region after photos moved.' :
+                                    '<b>{{count}}</b> comments removed from the region after photos moved.', { count: Math.abs(geoChangePhotosCount) });
+                            }
+                        }
 
-            return false;
-        },
-        sendSave: function (saveData, needRedraw, cb, ctx) {
-            socket.run('region.save', saveData)
-                .then(function (data) {
-                    this.region.pointsnum(data.region.pointsnum);
+                        if (resultStat.affectedPhotos) {
+                            msg += '<br>' + i18n('<b>{{count}}</b> photos moved through the tree along with the region.', { count: resultStat.affectedPhotos });
+                        }
 
-                    if (this.createMode()) {
-                        //Если регион успешно создан, но переходим на его cid, и через роутер он нарисуется
-                        globalVM.router.navigate('/admin/region/' + data.region.cid);
-                    } else {
-                        this.fillData(data, needRedraw);
-                    }
+                        if (resultStat.affectedComments) {
+                            msg += '<br>' + i18n('<b>{{count}}</b> comments moved along with their photos.', { count: resultStat.affectedComments });
+                        }
 
-                    cb.call(ctx, data);
-                }.bind(this))
-                .catch(function (error) {
-                    if (error.code === 'REGION_GEOJSON_PARSE') {
-                        error.message += '<br/>' + _.get(error, 'details.why');
-                    }
+                        if (resultStat.affectedUsers) {
+                            msg += '<br>' + i18n('My regions trimmed for <b>{{count}}</b> users.', { count: resultStat.affectedUsers });
+                        }
 
-                    noties.error(error);
-                    cb.call(ctx, null, error);
-                });
-        },
-        remove: function () {
-            if (this.exe()) {
-                return false;
-            }
-
-            this.exe(true);
-
-            const cid = this.region.cid();
-            const title = Utils.regionTitle(this.region);
-            let regionParent;
-            const that = this;
-            const childLenArr = this.childLenArr();
-            let msg = i18n('Region <b>{{title}}</b> will be removed', { title: title }) + '<br>';
-
-            if (childLenArr.length) {
-                msg += '<br>' + i18n('Also <b>{{count}}</b> child regions will be removed', {
-                    count: childLenArr.reduce(function (previousValue, currentValue) {
-                        return previousValue + currentValue;
-                    }),
-                }) + '<br>';
-            }
-
-            if (!this.region.parents().length) {
-                msg += i18n('All objects contained in this region and its descendants will be assigned to <b>Open Sea</b>') + '<br>';
-            } else {
-                regionParent = _.last(this.region.parents());
-                msg += i18n('All objects contained in this region and its descendants will stay in the parent region <b>{{title}}</b>', { title: Utils.regionTitle(regionParent) }) + '<br>';
-            }
-
-            msg += '<br>' + i18n('This may take several minutes. Confirm?') + '<br>' +
-                '<small><i>' + i18n('The operation will continue even if you close the browser') + '</i></small>';
-
-            noties.confirm({
-                message: msg,
-                okText: i18n('Yes'),
-                onOk: function (confirmer) {
-                    confirmer.close();
-
-                    noties.confirm({
-                        message: i18n('Changes are irreversible.<br>Do you really want to remove region <b>{{title}}</b>?', { title: title }),
-                        okText: i18n('Yes'),
-                        onOk: function (confirmer) {
-                            confirmer.disable();
-
-                            socket.run('region.remove', { cid: cid })
-                                .then(function (data) {
-                                    msg = i18n('Region <b>{{title}}</b> removed successfully', { title: title }) + '<br>';
-
-                                    if (data.affectedPhotos) {
-                                        msg += i18n('<b>{{count}}</b> photos got reassigned to other regions.', { count: data.affectedPhotos }) + '<br>';
-                                    }
-
-                                    if (data.affectedComments) {
-                                        msg += i18n('<b>{{count}}</b> comments got reassigned to other regions following their photos.', { count: data.affectedComments }) + '<br>';
-                                    }
-
-                                    if (data.homeAffectedUsers) {
-                                        msg += i18n('<b>{{count}}</b> users had their home region replaced with {{title}} (number {{cid}}).', {
-                                            count: data.homeAffectedUsers,
-                                            title: data.homeReplacedWith.title_en,
-                                            cid: data.homeReplacedWith.cid,
-                                        }) + '<br>';
-                                    }
-
-                                    if (data.affectedUsers) {
-                                        msg += i18n('My regions trimmed for <b>{{count}}</b> users.', { count: data.affectedUsers }) + '<br>';
-                                    }
-
-                                    if (data.affectedMods) {
-                                        msg += i18n('Moderated regions trimmed for <b>{{count}}</b> moderators.', { count: data.affectedMods });
-
-                                        if (data.affectedModsLose) {
-                                            msg += i18n('Of them <b>{{count}}</b> users lost the moderator role.', { count: data.affectedModsLose });
-                                        }
-
-                                        msg += '<br>';
-                                    }
-
-                                    confirmer.success(msg, 'Ok', null, function () {
-                                        let href = '/admin/region';
-
-                                        if (regionParent) {
-                                            href += '?hl=' + regionParent.cid();
-                                        }
-
-                                        document.location.href = href;
-                                    });
-                                })
-                                .catch(function (error) {
-                                    console.error(error);
-                                    confirmer.error(error, i18n('Close'), null, function () {
-                                        that.exe(false);
-                                    });
-                                });
-                        },
-                        cancelText: i18n('No'),
-                        cancelClass: 'btn-success',
-                        onCancel: function () {
-                            that.exe(false);
-                        },
-                    });
-                },
-                cancelText: i18n('Cancel'),
-                onCancel: function () {
-                    that.exe(false);
-                },
-            });
-
-            return false;
-        },
-
-        recalcStats: function () {
-            if (this.exe()) {
-                return false;
-            }
-
-            this.exe(true);
-
-            const that = this;
-            const cid = this.region.cid();
-            const title = Utils.regionTitle(this.region);
-
-            socket.run('region.recalcStatistics', { cids: [cid] })
-                .then(function (data) {
-                    let msg;
-
-                    if (data.running) {
-                        msg = i18n('Statistics are currently being recalculated for all regions');
-                    } else {
-                        msg = i18n('Statistics for region {{title}} have been recalculated', { title: title }) + '<br>';
-
-                        if (data.valuesChanged) {
-                            msg += i18n('<b>{{count, number}}</b> values changed', { count: data.valuesChanged });
-                        } else {
-                            msg += i18n('Values are unchanged');
+                        if (resultStat.affectedMods) {
+                            msg += '<br>' + i18n('Moderated regions trimmed for <b>{{count}}</b> moderators.', { count: resultStat.affectedMods });
                         }
                     }
 
                     noties.alert({
                         message: msg,
+                        type: 'alert',
                         ok: true,
-                        text: i18n('Close'),
-                        countdown: 10,
-                        onOk: function () {
-                            that.getOneRegion(cid, function () {
-                                that.exe(false);
-                            });
-                        },
                     });
-                })
-                .catch(function (error) {
-                    that.exe(false);
-                    noties.error(error);
-                });
-        },
+                }
 
-        changeParentWarn: function (cb, ctx) {
-            let msg = i18n('You want to change the region\'s position in the hierarchy.');
-            const childLenArr = this.childLenArr();
+                this.exe(false);
+            }, this);
+        }
 
-            if (childLenArr.length) {
-                msg += '<br>' + i18n('Along with it <b>{{count}}</b> child regions will be moved', {
-                    count: childLenArr.reduce(function (previousValue, currentValue) {
-                        return previousValue + currentValue;
-                    }),
-                }) + '<br>';
-            }
+        return false;
+    },
+    sendSave: function (saveData, needRedraw, cb, ctx) {
+        socket.run('region.save', saveData)
+            .then(function (data) {
+                this.region.pointsnum(data.region.pointsnum);
 
-            msg += '<br>' + i18n('For users subscribed to both the moved regions and their new parents, the subscription on the moved regions will be removed, since a parent subscription already covers its descendants. The same applies to regional moderator rights.');
-            msg += '<br>' + i18n('This may take several minutes. Confirm?') + '<br>' +
-                '<small><i>' + i18n('The operation will continue even if you close the browser') + '</i></small>';
+                if (this.createMode()) {
+                    //Если регион успешно создан, но переходим на его cid, и через роутер он нарисуется
+                    globalVM.router.navigate('/admin/region/' + data.region.cid);
+                } else {
+                    this.fillData(data, needRedraw);
+                }
 
-            noties.confirm({
-                message: msg,
-                okText: i18n('Yes'),
-                okClass: 'btn-warning',
-                onOk: function (confirmer) {
-                    confirmer.disable();
-                    cb.call(ctx, confirmer);
-                },
-                cancelText: i18n('No'),
-                cancelClass: 'btn-success',
-                onCancel: function () {
-                    cb.call(ctx, false);
-                },
+                cb.call(ctx, data);
+            }.bind(this))
+            .catch(function (error) {
+                if (error.code === 'REGION_GEOJSON_PARSE') {
+                    error.message += '<br/>' + _.get(error, 'details.why');
+                }
+
+                noties.error(error);
+                cb.call(ctx, null, error);
             });
-        },
+    },
+    remove: function () {
+        if (this.exe()) {
+            return false;
+        }
 
-        addFeatures: function () {
-            if (!this.regfiVM) {
-                renderer(
-                    [
-                        {
-                            module: 'm/admin/regionFeatureInsert',
-                            options: {
-                                cid: this.region.cid(),
-                            },
-                            modal: {
-                                topic: i18n('Insert FeatureCollection'),
-                                initWidth: '950px',
-                                maxWidthRatio: 0.95,
-                                fullHeight: true,
-                                withScroll: true,
-                                offIcon: { text: i18n('Close'), click: this.closeFeatures, ctx: this },
-                                btns: [{ css: 'btn-primary', text: i18n('Close'), click: this.closeFeatures, ctx: this }],
-                            },
-                            callback: function (vm) {
-                                this.regfiVM = vm;
-                                this.childModules[vm.id] = vm;
-                            }.bind(this),
-                        },
-                    ],
-                    {
-                        parent: this,
-                        level: this.level + 3, //Чтобы не удалился модуль карты
+        this.exe(true);
+
+        const cid = this.region.cid();
+        const title = Utils.regionTitle(this.region);
+        let regionParent;
+        const that = this;
+        const childLenArr = this.childLenArr();
+        let msg = i18n('Region <b>{{title}}</b> will be removed', { title: title }) + '<br>';
+
+        if (childLenArr.length) {
+            msg += '<br>' + i18n('Also <b>{{count}}</b> child regions will be removed', {
+                count: childLenArr.reduce(function (previousValue, currentValue) {
+                    return previousValue + currentValue;
+                }),
+            }) + '<br>';
+        }
+
+        if (!this.region.parents().length) {
+            msg += i18n('All objects contained in this region and its descendants will be assigned to <b>Open Sea</b>') + '<br>';
+        } else {
+            regionParent = _.last(this.region.parents());
+            msg += i18n('All objects contained in this region and its descendants will stay in the parent region <b>{{title}}</b>', { title: Utils.regionTitle(regionParent) }) + '<br>';
+        }
+
+        msg += '<br>' + i18n('This may take several minutes. Confirm?') + '<br>' +
+            '<small><i>' + i18n('The operation will continue even if you close the browser') + '</i></small>';
+
+        noties.confirm({
+            message: msg,
+            okText: i18n('Yes'),
+            onOk: function (confirmer) {
+                confirmer.close();
+
+                noties.confirm({
+                    message: i18n('Changes are irreversible.<br>Do you really want to remove region <b>{{title}}</b>?', { title: title }),
+                    okText: i18n('Yes'),
+                    onOk: function (confirmer) {
+                        confirmer.disable();
+
+                        socket.run('region.remove', { cid: cid })
+                            .then(function (data) {
+                                msg = i18n('Region <b>{{title}}</b> removed successfully', { title: title }) + '<br>';
+
+                                if (data.affectedPhotos) {
+                                    msg += i18n('<b>{{count}}</b> photos got reassigned to other regions.', { count: data.affectedPhotos }) + '<br>';
+                                }
+
+                                if (data.affectedComments) {
+                                    msg += i18n('<b>{{count}}</b> comments got reassigned to other regions following their photos.', { count: data.affectedComments }) + '<br>';
+                                }
+
+                                if (data.homeAffectedUsers) {
+                                    msg += i18n('<b>{{count}}</b> users had their home region replaced with {{title}} (number {{cid}}).', {
+                                        count: data.homeAffectedUsers,
+                                        title: data.homeReplacedWith.title_en,
+                                        cid: data.homeReplacedWith.cid,
+                                    }) + '<br>';
+                                }
+
+                                if (data.affectedUsers) {
+                                    msg += i18n('My regions trimmed for <b>{{count}}</b> users.', { count: data.affectedUsers }) + '<br>';
+                                }
+
+                                if (data.affectedMods) {
+                                    msg += i18n('Moderated regions trimmed for <b>{{count}}</b> moderators.', { count: data.affectedMods });
+
+                                    if (data.affectedModsLose) {
+                                        msg += i18n('Of them <b>{{count}}</b> users lost the moderator role.', { count: data.affectedModsLose });
+                                    }
+
+                                    msg += '<br>';
+                                }
+
+                                confirmer.success(msg, 'Ok', null, function () {
+                                    let href = '/admin/region';
+
+                                    if (regionParent) {
+                                        href += '?hl=' + regionParent.cid();
+                                    }
+
+                                    document.location.href = href;
+                                });
+                            })
+                            .catch(function (error) {
+                                console.error(error);
+                                confirmer.error(error, i18n('Close'), null, function () {
+                                    that.exe(false);
+                                });
+                            });
+                    },
+                    cancelText: i18n('No'),
+                    cancelClass: 'btn-success',
+                    onCancel: function () {
+                        that.exe(false);
+                    },
+                });
+            },
+            cancelText: i18n('Cancel'),
+            onCancel: function () {
+                that.exe(false);
+            },
+        });
+
+        return false;
+    },
+
+    recalcStats: function () {
+        if (this.exe()) {
+            return false;
+        }
+
+        this.exe(true);
+
+        const that = this;
+        const cid = this.region.cid();
+        const title = Utils.regionTitle(this.region);
+
+        socket.run('region.recalcStatistics', { cids: [cid] })
+            .then(function (data) {
+                let msg;
+
+                if (data.running) {
+                    msg = i18n('Statistics are currently being recalculated for all regions');
+                } else {
+                    msg = i18n('Statistics for region {{title}} have been recalculated', { title: title }) + '<br>';
+
+                    if (data.valuesChanged) {
+                        msg += i18n('<b>{{count, number}}</b> values changed', { count: data.valuesChanged });
+                    } else {
+                        msg += i18n('Values are unchanged');
                     }
-                );
-            }
-        },
+                }
 
-        closeFeatures: function () {
-            if (this.regfiVM) {
-                this.routeHandler();
-                this.regfiVM.destroy();
-                delete this.regfiVM;
-            }
-        },
-    });
+                noties.alert({
+                    message: msg,
+                    ok: true,
+                    text: i18n('Close'),
+                    countdown: 10,
+                    onOk: function () {
+                        that.getOneRegion(cid, function () {
+                            that.exe(false);
+                        });
+                    },
+                });
+            })
+            .catch(function (error) {
+                that.exe(false);
+                noties.error(error);
+            });
+    },
+
+    changeParentWarn: function (cb, ctx) {
+        let msg = i18n('You want to change the region\'s position in the hierarchy.');
+        const childLenArr = this.childLenArr();
+
+        if (childLenArr.length) {
+            msg += '<br>' + i18n('Along with it <b>{{count}}</b> child regions will be moved', {
+                count: childLenArr.reduce(function (previousValue, currentValue) {
+                    return previousValue + currentValue;
+                }),
+            }) + '<br>';
+        }
+
+        msg += '<br>' + i18n('For users subscribed to both the moved regions and their new parents, the subscription on the moved regions will be removed, since a parent subscription already covers its descendants. The same applies to regional moderator rights.');
+        msg += '<br>' + i18n('This may take several minutes. Confirm?') + '<br>' +
+            '<small><i>' + i18n('The operation will continue even if you close the browser') + '</i></small>';
+
+        noties.confirm({
+            message: msg,
+            okText: i18n('Yes'),
+            okClass: 'btn-warning',
+            onOk: function (confirmer) {
+                confirmer.disable();
+                cb.call(ctx, confirmer);
+            },
+            cancelText: i18n('No'),
+            cancelClass: 'btn-success',
+            onCancel: function () {
+                cb.call(ctx, false);
+            },
+        });
+    },
+
+    addFeatures: function () {
+        if (!this.regfiVM) {
+            renderer(
+                [
+                    {
+                        module: 'm/admin/regionFeatureInsert',
+                        options: {
+                            cid: this.region.cid(),
+                        },
+                        modal: {
+                            topic: i18n('Insert FeatureCollection'),
+                            initWidth: '950px',
+                            maxWidthRatio: 0.95,
+                            fullHeight: true,
+                            withScroll: true,
+                            offIcon: { text: i18n('Close'), click: this.closeFeatures, ctx: this },
+                            btns: [{ css: 'btn-primary', text: i18n('Close'), click: this.closeFeatures, ctx: this }],
+                        },
+                        callback: function (vm) {
+                            this.regfiVM = vm;
+                            this.childModules[vm.id] = vm;
+                        }.bind(this),
+                    },
+                ],
+                {
+                    parent: this,
+                    level: this.level + 3, //Чтобы не удалился модуль карты
+                }
+            );
+        }
+    },
+
+    closeFeatures: function () {
+        if (this.regfiVM) {
+            this.routeHandler();
+            this.regfiVM.destroy();
+            delete this.regfiVM;
+        }
+    },
 });

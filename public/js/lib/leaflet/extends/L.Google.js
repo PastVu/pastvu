@@ -4,19 +4,23 @@
  */
 
 // Google layer plugin wrapper. Loads Google Maps library with API key included.
-define(['Params', 'leaflet', 'leaflet-plugins/lru', 'leaflet-plugins/Leaflet.GoogleMutant'], function (P, L, lru) {
-    const keyParam = P.settings.publicApiKeys.googleMaps.length ? '&key=' + P.settings.publicApiKeys.googleMaps : '';
-    const url = 'https://maps.googleapis.com/maps/api/js?v=weekly&region=RU' + keyParam;
+import { loadScript } from 'frontend/loadScript';
+import P from 'Params';
+import L from 'leaflet';
+import lru from 'leaflet-plugins/lru';
+import 'leaflet-plugins/Leaflet.GoogleMutant';
 
-    // Load Google Maps API library asynchronously.
-    L.GridLayer.GoogleMutant.addInitHook(function () {
-        require(['async!' + url]);
-    });
+const keyParam = P.settings.publicApiKeys.googleMaps.length ? '&key=' + P.settings.publicApiKeys.googleMaps : '';
+const url = 'https://maps.googleapis.com/maps/api/js?v=weekly&region=RU' + keyParam;
 
-    return function (options) {
-        options = options || {};
-        options.lru = new lru.LRUMap(100); // Tile LRU cache.
-
-        return new L.GridLayer.GoogleMutant(options);
-    };
+// Load Google Maps API library asynchronously.
+L.GridLayer.GoogleMutant.addInitHook(function () {
+    loadScript(url, { callback: true });
 });
+
+export default function (options) {
+    options = options || {};
+    options.lru = new lru.LRUMap(100); // Tile LRU cache.
+
+    return new L.GridLayer.GoogleMutant(options);
+};

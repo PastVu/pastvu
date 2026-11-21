@@ -3,10 +3,14 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-define(['module'], function (/* module */) {
-    'use strict';
+import _ from 'underscore';
+import io from 'socket.io';
+import noties from 'noties';
+import TimeoutError from 'errors/Timeout';
+import i18n from 'i18n';
 
-    let onLoad;
+const ready = new Promise(resolve => {
+    const onLoad = resolve;
 
     function moduleHandler(_, io, noties, TimeoutError, i18n) {
         const connectPath = location.host;
@@ -434,17 +438,7 @@ define(['module'], function (/* module */) {
         manager.open(); // Коннектимся к серверу
     }
 
-    return {
-        load: function (name, req, onLoadExe, config) {
-            if (config.isBuild) {
-                onLoadExe(null); // Avoid errors in the r.js optimizer
-
-                return;
-            }
-
-            onLoad = onLoadExe;
-
-            req(['underscore', 'socket.io', 'noties', 'errors/Timeout', 'i18n'], moduleHandler);
-        },
-    };
+    moduleHandler(_, io, noties, TimeoutError, i18n);
 });
+
+export default await ready;
