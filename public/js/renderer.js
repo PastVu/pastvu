@@ -6,7 +6,7 @@
 import { loadModules } from 'frontend/lazy';
 import $ from 'jquery';
 import Utils from 'Utils';
-import _ from 'underscore';
+import _ from 'lodash';
 import ko from 'knockout';
 import globalVM from 'globalVM';
 import doT from 'lib/doT';

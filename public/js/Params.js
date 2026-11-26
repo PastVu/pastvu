@@ -8,7 +8,7 @@
  * Params
  */
 import $ from 'jquery';
-import _ from 'underscore';
+import _ from 'lodash';
 import socket from 'socket';
 import 'Utils';
 import 'knockout';

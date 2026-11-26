@@ -4,7 +4,6 @@
  */
 
 // Module for checking region by geo coordianates.
-import 'underscore';
 import $ from 'jquery';
 import Utils from 'Utils';
 import socket from 'socket';

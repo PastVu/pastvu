@@ -273,14 +273,19 @@ document.head.appendChild(link);
 export default await ready;`, loader: 'js' };
             });
             build.onResolve({ filter: /^[\w@]/ }, args => {
-                // Let esbuild resolve the npm package and its browser entry point.
-                if (args.path === 'i18next') {
+                // Let esbuild resolve npm packages and their own dependencies.
+                if (!args.importer.startsWith(root + path.sep) ||
+                    ['i18next', 'lodash', 'underscore.string'].includes(args.path)) {
                     return undefined;
                 }
 
                 return { path: resolveModule(args.path, args.importer) };
             });
             build.onLoad({ filter: /\/lib\/.*\.js$/ }, async args => {
+                if (!args.path.startsWith(path.join(root, 'lib') + path.sep)) {
+                    return undefined;
+                }
+
                 const source = await fs.readFile(args.path, 'utf8');
 
                 if (/^import |^export /m.test(source) || args.path.endsWith('/JSExtensions.js')) {

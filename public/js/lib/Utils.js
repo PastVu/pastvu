@@ -10,7 +10,7 @@
  */
 /*global init:true*/
 import $ from 'jquery';
-import _ from 'underscore';
+import _ from 'lodash';
 import _s from 'underscore.string';
 import i18n from 'i18n';
 import parsecoords from 'lib/geocoordsparser';

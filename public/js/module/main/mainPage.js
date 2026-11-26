@@ -3,7 +3,6 @@
  * GNU Affero General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/agpl.txt)
  */
 
-import 'underscore';
 import Utils from 'Utils';
 import P from 'Params';
 import ko from 'knockout';
