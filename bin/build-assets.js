@@ -275,7 +275,7 @@ export default await ready;`, loader: 'js' };
             build.onResolve({ filter: /^[\w@]/ }, args => {
                 // Let esbuild resolve npm packages and their own dependencies.
                 if (!args.importer.startsWith(root + path.sep) ||
-                    ['i18next', 'lodash', 'underscore.string'].includes(args.path)) {
+                    ['@turf/turf', 'i18next', 'lodash', 'underscore.string'].includes(args.path)) {
                     return undefined;
                 }
 
