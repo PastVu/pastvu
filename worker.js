@@ -35,40 +35,38 @@ export async function configure(startStamp) {
 
     logger.info(`Worker started up in ${(Date.now() - startStamp) / 1000}s`);
 
-    waitDb.then(() => {
+    return waitDb.then(() => {
         logger.info('Syncing indexes defined in model schemas to MongoDB.');
 
         return syncAllIndexes();
-    }).then(() => {
-        setupSessionQueue();
-        setupUserJobsQueue();
-    });
+    }).then(() => Promise.all([setupSessionQueue(), setupUserJobsQueue()]));
 }
 
 /**
  * Setup queue for session jobs.
  */
 function setupSessionQueue() {
-    createQueue('session').then(sessionQueue => {
+    return createQueue('session').then(sessionQueue => {
         // session.archiveExpiredSessions
         sessionQueue.process('archiveExpiredSessions', job => archiveExpiredSessions(job.data));
 
         // session.calcUserStats
         sessionQueue.process('calcUserStats', job => calcUserStats(job.data));
 
-        // Add archiveExpiredSessions periodic job.
-        sessionQueue.add('archiveExpiredSessions', {}, {
-            removeOnComplete: 2, // Needed to be able to retrieve it on global event listener (in different runner).
-            removeOnFail: true,
-            repeat: { every: ms('5m') },
-        });
-
-        // Add calcUserStatsJob periodic job.
-        sessionQueue.add('calcUserStats', {}, {
-            removeOnComplete: 2,
-            removeOnFail: true,
-            repeat: { every: ms('1d') },
-        });
+        return Promise.all([
+            sessionQueue.upsertJobScheduler('archiveExpiredSessions', { every: ms('5m') }, {
+                opts: {
+                    removeOnComplete: 2, // Keep completed jobs available to the frontend completion listener.
+                    removeOnFail: true,
+                },
+            }),
+            sessionQueue.upsertJobScheduler('calcUserStats', { every: ms('1d') }, {
+                opts: {
+                    removeOnComplete: 2,
+                    removeOnFail: true,
+                },
+            }),
+        ]);
     });
 }
 
@@ -76,7 +74,7 @@ function setupSessionQueue() {
  * Setup queue for user jobs (non-regular).
  */
 function setupUserJobsQueue() {
-    createQueue('userjobs').then(userJobsQueue => {
+    return createQueue('userjobs').then(userJobsQueue => {
         // converter.convertPhotosAll
         userJobsQueue.process('convertPhotosAll', job => convertPhotosAll(job.data));
         // cluster.clusterPhotosAll

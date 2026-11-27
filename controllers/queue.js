@@ -93,7 +93,7 @@ function getQueueEvents(name) {
  * supposed to be used on worker start.
  *
  * @param {string} name Name of the queue.
- * @returns {{name: string, process: Function, add: Function}}
+ * @returns {{name: string, process: Function, add: Function, upsertJobScheduler: Function}}
  */
 export async function createQueue(name) {
     const queueLogPrefix = `Queue '${name}'`;
@@ -157,6 +157,7 @@ export async function createQueue(name) {
         name,
         process: (jobName, handler) => handlers.set(jobName, handler),
         add: (jobName, data, opts) => queue.add(jobName, data, opts),
+        upsertJobScheduler: (schedulerId, repeat, template) => queue.upsertJobScheduler(schedulerId, repeat, template),
     };
 }
 

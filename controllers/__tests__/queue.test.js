@@ -68,6 +68,38 @@ describe('queue job completion', () => {
         expect(callback).toHaveBeenCalledWith({ echo: 1 });
     });
 
+    it('runs a scheduled job repeatedly after upserting the same scheduler twice', async () => {
+        expect.assertions(2);
+
+        const jobName = 'scheduled';
+        const repeat = { every: 100 };
+        let resolveSecondRun;
+        const secondRun = new Promise(resolve => {
+            resolveSecondRun = resolve;
+        });
+        let firstJobId;
+
+        queue.process(jobName, jest.fn()
+            .mockImplementationOnce(job => {
+                firstJobId = job.id;
+            })
+            .mockImplementationOnce(job => {
+                resolveSecondRun(job.id !== firstJobId);
+            }));
+
+        try {
+            const template = { opts: { removeOnComplete: 2 } };
+            await queue.upsertJobScheduler(jobName, repeat, template);
+            await queue.upsertJobScheduler(jobName, repeat, template);
+
+            await expect(listener.queue.getJobSchedulersCount()).resolves.toBe(1);
+
+            await expect(secondRun).resolves.toBe(true);
+        } finally {
+            await listener.queue.removeJobScheduler(jobName);
+        }
+    });
+
     it('runJob returns result.data to the caller', async () => {
         expect.assertions(1);
 
