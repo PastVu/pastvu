@@ -63,7 +63,7 @@
         "express-urlrewrite": "2.0.3",
         "formidable": "3.5.4",
         "got": "15.0.7",
-        "http-proxy-middleware": "4.2.0",
+        "http-proxy-middleware": "4.2.2",
         "i18next": "26.3.6",
         "ioredis": "5.11.1",
         "lodash": "4.18.1",
